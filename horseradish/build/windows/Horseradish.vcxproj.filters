@@ -31,9 +31,6 @@
     <Filter Include="libs\snappy">
       <UniqueIdentifier>{1ce4c73a-b77d-46ef-bf66-db7d4e559d5b}</UniqueIdentifier>
     </Filter>
-    <Filter Include="libs\tinyXML">
-      <UniqueIdentifier>{a14ec910-cb08-4013-97b7-c63f5a53aee7}</UniqueIdentifier>
-    </Filter>
     <Filter Include="libs\zlib">
       <UniqueIdentifier>{7aed9e0e-816b-4850-a602-e909001be7d5}</UniqueIdentifier>
     </Filter>
@@ -42,6 +39,9 @@
     </Filter>
     <Filter Include="libs\zlib\minizip">
       <UniqueIdentifier>{cf5739a6-c171-4a24-a2cd-95b74242c9ab}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="libs\tinyxml2">
+      <UniqueIdentifier>{de95f161-ba4a-4ea3-bdec-a034e52f03a5}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -597,18 +597,6 @@
     <ClCompile Include="..\..\src\libs\snappy\snappy-stubs-internal.cc">
       <Filter>libs\snappy</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\libs\tinyXML\tinystr.cpp">
-      <Filter>libs\tinyXML</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\libs\tinyXML\tinyxml.cpp">
-      <Filter>libs\tinyXML</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\libs\tinyXML\tinyxmlerror.cpp">
-      <Filter>libs\tinyXML</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\libs\tinyXML\tinyxmlparser.cpp">
-      <Filter>libs\tinyXML</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\libs\zlib\adler32.c">
       <Filter>libs\zlib</Filter>
     </ClCompile>
@@ -682,6 +670,9 @@
     <ClCompile Include="..\..\src\main.cpp" />
     <ClCompile Include="..\..\src\SGPUCounter.cpp" />
     <ClCompile Include="..\..\src\videoStream.cpp" />
+    <ClCompile Include="..\..\src\libs\tinyxml2\tinyxml2.cpp">
+      <Filter>libs\tinyxml2</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\common\imageFactory\ifHDRI.hpp">
@@ -1173,12 +1164,6 @@
     <ClInclude Include="..\..\src\libs\snappy\snappy-stubs-public.h">
       <Filter>libs\snappy</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\libs\tinyXML\tinystr.h">
-      <Filter>libs\tinyXML</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\libs\tinyXML\tinyxml.h">
-      <Filter>libs\tinyXML</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\libs\zlib\crc32.h">
       <Filter>libs\zlib</Filter>
     </ClInclude>
@@ -1243,5 +1228,8 @@
     <ClInclude Include="..\..\src\culling.hpp" />
     <ClInclude Include="..\..\src\SGPUCounter.hpp" />
     <ClInclude Include="..\..\src\videoStream.hpp" />
+    <ClInclude Include="..\..\src\libs\tinyxml2\tinyxml2.h">
+      <Filter>libs\tinyxml2</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

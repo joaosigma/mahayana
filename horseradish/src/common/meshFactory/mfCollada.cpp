@@ -4,7 +4,7 @@
 #include "common\Mesh.hpp"
 #include "common\MeshFactory.hpp"
 
-#include "libs\tinyXML\tinyxml.h"
+#include "libs\tinyxml2\tinyxml2.h"
 
 #include <windows.h>
 #include <stdio.h>
@@ -58,14 +58,15 @@ struct VERTEX_INDEX_PAIR{
 static
 const GEOM_ID_PAIR* findGeomID(const char * const geomID, const GEOM_ID_PAIR * const pairList, const int numPair)
 {
-	if ( (geomID == nullptr) || (pairList == nullptr) || (numPair <= 0))
+	if ((geomID == nullptr) || (pairList == nullptr) || (numPair <= 0))
 		return nullptr;
 
-	for(int curPair = 0; curPair < numPair; curPair++)
-		{
+	for (int curPair = 0; curPair < numPair; curPair++)
+	{
 		if (strcmp(pairList[curPair].geomID, geomID) == 0)
 			return (pairList + curPair);
-		}
+	}
+
 	return nullptr;
 }
 
@@ -76,33 +77,33 @@ int readValuesInt(int * const arrayInt, const int numInt, const char * const att
 	int curInt;
 
 	//verificar alguns parametros
-	if (arrayInt==nullptr || numInt<=0 || attribValues==nullptr || *attribValues=='\0')
+	if (arrayInt == nullptr || numInt <= 0 || attribValues == nullptr || *attribValues == '\0')
 		return 0;
 
 	//ao principio tudo aponta para o mesmo
 	walker = attribValues;
 
 	//limpo tudo
-	memset(arrayInt,0,sizeof(int)*numInt);
+	memset(arrayInt, 0, sizeof(int)*numInt);
 
 	//tenho de meter o walker a apontar para o próximo valor
-	while(*walker!='\0' && *walker==' ')
+	while (*walker != '\0' && *walker == ' ')
 		walker++;
 
 	//para cada valor que tenho de ler
-	for(curInt=0; curInt<numInt; curInt++)
+	for (curInt = 0; curInt < numInt; curInt++)
 	{
 		//algo correu mal
-		if (*walker=='\0')
+		if (*walker == '\0')
 			break;
 
 		//converter a string
-		arrayInt[curInt]=atoi(walker);
+		arrayInt[curInt] = atoi(walker);
 
 		//avanço para o próximo valor
-		while(*walker!='\0' && *walker!=' ')
+		while (*walker != '\0' && *walker != ' ')
 			walker++;
-		if (*walker==' ')
+		if (*walker == ' ')
 			walker++;
 	}
 
@@ -112,116 +113,116 @@ int readValuesInt(int * const arrayInt, const int numInt, const char * const att
 
 double strtod(const char *str)
 {
-  double number;
-  int exponent;
-  int negative;
-  char *p = (char *) str;
-  double p10;
-  int n;
-  int num_digits;
-  int num_decimals;
+	double number;
+	int exponent;
+	int negative;
+	char *p = (char *)str;
+	double p10;
+	int n;
+	int num_digits;
+	int num_decimals;
 
-  // Skip leading whitespace
-  while (isspace(*p)) p++;
+	// Skip leading whitespace
+	while (isspace(*p)) p++;
 
-  // Handle optional sign
-  negative = 0;
-  switch (*p) 
-  {             
-    case '-': negative = 1; // Fall through to increment position
-    case '+': p++;
-  }
+	// Handle optional sign
+	negative = 0;
+	switch (*p)
+	{
+	case '-': negative = 1; // Fall through to increment position
+	case '+': p++;
+	}
 
-  number = 0.;
-  exponent = 0;
-  num_digits = 0;
-  num_decimals = 0;
+	number = 0.;
+	exponent = 0;
+	num_digits = 0;
+	num_decimals = 0;
 
-  // Process string of digits
-  while (isdigit(*p))
-  {
-    number = number * 10. + (*p - '0');
-    p++;
-    num_digits++;
-  }
+	// Process string of digits
+	while (isdigit(*p))
+	{
+		number = number * 10. + (*p - '0');
+		p++;
+		num_digits++;
+	}
 
-  // Process decimal part
-  if ((*p == '.') || (*p == ',') )
-  {
-    p++;
+	// Process decimal part
+	if ((*p == '.') || (*p == ','))
+	{
+		p++;
 
-    while (isdigit(*p))
-    {
-      number = number * 10. + (*p - '0');
-      p++;
-      num_digits++;
-      num_decimals++;
-    }
+		while (isdigit(*p))
+		{
+			number = number * 10. + (*p - '0');
+			p++;
+			num_digits++;
+			num_decimals++;
+		}
 
-    exponent -= num_decimals;
-  }
+		exponent -= num_decimals;
+	}
 
-  if (num_digits == 0)
-  {
-    errno = ERANGE;
-    return 0.0;
-  }
+	if (num_digits == 0)
+	{
+		errno = ERANGE;
+		return 0.0;
+	}
 
-  // Correct for sign
-  if (negative) number = -number;
+	// Correct for sign
+	if (negative) number = -number;
 
-  // Process an exponent string
-  if (*p == 'e' || *p == 'E') 
-  {
-    // Handle optional sign
-    negative = 0;
-    switch(*++p) 
-    {   
-      case '-': negative = 1;   // Fall through to increment pos
-      case '+': p++;
-    }
+	// Process an exponent string
+	if (*p == 'e' || *p == 'E')
+	{
+		// Handle optional sign
+		negative = 0;
+		switch (*++p)
+		{
+		case '-': negative = 1;   // Fall through to increment pos
+		case '+': p++;
+		}
 
-    // Process string of digits
-    n = 0;
-    while (isdigit(*p)) 
-    {   
-      n = n * 10 + (*p - '0');
-      p++;
-    }
+		// Process string of digits
+		n = 0;
+		while (isdigit(*p))
+		{
+			n = n * 10 + (*p - '0');
+			p++;
+		}
 
-    if (negative) 
-      exponent -= n;
-    else
-      exponent += n;
-  }
+		if (negative)
+			exponent -= n;
+		else
+			exponent += n;
+	}
 
-  if (exponent < DBL_MIN_EXP  || exponent > DBL_MAX_EXP)
-  {
-    errno = ERANGE;
-    return HUGE_VAL;
-  }
+	if (exponent < DBL_MIN_EXP || exponent > DBL_MAX_EXP)
+	{
+		errno = ERANGE;
+		return HUGE_VAL;
+	}
 
-  // Scale the result
-  p10 = 10.;
-  n = exponent;
-  if (n < 0) n = -n;
-  while (n) 
-  {
-    if (n & 1) 
-    {
-      if (exponent < 0)
-        number /= p10;
-      else
-        number *= p10;
-    }
-    n >>= 1;
-    p10 *= p10;
-  }
+	// Scale the result
+	p10 = 10.;
+	n = exponent;
+	if (n < 0) n = -n;
+	while (n)
+	{
+		if (n & 1)
+		{
+			if (exponent < 0)
+				number /= p10;
+			else
+				number *= p10;
+		}
+		n >>= 1;
+		p10 *= p10;
+	}
 
-  if (number == HUGE_VAL)
-	  errno = ERANGE;
+	if (number == HUGE_VAL)
+		errno = ERANGE;
 
-  return number;
+	return number;
 }
 
 static
@@ -230,34 +231,34 @@ void readValuesFloat(float * const arrayFloat, const int numFloat, const char * 
 	const char *walker;
 
 	//verificar alguns parametros
-	if (arrayFloat==nullptr || numFloat<=0 || attribValues==nullptr || *attribValues=='\0')
+	if (arrayFloat == nullptr || numFloat <= 0 || attribValues == nullptr || *attribValues == '\0')
 		return;
 
 	//ao principio tudo aponta para o mesmo
 	walker = attribValues;
 
 	//limpo tudo
-	memset(arrayFloat,0,sizeof(float)*numFloat);
+	memset(arrayFloat, 0, sizeof(float)*numFloat);
 
 	//tenho de meter o walker a apontar para o próximo valor
-	while(*walker!='\0' && *walker==' ')
+	while (*walker != '\0' && *walker == ' ')
 		walker++;
 
 	//para cada valor que tenho de ler
-	for(int curFloat=0; curFloat<numFloat; curFloat++)
+	for (int curFloat = 0; curFloat < numFloat; curFloat++)
 	{
 		//algo correu mal
-		if (*walker=='\0')
+		if (*walker == '\0')
 			break;
 
 		//converter a string
 		//arrayFloat[curFloat]=(float)atof(walker);
-		arrayFloat[curFloat]=(float)strtod(walker);
+		arrayFloat[curFloat] = (float)strtod(walker);
 
 		//avanço para o próximo valor
-		while(*walker!='\0' && *walker!=' ')
+		while (*walker != '\0' && *walker != ' ')
 			walker++;
-		if (*walker==' ')
+		if (*walker == ' ')
 			walker++;
 	}
 }
@@ -268,11 +269,12 @@ const COLLADA_VERTICES* findVertex(const char * const vertexName, const COLLADA_
 	if ((colVertices == nullptr) || (colNumVertices <= 0))
 		return nullptr;
 
-	for(int curVertex = 0; curVertex < colNumVertices; curVertex++)
+	for (int curVertex = 0; curVertex < colNumVertices; curVertex++)
 	{
-		if (strcmp(colVertices[curVertex].nome, vertexName+1) == 0)
+		if (strcmp(colVertices[curVertex].nome, vertexName + 1) == 0)
 			return (colVertices + curVertex);
 	}
+
 	return nullptr;
 }
 
@@ -282,11 +284,12 @@ const COLLADA_INPUT* findInput(const char * const inputSemantic, const COLLADA_I
 	if ((colInputs == nullptr) || (colNumInputs <= 0))
 		return nullptr;
 
-	for(int curInput = 0; curInput < colNumInputs; curInput++)
+	for (int curInput = 0; curInput < colNumInputs; curInput++)
 	{
 		if (strcmp(colInputs[curInput].semantic, inputSemantic) == 0)
 			return (colInputs + curInput);
 	}
+
 	return nullptr;
 }
 
@@ -296,11 +299,12 @@ const COLLADA_SOURCE* findSource(const char * const sourceName, const COLLADA_SO
 	if ((colSources == nullptr) || (colNumSources <= 0))
 		return nullptr;
 
-	for(int curSource = 0; curSource < colNumSources; curSource++)
+	for (int curSource = 0; curSource < colNumSources; curSource++)
 	{
-		if (strcmp(colSources[curSource].nome, sourceName+1) == 0)
+		if (strcmp(colSources[curSource].nome, sourceName + 1) == 0)
 			return (colSources + curSource);
 	}
+
 	return nullptr;
 }
 
@@ -319,6 +323,7 @@ int qSortParIndex(const VERTEX_INDEX_PAIR& parA, const VERTEX_INDEX_PAIR& parB)
 
 	return 0;
 }
+
 static
 int qSortParIndexMain(const VERTEX_INDEX_PAIR& parA, const VERTEX_INDEX_PAIR& parB)
 {
@@ -342,11 +347,11 @@ void criaModelo(Geometry::Model * const modelo, const char *geomName, const COLL
 	meshArray = new Geometry::Mesh[colNumTriangles];
 
 	//para cada triangulo
-	for(int curTriIndex = 0; curTriIndex < colNumTriangles; curTriIndex++)
+	for (int curTriIndex = 0; curTriIndex < colNumTriangles; curTriIndex++)
 	{
 		VERTEX_INDEX_PAIR *pares;
 		const COLLADA_TRIANGLES *curTri;
-		const COLLADA_SOURCE *sourcePos,*sourceUV;
+		const COLLADA_SOURCE *sourcePos, *sourceUV;
 		const COLLADA_INPUT *curInput;
 		int inputOffsetPos, inputOffsetUV;
 		int numPairTotal, numPairGood, lastUsedIndex;
@@ -393,7 +398,7 @@ void criaModelo(Geometry::Model * const modelo, const char *geomName, const COLL
 			sourceUV = findSource(curInput->source, colSources, colNumSources);
 			inputOffsetUV = curInput->offset;
 		}
-		
+
 		//***********************
 		//e pronto. chegando aqui já tenho o que vou precisar, no entanto tenho de verificar se tenho posições (é obrigatório)
 		if (sourcePos == nullptr)
@@ -411,10 +416,10 @@ void criaModelo(Geometry::Model * const modelo, const char *geomName, const COLL
 			newIndices = (unsigned int*)meshArray[curTriIndex].CreateNewIndices(Geometry::Mesh::Int32, curTri->numTri * 3);
 
 			//copio todos os pontos de uma lista para a outra
-			memcpy(meshArray[curTriIndex].FindAttribIndex(0), sourcePos->values, sizeof(float)*sourcePos->numElements*3);
+			memcpy(meshArray[curTriIndex].FindAttribIndex(0), sourcePos->values, sizeof(float)*sourcePos->numElements * 3);
 
 			//agora basta copiar os indices
-			for(int curIndex = 0; curIndex < meshArray[curTriIndex].GetNumIndices(); curIndex++)
+			for (int curIndex = 0; curIndex < meshArray[curTriIndex].GetNumIndices(); curIndex++)
 				newIndices[curIndex] = (unsigned int)(curTri->indices[curTri->strideOffset*curIndex + inputOffsetPos]);
 
 			//não faço mais nada
@@ -431,7 +436,7 @@ void criaModelo(Geometry::Model * const modelo, const char *geomName, const COLL
 		memset(pares, 0, sizeof(VERTEX_INDEX_PAIR)*numPairTotal);
 
 		//basta comecar a construir os pares, ou seja, passo por todos os indices dos triangulos e crio o vertice
-		for(int curPairIndex = 0; curPairIndex < numPairTotal; curPairIndex++)
+		for (int curPairIndex = 0; curPairIndex < numPairTotal; curPairIndex++)
 		{
 			pares[curPairIndex].indexOld = curPairIndex;
 			pares[curPairIndex].indexNew = -1;
@@ -440,11 +445,11 @@ void criaModelo(Geometry::Model * const modelo, const char *geomName, const COLL
 		}
 
 		//agora ordeno a lista pelos respectivos pares
-		HorseRadish::Sorting::QuickSort<VERTEX_INDEX_PAIR>(pares, numPairTotal, qSortParIndex);	
+		HorseRadish::Sorting::QuickSort<VERTEX_INDEX_PAIR>(pares, numPairTotal, qSortParIndex);
 
 		//passo por cada vertice e verifico se está duplicado
 		numPairGood = 0;
-		for(int curPairIndex = 0; curPairIndex < numPairTotal; )
+		for (int curPairIndex = 0; curPairIndex < numPairTotal;)
 		{
 			int curPairIndexNext;
 
@@ -452,8 +457,8 @@ void criaModelo(Geometry::Model * const modelo, const char *geomName, const COLL
 			numPairGood++;
 
 			//agora só saio quando o pai for diferente
-			for(curPairIndexNext = curPairIndex + 1; curPairIndexNext < numPairTotal; curPairIndexNext++)
-			{		
+			for (curPairIndexNext = curPairIndex + 1; curPairIndexNext < numPairTotal; curPairIndexNext++)
+			{
 				//se este (que está à frente) for diferente do actual, devo sair
 				if ((pares[curPairIndexNext].indexVertex != pares[curPairIndex].indexVertex) || (pares[curPairIndexNext].indexUV != pares[curPairIndex].indexUV))
 					break;
@@ -475,7 +480,7 @@ void criaModelo(Geometry::Model * const modelo, const char *geomName, const COLL
 
 		//agora passo por cada vertice (agora par) para preencher os arrays
 		numPairGood = lastUsedIndex = 0;
-		for(int curPairIndex = 0; curPairIndex < numPairTotal; curPairIndex++)
+		for (int curPairIndex = 0; curPairIndex < numPairTotal; curPairIndex++)
 		{
 			//se este estava copiado
 			if ((pares[curPairIndex].indexVertex < 0) || (pares[curPairIndex].indexUV < 0))
@@ -498,7 +503,7 @@ void criaModelo(Geometry::Model * const modelo, const char *geomName, const COLL
 		HorseRadish::Sorting::QuickSort<VERTEX_INDEX_PAIR>(pares, numPairTotal, qSortParIndexMain);
 
 		//agora basta passar por todos os indices e copiar o indice novo para o array da mesh
-		for(int curPairIndex = 0; curPairIndex < meshArray[curTriIndex].GetNumIndices(); curPairIndex++)
+		for (int curPairIndex = 0; curPairIndex < meshArray[curTriIndex].GetNumIndices(); curPairIndex++)
 			newIndices[curPairIndex] = (unsigned int)pares[curPairIndex].indexNew;
 
 		//posso apagar os pares pq já não preciso deles
@@ -537,7 +542,7 @@ void criaModelo(Geometry::Model * const modelo, const char *geomName, const COLL
 		meshAcumula = 0;
 
 		//junto todas as meshes para cima da primeira e liberto o espaço
-		for(int curMesh = 1; curMesh < colNumTriangles; curMesh++)
+		for (int curMesh = 1; curMesh < colNumTriangles; curMesh++)
 		{
 			//se o material mudou, tenho de criar uma nova mesh
 			if (strcmp(colTriangles[meshAcumula].material, colTriangles[curMesh].material) != 0)
@@ -569,7 +574,7 @@ void criaModelo(Geometry::Model * const modelo, const char *geomName, const COLL
 		}
 
 		//não podendo esquecer a última mesh
-		
+
 		//crio uma nova mesh e limpo os nomes
 		novaMesh = modelo->arrayMesh.Add();
 		memset(novaMesh->materialName, 0, sizeof(novaMesh->materialName));
@@ -593,30 +598,25 @@ void criaModelo(Geometry::Model * const modelo, const char *geomName, const COLL
 }
 
 static
-void leSceneGraph(Geometry::Model* const modelo, const GEOM_ID_PAIR * const geomIDList, int geomIDNum, const TiXmlElement* xmlRootNode, const HorseRadish::Matrix &matrixStack)
+void leSceneGraph(Geometry::Model* const modelo, const GEOM_ID_PAIR * const geomIDList, int geomIDNum, const tinyxml2::XMLElement* xmlRootNode, const HorseRadish::Matrix &matrixStack)
 {
-	const TiXmlElement* xmlNode;
-
 	//para cada nó desta cena
-	xmlNode = xmlRootNode->FirstChildElement("node");
-	for(; xmlNode != nullptr; xmlNode = xmlNode->NextSiblingElement("node"))
+	auto xmlNode = xmlRootNode->FirstChildElement("node");
+	for (; xmlNode != nullptr; xmlNode = xmlNode->NextSiblingElement("node"))
 	{
-		const TiXmlNode* xmlChild;
-		const TiXmlElement* xmlInstanceGeom;
-		const char *nodeType,*attribValues;
 		HorseRadish::Matrix finalMat;
 
 		//só aceito este tipo de nós
-		nodeType = xmlNode->Attribute("type");
+		auto nodeType = xmlNode->Attribute("type");
 		if ((nodeType != nullptr) && (strcmp(nodeType, "NODE") != 0))
 			continue;
 
 		//inicializo a matrix com a identidade
 		finalMat.SetIdentidade();
-			
+
 		//passo por todos os elementos
-		xmlChild = xmlNode->FirstChild();
-		for(; xmlChild != nullptr; xmlChild = xmlChild->NextSibling())
+		auto xmlChild = xmlNode->FirstChild();
+		for (; xmlChild != nullptr; xmlChild = xmlChild->NextSibling())
 		{
 			const char *elementName;
 
@@ -631,7 +631,7 @@ void leSceneGraph(Geometry::Model* const modelo, const GEOM_ID_PAIR * const geom
 				float transValues[3];
 
 				//leio os valores
-				attribValues = xmlChild->ToElement()->GetText();
+				auto attribValues = xmlChild->ToElement()->GetText();
 				readValuesFloat(transValues, 3, attribValues);
 
 				//actualizo a matriz e pronto
@@ -646,13 +646,13 @@ void leSceneGraph(Geometry::Model* const modelo, const GEOM_ID_PAIR * const geom
 				HorseRadish::Matrix matRot;
 
 				//leio os valores
-				attribValues = xmlChild->ToElement()->GetText();
+				auto attribValues = xmlChild->ToElement()->GetText();
 				readValuesFloat(rotateValues, 4, attribValues);
 
 				//se por acaso isto for zero
 				if (HorseRadish::Math::isZero(rotateValues[3]) == true)
 					continue;
-				
+
 				//actualizo a matriz e pronto
 				matRot.SetRotate(rotateValues[3], rotateValues[0], rotateValues[1], rotateValues[2]);
 				finalMat *= matRot;
@@ -665,9 +665,9 @@ void leSceneGraph(Geometry::Model* const modelo, const GEOM_ID_PAIR * const geom
 				float scaleValues[3];
 
 				//leio os valores
-				attribValues = xmlChild->ToElement()->GetText();
+				auto attribValues = xmlChild->ToElement()->GetText();
 				readValuesFloat(scaleValues, 3, attribValues);
-				
+
 				//actualizo a matriz e pronto
 				finalMat.MultScale(scaleValues[0], scaleValues[1], scaleValues[2]);
 				continue;
@@ -680,9 +680,9 @@ void leSceneGraph(Geometry::Model* const modelo, const GEOM_ID_PAIR * const geom
 				float matElements[16];
 
 				//leio os valores
-				attribValues = xmlChild->ToElement()->GetText();
+				auto attribValues = xmlChild->ToElement()->GetText();
 				readValuesFloat(matElements, 16, attribValues);
-				
+
 				//actualizo a matriz e pronto
 				matAux.Set(matElements);
 				matAux.Transpose();
@@ -695,7 +695,7 @@ void leSceneGraph(Geometry::Model* const modelo, const GEOM_ID_PAIR * const geom
 		finalMat.MultInverseOrder(matrixStack);
 
 		//em que geometria aplico isto
-		xmlInstanceGeom = xmlNode->FirstChildElement("instance_geometry");
+		auto xmlInstanceGeom = xmlNode->FirstChildElement("instance_geometry");
 		if (xmlInstanceGeom != nullptr)
 		{
 			const char *geomInstanceURL;
@@ -703,11 +703,11 @@ void leSceneGraph(Geometry::Model* const modelo, const GEOM_ID_PAIR * const geom
 
 			//tiro a geometria em que aplico os valores
 			geomInstanceURL = xmlInstanceGeom->Attribute("url");
-			geometria = findGeomID(geomInstanceURL+1, geomIDList, geomIDNum);
+			geometria = findGeomID(geomInstanceURL + 1, geomIDList, geomIDNum);
 			if (geometria != nullptr)
 				modelo->arrayMesh[geometria->meshIndex].mesh.OpMatrix(Geometry::Mesh::Pos, finalMat);
 		}
-		
+
 		//faço o mesmo para os nós meus filhos
 		leSceneGraph(modelo, geomIDList, geomIDNum, xmlNode, finalMat);
 	}
@@ -719,27 +719,27 @@ void convertPolyList(COLLADA_TRIANGLES **colTriangles, int * const colNumTriangl
 	int numQuads, numTris;
 
 	//para cada polygono na lista
-	for(int curPoly = 0; curPoly < colNumPolylist; curPoly++)
-		{
+	for (int curPoly = 0; curPoly < colNumPolylist; curPoly++)
+	{
 		COLLADA_TRIANGLES *newTriangle;
-		int *writerWalker,*sourceWalker;
+		int *writerWalker, *sourceWalker;
 
 		//tenho de contar quantos quads ou triangulos tenho na lista
 		numQuads = numTris = 0;
-		for(int curVCount=0; curVCount<colPolylist[curPoly].numPolygons; curVCount++)
-			{
+		for (int curVCount = 0; curVCount < colPolylist[curPoly].numPolygons; curVCount++)
+		{
 			if (colPolylist[curPoly].vcount[curVCount] == 4)
 				numQuads++;
 			else if (colPolylist[curPoly].vcount[curVCount] == 3)
 				numTris++;
-			}
+		}
 
 		//agora tenho de verificar não tenho nada que possa usar
 		if ((numQuads == 0) && (numTris == 0))
 			continue;
-		
+
 		//crio este novo triangulo
-		newTriangle = (COLLADA_TRIANGLES*)realloc(*colTriangles, sizeof(COLLADA_TRIANGLES)*((*colNumTriangles)+1));
+		newTriangle = (COLLADA_TRIANGLES*)realloc(*colTriangles, sizeof(COLLADA_TRIANGLES)*((*colNumTriangles) + 1));
 		if (newTriangle == nullptr)
 			continue;
 
@@ -757,44 +757,44 @@ void convertPolyList(COLLADA_TRIANGLES **colTriangles, int * const colNumTriangl
 		newTriangle->numInputs = colPolylist[curPoly].numInputs;
 
 		//também já posso saber quantos triangulos tenho na realidade, e também o número de indices, pelo que posso logo criar espaço para os mesmos
-		newTriangle->numTri = numQuads*2 + numTris;
-		newTriangle->numIndices = newTriangle->numTri*3*newTriangle->numInputs;
+		newTriangle->numTri = numQuads * 2 + numTris;
+		newTriangle->numIndices = newTriangle->numTri * 3 * newTriangle->numInputs;
 		newTriangle->indices = (int*)malloc(sizeof(int)*newTriangle->numIndices);
 		if (newTriangle->indices == nullptr)
-			{
+		{
 			memset(newTriangle, 0, sizeof(COLLADA_TRIANGLES));
 			continue;
-			}
+		}
 
 		//prontos, chegado aqui basta simplesmente andar pelos indices do poligono e copiar/criar de acordo
 		writerWalker = newTriangle->indices;
 		sourceWalker = colPolylist[curPoly].indices;
-		for(int curVCount=0; curVCount<colPolylist[curPoly].numPolygons; curVCount++)
-			{
+		for (int curVCount = 0; curVCount < colPolylist[curPoly].numPolygons; curVCount++)
+		{
 			//se não for nem quad nem tri, passo à frente desses indices
 			if ((colPolylist[curPoly].vcount[curVCount] != 3) && (colPolylist[curPoly].vcount[curVCount] != 4))
-				{
+			{
 				sourceWalker += colPolylist[curPoly].numInputs*colPolylist[curPoly].vcount[curVCount];
 				continue;
-				}
+			}
 
 			//independente do numero de indices (se quad ou tri), copio sempre os 3 primeiros indices
-			memcpy(writerWalker, sourceWalker, sizeof(int)*colPolylist[curPoly].numInputs*3);
-			writerWalker += colPolylist[curPoly].numInputs*3;
-			sourceWalker += colPolylist[curPoly].numInputs*3;
+			memcpy(writerWalker, sourceWalker, sizeof(int)*colPolylist[curPoly].numInputs * 3);
+			writerWalker += colPolylist[curPoly].numInputs * 3;
+			sourceWalker += colPolylist[curPoly].numInputs * 3;
 
 			//se for um triangulo, escuso de fazer mais nada...
 			if (colPolylist[curPoly].vcount[curVCount] == 3)
-				{
+			{
 				//um triangulo já tá
 				numTris--;
 				continue;
-				}
+			}
 
 			//chegando aqui, tenho de criar o triangulo que falta
-			memcpy(writerWalker, sourceWalker-(colPolylist[curPoly].numInputs)*3, sizeof(int)*colPolylist[curPoly].numInputs);
+			memcpy(writerWalker, sourceWalker - (colPolylist[curPoly].numInputs) * 3, sizeof(int)*colPolylist[curPoly].numInputs);
 			writerWalker += colPolylist[curPoly].numInputs;
-			memcpy(writerWalker, sourceWalker-(colPolylist[curPoly].numInputs)*1, sizeof(int)*colPolylist[curPoly].numInputs);
+			memcpy(writerWalker, sourceWalker - (colPolylist[curPoly].numInputs) * 1, sizeof(int)*colPolylist[curPoly].numInputs);
 			writerWalker += colPolylist[curPoly].numInputs;
 			memcpy(writerWalker, sourceWalker, sizeof(int)*colPolylist[curPoly].numInputs);
 			writerWalker += colPolylist[curPoly].numInputs;
@@ -802,40 +802,37 @@ void convertPolyList(COLLADA_TRIANGLES **colTriangles, int * const colNumTriangl
 
 			//um quadrado já tá
 			numQuads--;
-			}
+		}
 
 		//posso limpar todos este poligono porque foi usado com sucesso (não quero que seja apagado sem querer mais tarde: os inputs não podem ser apagados)
 		if (colPolylist[curPoly].vcount != nullptr)
 			free(colPolylist[curPoly].vcount);
 		if (colPolylist[curPoly].indices != nullptr)
 			free(colPolylist[curPoly].indices);
-		memset(colPolylist+curPoly, 0, sizeof(COLLADA_POLYLIST));
+		memset(colPolylist + curPoly, 0, sizeof(COLLADA_POLYLIST));
 
 		//tenho de saber de quantos em quantos inputs salto para o próximo indice do triangulo
 		newTriangle->strideOffset = 0;
-		for(int i=0; i<newTriangle->numInputs; i++)
-			{
+		for (int i = 0; i<newTriangle->numInputs; i++)
+		{
 			if (newTriangle->inputs[i].offset > newTriangle->strideOffset)
 				newTriangle->strideOffset = newTriangle->inputs[i].offset;
-			}
-		newTriangle->strideOffset++;
 		}
+		newTriangle->strideOffset++;
+	}
 }
 
 static
-void readInputs(const TiXmlElement* xmlSourceElement, COLLADA_INPUT **inputList, int * const numInputs)
+void readInputs(const tinyxml2::XMLElement* xmlSourceElement, COLLADA_INPUT **inputList, int * const numInputs)
 {
-	const TiXmlElement *xmlInput;
-	const char *attribData;
-
 	//para cada input deste trianglo
-	xmlInput = xmlSourceElement->FirstChildElement("input");
-	for(; xmlInput != nullptr; xmlInput = xmlInput->NextSiblingElement("input"))
-		{
+	auto xmlInput = xmlSourceElement->FirstChildElement("input");
+	for (; xmlInput != nullptr; xmlInput = xmlInput->NextSiblingElement("input"))
+	{
 		COLLADA_INPUT *newInput;
 
 		//crio este novo vertice
-		newInput = (COLLADA_INPUT*)realloc((*inputList), sizeof(COLLADA_INPUT)*((*numInputs)+1));
+		newInput = (COLLADA_INPUT*)realloc((*inputList), sizeof(COLLADA_INPUT)*((*numInputs) + 1));
 		if (newInput == nullptr)
 			continue;
 
@@ -850,17 +847,16 @@ void readInputs(const TiXmlElement* xmlSourceElement, COLLADA_INPUT **inputList,
 		//tiro os dados do input
 		newInput->semantic = xmlInput->Attribute("semantic");
 		newInput->source = xmlInput->Attribute("source");
-		attribData = xmlInput->Attribute("offset");
+		auto attribData = xmlInput->Attribute("offset");
 		if (attribData != nullptr)
 			newInput->offset = atoi(attribData);
-		}
+	}
 }
 
 static
-void parseCollada(Geometry::Model * const modelo, const TiXmlDocument * const xmlDoc)
+void parseCollada(Geometry::Model * const modelo, const tinyxml2::XMLDocument * const xmlDoc)
 {
-	const TiXmlElement *xmlMain, *xmlLibGeom, *xmlGeometry, *xmlAsset, *xmlLibVisualScene;
-	const char *attribData, *attribValues, *axisValue;
+	const char *axisValue;
 	GEOM_ID_PAIR *geomIDList;
 	int geomIDNum;
 
@@ -869,45 +865,41 @@ void parseCollada(Geometry::Model * const modelo, const TiXmlDocument * const xm
 	geomIDNum = 0;
 
 	//vou até ao primeiro elemento COLLADA
-	xmlMain = xmlDoc->FirstChildElement("COLLADA");
+	auto xmlMain = xmlDoc->FirstChildElement("COLLADA");
 	if (xmlMain == nullptr)
 		return;
 
 	//ando até aos assets
 	axisValue = nullptr;
-	xmlAsset = xmlMain->FirstChildElement("asset");
+	auto xmlAsset = xmlMain->FirstChildElement("asset");
 	if (xmlAsset != nullptr)
 	{
-		const TiXmlElement *xmlAxis;
-
 		//procuro pelo elemento que me identifica o eixo e tiro-o
-		xmlAxis = xmlAsset->FirstChildElement("up_axis");
+		auto xmlAxis = xmlAsset->FirstChildElement("up_axis");
 		if (xmlAxis != nullptr)
 			axisValue = xmlAxis->ToElement()->GetText();
 	}
 
 	//ando até à biblioteca de geometrias
-	xmlLibGeom = xmlMain->FirstChildElement("library_geometries");
+	auto xmlLibGeom = xmlMain->FirstChildElement("library_geometries");
 	if (xmlLibGeom == nullptr)
 		return;
 
 	//andando em todos os library
-	xmlGeometry = xmlLibGeom->FirstChildElement("geometry");
-	for(; xmlGeometry != nullptr; xmlGeometry = xmlGeometry->NextSiblingElement("geometry"))
+	auto xmlGeometry = xmlLibGeom->FirstChildElement("geometry");
+	for (; xmlGeometry != nullptr; xmlGeometry = xmlGeometry->NextSiblingElement("geometry"))
 	{
-		const TiXmlElement *xmlMesh, *xmlSource, *xmlVertice, *xmlTriangle, *xmlPolylist, *xmlPolygons;
 		COLLADA_SOURCE *colSources;
 		COLLADA_VERTICES *colVertices;
 		COLLADA_TRIANGLES *colTriangles;
 		COLLADA_POLYLIST *colPolylist;
-		int colNumSources,colNumVertices,colNumTriangles,colNumPolylist;
-		const char *geomName;
+		int colNumSources, colNumVertices, colNumTriangles, colNumPolylist;
 
 		//tiro o nome da geometria
-		geomName = xmlGeometry->Attribute("name");
+		auto geomName = xmlGeometry->Attribute("name");
 
 		//vou buscar a mesh
-		xmlMesh = xmlGeometry->FirstChildElement("mesh");
+		auto xmlMesh = xmlGeometry->FirstChildElement("mesh");
 
 		//ao principio não tenho nada
 		colSources = nullptr;
@@ -917,25 +909,24 @@ void parseCollada(Geometry::Model * const modelo, const TiXmlDocument * const xm
 		colNumSources = colNumVertices = colNumTriangles = colNumPolylist = 0;
 
 		//enquanto houver sources para esta mesh / ou geometria
-		xmlSource = xmlMesh->FirstChildElement("source");
-		for(; xmlSource != nullptr; xmlSource = xmlSource->NextSiblingElement("source"))
+		auto xmlSource = xmlMesh->FirstChildElement("source");
+		for (; xmlSource != nullptr; xmlSource = xmlSource->NextSiblingElement("source"))
 		{
-			const TiXmlElement *xmlFloatArray, *xlmTechnique, *xmlAccessor;
 			COLLADA_SOURCE *newSource;
 			int numFloat;
 			float *arrayFloat;
 
 			//tiro o float_array desta source
-			xmlFloatArray = xmlSource->FirstChildElement("float_array");
+			auto xmlFloatArray = xmlSource->FirstChildElement("float_array");
 
 			//e quero saber quantos floats estão lá
-			attribData = xmlFloatArray->Attribute("count");
-			if (attribData==nullptr)
+			auto attribData = xmlFloatArray->Attribute("count");
+			if (attribData == nullptr)
 				continue;
 
 			//leio o valor e se for válido crio um array para onde devo ler cada ponto
-			numFloat=atoi(attribData);
-			if (numFloat<=0)
+			numFloat = atoi(attribData);
+			if (numFloat <= 0)
 				continue;
 
 			//crio espaço para ler tudo
@@ -944,11 +935,11 @@ void parseCollada(Geometry::Model * const modelo, const TiXmlDocument * const xm
 				continue;
 
 			//os valores dos atributos e leio toda a informação
-			attribValues = xmlFloatArray->ToElement()->GetText();
+			auto attribValues = xmlFloatArray->ToElement()->GetText();
 			readValuesFloat(arrayFloat, numFloat, attribValues);
 
 			//crio esta source
-			newSource = (COLLADA_SOURCE*)realloc(colSources, sizeof(COLLADA_SOURCE)*(colNumSources+1));
+			newSource = (COLLADA_SOURCE*)realloc(colSources, sizeof(COLLADA_SOURCE)*(colNumSources + 1));
 			if (newSource == nullptr)
 			{
 				free(arrayFloat);
@@ -969,8 +960,8 @@ void parseCollada(Geometry::Model * const modelo, const TiXmlDocument * const xm
 			newSource->nome = xmlSource->Attribute("id");
 
 			//tiro o ID do technique e depois do accessor
-			xlmTechnique = xmlSource->FirstChildElement("technique_common");
-			xmlAccessor = xlmTechnique->FirstChildElement("accessor");
+			auto xlmTechnique = xmlSource->FirstChildElement("technique_common");
+			auto xmlAccessor = xlmTechnique->FirstChildElement("accessor");
 
 			//agora tiro coisas simples como
 			attribData = xmlAccessor->Attribute("count");
@@ -982,14 +973,13 @@ void parseCollada(Geometry::Model * const modelo, const TiXmlDocument * const xm
 		}
 
 		//enquanto houver vertices para esta mesh / ou geometria
-		xmlVertice = xmlMesh->FirstChildElement("vertices");
-		for(; xmlVertice != nullptr; xmlVertice = xmlVertice->NextSiblingElement("vertices"))
+		auto xmlVertice = xmlMesh->FirstChildElement("vertices");
+		for (; xmlVertice != nullptr; xmlVertice = xmlVertice->NextSiblingElement("vertices"))
 		{
 			COLLADA_VERTICES *newVertex;
-			const TiXmlElement *xmlInput;
 
 			//crio este novo vertice
-			newVertex = (COLLADA_VERTICES*)realloc(colVertices, sizeof(COLLADA_VERTICES)*(colNumVertices+1));
+			newVertex = (COLLADA_VERTICES*)realloc(colVertices, sizeof(COLLADA_VERTICES)*(colNumVertices + 1));
 			if (newVertex == nullptr)
 				continue;
 
@@ -1005,13 +995,13 @@ void parseCollada(Geometry::Model * const modelo, const TiXmlDocument * const xm
 			newVertex->nome = xmlVertice->Attribute("id");
 
 			//para cada input deste vertice
-			xmlInput = xmlVertice->FirstChildElement("input");
-			for(; xmlInput != nullptr; xmlInput = xmlInput->NextSiblingElement("input"))
+			auto xmlInput = xmlVertice->FirstChildElement("input");
+			for (; xmlInput != nullptr; xmlInput = xmlInput->NextSiblingElement("input"))
 			{
 				COLLADA_INPUT *newInput;
 
 				//crio este novo vertice
-				newInput = (COLLADA_INPUT*)realloc(newVertex->inputs, sizeof(COLLADA_INPUT)*(newVertex->numInputs+1));
+				newInput = (COLLADA_INPUT*)realloc(newVertex->inputs, sizeof(COLLADA_INPUT)*(newVertex->numInputs + 1));
 				if (newInput == nullptr)
 					continue;
 
@@ -1026,21 +1016,20 @@ void parseCollada(Geometry::Model * const modelo, const TiXmlDocument * const xm
 				//tiro os dados do input
 				newInput->semantic = xmlInput->Attribute("semantic");
 				newInput->source = xmlInput->Attribute("source");
-				attribData = xmlInput->Attribute("offset");
+				auto attribData = xmlInput->Attribute("offset");
 				if (attribData != nullptr)
 					newInput->offset = atoi(attribData);
 			}
 		}
 
 		//enquanto houver triangulos para esta mesh / ou geometria
-		xmlTriangle = xmlMesh->FirstChildElement("triangles");
-		for(; xmlTriangle != nullptr; xmlTriangle = xmlTriangle->NextSiblingElement("triangles"))
+		auto xmlTriangle = xmlMesh->FirstChildElement("triangles");
+		for (; xmlTriangle != nullptr; xmlTriangle = xmlTriangle->NextSiblingElement("triangles"))
 		{
 			COLLADA_TRIANGLES *newTriangle;
-			const TiXmlElement *xmlP;
 
 			//crio este novo triangulo
-			newTriangle = (COLLADA_TRIANGLES*)realloc(colTriangles, sizeof(COLLADA_TRIANGLES)*(colNumTriangles+1));
+			newTriangle = (COLLADA_TRIANGLES*)realloc(colTriangles, sizeof(COLLADA_TRIANGLES)*(colNumTriangles + 1));
 			if (newTriangle == nullptr)
 				continue;
 
@@ -1061,15 +1050,15 @@ void parseCollada(Geometry::Model * const modelo, const TiXmlDocument * const xm
 
 			//tenho de saber de quantos em quantos inputs salto para o próximo indice do triangulo
 			newTriangle->strideOffset = 0;
-			for(int i=0; i<newTriangle->numInputs; i++)
+			for (int i = 0; i<newTriangle->numInputs; i++)
 			{
 				if (newTriangle->inputs[i].offset > newTriangle->strideOffset)
 					newTriangle->strideOffset = newTriangle->inputs[i].offset;
 			}
 			newTriangle->strideOffset++;
-			
+
 			//leio o <p> deste trianglo
-			xmlP = xmlTriangle->FirstChildElement("p");
+			auto xmlP = xmlTriangle->FirstChildElement("p");
 			if (xmlP != nullptr)
 			{
 				//no entanto isto é o numero de triangulos, o numero total de indices será: numTris * strideOffset * 3
@@ -1081,20 +1070,19 @@ void parseCollada(Geometry::Model * const modelo, const TiXmlDocument * const xm
 					continue;
 
 				//os valores dos atributos e leio toda a informação
-				attribValues = xmlP->ToElement()->GetText();
+				auto attribValues = xmlP->ToElement()->GetText();
 				readValuesInt(newTriangle->indices, newTriangle->numIndices, attribValues);
 			}
 		}
 
 		//enquanto houver polylist para esta mesh / ou geometria
-		xmlPolylist = xmlMesh->FirstChildElement("polylist");
-		for(; xmlPolylist != nullptr; xmlPolylist = xmlPolylist->NextSiblingElement("polylist"))
+		auto xmlPolylist = xmlMesh->FirstChildElement("polylist");
+		for (; xmlPolylist != nullptr; xmlPolylist = xmlPolylist->NextSiblingElement("polylist"))
 		{
 			COLLADA_POLYLIST *newPolylist;
-			const TiXmlElement *xmlP, *xmlVCount;
 
 			//crio este novo polylist
-			newPolylist = (COLLADA_POLYLIST*)realloc(colPolylist, sizeof(COLLADA_POLYLIST)*(colNumPolylist+1));
+			newPolylist = (COLLADA_POLYLIST*)realloc(colPolylist, sizeof(COLLADA_POLYLIST)*(colNumPolylist + 1));
 			if (newPolylist == nullptr)
 				continue;
 
@@ -1112,9 +1100,9 @@ void parseCollada(Geometry::Model * const modelo, const TiXmlDocument * const xm
 
 			//leio os inputs deste trianglo
 			readInputs(xmlPolylist, &newPolylist->inputs, &newPolylist->numInputs);
-			
+
 			//leio agora o vcount desta polylist
-			xmlVCount = xmlPolylist->FirstChildElement("vcount");
+			auto xmlVCount = xmlPolylist->FirstChildElement("vcount");
 			if (xmlVCount != nullptr)
 			{
 				//crio espaço para ler tudo
@@ -1123,17 +1111,17 @@ void parseCollada(Geometry::Model * const modelo, const TiXmlDocument * const xm
 					return;
 
 				//os valores dos atributos e leio toda a informação
-				attribValues = xmlVCount->ToElement()->GetText();
+				auto attribValues = xmlVCount->ToElement()->GetText();
 				readValuesInt(newPolylist->vcount, newPolylist->numPolygons, attribValues);
 			}
 
 			//leio o <p> desta polylist
-			xmlP = xmlPolylist->FirstChildElement("p");
+			auto xmlP = xmlPolylist->FirstChildElement("p");
 			if (xmlP != nullptr)
 			{
 				//tenho de passar por todos os polygonos e contar quandos indices tenho
 				newPolylist->numIndices = 0;
-				for(int i=0; i<newPolylist->numPolygons; i++)
+				for (int i = 0; i < newPolylist->numPolygons; i++)
 					newPolylist->numIndices += newPolylist->vcount[i];
 
 				//finalmente só tenho de multiplicar por quantos inputs tenho
@@ -1145,21 +1133,20 @@ void parseCollada(Geometry::Model * const modelo, const TiXmlDocument * const xm
 					continue;
 
 				//os valores dos atributos e leio toda a informação
-				attribValues = xmlP->ToElement()->GetText();
+				auto attribValues = xmlP->ToElement()->GetText();
 				readValuesInt(newPolylist->indices, newPolylist->numIndices, attribValues);
 			}
 		}
 
 		//enquanto houver polygons para esta mesh / ou geometria (um polygono vai ficar guardado como polylist)
-		xmlPolygons = xmlMesh->FirstChildElement("polygons");
-		for(; xmlPolygons != nullptr; xmlPolygons = xmlPolygons->NextSiblingElement("polygons"))
+		auto xmlPolygons = xmlMesh->FirstChildElement("polygons");
+		for (; xmlPolygons != nullptr; xmlPolygons = xmlPolygons->NextSiblingElement("polygons"))
 		{
 			COLLADA_POLYLIST *newPolylist;
-			const TiXmlElement *xmlP, *xmlVCount;
 			int *auxBufferIndices, numPolyLidos, numIndicesLidos;
 
 			//crio este novo polylist
-			newPolylist = (COLLADA_POLYLIST*)realloc(colPolylist, sizeof(COLLADA_POLYLIST)*(colNumPolylist+1));
+			newPolylist = (COLLADA_POLYLIST*)realloc(colPolylist, sizeof(COLLADA_POLYLIST)*(colNumPolylist + 1));
 			if (newPolylist == nullptr)
 				continue;
 
@@ -1196,23 +1183,23 @@ void parseCollada(Geometry::Model * const modelo, const TiXmlDocument * const xm
 			memset(newPolylist->indices, -1, sizeof(int)*newPolylist->numIndices);
 
 			//como vou ter de ler os polygonos às pingas, tenho de ter um buffer auxiliar
-			auxBufferIndices = (int*)malloc(sizeof(int)*newPolylist->numInputs*4);
+			auxBufferIndices = (int*)malloc(sizeof(int)*newPolylist->numInputs * 4);
 			if (auxBufferIndices == nullptr)
 				return;
-			
+
 			//leio todos os ps deste poligono
 			numPolyLidos = numIndicesLidos = 0;
-			xmlP = xmlPolygons->FirstChildElement("p");
-			for(; xmlP != nullptr; xmlP = xmlP->NextSiblingElement("p"))
+			auto xmlP = xmlPolygons->FirstChildElement("p");
+			for (; xmlP != nullptr; xmlP = xmlP->NextSiblingElement("p"))
 			{
 				int numValoresLidos, poligonoVertices;
 
 				//limpo os dados todos
-				memset(auxBufferIndices, -1, sizeof(int)*newPolylist->numInputs*4);
+				memset(auxBufferIndices, -1, sizeof(int)*newPolylist->numInputs * 4);
 
 				//os valores dos atributos e leio toda a informação
-				attribValues = xmlP->ToElement()->GetText();
-				numValoresLidos = readValuesInt(auxBufferIndices, newPolylist->numInputs*4, attribValues);
+				auto attribValues = xmlP->ToElement()->GetText();
+				numValoresLidos = readValuesInt(auxBufferIndices, newPolylist->numInputs * 4, attribValues);
 
 				//ok, à partida tenho todos os valores de que preciso, só preciso de verificar se tenho um triangulo ou tenho um quadrado
 				poligonoVertices = numValoresLidos / newPolylist->numInputs;
@@ -1221,7 +1208,7 @@ void parseCollada(Geometry::Model * const modelo, const TiXmlDocument * const xm
 
 				//basta gravar quantos vertices tenho e os dados propriamente ditos
 				newPolylist->vcount[numPolyLidos++] = poligonoVertices;
-				memcpy(newPolylist->indices+numIndicesLidos, auxBufferIndices, sizeof(int)*numValoresLidos);
+				memcpy(newPolylist->indices + numIndicesLidos, auxBufferIndices, sizeof(int)*numValoresLidos);
 				numIndicesLidos += numValoresLidos;
 			}
 
@@ -1240,7 +1227,7 @@ void parseCollada(Geometry::Model * const modelo, const TiXmlDocument * const xm
 			convertPolyList(&colTriangles, &colNumTriangles, colPolylist, colNumPolylist);
 
 		//tenho mais uma geometria, portanto tenho de criar espaço para a mesma e depois posso guardar o ID da mesma e a mesh a usar
-		geomIDList = (GEOM_ID_PAIR*)realloc(geomIDList, sizeof(GEOM_ID_PAIR)*(geomIDNum+1));
+		geomIDList = (GEOM_ID_PAIR*)realloc(geomIDList, sizeof(GEOM_ID_PAIR)*(geomIDNum + 1));
 		geomIDList[geomIDNum].geomID = xmlGeometry->Attribute("id");
 		geomIDList[geomIDNum].meshIndex = modelo->arrayMesh.GetNumElements();
 		geomIDNum++;
@@ -1249,24 +1236,24 @@ void parseCollada(Geometry::Model * const modelo, const TiXmlDocument * const xm
 		criaModelo(modelo, geomName, colSources, colVertices, colTriangles, colNumSources, colNumVertices, colNumTriangles);
 
 		//e como já acabei, basta limpar os dados antigos e continuar para a próxima mesh
-		for(int i=0; i<colNumSources; i++)
+		for (int i = 0; i < colNumSources; i++)
 		{
 			if (colSources[i].values != nullptr)
 				free(colSources[i].values);
 		}
-		for(int i=0; i<colNumVertices; i++)
+		for (int i = 0; i < colNumVertices; i++)
 		{
 			if (colVertices[i].inputs != nullptr)
 				free(colVertices[i].inputs);
 		}
-		for(int i=0; i<colNumTriangles; i++)
+		for (int i = 0; i < colNumTriangles; i++)
 		{
 			if (colTriangles[i].inputs != nullptr)
 				free(colTriangles[i].inputs);
 			if (colTriangles[i].indices != nullptr)
 				free(colTriangles[i].indices);
 		}
-		for(int i=0; i<colNumPolylist; i++)
+		for (int i = 0; i < colNumPolylist; i++)
 		{
 			if (colPolylist[i].inputs != nullptr)
 				free(colPolylist[i].inputs);
@@ -1293,13 +1280,11 @@ void parseCollada(Geometry::Model * const modelo, const TiXmlDocument * const xm
 	}
 
 	//tenho de ler o scenegraph
-	xmlLibVisualScene = xmlMain->FirstChildElement("library_visual_scenes");
+	auto xmlLibVisualScene = xmlMain->FirstChildElement("library_visual_scenes");
 	if (xmlLibVisualScene != nullptr)
 	{
-		const TiXmlElement *xmlVisualScene;
-
 		//só leio uma cena...
-		xmlVisualScene = xmlLibVisualScene->FirstChildElement("visual_scene");
+		auto xmlVisualScene = xmlLibVisualScene->FirstChildElement("visual_scene");
 		if (xmlVisualScene != 0)
 		{
 			HorseRadish::Matrix matrixStack;
@@ -1319,7 +1304,7 @@ void parseCollada(Geometry::Model * const modelo, const TiXmlDocument * const xm
 	geomIDNum = 0;
 
 	//como o COLLADA é right-handed, tenho de ir a cada mesh
-	for(int curMesh = 0; curMesh < modelo->arrayMesh.GetNumElements(); curMesh++)
+	for (int curMesh = 0; curMesh < modelo->arrayMesh.GetNumElements(); curMesh++)
 	{
 		float *vertData;
 
@@ -1334,7 +1319,7 @@ void parseCollada(Geometry::Model * const modelo, const TiXmlDocument * const xm
 			numVertices = modelo->arrayMesh[curMesh].mesh.GetNumElements();
 
 			//para cada vertice faço as trocas necessárias
-			for(int curVertex = 0; curVertex < numVertices; curVertex++, vertData+=3)
+			for (int curVertex = 0; curVertex < numVertices; curVertex++, vertData += 3)
 			{
 				posTemp = vertData[2];
 				vertData[2] = -vertData[1];
@@ -1344,10 +1329,10 @@ void parseCollada(Geometry::Model * const modelo, const TiXmlDocument * const xm
 	}
 
 	//agora que já sei que está tudo criado, caso tenha um eixo meio estranho, ponho as coisas no sitio correcto
-	if ((axisValue != nullptr) && (strcmp(axisValue, "Z_UP")==0))
+	if ((axisValue != nullptr) && (strcmp(axisValue, "Z_UP") == 0))
 	{
 		//para cada mesh dentro deste modelo
-		for(int curMesh = 0; curMesh < modelo->arrayMesh.GetNumElements(); curMesh++)
+		for (int curMesh = 0; curMesh < modelo->arrayMesh.GetNumElements(); curMesh++)
 		{
 			float *vData, auxVal;
 			int numVertices;
@@ -1357,7 +1342,7 @@ void parseCollada(Geometry::Model * const modelo, const TiXmlDocument * const xm
 			vData = modelo->arrayMesh[curMesh].mesh.FindAttribIndex(0);
 
 			//para cada vertice faço as trocas necessárias
-			for(int curVertex = 0; curVertex < numVertices; curVertex++, vData+=3)
+			for (int curVertex = 0; curVertex < numVertices; curVertex++, vData += 3)
 			{
 				auxVal = vData[2];
 				vData[2] = -vData[1];
@@ -1368,85 +1353,31 @@ void parseCollada(Geometry::Model * const modelo, const TiXmlDocument * const xm
 }
 
 static
-TiXmlDocument* documentOpenMem(const void *fileData, const int fileSize, char *errorDesc, const int errorBufferSize, int *errorLine)
+tinyxml2::XMLDocument* documentOpenMem(const void *fileData, const int fileSize, char *errorDesc, const int errorBufferSize, int *errorLine)
 {
-	TiXmlDocument *xmlDoc;
-	char *newData;
-	const char *mainBuffer;
-	int mainBufferSize;
+	tinyxml2::XMLDocument *xmlDoc;
 
-	//verificar isto
-	if (fileData==nullptr || fileSize<=0)
-		return 0;
-
-	//preciso deste ponteiro
-	mainBuffer = (const char*)fileData;
-	if (*mainBuffer == '\0')
+	if (fileData == nullptr || fileSize <= 0)
 		return nullptr;
 
-	//por defeito o tamanho do ficheiro está igual e não allocei nenhum buffer auxiliar
-	mainBufferSize = fileSize;
-	newData = nullptr;
-
-	//o ficheiro tem de estar terminado em '\0', logo tenho de me certificar disso
-	if (mainBuffer[mainBufferSize-1]!='\0')
+	xmlDoc = new tinyxml2::XMLDocument();
+	if (xmlDoc->Parse(static_cast<const char*>(fileData), fileSize) != tinyxml2::XML_NO_ERROR)
+	{
+		auto errorStr = xmlDoc->GetErrorStr1();
+		if (errorStr != nullptr && errorBufferSize > 0)
 		{
-		//crio mais espaço
-		newData=(char *)malloc(mainBufferSize+1);
-		if (newData==nullptr)
-			return nullptr;
+			memset(errorDesc, 0, errorBufferSize);
+			strcpy_s(errorDesc, errorBufferSize, errorStr);
 
-		//copio tudo de um lado para o outro
-		memcpy(newData,mainBuffer,mainBufferSize);
-
-		//basta arranjar o ponteiro e fechar o ficheiro no sitio correcto
-		newData[mainBufferSize]='\0';
-		mainBuffer=(const char*)newData;
-		mainBufferSize++;
-		}
-
-	//basta criar as coisas internas do ponteiro
-	xmlDoc = new TiXmlDocument();
-	if (xmlDoc == nullptr)
-		{
-		//deu barraca, só tenho de sair
-		if (newData != nullptr)
-			free(newData);
-		return 0;
-		}
-
-	//iniciar algumas coisas internas (o Parser devolve o ponteiro avançado até ao fim)
-	if (xmlDoc->Parse(mainBuffer, nullptr, TIXML_ENCODING_UTF8) != (mainBuffer+mainBufferSize-1))
-		{
-		//se houver algum erro digno de registo
-		if (xmlDoc->Error())
-			{
-			//se for para gravar uma descrição do erro
-			if (errorDesc!=nullptr && errorBufferSize>0)
-				{
-				//limpo o buffer, tiro a descrição do erro e gravo
-				memset(errorDesc, 0, errorBufferSize);
-				strcpy_s(errorDesc, errorBufferSize, xmlDoc->ErrorDesc());
-				}		
-
-			//tiro a linha do erro se for caso disso
 			if (errorLine)
-				*errorLine = xmlDoc->ErrorRow();
-			}
+				*errorLine = -1;
+		}
 
-		//limpo as coisas e pronto, bazo sem nada
-		if (newData != nullptr)
-			free(newData);
 		xmlDoc->Clear();
 		delete xmlDoc;
 		return nullptr;
-		}
+	}
 
-	//posso apagar o ficheiro
-	if (newData != nullptr)
-		free(newData);
-
-	//correu tudo bem...
 	return xmlDoc;
 }
 
@@ -1455,9 +1386,6 @@ TiXmlDocument* documentOpenMem(const void *fileData, const int fileSize, char *e
 §§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§*/
 Geometry::Model* mfReadCollada(HorseRadish::Streams::StreamReader * const streamReader)
 {
-	Geometry::Model *modelo;
-	TiXmlDocument *xmlDoc;
-	const void *streamContent;
 	int streamContentSize;
 	bool streamContentCopied;
 
@@ -1466,11 +1394,11 @@ Geometry::Model* mfReadCollada(HorseRadish::Streams::StreamReader * const stream
 		return nullptr;
 
 	//preciso do conteúdo do ficheiro completo
-	streamContent = streamReader->ReadContent(streamContentSize, streamContentCopied);
+	auto streamContent = streamReader->ReadContent(streamContentSize, streamContentCopied);
 
 	//tento ler e fazer parse do XML
-	xmlDoc = documentOpenMem(streamContent, streamContentSize, nullptr, 0, nullptr);
-	if (xmlDoc<=0)
+	auto xmlDoc = documentOpenMem(streamContent, streamContentSize, nullptr, 0, nullptr);
+	if (xmlDoc <= 0)
 	{
 		//posso apagar o buffer intermédio se for caso disso
 		if (streamContentCopied == true)
@@ -1479,7 +1407,7 @@ Geometry::Model* mfReadCollada(HorseRadish::Streams::StreamReader * const stream
 	}
 
 	//crio espaço para albergar tudo
-	modelo = new Geometry::Model();
+	auto modelo = new Geometry::Model();
 	if (modelo == nullptr)
 	{
 		//limpo o XML
