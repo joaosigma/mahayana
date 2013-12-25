@@ -26,6 +26,8 @@ freely, subject to the following restrictions:
 #ifndef LODEPNG_H
 #define LODEPNG_H
 
+#include "mylodepngoptions.h"
+
 #include <string.h> /*for size_t*/
 
 #ifdef __cplusplus

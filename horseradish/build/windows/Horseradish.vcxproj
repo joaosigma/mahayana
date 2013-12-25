@@ -538,6 +538,7 @@
     <ClInclude Include="..\..\src\libs\jpeglib\jversion.h" />
     <ClInclude Include="..\..\src\libs\jpeglib\transupp.h" />
     <ClInclude Include="..\..\src\libs\lodepng\lodepng.h" />
+    <ClInclude Include="..\..\src\libs\lodepng\mylodepngoptions.h" />
     <ClInclude Include="..\..\src\libs\snappy\snappy-internal.h" />
     <ClInclude Include="..\..\src\libs\snappy\snappy-sinksource.h" />
     <ClInclude Include="..\..\src\libs\snappy\snappy-stubs-internal.h" />

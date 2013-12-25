@@ -1234,5 +1234,8 @@
     <ClInclude Include="..\..\src\libs\jpeglib\transupp.h">
       <Filter>libs\jpeglib</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\libs\lodepng\mylodepngoptions.h">
+      <Filter>libs\lodepng</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
