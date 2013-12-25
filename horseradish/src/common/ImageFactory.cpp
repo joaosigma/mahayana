@@ -2,7 +2,7 @@
 #include "imageFactory\ifTGA.hpp"
 #include "imageFactory\ifHDRI.hpp"
 
-#include "libs\libJPEG\jpeglib.h"
+#include "libs\jpeglib\jpeglib.h"
 #include "libs\lodepng\lodepng.h"
 
 ///§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§
