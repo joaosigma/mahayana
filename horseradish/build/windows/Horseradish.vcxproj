@@ -174,7 +174,6 @@
     <ClCompile Include="..\..\src\common\ImageFactory.cpp" />
     <ClCompile Include="..\..\src\common\imageFactory\ifHDRI.cpp" />
     <ClCompile Include="..\..\src\common\imageFactory\ifTGA.cpp" />
-    <ClCompile Include="..\..\src\common\imageFactory\lodepng.cpp" />
     <ClCompile Include="..\..\src\common\Logger.cpp" />
     <ClCompile Include="..\..\src\common\Machine.cpp" />
     <ClCompile Include="..\..\src\common\Math.cpp" />
@@ -346,6 +345,7 @@
     <ClCompile Include="..\..\src\libs\libJPEG\wrppm.c" />
     <ClCompile Include="..\..\src\libs\libJPEG\wrrle.c" />
     <ClCompile Include="..\..\src\libs\libJPEG\wrtarga.c" />
+    <ClCompile Include="..\..\src\libs\lodepng\lodepng.cpp" />
     <ClCompile Include="..\..\src\libs\snappy\snappy-sinksource.cc" />
     <ClCompile Include="..\..\src\libs\snappy\snappy-stubs-internal.cc" />
     <ClCompile Include="..\..\src\libs\snappy\snappy.cc" />
@@ -392,7 +392,6 @@
     <ClInclude Include="..\..\src\common\ImageFactory.hpp" />
     <ClInclude Include="..\..\src\common\imageFactory\ifHDRI.hpp" />
     <ClInclude Include="..\..\src\common\imageFactory\ifTGA.hpp" />
-    <ClInclude Include="..\..\src\common\imageFactory\lodepng.h" />
     <ClInclude Include="..\..\src\common\Logger.hpp" />
     <ClInclude Include="..\..\src\common\Machine.hpp" />
     <ClInclude Include="..\..\src\common\Math.hpp" />
@@ -538,6 +537,7 @@
     <ClInclude Include="..\..\src\libs\libJPEG\jpeglib.h" />
     <ClInclude Include="..\..\src\libs\libJPEG\jversion.h" />
     <ClInclude Include="..\..\src\libs\libJPEG\transupp.h" />
+    <ClInclude Include="..\..\src\libs\lodepng\lodepng.h" />
     <ClInclude Include="..\..\src\libs\snappy\snappy-internal.h" />
     <ClInclude Include="..\..\src\libs\snappy\snappy-sinksource.h" />
     <ClInclude Include="..\..\src\libs\snappy\snappy-stubs-internal.h" />

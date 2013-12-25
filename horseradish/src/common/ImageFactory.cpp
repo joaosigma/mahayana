@@ -1,9 +1,9 @@
 #include "ImageFactory.hpp"
 #include "imageFactory\ifTGA.hpp"
 #include "imageFactory\ifHDRI.hpp"
-#include "imageFactory\lodepng.h"
 
 #include "libs\libJPEG\jpeglib.h"
+#include "libs\lodepng\lodepng.h"
 
 ///§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§
 //§§§§§§   -= Coisas auxiliares =-   §§§§§
@@ -258,64 +258,55 @@ bool Factory::SaveTGA(HorseRadish::Streams::StreamWriter * const streamWriter, c
 
 HorseRadish::Imaging::Image* Factory::ReadPNG(HorseRadish::Streams::StreamReader * const streamReader)
 {
-	const void *streamBuffer;
 	int streamBufferSize;
 	bool streamCopied;
+	unsigned int imgW, imgH;
+	LodePNGState pngState;
 	HorseRadish::Imaging::Image *newImage;
-	LodePNG::Decoder decoder;
 
-	//primeiro preciso ler a informação da imagem
-	streamBuffer = streamReader->ReadContent(streamBufferSize, streamCopied);
+	auto streamBuffer = streamReader->ReadContent(streamBufferSize, streamCopied);
 	if (streamBuffer == nullptr)
 		return nullptr;
 	
-	//tenho de mandar inspeccionar a imagem
-	decoder.inspect((const unsigned char*)streamBuffer, streamBufferSize);
+	lodepng_state_init(&pngState);
+	if (lodepng_inspect(&imgW, &imgH, &pngState, static_cast<const unsigned char*>(streamBuffer), streamBufferSize) != 0)
+		return nullptr;
 
-	//por omissão
 	newImage = nullptr;
 
-	//se tiver tudo bem e não tiver alpha, descodifico para RGB
-	if ((decoder.hasError() == false) && (decoder.isAlphaType() == 0))
+	//decode to RGBA
+	if (lodepng_is_alpha_type(&pngState.info_png.color) || (lodepng_is_palette_type(&pngState.info_png.color) && lodepng_has_palette_alpha(&pngState.info_png.color)))
 	{
-		unsigned char *imgBuffer;
-		size_t imgBufferSize;
+		unsigned char* outBuffer;
+		unsigned int outW, outH;
 
-		//como suporto RGB, peço para a imagem ser descodificada para RGB
-		decoder.getInfoRaw().color.colorType = 2;
+		if (lodepng_decode32(&outBuffer, &outW, &outH, static_cast<const unsigned char *>(streamBuffer), streamBufferSize) != 0)
+			return nullptr;
 
-		//descodifico a imagem
-		decoder.decode(&imgBuffer, &imgBufferSize, (const unsigned char *)streamBuffer, streamBufferSize);
-
-		//se tiver algum buffer de jeito, crio a imagem
-		if (imgBuffer != nullptr)
-			newImage = new HorseRadish::Imaging::Image(decoder.getWidth(), decoder.getHeight(), HorseRadish::Imaging::Image::UByte, HorseRadish::Imaging::Image::RGB, imgBuffer, true);
+		if (outBuffer != nullptr)
+			newImage = new HorseRadish::Imaging::Image(outW, outH, HorseRadish::Imaging::Image::UByte, HorseRadish::Imaging::Image::RGBA, outBuffer, true);
 	}
-	//se tiver tudo bem descodifico para RGBA
-	else if (decoder.hasError() == false)
+	//decode to RGB
+	else if (pngState.info_png.color.colortype == LCT_RGB)
 	{
-		unsigned char *imgBuffer;
-		size_t imgBufferSize;
+		unsigned char* outBuffer;
+		unsigned int outW, outH;
 
-		//descodifico a imagem para RGBA normalmente
-		decoder.decode(&imgBuffer, &imgBufferSize, (const unsigned char *)streamBuffer, streamBufferSize);
+		if (lodepng_decode24(&outBuffer, &outW, &outH, static_cast<const unsigned char *>(streamBuffer), streamBufferSize) != 0)
+			return nullptr;
 
-		//se tiver algum buffer de jeito, crio a imagem
-		if (imgBuffer != nullptr)
-			newImage = new HorseRadish::Imaging::Image(decoder.getWidth(), decoder.getHeight(), HorseRadish::Imaging::Image::UByte, HorseRadish::Imaging::Image::RGBA, imgBuffer, true);
+		if (outBuffer != nullptr)
+			newImage = new HorseRadish::Imaging::Image(outW, outH, HorseRadish::Imaging::Image::UByte, HorseRadish::Imaging::Image::RGBA, outBuffer, true);
 	}
 
-	//liberto o conteúdo do stream se for preciso
 	if (streamCopied == true)
 		free((void*)streamBuffer);
 
-	//posso devolver a imagem
 	return newImage;
 }
 
 bool Factory::SavePNG(HorseRadish::Streams::StreamWriter * const streamWriter, const HorseRadish::Imaging::Image * const imageToSave)
 {
-	LodePNG::Encoder encoder;
 	int imgWidth, imgHeight;
 	size_t bufferOutSize;
 	unsigned char *bufferOut;
@@ -328,45 +319,30 @@ bool Factory::SavePNG(HorseRadish::Streams::StreamWriter * const streamWriter, c
 	bufferOut = nullptr;
 	bufferOutSize = 0;
 
-	//preparo o encoder
-	encoder.addText("Comment", "Created with HorseRadish");
-	encoder.getSettings().zlibsettings.windowSize = 2048;
-
 	//isto dá jeito
 	imageToSave->GetDims(imgWidth, imgHeight);
 
 	//se a imagem é ubyte RGBA posso mandá-la directamente
 	if (imageToSave->Check(HorseRadish::Imaging::Image::UByte, HorseRadish::Imaging::Image::RGBA) == true)
 	{
-		//mando codificar a imagem
-		encoder.encode(&bufferOut, &bufferOutSize, (const unsigned char*)imageToSave->data, imgWidth, imgHeight);
+		lodepng_encode32(&bufferOut, &bufferOutSize, (const unsigned char*)imageToSave->data, imgWidth, imgHeight);
 	}
 	//se a imagem é ubyte RGB posso mandá-la quase directamente
 	else if (imageToSave->Check(HorseRadish::Imaging::Image::UByte, HorseRadish::Imaging::Image::RGB) == true)
 	{
-		//indico que a imagem raw está em RGB
-		encoder.getInfoRaw().color.colorType = 2;
-
-		//e quero que o PNG final seja RGB também
-		encoder.getInfoPng().color.colorType = 2;
-
-		//mando codificar a imagem
-		encoder.encode(&bufferOut, &bufferOutSize, (const unsigned char*)imageToSave->data, imgWidth, imgHeight);
+		lodepng_encode24(&bufferOut, &bufferOutSize, (const unsigned char*)imageToSave->data, imgWidth, imgHeight);
 	}
 	//chegando aqui tenho de converter qualquer outro formato para RGBA
 	else
 	{
 		HorseRadish::Imaging::Image *imageTemp;
 
-		//crio uma nova imagem
 		imageTemp = imageToSave->Clone(HorseRadish::Imaging::Image::UByte, HorseRadish::Imaging::Image::RGBA);
 		if (imageTemp == nullptr)
 			return false;
 
-		//mando codificar a imagem
-		encoder.encode(&bufferOut, &bufferOutSize, (const unsigned char*)imageTemp->data, imgWidth, imgHeight);
+		lodepng_encode32(&bufferOut, &bufferOutSize, (const unsigned char*)imageToSave->data, imgWidth, imgHeight);
 
-		//apago a imagem temporária
 		delete imageTemp;
 	}
 

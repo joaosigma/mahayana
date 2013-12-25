@@ -43,15 +43,15 @@
     <Filter Include="libs\tinyxml2">
       <UniqueIdentifier>{de95f161-ba4a-4ea3-bdec-a034e52f03a5}</UniqueIdentifier>
     </Filter>
+    <Filter Include="libs\lodepng">
+      <UniqueIdentifier>{4b0361e6-f669-489f-8c4c-1c8bed24135b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\common\imageFactory\ifHDRI.cpp">
       <Filter>common\imageFactory</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\common\imageFactory\ifTGA.cpp">
-      <Filter>common\imageFactory</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\common\imageFactory\lodepng.cpp">
       <Filter>common\imageFactory</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\common\meshFactory\mf3DS.cpp">
@@ -673,15 +673,15 @@
     <ClCompile Include="..\..\src\libs\tinyxml2\tinyxml2.cpp">
       <Filter>libs\tinyxml2</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\libs\lodepng\lodepng.cpp">
+      <Filter>libs\lodepng</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\common\imageFactory\ifHDRI.hpp">
       <Filter>common\imageFactory</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\common\imageFactory\ifTGA.hpp">
-      <Filter>common\imageFactory</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\common\imageFactory\lodepng.h">
       <Filter>common\imageFactory</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\common\meshFactory\mf.hpp">
@@ -1230,6 +1230,9 @@
     <ClInclude Include="..\..\src\videoStream.hpp" />
     <ClInclude Include="..\..\src\libs\tinyxml2\tinyxml2.h">
       <Filter>libs\tinyxml2</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\libs\lodepng\lodepng.h">
+      <Filter>libs\lodepng</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
