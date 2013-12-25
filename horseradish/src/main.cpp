@@ -1320,7 +1320,7 @@ void showInitialCredits(HorseRadish::Render::Renderer2D * const renderData, Open
 	glContext->SwapBuffers();
 
 	//abro o ficheiro com o video
-	videoStream = new VideoStream(3, PixelFormat::PIX_FMT_BGR24, "media\\icredits.mkv");
+	videoStream = new VideoStream(3, PixelFormat::PIX_FMT_BGR24, "..\\media\\icredits.mkv");
 	if ((videoStream == nullptr) || (videoStream->IsValid() == false))
 	{
 		//ele pode existir (ou seja, está inválido)
