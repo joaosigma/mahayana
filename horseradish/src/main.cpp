@@ -1341,6 +1341,7 @@ void showInitialCredits(HorseRadish::Render::Renderer2D * const renderData, Open
 
 	//crio a textura que vai mostrar o video
 	texVideo = glObjects->CreateRect(true, nullptr, videoWidth, videoHeight, HorseRadish::OpenGL::Objects::ObjectsManager::RGBA32);
+	texVideo->Bind(0);
 	
 	//o PBO que vou usar para transferir as coisas para a textura criada
 	pboVideo = (HorseRadish::OpenGL::Objects::PixelBuffer*)glObjects->ObjectCreate(HorseRadish::OpenGL::Objects::ObjectsManager::PixelUnpackBuffer);

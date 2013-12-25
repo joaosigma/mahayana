@@ -1002,14 +1002,14 @@ const Objects::Texture* ObjectsManager::CreateCube(const unsigned int faceSize, 
 const Objects::Texture* ObjectsManager::CreateCube(const HorseRadish::IO::Path &path, const ObjectsManager::TargetType targetType, const int flag)
 {
 	HorseRadish::Imaging::Image *img, *imgCrop;
-	bool compress,domipmap;
+	bool compress, domipmap;
 	Objects::Texture *textura;
-	int curFace,curFaceTarget,buflen,TCformat;
-	unsigned int internalFormat,imgComp,imgLarg;
+	int curFace, curFaceTarget, buflen, TCformat;
+	unsigned int internalFormat, imgComp, imgLarg;
 	unsigned char *bufferZip;
 
 	//verifica parametros
-	if (path.IsEmpty() || toGLInternalFormat(targetType)==0)
+	if (path.IsEmpty() || toGLInternalFormat(targetType) == 0)
 		return nullptr;
 
 	//crio o stream para o ficheiro
@@ -1017,22 +1017,22 @@ const Objects::Texture* ObjectsManager::CreateCube(const HorseRadish::IO::Path &
 
 	//leio a imagem
 	img = HorseRadish::Imaging::Factory::Read(&HorseRadish::Streams::StreamReader(&fileStream));
-	if (img==nullptr)
+	if (img == nullptr)
 	{
 		//SConsole::SConsolePLog(logID,HorseRadish::String("Unable to open file \"%s\"",path));
 		return nullptr;
 	}
 
 	//verifico se a textura corresponde aquilo que quero
-	if (img->GetWidth()%3!=0 || img->GetHeight()%4!=0 || img->GetWidth()%3 != img->GetHeight()%4)
+	if (img->GetWidth() % 3 != 0 || img->GetHeight() % 4 != 0 || img->GetWidth() % 3 != img->GetHeight() % 4)
 	{
 		delete img;
 		return nullptr;
 	}
 
 	//qual o formato GL dela
-	internalFormat=toGLInternalFormat(targetType);
-	if (internalFormat==0)
+	internalFormat = toGLInternalFormat(targetType);
+	if (internalFormat == 0)
 	{
 		delete img;
 		return nullptr;
@@ -1040,25 +1040,25 @@ const Objects::Texture* ObjectsManager::CreateCube(const HorseRadish::IO::Path &
 
 	//crio nova entrada
 	textura = (Objects::Texture*)this->ObjectCreate(ObjectsManager::TextureCubeMap);
-	if (textura==nullptr)
+	if (textura == nullptr)
 	{
 		delete img;
 		return nullptr;
 	}
 
 	//preencho a entrada
-	imgComp = img->GetWidth()/3;
-	imgLarg = img->GetHeight()/4;
+	imgComp = img->GetWidth() / 3;
+	imgLarg = img->GetHeight() / 4;
 	textura->width = imgComp;
 	textura->height = imgLarg;
-	textura->glTarget=GL_TEXTURE_CUBE_MAP;
+	textura->glTarget = GL_TEXTURE_CUBE_MAP;
 
 	//o bind tem sempre de ser e coloco um filtro por defeito
-	HorseRadish::OpenGL::glBindTexture(GL_TEXTURE_CUBE_MAP,textura->glID);
+	HorseRadish::OpenGL::glBindTexture(GL_TEXTURE_CUBE_MAP, textura->glID);
 
 	//o que quero fazer
-	domipmap=!(flag & STEXTURE_NO_MIPMAPS);
-	compress=(flag & STEXTURE_COMPRESS);
+	domipmap = !(flag & STEXTURE_NO_MIPMAPS);
+	compress = (flag & STEXTURE_COMPRESS);
 
 	//se é para fazer mipmaps e nao quero comprimir e tenho geração de mipmaps, já tá
 	/*if ( domipmap && (extAvailable & EXT_GEN_MIP))
@@ -1066,9 +1066,9 @@ const Objects::Texture* ObjectsManager::CreateCube(const HorseRadish::IO::Path &
 
 	//************
 	//carrego todas as 6 imagens
-	imgCrop=nullptr;
-	for(curFace=0; curFace<6; curFace++)
-		{
+	imgCrop = nullptr;
+	for (curFace = 0; curFace < 6; curFace++)
+	{
 		//se não tenho de apagar nada antes
 		if (imgCrop)
 			delete imgCrop;
@@ -1079,29 +1079,29 @@ const Objects::Texture* ObjectsManager::CreateCube(const HorseRadish::IO::Path &
 			continue;
 
 		//contruo o caminho
-		switch(curFace){
-			case 0:	imgCrop->Crop(imgComp*2, imgLarg*1, imgComp, imgLarg);
-					curFaceTarget=GL_TEXTURE_CUBE_MAP_POSITIVE_X;
-					break;
-			case 1:	imgCrop->Crop(imgComp*1, imgLarg*0, imgComp, imgLarg);
-					curFaceTarget=GL_TEXTURE_CUBE_MAP_POSITIVE_Y;
-					break;
-			case 2:	imgCrop->Crop(imgComp*1, imgLarg*3, imgComp, imgLarg);
-					curFaceTarget=GL_TEXTURE_CUBE_MAP_POSITIVE_Z;
-					break;
-			case 3:	imgCrop->Crop(imgComp*0,  imgLarg*1, imgComp, imgLarg);
-					curFaceTarget=GL_TEXTURE_CUBE_MAP_NEGATIVE_X;
-					break;
-			case 4:	imgCrop->Crop(imgComp*1,imgLarg*2, imgComp, imgLarg);
-					curFaceTarget=GL_TEXTURE_CUBE_MAP_NEGATIVE_Y;
-					break;
-			case 5:	imgCrop->Crop(imgComp*1, imgLarg*1, imgComp, imgLarg);
-					curFaceTarget=GL_TEXTURE_CUBE_MAP_NEGATIVE_Z;
-					break;
-			}
+		switch (curFace){
+		case 0:	imgCrop->Crop(imgComp * 2, imgLarg * 1, imgComp, imgLarg);
+			curFaceTarget = GL_TEXTURE_CUBE_MAP_POSITIVE_X;
+			break;
+		case 1:	imgCrop->Crop(imgComp * 1, imgLarg * 0, imgComp, imgLarg);
+			curFaceTarget = GL_TEXTURE_CUBE_MAP_POSITIVE_Y;
+			break;
+		case 2:	imgCrop->Crop(imgComp * 1, imgLarg * 3, imgComp, imgLarg);
+			curFaceTarget = GL_TEXTURE_CUBE_MAP_POSITIVE_Z;
+			break;
+		case 3:	imgCrop->Crop(imgComp * 0, imgLarg * 1, imgComp, imgLarg);
+			curFaceTarget = GL_TEXTURE_CUBE_MAP_NEGATIVE_X;
+			break;
+		case 4:	imgCrop->Crop(imgComp * 1, imgLarg * 2, imgComp, imgLarg);
+			curFaceTarget = GL_TEXTURE_CUBE_MAP_NEGATIVE_Y;
+			break;
+		case 5:	imgCrop->Crop(imgComp * 1, imgLarg * 1, imgComp, imgLarg);
+			curFaceTarget = GL_TEXTURE_CUBE_MAP_NEGATIVE_Z;
+			break;
+		}
 
 		//se for para não comprimir e fazer os mipmaps
-		if ( (domipmap && !compress) || (!domipmap && !compress) )
+		if ((domipmap && !compress) || (!domipmap && !compress))
 		{
 			HorseRadish::OpenGL::glTexImage2D(curFaceTarget, 0, internalFormat, imgComp, imgLarg, 0, toGLFormat(imgCrop->GetFormat()), toGLType(imgCrop->GetType()), imgCrop->GetPixelData());
 			if (domipmap)
@@ -1117,18 +1117,18 @@ const Objects::Texture* ObjectsManager::CreateCube(const HorseRadish::IO::Path &
 			prepareImgData(&imgCropData, imgCrop);
 
 			//tento comprimir
-			bufferZip = compressTexCube(&imgCropData, curFaceTarget,internalFormat,0,&buflen,&TCformat, this->context->extensionsAvailable & Context::CompressionS3);
+			bufferZip = compressTexCube(&imgCropData, curFaceTarget, internalFormat, 0, &buflen, &TCformat, this->context->extensionsAvailable & Context::CompressionS3);
 			if (bufferZip != nullptr)
 			{
 				HorseRadish::OpenGL::glCompressedTexImage2D(curFaceTarget, 0, TCformat, imgComp, imgLarg, 0, buflen, bufferZip);
 				delete[] bufferZip;
-				bufferZip=nullptr;
+				bufferZip = nullptr;
 			}
 			else
 			{
 				HorseRadish::OpenGL::glTexImage2D(curFaceTarget, 0, internalFormat, imgComp, imgLarg, 0, toGLFormat(imgCrop->GetFormat()), toGLType(imgCrop->GetType()), imgCrop->GetPixelData());
 			}
-			
+
 			//não é preciso fazer mais nada
 			continue;
 		}
@@ -1172,18 +1172,18 @@ const Objects::Texture* ObjectsManager::CreateRect(const bool immutable, const u
 	ImgData img;
 
 	//verificar parametros de entrada
-	if (comp<1 || larg<1)
+	if (comp < 1 || larg < 1)
 		return nullptr;
 
 	//preparo isto pra mandar pro fazTexturas
-	img.width=comp;
-	img.height=larg;
-	img.data=(void *)data;
+	img.width = comp;
+	img.height = larg;
+	img.data = (void *)data;
 	img.type = HorseRadish::Imaging::Image::UByte;
 	img.format = HorseRadish::Imaging::Image::RGBA;
 
 	//crio a textura (não é preciso log)
-	return this->createRect(immutable, &img,targetType);
+	return this->createRect(immutable, &img, targetType);
 }
 
 const Objects::Texture* ObjectsManager::CreateRect(const bool immutable, const HorseRadish::Imaging::Image * const img, const ObjectsManager::TargetType targetType)
@@ -1198,37 +1198,37 @@ const Objects::Texture* ObjectsManager::createRect(const bool immutable, const I
 {
 	Objects::Texture *textura;
 	unsigned char *bufferZip;
-	unsigned int iGLFormat,iGLType;
-	int internalFormat,buflenZip,TCformat;
+	unsigned int iGLFormat, iGLType;
+	int internalFormat, buflenZip, TCformat;
 
 	//verificar parametros de entrada
-	if (img==nullptr)
+	if (img == nullptr)
 		return nullptr;
 
 	//qual o formato GL dela
-	internalFormat=toGLInternalFormat(targetType);
-	if (internalFormat==0)
+	internalFormat = toGLInternalFormat(targetType);
+	if (internalFormat == 0)
 		return nullptr;
 
 	//crio nova entrada
 	textura = (Objects::Texture*)this->ObjectCreate(ObjectsManager::TextureRect);
-	if (textura==nullptr)
+	if (textura == nullptr)
 		return nullptr;
 
 	//preencho a entrada
 	textura->width = img->width;
 	textura->height = img->height;
-	textura->glTarget=GL_TEXTURE_RECTANGLE;
+	textura->glTarget = GL_TEXTURE_RECTANGLE;
 
 	//calculo o formato e tipo de dados que tenho de ter (se o formato for DEPTH tenho de ter cuidado)
 	iGLFormat = toGLFormat(img->format);
 	iGLType = toGLType(img->type);
-	if (targetType==ObjectsManager::Depth16 || targetType==ObjectsManager::Depth24)
+	if (targetType == ObjectsManager::Depth16 || targetType == ObjectsManager::Depth24)
 	{
 		iGLFormat = GL_DEPTH_COMPONENT;
 		iGLType = GL_UNSIGNED_INT;
 	}
-	else if (targetType==ObjectsManager::DepthStencil)
+	else if (targetType == ObjectsManager::DepthStencil)
 	{
 		iGLFormat = GL_DEPTH_STENCIL;
 		iGLType = GL_UNSIGNED_INT_24_8;

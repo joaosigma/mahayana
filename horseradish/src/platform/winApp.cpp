@@ -74,7 +74,7 @@ Window::Window(HINSTANCE hInst)
 	this->hWnd = nullptr;
 	this->isFullscreen = false;
 	this->isInitialized = false;
-	
+
 	//e também estes buffers
 	memset(&this->originalDeviceMode, 0, sizeof(this->originalDeviceMode));
 	memset(this->className, 0, sizeof(this->className));
@@ -83,7 +83,7 @@ Window::Window(HINSTANCE hInst)
 Window::~Window()
 {
 	//se ainda não fechei tudo como deve de ser, faço-o antes de terminar
-	if (this->isInitialized = true)
+	if (this->isInitialized)
 		this->WindowKill();
 }
 
@@ -91,7 +91,7 @@ bool Window::WindowInit(WNDPROC procFunc, const HorseRadish::hChar *windowTitle,
 {
 	WNDCLASSEXW windowClass;
 	DWORD dwExStyle, dwStyle;
-	RECT windowRect;
+	RECT windowRect, desktopRect;
 	DEVMODE	dmScreenSettings;
 	wchar_t windowTitleWChar[256];
 
@@ -124,17 +124,17 @@ bool Window::WindowInit(WNDPROC procFunc, const HorseRadish::hChar *windowTitle,
 
 	//tento registar a classe da janela
 	memset(&windowClass, 0, sizeof(WNDCLASSEXW));
-	windowClass.cbSize			= sizeof (WNDCLASSEXW);
-	windowClass.style			= CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
-	windowClass.lpfnWndProc		= (WNDPROC)procFunc;
-	windowClass.cbClsExtra		= 0;
-	windowClass.cbWndExtra		= 0;
-	windowClass.hInstance		= this->hInstance;
-	windowClass.hIcon			= nullptr;
-	windowClass.hCursor			= nullptr;
-	windowClass.hbrBackground	= nullptr;
-	windowClass.lpszMenuName	= nullptr;
-	windowClass.lpszClassName	= this->className;
+	windowClass.cbSize = sizeof (WNDCLASSEXW);
+	windowClass.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
+	windowClass.lpfnWndProc = (WNDPROC)procFunc;
+	windowClass.cbClsExtra = 0;
+	windowClass.cbWndExtra = 0;
+	windowClass.hInstance = this->hInstance;
+	windowClass.hIcon = nullptr;
+	windowClass.hCursor = nullptr;
+	windowClass.hbrBackground = nullptr;
+	windowClass.lpszMenuName = nullptr;
+	windowClass.lpszClassName = this->className;
 	if (RegisterClassEx(&windowClass) == 0)
 	{
 		Window::MsgBoxErro("Unable to register window class.\nApplication cannot proceed.");
@@ -158,7 +158,7 @@ bool Window::WindowInit(WNDPROC procFunc, const HorseRadish::hChar *windowTitle,
 		dmScreenSettings.dmFields = DM_BITSPERPEL | DM_PELSWIDTH | DM_PELSHEIGHT;
 
 		//tento achar o melhor e tento colocá-lo
-		if ( (checkBestDisplayFrequency(&dmScreenSettings) == false) || (ChangeDisplaySettings(&dmScreenSettings, CDS_FULLSCREEN | CDS_RESET) != DISP_CHANGE_SUCCESSFUL))
+		if ((checkBestDisplayFrequency(&dmScreenSettings) == false) || (ChangeDisplaySettings(&dmScreenSettings, CDS_FULLSCREEN | CDS_RESET) != DISP_CHANGE_SUCCESSFUL))
 		{
 			//aviso que falhou
 			Window::MsgBoxAviso("Unable to change to fullscreen.\nApplication will continue in window mode.");
@@ -186,8 +186,12 @@ bool Window::WindowInit(WNDPROC procFunc, const HorseRadish::hChar *windowTitle,
 		AdjustWindowRectEx(&windowRect, dwStyle, false, dwExStyle);
 	}
 
+	//get desktop area
+	if (SystemParametersInfo(SPI_GETWORKAREA, 0, &desktopRect, 0) != TRUE)
+		desktopRect.bottom = desktopRect.left = desktopRect.right = desktopRect.top = 0;
+
 	//crio a janela propriamente dita
-	this->hWnd = CreateWindowEx(dwExStyle, this->className, windowTitleWChar, dwStyle, 5, 5, (windowRect.right - windowRect.left), (windowRect.bottom - windowRect.top), HWND_DESKTOP, nullptr, this->hInstance, nullptr);
+	this->hWnd = CreateWindowEx(dwExStyle, this->className, windowTitleWChar, dwStyle, desktopRect.left + 5, desktopRect.top + 5, (windowRect.right - windowRect.left), (windowRect.bottom - windowRect.top), HWND_DESKTOP, nullptr, this->hInstance, nullptr);
 	if (this->hWnd == nullptr)
 	{
 		//aviso
@@ -327,7 +331,7 @@ void Window::WindowKill()
 		return;
 
 	//se tenho de sair de fullscreen
-	if (this->isFullscreen == true)
+	if (this->isFullscreen)
 	{
 		ChangeDisplaySettings(&this->originalDeviceMode, CDS_RESET | CDS_UPDATEREGISTRY);
 		this->isFullscreen = false;
@@ -355,7 +359,7 @@ void Window::WindowKill()
 bool Window::SetWindowAlpha(const unsigned char &valorAlpha) const
 {
 	//so faço se estiver em janela
-	if (this->isFullscreen == true)
+	if (this->isFullscreen)
 		return false;
 
 	//mudo o estilo da janela (precisa de ter WS_EX_LAYERED)
@@ -385,7 +389,7 @@ void Window::PeekMessageDispatch(bool translateMessage) const
 	if (PeekMessage(&msg, this->hWnd, 0, 0, PM_REMOVE) == TRUE)
 	{
 		//chegando aqui tenho uma mensagem válida, por isso traduzo-a (se for necessário) e mando-a
-		if (translateMessage == true)
+		if (translateMessage)
 			TranslateMessage(&msg);
 		DispatchMessage(&msg);
 	}
