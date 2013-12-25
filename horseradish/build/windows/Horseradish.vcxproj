@@ -1,0 +1,577 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{E2FBB50F-54CD-4CDE-BE41-1708FFCC779F}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <RootNamespace>Horseradish</RootNamespace>
+    <ProjectName>horseradish</ProjectName>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v120</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v120</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v120</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v120</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <LinkIncremental>true</LinkIncremental>
+    <OutDir>$(SolutionDir)sandbox\bin_x86\</OutDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <LinkIncremental>true</LinkIncremental>
+    <OutDir>$(SolutionDir)sandbox\bin_x64\</OutDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <LinkIncremental>false</LinkIncremental>
+    <OutDir>$(SolutionDir)sandbox\bin_x86\</OutDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <LinkIncremental>false</LinkIncremental>
+    <OutDir>$(SolutionDir)sandbox\bin_x64\</OutDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
+      <AdditionalIncludeDirectories>$(SolutionDir)$(ProjectName)\src;$(SolutionDir)$(ProjectName)\external_includes\freetype2;$(SolutionDir)$(ProjectName)\external_includes\ffmpeg;$(SolutionDir)$(ProjectName)\external_includes\misc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
+      <AdditionalLibraryDirectories>$(SolutionDir)$(ProjectName)\external_libs\x86\freetype2;$(SolutionDir)$(ProjectName)\external_libs\x86\ffmpeg;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>freetype.lib;avcodec.lib;avformat.lib;avutil.lib;swscale.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
+      <AdditionalIncludeDirectories>$(SolutionDir)$(ProjectName)\src;$(SolutionDir)$(ProjectName)\external_includes\freetype2;$(SolutionDir)$(ProjectName)\external_includes\ffmpeg;$(SolutionDir)$(ProjectName)\external_includes\misc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
+      <AdditionalLibraryDirectories>$(SolutionDir)$(ProjectName)\external_libs\x64\freetype2;$(SolutionDir)$(ProjectName)\external_libs\x64\ffmpeg;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>freetype.lib;avcodec.lib;avformat.lib;avutil.lib;swscale.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
+      <AdditionalIncludeDirectories>$(SolutionDir)$(ProjectName)\src;$(SolutionDir)$(ProjectName)\external_includes\freetype2;$(SolutionDir)$(ProjectName)\external_includes\ffmpeg;$(SolutionDir)$(ProjectName)\external_includes\misc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
+      <AdditionalLibraryDirectories>$(SolutionDir)$(ProjectName)\external_libs\x86\freetype2;$(SolutionDir)$(ProjectName)\external_libs\x86\ffmpeg;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>freetype.lib;avcodec.lib;avformat.lib;avutil.lib;swscale.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
+      <AdditionalIncludeDirectories>$(SolutionDir)$(ProjectName)\src;$(SolutionDir)$(ProjectName)\external_includes\freetype2;$(SolutionDir)$(ProjectName)\external_includes\ffmpeg;$(SolutionDir)$(ProjectName)\external_includes\misc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
+      <AdditionalLibraryDirectories>$(SolutionDir)$(ProjectName)\external_libs\x64\freetype2;$(SolutionDir)$(ProjectName)\external_libs\x64\ffmpeg;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>freetype.lib;avcodec.lib;avformat.lib;avutil.lib;swscale.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\src\common\BAreas.cpp" />
+    <ClCompile Include="..\..\src\common\BVolumes.cpp" />
+    <ClCompile Include="..\..\src\common\Color.cpp" />
+    <ClCompile Include="..\..\src\common\Encoders.cpp" />
+    <ClCompile Include="..\..\src\common\FileSystem.cpp" />
+    <ClCompile Include="..\..\src\common\Hashing.cpp" />
+    <ClCompile Include="..\..\src\common\Image.cpp" />
+    <ClCompile Include="..\..\src\common\ImageFactory.cpp" />
+    <ClCompile Include="..\..\src\common\imageFactory\ifHDRI.cpp" />
+    <ClCompile Include="..\..\src\common\imageFactory\ifTGA.cpp" />
+    <ClCompile Include="..\..\src\common\imageFactory\lodepng.cpp" />
+    <ClCompile Include="..\..\src\common\Logger.cpp" />
+    <ClCompile Include="..\..\src\common\Machine.cpp" />
+    <ClCompile Include="..\..\src\common\Math.cpp" />
+    <ClCompile Include="..\..\src\common\Matrix.cpp" />
+    <ClCompile Include="..\..\src\common\MemManager.cpp" />
+    <ClCompile Include="..\..\src\common\Mesh.cpp" />
+    <ClCompile Include="..\..\src\common\MeshFactory.cpp" />
+    <ClCompile Include="..\..\src\common\meshFactory\mf3DS.cpp" />
+    <ClCompile Include="..\..\src\common\meshFactory\mfASE.cpp" />
+    <ClCompile Include="..\..\src\common\meshFactory\mfCollada.cpp" />
+    <ClCompile Include="..\..\src\common\meshFactory\mfLWO.cpp" />
+    <ClCompile Include="..\..\src\common\meshFactory\mfOBJ.cpp" />
+    <ClCompile Include="..\..\src\common\meshFactory\mfPLY.cpp" />
+    <ClCompile Include="..\..\src\common\meshFactory\mfSMD.cpp" />
+    <ClCompile Include="..\..\src\common\opengl\objects (textures).cpp" />
+    <ClCompile Include="..\..\src\common\opengl\objects.cpp" />
+    <ClCompile Include="..\..\src\common\opengl\openGL.cpp" />
+    <ClCompile Include="..\..\src\common\opengl\openGLext.cpp" />
+    <ClCompile Include="..\..\src\common\opengl\tools (camera).cpp" />
+    <ClCompile Include="..\..\src\common\opengl\tools (font).cpp" />
+    <ClCompile Include="..\..\src\common\opengl\tools (viewport frustum).cpp" />
+    <ClCompile Include="..\..\src\common\opengl\tools.cpp" />
+    <ClCompile Include="..\..\src\common\Path.cpp" />
+    <ClCompile Include="..\..\src\common\Plane.cpp" />
+    <ClCompile Include="..\..\src\common\Platform.cpp" />
+    <ClCompile Include="..\..\src\common\Quaternion.cpp" />
+    <ClCompile Include="..\..\src\common\Random.cpp" />
+    <ClCompile Include="..\..\src\common\Ray.cpp" />
+    <ClCompile Include="..\..\src\common\Sorting.cpp" />
+    <ClCompile Include="..\..\src\common\Stream.cpp" />
+    <ClCompile Include="..\..\src\common\String.cpp" />
+    <ClCompile Include="..\..\src\common\Threadding.cpp" />
+    <ClCompile Include="..\..\src\common\Timer.cpp" />
+    <ClCompile Include="..\..\src\common\UTF.cpp" />
+    <ClCompile Include="..\..\src\console\console.cpp" />
+    <ClCompile Include="..\..\src\console\consoleUI.cpp" />
+    <ClCompile Include="..\..\src\console\consoleUITabs.cpp" />
+    <ClCompile Include="..\..\src\culling.cpp" />
+    <ClCompile Include="..\..\src\libs\crunch\crnlib.cpp" />
+    <ClCompile Include="..\..\src\libs\crunch\crn_arealist.cpp" />
+    <ClCompile Include="..\..\src\libs\crunch\crn_assert.cpp" />
+    <ClCompile Include="..\..\src\libs\crunch\crn_checksum.cpp" />
+    <ClCompile Include="..\..\src\libs\crunch\crn_command_line_params.cpp" />
+    <ClCompile Include="..\..\src\libs\crunch\crn_comp.cpp" />
+    <ClCompile Include="..\..\src\libs\crunch\crn_condition_var.cpp" />
+    <ClCompile Include="..\..\src\libs\crunch\crn_console.cpp" />
+    <ClCompile Include="..\..\src\libs\crunch\crn_core.cpp" />
+    <ClCompile Include="..\..\src\libs\crunch\crn_data_stream.cpp" />
+    <ClCompile Include="..\..\src\libs\crunch\crn_dds_comp.cpp" />
+    <ClCompile Include="..\..\src\libs\crunch\crn_dds_texture.cpp" />
+    <ClCompile Include="..\..\src\libs\crunch\crn_decomp.cpp" />
+    <ClCompile Include="..\..\src\libs\crunch\crn_dxt.cpp" />
+    <ClCompile Include="..\..\src\libs\crunch\crn_dxt1.cpp" />
+    <ClCompile Include="..\..\src\libs\crunch\crn_dxt5a.cpp" />
+    <ClCompile Include="..\..\src\libs\crunch\crn_dxt_endpoint_refiner.cpp" />
+    <ClCompile Include="..\..\src\libs\crunch\crn_dxt_fast.cpp" />
+    <ClCompile Include="..\..\src\libs\crunch\crn_dxt_hc.cpp" />
+    <ClCompile Include="..\..\src\libs\crunch\crn_dxt_hc_common.cpp" />
+    <ClCompile Include="..\..\src\libs\crunch\crn_dxt_image.cpp" />
+    <ClCompile Include="..\..\src\libs\crunch\crn_dynamic_string.cpp" />
+    <ClCompile Include="..\..\src\libs\crunch\crn_dynamic_wstring.cpp" />
+    <ClCompile Include="..\..\src\libs\crunch\crn_hash.cpp" />
+    <ClCompile Include="..\..\src\libs\crunch\crn_hash_map.cpp" />
+    <ClCompile Include="..\..\src\libs\crunch\crn_huffman_codes.cpp" />
+    <ClCompile Include="..\..\src\libs\crunch\crn_image_utils.cpp" />
+    <ClCompile Include="..\..\src\libs\crunch\crn_lzma_codec.cpp" />
+    <ClCompile Include="..\..\src\libs\crunch\crn_math.cpp" />
+    <ClCompile Include="..\..\src\libs\crunch\crn_mem.cpp" />
+    <ClCompile Include="..\..\src\libs\crunch\crn_pixel_format.cpp" />
+    <ClCompile Include="..\..\src\libs\crunch\crn_platform.cpp" />
+    <ClCompile Include="..\..\src\libs\crunch\crn_prefix_coding.cpp" />
+    <ClCompile Include="..\..\src\libs\crunch\crn_qdxt1.cpp" />
+    <ClCompile Include="..\..\src\libs\crunch\crn_qdxt5.cpp" />
+    <ClCompile Include="..\..\src\libs\crunch\crn_rand.cpp" />
+    <ClCompile Include="..\..\src\libs\crunch\crn_resampler.cpp" />
+    <ClCompile Include="..\..\src\libs\crunch\crn_resample_filters.cpp" />
+    <ClCompile Include="..\..\src\libs\crunch\crn_ryg_dxt.cpp" />
+    <ClCompile Include="..\..\src\libs\crunch\crn_sparse_bit_array.cpp" />
+    <ClCompile Include="..\..\src\libs\crunch\crn_stb_image.cpp" />
+    <ClCompile Include="..\..\src\libs\crunch\crn_strutils.cpp" />
+    <ClCompile Include="..\..\src\libs\crunch\crn_symbol_codec.cpp" />
+    <ClCompile Include="..\..\src\libs\crunch\crn_task_pool.cpp" />
+    <ClCompile Include="..\..\src\libs\crunch\crn_texture_comp.cpp" />
+    <ClCompile Include="..\..\src\libs\crunch\crn_texture_conversion.cpp" />
+    <ClCompile Include="..\..\src\libs\crunch\crn_texture_file_types.cpp" />
+    <ClCompile Include="..\..\src\libs\crunch\crn_threaded_resampler.cpp" />
+    <ClCompile Include="..\..\src\libs\crunch\crn_utils.cpp" />
+    <ClCompile Include="..\..\src\libs\crunch\crn_value.cpp" />
+    <ClCompile Include="..\..\src\libs\crunch\crn_vector.cpp" />
+    <ClCompile Include="..\..\src\libs\crunch\crn_win32_console.cpp" />
+    <ClCompile Include="..\..\src\libs\crunch\crn_win32_file_utils.cpp" />
+    <ClCompile Include="..\..\src\libs\crunch\crn_win32_find_files.cpp" />
+    <ClCompile Include="..\..\src\libs\crunch\crn_win32_threading.cpp" />
+    <ClCompile Include="..\..\src\libs\crunch\crn_win32_timer.cpp" />
+    <ClCompile Include="..\..\src\libs\crunch\crn_zeng.cpp" />
+    <ClCompile Include="..\..\src\libs\crunch\lzma_7zBuf.cpp" />
+    <ClCompile Include="..\..\src\libs\crunch\lzma_7zBuf2.cpp" />
+    <ClCompile Include="..\..\src\libs\crunch\lzma_7zCrc.cpp" />
+    <ClCompile Include="..\..\src\libs\crunch\lzma_7zFile.cpp" />
+    <ClCompile Include="..\..\src\libs\crunch\lzma_7zStream.cpp" />
+    <ClCompile Include="..\..\src\libs\crunch\lzma_Alloc.cpp" />
+    <ClCompile Include="..\..\src\libs\crunch\lzma_Bcj2.cpp" />
+    <ClCompile Include="..\..\src\libs\crunch\lzma_Bra.cpp" />
+    <ClCompile Include="..\..\src\libs\crunch\lzma_Bra86.cpp" />
+    <ClCompile Include="..\..\src\libs\crunch\lzma_BraIA64.cpp" />
+    <ClCompile Include="..\..\src\libs\crunch\lzma_LzFind.cpp" />
+    <ClCompile Include="..\..\src\libs\crunch\lzma_LzFindMt.cpp" />
+    <ClCompile Include="..\..\src\libs\crunch\lzma_LzmaDec.cpp" />
+    <ClCompile Include="..\..\src\libs\crunch\lzma_LzmaEnc.cpp" />
+    <ClCompile Include="..\..\src\libs\crunch\lzma_LzmaLib.cpp" />
+    <ClCompile Include="..\..\src\libs\crunch\lzma_Threads.cpp" />
+    <ClCompile Include="..\..\src\libs\libJPEG\cdjpeg.c" />
+    <ClCompile Include="..\..\src\libs\libJPEG\jaricom.c" />
+    <ClCompile Include="..\..\src\libs\libJPEG\jcapimin.c" />
+    <ClCompile Include="..\..\src\libs\libJPEG\jcapistd.c" />
+    <ClCompile Include="..\..\src\libs\libJPEG\jcarith.c" />
+    <ClCompile Include="..\..\src\libs\libJPEG\jccoefct.c" />
+    <ClCompile Include="..\..\src\libs\libJPEG\jccolor.c" />
+    <ClCompile Include="..\..\src\libs\libJPEG\jcdctmgr.c" />
+    <ClCompile Include="..\..\src\libs\libJPEG\jchuff.c" />
+    <ClCompile Include="..\..\src\libs\libJPEG\jcinit.c" />
+    <ClCompile Include="..\..\src\libs\libJPEG\jcmainct.c" />
+    <ClCompile Include="..\..\src\libs\libJPEG\jcmarker.c" />
+    <ClCompile Include="..\..\src\libs\libJPEG\jcmaster.c" />
+    <ClCompile Include="..\..\src\libs\libJPEG\jcomapi.c" />
+    <ClCompile Include="..\..\src\libs\libJPEG\jcparam.c" />
+    <ClCompile Include="..\..\src\libs\libJPEG\jcprepct.c" />
+    <ClCompile Include="..\..\src\libs\libJPEG\jcsample.c" />
+    <ClCompile Include="..\..\src\libs\libJPEG\jctrans.c" />
+    <ClCompile Include="..\..\src\libs\libJPEG\jdapimin.c" />
+    <ClCompile Include="..\..\src\libs\libJPEG\jdapistd.c" />
+    <ClCompile Include="..\..\src\libs\libJPEG\jdarith.c" />
+    <ClCompile Include="..\..\src\libs\libJPEG\jdatadst.c" />
+    <ClCompile Include="..\..\src\libs\libJPEG\jdatasrc.c" />
+    <ClCompile Include="..\..\src\libs\libJPEG\jdcoefct.c" />
+    <ClCompile Include="..\..\src\libs\libJPEG\jdcolor.c" />
+    <ClCompile Include="..\..\src\libs\libJPEG\jddctmgr.c" />
+    <ClCompile Include="..\..\src\libs\libJPEG\jdhuff.c" />
+    <ClCompile Include="..\..\src\libs\libJPEG\jdinput.c" />
+    <ClCompile Include="..\..\src\libs\libJPEG\jdmainct.c" />
+    <ClCompile Include="..\..\src\libs\libJPEG\jdmarker.c" />
+    <ClCompile Include="..\..\src\libs\libJPEG\jdmaster.c" />
+    <ClCompile Include="..\..\src\libs\libJPEG\jdmerge.c" />
+    <ClCompile Include="..\..\src\libs\libJPEG\jdpostct.c" />
+    <ClCompile Include="..\..\src\libs\libJPEG\jdsample.c" />
+    <ClCompile Include="..\..\src\libs\libJPEG\jdtrans.c" />
+    <ClCompile Include="..\..\src\libs\libJPEG\jerror.c" />
+    <ClCompile Include="..\..\src\libs\libJPEG\jfdctflt.c" />
+    <ClCompile Include="..\..\src\libs\libJPEG\jfdctfst.c" />
+    <ClCompile Include="..\..\src\libs\libJPEG\jfdctint.c" />
+    <ClCompile Include="..\..\src\libs\libJPEG\jidctflt.c" />
+    <ClCompile Include="..\..\src\libs\libJPEG\jidctfst.c" />
+    <ClCompile Include="..\..\src\libs\libJPEG\jidctint.c" />
+    <ClCompile Include="..\..\src\libs\libJPEG\jmemmgr.c" />
+    <ClCompile Include="..\..\src\libs\libJPEG\jmemnobs.c" />
+    <ClCompile Include="..\..\src\libs\libJPEG\jquant1.c" />
+    <ClCompile Include="..\..\src\libs\libJPEG\jquant2.c" />
+    <ClCompile Include="..\..\src\libs\libJPEG\jutils.c" />
+    <ClCompile Include="..\..\src\libs\libJPEG\rdbmp.c" />
+    <ClCompile Include="..\..\src\libs\libJPEG\rdcolmap.c" />
+    <ClCompile Include="..\..\src\libs\libJPEG\rdgif.c" />
+    <ClCompile Include="..\..\src\libs\libJPEG\rdppm.c" />
+    <ClCompile Include="..\..\src\libs\libJPEG\rdrle.c" />
+    <ClCompile Include="..\..\src\libs\libJPEG\rdswitch.c" />
+    <ClCompile Include="..\..\src\libs\libJPEG\rdtarga.c" />
+    <ClCompile Include="..\..\src\libs\libJPEG\transupp.c" />
+    <ClCompile Include="..\..\src\libs\libJPEG\wrbmp.c" />
+    <ClCompile Include="..\..\src\libs\libJPEG\wrgif.c" />
+    <ClCompile Include="..\..\src\libs\libJPEG\wrppm.c" />
+    <ClCompile Include="..\..\src\libs\libJPEG\wrrle.c" />
+    <ClCompile Include="..\..\src\libs\libJPEG\wrtarga.c" />
+    <ClCompile Include="..\..\src\libs\snappy\snappy-sinksource.cc" />
+    <ClCompile Include="..\..\src\libs\snappy\snappy-stubs-internal.cc" />
+    <ClCompile Include="..\..\src\libs\snappy\snappy.cc" />
+    <ClCompile Include="..\..\src\libs\tinyXML\tinystr.cpp" />
+    <ClCompile Include="..\..\src\libs\tinyXML\tinyxml.cpp" />
+    <ClCompile Include="..\..\src\libs\tinyXML\tinyxmlerror.cpp" />
+    <ClCompile Include="..\..\src\libs\tinyXML\tinyxmlparser.cpp" />
+    <ClCompile Include="..\..\src\libs\zlib\adler32.c" />
+    <ClCompile Include="..\..\src\libs\zlib\compress.c" />
+    <ClCompile Include="..\..\src\libs\zlib\crc32.c" />
+    <ClCompile Include="..\..\src\libs\zlib\deflate.c" />
+    <ClCompile Include="..\..\src\libs\zlib\gzclose.c" />
+    <ClCompile Include="..\..\src\libs\zlib\gzlib.c" />
+    <ClCompile Include="..\..\src\libs\zlib\gzread.c" />
+    <ClCompile Include="..\..\src\libs\zlib\gzwrite.c" />
+    <ClCompile Include="..\..\src\libs\zlib\infback.c" />
+    <ClCompile Include="..\..\src\libs\zlib\inffast.c" />
+    <ClCompile Include="..\..\src\libs\zlib\inflate.c" />
+    <ClCompile Include="..\..\src\libs\zlib\inftrees.c" />
+    <ClCompile Include="..\..\src\libs\zlib\minizip\ioapi.c" />
+    <ClCompile Include="..\..\src\libs\zlib\minizip\unzip.c" />
+    <ClCompile Include="..\..\src\libs\zlib\minizip\zip.c" />
+    <ClCompile Include="..\..\src\libs\zlib\trees.c" />
+    <ClCompile Include="..\..\src\libs\zlib\uncompr.c" />
+    <ClCompile Include="..\..\src\libs\zlib\zutil.c" />
+    <ClCompile Include="..\..\src\main.cpp" />
+    <ClCompile Include="..\..\src\platform\winApp.cpp" />
+    <ClCompile Include="..\..\src\render\renderer.cpp" />
+    <ClCompile Include="..\..\src\render\renderer2D.cpp" />
+    <ClCompile Include="..\..\src\render\rendererDeferred.cpp" />
+    <ClCompile Include="..\..\src\render\world.cpp" />
+    <ClCompile Include="..\..\src\SGPUCounter.cpp" />
+    <ClCompile Include="..\..\src\videoStream.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\src\build.hpp" />
+    <ClInclude Include="..\..\src\common\AVL-tree.hpp" />
+    <ClInclude Include="..\..\src\common\BAreas.hpp" />
+    <ClInclude Include="..\..\src\common\BVolumes.hpp" />
+    <ClInclude Include="..\..\src\common\Color.hpp" />
+    <ClInclude Include="..\..\src\common\Common.hpp" />
+    <ClInclude Include="..\..\src\common\Containers.hpp" />
+    <ClInclude Include="..\..\src\common\Encoders.hpp" />
+    <ClInclude Include="..\..\src\common\FileSystem.hpp" />
+    <ClInclude Include="..\..\src\common\Hashing.hpp" />
+    <ClInclude Include="..\..\src\common\Image.hpp" />
+    <ClInclude Include="..\..\src\common\ImageFactory.hpp" />
+    <ClInclude Include="..\..\src\common\imageFactory\ifHDRI.hpp" />
+    <ClInclude Include="..\..\src\common\imageFactory\ifTGA.hpp" />
+    <ClInclude Include="..\..\src\common\imageFactory\lodepng.h" />
+    <ClInclude Include="..\..\src\common\Logger.hpp" />
+    <ClInclude Include="..\..\src\common\Machine.hpp" />
+    <ClInclude Include="..\..\src\common\Math.hpp" />
+    <ClInclude Include="..\..\src\common\Matrix.hpp" />
+    <ClInclude Include="..\..\src\common\MemContainers.hpp" />
+    <ClInclude Include="..\..\src\common\MemManager.hpp" />
+    <ClInclude Include="..\..\src\common\Mesh.hpp" />
+    <ClInclude Include="..\..\src\common\MeshFactory.hpp" />
+    <ClInclude Include="..\..\src\common\meshFactory\mf.hpp" />
+    <ClInclude Include="..\..\src\common\opengl\objects.hpp" />
+    <ClInclude Include="..\..\src\common\opengl\openGL.h" />
+    <ClInclude Include="..\..\src\common\opengl\openGLext.hpp" />
+    <ClInclude Include="..\..\src\common\opengl\tools.hpp" />
+    <ClInclude Include="..\..\src\common\Path.hpp" />
+    <ClInclude Include="..\..\src\common\Plane.hpp" />
+    <ClInclude Include="..\..\src\common\Platform.hpp" />
+    <ClInclude Include="..\..\src\common\Primitives2D.hpp" />
+    <ClInclude Include="..\..\src\common\Quaternion.hpp" />
+    <ClInclude Include="..\..\src\common\Random.hpp" />
+    <ClInclude Include="..\..\src\common\Ray.hpp" />
+    <ClInclude Include="..\..\src\common\ScopedAction.hpp" />
+    <ClInclude Include="..\..\src\common\SmartPointers.hpp" />
+    <ClInclude Include="..\..\src\common\Sorting.hpp" />
+    <ClInclude Include="..\..\src\common\Stream.hpp" />
+    <ClInclude Include="..\..\src\common\String.hpp" />
+    <ClInclude Include="..\..\src\common\Threadding.hpp" />
+    <ClInclude Include="..\..\src\common\Timer.hpp" />
+    <ClInclude Include="..\..\src\common\Types.hpp" />
+    <ClInclude Include="..\..\src\common\UTF.hpp" />
+    <ClInclude Include="..\..\src\common\Vector.hpp" />
+    <ClInclude Include="..\..\src\console\console.hpp" />
+    <ClInclude Include="..\..\src\console\consoleUI.hpp" />
+    <ClInclude Include="..\..\src\culling.hpp" />
+    <ClInclude Include="..\..\src\libs\crunch\crnlib.h" />
+    <ClInclude Include="..\..\src\libs\crunch\crn_arealist.h" />
+    <ClInclude Include="..\..\src\libs\crunch\crn_assert.h" />
+    <ClInclude Include="..\..\src\libs\crunch\crn_buffer_stream.h" />
+    <ClInclude Include="..\..\src\libs\crunch\crn_cfile_stream.h" />
+    <ClInclude Include="..\..\src\libs\crunch\crn_checksum.h" />
+    <ClInclude Include="..\..\src\libs\crunch\crn_clusterizer.h" />
+    <ClInclude Include="..\..\src\libs\crunch\crn_color.h" />
+    <ClInclude Include="..\..\src\libs\crunch\crn_command_line_params.h" />
+    <ClInclude Include="..\..\src\libs\crunch\crn_comp.h" />
+    <ClInclude Include="..\..\src\libs\crunch\crn_condition_var.h" />
+    <ClInclude Include="..\..\src\libs\crunch\crn_console.h" />
+    <ClInclude Include="..\..\src\libs\crunch\crn_core.h" />
+    <ClInclude Include="..\..\src\libs\crunch\crn_data_stream.h" />
+    <ClInclude Include="..\..\src\libs\crunch\crn_data_stream_serializer.h" />
+    <ClInclude Include="..\..\src\libs\crunch\crn_dds_comp.h" />
+    <ClInclude Include="..\..\src\libs\crunch\crn_dds_texture.h" />
+    <ClInclude Include="..\..\src\libs\crunch\crn_decomp.h" />
+    <ClInclude Include="..\..\src\libs\crunch\crn_dxt.h" />
+    <ClInclude Include="..\..\src\libs\crunch\crn_dxt1.h" />
+    <ClInclude Include="..\..\src\libs\crunch\crn_dxt5a.h" />
+    <ClInclude Include="..\..\src\libs\crunch\crn_dxt_endpoint_refiner.h" />
+    <ClInclude Include="..\..\src\libs\crunch\crn_dxt_fast.h" />
+    <ClInclude Include="..\..\src\libs\crunch\crn_dxt_hc.h" />
+    <ClInclude Include="..\..\src\libs\crunch\crn_dxt_hc_common.h" />
+    <ClInclude Include="..\..\src\libs\crunch\crn_dxt_image.h" />
+    <ClInclude Include="..\..\src\libs\crunch\crn_dynamic_stream.h" />
+    <ClInclude Include="..\..\src\libs\crunch\crn_dynamic_string.h" />
+    <ClInclude Include="..\..\src\libs\crunch\crn_dynamic_wstring.h" />
+    <ClInclude Include="..\..\src\libs\crunch\crn_event.h" />
+    <ClInclude Include="..\..\src\libs\crunch\crn_hash.h" />
+    <ClInclude Include="..\..\src\libs\crunch\crn_hash_map.h" />
+    <ClInclude Include="..\..\src\libs\crunch\crn_helpers.h" />
+    <ClInclude Include="..\..\src\libs\crunch\crn_huffman_codes.h" />
+    <ClInclude Include="..\..\src\libs\crunch\crn_image.h" />
+    <ClInclude Include="..\..\src\libs\crunch\crn_image_utils.h" />
+    <ClInclude Include="..\..\src\libs\crunch\crn_intersect.h" />
+    <ClInclude Include="..\..\src\libs\crunch\crn_lzma_codec.h" />
+    <ClInclude Include="..\..\src\libs\crunch\crn_math.h" />
+    <ClInclude Include="..\..\src\libs\crunch\crn_matrix.h" />
+    <ClInclude Include="..\..\src\libs\crunch\crn_mem.h" />
+    <ClInclude Include="..\..\src\libs\crunch\crn_mutex.h" />
+    <ClInclude Include="..\..\src\libs\crunch\crn_packed_uint.h" />
+    <ClInclude Include="..\..\src\libs\crunch\crn_pixel_format.h" />
+    <ClInclude Include="..\..\src\libs\crunch\crn_platform.h" />
+    <ClInclude Include="..\..\src\libs\crunch\crn_prefix_coding.h" />
+    <ClInclude Include="..\..\src\libs\crunch\crn_qdxt1.h" />
+    <ClInclude Include="..\..\src\libs\crunch\crn_qdxt5.h" />
+    <ClInclude Include="..\..\src\libs\crunch\crn_rand.h" />
+    <ClInclude Include="..\..\src\libs\crunch\crn_ray.h" />
+    <ClInclude Include="..\..\src\libs\crunch\crn_rect.h" />
+    <ClInclude Include="..\..\src\libs\crunch\crn_resampler.h" />
+    <ClInclude Include="..\..\src\libs\crunch\crn_resample_filters.h" />
+    <ClInclude Include="..\..\src\libs\crunch\crn_ryg_dxt.hpp" />
+    <ClInclude Include="..\..\src\libs\crunch\crn_ryg_types.hpp" />
+    <ClInclude Include="..\..\src\libs\crunch\crn_semaphore.h" />
+    <ClInclude Include="..\..\src\libs\crunch\crn_sparse_array.h" />
+    <ClInclude Include="..\..\src\libs\crunch\crn_sparse_bit_array.h" />
+    <ClInclude Include="..\..\src\libs\crunch\crn_spinlock.h" />
+    <ClInclude Include="..\..\src\libs\crunch\crn_strutils.h" />
+    <ClInclude Include="..\..\src\libs\crunch\crn_symbol_codec.h" />
+    <ClInclude Include="..\..\src\libs\crunch\crn_task_pool.h" />
+    <ClInclude Include="..\..\src\libs\crunch\crn_texture_comp.h" />
+    <ClInclude Include="..\..\src\libs\crunch\crn_texture_conversion.h" />
+    <ClInclude Include="..\..\src\libs\crunch\crn_texture_file_types.h" />
+    <ClInclude Include="..\..\src\libs\crunch\crn_threaded_clusterizer.h" />
+    <ClInclude Include="..\..\src\libs\crunch\crn_threaded_resampler.h" />
+    <ClInclude Include="..\..\src\libs\crunch\crn_traits.h" />
+    <ClInclude Include="..\..\src\libs\crunch\crn_tree_clusterizer.h" />
+    <ClInclude Include="..\..\src\libs\crunch\crn_types.h" />
+    <ClInclude Include="..\..\src\libs\crunch\crn_utils.h" />
+    <ClInclude Include="..\..\src\libs\crunch\crn_value.h" />
+    <ClInclude Include="..\..\src\libs\crunch\crn_vec.h" />
+    <ClInclude Include="..\..\src\libs\crunch\crn_vector.h" />
+    <ClInclude Include="..\..\src\libs\crunch\crn_vec_interval.h" />
+    <ClInclude Include="..\..\src\libs\crunch\crn_win32_console.h" />
+    <ClInclude Include="..\..\src\libs\crunch\crn_win32_file_utils.h" />
+    <ClInclude Include="..\..\src\libs\crunch\crn_win32_find_files.h" />
+    <ClInclude Include="..\..\src\libs\crunch\crn_win32_threading.h" />
+    <ClInclude Include="..\..\src\libs\crunch\crn_win32_timer.h" />
+    <ClInclude Include="..\..\src\libs\crunch\crn_winhdr.h" />
+    <ClInclude Include="..\..\src\libs\crunch\crn_zeng.h" />
+    <ClInclude Include="..\..\src\libs\crunch\dds_defs.h" />
+    <ClInclude Include="..\..\src\libs\crunch\lzma_7zBuf.h" />
+    <ClInclude Include="..\..\src\libs\crunch\lzma_7zCrc.h" />
+    <ClInclude Include="..\..\src\libs\crunch\lzma_7zFile.h" />
+    <ClInclude Include="..\..\src\libs\crunch\lzma_7zVersion.h" />
+    <ClInclude Include="..\..\src\libs\crunch\lzma_Alloc.h" />
+    <ClInclude Include="..\..\src\libs\crunch\lzma_Bcj2.h" />
+    <ClInclude Include="..\..\src\libs\crunch\lzma_Bra.h" />
+    <ClInclude Include="..\..\src\libs\crunch\lzma_CpuArch.h" />
+    <ClInclude Include="..\..\src\libs\crunch\lzma_LzFind.h" />
+    <ClInclude Include="..\..\src\libs\crunch\lzma_LzFindMt.h" />
+    <ClInclude Include="..\..\src\libs\crunch\lzma_LzHash.h" />
+    <ClInclude Include="..\..\src\libs\crunch\lzma_LzmaDec.h" />
+    <ClInclude Include="..\..\src\libs\crunch\lzma_LzmaEnc.h" />
+    <ClInclude Include="..\..\src\libs\crunch\lzma_LzmaLib.h" />
+    <ClInclude Include="..\..\src\libs\crunch\lzma_MyVersion.h" />
+    <ClInclude Include="..\..\src\libs\crunch\lzma_Threads.h" />
+    <ClInclude Include="..\..\src\libs\crunch\lzma_Types.h" />
+    <ClInclude Include="..\..\src\libs\libJPEG\cderror.h" />
+    <ClInclude Include="..\..\src\libs\libJPEG\cdjpeg.h" />
+    <ClInclude Include="..\..\src\libs\libJPEG\jconfig.h" />
+    <ClInclude Include="..\..\src\libs\libJPEG\jdct.h" />
+    <ClInclude Include="..\..\src\libs\libJPEG\jerror.h" />
+    <ClInclude Include="..\..\src\libs\libJPEG\jinclude.h" />
+    <ClInclude Include="..\..\src\libs\libJPEG\jmemsys.h" />
+    <ClInclude Include="..\..\src\libs\libJPEG\jmorecfg.h" />
+    <ClInclude Include="..\..\src\libs\libJPEG\jpegint.h" />
+    <ClInclude Include="..\..\src\libs\libJPEG\jpeglib.h" />
+    <ClInclude Include="..\..\src\libs\libJPEG\jversion.h" />
+    <ClInclude Include="..\..\src\libs\libJPEG\transupp.h" />
+    <ClInclude Include="..\..\src\libs\snappy\snappy-internal.h" />
+    <ClInclude Include="..\..\src\libs\snappy\snappy-sinksource.h" />
+    <ClInclude Include="..\..\src\libs\snappy\snappy-stubs-internal.h" />
+    <ClInclude Include="..\..\src\libs\snappy\snappy-stubs-public.h" />
+    <ClInclude Include="..\..\src\libs\snappy\snappy.h" />
+    <ClInclude Include="..\..\src\libs\tinyXML\tinystr.h" />
+    <ClInclude Include="..\..\src\libs\tinyXML\tinyxml.h" />
+    <ClInclude Include="..\..\src\libs\zlib\crc32.h" />
+    <ClInclude Include="..\..\src\libs\zlib\deflate.h" />
+    <ClInclude Include="..\..\src\libs\zlib\gzguts.h" />
+    <ClInclude Include="..\..\src\libs\zlib\inffast.h" />
+    <ClInclude Include="..\..\src\libs\zlib\inffixed.h" />
+    <ClInclude Include="..\..\src\libs\zlib\inflate.h" />
+    <ClInclude Include="..\..\src\libs\zlib\inftrees.h" />
+    <ClInclude Include="..\..\src\libs\zlib\minizip\crypt.h" />
+    <ClInclude Include="..\..\src\libs\zlib\minizip\ioapi.h" />
+    <ClInclude Include="..\..\src\libs\zlib\minizip\unzip.h" />
+    <ClInclude Include="..\..\src\libs\zlib\minizip\zip.h" />
+    <ClInclude Include="..\..\src\libs\zlib\trees.h" />
+    <ClInclude Include="..\..\src\libs\zlib\zconf.h" />
+    <ClInclude Include="..\..\src\libs\zlib\zlib.h" />
+    <ClInclude Include="..\..\src\libs\zlib\zutil.h" />
+    <ClInclude Include="..\..\src\platform\winApp.hpp" />
+    <ClInclude Include="..\..\src\render\renderer.hpp" />
+    <ClInclude Include="..\..\src\render\renderer2D.hpp" />
+    <ClInclude Include="..\..\src\render\rendererDeferred.hpp" />
+    <ClInclude Include="..\..\src\render\world.hpp" />
+    <ClInclude Include="..\..\src\SGPUCounter.hpp" />
+    <ClInclude Include="..\..\src\videoStream.hpp" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>
