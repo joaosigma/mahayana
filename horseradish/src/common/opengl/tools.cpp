@@ -22,11 +22,30 @@ int UniformCache::comparePrograms(const ProgramData &objA, const ProgramData &ob
 		return 1;
 	return 0;
 }
+
+int UniformCache::compareProgramsID(const ProgramData &objA, const unsigned int &programID)
+{
+	if (objA.programID < programID)
+		return -1;
+	if (objA.programID > programID)
+		return 1;
+	return 0;
+}
+
 int UniformCache::compareUniforms(const ProgramData::UniformData &objA, const ProgramData::UniformData &objB)
 {
 	if (objA.uniformCRC32 < objB.uniformCRC32)
 		return -1;
 	if (objA.uniformCRC32 > objB.uniformCRC32)
+		return 1;
+	return 0;
+}
+
+int UniformCache::compareUniformsID(const ProgramData::UniformData &objA, const unsigned int &uniformCRC32)
+{
+	if (objA.uniformCRC32 < uniformCRC32)
+		return -1;
+	if (objA.uniformCRC32 > uniformCRC32)
 		return 1;
 	return 0;
 }
@@ -47,15 +66,14 @@ bool UniformCache::AddUniform(const unsigned int programID, const char * const u
 	bool crieiPrograma, crieiUniform;
 	int programaAlvoIndex, uniformAlvoIndex;
 	unsigned int uniformCRC32;
-	ProgramData *programaAlvo, programDummy;
-	ProgramData::UniformData *uniformAlvo, uniformDummy;
+	ProgramData *programaAlvo;
+	ProgramData::UniformData *uniformAlvo;
 
 	//por defeito não criei nada
 	crieiPrograma = crieiUniform = false;
 
 	//tiro o programa alvo e se não tenho nada, tenho de criar
-	programDummy.programID = programID;
-	programaAlvoIndex = HorseRadish::Sorting::BinarySearch<ProgramData>(this->arrayPrograms.GetMainPointer(), this->arrayPrograms.GetNumElements(), UniformCache::comparePrograms, programDummy);
+	programaAlvoIndex = HorseRadish::Sorting::BinarySearch<ProgramData, unsigned int>(this->arrayPrograms.GetMainPointer(), this->arrayPrograms.GetNumElements(), &UniformCache::compareProgramsID, programID);
 	if (programaAlvoIndex < 0)
 	{
 		//crio um novo
@@ -73,8 +91,7 @@ bool UniformCache::AddUniform(const unsigned int programID, const char * const u
 	uniformCRC32 = HorseRadish::Hashing::CalculateCRC32(uniformName, strlen(uniformName));
 
 	//agora neste programa, procuro se já existe este uniform e se não existir crio espaço para mais
-	uniformDummy.uniformCRC32 = uniformCRC32;
-	uniformAlvoIndex = HorseRadish::Sorting::BinarySearch<ProgramData::UniformData>(programaAlvo->arrayUniforms.GetMainPointer(), programaAlvo->arrayUniforms.GetNumElements(), UniformCache::compareUniforms, uniformDummy);
+	uniformAlvoIndex = HorseRadish::Sorting::BinarySearch<ProgramData::UniformData, unsigned int>(programaAlvo->arrayUniforms.GetMainPointer(), programaAlvo->arrayUniforms.GetNumElements(), &UniformCache::compareUniformsID, uniformCRC32);
 	if (uniformAlvoIndex < 0)	
 	{
 		//crio um novo
@@ -93,9 +110,9 @@ bool UniformCache::AddUniform(const unsigned int programID, const char * const u
 
 	//se acrescentei alguma coisa, tenho de reordenar a lista (o uniform tem de estar antes do programa)
 	if (crieiUniform)
-		programaAlvo->arrayUniforms.QuickSort(UniformCache::compareUniforms);
+		programaAlvo->arrayUniforms.QuickSort(&UniformCache::compareUniforms);
 	if (crieiPrograma)
-		this->arrayPrograms.QuickSort(UniformCache::comparePrograms);
+		this->arrayPrograms.QuickSort(&UniformCache::comparePrograms);
 
 	//tá tudo
 	return true;
@@ -105,12 +122,10 @@ int UniformCache::GetUniformPos(const unsigned int programID, const char * const
 {
 	unsigned int uniformCRC32;
 	int programaAlvoIndex, uniformAlvoIndex;
-	ProgramData *programaAlvo, programDummy;
-	ProgramData::UniformData uniformDummy;
+	ProgramData *programaAlvo;
 
 	//tiro o programa alvo e se não tenho nada, crio o que for preciso
-	programDummy.programID = programID;
-	programaAlvoIndex = HorseRadish::Sorting::BinarySearch<ProgramData>(this->arrayPrograms.GetMainPointer(), this->arrayPrograms.GetNumElements(), UniformCache::comparePrograms, programDummy);
+	programaAlvoIndex = HorseRadish::Sorting::BinarySearch<ProgramData, unsigned int>(this->arrayPrograms.GetMainPointer(), this->arrayPrograms.GetNumElements(), &UniformCache::compareProgramsID, programID);
 	if (programaAlvoIndex < 0)
 	{
 		int uniformPos;
@@ -132,8 +147,7 @@ int UniformCache::GetUniformPos(const unsigned int programID, const char * const
 	uniformCRC32 = HorseRadish::Hashing::CalculateCRC32(uniformName, strlen(uniformName));
 
 	//agora pesquiso pelo uniform em questão
-	uniformDummy.uniformCRC32 = uniformCRC32;
-	programaAlvoIndex = HorseRadish::Sorting::BinarySearch<ProgramData::UniformData>(programaAlvo->arrayUniforms.GetMainPointer(), programaAlvo->arrayUniforms.GetNumElements(), UniformCache::compareUniforms, uniformDummy);
+	programaAlvoIndex = HorseRadish::Sorting::BinarySearch<ProgramData::UniformData, unsigned int>(programaAlvo->arrayUniforms.GetMainPointer(), programaAlvo->arrayUniforms.GetNumElements(), &UniformCache::compareUniformsID, uniformCRC32);
 	if (programaAlvoIndex < 0)
 	{
 		int uniformPos;

@@ -405,7 +405,8 @@ public:
 		};
 
 	String();
-	String(const String &nova);
+	String(const String &s);
+	String(String &&s);
 	explicit String(const char *fmt, ...);
 	~String();
 

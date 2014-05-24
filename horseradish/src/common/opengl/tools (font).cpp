@@ -111,22 +111,11 @@ Font* FontManager::CreateFont(const int fontSize, const char * const fontFilePat
 unsigned short Font::primitiveRestartIndex = 65500;
 int Font::numMaxChar = 512;
 
-int Font::sortCharData(const Font::CharacterData &objA, const Font::CharacterData &objB)
-{
-	if (objA.unicodeID < objB.unicodeID)
-		return -1;
-	if (objA.unicodeID > objB.unicodeID)
-		return 1;
-	return 0;
-}
-
-int Font::findCharData(const Font::CharacterData &objA, const Font::CharacterData &objB)
+int Font::compareCharData(const Font::CharacterData &objA, const Font::CharacterData &objB)
 {
 	if (objA.unicodeID == objB.unicodeID)
 		return 0;
-	if (objA.unicodeID < objB.unicodeID)
-		return -1;
-	return 1;
+	return ((objA.unicodeID < objB.unicodeID) ? -1 : 1);
 }
 
 Font::Font(FontManager * const fontManager, const int fontSize, const char * const fontFilePath, unsigned int glProgramID)
@@ -475,7 +464,7 @@ bool Font::initFont(const char * const fontFilePath)
 	}
 
 	//agora ordeno a lista dos caracteres (e assim os dados do kerning já ficam ordenados)
-	this->charData.QuickSort(Font::sortCharData);
+	this->charData.QuickSort(Font::compareCharData);
 
 	//se a fonte tiver kerning
 	if (FT_HAS_KERNING(ftFace) != 0)
@@ -677,7 +666,7 @@ const Font::CharacterData* Font::getCharData(int unicodeID) const
 	testeComparacao.unicodeID = unicodeID;
 
 	//faço a pesquisa binária
-	charIndex = this->charData.BinarySearch<CharacterData>(Font::findCharData, testeComparacao);
+	charIndex = this->charData.BinarySearch<CharacterData>(Font::compareCharData, testeComparacao);
 	return ((charIndex < 0) ? nullptr : (this->charData + charIndex));
 }
 

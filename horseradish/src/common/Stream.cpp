@@ -561,6 +561,7 @@ int FileStream::ReadUntil(void * const outBuffer, const int bufferSize, const ch
 	//mas chegando aqui foi por ter chegado ao fim do ficheiro, logo devolvo negativo
 	return -lerMesmo;
 }
+
 const void* FileStream::ReadContent(int &contentSize, bool &contentCopied) const
 {
 	int curPos, outBufferSize;
@@ -605,6 +606,7 @@ const void* FileStream::ReadContent(int &contentSize, bool &contentCopied) const
 	contentSize = outBufferSize;
 	return outBuffer;
 }
+
 int FileStream::Write(const void * const inBuffer, int numBytes)
 {
 	DWORD bytesWritten;
@@ -624,6 +626,7 @@ int FileStream::Write(const void * const inBuffer, int numBytes)
 	//escrevi estes bytes
 	return bytesWritten;
 }
+
 int FileStream::Seek(const int offset, const SeekOrigin seekOrigin)
 {
 	//se não tenho ficheiro
@@ -685,6 +688,45 @@ void* FileStream::ReadEntireFile(const HorseRadish::hChar * const filePath, int 
 	//chegando aqui correu tudo bem
 	fileSize = outBufferSize;
 	return outBuffer;
+}
+
+HorseRadish::String FileStream::ReadEntireFileAsString(const HorseRadish::hChar * const filePath)
+{
+	HANDLE fileHandle;
+	DWORD bytesRead;
+	wchar_t filePathWChar[128];
+
+	//verifico isto
+	if (filePath == nullptr)
+		return HorseRadish::String();
+
+	//tenho de converter a string para WideChar
+	HorseRadish::UTF::ConvertUTF8To(filePath, HorseRadish::UTF::Windows, filePathWChar, sizeof(filePathWChar));
+
+	//tento abrir o ficheiro
+	fileHandle = CreateFile(filePathWChar, GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+	if (fileHandle == INVALID_HANDLE_VALUE)
+		return HorseRadish::String();
+
+	//para me certificar que tenho sempre de "fechar" o ficheiro
+	ScopedAction scopedAction([&]()
+	{
+		CloseHandle(fileHandle);
+	});
+
+	//leio o tamanho do ficheiro e tento alocar espaço para o ler todo
+	auto outBufferSize = GetFileSize(fileHandle, nullptr);
+	auto finalString = HorseRadish::String();
+
+	finalString.Capacity(outBufferSize + 1);
+
+	//leio tudo
+	if ((ReadFile(fileHandle, (void*)finalString.GetData(), outBufferSize, &bytesRead, nullptr) == 0) || (outBufferSize != bytesRead))
+		return HorseRadish::String();
+
+	//chegando aqui correu tudo bem
+	finalString.CloseAt(outBufferSize);
+	return finalString;
 }
 
 bool FileStream::StreamDump(Stream* stream, const HorseRadish::hChar * const filePath)

@@ -30,9 +30,9 @@ public:
 	static const HorseRadish::hChar BomUTF32BigE[];
 	static const HorseRadish::hChar BomUTF32LittleE[];
 
-	static int ValidateUTF8(const void *bufferUTF8, int *numChars, int *numBytes);
+	static int ValidateUTF8(const void * const bufferUTF8, int *numChars, int *numBytes);
 	static int ConvertUTF8To(const String &stringIn, const Encoding targetEncoding, void *outBuffer, const int outBufferSize);
-	static int ConvertUTF8To(const void *bufferInUTF8, const Encoding targetEncoding, void *outBuffer, const int outBufferSize);
+	static int ConvertUTF8To(const void * const bufferInUTF8, const Encoding targetEncoding, void *outBuffer, const int outBufferSize);
 	static int ConvertToUTF8(const Encoding inEncoding, const void *inBuffer, void *outBuffer, const int outBufferSize);
 };
 

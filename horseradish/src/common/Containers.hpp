@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include <functional>
 
 #include "Types.hpp"
 
@@ -26,18 +27,13 @@ class Array
 
 	bool addNewElements()
 	{
-		void *newBuffer;
-
-		//se não tiver um número para crescer
 		if (this->numGrowElements <= 0)
 			return false;
 
-		//preciso de mais espaço
-		newBuffer = realloc(this->mainArray, sizeof(T) * (this->numMaxElements + this->numGrowElements));
+		auto newBuffer = realloc(this->mainArray, sizeof(T) * (this->numMaxElements + this->numGrowElements));
 		if (newBuffer == nullptr)
 			return false;
 
-		//guardo os novos dados
 		this->mainArray = (T*)newBuffer;
 		this->numMaxElements += this->numGrowElements;
 		return true;
@@ -45,60 +41,59 @@ class Array
 
 public:
 	Array(int numStartElements = 0, int numGrowElements = 4)
+		: mainArray(nullptr)
+		, numElements(0)
+		, numMaxElements(0)
+		, numGrowElements(numGrowElements)
 	{
-		//guardo e verifico este valor
-		this->numGrowElements = numGrowElements;
 		if (this->numGrowElements < 4)
 			this->numGrowElements = 4;
 
-		//limpo isto tudo
-		this->mainArray = nullptr;
-		this->numElements = 0;
-		this->numMaxElements = 0;
-
-		//se tiver alguma coisa para allocar imediatamente
 		if (numStartElements > 0)
 		{
-			//tento allocar memória
 			this->mainArray = (T*)malloc(sizeof(T) * numStartElements);
 			if (this->mainArray == nullptr)
 				return;
 
-			//tenho estes elementos disponíveis
 			this->numMaxElements = numStartElements;
 		}
 	}
 
+	Array(Array<T> &&a)
+		: mainArray(a.mainArray)
+		, numElements(a.numElements)
+		, numMaxElements(a.numMaxElements)
+		, numGrowElements(a.numGrowElements)
+	{
+		a.mainArray = nullptr;
+		a.numElements = a.numMaxElements = a.numGrowElements = 0;
+	}
+
 	~Array()
 	{
-		//mando limpar tudo
 		this->Clear();
 
-		//apago a memória usada
 		if (this->mainArray != nullptr)
 			free(this->mainArray);
 
-		//limpo tudo o resto
 		this->mainArray = nullptr;
-		this->numElements = 0;
-		this->numMaxElements = 0;
-		this->numGrowElements = 0;
+		this->numElements = this->numMaxElements = this->numGrowElements = 0;
 	}
+
+	Array(Array<T> &a) = delete;
+	Array(const Array<T> &a) = delete;
+
+	Array<T>& operator =(const Array<T>&) = delete;
 
 	bool SetCapacity(unsigned int numElements)
 	{
-		void *newBuffer;
-
-		//se não é preciso fazer nada
 		if (numElements <= this->numMaxElements)
 			return true;
 
-		//preciso de mais espaço
-		newBuffer = realloc(this->mainArray, sizeof(T) * numElements);
+		auto newBuffer = realloc(this->mainArray, sizeof(T) * numElements);
 		if (newBuffer == nullptr)
 			return false;
 
-		//guardo os novos dados
 		this->mainArray = (T*)newBuffer;
 		this->numMaxElements = numElements;
 		return true;
@@ -106,70 +101,51 @@ public:
 
 	HFUNC_RESTRICT T* Add()
 	{
-		//se não tenho espaço
 		if (this->numElements >= this->numMaxElements)
 		{
-			//tento criar mais espaço
 			if (addNewElements() == false)
 				return nullptr;
 		}
 
-		//ajusto o número de elementos
 		this->numElements++;
 
-		//gero o elemento com o seu constructor por omissão
 		return new(this->mainArray + this->numElements - 1) T;
 	}
 
 	bool Reserve(unsigned int numElements)
 	{
-		T* elementWalker;
-
-		//se precisar de espaço
 		if ((this->numElements + numElements) > this->numMaxElements)
 		{
 			int newCapacity;
 
-			//calculo o que vou precisar
 			newCapacity = this->numElements + numElements;
 			if ((newCapacity % this->numGrowElements) != 0)
 				newCapacity += (this->numGrowElements - (newCapacity % this->numGrowElements));
 
-			//tenho de aumentar o espaço
 			if (this->SetCapacity(newCapacity) == false)
 				return false;
 		}
 
-		//chamo o constructor para cada um
-		elementWalker = this->mainArray + this->numElements;
+		auto elementWalker = this->mainArray + this->numElements;
 		for(int i = 0; i < numElements; i++, elementWalker++)
 			new(elementWalker) T;
 
-		//acabei de criar estes elementos
 		this->numElements += numElements;
-
-		//correu tudo bem
 		return true;
 	}
 
 	void SwapData(Array<T> &swapArray)
 	{
-		T* oldArray;
-		int oldNumElements, oldMaxElements, oldNumGrowElements;
+		auto oldArray = this->mainArray;
+		auto oldNumElements = this->numElements;
+		auto oldMaxElements = this->numMaxElements;
+		auto oldNumGrowElements = this->numGrowElements;
 
-		//guardo todos os dados deste
-		oldArray = this->mainArray;
-		oldNumElements = this->numElements;
-		oldMaxElements = this->numMaxElements;
-		oldNumGrowElements = this->numGrowElements;
-
-		//guardo os dados do outro array
 		this->mainArray = swapArray.mainArray;
 		this->numElements = swapArray.numElements;
 		this->numMaxElements = swapArray.numMaxElements;
 		this->numGrowElements = swapArray.numGrowElements;
 
-		//e coloco no outro os meus dados antigos
 		swapArray.mainArray = oldArray;
 		swapArray.numElements = oldNumElements;
 		swapArray.numMaxElements = oldMaxElements;
@@ -178,54 +154,45 @@ public:
 
 	void Clear(bool cleanData = false)
 	{
-		//chamo o destructor
 		for(int i = 0; i < this->numElements; i++)
 			this->mainArray[i].~T();
 
-		//basta limpar o número de elementos que tenho
 		this->numElements = 0;
 
-		//se for para limpar alguma coisa
 		if (cleanData == true)
 			memset(this->mainArray, 0, sizeof(T) * this->numMaxElements);
 	}
 
 	void QuickSort()
 	{
-		//verificar o número de parametros
 		if (this->numElements <= 1)
 			return;
 
-		//basta chamar esta função
 		HorseRadish::Sorting::QuickSort<T>(this->mainArray, this->numElements);
 	}
-	void QuickSort(int (*compareFunc)(const T&, const T&))
+
+	void QuickSort(std::function<int (const T&, const T&)> compareFunc)
 	{
-		//verificar alguns parametros
-		if ((this->numElements <= 1) || (compareFunc == nullptr))
+		if ((this->numElements <= 1) || !compareFunc)
 			return;
 
-		//basta chamar esta função
 		HorseRadish::Sorting::QuickSort<T>(this->mainArray, this->numElements, compareFunc);
 	}
 
 	int BinarySearch(const T& compareElement) const
 	{
-		//verificar alguns parametros
 		if (this->numElements <= 0)
 			return -1;
 
-		//basta chamar esta função
 		return HorseRadish::Sorting::BinarySearch<T>(this->mainArray, this->numElements, compareElement);
 	}
+
 	template <typename U>
-	int BinarySearch(int (*compareFunc)(const U&, const T&), const U& compareElement) const
+	int BinarySearch(std::function<int (const T&, const U&)> compareFunc, const U& compareElement) const
 	{
-		//verificar alguns parametros
-		if ((this->numElements <= 0) || (compareFunc == nullptr))
+		if ((this->numElements <= 0) || !compareFunc)
 			return -1;
 
-		//procuro pelo elemento e devolvo-o
 		return HorseRadish::Sorting::BinarySearch<T, U>(this->mainArray, this->numElements, compareFunc, compareElement);
 	}
 
@@ -248,18 +215,13 @@ class Array<char>
 
 	bool addNewElements()
 	{
-		void *newBuffer;
-
-		//se não tiver um número para crescer
 		if (this->numGrowElements <= 0)
 			return false;
 
-		//preciso de mais espaço
-		newBuffer = realloc(this->mainArray, sizeof(char) * (this->numMaxElements + this->numGrowElements));
+		auto newBuffer = realloc(this->mainArray, sizeof(char) * (this->numMaxElements + this->numGrowElements));
 		if (newBuffer == nullptr)
 			return false;
 
-		//guardo os novos dados
 		this->mainArray = (char*)newBuffer;
 		this->numMaxElements += this->numGrowElements;
 		return true;
@@ -267,57 +229,57 @@ class Array<char>
 
 public:
 	Array(int numStartElements = 0, int numGrowElements = 25)
+		: mainArray(nullptr)
+		, numElements(0)
+		, numMaxElements(0)
+		, numGrowElements(numGrowElements)
 	{
-		//guardo e verifico este valor
-		this->numGrowElements = numGrowElements;
 		if (this->numGrowElements < 4)
 			this->numGrowElements = 4;
 
-		//limpo isto tudo
-		this->mainArray = nullptr;
-		this->numElements = 0;
-		this->numMaxElements = 0;
-
-		//se tiver alguma coisa para allocar imediatamente
 		if (numStartElements > 0)
 		{
-			//tento allocar memória
 			this->mainArray = (char*)malloc(sizeof(char) * numStartElements);
 			if (this->mainArray == nullptr)
 				return;
 
-			//tenho estes elementos disponíveis
 			this->numMaxElements = numStartElements;
 		}
 	}
 
+	Array(Array<char> &&a)
+		: mainArray(a.mainArray)
+		, numElements(a.numElements)
+		, numMaxElements(a.numMaxElements)
+		, numGrowElements(a.numGrowElements)
+	{
+		a.mainArray = nullptr;
+		a.numElements = a.numMaxElements = a.numGrowElements = 0;
+	}
+
 	~Array()
 	{
-		//apago a memória usada
 		if (this->mainArray != nullptr)
 			free(this->mainArray);
 
-		//limpo tudo o resto
 		this->mainArray = nullptr;
-		this->numElements = 0;
-		this->numMaxElements = 0;
-		this->numGrowElements = 0;
+		this->numElements = this->numMaxElements = this->numGrowElements = 0;
 	}
+
+	Array(Array<char> &a) = delete;
+	Array(const Array<char> &a) = delete;
+
+	Array<char>& operator =(const Array<char>&) = delete;
 
 	bool SetCapacity(unsigned int numElements)
 	{
-		void *newBuffer;
-
-		//se não é preciso fazer nada
 		if (numElements <= this->numMaxElements)
 			return true;
 
-		//preciso de mais espaço
-		newBuffer = realloc(this->mainArray, sizeof(char) * numElements);
+		auto newBuffer = realloc(this->mainArray, sizeof(char) * numElements);
 		if (newBuffer == nullptr)
 			return false;
 
-		//guardo os novos dados
 		this->mainArray = (char*)newBuffer;
 		this->numMaxElements = numElements;
 		return true;
@@ -398,10 +360,8 @@ public:
 
 	void Clear(bool cleanData = false)
 	{
-		//basta limpar o número de elementos que tenho
 		this->numElements = 0;
 
-		//se for para limpar alguma coisa
 		if (cleanData == true)
 			memset(this->mainArray, 0, sizeof(char) * this->numMaxElements);
 	}
@@ -444,16 +404,13 @@ class Array<HorseRadish::hChar>
 
 public:
 	Array(int numStartElements = 0, int numGrowElements = 25)
+		: mainArray(nullptr)
+		, numElements(0)
+		, numMaxElements(0)
+		, numGrowElements(numGrowElements)
 	{
-		//guardo e verifico este valor
-		this->numGrowElements = numGrowElements;
 		if (this->numGrowElements < 4)
 			this->numGrowElements = 4;
-
-		//limpo isto tudo
-		this->mainArray = nullptr;
-		this->numElements = 0;
-		this->numMaxElements = 0;
 
 		//se tiver alguma coisa para allocar imediatamente
 		if (numStartElements > 0)
@@ -468,18 +425,29 @@ public:
 		}
 	}
 
+	Array(Array<HorseRadish::hChar> &&a)
+		: mainArray(a.mainArray)
+		, numElements(a.numElements)
+		, numMaxElements(a.numMaxElements)
+		, numGrowElements(a.numGrowElements)
+	{
+		a.mainArray = nullptr;
+		a.numElements = a.numMaxElements = a.numGrowElements = 0;
+	}
+
 	~Array()
 	{
-		//apago a memória usada
 		if (this->mainArray != nullptr)
 			free(this->mainArray);
 
-		//limpo tudo o resto
 		this->mainArray = nullptr;
-		this->numElements = 0;
-		this->numMaxElements = 0;
-		this->numGrowElements = 0;
+		this->numElements = this->numMaxElements = this->numGrowElements = 0;
 	}
+
+	Array(Array<HorseRadish::hChar> &a) = delete;
+	Array(const Array<HorseRadish::hChar> &a) = delete;
+
+	Array<HorseRadish::hChar>& operator =(const Array<HorseRadish::hChar>&) = delete;
 
 	bool SetCapacity(unsigned int numElements)
 	{
@@ -621,16 +589,13 @@ class Array<unsigned char>
 
 public:
 	Array(int numStartElements = 0, int numGrowElements = 25)
+		: mainArray(nullptr)
+		, numElements(0)
+		, numMaxElements(0)
+		, numGrowElements(numGrowElements)
 	{
-		//guardo e verifico este valor
-		this->numGrowElements = numGrowElements;
 		if (this->numGrowElements < 4)
 			this->numGrowElements = 4;
-
-		//limpo isto tudo
-		this->mainArray = nullptr;
-		this->numElements = 0;
-		this->numMaxElements = 0;
 
 		//se tiver alguma coisa para allocar imediatamente
 		if (numStartElements > 0)
@@ -645,18 +610,29 @@ public:
 		}
 	}
 
+	Array(Array<unsigned char> &&a)
+		: mainArray(a.mainArray)
+		, numElements(a.numElements)
+		, numMaxElements(a.numMaxElements)
+		, numGrowElements(a.numGrowElements)
+	{
+		a.mainArray = nullptr;
+		a.numElements = a.numMaxElements = a.numGrowElements = 0;
+	}
+
 	~Array()
 	{
-		//apago a memória usada
 		if (this->mainArray != nullptr)
 			free(this->mainArray);
 
-		//limpo tudo o resto
 		this->mainArray = nullptr;
-		this->numElements = 0;
-		this->numMaxElements = 0;
-		this->numGrowElements = 0;
+		this->numElements = this->numMaxElements = this->numGrowElements = 0;
 	}
+
+	Array(Array<unsigned char> &a) = delete;
+	Array(const Array<unsigned char> &a) = delete;
+
+	Array<unsigned char>& operator =(const Array<unsigned char>&) = delete;
 
 	bool SetCapacity(unsigned int numElements)
 	{
@@ -798,16 +774,13 @@ class Array<T*>
 
 public:
 	Array(int numStartElements = 0, int numGrowElements = 20)
+		: mainArray(nullptr)
+		, numElements(0)
+		, numMaxElements(0)
+		, numGrowElements(numGrowElements)
 	{
-		//guardo e verifico este valor
-		this->numGrowElements = numGrowElements;
 		if (this->numGrowElements < 10)
 			this->numGrowElements = 10;
-
-		//limpo isto tudo
-		this->mainArray = nullptr;
-		this->numElements = 0;
-		this->numMaxElements = 0;
 
 		//se tiver alguma coisa para allocar imediatamente
 		if (numStartElements > 0)
@@ -822,18 +795,29 @@ public:
 		}
 	}
 
+	Array(Array<T*> &&a)
+		: mainArray(a.mainArray)
+		, numElements(a.numElements)
+		, numMaxElements(a.numMaxElements)
+		, numGrowElements(a.numGrowElements)
+	{
+		a.mainArray = nullptr;
+		a.numElements = a.numMaxElements = a.numGrowElements = 0;
+	}
+
 	~Array()
 	{
-		//apago a memória usada
 		if (this->mainArray != nullptr)
 			free(this->mainArray);
 
-		//limpo tudo o resto
 		this->mainArray = nullptr;
-		this->numElements = 0;
-		this->numMaxElements = 0;
-		this->numGrowElements = 0;
+		this->numElements = this->numMaxElements = this->numGrowElements = 0;
 	}
+
+	Array(Array<T*> &a) = delete;
+	Array(const Array<T*> &a) = delete;
+
+	Array<T*>& operator =(const Array<T*>&) = delete;
 
 	bool SetCapacity(unsigned int numElements)
 	{
@@ -983,57 +967,55 @@ class Pool
 
 public:
 	Pool(unsigned int poolMinElements)
+		: pools(nullptr)
+		, curPool(nullptr)
+		, curAllocEnd(nullptr)
+		, curAlloc(nullptr)
+		, numPools(0)
+		, numAllocs(0)
+		, numPoolElements(poolMinElements)
 	{
-		//limpo tudo
-		this->pools = nullptr;
-		this->curPool = this->curAllocEnd = this->curAlloc = nullptr;
-		this->numPools = this->numAllocs = 0;
-		this->numPoolElements = poolMinElements;
-
-		//quero pelo menos um pool
 		this->pools = (void**)malloc(sizeof(void*));
 		if (this->pools == nullptr)
 			return;
 
-		//já tenho um pool
 		this->numPools = 1;
 		this->pools[0] = malloc(sizeof(T) * this->numPoolElements);
 		if (this->pools[0] == nullptr)
 			return;
 
-		//limpo os dados
 		memset(this->pools[0], 0, sizeof(T) * this->numPoolElements);
 
-		//deu tudo bem, arranjo só os ponteiros
 		this->curPool = this->curAlloc = this->pools[0];
 		this->curAllocEnd = ((unsigned char*)this->curPool) + (sizeof(T) * this->numPoolElements);
 	}
+
 	~Pool()
 	{
-		//limpo cada memória allocada a cada pool
 		while(this->numPools)
 		{
 			this->numPools--;
 			free(this->pools[this->numPools]);
 		}
 
-		//limpo a lista de poools
 		if (this->pools)
 			free(pools);
 
-		//limpo todas as variáveis
 		this->pools = nullptr;
 		this->curPool = this->curAllocEnd = this->curAlloc = nullptr;
 		this->numPools = this->numAllocs = 0;
 	}
 
+	Pool(Pool<T> &a) = delete;
+	Pool(const Pool<T> &a) = delete;
+
+	Pool<T>& operator =(const Pool<T>&) = delete;
+
 	HFUNC_RESTRICT T* Alloc()
 	{
-		//se já acabou, tenho de arranjar mais pools
 		if ( (this->curAlloc >= this->curAllocEnd) && (addNewPool() == false))
 			return nullptr;
 
-		//basta devolver
 		this->numAllocs++;
 		this->curAlloc = ((unsigned char*)this->curAlloc) + sizeof(T);
 		return ((T*)(((unsigned char*)this->curAlloc) - sizeof(T)));
@@ -1041,14 +1023,12 @@ public:
 
 	void Clear()
 	{
-		//apago tudo menos um
 		while(this->numPools > 1)
 		{
 			this->numPools--;
 			free(this->pools[this->numPools]);
 		}
 
-		//arranjo os ponteiros e alguns valores
 		this->curPool = this->curAlloc = this->pools[0];
 		this->curAllocEnd = ((unsigned char*)this->curPool) + (sizeof(T) * this->numPoolElements);
 		this->numPools = 1;
@@ -1147,17 +1127,22 @@ private:
 
 public:
 	Queue()
+		: count(0)
+		, first(nullptr)
+		, last(nullptr)
+		, curr(nullptr)
 	{
-		//limpo tudo
-		this->count = 0;
-		this->first = this->last = this->curr = nullptr;
 	}
 
 	~Queue()
 	{
-		//liberto tudo
 		Clear();
 	}
+
+	Queue(Queue<T> &a) = delete;
+	Queue(const Queue<T> &a) = delete;
+
+	Queue<T>& operator =(const Queue<T>&) = delete;
 
 	unsigned int GetCount() const { return this->count; }
 

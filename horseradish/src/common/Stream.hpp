@@ -110,6 +110,7 @@ public:
 	int Seek(const int offset, const SeekOrigin seekOrigin);
 
 	static void* ReadEntireFile(const HorseRadish::hChar * const filePath, int &fileSize);
+	static HorseRadish::String ReadEntireFileAsString(const HorseRadish::hChar * const filePath);
 	static bool StreamDump(Stream* stream, const HorseRadish::hChar * const filePath);
 };
 

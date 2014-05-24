@@ -67,7 +67,6 @@ using namespace HorseRadish::Console;
 //§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§
 //§§§§§§   -= Todas as variáveis globais =-   §§§§§
 //§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§
-static
 struct EDITOR_PARAMETERS{
 	unsigned int editorWinW, editorWinH;
 	HWND editorWinHandle;
@@ -100,7 +99,7 @@ static Console *gbMainConsole;
 void renderThread(void *threadData);
 void editorProcessMemory();
 void processWindowsKeyUp(WPARAM wParam);
-void writeSystemInfo();
+void writeSystemInfo(Console &console);
 void systemExit(const int exitCause);
 void parseAppConfFile(const HorseRadish::IO::Path &filePath);
 LRESULT CALLBACK windowsMessages(HWND hWnd, UINT Message, WPARAM wParam, LPARAM lParam);
@@ -109,115 +108,115 @@ LRESULT CALLBACK windowsMessages(HWND hWnd, UINT Message, WPARAM wParam, LPARAM 
 //§§§§§§   -= As funções de callback para os comandos e variáveis da consola =-	§§§§§
 //§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§
 static
-int CALLBACK consoleCallbackCommands(const unsigned int cmdID, const unsigned int numParam, const char **param)
+void consoleCallbackCommands(Console &console, const unsigned int cmdID, const unsigned int numParam, const char **param)
 {
 	//*****
 	//com_createVar
-	if (cmdID==1)
-	{		
-		return 0;
+	if (cmdID == 1)
+	{
+		return;
 	}
 
 	//*****
 	//com_execCfg
-	if (cmdID==2)
+	if (cmdID == 2)
 	{
 		//tenho de ter 1 argumentos (o nome do ficheiro que devo ler)
-		if (numParam!=2)
+		if (numParam != 2)
 		{
-			gbMainConsole->LogError("Error in arguments: com_execCfg <file to read>");
-			return 0;
+			console.LogError("Error in arguments: com_execCfg <file to read>");
+			return;
 		}
 
 		//faço parse e prontos
 		parseAppConfFile(HorseRadish::IO::Path(param[1]));
-		return 0;
+		return;
 	}
 
 	//*****
 	//com_unBind
-	if (cmdID==3)
+	if (cmdID == 3)
 	{
-		return 0;
+		return;
 	}
 
 	//*****
 	//com_unBindAll
-	if (cmdID==4)
+	if (cmdID == 4)
 	{
-		gbMainConsole->BindClear();
-		return 0;
+		console.BindClear();
+		return;
 	}
 
 	//*****
 	//com_list
-	if (cmdID==5)
+	if (cmdID == 5)
 	{
-		gbMainConsole->PrintCommands(false);
-		gbMainConsole->PrintVars(false);
-		return 0;
+		console.PrintCommands(false);
+		console.PrintVars(false);
+		return;
 	}
 
 	//*****
 	//com_listBind
-	if (cmdID==6)
+	if (cmdID == 6)
 	{
-		gbMainConsole->PrintBinds();
-		return 0;
+		console.PrintBinds();
+		return;
 	}
 
 	//*****
 	//com_echoOff
-	if (cmdID==7)
+	if (cmdID == 7)
 	{
-		gbMainConsole->SetEcho(false,true);
-		return 0;
+		console.SetEcho(false, true);
+		return;
 	}
 
 	//*****
 	//com_echoOn
-	if (cmdID==8)
+	if (cmdID == 8)
 	{
-		gbMainConsole->SetEcho(true,true);
-		return 0;
+		console.SetEcho(true, true);
+		return;
 	}
 
 	//*****
 	//com_console
-	/*if (cmdID==9)
+	/*if (cmdID == 9)
 	{
 		if (numParam==1)
-			{
+		{
 			if (GUIVisivel(CONSOLE_GUI_CONSOLE))
 				GUIConsoleVisible(false);
 			else
 				GUIConsoleVisible(true);
-			return 1;
-			}
+			return;
+		}
 		if (numParam!=2)
-			return -1;
+			return;
 
 		if (!strcmp("open",param[1]))
-			{
+		{
 			GUIConsoleVisible(true);
-			return 1;
-			}
+			return;
+		}
 		if (!strcmp("close",param[1]))
-			{
+		{
 			GUIConsoleVisible(false);
-			return 1;
-			}
-		return -1;
+			return;
+		}
+		return;
 	}*/
 
 	//*****
 	//com_log
-	if (cmdID==10)
+	if (cmdID == 10)
 	{
-		if (numParam!=2)
-			return -1;
-		gbMainConsole->Log(param[1]);
-		return 1;
+		if (numParam != 2)
+			return;
+		console.Log(param[1]);
+		return;
 	}
 
 	//*****
@@ -225,515 +224,509 @@ int CALLBACK consoleCallbackCommands(const unsigned int cmdID, const unsigned in
 	/*if (cmdID==11)
 	{
 		if (numParam!=2)
-			return -1;
+			return ;
 		GUISMSAdd(param[1], CONSOLE_SMS_TIME, 1.0f, 1.0f, 1.0f);
-		return 1;
+		return;
 	}*/
 
 	//*****
 	//sys_restart
-	if (cmdID==30)
+	if (cmdID == 30)
 	{
 		systemExit(HR_EXIT_RESTART);
-		return 0;
+		return;
 	}
 
 	//*****
 	//sys_forceCrash
-	if (cmdID==31)
+	if (cmdID == 31)
 	{
 		//provoco um abort e mais nada
 		abort();
-		return 0;
+		return;
 	}
 
 	//*****
 	//ed_begin
-	if (cmdID==40)
+	if (cmdID == 40)
 	{
 		systemExit(HR_EXIT_RESTART_EDITOR);
-		return 0;
+		return;
 	}
 
 	//*****
 	//ed_exportHRF
-	if (cmdID==41)
+	if (cmdID == 41)
 	{
 		//tenho de ter pelo menos 1 argumento (onde salvar o ficheiro)
-		if (numParam<2)
+		if (numParam < 2)
 		{
-			gbMainConsole->LogError("Error in arguments: ed_exportHRF <path to file>");
-			return 0;
+			console.LogError("Error in arguments: ed_exportHRF <path to file>");
+			return;
 		}
 
 		//basta gravar para o sitio indicado
 		/*if (RenderExportHRF(renderData, param[1]) == 0)
-			gbMainConsole->LogInfo(SStringUTF8("Scene exported to: \"%s\"", param[1]));
+			console.LogInfo(SStringUTF8("Scene exported to: \"%s\"", param[1]));
 		else
-			gbMainConsole->LogError("error exporting scene.");*/
-		return 0;
+			console.LogError("error exporting scene.");*/
+		return;
 	}
 
 	//*****
 	//quit
-	if (cmdID==50)
+	if (cmdID == 50)
 	{
 		systemExit(HR_EXIT_QUIT);
-		return 0;
+		return;
 	}
 
 	//*****
 	//help
-	if (cmdID==51)
+	if (cmdID == 51)
 	{
 		//se não tenho argumentos, imprimo a ajuda da própria consola
-		if (numParam==1)
+		if (numParam == 1)
 		{
-			gbMainConsole->PrintHelp(nullptr);
-			return 0;
+			console.PrintHelp(nullptr);
+			return;
 		}
 
 		//se tenho um argumento, imprimo ajuda sobre ele
-		if (numParam==2)
+		if (numParam == 2)
 		{
-			gbMainConsole->PrintHelp(param[1]);
-			return 0;
+			console.PrintHelp(param[1]);
+			return;
 		}
 
 		//chegando aqui é barraca
-		gbMainConsole->LogError("Error in arguments: help [\"command\" | \"variable\"]");
-		return 0;
+		console.LogError("Error in arguments: help [\"command\" | \"variable\"]");
+		return;
 	}
-		
+
 	//*****
 	//bind
-	if (cmdID==52)
-		{
+	if (cmdID == 52)
+	{
 		//tenho de ter 2 argumentos
-		if (numParam!=3)
+		if (numParam != 3)
 		{
-			gbMainConsole->LogError("Error in arguments: bind <key> <\"command\">");
-			return 0;
+			console.LogError("Error in arguments: bind <key> <\"command\">");
+			return;
 		}
-		
+
 		//se for uma letra
-		if (param[1][0]>='A' && param[1][0]<='Z' && param[1][1]=='\0'){
-			gbMainConsole->RegisterBind(param[1][0]-'A'+SCONSOLE_KEY_A,0,param[2]);
-			return 0;
+		if (param[1][0] >= 'A' && param[1][0] <= 'Z' && param[1][1] == '\0'){
+			console.RegisterBind(param[1][0] - 'A' + SCONSOLE_KEY_A, 0, param[2]);
+			return;
 		}
 		//se for um numero
-		if (param[1][0]>='0' && param[1][0]<='9' && param[1][1]=='\0'){
-			gbMainConsole->RegisterBind(param[1][0]-'0'+SCONSOLE_KEY_0,0,param[2]);
-			return 0;
+		if (param[1][0] >= '0' && param[1][0] <= '9' && param[1][1] == '\0'){
+			console.RegisterBind(param[1][0] - '0' + SCONSOLE_KEY_0, 0, param[2]);
+			return;
 		}
-		//se for um F
-		if (param[1][0]=='F' && param[1][1]>='1' && (param[1][2]=='\0' || (param[1][2]>='0' && param[1][2]<='2' && param[1][3]=='\0'))){
-			gbMainConsole->RegisterBind(atoi(param[1]+1)+SCONSOLE_KEY_F1-1,0,param[2]);
-			return 0;
+		//se for um F*
+		if (param[1][0] == 'F' && param[1][1] >= '1' && (param[1][2] == '\0' || (param[1][2] >= '0' && param[1][2] <= '2' && param[1][3] == '\0'))){
+			console.RegisterBind(atoi(param[1] + 1) + SCONSOLE_KEY_F1 - 1, 0, param[2]);
+			return;
 		}
 		//agora vejo os outros casos todos
-		if (strcmp(param[1],"ESCAPE")==0){
-			gbMainConsole->RegisterBind(SCONSOLE_KEY_ESCAPE,0,param[2]);
-			return 0;
+		if (strcmp(param[1], "ESCAPE") == 0){
+			console.RegisterBind(SCONSOLE_KEY_ESCAPE, 0, param[2]);
+			return;
 		}
-		if (strcmp(param[1],"ENTER")==0){
-			gbMainConsole->RegisterBind(SCONSOLE_KEY_ENTER,0,param[2]);
-			return 0;
+		if (strcmp(param[1], "ENTER") == 0){
+			console.RegisterBind(SCONSOLE_KEY_ENTER, 0, param[2]);
+			return;
 		}
-		if (strcmp(param[1],"SPACE")==0){
-			gbMainConsole->RegisterBind(SCONSOLE_KEY_SPACE,0,param[2]);
-			return 0;
+		if (strcmp(param[1], "SPACE") == 0){
+			console.RegisterBind(SCONSOLE_KEY_SPACE, 0, param[2]);
+			return;
 		}
-		if (strcmp(param[1],"TAB")==0){
-			gbMainConsole->RegisterBind(SCONSOLE_KEY_TAB,0,param[2]);
-			return 0;
+		if (strcmp(param[1], "TAB") == 0){
+			console.RegisterBind(SCONSOLE_KEY_TAB, 0, param[2]);
+			return;
 		}
-		if (strcmp(param[1],"PAUSE")==0){
-			gbMainConsole->RegisterBind(SCONSOLE_KEY_PAUSE,0,param[2]);
-			return 0;
+		if (strcmp(param[1], "PAUSE") == 0){
+			console.RegisterBind(SCONSOLE_KEY_PAUSE, 0, param[2]);
+			return;
 		}
-		if (strcmp(param[1],"UP")==0){
-			gbMainConsole->RegisterBind(SCONSOLE_KEY_UP,0,param[2]);
-			return 0;
+		if (strcmp(param[1], "UP") == 0){
+			console.RegisterBind(SCONSOLE_KEY_UP, 0, param[2]);
+			return;
 		}
-		if (strcmp(param[1],"DOWN")==0){
-			gbMainConsole->RegisterBind(SCONSOLE_KEY_DOWN,0,param[2]);
-			return 0;
+		if (strcmp(param[1], "DOWN") == 0){
+			console.RegisterBind(SCONSOLE_KEY_DOWN, 0, param[2]);
+			return;
 		}
-		if (strcmp(param[1],"LEFT")==0){
-			gbMainConsole->RegisterBind(SCONSOLE_KEY_LEFT,0,param[2]);
-			return 0;
+		if (strcmp(param[1], "LEFT") == 0){
+			console.RegisterBind(SCONSOLE_KEY_LEFT, 0, param[2]);
+			return;
 		}
-		if (strcmp(param[1],"RIGHT")==0){
-			gbMainConsole->RegisterBind(SCONSOLE_KEY_RIGHT,0,param[2]);
-			return 0;
+		if (strcmp(param[1], "RIGHT") == 0){
+			console.RegisterBind(SCONSOLE_KEY_RIGHT, 0, param[2]);
+			return;
 		}
 
 		//chegando aqui, deu barraca e eu nao conheco o bind
-		gbMainConsole->LogError("Error in arguments: bind key unrecognized.");
-		return 0;
+		console.LogError("Error in arguments: bind key unrecognized.");
+		return;
 	}
 }
 
 static
-int CALLBACK consoleCallbackVariables(const unsigned int varID, const int type, const void *curVal, const void *oldVal)
+void consoleCallbackVariables(Console &console, const unsigned int varID, const Console::VarType type, void * const curVal, const void * const oldVal)
 {
 	//r_varAuxF1
 	/*if (varID == 20)
 	{
-		HorseRadish::String dadosMostrar;
+	HorseRadish::String dadosMostrar;
 
-		dadosMostrar.SetPrintf(HorseRadish::String::UTF8, "r_varAuxF1: %f", *((const float*)curVal));
-		GUISMSAdd((const char*)dadosMostrar, CONSOLE_SMS_TIME, 1.0f,0.0f,0.0f);
-		return 0;
+	dadosMostrar.SetPrintf(HorseRadish::String::UTF8, "r_varAuxF1: %f", *((const float*)curVal));
+	GUISMSAdd((const char*)dadosMostrar, CONSOLE_SMS_TIME, 1.0f,0.0f,0.0f);
+	return 0;
 	}
 
 	//r_varAuxF2
 	if (varID == 21)
 	{
-		HorseRadish::String dadosMostrar;
+	HorseRadish::String dadosMostrar;
 
-		dadosMostrar.SetPrintf(HorseRadish::String::UTF8, "r_varAuxF2: %f", *((const float*)curVal));
-		GUISMSAdd((const char*)dadosMostrar, CONSOLE_SMS_TIME, 1.0f,0.0f,0.0f);
-		return 0;
+	dadosMostrar.SetPrintf(HorseRadish::String::UTF8, "r_varAuxF2: %f", *((const float*)curVal));
+	GUISMSAdd((const char*)dadosMostrar, CONSOLE_SMS_TIME, 1.0f,0.0f,0.0f);
+	return 0;
 	}*/
 
 	//sys_consoleTextFont
 	if (varID == 31)
 	{
-		const char* valorTexto;
-		valorTexto = (const char*)curVal;
-		if ((valorTexto == nullptr) || (*valorTexto == '\0'))
-			return -1;
-		return 0;
+		auto valorTexto = static_cast<const char*>(curVal);
+		return;
 	}
 
 	//sys_consoleTextSize
 	if (varID == 32)
 	{
-		*((int*)curVal) = HorseRadish::Math::iClamp( *((const int*)curVal), 3, 50);
-		return 0;
+		*((int*)curVal) = HorseRadish::Math::iClamp(*static_cast<const int*>(curVal), 3, 50);
+		return;
 	}
 
 	//*****
 	//r_winSwapInterval
 	/*if (varID==1)
 	{
-		int interval;
-		interval = *((int*)curVal);
+	int interval;
+	interval = *((int*)curVal);
 
-		//tenho de ter isto, senão nada feito
-		if (interval<0 || interval>10)
-			return -1;
+	//tenho de ter isto, senão nada feito
+	if (interval<0 || interval>10)
+	return -1;
 
-		//basta meter o valor e já tá
-		if (HorseRadish::OpenGL::Windows::wglSwapIntervalEXT != nullptr)
-			HorseRadish::OpenGL::Windows::wglSwapIntervalEXT(interval);
-		return 0;
+	//basta meter o valor e já tá
+	if (HorseRadish::OpenGL::Windows::wglSwapIntervalEXT != nullptr)
+	HorseRadish::OpenGL::Windows::wglSwapIntervalEXT(interval);
+	return 0;
 	}*/
 
 	//*****
 	//r_winFOV
 	/*if (varID==5)
 	{
-		float fov;
-		fov = *((float*)curVal);
+	float fov;
+	fov = *((float*)curVal);
 
-		//tenho de ter isto, senão nada feito
-		if (fov<=0.0f || fov>=180.0f)
-			return -1;
+	//tenho de ter isto, senão nada feito
+	if (fov<=0.0f || fov>=180.0f)
+	return -1;
 
-		//basta meter o valor e já tá
-		if (rendererData)
-			rendererData->viewport.setFOV(fov);
-		return 0;
+	//basta meter o valor e já tá
+	if (rendererData)
+	rendererData->viewport.setFOV(fov);
+	return 0;
 	}*/
 
 	//*****
 	//r_drawMode
 	/*if (varID==40)
 	{
-		int drawMode;
-		
-		//tiro o valor e verifico o intervalo onde está
-		drawMode = *((int*)curVal);
-		if (drawMode<0 || drawMode>7)
-			return -1;
+	int drawMode;
 
-		//só escrevo alguma coisa se realmente mudei de modo
-		if (drawMode != *((int*)oldVal))
-		{
-			//de acordo com o valor que fica
-			switch(drawMode)
-			{
-				case 7: GUISMSAdd("Modo de desenho: produzem sombras",SCONSOLE_SMS_TIME);		break;
-				case 6: GUISMSAdd("Modo de desenho: sólido",SCONSOLE_SMS_TIME);		break;
-				case 5: GUISMSAdd("Modo de desenho: ambiente",SCONSOLE_SMS_TIME);	break;
-				case 4: GUISMSAdd("Modo de desenho: bump",SCONSOLE_SMS_TIME);		break;
-				case 3: GUISMSAdd("Modo de desenho: especular",SCONSOLE_SMS_TIME);	break;
-				case 2: GUISMSAdd("Modo de desenho: normais",SCONSOLE_SMS_TIME);	break;
-				case 1: GUISMSAdd("Modo de desenho: diffuso",SCONSOLE_SMS_TIME);	break;
+	//tiro o valor e verifico o intervalo onde está
+	drawMode = *((int*)curVal);
+	if (drawMode<0 || drawMode>7)
+	return -1;
 
-				default:
-				case 0: GUISMSAdd("Modo de desenho: completo",SCONSOLE_SMS_TIME);	break;
-			}
-		}
+	//só escrevo alguma coisa se realmente mudei de modo
+	if (drawMode != *((int*)oldVal))
+	{
+	//de acordo com o valor que fica
+	switch(drawMode)
+	{
+	case 7: GUISMSAdd("Modo de desenho: produzem sombras",SCONSOLE_SMS_TIME);		break;
+	case 6: GUISMSAdd("Modo de desenho: sólido",SCONSOLE_SMS_TIME);		break;
+	case 5: GUISMSAdd("Modo de desenho: ambiente",SCONSOLE_SMS_TIME);	break;
+	case 4: GUISMSAdd("Modo de desenho: bump",SCONSOLE_SMS_TIME);		break;
+	case 3: GUISMSAdd("Modo de desenho: especular",SCONSOLE_SMS_TIME);	break;
+	case 2: GUISMSAdd("Modo de desenho: normais",SCONSOLE_SMS_TIME);	break;
+	case 1: GUISMSAdd("Modo de desenho: diffuso",SCONSOLE_SMS_TIME);	break;
 
-		//tá tudo bem
-		return 0;
+	default:
+	case 0: GUISMSAdd("Modo de desenho: completo",SCONSOLE_SMS_TIME);	break;
+	}
+	}
+
+	//tá tudo bem
+	return 0;
 	}
 
 	//*****
 	//r_postProcess
 	if (varID==41)
 	{
-		ENGINE_PPROCESS_MATERIAL *pprocess;
+	ENGINE_PPROCESS_MATERIAL *pprocess;
 
-		//tiro o postprocess a usar e se for igual a que já cá tá (pode incluir nullptr), não faço nada
-		pprocess = PProcessFind(libraryPProcess,libraryNumPProcess,(const char*)curVal);
-		if (rendererData->opengl.pprocessMaterial==pprocess)
-			return 0;
+	//tiro o postprocess a usar e se for igual a que já cá tá (pode incluir nullptr), não faço nada
+	pprocess = PProcessFind(libraryPProcess,libraryNumPProcess,(const char*)curVal);
+	if (rendererData->opengl.pprocessMaterial==pprocess)
+	return 0;
 
-		//se tiver algo anterior, limpo
-		if (rendererData->opengl.pprocessMaterial)
-			PProcessUnLoad(rendererData->opengl.pprocessMaterial);
+	//se tiver algo anterior, limpo
+	if (rendererData->opengl.pprocessMaterial)
+	PProcessUnLoad(rendererData->opengl.pprocessMaterial);
 
-		//se tiver algo escolhido, tento carregar
-		if ( (pprocess!=nullptr) && (PProcessLoad(pprocess)==false))
-		{
-			PProcessUnLoad(pprocess);
-			pprocess=nullptr;
-		}
+	//se tiver algo escolhido, tento carregar
+	if ( (pprocess!=nullptr) && (PProcessLoad(pprocess)==false))
+	{
+	PProcessUnLoad(pprocess);
+	pprocess=nullptr;
+	}
 
-		//coloco o novo e mando o renderer refazer algumas coisas
-		rendererData->opengl.pprocessMaterial=pprocess;
-		RendererUpdatePostProcess(rendererData);
-		return 0;
+	//coloco o novo e mando o renderer refazer algumas coisas
+	rendererData->opengl.pprocessMaterial=pprocess;
+	RendererUpdatePostProcess(rendererData);
+	return 0;
 	}
 
 	//*****
 	//tex_diffuseFilter
 	if (varID==50)
 	{
-		SString filterName;
-		
-		//se o nome do filtro for válido
-		filterName=(const char*)curVal;
-		if (filterName=="none" || filterName=="linear" || filterName=="bilinear" || filterName=="trilinear")
-		{
-			//passo por cada material e mudo os parametros
-			if (rendererData)
-			{
-				for(int i=0; i<rendererData->numMaterials; i++)
-					MaterialSetTexParam(rendererData->materials+i);
-			}
-			return 0;
-		}
-	
-		//chegando aqui o valor é inválido
-		return -1;
+	SString filterName;
+
+	//se o nome do filtro for válido
+	filterName=(const char*)curVal;
+	if (filterName=="none" || filterName=="linear" || filterName=="bilinear" || filterName=="trilinear")
+	{
+	//passo por cada material e mudo os parametros
+	if (rendererData)
+	{
+	for(int i=0; i<rendererData->numMaterials; i++)
+	MaterialSetTexParam(rendererData->materials+i);
+	}
+	return 0;
+	}
+
+	//chegando aqui o valor é inválido
+	return -1;
 	}
 
 	//*****
 	//tex_diffuseAnisotropic
 	if (varID==51)
 	{
-		float anisoVal;
-		
-		//tiro o valor e não aceito valores inferiores a 1.0f
-		anisoVal = *((float*)curVal);
-		if (anisoVal<1.0f)
-			return -1;
+	float anisoVal;
 
-		//tá tudo bem, logo passo por cada material, mudo os parametros e posso sair
-		if (rendererData)
-		{
-			for(int i=0; i<rendererData->numMaterials; i++)
-				MaterialSetTexParam(rendererData->materials+i);
-		}
-		return 0;
-	}*/
+	//tiro o valor e não aceito valores inferiores a 1.0f
+	anisoVal = *((float*)curVal);
+	if (anisoVal<1.0f)
+	return -1;
 
-	//tudo normal
+	//tá tudo bem, logo passo por cada material, mudo os parametros e posso sair
+	if (rendererData)
+	{
+	for(int i=0; i<rendererData->numMaterials; i++)
+	MaterialSetTexParam(rendererData->materials+i);
+	}
 	return 0;
+	}*/
 }
 
 static
-void registerConsoleCommands()
+void registerConsoleCommands(Console &console)
 {
-	gbMainConsole->RegisterCommand(1,"r_reloadMaterial","Faz reload do material especificado", nullptr);
-	gbMainConsole->RegisterCommand(4,"r_reloadScene","Faz reload da cena actual carregada", nullptr);
-	gbMainConsole->RegisterCommand(5,"r_printMaterial","Mostra a informação acerca do material especificado", nullptr);
-	gbMainConsole->RegisterCommand(6,"r_printLight","Mostra a informação acerca da luz especificada", nullptr);
-	gbMainConsole->RegisterCommand(7,"r_showInfo","Mostra ou adiciona variáveis de informação", nullptr);
-	
-	gbMainConsole->RegisterCommand(20,"r_camSetPos","Indica a nova posição da camera", nullptr);
-	gbMainConsole->RegisterCommand(21,"r_camSetDir","Indica a nova direcção da camera", nullptr);
-	gbMainConsole->RegisterCommand(22,"r_camLoad","Carrega uma camera cinemática", nullptr);
-	gbMainConsole->RegisterCommand(23,"r_camStop","Pára uma camera cinemática (caso exista)", nullptr);
-	gbMainConsole->RegisterCommand(24,"r_camInfo","Imprime dados relativos a uma camera", nullptr);
-	
-	gbMainConsole->RegisterCommand(1,"com_createVar","Cria uma nova variável na consola",consoleCallbackCommands);
-	gbMainConsole->RegisterCommand(2,"com_execCfg","Executa um ficheiro de configuração",consoleCallbackCommands);
-	gbMainConsole->RegisterCommand(3,"com_unBind","Termina uma ligação de uma tecla a um comando",consoleCallbackCommands);
-	gbMainConsole->RegisterCommand(4,"com_unBindAll","Termina todas as ligações de uma tecla a um comando",consoleCallbackCommands);
-	gbMainConsole->RegisterCommand(5,"com_list","Forneçe uma lista de todos os comandos e variáveis disponiveis",consoleCallbackCommands);
-	gbMainConsole->RegisterCommand(6,"com_listBind","Fornece uma lista de todos os binds disponiveis",consoleCallbackCommands);
-	gbMainConsole->RegisterCommand(7,"com_echoOff","Comandos deixam de fazer echo na consola (excepto erros)",consoleCallbackCommands);
-	gbMainConsole->RegisterCommand(8,"com_echoOn","Comandos tornam a fazer echo na consola",consoleCallbackCommands);
-	gbMainConsole->RegisterCommand(9,"com_console","Abrir/fechar a consola",consoleCallbackCommands);
-	gbMainConsole->RegisterCommand(10,"com_log","Sends text to the output of the console.",consoleCallbackCommands);
-	gbMainConsole->RegisterCommand(11,"com_sms","Sends a sms to the screen.",consoleCallbackCommands);
+	console.RegisterCommand(1, "r_reloadMaterial", "Faz reload do material especificado", nullptr);
+	console.RegisterCommand(4, "r_reloadScene", "Faz reload da cena actual carregada", nullptr);
+	console.RegisterCommand(5, "r_printMaterial", "Mostra a informação acerca do material especificado", nullptr);
+	console.RegisterCommand(6, "r_printLight", "Mostra a informação acerca da luz especificada", nullptr);
+	console.RegisterCommand(7, "r_showInfo", "Mostra ou adiciona variáveis de informação", nullptr);
 
-	gbMainConsole->RegisterCommand(30,"sys_restart","Reinicia toda a aplicação", consoleCallbackCommands);
-	gbMainConsole->RegisterCommand(31,"sys_forceCrash","Força a aplicação a crashar imediatamente", consoleCallbackCommands);
-	
-	gbMainConsole->RegisterCommand(40,"ed_begin","Calls the editor.", consoleCallbackCommands);
-	gbMainConsole->RegisterCommand(41,"ed_exportHRF","Exports the entire scene contents to a HRF file",consoleCallbackCommands);
-	
-	gbMainConsole->RegisterCommand(50,"quit","Termina a aplicação (fechando tudo normalmente)", consoleCallbackCommands);
-	gbMainConsole->RegisterCommand(51,"help","Displays help information of a command or variable or the help of the console", consoleCallbackCommands);
-	gbMainConsole->RegisterCommand(52,"bind","Cria uma ligação de uma tecla a um comando.", consoleCallbackCommands);
+	console.RegisterCommand(20, "r_camSetPos", "Indica a nova posição da camera", nullptr);
+	console.RegisterCommand(21, "r_camSetDir", "Indica a nova direcção da camera", nullptr);
+	console.RegisterCommand(22, "r_camLoad", "Carrega uma camera cinemática", nullptr);
+	console.RegisterCommand(23, "r_camStop", "Pára uma camera cinemática (caso exista)", nullptr);
+	console.RegisterCommand(24, "r_camInfo", "Imprime dados relativos a uma camera", nullptr);
+
+	console.RegisterCommand(1, "com_createVar", "Cria uma nova variável na consola", consoleCallbackCommands);
+	console.RegisterCommand(2, "com_execCfg", "Executa um ficheiro de configuração", consoleCallbackCommands);
+	console.RegisterCommand(3, "com_unBind", "Termina uma ligação de uma tecla a um comando", consoleCallbackCommands);
+	console.RegisterCommand(4, "com_unBindAll", "Termina todas as ligações de uma tecla a um comando", consoleCallbackCommands);
+	console.RegisterCommand(5, "com_list", "Forneçe uma lista de todos os comandos e variáveis disponiveis", consoleCallbackCommands);
+	console.RegisterCommand(6, "com_listBind", "Fornece uma lista de todos os binds disponiveis", consoleCallbackCommands);
+	console.RegisterCommand(7, "com_echoOff", "Comandos deixam de fazer echo na consola (excepto erros)", consoleCallbackCommands);
+	console.RegisterCommand(8, "com_echoOn", "Comandos tornam a fazer echo na consola", consoleCallbackCommands);
+	console.RegisterCommand(9, "com_console", "Abrir/fechar a consola", consoleCallbackCommands);
+	console.RegisterCommand(10, "com_log", "Sends text to the output of the console.", consoleCallbackCommands);
+	console.RegisterCommand(11, "com_sms", "Sends a sms to the screen.", consoleCallbackCommands);
+
+	console.RegisterCommand(30, "sys_restart", "Reinicia toda a aplicação", consoleCallbackCommands);
+	console.RegisterCommand(31, "sys_forceCrash", "Força a aplicação a crashar imediatamente", consoleCallbackCommands);
+
+	console.RegisterCommand(40, "ed_begin", "Calls the editor.", consoleCallbackCommands);
+	console.RegisterCommand(41, "ed_exportHRF", "Exports the entire scene contents to a HRF file", consoleCallbackCommands);
+
+	console.RegisterCommand(50, "quit", "Termina a aplicação (fechando tudo normalmente)", consoleCallbackCommands);
+	console.RegisterCommand(51, "help", "Displays help information of a command or variable or the help of the console", consoleCallbackCommands);
+	console.RegisterCommand(52, "bind", "Cria uma ligação de uma tecla a um comando.", consoleCallbackCommands);
 }
 
 static
-void registerConsoleVariables()
+void registerConsoleVariables(Console &console)
 {
 	HorseRadish::String stringAux;
 
-	gbMainConsole->RegisterVariable(0,"r_infoMTRIS",Console::Float,"Milhões de triangulos por segundo (por frame)","MTRIS: %.4f",nullptr);
-	gbMainConsole->RegisterVariable(0,"r_infoMVERTS",Console::Float,"Keeps the current million of vertices per frame value.","MVERTS: %.3f",nullptr);
-	gbMainConsole->RegisterVariable(0,"r_infoMaterials",Console::Integer,"Número de materiais usados na última frame","Número de materiais: %d",nullptr);
-	gbMainConsole->RegisterVariable(0,"r_infoTextures",Console::Integer,"Número de texturas diferentes usadas na última frame","Número de texturas: %d",nullptr);
-	gbMainConsole->RegisterVariable(0,"r_infoObjectos",Console::Integer,"Número de objectos usados na última frame","Número de objectos: %d",nullptr);
-	gbMainConsole->RegisterVariable(0,"r_infoLights",Console::Integer,"Número de luzes usadas na última frame","Número de luzes: %d",nullptr);
-	gbMainConsole->RegisterVariable(0,"r_infoPosition",Console::String,"Posição da camera que controla a vista (por frame)","Posição: %s",nullptr);
-	gbMainConsole->RegisterVariable(0,"r_infoGLError",Console::String,"Último erro reportado pelo OpenGL","OpenGL error: %s",nullptr);
-	gbMainConsole->RegisterVariable(0,"r_infoGLDrawElements",Console::Integer,"Número de chamadas a glDrawElements (por frame)","GLDrawElements: %d",nullptr);
-	gbMainConsole->RegisterVariable(0,"r_infoViewDir",Console::String,"Direcção da camera (por frame)","View direction: %s",nullptr);
+	console.RegisterVariable(0, "r_infoMTRIS", Console::VarType::Float, "Milhões de triangulos por segundo (por frame)", "MTRIS: %.4f", nullptr);
+	console.RegisterVariable(0, "r_infoMVERTS", Console::VarType::Float, "Keeps the current million of vertices per frame value.", "MVERTS: %.3f", nullptr);
+	console.RegisterVariable(0, "r_infoMaterials", Console::VarType::Integer, "Número de materiais usados na última frame", "Número de materiais: %d", nullptr);
+	console.RegisterVariable(0, "r_infoTextures", Console::VarType::Integer, "Número de texturas diferentes usadas na última frame", "Número de texturas: %d", nullptr);
+	console.RegisterVariable(0, "r_infoObjectos", Console::VarType::Integer, "Número de objectos usados na última frame", "Número de objectos: %d", nullptr);
+	console.RegisterVariable(0, "r_infoLights", Console::VarType::Integer, "Número de luzes usadas na última frame", "Número de luzes: %d", nullptr);
+	console.RegisterVariable(0, "r_infoPosition", Console::VarType::String, "Posição da camera que controla a vista (por frame)", "Posição: %s", nullptr);
+	console.RegisterVariable(0, "r_infoGLError", Console::VarType::String, "Último erro reportado pelo OpenGL", "OpenGL error: %s", nullptr);
+	console.RegisterVariable(0, "r_infoGLDrawElements", Console::VarType::Integer, "Número de chamadas a glDrawElements (por frame)", "GLDrawElements: %d", nullptr);
+	console.RegisterVariable(0, "r_infoViewDir", Console::VarType::String, "Direcção da camera (por frame)", "View direction: %s", nullptr);
 
-	gbMainConsole->RegisterVariable(0,"r_showTris",Console::Integer,"Mostra os triângulos que compoem a cena",nullptr,nullptr);
-	gbMainConsole->RegisterVariable(0,"r_showBBox",Console::Integer,"Mostra as bounding boxes dos objectos",nullptr,nullptr);
-	gbMainConsole->RegisterVariable(0,"r_showBSphere",Console::Integer,"Mostra as bounding spheres dos objectos",nullptr,nullptr);
-	gbMainConsole->RegisterVariable(0,"r_showSurfInfo",Console::Integer,"Mostra info da superfície que intersecta o rato",nullptr,nullptr);
-	gbMainConsole->RegisterVariable(0,"r_showLightFrustum",Console::Integer,"Mostra os frustums das luzes",nullptr,nullptr);
-	gbMainConsole->RegisterVariable(0,"r_showLightBBox",Console::Integer,"Mostra as bounding box das superfícies para as luzes",nullptr,nullptr);
-	gbMainConsole->RegisterVariable(0,"r_showNormals",Console::Integer,"Mostra as normais de cada objecto",nullptr,nullptr);
-	gbMainConsole->RegisterVariable(0,"r_showOrthoSpace",Console::Integer,"Mostra o espaço ortonormal de cada objecto",nullptr,nullptr);
-	gbMainConsole->RegisterVariable(0,"r_showOverdraw",Console::Integer,"Mostra o overdraw dos passes (vermelho – azul)",nullptr,nullptr);
-	gbMainConsole->RegisterVariable(0,"r_showSkeletons",Console::Integer,"Mostra os esqueletos dos modelos animados",nullptr,nullptr);
-	gbMainConsole->RegisterVariable(0,"r_showCrosshair",Console::Integer,"Mostra a mira do rato",nullptr,nullptr);
-	gbMainConsole->RegisterVariable(0,"r_showColliders",Console::Integer,"Mostra os objectos testados contra colisão",nullptr,nullptr);
-	gbMainConsole->RegisterVariable(0,"r_showTexture",Console::String,"Mostra uma dada textura no canto inferior direito",nullptr,nullptr);
+	console.RegisterVariable(0, "r_showTris", Console::VarType::Integer, "Mostra os triângulos que compoem a cena", nullptr, nullptr);
+	console.RegisterVariable(0, "r_showBBox", Console::VarType::Integer, "Mostra as bounding boxes dos objectos", nullptr, nullptr);
+	console.RegisterVariable(0, "r_showBSphere", Console::VarType::Integer, "Mostra as bounding spheres dos objectos", nullptr, nullptr);
+	console.RegisterVariable(0, "r_showSurfInfo", Console::VarType::Integer, "Mostra info da superfície que intersecta o rato", nullptr, nullptr);
+	console.RegisterVariable(0, "r_showLightFrustum", Console::VarType::Integer, "Mostra os frustums das luzes", nullptr, nullptr);
+	console.RegisterVariable(0, "r_showLightBBox", Console::VarType::Integer, "Mostra as bounding box das superfícies para as luzes", nullptr, nullptr);
+	console.RegisterVariable(0, "r_showNormals", Console::VarType::Integer, "Mostra as normais de cada objecto", nullptr, nullptr);
+	console.RegisterVariable(0, "r_showOrthoSpace", Console::VarType::Integer, "Mostra o espaço ortonormal de cada objecto", nullptr, nullptr);
+	console.RegisterVariable(0, "r_showOverdraw", Console::VarType::Integer, "Mostra o overdraw dos passes (vermelho – azul)", nullptr, nullptr);
+	console.RegisterVariable(0, "r_showSkeletons", Console::VarType::Integer, "Mostra os esqueletos dos modelos animados", nullptr, nullptr);
+	console.RegisterVariable(0, "r_showCrosshair", Console::VarType::Integer, "Mostra a mira do rato", nullptr, nullptr);
+	console.RegisterVariable(0, "r_showColliders", Console::VarType::Integer, "Mostra os objectos testados contra colisão", nullptr, nullptr);
+	console.RegisterVariable(0, "r_showTexture", Console::VarType::String, "Mostra uma dada textura no canto inferior direito", nullptr, nullptr);
 
-	gbMainConsole->RegisterVariable(1,"r_winSwapInterval",Console::Integer,"O valor para o swapinterval",nullptr,consoleCallbackVariables);
-	gbMainConsole->RegisterVariable(2,"r_winWidth",Console::Integer,"O comprimento da janela de visualização",nullptr,consoleCallbackVariables);
-	gbMainConsole->RegisterVariable(3,"r_winHeight",Console::Integer,"A altura da janela de visualização",nullptr,consoleCallbackVariables);
-	gbMainConsole->RegisterVariable(4,"r_winFullscreen",Console::Integer,"Se a janela está ou não fullscreen",nullptr,consoleCallbackVariables);
-	gbMainConsole->RegisterVariable(5,"r_winFOV",Console::Float,"O field of view da janela",nullptr,consoleCallbackVariables);
-	gbMainConsole->RegisterVariable(6,"r_winRefresh",Console::Integer,"O refresh rate quando está em fullscreen",nullptr,consoleCallbackVariables);
-	
-	gbMainConsole->RegisterVariable(0,"r_useVBOIndex",Console::Integer,"Usa ou não VBO's para guardar os indices",nullptr,nullptr);
-	gbMainConsole->RegisterVariable(0,"r_useLightScissor",Console::Integer,"Usa ou não scissor test para as luzes",nullptr,nullptr);
-	gbMainConsole->RegisterVariable(0,"r_useParallax",Console::Integer,"Usa ou não o efeito de parallax (global)",nullptr,nullptr);
-	gbMainConsole->RegisterVariable(0,"r_useShadows",Console::Integer,"Usa ou não sombras (global)",nullptr,nullptr);
-	gbMainConsole->RegisterVariable(0,"r_useAmbient",Console::Integer,"Faz ou não o passe ambiente (global)",nullptr,nullptr);
-	gbMainConsole->RegisterVariable(0,"r_useGlow",Console::Integer,"Liga ou não o uso de glare / bloom na cena",nullptr,nullptr);
-		
-	gbMainConsole->RegisterVariable(0,"r_glDriver",Console::String,"Qual o driver de OpenGL a usar",nullptr,nullptr);
-	gbMainConsole->RegisterVariable(0,"r_glDebug",Console::Integer,"Indica se é ou não para colocar o OpenGL em modo de debug",nullptr,nullptr);
-	gbMainConsole->RegisterVariable(0,"r_orthoSpaceScale",Console::Float,"A escala a usar para mostrar normais, tangentes e binormais",nullptr,nullptr);
-	gbMainConsole->RegisterVariable(0,"r_filterShadows",Console::Integer,"Se filtra ou não as sombras",nullptr,nullptr);
-	gbMainConsole->RegisterVariable(0,"r_drawInfinites",Console::Integer,"Se deverá ou não desenhar infinitos",nullptr,nullptr);
-	gbMainConsole->RegisterVariable(0,"r_drawNoLighting",Console::Integer,"Se deverá ou não desenhar materiais não iluminados",nullptr,nullptr);
-    gbMainConsole->RegisterVariable(40,"r_drawMode",Console::Integer,"Que tipo de desenho deverá ser feito",nullptr, consoleCallbackVariables);
-	
-	gbMainConsole->RegisterVariable(20,"r_varAuxF1",Console::Float,"A generic float variable for debugging purposes",nullptr, consoleCallbackVariables);
-	gbMainConsole->RegisterVariable(21,"r_varAuxF2",Console::Float,"A generic float variable for debugging porpuses",nullptr, consoleCallbackVariables);
+	console.RegisterVariable(1, "r_winSwapInterval", Console::VarType::Integer, "O valor para o swapinterval", nullptr, consoleCallbackVariables);
+	console.RegisterVariable(2, "r_winWidth", Console::VarType::Integer, "O comprimento da janela de visualização", nullptr, consoleCallbackVariables);
+	console.RegisterVariable(3, "r_winHeight", Console::VarType::Integer, "A altura da janela de visualização", nullptr, consoleCallbackVariables);
+	console.RegisterVariable(4, "r_winFullscreen", Console::VarType::Integer, "Se a janela está ou não fullscreen", nullptr, consoleCallbackVariables);
+	console.RegisterVariable(5, "r_winFOV", Console::VarType::Float, "O field of view da janela", nullptr, consoleCallbackVariables);
+	console.RegisterVariable(6, "r_winRefresh", Console::VarType::Integer, "O refresh rate quando está em fullscreen", nullptr, consoleCallbackVariables);
 
-	gbMainConsole->RegisterVariable(41,"r_ppEffect",Console::String,"The postprocessing effect to use",nullptr, consoleCallbackVariables);
-	gbMainConsole->RegisterVariable(0,"r_ppTone",Console::Float,"Amount of brightness to use in postprocessing",nullptr,nullptr);
-	gbMainConsole->RegisterVariable(0,"r_ppBrightness",Console::Float,"Amount of tone to use in postprocessing",nullptr,nullptr);
-	gbMainConsole->RegisterVariable(0,"r_ppAO",Console::Integer,"------",nullptr,nullptr);
+	console.RegisterVariable(0, "r_useVBOIndex", Console::VarType::Integer, "Usa ou não VBO's para guardar os indices", nullptr, nullptr);
+	console.RegisterVariable(0, "r_useLightScissor", Console::VarType::Integer, "Usa ou não scissor test para as luzes", nullptr, nullptr);
+	console.RegisterVariable(0, "r_useParallax", Console::VarType::Integer, "Usa ou não o efeito de parallax (global)", nullptr, nullptr);
+	console.RegisterVariable(0, "r_useShadows", Console::VarType::Integer, "Usa ou não sombras (global)", nullptr, nullptr);
+	console.RegisterVariable(0, "r_useAmbient", Console::VarType::Integer, "Faz ou não o passe ambiente (global)", nullptr, nullptr);
+	console.RegisterVariable(0, "r_useGlow", Console::VarType::Integer, "Liga ou não o uso de glare / bloom na cena", nullptr, nullptr);
 
-	gbMainConsole->RegisterVariable(0,"r_hdriGlowThreshold",Console::Float,"A quantidade a subtrair à cor para obter o glow",nullptr,nullptr);
+	console.RegisterVariable(0, "r_glDriver", Console::VarType::String, "Qual o driver de OpenGL a usar", nullptr, nullptr);
+	console.RegisterVariable(0, "r_glDebug", Console::VarType::Integer, "Indica se é ou não para colocar o OpenGL em modo de debug", nullptr, nullptr);
+	console.RegisterVariable(0, "r_orthoSpaceScale", Console::VarType::Float, "A escala a usar para mostrar normais, tangentes e binormais", nullptr, nullptr);
+	console.RegisterVariable(0, "r_filterShadows", Console::VarType::Integer, "Se filtra ou não as sombras", nullptr, nullptr);
+	console.RegisterVariable(0, "r_drawInfinites", Console::VarType::Integer, "Se deverá ou não desenhar infinitos", nullptr, nullptr);
+	console.RegisterVariable(0, "r_drawNoLighting", Console::VarType::Integer, "Se deverá ou não desenhar materiais não iluminados", nullptr, nullptr);
+	console.RegisterVariable(40, "r_drawMode", Console::VarType::Integer, "Que tipo de desenho deverá ser feito", nullptr, consoleCallbackVariables);
 
-	gbMainConsole->RegisterVariable(50,"tex_diffuseFilter",Console::String,"O tipo de filtro a aplicar às texturas difusas",nullptr, consoleCallbackVariables);
-	gbMainConsole->RegisterVariable(51,"tex_diffuseAnisotropic",Console::Float,"A quantidade de anisotrópico a aplicar às texturas difusas",nullptr, consoleCallbackVariables);
+	console.RegisterVariable(20, "r_varAuxF1", Console::VarType::Float, "A generic float variable for debugging purposes", nullptr, consoleCallbackVariables);
+	console.RegisterVariable(21, "r_varAuxF2", Console::VarType::Float, "A generic float variable for debugging porpuses", nullptr, consoleCallbackVariables);
 
-	gbMainConsole->RegisterVariable(0,"p_infoVelocity",Console::String,"A velocidade do player",nullptr,nullptr);
-	gbMainConsole->RegisterVariable(0,"p_gravity",Console::Float,"A gravidade a aplicar ao jogador",nullptr,nullptr);
-	gbMainConsole->RegisterVariable(0,"p_noClip",Console::Integer,"Se o jogador pode ou não voar e reagir com o ambiente",nullptr,nullptr);
+	console.RegisterVariable(41, "r_ppEffect", Console::VarType::String, "The postprocessing effect to use", nullptr, consoleCallbackVariables);
+	console.RegisterVariable(0, "r_ppTone", Console::VarType::Float, "Amount of brightness to use in postprocessing", nullptr, nullptr);
+	console.RegisterVariable(0, "r_ppBrightness", Console::VarType::Float, "Amount of tone to use in postprocessing", nullptr, nullptr);
+	console.RegisterVariable(0, "r_ppAO", Console::VarType::Integer, "------", nullptr, nullptr);
 
-	gbMainConsole->RegisterVariable(0,"sys_infoCPUVendorID",Console::String,"The CPU vendor ID string","CPU vendor ID: %s",nullptr);
-	gbMainConsole->RegisterVariable(0,"sys_infoCPUProcessorName",Console::String,"The CPU processor name string","CPU processor name: %s",nullptr);
-	gbMainConsole->RegisterVariable(0,"sys_infoFPS",Console::Integer,"Average number of frames per second (updated every second)","FPS: %d",nullptr);
-	gbMainConsole->RegisterVariable(0,"sys_screenshot",Console::Integer,"Número de screenshot (um por frame) a tirar",nullptr,nullptr);
-	gbMainConsole->RegisterVariable(0,"sys_version",Console::String,"A versão do build do HorseRadish em uso",nullptr,nullptr);
-	gbMainConsole->RegisterVariable(30,"sys_consoleAlpha",Console::Float,"The console's alpha value (to make it a little transparent)",nullptr, consoleCallbackVariables);
-	gbMainConsole->RegisterVariable(31,"sys_consoleTextFont",Console::String,"The console's font file used to render the text",nullptr, consoleCallbackVariables);
-	gbMainConsole->RegisterVariable(32,"sys_consoleTextSize",Console::Integer,"The console's font size used to render the text",nullptr, consoleCallbackVariables);
+	console.RegisterVariable(0, "r_hdriGlowThreshold", Console::VarType::Float, "A quantidade a subtrair à cor para obter o glow", nullptr, nullptr);
 
-	gbMainConsole->RegisterVariable(0,"developer",Console::Integer,"This should be diferent than 0 if the engine is being developed (shows more errors, further test, etc)",nullptr,nullptr);
+	console.RegisterVariable(50, "tex_diffuseFilter", Console::VarType::String, "O tipo de filtro a aplicar às texturas difusas", nullptr, consoleCallbackVariables);
+	console.RegisterVariable(51, "tex_diffuseAnisotropic", Console::VarType::Float, "A quantidade de anisotrópico a aplicar às texturas difusas", nullptr, consoleCallbackVariables);
+
+	console.RegisterVariable(0, "p_infoVelocity", Console::VarType::String, "A velocidade do player", nullptr, nullptr);
+	console.RegisterVariable(0, "p_gravity", Console::VarType::Float, "A gravidade a aplicar ao jogador", nullptr, nullptr);
+	console.RegisterVariable(0, "p_noClip", Console::VarType::Integer, "Se o jogador pode ou não voar e reagir com o ambiente", nullptr, nullptr);
+
+	console.RegisterVariable(0, "sys_infoCPUVendorID", Console::VarType::String, "The CPU vendor ID string", "CPU vendor ID: %s", nullptr);
+	console.RegisterVariable(0, "sys_infoCPUProcessorName", Console::VarType::String, "The CPU processor name string", "CPU processor name: %s", nullptr);
+	console.RegisterVariable(0, "sys_infoFPS", Console::VarType::Integer, "Average number of frames per second (updated every second)", "FPS: %d", nullptr);
+	console.RegisterVariable(0, "sys_screenshot", Console::VarType::Integer, "Número de screenshot (um por frame) a tirar", nullptr, nullptr);
+	console.RegisterVariable(0, "sys_version", Console::VarType::String, "A versão do build do HorseRadish em uso", nullptr, nullptr);
+	console.RegisterVariable(30, "sys_consoleAlpha", Console::VarType::Float, "The console's alpha value (to make it a little transparent)", nullptr, consoleCallbackVariables);
+	console.RegisterVariable(31, "sys_consoleTextFont", Console::VarType::String, "The console's font file used to render the text", nullptr, consoleCallbackVariables);
+	console.RegisterVariable(32, "sys_consoleTextSize", Console::VarType::Integer, "The console's font size used to render the text", nullptr, consoleCallbackVariables);
+
+	console.RegisterVariable(0, "developer", Console::VarType::Integer, "This should be diferent than 0 if the engine is being developed (shows more errors, further test, etc)", nullptr, nullptr);
 
 	//algums valores por defeito
-	gbMainConsole->VarSetDataI("r_winSwapInterval",1);
-	gbMainConsole->VarSetDataI("r_winWidth",800);
-	gbMainConsole->VarSetDataI("r_winHeight",600);
-	gbMainConsole->VarSetDataI("r_winFullscreen",0);
-	gbMainConsole->VarSetDataF("r_winFOV",90.0f);
-	gbMainConsole->VarSetDataI("r_winRefresh",0);
-	gbMainConsole->VarSetDataS("r_showTexture","");
-	gbMainConsole->VarSetDataI("r_useLightScissor",1);
-	gbMainConsole->VarSetDataI("r_useParallax",1);
-	gbMainConsole->VarSetDataI("r_useShadows",1);
-	gbMainConsole->VarSetDataI("r_drawInfinites",1);
-	gbMainConsole->VarSetDataI("r_drawNoLighting",1);
-	gbMainConsole->VarSetDataI("r_useAmbient",1);
-	gbMainConsole->VarSetDataI("r_useGlow",1);
-	gbMainConsole->VarSetDataS("r_glDriver", "OpenGL32.dll");
-	gbMainConsole->VarSetDataI("r_glDebug", 0);
-	gbMainConsole->VarSetDataF("r_orthoSpaceScale",1.0f);
-	gbMainConsole->VarSetDataI("r_filterShadows",1);
-	gbMainConsole->VarSetDataI("r_drawMode",0);
-	gbMainConsole->VarSetDataF("r_varAuxF1",1.0f);
-	gbMainConsole->VarSetDataF("r_varAuxF2",0.1f);
-	gbMainConsole->VarSetDataF("r_ppTone",1.0f);
-	gbMainConsole->VarSetDataF("r_ppBrightness",0.0f);
-	gbMainConsole->VarSetDataI("r_ppAO",0);
-	gbMainConsole->VarSetDataF("r_hdriGlowThreshold",0.9f);
-	gbMainConsole->VarSetDataS("tex_diffuseFilter","bilinear");
-	gbMainConsole->VarSetDataF("tex_diffuseAnisotropic",1.0f);
-	gbMainConsole->VarSetDataI("p_noClip",1);
-	gbMainConsole->VarSetDataF("sys_consoleAlpha",0.8f);
-	gbMainConsole->VarSetDataS("sys_consoleTextFont","C:\\WINDOWS\\Fonts\\TAHOMAbd.TTF");
-	gbMainConsole->VarSetDataI("sys_consoleTextSize",9);
-	gbMainConsole->VarSetDataS("sys_version", HorseRadish::String("Horseradish v1.0.0 (alpha build 1052)", HorseRadish::Build::BuildNumber).GetData());
+	console.VarSetDataI("r_winSwapInterval", 1);
+	console.VarSetDataI("r_winWidth", 800);
+	console.VarSetDataI("r_winHeight", 600);
+	console.VarSetDataI("r_winFullscreen", 0);
+	console.VarSetDataF("r_winFOV", 90.0f);
+	console.VarSetDataI("r_winRefresh", 0);
+	console.VarSetDataS("r_showTexture", "");
+	console.VarSetDataI("r_useLightScissor", 1);
+	console.VarSetDataI("r_useParallax", 1);
+	console.VarSetDataI("r_useShadows", 1);
+	console.VarSetDataI("r_drawInfinites", 1);
+	console.VarSetDataI("r_drawNoLighting", 1);
+	console.VarSetDataI("r_useAmbient", 1);
+	console.VarSetDataI("r_useGlow", 1);
+	console.VarSetDataS("r_glDriver", "OpenGL32.dll");
+	console.VarSetDataI("r_glDebug", 0);
+	console.VarSetDataF("r_orthoSpaceScale", 1.0f);
+	console.VarSetDataI("r_filterShadows", 1);
+	console.VarSetDataI("r_drawMode", 0);
+	console.VarSetDataF("r_varAuxF1", 1.0f);
+	console.VarSetDataF("r_varAuxF2", 0.1f);
+	console.VarSetDataF("r_ppTone", 1.0f);
+	console.VarSetDataF("r_ppBrightness", 0.0f);
+	console.VarSetDataI("r_ppAO", 0);
+	console.VarSetDataF("r_hdriGlowThreshold", 0.9f);
+	console.VarSetDataS("tex_diffuseFilter", "bilinear");
+	console.VarSetDataF("tex_diffuseAnisotropic", 1.0f);
+	console.VarSetDataI("p_noClip", 1);
+	console.VarSetDataF("sys_consoleAlpha", 0.8f);
+	console.VarSetDataS("sys_consoleTextFont", "C:\\WINDOWS\\Fonts\\TAHOMAbd.TTF");
+	console.VarSetDataI("sys_consoleTextSize", 9);
+	console.VarSetDataS("sys_version", HorseRadish::String("Horseradish v1.0.0 (alpha build 1052)", HorseRadish::Build::BuildNumber).GetData());
 
 	//gravo algumas coisas para algumas variáveis
 	if (HorseRadish::Machine::CPUGetVendorID(stringAux) == true)
-		gbMainConsole->VarSetDataS("sys_infoCPUVendorID", stringAux.GetData());
+		console.VarSetDataS("sys_infoCPUVendorID", stringAux.GetData());
 	if (HorseRadish::Machine::CPUGetProcessorName(stringAux) == true)
-		gbMainConsole->VarSetDataS("sys_infoCPUProcessorName", stringAux.GetData());
+		console.VarSetDataS("sys_infoCPUProcessorName", stringAux.GetData());
 
 	//algumas das variáveis são read-only
-	/*gbMainConsole->VarSetAttrib("r_infoMTRIS",SCONSOLE_VAR_READONLY,0);
-	gbMainConsole->VarSetAttrib("r_infoMaterials",SCONSOLE_VAR_READONLY,0);
-	gbMainConsole->VarSetAttrib("r_infoTextures",SCONSOLE_VAR_READONLY,0);
-	gbMainConsole->VarSetAttrib("r_infoObjectos",SCONSOLE_VAR_READONLY,0);
-	gbMainConsole->VarSetAttrib("r_infoLights",SCONSOLE_VAR_READONLY,0);
-	gbMainConsole->VarSetAttrib("r_infoPosition",SCONSOLE_VAR_READONLY,0);
-	gbMainConsole->VarSetAttrib("r_infoGLError",SCONSOLE_VAR_READONLY,0);
-	gbMainConsole->VarSetAttrib("r_infoGLDrawElements",SCONSOLE_VAR_READONLY,0);*/
-	gbMainConsole->VarSetAttrib("r_glDriver", Console::ReadOnly, Console::VarFlags::None);
-	gbMainConsole->VarSetAttrib("sys_consoleAlpha", Console::Clamp, Console::VarFlags::None);
-	gbMainConsole->VarSetAttrib("sys_infoCPUVendorID", Console::ReadOnly, Console::VarFlags::None);
-	gbMainConsole->VarSetAttrib("sys_infoCPUProcessorName", Console::ReadOnly, Console::VarFlags::None);
-	gbMainConsole->VarSetAttrib("sys_version", Console::ReadOnly, (Console::VarFlags)0);
+	/*console.VarSetAttrib("r_infoMTRIS",SCONSOLE_VAR_READONLY,0);
+	console.VarSetAttrib("r_infoMaterials",SCONSOLE_VAR_READONLY,0);
+	console.VarSetAttrib("r_infoTextures",SCONSOLE_VAR_READONLY,0);
+	console.VarSetAttrib("r_infoObjectos",SCONSOLE_VAR_READONLY,0);
+	console.VarSetAttrib("r_infoLights",SCONSOLE_VAR_READONLY,0);
+	console.VarSetAttrib("r_infoPosition",SCONSOLE_VAR_READONLY,0);
+	console.VarSetAttrib("r_infoGLError",SCONSOLE_VAR_READONLY,0);
+	console.VarSetAttrib("r_infoGLDrawElements",SCONSOLE_VAR_READONLY,0);*/
+	console.VarSetAttrib("r_glDriver", Console::ReadOnly, Console::VarFlags::None);
+	console.VarSetAttrib("sys_consoleAlpha", Console::Clamp, Console::VarFlags::None);
+	console.VarSetAttrib("sys_infoCPUVendorID", Console::ReadOnly, Console::VarFlags::None);
+	console.VarSetAttrib("sys_infoCPUProcessorName", Console::ReadOnly, Console::VarFlags::None);
+	console.VarSetAttrib("sys_version", Console::ReadOnly, (Console::VarFlags)0);
 }
 
 static
-void CALLBACK callbackConsoleErrorLoopback(const char *errorInfo)
+void CALLBACK callbackConsoleErrorLoopback(Console &console, const char *errorInfo)
 {
 	/*if (errorInfo!=nullptr && errorInfo[0]!='\0')
 		consolaGUI->GUISMSAdd(errorInfo,CONSOLE_SMS_TIME,1.0f,0.0f,0.0f);*/
@@ -776,8 +769,8 @@ bool systemInitialize(const HINSTANCE hInstance, const PWSTR lpCmdLine)
 	gbMainConsole = new Console(HorseRadish::IO::Path("./logs/appLog.txt"));
 
 	//registo os comandos e variáveis na consola
-	registerConsoleCommands();
-	registerConsoleVariables();
+	registerConsoleCommands(*gbMainConsole);
+	registerConsoleVariables(*gbMainConsole);
 
 	//se alguém indicou que um ficheiro deve ser executado para fazer override às configurações de sistema
 	if (Window::CommandLineGetParam(lpCmdLine, (const HorseRadish::hChar*)"-sysConf", systemConfOverride) == true)
@@ -799,7 +792,7 @@ bool systemInitialize(const HINSTANCE hInstance, const PWSTR lpCmdLine)
 	gbWindow = new Window(hInstance);
 
 	//escrevo informação acerca do sistema
-	writeSystemInfo();
+	writeSystemInfo(*gbMainConsole);
 	gbMainConsole->Log(" ");
 
 	//pequenas coisas que tem de ser activadas e preparadas
@@ -921,104 +914,103 @@ void systemExit(const int exitCause)
 }
 
 static
-void writeSystemInfo()
+void writeSystemInfo(Console &console)
 {
 	HorseRadish::String auxInfo;
 	int memTotal, memFree, displayWidth, displayHeight, displayColorBits, displayFrequency;
 
 	//informação geral
-	gbMainConsole->Log("#150,150,0.->#255,255,255.System information:");
+	console.Log("#150,150,0.->#255,255,255.System information:");
 	
 		if (HorseRadish::Machine::CPUGetVendorID(auxInfo) == true)
-			gbMainConsole->LogTab(HorseRadish::String("CPU vendor ID: %s.", auxInfo.GetData()).GetData(), 2);
+			console.LogTab(HorseRadish::String("CPU vendor ID: %s.", auxInfo.GetData()).GetData(), 2);
 		if (HorseRadish::Machine::CPUGetProcessorName(auxInfo) == true)
-			gbMainConsole->LogTab(HorseRadish::String("CPU processor name: %s.", auxInfo.GetData()).GetData(), 2);
+			console.LogTab(HorseRadish::String("CPU processor name: %s.", auxInfo.GetData()).GetData(), 2);
 
 		HorseRadish::Platform::GetSystemInfo(HorseRadish::Platform::MemoryTotal, memTotal);
 		auxInfo.SetMemory(memTotal);
-		gbMainConsole->LogTab(HorseRadish::String("Total physical memory: %s", auxInfo.GetData()).GetData(), 2);
+		console.LogTab(HorseRadish::String("Total physical memory: %s", auxInfo.GetData()).GetData(), 2);
 
 		HorseRadish::Platform::GetSystemInfo(HorseRadish::Platform::MemoryFree, memFree);
 		auxInfo.SetMemory(memFree);
-		gbMainConsole->LogTab(HorseRadish::String("Free physical memory: %s", auxInfo.GetData()).GetData(), 2);
+		console.LogTab(HorseRadish::String("Free physical memory: %s", auxInfo.GetData()).GetData(), 2);
 
 		HorseRadish::Platform::GetSystemInfo(HorseRadish::Platform::DisplayWidth, displayWidth);
 		HorseRadish::Platform::GetSystemInfo(HorseRadish::Platform::DisplayHeight, displayHeight);
 		HorseRadish::Platform::GetSystemInfo(HorseRadish::Platform::DisplayColorBits, displayColorBits);
 		HorseRadish::Platform::GetSystemInfo(HorseRadish::Platform::DisplayFrequency, displayFrequency);
-		gbMainConsole->LogTab(HorseRadish::String("Desktop resolution: %dx%dx%d@%d", displayWidth, displayHeight, displayColorBits, displayFrequency).GetData(), 2);
+		console.LogTab(HorseRadish::String("Desktop resolution: %dx%dx%d@%d", displayWidth, displayHeight, displayColorBits, displayFrequency).GetData(), 2);
 
 		HorseRadish::Platform::GetSystemInfo(HorseRadish::Platform::OperatingSystemName, auxInfo);
-		gbMainConsole->LogTab(HorseRadish::String("Operating system: %s", auxInfo.GetData()).GetData(), 2);
+		console.LogTab(HorseRadish::String("Operating system: %s", auxInfo.GetData()).GetData(), 2);
 
-		gbMainConsole->LogTab(HorseRadish::Platform::IsArch64() ? "Build type: x86 64bit" : "Build type: x86 32bit", 2);
+		console.LogTab(HorseRadish::Platform::IsArch64() ? "Build type: x86 64bit" : "Build type: x86 32bit", 2);
 
 		HorseRadish::Platform::GetSystemInfo(HorseRadish::Platform::MachineName, auxInfo);
-		gbMainConsole->LogTab(HorseRadish::String("Machine name: %s", auxInfo.GetData()).GetData(), 2);
+		console.LogTab(HorseRadish::String("Machine name: %s", auxInfo.GetData()).GetData(), 2);
 
 		HorseRadish::Platform::GetSystemInfo(HorseRadish::Platform::CurrentUsername, auxInfo);
-		gbMainConsole->LogTab(HorseRadish::String("User name: %s", auxInfo.GetData()).GetData(), 2);
+		console.LogTab(HorseRadish::String("User name: %s", auxInfo.GetData()).GetData(), 2);
 
 	//para testar UTF8
-	gbMainConsole->Log("#150,150,0.->#255,255,255.UTF8 text test:");
-		gbMainConsole->LogTab("Hello!", 2);
-		gbMainConsole->LogTab("Olá!", 2);
-		gbMainConsole->LogTab("Grüß Gott", 2);
-		gbMainConsole->LogTab("Здравствуйте", 2);
-		gbMainConsole->LogTab("Γειά σου", 2);
-		gbMainConsole->LogTab("مرحبا", 2);
+	console.Log("#150,150,0.->#255,255,255.UTF8 text test:");
+		console.LogTab("Hello!", 2);
+		console.LogTab("Olá!", 2);
+		console.LogTab("Grüß Gott", 2);
+		console.LogTab("Здравствуйте", 2);
+		console.LogTab("Γειά σου", 2);
+		console.LogTab("مرحبا", 2);
 }
 
 static
-void writeOpenGLInfo(const HorseRadish::OpenGL::Objects::Context &glContext)
+void writeOpenGLInfo(Console &console, const HorseRadish::OpenGL::Objects::Context &glContext)
 {
 	HorseRadish::String infoValueString;
 	int infoValueInt;
 
 	//info acerca da drive
-	gbMainConsole->Log("#150,150,0.->#255,255,255.OpenGL driver info:");
+	console.Log("#150,150,0.->#255,255,255.OpenGL driver info:");
 		glContext.GetInformation(HorseRadish::OpenGL::Objects::Context::Version, infoValueString);
-		gbMainConsole->LogTab(HorseRadish::String("OpenGL version: %s.", infoValueString.GetData()).GetData(), 2);
+		console.LogTab(HorseRadish::String("OpenGL version: %s.", infoValueString.GetData()).GetData(), 2);
 		glContext.GetInformation(HorseRadish::OpenGL::Objects::Context::Vendor, infoValueString);
-		gbMainConsole->LogTab(HorseRadish::String("OpenGL vendor: %s.", infoValueString.GetData()).GetData(), 2);
+		console.LogTab(HorseRadish::String("OpenGL vendor: %s.", infoValueString.GetData()).GetData(), 2);
 		glContext.GetInformation(HorseRadish::OpenGL::Objects::Context::Renderer, infoValueString);
-		gbMainConsole->LogTab(HorseRadish::String("OpenGL renderer: %s.", infoValueString.GetData()).GetData(), 2);
+		console.LogTab(HorseRadish::String("OpenGL renderer: %s.", infoValueString.GetData()).GetData(), 2);
 
 	//info acerca das extensões
-	gbMainConsole->Log("#150,150,0.->#255,255,255.OpenGL extensions available:");
+	console.Log("#150,150,0.->#255,255,255.OpenGL extensions available:");
 	HorseRadish::OpenGL::glGetIntegerv(GL_NUM_EXTENSIONS, &infoValueInt);
 	for(int curExt = 0; curExt < infoValueInt; curExt++)
-		gbMainConsole->LogTab((const char*)HorseRadish::OpenGL::glGetStringi(GL_EXTENSIONS, curExt), 2);
+		console.LogTab((const char*)HorseRadish::OpenGL::glGetStringi(GL_EXTENSIONS, curExt), 2);
 
 	//info de outras coisas
-	gbMainConsole->Log("#150,150,0.->#255,255,255.OpenGL extended information:");
+	console.Log("#150,150,0.->#255,255,255.OpenGL extended information:");
 	
 		glContext.GetInformation(HorseRadish::OpenGL::Objects::Context::GLSLVersion, infoValueString);
-		gbMainConsole->LogTab(HorseRadish::String("GLSL version: %s", infoValueString.GetData()).GetData(), 2);
+		console.LogTab(HorseRadish::String("GLSL version: %s", infoValueString.GetData()).GetData(), 2);
 
 		glContext.GetInformation(HorseRadish::OpenGL::Objects::Context::MaxDrawBuffers, infoValueInt);
-		gbMainConsole->LogTab(HorseRadish::String("Maximum number of draw buffers: %d", infoValueInt).GetData(), 2);
+		console.LogTab(HorseRadish::String("Maximum number of draw buffers: %d", infoValueInt).GetData(), 2);
 
 		glContext.GetInformation(HorseRadish::OpenGL::Objects::Context::MaxColorAttachments, infoValueInt);
-		gbMainConsole->LogTab(HorseRadish::String("Maximum number of color attachments in FBOs: %d", infoValueInt).GetData(), 2);
+		console.LogTab(HorseRadish::String("Maximum number of color attachments in FBOs: %d", infoValueInt).GetData(), 2);
 
 		glContext.GetInformation(HorseRadish::OpenGL::Objects::Context::MaxTextureSize, infoValueInt);
-		gbMainConsole->LogTab(HorseRadish::String("Maximum 1D/2D texture size: %dx%d", infoValueInt, infoValueInt).GetData(), 2);
+		console.LogTab(HorseRadish::String("Maximum 1D/2D texture size: %dx%d", infoValueInt, infoValueInt).GetData(), 2);
 		glContext.GetInformation(HorseRadish::OpenGL::Objects::Context::MaxTexture3DSize, infoValueInt);
-		gbMainConsole->LogTab(HorseRadish::String("Maximum 3D texture size: %dx%dx%d", infoValueInt, infoValueInt, infoValueInt).GetData(), 2);
+		console.LogTab(HorseRadish::String("Maximum 3D texture size: %dx%dx%d", infoValueInt, infoValueInt, infoValueInt).GetData(), 2);
 		glContext.GetInformation(HorseRadish::OpenGL::Objects::Context::MaxTextureCubemapSize, infoValueInt);
-		gbMainConsole->LogTab(HorseRadish::String("Maximum cubemap texture size: %dx%d", infoValueInt, infoValueInt).GetData(), 2);
+		console.LogTab(HorseRadish::String("Maximum cubemap texture size: %dx%d", infoValueInt, infoValueInt).GetData(), 2);
 		glContext.GetInformation(HorseRadish::OpenGL::Objects::Context::MaxTextureRectSize, infoValueInt);
-		gbMainConsole->LogTab(HorseRadish::String("Maximum rectangle texture size: %dx%d", infoValueInt, infoValueInt).GetData(), 2);
+		console.LogTab(HorseRadish::String("Maximum rectangle texture size: %dx%d", infoValueInt, infoValueInt).GetData(), 2);
 }
 
 void CALLBACK openglDebugMessagesCallback(HorseRadish::OpenGL::GLenum source, HorseRadish::OpenGL::GLenum type, HorseRadish::OpenGL::GLuint id, HorseRadish::OpenGL::GLenum severity, HorseRadish::OpenGL::GLsizei length, const HorseRadish::OpenGL::GLchar* message, HorseRadish::OpenGL::GLvoid* userParam)
 {
-	Console *appConsole;
 	const char *glSource, *glType, *glSeverity;
 
 	//isto dá jeito
-	appConsole = (Console*)userParam;
+	auto appConsole = (Console*)userParam;
 
 	//por omissão
 	glSource = glType = glSeverity = "";
@@ -1581,7 +1573,7 @@ void renderThread(void *threadData)
 	rendererDeferred->Initialize(gbMainConsole->VarGetDataI("r_winWidth"), gbMainConsole->VarGetDataI("r_winHeight"), gbFileSystem);
 
 	//escrevo alguma informação acerda do GL
-	writeOpenGLInfo(*glContext);
+	writeOpenGLInfo(*gbMainConsole, *glContext);
 
 	//a camera
 	camera = new HorseRadish::OpenGL::Tools::Camera();
@@ -2072,7 +2064,6 @@ void editorProcessMemory()
 		Window::MsgBoxAviso(HorseRadish::String("%s - %d", pathFicheiro.GetData(), formatoInterno).GetData());
 		return;
 	}
-
 }
 
 static
@@ -2215,21 +2206,21 @@ int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PWSTR lpCmdLine, int n
 	unsigned int curControlWord;
 	int infoValue;
 
-	//antes de tudo, verificar isto
+	//check if we have a clean boot
 	if ((HorseRadish::Platform::GetSystemInfo(HorseRadish::Platform::CleanBoot, infoValue) == false) || (infoValue == 0))
 	{
 		Window::MsgBoxAviso("The OS did not boot normally!\nFor security reasons the application will now exit.");
 		return 0;
 	}
 
-	//quero processadores com, no mínimo, SSE, SSE2 e CMOV
+	//check necessary CPU features (SSE, SSE2 e CMOV)
 	if (HorseRadish::Machine::CPUCheckFeatures((HorseRadish::Machine::CPUFeature)(HorseRadish::Machine::SSE | HorseRadish::Machine::SSE2 | HorseRadish::Machine::CMov)) == false)
 	{
 		Window::MsgBoxAviso("The CPU doesn't have the minimum required features.\nThe application cannot proceed.");
 		return 0;
 	}
 
-	//crio esta classe que me diz se outra aplicação já está a correr
+	//make sure only one app is running
 	HorseRadish::Platform::SingleInstance singleInstance;
 	if (singleInstance.IsAnotherRunning() == true)
 	{
@@ -2238,40 +2229,39 @@ int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PWSTR lpCmdLine, int n
 	}
 
 #ifndef _M_X64
-	//mudo a control word para operações de FP
-	_controlfp_s(&curControlWord, _PC_24, _MCW_PC);	//quero uma precisão de 24bits
-	_controlfp_s(&curControlWord, _DN_FLUSH, _MCW_DN); //quero que os denormal vão para zero
-	_controlfp_s(&curControlWord, _RC_NEAR, _MCW_RC); //arredondar para mais próximo (1.5 > 2.0)
-	_controlfp_s(&curControlWord, _EM_INVALID|_EM_DENORMAL|_EM_ZERODIVIDE|_EM_OVERFLOW|_EM_UNDERFLOW|_EM_INEXACT, _MCW_EM); //não quero excepções
-	_clearfp(); //limpo quaisquer excepções anteriores
+	//control floating-point operations
+	_controlfp_s(&curControlWord, _PC_24, _MCW_PC);	//set precision control to 24bit
+	_controlfp_s(&curControlWord, _DN_FLUSH, _MCW_DN); //convert denorms to zero
+	_controlfp_s(&curControlWord, _RC_NEAR, _MCW_RC); //round to nearest (e.g.: 1.5 > 2.0)
+	_controlfp_s(&curControlWord, _EM_INVALID|_EM_DENORMAL|_EM_ZERODIVIDE|_EM_OVERFLOW|_EM_UNDERFLOW|_EM_INEXACT, _MCW_EM); //ignore exceptions
+	_clearfp(); //clear previous exceptions
 #endif
 
-	//inicio o sistema
+	//initialize system (e.g.: console, scripting, logs, file system)
 	systemInitialize(hInst, lpCmdLine);
 
-	//preparo a janela e o resto dos sistemas
+	//prepare window system and input
 	windowInitialize();
 
-	//inicia o message loop da aplicação e cria também a thread de render
+	//start app message loop (it also creates the render thread)
 	messageLoop();
 
-	//fecho a janela
+	//close windows
 	windowShutdown();
 
-	//fecho o sistema
+	//shutdown system
 	systemShutdown();
 
-	//se for preciso mandar executar alguma coisa
+	//if restart is required
 	if (gbAppExitReason == HR_EXIT_RESTART)
 		HorseRadish::Platform::InstanciateProcess("Horseradish.exe");
 	else if (gbAppExitReason == HR_EXIT_RESTART_EDITOR)
 		HorseRadish::Platform::InstanciateProcess("BloodyMary.exe");
 
-	//reponho a control word para operações de FP e saio
-	_controlfp_s(&curControlWord, _CW_DEFAULT, 0xfffff );
+	//reset floating-point control data
+	_controlfp_s(&curControlWord, _CW_DEFAULT, 0xfffff);
 	return gbAppExitCode;
 
-	//porcaria dos avisos
 	UNREFERENCED_PARAMETER(hInstPrev); 
     UNREFERENCED_PARAMETER(nCmdShow);
 }

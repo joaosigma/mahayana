@@ -222,29 +222,41 @@ String::String()
 	this->numBytes = this->numChars = 0;
 }
 
-String::String(const String &nova)
+String::String(const String &s)
+	: String()
 {
-	//por omissão a string está vazia
-	this->bufferLocal[0] = '\0';
-	this->bufferHeap = nullptr;
-	this->actualBuffer = this->bufferLocal;
-	this->numBytes = this->numChars = 0;
-
 	//esta função trata de tudo
-	this->Set(nova);
+	this->Set(s);
+}
+
+String::String(String &&s)
+{
+	this->bufferHeap = s.bufferHeap;
+	this->numBytes = s.numBytes;
+	this->numChars = s.numChars;
+
+	if (s.actualBuffer == s.bufferLocal)
+	{
+		this->actualBuffer = this->bufferLocal;
+		memcpy(this->bufferLocal, s.bufferLocal, s.numBytes);
+	}
+	else
+	{
+		this->actualBuffer = this->bufferHeap->GetMainPointer();
+		this->bufferLocal[0] = '\0';
+	}
+
+	s.actualBuffer = nullptr;
+	s.bufferHeap = nullptr;
+	s.numBytes = s.numChars = 0;
 }
 
 String::String(const char *fmt, ...)
+	: String()
 {
 	va_list ap;
 	int bytesWritten;
 	char auxBuffer[2048];
-
-	//por omissão a string está vazia
-	this->bufferLocal[0] = '\0';
-	this->bufferHeap = nullptr;
-	this->actualBuffer = this->bufferLocal;
-	this->numBytes = this->numChars = 0;
 
 	//tenho de ter alguma coisa
 	if (fmt == nullptr)

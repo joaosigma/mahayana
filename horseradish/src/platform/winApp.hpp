@@ -26,7 +26,6 @@ class Window
 	bool isFullscreen, isInitialized;
 	unsigned int winWidth, winHeight;
 
-	//sou amigo deste pessoal
 	friend class OpenglContext;
 	friend class RawInput;
 	

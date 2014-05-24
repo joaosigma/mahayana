@@ -44,7 +44,9 @@ private:
 	HorseRadish::Containers::Array<ProgramData> arrayPrograms;
 
 	static int comparePrograms(const ProgramData &objA, const ProgramData &objB);
+	static int compareProgramsID(const ProgramData &objA, const unsigned int &programID);
 	static int compareUniforms(const ProgramData::UniformData &objA, const ProgramData::UniformData &objB);
+	static int compareUniformsID(const ProgramData::UniformData &objA, const unsigned int &uniformCRC32);
 
 public:
 	UniformCache();
@@ -192,8 +194,7 @@ private:
 	static unsigned short primitiveRestartIndex;
 	static int numMaxChar;
 
-	static int sortCharData(const CharacterData &objA, const CharacterData &objB);
-	static int findCharData(const CharacterData &objA, const CharacterData &objB);
+	static int compareCharData(const CharacterData &objA, const CharacterData &objB);
 
 	Font(FontManager * const fontManager, const int fontSize, const char * const fontFilePath, unsigned int glProgramID);
 	~Font();

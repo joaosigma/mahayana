@@ -46,7 +46,7 @@ bool UTF::validateChar(const unsigned char * const charPtr)
     return (*charPtr <= 0xF4);
 }
 
-int UTF::ValidateUTF8(const void *bufferUTF8, int *numChars, int *numBytes)
+int UTF::ValidateUTF8(const void * const bufferUTF8, int *numChars, int *numBytes)
 {
 	unsigned short numChar;
 	const unsigned char *walker;
@@ -87,14 +87,14 @@ int UTF::ConvertUTF8To(const String &stringIn, const Encoding targetEncoding, vo
 	if (targetEncoding == UTF::Windows)
 	{
 		//converto e pronto, tá tudo (a função já devolve o numero de caracteres convertidos)
-		return MultiByteToWideChar(CP_UTF8, 0, (LPSTR)stringIn.GetData(), -1, (LPWSTR)outBuffer, outBufferSize);
+		return MultiByteToWideChar(CP_UTF8, 0, (LPCCH)stringIn.GetData(), -1, (LPWSTR)outBuffer, outBufferSize);
 	}
 
 	//chegando aqui é barraca
 	return 0;
 }
 
-int UTF::ConvertUTF8To(const void *bufferInUTF8, const Encoding targetEncoding, void *outBuffer, const int outBufferSize)
+int UTF::ConvertUTF8To(const void * const bufferInUTF8, const Encoding targetEncoding, void *outBuffer, const int outBufferSize)
 {
 	//se não tenho nada donde ler ou pra onde escrever, facilita a vida
 	if ((bufferInUTF8 == nullptr) || (outBuffer == nullptr) || (outBufferSize <= 0))
@@ -104,7 +104,7 @@ int UTF::ConvertUTF8To(const void *bufferInUTF8, const Encoding targetEncoding, 
 	if (targetEncoding == UTF::Windows)
 	{
 		//converto e pronto, tá tudo (a função já devolve o numero de caracteres convertidos)
-		return MultiByteToWideChar(CP_UTF8, 0, (LPSTR)bufferInUTF8, -1, (LPWSTR)outBuffer, outBufferSize);
+		return MultiByteToWideChar(CP_UTF8, 0, (LPCCH)bufferInUTF8, -1, (LPWSTR)outBuffer, outBufferSize);
 	}
 
 	//chegando aqui é barraca

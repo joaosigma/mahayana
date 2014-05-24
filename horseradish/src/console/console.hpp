@@ -82,29 +82,32 @@ namespace Console
 #define SCONSOLE_KEY_MALT		(1<<6)
 #define SCONSOLE_KEY_MCONTROL	(1<<7)
 
-class Console{
+class Console
+
+{
 public:
 	
-	//as funcões para mensagens
-	typedef int  (APIENTRY * CallbackCommand) (const unsigned int msgID, const unsigned int numParam, const char **param);
-	typedef int  (APIENTRY * CallbackVariable)(const unsigned int varID, const int type, const void *curVal, const void *oldVal);
-	typedef void (APIENTRY * CallbackLoop)(const char * msg);
-
-	enum VarType{
+	enum class VarType : int
+	{
 		Integer = 0xcca7,
 		Float = 0xcca8,
 		String = 0xcca9
-		};
-	
-	enum VarFlags{
-		None = 0, //nada (valor por omissão)
-		ReadOnly = (1<<0),	//o valor não pode ser mudado pela consola (só por comandos)
-		Clamp = (1<<1),	//o valor da variável é sempre clampado (inteiros: [0, +inf] floats: [0, 1]
-		Constant = (1<<2),	//o valor não pode ser mudado (NUNCA)
-		Archive = (1<<3),	//o valor da variável é guardado quando a aplicação terminar
-		Server = (1<<4),	//o valor da variável é mandado para o servidor
-		Cheat = (1<<5)	//o valor da variável só pode ser mudado quando as cheats estão activas
-		};
+	};
+
+	enum VarFlags
+	{
+		None = 0,
+		ReadOnly = (1 << 0), //the value can't be change through the console, only commands
+		Clamp = (1 << 1), //the value is always clamped (ints: [0, +inf]; floats: [0, 1])
+		Constant = (1 << 2), //the value can NEVER be changed
+		Archive = (1 << 3), //the value is saved whenever it's changed (it's persistent)
+		Server = (1 << 4), //the value is shared with the server
+		Cheat = (1 << 5) //the value can only be changed when cheats are enabled
+	};
+
+	typedef std::function<void(Console &console, const unsigned int msgID, const unsigned int numParam, const char **param)> CallbackCommand;
+	typedef std::function<void(Console &console, const unsigned int varID, const VarType type, void * const curVal, const void * const oldVal)> CallbackVariable;
+	typedef std::function<void(Console &console, const char * msg)> CallbackLoop;
 
 	HorseRadish::Logging::Logger *logger;
 private:
@@ -153,9 +156,6 @@ private:
 	static bool checkValue(const char *value, unsigned char &realValue);
 	static bool checkSentence(const char *sentence, int &numSpecialChar);
 	static bool isForcedNoEcho(const char * const command);
-	static bool setVarI(DATA_NO * const parametros, const int data);
-	static bool setVarF(DATA_NO * const parametros, const float data);
-	static bool setVarS(DATA_NO * const parametros, const char *data);
 	static bool isSeveralExpressions(const char * const command);
 
 	bool addPhrase(const char *Frase, int nespacos = 0);
@@ -168,6 +168,9 @@ private:
 	void doThreeArgVarCommand(DATA_NO * const spec, const ARG_DATA * const argList);
 	void doFiveArgVarCommand(DATA_NO * const spec, const ARG_DATA * const argList);
 	bool divideCommand(const char * const command);
+	bool setVarI(DATA_NO * const parametros, const int data);
+	bool setVarF(DATA_NO * const parametros, const float data);
+	bool setVarS(DATA_NO * const parametros, const char *data);
 
 public:
 	Console(const HorseRadish::IO::Path &fileOutputPath);
