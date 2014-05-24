@@ -6,18 +6,7 @@
 
 #include <functional>
 
-#if defined(_WIN32)
-	//não é preciso a maior parte das coisas dos headers do windows
-	#define WIN32_LEAN_AND_MEAN
-
-	//para serviços do Windows XP SP2 ou superior
-	#define _WIN32_WINNT 0x0501
-	#define WINVER 0x0501
-	#define NTDDI_VERSION NTDDI_WINXPSP1
-
-#else
-	
-#endif
+#include "PlatformWin32.hpp"
 
 namespace HorseRadish
 {
@@ -67,6 +56,13 @@ namespace HorseRadish
 
 			static bool ClipboardGetStrings(std::function<bool (const HorseRadish::String &)> funcCallback);
 			static bool ClipboardGetFiles(std::function<bool (const HorseRadish::String &)> funcCallback);
+
+			static bool StdInOutErrRedirect();
+			static void StdInOutErrClose();
+			static void StdErrClear();
+			static void StdOutClear();
+			static bool StdErrRead(void *outBuffer, const int outBufferSize, int &bytesWritten);
+			static bool StdOutRead(void *outBuffer, const int outBufferSize, int &bytesWritten);
 	};
 }
 

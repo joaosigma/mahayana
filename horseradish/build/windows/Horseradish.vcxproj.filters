@@ -43,8 +43,11 @@
     <Filter Include="libs\lodepng">
       <UniqueIdentifier>{4b0361e6-f669-489f-8c4c-1c8bed24135b}</UniqueIdentifier>
     </Filter>
-    <Filter Include="libs\jpeglib">
-      <UniqueIdentifier>{1f92cfe5-5cda-4563-8433-4d2bae7df8d7}</UniqueIdentifier>
+    <Filter Include="scripting">
+      <UniqueIdentifier>{5cdd04aa-c0c6-439b-9a36-8918226a641c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="libs\squirrel">
+      <UniqueIdentifier>{52ef2aa5-1fe8-470e-87b1-06677b908183}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -148,9 +151,6 @@
       <Filter>common</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\common\Plane.cpp">
-      <Filter>common</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\common\Platform.cpp">
       <Filter>common</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\common\Quaternion.cpp">
@@ -496,185 +496,47 @@
     <ClCompile Include="..\..\src\libs\lodepng\lodepng.cpp">
       <Filter>libs\lodepng</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\libs\jpeglib\cdjpeg.c">
-      <Filter>libs\jpeglib</Filter>
+    <ClCompile Include="..\..\src\common\PlatformWin32.cpp">
+      <Filter>common</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\libs\jpeglib\jaricom.c">
-      <Filter>libs\jpeglib</Filter>
+    <ClCompile Include="..\..\src\scripting\scripting.cpp">
+      <Filter>scripting</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\libs\jpeglib\jcapimin.c">
-      <Filter>libs\jpeglib</Filter>
+    <ClCompile Include="..\..\src\libs\squirrel\sqapi.cpp">
+      <Filter>libs\squirrel</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\libs\jpeglib\jcapistd.c">
-      <Filter>libs\jpeglib</Filter>
+    <ClCompile Include="..\..\src\libs\squirrel\sqbaselib.cpp">
+      <Filter>libs\squirrel</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\libs\jpeglib\jcarith.c">
-      <Filter>libs\jpeglib</Filter>
+    <ClCompile Include="..\..\src\libs\squirrel\sqclass.cpp">
+      <Filter>libs\squirrel</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\libs\jpeglib\jccoefct.c">
-      <Filter>libs\jpeglib</Filter>
+    <ClCompile Include="..\..\src\libs\squirrel\sqcompiler.cpp">
+      <Filter>libs\squirrel</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\libs\jpeglib\jccolor.c">
-      <Filter>libs\jpeglib</Filter>
+    <ClCompile Include="..\..\src\libs\squirrel\sqdebug.cpp">
+      <Filter>libs\squirrel</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\libs\jpeglib\jcdctmgr.c">
-      <Filter>libs\jpeglib</Filter>
+    <ClCompile Include="..\..\src\libs\squirrel\sqfuncstate.cpp">
+      <Filter>libs\squirrel</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\libs\jpeglib\jchuff.c">
-      <Filter>libs\jpeglib</Filter>
+    <ClCompile Include="..\..\src\libs\squirrel\sqlexer.cpp">
+      <Filter>libs\squirrel</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\libs\jpeglib\jcinit.c">
-      <Filter>libs\jpeglib</Filter>
+    <ClCompile Include="..\..\src\libs\squirrel\sqmem.cpp">
+      <Filter>libs\squirrel</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\libs\jpeglib\jcmainct.c">
-      <Filter>libs\jpeglib</Filter>
+    <ClCompile Include="..\..\src\libs\squirrel\sqobject.cpp">
+      <Filter>libs\squirrel</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\libs\jpeglib\jcmarker.c">
-      <Filter>libs\jpeglib</Filter>
+    <ClCompile Include="..\..\src\libs\squirrel\sqstate.cpp">
+      <Filter>libs\squirrel</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\libs\jpeglib\jcmaster.c">
-      <Filter>libs\jpeglib</Filter>
+    <ClCompile Include="..\..\src\libs\squirrel\sqtable.cpp">
+      <Filter>libs\squirrel</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\libs\jpeglib\jcomapi.c">
-      <Filter>libs\jpeglib</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\libs\jpeglib\jcparam.c">
-      <Filter>libs\jpeglib</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\libs\jpeglib\jcprepct.c">
-      <Filter>libs\jpeglib</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\libs\jpeglib\jcsample.c">
-      <Filter>libs\jpeglib</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\libs\jpeglib\jctrans.c">
-      <Filter>libs\jpeglib</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\libs\jpeglib\jdapimin.c">
-      <Filter>libs\jpeglib</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\libs\jpeglib\jdapistd.c">
-      <Filter>libs\jpeglib</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\libs\jpeglib\jdarith.c">
-      <Filter>libs\jpeglib</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\libs\jpeglib\jdatadst.c">
-      <Filter>libs\jpeglib</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\libs\jpeglib\jdatasrc.c">
-      <Filter>libs\jpeglib</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\libs\jpeglib\jdcoefct.c">
-      <Filter>libs\jpeglib</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\libs\jpeglib\jdcolor.c">
-      <Filter>libs\jpeglib</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\libs\jpeglib\jddctmgr.c">
-      <Filter>libs\jpeglib</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\libs\jpeglib\jdhuff.c">
-      <Filter>libs\jpeglib</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\libs\jpeglib\jdinput.c">
-      <Filter>libs\jpeglib</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\libs\jpeglib\jdmainct.c">
-      <Filter>libs\jpeglib</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\libs\jpeglib\jdmarker.c">
-      <Filter>libs\jpeglib</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\libs\jpeglib\jdmaster.c">
-      <Filter>libs\jpeglib</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\libs\jpeglib\jdmerge.c">
-      <Filter>libs\jpeglib</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\libs\jpeglib\jdpostct.c">
-      <Filter>libs\jpeglib</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\libs\jpeglib\jdsample.c">
-      <Filter>libs\jpeglib</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\libs\jpeglib\jdtrans.c">
-      <Filter>libs\jpeglib</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\libs\jpeglib\jerror.c">
-      <Filter>libs\jpeglib</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\libs\jpeglib\jfdctflt.c">
-      <Filter>libs\jpeglib</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\libs\jpeglib\jfdctfst.c">
-      <Filter>libs\jpeglib</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\libs\jpeglib\jfdctint.c">
-      <Filter>libs\jpeglib</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\libs\jpeglib\jidctflt.c">
-      <Filter>libs\jpeglib</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\libs\jpeglib\jidctfst.c">
-      <Filter>libs\jpeglib</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\libs\jpeglib\jidctint.c">
-      <Filter>libs\jpeglib</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\libs\jpeglib\jmemmgr.c">
-      <Filter>libs\jpeglib</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\libs\jpeglib\jmemnobs.c">
-      <Filter>libs\jpeglib</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\libs\jpeglib\jquant1.c">
-      <Filter>libs\jpeglib</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\libs\jpeglib\jquant2.c">
-      <Filter>libs\jpeglib</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\libs\jpeglib\jutils.c">
-      <Filter>libs\jpeglib</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\libs\jpeglib\rdbmp.c">
-      <Filter>libs\jpeglib</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\libs\jpeglib\rdcolmap.c">
-      <Filter>libs\jpeglib</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\libs\jpeglib\rdgif.c">
-      <Filter>libs\jpeglib</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\libs\jpeglib\rdppm.c">
-      <Filter>libs\jpeglib</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\libs\jpeglib\rdrle.c">
-      <Filter>libs\jpeglib</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\libs\jpeglib\rdswitch.c">
-      <Filter>libs\jpeglib</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\libs\jpeglib\rdtarga.c">
-      <Filter>libs\jpeglib</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\libs\jpeglib\transupp.c">
-      <Filter>libs\jpeglib</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\libs\jpeglib\wrbmp.c">
-      <Filter>libs\jpeglib</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\libs\jpeglib\wrgif.c">
-      <Filter>libs\jpeglib</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\libs\jpeglib\wrppm.c">
-      <Filter>libs\jpeglib</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\libs\jpeglib\wrrle.c">
-      <Filter>libs\jpeglib</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\libs\jpeglib\wrtarga.c">
-      <Filter>libs\jpeglib</Filter>
+    <ClCompile Include="..\..\src\libs\squirrel\sqvm.cpp">
+      <Filter>libs\squirrel</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1198,44 +1060,65 @@
     <ClInclude Include="..\..\src\libs\lodepng\lodepng.h">
       <Filter>libs\lodepng</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\libs\jpeglib\cderror.h">
-      <Filter>libs\jpeglib</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\libs\jpeglib\cdjpeg.h">
-      <Filter>libs\jpeglib</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\libs\jpeglib\jconfig.h">
-      <Filter>libs\jpeglib</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\libs\jpeglib\jdct.h">
-      <Filter>libs\jpeglib</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\libs\jpeglib\jerror.h">
-      <Filter>libs\jpeglib</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\libs\jpeglib\jinclude.h">
-      <Filter>libs\jpeglib</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\libs\jpeglib\jmemsys.h">
-      <Filter>libs\jpeglib</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\libs\jpeglib\jmorecfg.h">
-      <Filter>libs\jpeglib</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\libs\jpeglib\jpegint.h">
-      <Filter>libs\jpeglib</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\libs\jpeglib\jpeglib.h">
-      <Filter>libs\jpeglib</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\libs\jpeglib\jversion.h">
-      <Filter>libs\jpeglib</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\libs\jpeglib\transupp.h">
-      <Filter>libs\jpeglib</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\libs\lodepng\mylodepngoptions.h">
       <Filter>libs\lodepng</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\common\PlatformWin32.hpp">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\scripting\scripting.hpp">
+      <Filter>scripting</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\libs\squirrel\sqarray.h">
+      <Filter>libs\squirrel</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\libs\squirrel\sqclass.h">
+      <Filter>libs\squirrel</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\libs\squirrel\sqclosure.h">
+      <Filter>libs\squirrel</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\libs\squirrel\sqcompiler.h">
+      <Filter>libs\squirrel</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\libs\squirrel\sqfuncproto.h">
+      <Filter>libs\squirrel</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\libs\squirrel\sqfuncstate.h">
+      <Filter>libs\squirrel</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\libs\squirrel\sqlexer.h">
+      <Filter>libs\squirrel</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\libs\squirrel\sqobject.h">
+      <Filter>libs\squirrel</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\libs\squirrel\sqopcodes.h">
+      <Filter>libs\squirrel</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\libs\squirrel\sqpcheader.h">
+      <Filter>libs\squirrel</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\libs\squirrel\sqstate.h">
+      <Filter>libs\squirrel</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\libs\squirrel\sqstring.h">
+      <Filter>libs\squirrel</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\libs\squirrel\sqtable.h">
+      <Filter>libs\squirrel</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\libs\squirrel\squirrel.h">
+      <Filter>libs\squirrel</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\libs\squirrel\squserdata.h">
+      <Filter>libs\squirrel</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\libs\squirrel\squtils.h">
+      <Filter>libs\squirrel</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\libs\squirrel\sqvm.h">
+      <Filter>libs\squirrel</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

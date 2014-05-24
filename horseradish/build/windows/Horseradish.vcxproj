@@ -91,14 +91,15 @@
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
-      <AdditionalIncludeDirectories>$(SolutionDir)$(ProjectName)\src;$(SolutionDir)$(ProjectName)\external_includes\freetype2;$(SolutionDir)$(ProjectName)\external_includes\ffmpeg;$(SolutionDir)$(ProjectName)\external_includes\misc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)$(ProjectName)\src;$(SolutionDir)$(ProjectName)\external_includes\freetype2;$(SolutionDir)$(ProjectName)\external_includes\ffmpeg;$(SolutionDir)$(ProjectName)\external_includes\turbojpeg;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
-      <AdditionalLibraryDirectories>$(SolutionDir)$(ProjectName)\external_libs\x86\freetype2;$(SolutionDir)$(ProjectName)\external_libs\x86\ffmpeg;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>freetype.lib;avcodec.lib;avformat.lib;avutil.lib;swscale.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)$(ProjectName)\external_libs\x86\freetype2;$(SolutionDir)$(ProjectName)\external_libs\x86\ffmpeg;$(SolutionDir)$(ProjectName)\external_libs\x86\turbojpeg;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>avcodec.lib;avformat.lib;avutil.lib;swscale.lib;freetype253.lib;turbojpeg.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -109,14 +110,14 @@
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
-      <AdditionalIncludeDirectories>$(SolutionDir)$(ProjectName)\src;$(SolutionDir)$(ProjectName)\external_includes\freetype2;$(SolutionDir)$(ProjectName)\external_includes\ffmpeg;$(SolutionDir)$(ProjectName)\external_includes\misc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)$(ProjectName)\src;$(SolutionDir)$(ProjectName)\external_includes\freetype2;$(SolutionDir)$(ProjectName)\external_includes\ffmpeg;$(SolutionDir)$(ProjectName)\external_includes\turbojpeg;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
-      <AdditionalLibraryDirectories>$(SolutionDir)$(ProjectName)\external_libs\x64\freetype2;$(SolutionDir)$(ProjectName)\external_libs\x64\ffmpeg;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>freetype.lib;avcodec.lib;avformat.lib;avutil.lib;swscale.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)$(ProjectName)\external_libs\x64\freetype2;$(SolutionDir)$(ProjectName)\external_libs\x64\ffmpeg;$(SolutionDir)$(ProjectName)\external_libs\x64\turbojpeg;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>avcodec.lib;avformat.lib;avutil.lib;swscale.lib;freetype253.lib;turbojpeg.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -129,7 +130,8 @@
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
-      <AdditionalIncludeDirectories>$(SolutionDir)$(ProjectName)\src;$(SolutionDir)$(ProjectName)\external_includes\freetype2;$(SolutionDir)$(ProjectName)\external_includes\ffmpeg;$(SolutionDir)$(ProjectName)\external_includes\misc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)$(ProjectName)\src;$(SolutionDir)$(ProjectName)\external_includes\freetype2;$(SolutionDir)$(ProjectName)\external_includes\ffmpeg;$(SolutionDir)$(ProjectName)\external_includes\turbojpeg;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -137,8 +139,8 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
-      <AdditionalLibraryDirectories>$(SolutionDir)$(ProjectName)\external_libs\x86\freetype2;$(SolutionDir)$(ProjectName)\external_libs\x86\ffmpeg;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>freetype.lib;avcodec.lib;avformat.lib;avutil.lib;swscale.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)$(ProjectName)\external_libs\x86\freetype2;$(SolutionDir)$(ProjectName)\external_libs\x86\ffmpeg;$(SolutionDir)$(ProjectName)\external_libs\x86\turbojpeg;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>avcodec.lib;avformat.lib;avutil.lib;swscale.lib;freetype253.lib;turbojpeg.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -151,7 +153,7 @@
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
-      <AdditionalIncludeDirectories>$(SolutionDir)$(ProjectName)\src;$(SolutionDir)$(ProjectName)\external_includes\freetype2;$(SolutionDir)$(ProjectName)\external_includes\ffmpeg;$(SolutionDir)$(ProjectName)\external_includes\misc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)$(ProjectName)\src;$(SolutionDir)$(ProjectName)\external_includes\freetype2;$(SolutionDir)$(ProjectName)\external_includes\ffmpeg;$(SolutionDir)$(ProjectName)\external_includes\turbojpeg;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -159,8 +161,8 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
-      <AdditionalLibraryDirectories>$(SolutionDir)$(ProjectName)\external_libs\x64\freetype2;$(SolutionDir)$(ProjectName)\external_libs\x64\ffmpeg;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>freetype.lib;avcodec.lib;avformat.lib;avutil.lib;swscale.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)$(ProjectName)\external_libs\x64\freetype2;$(SolutionDir)$(ProjectName)\external_libs\x64\ffmpeg;$(SolutionDir)$(ProjectName)\external_libs\x64\turbojpeg;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>avcodec.lib;avformat.lib;avutil.lib;swscale.lib;freetype253.lib;turbojpeg.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -198,7 +200,7 @@
     <ClCompile Include="..\..\src\common\opengl\tools.cpp" />
     <ClCompile Include="..\..\src\common\Path.cpp" />
     <ClCompile Include="..\..\src\common\Plane.cpp" />
-    <ClCompile Include="..\..\src\common\Platform.cpp" />
+    <ClCompile Include="..\..\src\common\PlatformWin32.cpp" />
     <ClCompile Include="..\..\src\common\Quaternion.cpp" />
     <ClCompile Include="..\..\src\common\Random.cpp" />
     <ClCompile Include="..\..\src\common\Ray.cpp" />
@@ -285,70 +287,22 @@
     <ClCompile Include="..\..\src\libs\crunch\lzma_LzmaEnc.cpp" />
     <ClCompile Include="..\..\src\libs\crunch\lzma_LzmaLib.cpp" />
     <ClCompile Include="..\..\src\libs\crunch\lzma_Threads.cpp" />
-    <ClCompile Include="..\..\src\libs\jpeglib\cdjpeg.c" />
-    <ClCompile Include="..\..\src\libs\jpeglib\jaricom.c" />
-    <ClCompile Include="..\..\src\libs\jpeglib\jcapimin.c" />
-    <ClCompile Include="..\..\src\libs\jpeglib\jcapistd.c" />
-    <ClCompile Include="..\..\src\libs\jpeglib\jcarith.c" />
-    <ClCompile Include="..\..\src\libs\jpeglib\jccoefct.c" />
-    <ClCompile Include="..\..\src\libs\jpeglib\jccolor.c" />
-    <ClCompile Include="..\..\src\libs\jpeglib\jcdctmgr.c" />
-    <ClCompile Include="..\..\src\libs\jpeglib\jchuff.c" />
-    <ClCompile Include="..\..\src\libs\jpeglib\jcinit.c" />
-    <ClCompile Include="..\..\src\libs\jpeglib\jcmainct.c" />
-    <ClCompile Include="..\..\src\libs\jpeglib\jcmarker.c" />
-    <ClCompile Include="..\..\src\libs\jpeglib\jcmaster.c" />
-    <ClCompile Include="..\..\src\libs\jpeglib\jcomapi.c" />
-    <ClCompile Include="..\..\src\libs\jpeglib\jcparam.c" />
-    <ClCompile Include="..\..\src\libs\jpeglib\jcprepct.c" />
-    <ClCompile Include="..\..\src\libs\jpeglib\jcsample.c" />
-    <ClCompile Include="..\..\src\libs\jpeglib\jctrans.c" />
-    <ClCompile Include="..\..\src\libs\jpeglib\jdapimin.c" />
-    <ClCompile Include="..\..\src\libs\jpeglib\jdapistd.c" />
-    <ClCompile Include="..\..\src\libs\jpeglib\jdarith.c" />
-    <ClCompile Include="..\..\src\libs\jpeglib\jdatadst.c" />
-    <ClCompile Include="..\..\src\libs\jpeglib\jdatasrc.c" />
-    <ClCompile Include="..\..\src\libs\jpeglib\jdcoefct.c" />
-    <ClCompile Include="..\..\src\libs\jpeglib\jdcolor.c" />
-    <ClCompile Include="..\..\src\libs\jpeglib\jddctmgr.c" />
-    <ClCompile Include="..\..\src\libs\jpeglib\jdhuff.c" />
-    <ClCompile Include="..\..\src\libs\jpeglib\jdinput.c" />
-    <ClCompile Include="..\..\src\libs\jpeglib\jdmainct.c" />
-    <ClCompile Include="..\..\src\libs\jpeglib\jdmarker.c" />
-    <ClCompile Include="..\..\src\libs\jpeglib\jdmaster.c" />
-    <ClCompile Include="..\..\src\libs\jpeglib\jdmerge.c" />
-    <ClCompile Include="..\..\src\libs\jpeglib\jdpostct.c" />
-    <ClCompile Include="..\..\src\libs\jpeglib\jdsample.c" />
-    <ClCompile Include="..\..\src\libs\jpeglib\jdtrans.c" />
-    <ClCompile Include="..\..\src\libs\jpeglib\jerror.c" />
-    <ClCompile Include="..\..\src\libs\jpeglib\jfdctflt.c" />
-    <ClCompile Include="..\..\src\libs\jpeglib\jfdctfst.c" />
-    <ClCompile Include="..\..\src\libs\jpeglib\jfdctint.c" />
-    <ClCompile Include="..\..\src\libs\jpeglib\jidctflt.c" />
-    <ClCompile Include="..\..\src\libs\jpeglib\jidctfst.c" />
-    <ClCompile Include="..\..\src\libs\jpeglib\jidctint.c" />
-    <ClCompile Include="..\..\src\libs\jpeglib\jmemmgr.c" />
-    <ClCompile Include="..\..\src\libs\jpeglib\jmemnobs.c" />
-    <ClCompile Include="..\..\src\libs\jpeglib\jquant1.c" />
-    <ClCompile Include="..\..\src\libs\jpeglib\jquant2.c" />
-    <ClCompile Include="..\..\src\libs\jpeglib\jutils.c" />
-    <ClCompile Include="..\..\src\libs\jpeglib\rdbmp.c" />
-    <ClCompile Include="..\..\src\libs\jpeglib\rdcolmap.c" />
-    <ClCompile Include="..\..\src\libs\jpeglib\rdgif.c" />
-    <ClCompile Include="..\..\src\libs\jpeglib\rdppm.c" />
-    <ClCompile Include="..\..\src\libs\jpeglib\rdrle.c" />
-    <ClCompile Include="..\..\src\libs\jpeglib\rdswitch.c" />
-    <ClCompile Include="..\..\src\libs\jpeglib\rdtarga.c" />
-    <ClCompile Include="..\..\src\libs\jpeglib\transupp.c" />
-    <ClCompile Include="..\..\src\libs\jpeglib\wrbmp.c" />
-    <ClCompile Include="..\..\src\libs\jpeglib\wrgif.c" />
-    <ClCompile Include="..\..\src\libs\jpeglib\wrppm.c" />
-    <ClCompile Include="..\..\src\libs\jpeglib\wrrle.c" />
-    <ClCompile Include="..\..\src\libs\jpeglib\wrtarga.c" />
     <ClCompile Include="..\..\src\libs\lodepng\lodepng.cpp" />
     <ClCompile Include="..\..\src\libs\snappy\snappy-sinksource.cc" />
     <ClCompile Include="..\..\src\libs\snappy\snappy-stubs-internal.cc" />
     <ClCompile Include="..\..\src\libs\snappy\snappy.cc" />
+    <ClCompile Include="..\..\src\libs\squirrel\sqapi.cpp" />
+    <ClCompile Include="..\..\src\libs\squirrel\sqbaselib.cpp" />
+    <ClCompile Include="..\..\src\libs\squirrel\sqclass.cpp" />
+    <ClCompile Include="..\..\src\libs\squirrel\sqcompiler.cpp" />
+    <ClCompile Include="..\..\src\libs\squirrel\sqdebug.cpp" />
+    <ClCompile Include="..\..\src\libs\squirrel\sqfuncstate.cpp" />
+    <ClCompile Include="..\..\src\libs\squirrel\sqlexer.cpp" />
+    <ClCompile Include="..\..\src\libs\squirrel\sqmem.cpp" />
+    <ClCompile Include="..\..\src\libs\squirrel\sqobject.cpp" />
+    <ClCompile Include="..\..\src\libs\squirrel\sqstate.cpp" />
+    <ClCompile Include="..\..\src\libs\squirrel\sqtable.cpp" />
+    <ClCompile Include="..\..\src\libs\squirrel\sqvm.cpp" />
     <ClCompile Include="..\..\src\libs\tinyxml2\tinyxml2.cpp" />
     <ClCompile Include="..\..\src\libs\zlib\adler32.c" />
     <ClCompile Include="..\..\src\libs\zlib\compress.c" />
@@ -374,6 +328,7 @@
     <ClCompile Include="..\..\src\render\renderer2D.cpp" />
     <ClCompile Include="..\..\src\render\rendererDeferred.cpp" />
     <ClCompile Include="..\..\src\render\world.cpp" />
+    <ClCompile Include="..\..\src\scripting\scripting.cpp" />
     <ClCompile Include="..\..\src\SGPUCounter.cpp" />
     <ClCompile Include="..\..\src\videoStream.cpp" />
   </ItemGroup>
@@ -408,6 +363,7 @@
     <ClInclude Include="..\..\src\common\Path.hpp" />
     <ClInclude Include="..\..\src\common\Plane.hpp" />
     <ClInclude Include="..\..\src\common\Platform.hpp" />
+    <ClInclude Include="..\..\src\common\PlatformWin32.hpp" />
     <ClInclude Include="..\..\src\common\Primitives2D.hpp" />
     <ClInclude Include="..\..\src\common\Quaternion.hpp" />
     <ClInclude Include="..\..\src\common\Random.hpp" />
@@ -525,18 +481,6 @@
     <ClInclude Include="..\..\src\libs\crunch\lzma_MyVersion.h" />
     <ClInclude Include="..\..\src\libs\crunch\lzma_Threads.h" />
     <ClInclude Include="..\..\src\libs\crunch\lzma_Types.h" />
-    <ClInclude Include="..\..\src\libs\jpeglib\cderror.h" />
-    <ClInclude Include="..\..\src\libs\jpeglib\cdjpeg.h" />
-    <ClInclude Include="..\..\src\libs\jpeglib\jconfig.h" />
-    <ClInclude Include="..\..\src\libs\jpeglib\jdct.h" />
-    <ClInclude Include="..\..\src\libs\jpeglib\jerror.h" />
-    <ClInclude Include="..\..\src\libs\jpeglib\jinclude.h" />
-    <ClInclude Include="..\..\src\libs\jpeglib\jmemsys.h" />
-    <ClInclude Include="..\..\src\libs\jpeglib\jmorecfg.h" />
-    <ClInclude Include="..\..\src\libs\jpeglib\jpegint.h" />
-    <ClInclude Include="..\..\src\libs\jpeglib\jpeglib.h" />
-    <ClInclude Include="..\..\src\libs\jpeglib\jversion.h" />
-    <ClInclude Include="..\..\src\libs\jpeglib\transupp.h" />
     <ClInclude Include="..\..\src\libs\lodepng\lodepng.h" />
     <ClInclude Include="..\..\src\libs\lodepng\mylodepngoptions.h" />
     <ClInclude Include="..\..\src\libs\snappy\snappy-internal.h" />
@@ -544,6 +488,23 @@
     <ClInclude Include="..\..\src\libs\snappy\snappy-stubs-internal.h" />
     <ClInclude Include="..\..\src\libs\snappy\snappy-stubs-public.h" />
     <ClInclude Include="..\..\src\libs\snappy\snappy.h" />
+    <ClInclude Include="..\..\src\libs\squirrel\sqarray.h" />
+    <ClInclude Include="..\..\src\libs\squirrel\sqclass.h" />
+    <ClInclude Include="..\..\src\libs\squirrel\sqclosure.h" />
+    <ClInclude Include="..\..\src\libs\squirrel\sqcompiler.h" />
+    <ClInclude Include="..\..\src\libs\squirrel\sqfuncproto.h" />
+    <ClInclude Include="..\..\src\libs\squirrel\sqfuncstate.h" />
+    <ClInclude Include="..\..\src\libs\squirrel\sqlexer.h" />
+    <ClInclude Include="..\..\src\libs\squirrel\sqobject.h" />
+    <ClInclude Include="..\..\src\libs\squirrel\sqopcodes.h" />
+    <ClInclude Include="..\..\src\libs\squirrel\sqpcheader.h" />
+    <ClInclude Include="..\..\src\libs\squirrel\sqstate.h" />
+    <ClInclude Include="..\..\src\libs\squirrel\sqstring.h" />
+    <ClInclude Include="..\..\src\libs\squirrel\sqtable.h" />
+    <ClInclude Include="..\..\src\libs\squirrel\squirrel.h" />
+    <ClInclude Include="..\..\src\libs\squirrel\squserdata.h" />
+    <ClInclude Include="..\..\src\libs\squirrel\squtils.h" />
+    <ClInclude Include="..\..\src\libs\squirrel\sqvm.h" />
     <ClInclude Include="..\..\src\libs\tinyxml2\tinyxml2.h" />
     <ClInclude Include="..\..\src\libs\zlib\crc32.h" />
     <ClInclude Include="..\..\src\libs\zlib\deflate.h" />
@@ -565,6 +526,7 @@
     <ClInclude Include="..\..\src\render\renderer2D.hpp" />
     <ClInclude Include="..\..\src\render\rendererDeferred.hpp" />
     <ClInclude Include="..\..\src\render\world.hpp" />
+    <ClInclude Include="..\..\src\scripting\scripting.hpp" />
     <ClInclude Include="..\..\src\SGPUCounter.hpp" />
     <ClInclude Include="..\..\src\videoStream.hpp" />
   </ItemGroup>
