@@ -494,16 +494,13 @@ const void* VideoStream::GetFrame(bool &clockIsBehind, HorseRadish::hInt64 &fram
 		recycleVideoFrameQueue();
 		this->videoQueueActive--;
 #else
-		void* frameData;
-		HorseRadish::hUInt64 timerValue;
-
 		//nesta situação, o frameID é sempre diferente e a duração é 0
-		this->timerInfo.timer.GetTimeIntMS(timerValue);
+		auto timerValue = this->timerInfo.timer.GetTimeIntMS(timerValue);
 		frameID = timerValue;
 		frameDurationS = 0.0;
 
 		//os dados da frame
-		frameData = this->videoQueue[0].frameData;
+		auto frameData = this->videoQueue[0].frameData;
 
 		//só mostro uma vez, portanto, removo já a frame
 		recycleVideoFrameQueue();

@@ -4,8 +4,8 @@
 
 #include "Types.hpp"
 #include "Path.hpp"
-#include "Threadding.hpp"
 
+#include <mutex>
 #include <time.h>
 
 namespace HorseRadish
@@ -41,7 +41,7 @@ private:
 	void *dataMain, *dataEnd, *dataNext;
 	HorseRadish::IO::Path filePath;
 	bool appendToFile;
-	mutable HorseRadish::Threadding::Lock syncLock;
+	mutable std::mutex syncLock;
 	int numberTotalEntries, numberCurrentEntries;
 
 	static const EntryHeader* getNextEntryHeader(const EntryHeader *entryHeader);

@@ -588,6 +588,14 @@ void ConsoleGUI::ConsoleAddTab(ConsoleTab * const newConsoleTab)
 
 void ConsoleGUI::ConsoleProcessMSG(const MSG * const msg)
 {
+	//se a consola está visível
+	if (this->GUIVisivel(HorseRadish::Console::UI::ConsoleGUI::FunctionConsole))
+	{
+		auto curTab = this->ConsoleGetSelectedTab();
+		if (curTab)
+			curTab->ProcessMSG(msg);
+	}
+
 	//se for um tecla e for a tecla '\'
 	if ( (msg->message == WM_KEYDOWN) && (msg->wParam == 220) )
 	{

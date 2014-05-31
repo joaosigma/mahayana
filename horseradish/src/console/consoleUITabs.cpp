@@ -915,6 +915,9 @@ void ConsoleTabStats::DrawContent(HorseRadish::Render::Renderer2D* const render2
 	guiFont->paintEnd();*/
 }
 
+void ConsoleTabStats::ProcessMSG(const MSG * const msg)
+{
+}
 
 ConsoleTabExtra::ConsoleTabExtra(HorseRadish::Render::RendererDeferred * const renderDeferred) : ConsoleGUI::ConsoleTab()
 {

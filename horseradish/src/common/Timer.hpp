@@ -3,50 +3,36 @@
 #define __HTIMER__
 
 #include "Types.hpp"
-#include "Platform.hpp"
-#include "Vector.hpp"
-#include <windows.h>
+
+#include <chrono>
 
 namespace HorseRadish
 {
+	class Timer
+	{
+		std::chrono::high_resolution_clock::time_point timepoint;
 
-class Timer
-{
-	static LARGE_INTEGER freqTimerS;
-	static LARGE_INTEGER freqTimerMS;
-	static double invFreqS;
-	static double invFreqMS;
-	static bool isInitialized;
+	public:
+		Timer();
 
-	LARGE_INTEGER qptStartTime;
+		void ReStart();
 
-public:
-	Timer();
+		double GetTimeS(const bool restart = false);
+		double GetTimeMS(const bool restart = false);
+		hUInt64 GetTimeIntS(const bool restart = false);
+		hUInt64 GetTimeIntMS(const bool restart = false);
 
-	void ReStart();
+		void SetS(const hUInt64 seconds);
+		void SetS(const double seconds);
+		void SetMS(const hUInt64 miliseconds);
+		void SetMS(const double miliseconds);
 
-	double GetTimeS(const bool reStart = false);
-	double GetTimeMS(const bool reStart = false);
-	hUInt32 GetTimeIntS(const bool reStart = false);
-	hUInt32 GetTimeIntS(hUInt64 &seconds, const bool reStart = false);
-	hUInt32 GetTimeIntMS(const bool reStart = false);
-	hUInt32 GetTimeIntMS(hUInt64 &miliseconds, const bool reStart = false);
+		void AddS(const hInt64 seconds);
+		void AddS(const double seconds);
+		void AddMS(const hInt64 miliseconds);
+		void AddMS(const double miliseconds);
+	};
 
-	void SetS(const hUInt32 seconds);
-	void SetS(const hUInt64 seconds);
-	void SetS(const double seconds);
-	void SetMS(const hUInt32 miliseconds);
-	void SetMS(const hUInt64 miliseconds);
-	void SetMS(const double miliseconds);
-
-	void AddS(const hInt32 seconds);
-	void AddS(const hInt64 seconds);
-	void AddS(const double seconds);
-	void AddMS(const hInt32 miliseconds);
-	void AddMS(const hInt64 miliseconds);
-	void AddMS(const double miliseconds);
-};
-
-}//namespace HorseRadish
+} //namespace HorseRadish
 
 #endif

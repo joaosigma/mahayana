@@ -9,30 +9,26 @@
 
 namespace HorseRadish
 {
+	class ScopedAction
+	{
+		std::function<void()> funcCallback;
 
-//§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§
-//§§§§§§ Classe ScopedAction		§§
-//§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§
-class ScopedAction
-{
-    std::function<void ()> funcCallback;
+	public:
+		ScopedAction(const ScopedAction&) = delete;
+		ScopedAction& operator=(const ScopedAction&) = delete;
 
-	//isto impede cópias
-    ScopedAction(ScopedAction const &);
-    ScopedAction& operator=(ScopedAction const &);
+		explicit ScopedAction(std::function<void()> funcCallback)
+			: funcCallback(funcCallback)
+		{
+		}
 
-public:
+		~ScopedAction()
+		{
+			if (funcCallback != nullptr)
+				funcCallback();
+		}
+	};
 
-    explicit ScopedAction(std::function<void ()> funcCallback = nullptr) : funcCallback(funcCallback)
-    {    }
-
-    ~ScopedAction()
-    {
-        if (funcCallback != nullptr)
-			funcCallback();
-    }
-};
-
-}//namespace HorseRadish
+} //namespace HorseRadish
 
 #endif

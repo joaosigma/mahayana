@@ -12,8 +12,6 @@ namespace Logging
 
 const Logger::EntryHeader* Logger::getNextEntryHeader(const Logger::EntryHeader *entryHeader)
 {
-	const Logger::EntryFooter *entryFooter;
-
 	//se não tenho nada
 	if (entryHeader == nullptr)
 		return nullptr;
@@ -305,10 +303,8 @@ void Logger::Log(const EntryType &entryType, const char * const entryData)
 		return;
 
 	{
-		//para garantir acesso exclusivo
-		HorseRadish::Threadding::LockAccess lock(this->syncLock);
+		std::lock_guard<std::mutex> lock(this->syncLock);
 		
-		//basta chamar isto
 		this->addEntry(entryType, entryData, nullptr, 0);
 	}
 }
@@ -320,10 +316,8 @@ void Logger::Log(const EntryType &entryType, const void * const metadata, const 
 		return;
 
 	{
-		//para garantir acesso exclusivo
-		HorseRadish::Threadding::LockAccess lock(this->syncLock);
-
-		//basta chamar isto
+		std::lock_guard<std::mutex> lock(this->syncLock);
+		
 		this->addEntry(entryType, entryData, metadata, metadataSize);
 	}
 }
@@ -335,10 +329,8 @@ void Logger::Log(const char * const entryData)
 		return;
 
 	{
-		//para garantir acesso exclusivo
-		HorseRadish::Threadding::LockAccess lock(this->syncLock);
+		std::lock_guard<std::mutex> lock(this->syncLock);
 
-		//basta chamar isto
 		this->addEntry(EntryType::Normal, entryData, nullptr, 0);
 	}
 }
@@ -350,10 +342,8 @@ void Logger::Log(const void * const metadata, const int metadataSize, const char
 		return;
 
 	{
-		//para garantir acesso exclusivo
-		HorseRadish::Threadding::LockAccess lock(this->syncLock);
+		std::lock_guard<std::mutex> lock(this->syncLock);
 
-		//basta chamar isto
 		this->addEntry(EntryType::Normal, entryData, metadata, metadataSize);
 	}
 }
@@ -365,10 +355,8 @@ void Logger::LogInfo(const char * const entryData)
 		return;
 
 	{
-		//para garantir acesso exclusivo
-		HorseRadish::Threadding::LockAccess lock(this->syncLock);
+		std::lock_guard<std::mutex> lock(this->syncLock);
 
-		//basta chamar isto
 		this->addEntry(EntryType::Info, entryData, nullptr, 0);
 	}
 }
@@ -380,10 +368,8 @@ void Logger::LogInfo(const void * const metadata, const int metadataSize, const 
 		return;
 
 	{
-		//para garantir acesso exclusivo
-		HorseRadish::Threadding::LockAccess lock(this->syncLock);
+		std::lock_guard<std::mutex> lock(this->syncLock);
 
-		//basta chamar isto
 		this->addEntry(EntryType::Info, entryData, metadata, metadataSize);
 	}
 }
@@ -395,10 +381,8 @@ void Logger::LogWarning(const char * const entryData)
 		return;
 
 	{
-		//para garantir acesso exclusivo
-		HorseRadish::Threadding::LockAccess lock(this->syncLock);
+		std::lock_guard<std::mutex> lock(this->syncLock);
 
-		//basta chamar isto
 		this->addEntry(EntryType::Warning, entryData, nullptr, 0);
 	}
 }
@@ -410,10 +394,8 @@ void Logger::LogWarning(const void * const metadata, const int metadataSize, con
 		return;
 
 	{
-		//para garantir acesso exclusivo
-		HorseRadish::Threadding::LockAccess lock(this->syncLock);
+		std::lock_guard<std::mutex> lock(this->syncLock);
 
-		//basta chamar isto
 		this->addEntry(EntryType::Warning, entryData, metadata, metadataSize);
 	}
 }
@@ -425,10 +407,8 @@ void Logger::LogError(const char * const entryData)
 		return;
 
 	{
-		//para garantir acesso exclusivo
-		HorseRadish::Threadding::LockAccess lock(this->syncLock);
+		std::lock_guard<std::mutex> lock(this->syncLock);
 
-		//basta chamar isto
 		this->addEntry(EntryType::Error, entryData, nullptr, 0);
 	}
 }
@@ -440,10 +420,8 @@ void Logger::LogError(const void * const metadata, const int metadataSize, const
 		return;
 
 	{
-		//para garantir acesso exclusivo
-		HorseRadish::Threadding::LockAccess lock(this->syncLock);
+		std::lock_guard<std::mutex> lock(this->syncLock);
 
-		//basta chamar isto
 		this->addEntry(EntryType::Error, entryData, metadata, metadataSize);
 	}
 }
@@ -455,13 +433,9 @@ void Logger::Reset()
 		return;
 
 	{
-		//para garantir acesso exclusivo
-		HorseRadish::Threadding::LockAccess lock(this->syncLock);
+		std::lock_guard<std::mutex> lock(this->syncLock);
 
-		//basta colocar a próxima escrita para o início (eliminando todos os restantes)
 		this->dataNext = this->dataMain;
-
-		//deixo de ter entradas actuais
 		this->numberCurrentEntries = 0;
 	}
 }
@@ -473,10 +447,8 @@ void Logger::WriteToFile(bool resetData)
 		return;
 
 	{
-		//para garantir acesso exclusivo
-		HorseRadish::Threadding::LockAccess lock(this->syncLock);
+		std::lock_guard<std::mutex> lock(this->syncLock);
 
-		//basta chamar esta função
 		this->writeToFile(resetData);
 	}
 }
@@ -488,8 +460,7 @@ void Logger::Iterate(bool fromBottom, std::function<bool (const char * const dat
 		return;
 
 	{
-		//para garantir acesso exclusivo
-		HorseRadish::Threadding::LockAccess lock(this->syncLock);
+		std::lock_guard<std::mutex> lock(this->syncLock);
 
 		//se não tenho nada
 		if (this->dataNext <= this->dataMain)
@@ -551,8 +522,7 @@ void Logger::Iterate(bool fromBottom, std::function<bool (const void * const met
 		return;
 
 	{
-		//para garantir acesso exclusivo
-		HorseRadish::Threadding::LockAccess lock(this->syncLock);
+		std::lock_guard<std::mutex> lock(this->syncLock);
 
 		//se não tenho nada
 		if (this->dataNext <= this->dataMain)

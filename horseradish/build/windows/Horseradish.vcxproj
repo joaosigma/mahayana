@@ -207,7 +207,6 @@
     <ClCompile Include="..\..\src\common\Sorting.cpp" />
     <ClCompile Include="..\..\src\common\Stream.cpp" />
     <ClCompile Include="..\..\src\common\String.cpp" />
-    <ClCompile Include="..\..\src\common\Threadding.cpp" />
     <ClCompile Include="..\..\src\common\Timer.cpp" />
     <ClCompile Include="..\..\src\common\UTF.cpp" />
     <ClCompile Include="..\..\src\console\console.cpp" />
@@ -373,7 +372,6 @@
     <ClInclude Include="..\..\src\common\Sorting.hpp" />
     <ClInclude Include="..\..\src\common\Stream.hpp" />
     <ClInclude Include="..\..\src\common\String.hpp" />
-    <ClInclude Include="..\..\src\common\Threadding.hpp" />
     <ClInclude Include="..\..\src\common\Timer.hpp" />
     <ClInclude Include="..\..\src\common\Types.hpp" />
     <ClInclude Include="..\..\src\common\UTF.hpp" />

@@ -171,9 +171,6 @@
     <ClCompile Include="..\..\src\common\String.cpp">
       <Filter>common</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\common\Threadding.cpp">
-      <Filter>common</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\common\Timer.cpp">
       <Filter>common</Filter>
     </ClCompile>
@@ -652,9 +649,6 @@
       <Filter>common</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\common\String.hpp">
-      <Filter>common</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\common\Threadding.hpp">
       <Filter>common</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\common\Timer.hpp">

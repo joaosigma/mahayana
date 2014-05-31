@@ -4,10 +4,6 @@
 //#define HR_VS_MEMORY_LEAKS
 #define THREAD_PARAM_NUM_MSG	100
 
-///§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§
-//§§§§§§   -= Includes que necessito =-   §§§§§
-//§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§
-
 #ifdef HR_VS_MEMORY_LEAKS
 	#define _CRTDBG_MAP_ALLOC
 	#define _CRTDBG_MAPALLOC
@@ -19,6 +15,8 @@
 #include <float.h>
 #include <process.h>
 #include <windows.h>
+#include <thread>
+#include <atomic>
 
 #include "build.hpp"
 
@@ -55,12 +53,16 @@
 #include "render\rendererDeferred.hpp"
 #include "render\renderer2D.hpp"
 
-#define HR_EXIT_NOT_YET				0xdea0
-#define HR_EXIT_QUIT				0xdead
-#define HR_EXIT_RESTART				0xdeae
-#define HR_EXIT_RESTART_VID			0xdeaf
-#define HR_EXIT_RESTART_EDITOR		0xdea1
-#define HR_EXIT_RENDER_INIT_ERROR	0xdea2
+enum class AppExitAction
+{
+	NONE,
+	TERMINATE,
+	RESTART,
+	RESTART_VID,
+	RESTART_EDITOR,
+	ERROR_WINDOW,
+	ERROR_RENDER
+};
 
 using namespace HorseRadish::Console;
 
@@ -87,20 +89,16 @@ struct THREAD_RENDER_PARAMETERS{
 static DWORD gbAppExitCode=0;
 static RawInput *gbRawInput=nullptr;
 static Window *gbWindow=nullptr;
-static HANDLE gbThreadRenderEventExit=nullptr;
-static HANDLE gbThreadRenderEventReady=nullptr;
+static std::atomic<AppExitAction> appExitAction(AppExitAction::NONE);
 static HorseRadish::Timer gbTotalTimer;
-static int gbAppExitReason=HR_EXIT_NOT_YET;
 static EDITOR_PARAMETERS *gbEditorParam = nullptr;
 static THREAD_RENDER_PARAMETERS *gbThreadParams=nullptr;
 static HorseRadish::IO::FileSystem *gbFileSystem=nullptr;
 static Console *gbMainConsole;
 
-void renderThread(void *threadData);
 void editorProcessMemory();
-void processWindowsKeyUp(WPARAM wParam);
 void writeSystemInfo(Console &console);
-void systemExit(const int exitCause);
+void systemExit(const AppExitAction exitCause);
 void parseAppConfFile(const HorseRadish::IO::Path &filePath);
 LRESULT CALLBACK windowsMessages(HWND hWnd, UINT Message, WPARAM wParam, LPARAM lParam);
 
@@ -233,7 +231,7 @@ void consoleCallbackCommands(Console &console, const unsigned int cmdID, const u
 	//sys_restart
 	if (cmdID == 30)
 	{
-		systemExit(HR_EXIT_RESTART);
+		systemExit(AppExitAction::RESTART);
 		return;
 	}
 
@@ -250,7 +248,7 @@ void consoleCallbackCommands(Console &console, const unsigned int cmdID, const u
 	//ed_begin
 	if (cmdID == 40)
 	{
-		systemExit(HR_EXIT_RESTART_EDITOR);
+		systemExit(AppExitAction::RESTART_EDITOR);
 		return;
 	}
 
@@ -277,7 +275,7 @@ void consoleCallbackCommands(Console &console, const unsigned int cmdID, const u
 	//quit
 	if (cmdID == 50)
 	{
-		systemExit(HR_EXIT_QUIT);
+		systemExit(AppExitAction::TERMINATE);
 		return;
 	}
 
@@ -878,36 +876,27 @@ void systemShutdown()
 }
 
 static
-void systemExit(const int exitCause)
+void systemExit(const AppExitAction exitCause)
 {
-	//fazer restart
-	if (exitCause == HR_EXIT_RESTART)
+	switch (exitCause)
 	{
-		gbAppExitReason = HR_EXIT_RESTART;
+	case AppExitAction::RESTART:
+		appExitAction.store(AppExitAction::RESTART);
 		gbWindow->SendMessageClose();
 		return;
-	}
 
-	//fazer restart só ao video
-	if (exitCause == HR_EXIT_RESTART)
-	{
-		gbAppExitReason = HR_EXIT_RESTART_VID;
+	case AppExitAction::RESTART_VID:
+		appExitAction.store(AppExitAction::RESTART_VID);
 		gbWindow->SendMessageClose();
 		return;
-	}
 
-	//fazer um quit normal
-	if (exitCause == HR_EXIT_QUIT)
-	{
-		gbAppExitReason = HR_EXIT_QUIT;
+	case AppExitAction::TERMINATE:
+		appExitAction.store(AppExitAction::TERMINATE);
 		gbWindow->SendMessageClose();
 		return;
-	}
 
-	//tenho de sair e iniciar o editor
-	if (exitCause == HR_EXIT_RESTART_EDITOR)
-	{
-		gbAppExitReason = HR_EXIT_RESTART_EDITOR;
+	case AppExitAction::RESTART_EDITOR:
+		appExitAction.store(AppExitAction::RESTART_EDITOR);
 		gbWindow->SendMessageClose();
 		return;
 	}
@@ -1359,7 +1348,7 @@ void showInitialCredits(HorseRadish::Render::Renderer2D * const renderData, Open
 	videoColor = 1.0f;
 
 	//ciclo infinito da thread
-	while(true)
+	while (appExitAction.load() == AppExitAction::NONE)
 	{
 		bool frameIsAhead;
 		HorseRadish::hInt64 frameID;
@@ -1379,10 +1368,6 @@ void showInitialCredits(HorseRadish::Render::Renderer2D * const renderData, Open
 			//ajusto a cor
 			videoColor = 1.0f - timerSaida.GetTimeS();
 		}
-
-		//se for para sair
-		if (WaitForSingleObject(gbThreadRenderEventExit, 0) == WAIT_OBJECT_0)
-			break;
 
 		//tiro o ponteiro para o buffer da frame (se já não existe, ou o relógio se atrasou ou cheguei ao fim do video)
 		frameData = videoStream->GetFrame(frameIsAhead, frameID, frameDurationS);
@@ -1470,8 +1455,7 @@ void showInitialCredits(HorseRadish::Render::Renderer2D * const renderData, Open
 				frameDurationS = 0.0;
 		}
 
-		//posso esperar o tempo que esta frame demora a ser mostrada
-		Sleep(HorseRadish::Math::ftoi(frameDurationS * 1000.0));
+		std::this_thread::sleep_for(std::chrono::milliseconds(HorseRadish::Math::ftoi(frameDurationS * 1000.0)));
 	}
 
 	//limpar o último conteúdo
@@ -1490,7 +1474,7 @@ void showInitialCredits(HorseRadish::Render::Renderer2D * const renderData, Open
 }
 
 static
-void renderThread(void *threadData)
+void renderThreadFunc()
 {
 	float timeSpentDrawing, timeSpentProcessing, timeSpentIdle;
 	HorseRadish::Timer timerSecond, timerFrame, timerTotal;
@@ -1512,8 +1496,7 @@ void renderThread(void *threadData)
 	glContext = new OpenglContext(gbWindow, (const HorseRadish::hChar*)gbMainConsole->VarGetDataS("r_glDriver"), 3, 3, (gbMainConsole->VarGetDataI("r_glDebug") != 0), false);
 	if (glContext == nullptr)
 	{
-		gbAppExitReason = HR_EXIT_RENDER_INIT_ERROR;
-		SetEvent(gbThreadRenderEventReady);
+		systemExit(AppExitAction::ERROR_RENDER);
 		return;
 	}
 
@@ -1523,8 +1506,7 @@ void renderThread(void *threadData)
 	//e que tal carregar o GL propriamente dito
 	if (openglInitialize(*glContext) == false)
 	{
-		gbAppExitReason = HR_EXIT_RENDER_INIT_ERROR;
-		SetEvent(gbThreadRenderEventReady);
+		systemExit(AppExitAction::ERROR_RENDER);
 		return;
 	}
 
@@ -1535,8 +1517,7 @@ void renderThread(void *threadData)
 	if (glContext->IsExtensionPresent((OpenglContext::Extensions)(OpenglContext::TextureStorage | OpenglContext::MapBufferAlignment | OpenglContext::ShadingLanguage420Pack | OpenglContext::DirectStateAccess)) == false)
 	{
 		Window::MsgBoxErro("The following OpenGL extensions are required:\n   - GL_ARB_texture_storage\n   - GL_ARB_map_buffer_alignmentn\n   - GL_ARB_shading_language_420pack\n   - GL_EXT_direct_state_access\nApplication cannot proceed.");
-		gbAppExitReason = HR_EXIT_RENDER_INIT_ERROR;
-		SetEvent(gbThreadRenderEventReady);
+		systemExit(AppExitAction::ERROR_RENDER);
 		return;
 	}
 
@@ -1625,9 +1606,6 @@ void renderThread(void *threadData)
 		consolaGUI->ConsoleVisible(false);
 	}
 
-	//posso avisar que estou pronto
-	SetEvent(gbThreadRenderEventReady);
-
 	//se sou developer preciso de fazer algumas coisas
 	if (gbMainConsole->VarGetDataI("developer") != 0)
 	{
@@ -1689,13 +1667,8 @@ void renderThread(void *threadData)
 	timerFrame.ReStart();
 	timerTotal.ReStart();
 
-	//ciclo infinito da thread
-	while(true)
+	while (appExitAction.load() == AppExitAction::NONE)
 	{
-		//se for para sair
-		if (WaitForSingleObject(gbThreadRenderEventExit, 0) == WAIT_OBJECT_0)
-			break;
-
 		//a primeira coisa é acertar os tempos
 		renderer2D->auxTools.lastTimeS = renderer2D->auxTools.curTimeS;
 		renderer2D->auxTools.curTimeS = timerTotal.GetTimeS();
@@ -1783,36 +1756,14 @@ void renderThread(void *threadData)
 			camera->CommitInput(cameraActions, gbRawInput->MStatusPosX(), gbRawInput->MStatusPosY(), true, renderer2D->auxTools.curTimeS - renderer2D->auxTools.lastTimeS);
 		}
 
-		//espero pelo mutex (variável numMsgListaMain), mando a mensagem para o GUI da consola e liberto o mutex
 		if (gbThreadParams->numMsgListaMain > 0)
 		{
-			//tranco a consola e passo por todas as mensagens e actualizo a consola e o overlay
 			for(unsigned int curMsgIndex=0; curMsgIndex<gbThreadParams->numMsgListaMain; curMsgIndex++)
-			{
-				//mando processar as teclas
-				if (gbThreadParams->listaMain[curMsgIndex].message == WM_KEYUP)
-					processWindowsKeyUp(gbThreadParams->listaMain[curMsgIndex].wParam);
-
-				//se a consola está visível
-				if (consolaGUI->GUIVisivel(HorseRadish::Console::UI::ConsoleGUI::FunctionConsole) == true)
-				{
-					//escolho a tab para onde mandar as mensagens
-					if (consolaGUI->ConsoleGetSelectedTab() == consoleUIMain)
-						consoleUIMain->ProcessMSG(gbThreadParams->listaMain + curMsgIndex);
-					else if (consolaGUI->ConsoleGetSelectedTab() == consoleUIDeferred)
-						consoleUIDeferred->ProcessMSG(gbThreadParams->listaMain + curMsgIndex);
-				}
-
-				//mando o resto para a consola e para o sistema de overlays
 				consolaGUI->ConsoleProcessMSG(gbThreadParams->listaMain + curMsgIndex);
-				//SOverlayWndMessage(gbMainConsole, gbThreadParams->listaMain[curMsgIndex].message,gbThreadParams->listaMain[curMsgIndex].wParam,gbThreadParams->listaMain[curMsgIndex].lParam);
-			}
 
-			//verifico se o editor me mandou alguma coisa
 			if ((gbEditorParam != nullptr) && (WaitForSingleObject(gbEditorParam->hEventEditorWrote, 0) == WAIT_OBJECT_0))
 				editorProcessMemory();
 
-			//já não tenho nada na lista
 			gbThreadParams->numMsgListaMain = 0;
 		}
 
@@ -1885,10 +1836,8 @@ void renderThread(void *threadData)
 			//se a frame demorou menos do que aquilo que devia (para dar 60fps)
 			if (frameTotalTimeMS < 16.5)
 			{
-				//durmo o tempo necessário
-				Sleep(16.5 - frameTotalTimeMS);
-
-				//mas não quer dizer que tenha dormido o tempo necessário
+				std::this_thread::sleep_for(std::chrono::milliseconds(HorseRadish::Math::ftoi(16.5 - frameTotalTimeMS)));
+				
 				while (timerFrame.GetTimeMS() < 16.5);
 			}
 		}
@@ -1946,93 +1895,23 @@ void renderThread(void *threadData)
 static
 bool messageLoop()
 {
-	HANDLE gbThreadRender;
-
-	//preicso de espaço para passar / trocar dados com a thread
 	gbThreadParams = new THREAD_RENDER_PARAMETERS;
-
-	//limpo isto
 	memset(gbThreadParams, 0, sizeof(THREAD_RENDER_PARAMETERS));
 
-	//inicio a thread dos gráficos e o evento para a fazer sair
-	gbThreadRenderEventExit = CreateEvent(nullptr, true, false, nullptr);
-	gbThreadRenderEventReady = CreateEvent(nullptr, true, false, nullptr);
-	gbThreadRender = (HANDLE)_beginthread(renderThread, 0, nullptr);
+	std::thread threadRender(renderThreadFunc);
 
-	//espero que a thread fiquer pronta
-	WaitForSingleObject(gbThreadRenderEventReady, INFINITE);
-
-	//aqui vou eu até o windows me mandar parar
-	while (gbAppExitReason == HR_EXIT_NOT_YET)
+	while (appExitAction.load() == AppExitAction::NONE)
 	{
-		//mando ver se há mensagens e se houver, para as mandar
-		gbWindow->PeekMessageDispatch(true);
-
-		//para isto não ocupar o CPU por completo
-		Sleep(0);
+		gbWindow->PeekMessageAndDispatch();
+		std::this_thread::yield();
 	}
 
-	//assinalo o evento para a thread de render terminar e espero que ela termine
-	SetEvent(gbThreadRenderEventExit);
-	WaitForSingleObject(gbThreadRender, INFINITE);
+	threadRender.join();
 
-	//posso apagar esta memória
 	delete gbThreadParams;
 	gbThreadParams = nullptr;
 
-	//fecho estes handles
-	CloseHandle(gbThreadRenderEventExit);
-	CloseHandle(gbThreadRenderEventReady);
-	gbThreadRender = nullptr;
-	gbThreadRenderEventExit = nullptr;
-	gbThreadRenderEventReady = nullptr;
-
-	//correu tudo bem
 	return true;
-}
-
-static
-void processWindowsKeyUp(WPARAM wParam)
-{
-	//só mando teclas como BIND se a consola não está visivel!
-	/*if (consolaGUI->GUIVisivel(CONSOLE_GUI_CONSOLE)==false)
-		{
-		int flags;
-
-		//crio as flags para modificar a tecla
-		flags=(GetKeyState(VK_SHIFT) & 0xFF00)? SCONSOLE_KEY_MSHIFT:0;
-		flags|=(GetKeyState(VK_CONTROL) & 0xFF00)? SCONSOLE_KEY_MCONTROL:0;
-		flags|=(GetKeyState(VK_MENU) & 0xFF00)? SCONSOLE_KEY_MALT:0;
-
-		//mandar para a consola
-		if (wParam>='A' && wParam<='Z')
-			gbMainConsole->BindEmitKey((wParam-'A')+SCONSOLE_KEY_A,flags);
-		else if (wParam>='0' && wParam<='9')
-			gbMainConsole->BindEmitKey((wParam-'0')+SCONSOLE_KEY_0,flags);
-		else if (wParam>=VK_F1 && wParam<=VK_F12)
-			gbMainConsole->BindEmitKey((wParam-VK_F1)+SCONSOLE_KEY_F1,flags);
-		else
-			{
-			switch(wParam){
-				case VK_ESCAPE:		gbMainConsole->BindEmitKey(SCONSOLE_KEY_ESCAPE,flags);break;
-				case VK_RETURN:		gbMainConsole->BindEmitKey(SCONSOLE_KEY_ENTER,flags);break;
-				case VK_SPACE:		gbMainConsole->BindEmitKey(SCONSOLE_KEY_SPACE,flags);break;
-				case VK_TAB:		gbMainConsole->BindEmitKey(SCONSOLE_KEY_TAB,flags);break;
-				case VK_PAUSE:		gbMainConsole->BindEmitKey(SCONSOLE_KEY_PAUSE,flags);break;
-				case VK_UP:			gbMainConsole->BindEmitKey(SCONSOLE_KEY_UP,flags);break;
-				case VK_DOWN:		gbMainConsole->BindEmitKey(SCONSOLE_KEY_DOWN,flags);break;
-				case VK_LEFT:		gbMainConsole->BindEmitKey(SCONSOLE_KEY_LEFT,flags);break;
-				case VK_RIGHT:		gbMainConsole->BindEmitKey(SCONSOLE_KEY_RIGHT,flags);break;
-				}
-			}
-		}*/
-
-	//if (wParam==VK_F8)
-	//{
-	//unsigned int scriptID;
-	//scriptID = SScript::SScriptLoad(mainScriptKernelID,"~/gmdebug.txt",nullptr);
-	//SMemSnapshot();
-	//}
 }
 
 //funções para processar as mensagens vindas do editor
@@ -2083,10 +1962,6 @@ void editorProcessMessages(WPARAM wParam, LPARAM lParam)
 	{
 		MSG msgAux;
 
-		//se foi o WM_KEYUP
-		if (wParam == 2)
-			processWindowsKeyUp(lParam);
-
 		//crio uma mensagem auxiliar para mandar para a consola
 		memset(&msgAux, 0, sizeof(MSG));
 		switch(wParam)
@@ -2109,35 +1984,26 @@ void editorProcessMessages(WPARAM wParam, LPARAM lParam)
 //função principal para receber mensagens do windows
 LRESULT CALLBACK windowsMessages(HWND hWnd, UINT messageID, WPARAM wParam, LPARAM lParam)
 {
-	//esta mensagem é processada directamente aqui
 	if (messageID == WM_INPUT)
     {
-		//mas só faço alguma coisa se tiver onde possa guardar os dados
 		if (gbRawInput != nullptr)
 		{
-			UINT bufferSize;
 			BYTE bufferAux[40];
 	    
-			//basta ler os dados do buffer (40 é suficiente para o rato e teclado, qualquer outro é preciso saber qual o tamanho necessário)
-			bufferSize = sizeof(bufferAux);
+			auto bufferSize = sizeof(bufferAux);
 			GetRawInputData((HRAWINPUT)lParam, RID_INPUT, bufferAux, &bufferSize, sizeof(RAWINPUTHEADER));
 	    
-			//basta mandar os dados
 			gbRawInput->ProcessRawInput((RAWINPUT*)bufferAux);
 		}
 
-		//foi tudo processado
         return 0;
     }
 
-	//se foi uma tecla que foi abaixo ou acima, tenho de mandar isso para o input (se existir)
 	if ((gbRawInput != nullptr) && ((messageID == WM_KEYDOWN) || (messageID == WM_KEYUP)))
 		gbRawInput->ProcessKey((messageID == WM_KEYDOWN), wParam, lParam);
 
-	//qualquer mensagem é colocada nos parametros da thread
 	if (gbThreadParams != nullptr)
 	{
-		//verifico fila de mensagens, se tiver alguma coisa e tiver espaço onde escrever
 		if (gbThreadParams->numMsgListaAux < THREAD_PARAM_NUM_MSG)
 		{
 			memset(gbThreadParams->listaAux + gbThreadParams->numMsgListaAux, 0, sizeof(MSG));
@@ -2148,7 +2014,6 @@ LRESULT CALLBACK windowsMessages(HWND hWnd, UINT messageID, WPARAM wParam, LPARA
 			gbThreadParams->numMsgListaAux++;
 		}
 
-		//se tiver a lista principal a 0 e alguma coisa na minha lista auxiliar, transfiro as coisas para lá
 		if ((gbThreadParams->numMsgListaMain == 0) && (gbThreadParams->numMsgListaAux != 0))
 		{
 			memcpy(gbThreadParams->listaMain, gbThreadParams->listaAux, sizeof(MSG)*gbThreadParams->numMsgListaAux);
@@ -2157,7 +2022,6 @@ LRESULT CALLBACK windowsMessages(HWND hWnd, UINT messageID, WPARAM wParam, LPARA
 		}
 	}
 
-	//se estou em modo de editor e recebo uma mensagem interna, processo-a
 	if ((gbEditorParam != nullptr) && (messageID == gbEditorParam->msgID))
 	{
 		editorProcessMessages(wParam, lParam);
@@ -2168,15 +2032,13 @@ LRESULT CALLBACK windowsMessages(HWND hWnd, UINT messageID, WPARAM wParam, LPARA
 	switch (messageID){
 		case WM_DESTROY:
 		case WM_CLOSE:
-						//posso simplesmente sair
-						if (gbAppExitReason == HR_EXIT_NOT_YET)
-							gbAppExitReason = HR_EXIT_QUIT;
+						appExitAction.store(AppExitAction::TERMINATE);
+						
 						PostQuitMessage(0);
 						return 0;
 		case WM_QUIT:
-						//posso simplesmente sair
-						if (gbAppExitReason == HR_EXIT_NOT_YET)
-							gbAppExitReason = HR_EXIT_QUIT;
+						appExitAction.store(AppExitAction::TERMINATE);
+
 						gbAppExitCode = wParam;
 						return 0;
 						
@@ -2221,8 +2083,7 @@ int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PWSTR lpCmdLine, int n
 	}
 
 	//make sure only one app is running
-	HorseRadish::Platform::SingleInstance singleInstance;
-	if (singleInstance.IsAnotherRunning() == true)
+	if (HorseRadish::Platform::SingleInstance().IsAnotherRunning() == true)
 	{
 		Window::MsgBoxErro("Another instance of this application is already running.");
 		return 0;
@@ -2253,12 +2114,18 @@ int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PWSTR lpCmdLine, int n
 	systemShutdown();
 
 	//if restart is required
-	if (gbAppExitReason == HR_EXIT_RESTART)
+	switch (appExitAction.load())
+	{
+	case AppExitAction::RESTART:
 		HorseRadish::Platform::InstanciateProcess("Horseradish.exe");
-	else if (gbAppExitReason == HR_EXIT_RESTART_EDITOR)
+		break;
+	case AppExitAction::RESTART_EDITOR:
 		HorseRadish::Platform::InstanciateProcess("BloodyMary.exe");
-
-	//reset floating-point control data
+		break;
+	default:
+		break;
+	}
+	
 	_controlfp_s(&curControlWord, _CW_DEFAULT, 0xfffff);
 	return gbAppExitCode;
 

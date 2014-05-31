@@ -6,8 +6,8 @@
 #include "Containers.hpp"
 #include "Hashing.hpp"
 
+#include <mutex>
 #include <stdlib.h>
-#include <windows.h>
 
 namespace HorseRadish
 {
@@ -61,8 +61,8 @@ class MemoryManager
 
 	MEM_POOL *MemPools;
 	AVL *FreeNodes;
+	std::mutex mutex;
 	int mngPoolSize,mngAlign,workFlags;
-	CRITICAL_SECTION criticalSection;
 	int logID;
 	HorseRadish::Containers::Pool<AVL> poolAVL;
 	STATS InfoData;

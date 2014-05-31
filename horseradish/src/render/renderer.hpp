@@ -13,32 +13,27 @@
 
 namespace HorseRadish
 {
+	namespace Render
+	{
+		class Renderer
+		{
+		protected:
 
-namespace Render
-{
+			struct Stats{
+				unsigned int numTris, numGlDrawElements;
 
-//§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§
-//§§§§§§   Classe Renderer	§§§§§
-//§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§
-class Renderer
-{
-protected:
-	
-	struct Stats{
-		unsigned int numTris, numGlDrawElements;
+				Stats() : numTris(0), numGlDrawElements(0) { }
+			};
 
-		Stats() : numTris(0), numGlDrawElements(0) { }
-	};
+			HorseRadish::OpenGL::Objects::Context *glContext;
+			Stats stats;
 
-	HorseRadish::OpenGL::Objects::Context *glContext;
-	Stats stats;
+		public:
+			Renderer(HorseRadish::OpenGL::Objects::Context * const glContext);
+			virtual ~Renderer();
+		};
 
-public:
-	Renderer(HorseRadish::OpenGL::Objects::Context * const glContext);
-	virtual ~Renderer();
-};
-
-}//namespace Render
-}//namespace HorseRadish
+	}
+}
 
 #endif

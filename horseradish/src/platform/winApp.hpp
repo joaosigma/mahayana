@@ -7,16 +7,14 @@
 #include "common\FileSystem.hpp"
 #include "common\opengl\objects.hpp"
 
+#include <mutex>
+
 #include <windows.h>
 
-//declarações
 class Window;
 class OpenglContext;
 class RawInput;
 
-//§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§
-//§§§§§§   Classe Window	§§§§§
-//§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§
 class Window
 {
 	HWND hWnd;
@@ -40,7 +38,7 @@ public:
 	bool SetWindowAlpha(const unsigned char &valorAlpha) const;
 	bool SendMessageClose() const;
 	bool SetFocus() const;
-	void PeekMessageDispatch(bool translateMessage = true) const;
+	void PeekMessageAndDispatch() const;
 
 	static void MsgBoxInfo(const HorseRadish::String &msg);
 	static void MsgBoxInfo(const char * const msg);
@@ -54,9 +52,6 @@ public:
 	static bool CommandLineGetParam(PWSTR cmdLine, const HorseRadish::hChar * const parameterName, int &parameterValue);
 };
 
-//§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§
-//§§§§§§   Classe OpenglContext	§§§§§
-//§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§
 class OpenglContext : public HorseRadish::OpenGL::Objects::Context
 {
 	HDC hDC;
@@ -64,13 +59,11 @@ class OpenglContext : public HorseRadish::OpenGL::Objects::Context
 	const Window *window;
 	unsigned int usedPFD;
 
-	//estas funções estão sempre presentes no módulo de OpenGL
 	HGLRC (APIENTRY *wglCreateContext)			(HDC hdc);
 	BOOL  (APIENTRY *wglMakeCurrent)			(HDC hdc, HGLRC hglrc);
 	BOOL  (APIENTRY *wglDeleteContext)			(HGLRC hglrc);
 	BOOL  (APIENTRY *wglSwapBuffers)			(HDC hdc);
 
-	//estas são as extensões de WGL suportadas
 	// WGL_ARB_create_context
 	typedef HGLRC (APIENTRY *PFNWGLCREATECONTEXTATTRIBSARBPROC)(HDC hDC, HGLRC hShareContext, const int *attribList);
 	PFNWGLCREATECONTEXTATTRIBSARBPROC wglCreateContextAttribsARB;
@@ -101,13 +94,10 @@ public:
 	bool SwapBuffers(void) const;
 };
 
-//§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§
-//§§§§§§   Classe RawInput	§§§§§
-//§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§
 class RawInput
 {
 	int numMaxTeclas;
-	CRITICAL_SECTION criticalSection;
+	std::mutex mutex;
 	float ratoSnapshot[3], ratoPosAccum[3];
 	bool *teclasSnapshot, *teclasTempoReal;	
 

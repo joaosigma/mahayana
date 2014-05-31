@@ -2,21 +2,16 @@
 
 namespace HorseRadish
 {
+	namespace Render
+	{
+		Renderer::Renderer(HorseRadish::OpenGL::Objects::Context * const glContext)
+			: glContext(glContext)
+		{
+		}
 
-namespace Render
-{
+		Renderer::~Renderer()
+		{
+		}
 
-//§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§
-//§§§§§§   Classe Renderer	§§§§§
-//§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§
-Renderer::Renderer(HorseRadish::OpenGL::Objects::Context * const glContext)
-	: glContext(glContext)
-{
+	}
 }
-
-Renderer::~Renderer()
-{
-}
-
-}//namespace Render
-}//namespace HorseRadish

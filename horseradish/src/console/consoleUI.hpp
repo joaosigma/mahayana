@@ -39,11 +39,14 @@ public:
 
 		const HorseRadish::String* GetText();
 		int GetTextAreaWidth();
+
 		void SetTextAreaWidth(const int &width);
 		void SetContentAreaSize(const int &width, const int &height);
 		void SetContentAreaOrigin(const int &x, const int &y);
 		void SetContentScreenDelta(const int &x, const int &y);
+		
 		virtual void DrawContent(HorseRadish::Render::Renderer2D* const render2D, const HorseRadish::Matrix &transformMatrix) = 0;
+		virtual void ProcessMSG(const MSG * const msg) = 0;
 	};
 
 	enum TypeSMS{
@@ -150,6 +153,7 @@ public:
 	~ConsoleTabStats();
 
 	void DrawContent(HorseRadish::Render::Renderer2D* const render2D, const HorseRadish::Matrix &transformMatrix);
+	void ProcessMSG(const MSG * const msg);
 };
 
 class ConsoleTabExtra : public ConsoleGUI::ConsoleTab
