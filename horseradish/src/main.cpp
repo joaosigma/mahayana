@@ -782,7 +782,7 @@ bool systemInitialize(const HINSTANCE hInstance, const PWSTR lpCmdLine)
 	if (HorseRadish::OpenGL::OpenGLLoadLibrary(gbMainConsole->VarGetDataS("r_glDriver")) == false)
 	{
 		gbMainConsole->LogError("Error linking OpenGL driver!!");
-		Window::MsgBoxErro("Unable to load OpenGL driver!\nApplication cannot proceed.");
+		Window::MsgBoxError("Unable to load OpenGL driver!\nApplication cannot proceed.");
 		return false;
 	}
 
@@ -1190,7 +1190,7 @@ bool windowInitialize()
 		//inicio janela
 		if (gbWindow->WindowInit(windowsMessages, (const HorseRadish::hChar*)"Horseradish engine v1.0", winWidth, winHeight, winFullscreen)==false)
 		{
-			Window::MsgBoxErro("Unable to create rendering window!\nApplication cannot proceed.");
+			Window::MsgBoxError("Unable to create rendering window!\nApplication cannot proceed.");
 			return false;
 		}
 
@@ -1701,7 +1701,7 @@ void renderThreadFunc()
 			HorseRadish::Streams::FileStream fileStream(HorseRadish::IO::Path("screenshot.bmp"), false, true);
 
 			//basta mandar tirar o screenshot
-			glContext->TakeScreenshot(fileStream);
+			//glContext->TakeScreenshot(fileStream); //should come from the framebuffers
 		}
 
 		//se alguma coisa da consola precisar de ser desenhado
@@ -1938,7 +1938,7 @@ void editorProcessMemory()
 		((int*)gbEditorParam->mappedBufferChar)[0] = 0;
 		ReleaseMutex(gbEditorParam->hMutex);
 
-		Window::MsgBoxAviso(HorseRadish::String("%s - %d", pathFicheiro.GetData(), formatoInterno).GetData());
+		Window::MsgBoxWarn(HorseRadish::String("%s - %d", pathFicheiro.GetData(), formatoInterno).GetData());
 		return;
 	}
 }
@@ -2069,21 +2069,21 @@ int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PWSTR lpCmdLine, int n
 	//check if we have a clean boot
 	if ((HorseRadish::Platform::GetSystemInfo(HorseRadish::Platform::CleanBoot, infoValue) == false) || (infoValue == 0))
 	{
-		Window::MsgBoxAviso("The OS did not boot normally!\nFor security reasons the application will now exit.");
+		Window::MsgBoxWarn("The OS did not boot normally!\nFor security reasons the application will now exit.");
 		return 0;
 	}
 
 	//check necessary CPU features (SSE, SSE2 e CMOV)
 	if (HorseRadish::Machine::CPUCheckFeatures((HorseRadish::Machine::CPUFeature)(HorseRadish::Machine::SSE | HorseRadish::Machine::SSE2 | HorseRadish::Machine::CMov)) == false)
 	{
-		Window::MsgBoxAviso("The CPU doesn't have the minimum required features.\nThe application cannot proceed.");
+		Window::MsgBoxWarn("The CPU doesn't have the minimum required features.\nThe application cannot proceed.");
 		return 0;
 	}
 
 	//make sure only one app is running
 	if (HorseRadish::Platform::SingleInstance().IsAnotherRunning() == true)
 	{
-		Window::MsgBoxErro("Another instance of this application is already running.");
+		Window::MsgBoxError("Another instance of this application is already running.");
 		return 0;
 	}
 

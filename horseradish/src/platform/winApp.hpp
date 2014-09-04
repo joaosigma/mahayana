@@ -1,11 +1,10 @@
 #pragma once
-#ifndef __WINSYS__
-#define __WINSYS__
 
 #include "common\Platform.hpp"
 #include "common\String.hpp"
-#include "common\FileSystem.hpp"
 #include "common\opengl\objects.hpp"
+
+#include "wglext.h"
 
 #include <mutex>
 
@@ -42,10 +41,10 @@ public:
 
 	static void MsgBoxInfo(const HorseRadish::String &msg);
 	static void MsgBoxInfo(const char * const msg);
-	static void MsgBoxAviso(const HorseRadish::String &msg);
-	static void MsgBoxAviso(const char * const msg);
-	static void MsgBoxErro(const HorseRadish::String &msg);
-	static void MsgBoxErro(const char * const msg);
+	static void MsgBoxWarn(const HorseRadish::String &msg);
+	static void MsgBoxWarn(const char * const msg);
+	static void MsgBoxError(const HorseRadish::String &msg);
+	static void MsgBoxError(const char * const msg);
 
 	static bool CommandLineHasParam(PWSTR cmdLine, const HorseRadish::hChar * const parameterName);
 	static bool CommandLineGetParam(PWSTR cmdLine, const HorseRadish::hChar * const parameterName, HorseRadish::String &parameterValue);
@@ -59,29 +58,29 @@ class OpenglContext : public HorseRadish::OpenGL::Objects::Context
 	const Window *window;
 	unsigned int usedPFD;
 
-	HGLRC (APIENTRY *wglCreateContext)			(HDC hdc);
-	BOOL  (APIENTRY *wglMakeCurrent)			(HDC hdc, HGLRC hglrc);
-	BOOL  (APIENTRY *wglDeleteContext)			(HGLRC hglrc);
-	BOOL  (APIENTRY *wglSwapBuffers)			(HDC hdc);
+	HGLRC (APIENTRY *wglCreateContext)	(HDC hdc);
+	BOOL  (APIENTRY *wglMakeCurrent)	(HDC hdc, HGLRC hglrc);
+	BOOL  (APIENTRY *wglDeleteContext)	(HGLRC hglrc);
+	BOOL  (APIENTRY *wglSwapBuffers)	(HDC hdc);
 
-	// WGL_ARB_create_context
-	typedef HGLRC (APIENTRY *PFNWGLCREATECONTEXTATTRIBSARBPROC)(HDC hDC, HGLRC hShareContext, const int *attribList);
+#ifdef WGL_ARB_create_context
 	PFNWGLCREATECONTEXTATTRIBSARBPROC wglCreateContextAttribsARB;
-	// WGL_ARB_extensions_string
-	typedef const char * (APIENTRYP PFNWGLGETEXTENSIONSSTRINGARBPROC) (HDC hdc);
+#endif
+
+#ifdef WGL_ARB_extensions_string
 	PFNWGLGETEXTENSIONSSTRINGARBPROC wglGetExtensionsStringARB;
-	// WGL_ARB_pixel_format
-	typedef BOOL (APIENTRYP PFNWGLGETPIXELFORMATATTRIBIVARBPROC)(HDC hdc, int iPixelFormat, int iLayerPlane, UINT nAttributes, const int *piAttributes, int *piValues);
-	typedef BOOL (APIENTRYP PFNWGLGETPIXELFORMATATTRIBFVARBPROC)(HDC hdc, int iPixelFormat, int iLayerPlane, UINT nAttributes, const int *piAttributes, FLOAT *pfValues);
-	typedef BOOL (APIENTRYP PFNWGLCHOOSEPIXELFORMATARBPROC)(HDC hdc, const int *piAttribIList, const FLOAT *pfAttribFList, UINT nMaxFormats, int *piFormats, UINT *nNumFormats);
+#endif
+
+#ifdef WGL_ARB_pixel_format
 	PFNWGLGETPIXELFORMATATTRIBIVARBPROC wglGetPixelFormatAttribivARB;
 	PFNWGLGETPIXELFORMATATTRIBFVARBPROC wglGetPixelFormatAttribfvARB;
 	PFNWGLCHOOSEPIXELFORMATARBPROC wglChoosePixelFormatARB;
-	// WGL_EXT_swap_control
-	typedef BOOL (APIENTRYP PFNWGLSWAPINTERVALEXTPROC)(int interval);
-	typedef int (APIENTRYP PFNWGLGETSWAPINTERVALEXTPROC)(void);
+#endif
+
+#ifdef WGL_EXT_swap_control
 	PFNWGLSWAPINTERVALEXTPROC wglSwapIntervalEXT;
 	PFNWGLGETSWAPINTERVALEXTPROC wglGetSwapIntervalEXT;
+#endif
 	
 	void loadWGLFunctions(HMODULE openglModule);
 	bool auxWindowWGLExt(HINSTANCE hInstance, HMODULE openglModule);
@@ -89,17 +88,16 @@ public:
 	OpenglContext(const Window * const window, const HorseRadish::hChar *openGLModuleName, int contextMajorVersion, int contextMinorVersion, bool contextDebug, bool contextForwardCompatible);
 	~OpenglContext();
 
-	bool TakeScreenshot(HorseRadish::Streams::FileStream &fileStream) const;
 	void SetSwapInterval(const unsigned int &interval) const;
 	bool SwapBuffers(void) const;
 };
 
 class RawInput
 {
-	int numMaxTeclas;
+	int numMaxKeyStrokes;
 	std::mutex mutex;
-	float ratoSnapshot[3], ratoPosAccum[3];
-	bool *teclasSnapshot, *teclasTempoReal;	
+	float mouseSnapshot[3], mousePosAccum[3];
+	bool *keysSnapshot, *keysRealtime;
 
 public:
 	RawInput(const Window * const window);
@@ -114,5 +112,3 @@ public:
 	float MStatusPosY() const;
 	float MStatusPosZ() const;
 };
-
-#endif

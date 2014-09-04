@@ -1,14 +1,12 @@
-#include "common\Platform.hpp"
+#include "winApp.hpp"
+
 #include "common\Common.hpp"
 #include "common\UTF.hpp"
-#include "common\Image.hpp"
-#include "common\ImageFactory.hpp"
 #include "common\opengl\openGL.hpp"
 
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
-#include "winApp.hpp"
 
 static
 bool checkBestDisplayFrequency(DEVMODE * const deviceMode)
@@ -70,21 +68,18 @@ Window::~Window()
 
 bool Window::WindowInit(WNDPROC procFunc, const HorseRadish::hChar *windowTitle, const unsigned int winWidth, const unsigned int winHeight, const bool winFullscreen)
 {
-	WNDCLASSEXW windowClass;
 	DWORD dwExStyle, dwStyle;
 	RECT windowRect, desktopRect;
-	DEVMODE	dmScreenSettings;
-	wchar_t windowTitleWChar[256];
 
 	if (this->isInitialized == true)
 	{
-		Window::MsgBoxErro("Window already initialized.\nApplication cannot proceed.");
+		Window::MsgBoxError("Window already initialized.\nApplication cannot proceed.");
 		return false;
 	}
 
 	if ((windowTitle == nullptr) || (*windowTitle == '\0') || (winWidth == 0) || (winHeight == 0))
 	{
-		Window::MsgBoxErro("Incorrect data: cannot create window.\nApplication cannot proceed.");
+		Window::MsgBoxError("Incorrect data: cannot create window.\nApplication cannot proceed.");
 		return false;
 	}
 
@@ -96,24 +91,27 @@ bool Window::WindowInit(WNDPROC procFunc, const HorseRadish::hChar *windowTitle,
 	windowRect.bottom = winHeight;
 
 	HorseRadish::UTF::ConvertUTF8To("HorseRadish graphics engine...", HorseRadish::UTF::Windows, this->className, sizeof(this->className));
-	HorseRadish::UTF::ConvertUTF8To(windowTitle, HorseRadish::UTF::Windows, windowTitleWChar, sizeof(windowTitleWChar));
 
-	memset(&windowClass, 0, sizeof(WNDCLASSEXW));
-	windowClass.cbSize = sizeof (WNDCLASSEXW);
-	windowClass.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
-	windowClass.lpfnWndProc = (WNDPROC)procFunc;
-	windowClass.cbClsExtra = 0;
-	windowClass.cbWndExtra = 0;
-	windowClass.hInstance = this->hInstance;
-	windowClass.hIcon = nullptr;
-	windowClass.hCursor = nullptr;
-	windowClass.hbrBackground = nullptr;
-	windowClass.lpszMenuName = nullptr;
-	windowClass.lpszClassName = this->className;
-	if (RegisterClassEx(&windowClass) == 0)
 	{
-		Window::MsgBoxErro("Unable to register window class.\nApplication cannot proceed.");
-		return false;
+		WNDCLASSEXW windowClass;
+
+		memset(&windowClass, 0, sizeof(WNDCLASSEXW));
+		windowClass.cbSize = sizeof(WNDCLASSEXW);
+		windowClass.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
+		windowClass.lpfnWndProc = (WNDPROC)procFunc;
+		windowClass.cbClsExtra = 0;
+		windowClass.cbWndExtra = 0;
+		windowClass.hInstance = this->hInstance;
+		windowClass.hIcon = nullptr;
+		windowClass.hCursor = nullptr;
+		windowClass.hbrBackground = nullptr;
+		windowClass.lpszMenuName = nullptr;
+		windowClass.lpszClassName = this->className;
+		if (RegisterClassEx(&windowClass) == 0)
+		{
+			Window::MsgBoxError("Unable to register window class.\nApplication cannot proceed.");
+			return false;
+		}
 	}
 
 	this->originalDeviceMode.dmSize = sizeof(DEVMODE);
@@ -122,6 +120,8 @@ bool Window::WindowInit(WNDPROC procFunc, const HorseRadish::hChar *windowTitle,
 
 	if (winFullscreen)
 	{
+		DEVMODE	dmScreenSettings;
+
 		memset(&dmScreenSettings, 0, sizeof(DEVMODE));
 		dmScreenSettings.dmSize = sizeof(DEVMODE);
 		dmScreenSettings.dmPelsWidth = winWidth;
@@ -131,7 +131,7 @@ bool Window::WindowInit(WNDPROC procFunc, const HorseRadish::hChar *windowTitle,
 
 		if ((checkBestDisplayFrequency(&dmScreenSettings) == false) || (ChangeDisplaySettings(&dmScreenSettings, CDS_FULLSCREEN | CDS_RESET) != DISP_CHANGE_SUCCESSFUL))
 		{
-			Window::MsgBoxAviso("Unable to change to fullscreen.\nApplication will continue in window mode.");
+			Window::MsgBoxWarn("Unable to change to fullscreen.\nApplication will continue in window mode.");
 
 			dwExStyle = WS_EX_APPWINDOW;
 			dwStyle = WS_CAPTION | WS_VISIBLE;
@@ -155,13 +155,18 @@ bool Window::WindowInit(WNDPROC procFunc, const HorseRadish::hChar *windowTitle,
 	if (SystemParametersInfo(SPI_GETWORKAREA, 0, &desktopRect, 0) != TRUE)
 		desktopRect.bottom = desktopRect.left = desktopRect.right = desktopRect.top = 0;
 
-	this->hWnd = CreateWindowEx(dwExStyle, this->className, windowTitleWChar, dwStyle, desktopRect.left + 5, desktopRect.top + 5, (windowRect.right - windowRect.left), (windowRect.bottom - windowRect.top), HWND_DESKTOP, nullptr, this->hInstance, nullptr);
-	if (this->hWnd == nullptr)
 	{
-		Window::MsgBoxErro("Unable to create window!\nApplication cannot proceed.");
+		wchar_t windowTitleWChar[256];
+		HorseRadish::UTF::ConvertUTF8To(windowTitle, HorseRadish::UTF::Windows, windowTitleWChar, sizeof(windowTitleWChar));
 
-		UnregisterClass(this->className, this->hInstance);
-		return false;
+		this->hWnd = CreateWindowEx(dwExStyle, this->className, windowTitleWChar, dwStyle, desktopRect.left + 5, desktopRect.top + 5, (windowRect.right - windowRect.left), (windowRect.bottom - windowRect.top), HWND_DESKTOP, nullptr, this->hInstance, nullptr);
+		if (this->hWnd == nullptr)
+		{
+			Window::MsgBoxError("Unable to create window!\nApplication cannot proceed.");
+
+			UnregisterClass(this->className, this->hInstance);
+			return false;
+		}
 	}
 
 	SetCursor(nullptr);
@@ -172,115 +177,6 @@ bool Window::WindowInit(WNDPROC procFunc, const HorseRadish::hChar *windowTitle,
 
 bool Window::WindowEditorInit(WNDPROC procFunc, const HorseRadish::hChar *windowTitle, const unsigned int winWidth, const unsigned int winHeight, const HWND handleWindowParent)
 {
-	/*WNDCLASSEXW wc;
-	DWORD dwExStyle, dwStyle;
-	wchar_t windowTitleWChar[256];
-
-	//se já iniciei
-	if (this->isInitialized == true)
-	{
-		Window::MsgBoxErro("Window already initialized.\nApplication cannot proceed.");
-		return false;
-	}
-
-	//verificar parametros e dados destes
-	if (title==nullptr || winWidth==0 || winHeight==0 || OpenGLDllName==nullptr || *OpenGLDllName=='\0')
-	{
-		Window::MsgBoxErro("Incorrect data! Cannot create window.\nApplication cannot proceed.");
-		return false;
-	}
-
-	//guardo isto
-	this->winWidth = winWidth;
-	this->winHeight = winHeight;
-
-	//tenho de buscar os ponteiros para isto
-	this->wglCreateContext=(HGLRC (APIENTRY *)(HDC hdc))GetProcAddress(GetModuleHandle(OpenGLDllName), "wglCreateContext");
-	this->wglDeleteContext=(BOOL (APIENTRY *)(HGLRC hglrc))GetProcAddress(GetModuleHandle(OpenGLDllName), "wglDeleteContext");
-	this->wglMakeCurrent=(BOOL (APIENTRY *)(HDC hdc, HGLRC hglrc))GetProcAddress(GetModuleHandle(OpenGLDllName), "wglMakeCurrent");
-	this->wglSwapBuffers=(BOOL (APIENTRY *)(HDC hdc))GetProcAddress(GetModuleHandle(OpenGLDllName), "wglSwapBuffers");
-	if (this->wglCreateContext==nullptr || this->wglDeleteContext==nullptr || this->wglMakeCurrent==nullptr || this->wglSwapBuffers==nullptr)
-		return false;
-
-	//guardo já o nome da classe e também transformo o titulo da janela
-	HorseRadish::UTF::ConvertUTF8To("SIGMA Graphics Engine...", HorseRadish::UTF::Windows, this->className, sizeof(this->className));
-	HorseRadish::UTF::ConvertUTF8To(windowTitle, HorseRadish::UTF::Windows, windowTitleWChar, sizeof(windowTitleWChar));
-
-	//tento registar a classe da janela
-	memset(&wc,0,sizeof(WNDCLASSEXW));
-	wc.cbSize			= sizeof (WNDCLASSEXW);
-	wc.style			= CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
-	wc.lpfnWndProc		= (WNDPROC)procFunc;
-	wc.cbClsExtra		= 0;
-	wc.cbWndExtra		= 0;
-	wc.hInstance		= this->hInstance;
-	wc.hIcon			= nullptr;
-	wc.hCursor			= nullptr;
-	wc.hbrBackground	= nullptr;
-	wc.lpszMenuName		= nullptr;
-	wc.lpszClassName	= this->className;
-	if (!RegisterClassEx(&wc))
-	{
-		Window::MsgBoxErro("Unable to register window class!\nApplication cannot proceed.");
-		return false;
-	}
-
-	//sou filho de uma outra janela (o meu pai é o editor)
-	dwExStyle = 0;
-	dwStyle = WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN;
-
-	//crio a janela
-	this->hWnd=CreateWindowEx(dwExStyle, this->className, windowTitleWChar, dwStyle, 0, 0, winWidth, winHeight, handleWindowParent, nullptr, this->hInstance, nullptr);
-	if (this->hWnd==nullptr)
-	{
-		this->WindowKill();
-		Window::MsgBoxErro("Unable to create window!\nApplication cannot proceed.");
-		return false;
-	}
-
-	//obtenho o device context
-	this->hDC=GetDC(this->hWnd);
-	if (this->hDC==nullptr)
-	{
-		this->WindowKill();
-		Window::MsgBoxErro("Unable to device context!\nApplication cannot proceed.");
-		return false;
-	}
-
-	//procuro o melhor, tendo em conta o WGL
-	this->usedPFD=checkBestPFD(this->hDC);
-
-	//carrego o pixel format
-	if(this->usedPFD==0 || SetPixelFormat(this->hDC,this->usedPFD,nullptr)==false)
-	{
-		this->WindowKill();
-		Window::MsgBoxErro("Cannot find a useful pixel format!\nApplication cannot proceed.");
-		return false;
-	}
-
-	//crio o rendering context
-	if (!(this->hRC=this->wglCreateContext(this->hDC)))
-	{
-		this->WindowKill();
-		Window::MsgBoxErro("Unable to create a rendering context!\nApplication cannot proceed.");
-		return false;
-	}
-
-	//activo o rendering context
-	if(!this->wglMakeCurrent(this->hDC,this->hRC))
-	{
-		this->WindowKill();
-		Window::MsgBoxErro("Unable to activate a rendering context!\nApplication cannot proceed.");
-		return false;
-	}
-
-	//carrego por fim o WGL
-	HorseRadish::OpenGL::Windows::ExtensionsLoad(OpenGLDllName);
-
-	//correu tudo bem
-	this->isInitialized = true;
-	return true;*/
-
 	return false;
 }
 
@@ -296,13 +192,13 @@ void Window::WindowKill()
 	if (this->hWnd != nullptr)
 	{
 		if (DestroyWindow(this->hWnd) == FALSE)
-			Window::MsgBoxErro("Unable to delete window handle.");
+			Window::MsgBoxError("Unable to delete window handle.");
 
 		this->hWnd = nullptr;
 	}
 
 	if (UnregisterClass(this->className, this->hInstance) == FALSE)
-		Window::MsgBoxErro("Unable to unregister window class.");
+		Window::MsgBoxError("Unable to unregister window class.");
 
 	this->isInitialized = false;
 }
@@ -354,7 +250,7 @@ void Window::MsgBoxInfo(const char * const msg)
 	Window::MsgBoxInfo(msgConvertida);
 }
 
-void Window::MsgBoxAviso(const HorseRadish::String &msg)
+void Window::MsgBoxWarn(const HorseRadish::String &msg)
 {
 	wchar_t msgConverted[512];
 
@@ -362,15 +258,15 @@ void Window::MsgBoxAviso(const HorseRadish::String &msg)
 	MessageBox(nullptr, msgConverted, L"Warning", MB_OK | MB_ICONWARNING);
 }
 
-void Window::MsgBoxAviso(const char * const msg)
+void Window::MsgBoxWarn(const char * const msg)
 {
-	HorseRadish::String msgConvertida;
+	HorseRadish::String msgConverted;
 
-	msgConvertida.Set(HorseRadish::String::UTF8, msg);
-	Window::MsgBoxAviso(msgConvertida);
+	msgConverted.Set(HorseRadish::String::UTF8, msg);
+	Window::MsgBoxWarn(msgConverted);
 }
 
-void Window::MsgBoxErro(const HorseRadish::String &msg)
+void Window::MsgBoxError(const HorseRadish::String &msg)
 {
 	wchar_t msgConverted[512];
 
@@ -378,12 +274,12 @@ void Window::MsgBoxErro(const HorseRadish::String &msg)
 	MessageBox(nullptr, msgConverted, L"Error", MB_OK | MB_ICONERROR);
 }
 
-void Window::MsgBoxErro(const char * const msg)
+void Window::MsgBoxError(const char * const msg)
 {
-	HorseRadish::String msgConvertida;
+	HorseRadish::String msgConverted;
 
-	msgConvertida.Set(HorseRadish::String::UTF8, msg);
-	Window::MsgBoxErro(msgConvertida);
+	msgConverted.Set(HorseRadish::String::UTF8, msg);
+	Window::MsgBoxError(msgConverted);
 }
 
 bool Window::CommandLineHasParam(PWSTR cmdLine, const HorseRadish::hChar * const parameterName)
@@ -453,102 +349,51 @@ bool Window::CommandLineGetParam(PWSTR cmdLine, const HorseRadish::hChar * const
 	return true;
 }
 
-#define WGL_CONTEXT_DEBUG_BIT_ARB      0x00000001
-#define WGL_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB 0x00000002
-#define WGL_CONTEXT_MAJOR_VERSION_ARB  0x2091
-#define WGL_CONTEXT_MINOR_VERSION_ARB  0x2092
-#define WGL_CONTEXT_LAYER_PLANE_ARB    0x2093
-#define WGL_CONTEXT_FLAGS_ARB          0x2094
-#define ERROR_INVALID_VERSION_ARB      0x209
-
-#define WGL_CONTEXT_PROFILE_MASK_ARB   0x9126
-#define WGL_CONTEXT_CORE_PROFILE_BIT_ARB 0x00000001
-#define WGL_CONTEXT_COMPATIBILITY_PROFILE_BIT_ARB 0x00000002
-#define ERROR_INVALID_PROFILE_ARB      0x2096
-
-#define WGL_NUMBER_PIXEL_FORMATS_ARB   0x2000
-#define WGL_DRAW_TO_WINDOW_ARB         0x2001
-#define WGL_DRAW_TO_BITMAP_ARB         0x2002
-#define WGL_ACCELERATION_ARB           0x2003
-#define WGL_NEED_PALETTE_ARB           0x2004
-#define WGL_NEED_SYSTEM_PALETTE_ARB    0x2005
-#define WGL_SWAP_LAYER_BUFFERS_ARB     0x2006
-#define WGL_SWAP_METHOD_ARB            0x2007
-#define WGL_NUMBER_OVERLAYS_ARB        0x2008
-#define WGL_NUMBER_UNDERLAYS_ARB       0x2009
-#define WGL_TRANSPARENT_ARB            0x200A
-#define WGL_TRANSPARENT_RED_VALUE_ARB  0x2037
-#define WGL_TRANSPARENT_GREEN_VALUE_ARB 0x2038
-#define WGL_TRANSPARENT_BLUE_VALUE_ARB 0x2039
-#define WGL_TRANSPARENT_ALPHA_VALUE_ARB 0x203A
-#define WGL_TRANSPARENT_INDEX_VALUE_ARB 0x203B
-#define WGL_SHARE_DEPTH_ARB            0x200C
-#define WGL_SHARE_STENCIL_ARB          0x200D
-#define WGL_SHARE_ACCUM_ARB            0x200E
-#define WGL_SUPPORT_GDI_ARB            0x200F
-#define WGL_SUPPORT_OPENGL_ARB         0x2010
-#define WGL_DOUBLE_BUFFER_ARB          0x2011
-#define WGL_STEREO_ARB                 0x2012
-#define WGL_PIXEL_TYPE_ARB             0x2013
-#define WGL_COLOR_BITS_ARB             0x2014
-#define WGL_RED_BITS_ARB               0x2015
-#define WGL_RED_SHIFT_ARB              0x2016
-#define WGL_GREEN_BITS_ARB             0x2017
-#define WGL_GREEN_SHIFT_ARB            0x2018
-#define WGL_BLUE_BITS_ARB              0x2019
-#define WGL_BLUE_SHIFT_ARB             0x201A
-#define WGL_ALPHA_BITS_ARB             0x201B
-#define WGL_ALPHA_SHIFT_ARB            0x201C
-#define WGL_ACCUM_BITS_ARB             0x201D
-#define WGL_ACCUM_RED_BITS_ARB         0x201E
-#define WGL_ACCUM_GREEN_BITS_ARB       0x201F
-#define WGL_ACCUM_BLUE_BITS_ARB        0x2020
-#define WGL_ACCUM_ALPHA_BITS_ARB       0x2021
-#define WGL_DEPTH_BITS_ARB             0x2022
-#define WGL_STENCIL_BITS_ARB           0x2023
-#define WGL_AUX_BUFFERS_ARB            0x2024
-#define WGL_NO_ACCELERATION_ARB        0x2025
-#define WGL_GENERIC_ACCELERATION_ARB   0x2026
-#define WGL_FULL_ACCELERATION_ARB      0x2027
-#define WGL_SWAP_EXCHANGE_ARB          0x2028
-#define WGL_SWAP_COPY_ARB              0x2029
-#define WGL_SWAP_UNDEFINED_ARB         0x202A
-#define WGL_TYPE_RGBA_ARB              0x202B
-#define WGL_TYPE_COLORINDEX_ARB        0x202C
-
-#define WGL_TYPE_RGBA_FLOAT_ARB		0x21A0
-
 void OpenglContext::loadWGLFunctions(HMODULE openglModule)
 {
-	PROC (APIENTRY *ptrWGlGetProcAddress)(LPCSTR lpcstr);
+	typedef PROC(APIENTRY *PFNWGLGETPROCADDRESSPROC)(LPCSTR lpcstr);
 
-	ptrWGlGetProcAddress = (PROC (APIENTRY *)(LPCSTR lpcstr))GetProcAddress(openglModule, "wglGetProcAddress");
+	auto ptrWGlGetProcAddress = (PFNWGLGETPROCADDRESSPROC)GetProcAddress(openglModule, "wglGetProcAddress");
 	if (ptrWGlGetProcAddress == nullptr)
 		return;
 
-	this->wglCreateContextAttribsARB = (OpenglContext::PFNWGLCREATECONTEXTATTRIBSARBPROC)ptrWGlGetProcAddress("wglCreateContextAttribsARB");
-	this->wglGetExtensionsStringARB = (OpenglContext::PFNWGLGETEXTENSIONSSTRINGARBPROC)ptrWGlGetProcAddress("wglGetExtensionsStringARB");
-	this->wglGetPixelFormatAttribivARB = (OpenglContext::PFNWGLGETPIXELFORMATATTRIBIVARBPROC)ptrWGlGetProcAddress("wglGetPixelFormatAttribivARB");
-	this->wglGetPixelFormatAttribfvARB = (OpenglContext::PFNWGLGETPIXELFORMATATTRIBFVARBPROC)ptrWGlGetProcAddress("wglGetPixelFormatAttribfvARB");
-	this->wglChoosePixelFormatARB = (OpenglContext::PFNWGLCHOOSEPIXELFORMATARBPROC)ptrWGlGetProcAddress("wglChoosePixelFormatARB");
-	this->wglSwapIntervalEXT = (OpenglContext::PFNWGLSWAPINTERVALEXTPROC)ptrWGlGetProcAddress("wglSwapIntervalEXT");
-	this->wglGetSwapIntervalEXT = (OpenglContext::PFNWGLGETSWAPINTERVALEXTPROC)ptrWGlGetProcAddress("wglGetSwapIntervalEXT");
+#ifdef WGL_ARB_create_context
+	this->wglCreateContextAttribsARB = (PFNWGLCREATECONTEXTATTRIBSARBPROC)ptrWGlGetProcAddress("wglCreateContextAttribsARB");
+#endif
+
+#ifdef WGL_ARB_extensions_string
+	this->wglGetExtensionsStringARB = (PFNWGLGETEXTENSIONSSTRINGARBPROC)ptrWGlGetProcAddress("wglGetExtensionsStringARB");
+#endif
+
+#ifdef WGL_ARB_pixel_format
+	this->wglGetPixelFormatAttribivARB = (PFNWGLGETPIXELFORMATATTRIBIVARBPROC)ptrWGlGetProcAddress("wglGetPixelFormatAttribivARB");
+	this->wglGetPixelFormatAttribfvARB = (PFNWGLGETPIXELFORMATATTRIBFVARBPROC)ptrWGlGetProcAddress("wglGetPixelFormatAttribfvARB");
+	this->wglChoosePixelFormatARB = (PFNWGLCHOOSEPIXELFORMATARBPROC)ptrWGlGetProcAddress("wglChoosePixelFormatARB");
+#endif
+
+#ifdef WGL_EXT_swap_control
+	this->wglSwapIntervalEXT = (PFNWGLSWAPINTERVALEXTPROC)ptrWGlGetProcAddress("wglSwapIntervalEXT");
+	this->wglGetSwapIntervalEXT = (PFNWGLGETSWAPINTERVALEXTPROC)ptrWGlGetProcAddress("wglGetSwapIntervalEXT");
+#endif
 }
 
 bool OpenglContext::auxWindowWGLExt(HINSTANCE hInstance, HMODULE openglModule)
 {
-	WNDCLASS winClassAux;
 	HWND hWndAux;
 	HDC hDCAux;
 	HGLRC hRCAux;
 	PIXELFORMATDESCRIPTOR pfFormatD;
-	
-	memset(&winClassAux, 0, sizeof(WNDCLASS));
-	winClassAux.hInstance = hInstance;
-	winClassAux.lpszClassName = L"gl aux window";
-	winClassAux.lpfnWndProc = auxWindowWGLExtProc;
-	if (RegisterClass(&winClassAux) == 0)
-		return false;
+
+	{
+		WNDCLASS winClassAux;
+
+		memset(&winClassAux, 0, sizeof(WNDCLASS));
+		winClassAux.hInstance = hInstance;
+		winClassAux.lpszClassName = L"gl aux window";
+		winClassAux.lpfnWndProc = auxWindowWGLExtProc;
+		if (RegisterClass(&winClassAux) == 0)
+			return false;
+	}
 
 	hWndAux = CreateWindow(L"gl aux window", L"gl aux window", WS_POPUP | WS_CLIPCHILDREN | WS_CLIPSIBLINGS, 0, 0, 8, 8, HWND_DESKTOP, nullptr, hInstance, nullptr);
 	if (hWndAux == nullptr)
@@ -583,26 +428,26 @@ bool OpenglContext::auxWindowWGLExt(HINSTANCE hInstance, HMODULE openglModule)
 
 OpenglContext::OpenglContext(const Window * const window, const HorseRadish::hChar *openGLModuleName, int contextMajorVersion, int contextMinorVersion, bool contextDebug, bool contextForwardCompatible)
 {
-	int contextAttrib[10];
-	const char *wglExt;
 	HMODULE openglModule;
-	wchar_t openGLModuleNameWChar[128];
 
 	this->window = window;
 
 	if ( (this->window == nullptr) || (this->window->hWnd == nullptr) || (openGLModuleName == nullptr) || (*openGLModuleName == '\0') || (contextMajorVersion < 3) || (contextMinorVersion < 0))
 	{
-		Window::MsgBoxErro("Incorrect data! Cannot create window.\nApplication cannot proceed.");
+		Window::MsgBoxError("Incorrect data! Cannot create window.\nApplication cannot proceed.");
 		return;
 	}
 
-	HorseRadish::UTF::ConvertUTF8To(openGLModuleName, HorseRadish::UTF::Windows, openGLModuleNameWChar, sizeof(openGLModuleNameWChar));
-
-	openglModule = GetModuleHandle(openGLModuleNameWChar);
-	if (openglModule == nullptr)
 	{
-		Window::MsgBoxErro("Incorrect OpenGL module name.\nApplication cannot proceed.");
-		return;
+		wchar_t openGLModuleNameWChar[128];
+		HorseRadish::UTF::ConvertUTF8To(openGLModuleName, HorseRadish::UTF::Windows, openGLModuleNameWChar, sizeof(openGLModuleNameWChar));
+
+		openglModule = GetModuleHandle(openGLModuleNameWChar);
+		if (openglModule == nullptr)
+		{
+			Window::MsgBoxError("Incorrect OpenGL module name.\nApplication cannot proceed.");
+			return;
+		}
 	}
 
 	this->wglCreateContext = (HGLRC (APIENTRY *)(HDC hdc))GetProcAddress(openglModule, "wglCreateContext");
@@ -620,14 +465,14 @@ OpenglContext::OpenglContext(const Window * const window, const HorseRadish::hCh
 	this->hDC = GetDC(this->window->hWnd);
 	if (this->hDC == nullptr)
 	{
-		Window::MsgBoxErro("Unable to device context!\nApplication cannot proceed.");
+		Window::MsgBoxError("Unable to device context!\nApplication cannot proceed.");
 		return;
 	}
 
-	wglExt = this->wglGetExtensionsStringARB(this->hDC);
+	auto wglExt = this->wglGetExtensionsStringARB(this->hDC);
 	if ((wglExt == nullptr) || (strstr(wglExt, "WGL_ARB_create_context_profile") == nullptr))
 	{
-		Window::MsgBoxErro("Extensions WGL_ARB_create_context_profile not supported!\nApplication cannot proceed.");
+		Window::MsgBoxError("Extensions WGL_ARB_create_context_profile not supported!\nApplication cannot proceed.");
 		return;
 	}
 
@@ -637,6 +482,7 @@ OpenglContext::OpenglContext(const Window * const window, const HorseRadish::hCh
 
 		float fAttributes[] = {0,0};
 		int iAttributes[] = {
+			WGL_PIXEL_TYPE_ARB, WGL_TYPE_RGBA_ARB,
 			WGL_DRAW_TO_WINDOW_ARB, GL_TRUE,
 			WGL_SUPPORT_OPENGL_ARB, GL_TRUE,
 			WGL_ACCELERATION_ARB, WGL_FULL_ACCELERATION_ARB,
@@ -645,7 +491,7 @@ OpenglContext::OpenglContext(const Window * const window, const HorseRadish::hCh
 			WGL_DEPTH_BITS_ARB, 0,
 			WGL_STENCIL_BITS_ARB, 0,
 			WGL_DOUBLE_BUFFER_ARB, GL_TRUE,
-			0, 0};
+			0, 0 };
 
 		this->usedPFD = -1;
 		if (this->wglChoosePixelFormatARB(this->hDC, iAttributes, fAttributes, 1, &pixelFormat, &numFormats) == TRUE)
@@ -654,33 +500,29 @@ OpenglContext::OpenglContext(const Window * const window, const HorseRadish::hCh
 
 	if ((this->usedPFD == 0) || (SetPixelFormat(this->hDC,this->usedPFD,nullptr) == false))
 	{
-		Window::MsgBoxErro("Cannot find a useful pixel format!\nApplication cannot proceed.");
+		Window::MsgBoxError("Cannot find a useful pixel format!\nApplication cannot proceed.");
 		return;
 	}
 
-	contextAttrib[0] = WGL_CONTEXT_MAJOR_VERSION_ARB;
-	contextAttrib[1] = contextMajorVersion;
-	contextAttrib[2] = WGL_CONTEXT_MINOR_VERSION_ARB;
-	contextAttrib[3] = contextMinorVersion;
-	contextAttrib[4] = WGL_CONTEXT_FLAGS_ARB;
-	contextAttrib[5] = 0;
-	contextAttrib[5] |= contextDebug ? WGL_CONTEXT_DEBUG_BIT_ARB : 0;
-	contextAttrib[5] |= contextForwardCompatible ? WGL_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB : 0;
-	contextAttrib[6] = WGL_CONTEXT_PROFILE_MASK_ARB;
-	contextAttrib[7] = WGL_CONTEXT_CORE_PROFILE_BIT_ARB;
-	contextAttrib[8] = 0;
-	contextAttrib[9] = 0;
-
-	this->hRC = this->wglCreateContextAttribsARB(this->hDC, 0, contextAttrib);
-	if (this->hRC == nullptr)
 	{
-		Window::MsgBoxErro("Unable to create a rendering context!\nApplication cannot proceed.");
-		return;
+		int contextAttrib[] = {
+			WGL_CONTEXT_MAJOR_VERSION_ARB, contextMajorVersion,
+			WGL_CONTEXT_MINOR_VERSION_ARB, contextMinorVersion,
+			WGL_CONTEXT_FLAGS_ARB, (contextDebug ? WGL_CONTEXT_DEBUG_BIT_ARB : 0) | (contextForwardCompatible ? WGL_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB : 0),
+			WGL_CONTEXT_PROFILE_MASK_ARB, WGL_CONTEXT_CORE_PROFILE_BIT_ARB,
+			0, 0 };
+
+		this->hRC = this->wglCreateContextAttribsARB(this->hDC, 0, contextAttrib);
+		if (this->hRC == nullptr)
+		{
+			Window::MsgBoxError("Unable to create a rendering context!\nApplication cannot proceed.");
+			return;
+		}
 	}
 
 	if (this->wglMakeCurrent(this->hDC, this->hRC) == FALSE)
 	{
-		Window::MsgBoxErro("Unable to activate a rendering context!\nApplication cannot proceed.");
+		Window::MsgBoxError("Unable to activate a rendering context!\nApplication cannot proceed.");
 		return;
 	}
 
@@ -694,10 +536,10 @@ OpenglContext::~OpenglContext()
 	if (this->hRC != nullptr)
 	{
 		if (this->wglMakeCurrent(this->hDC, nullptr) == FALSE)
-			Window::MsgBoxErro("Unable to release rendering context.");
+			Window::MsgBoxError("Unable to release rendering context.");
 
 		if (this->wglDeleteContext(this->hRC) == FALSE)
-			Window::MsgBoxErro("Unable to delete rendering context.");
+			Window::MsgBoxError("Unable to delete rendering context.");
 
 		this->hRC = nullptr;
 	}
@@ -705,28 +547,10 @@ OpenglContext::~OpenglContext()
 	if (this->hDC != nullptr)
 	{
 		if (ReleaseDC(this->window->hWnd, this->hDC) == 0)
-			Window::MsgBoxErro("Unable to release device context.");
+			Window::MsgBoxError("Unable to release device context.");
 
 		this->hDC = nullptr;
 	}
-}
-
-bool OpenglContext::TakeScreenshot(HorseRadish::Streams::FileStream &fileStream) const
-{
-	HorseRadish::Imaging::Image *imgWrite;
-	unsigned char *pixels;
-
-	pixels = new unsigned char[this->window->winWidth * this->window->winHeight * 3];
-
-	HorseRadish::OpenGL::glReadPixels(0, 0, this->window->winWidth, this->window->winHeight, GL_BGR, GL_UNSIGNED_BYTE, pixels);
-	
-	imgWrite = new HorseRadish::Imaging::Image(this->window->winWidth, this->window->winHeight, HorseRadish::Imaging::Image::UByte, HorseRadish::Imaging::Image::BGR, pixels, true);
-
-	HorseRadish::Imaging::Factory::SaveBMP(&HorseRadish::Streams::StreamWriter(&fileStream), imgWrite);
-
-	delete imgWrite;
-
-	return true;
 }
 
 void OpenglContext::SetSwapInterval(const unsigned int &interval) const
@@ -741,21 +565,21 @@ bool OpenglContext::SwapBuffers() const
 }
 
 RawInput::RawInput(const Window * const window)
+	: numMaxKeyStrokes(256)
 {
 	RAWINPUTDEVICE rawInputDevice[1];
 
-	memset(ratoSnapshot, 0, sizeof(ratoSnapshot));
-	memset(ratoPosAccum, 0, sizeof(ratoPosAccum));
+	memset(mouseSnapshot, 0, sizeof(mouseSnapshot));
+	memset(mousePosAccum, 0, sizeof(mousePosAccum));
 
-	numMaxTeclas = 256;
-	teclasSnapshot = new bool[numMaxTeclas];
-	teclasTempoReal = new bool[numMaxTeclas];
+	keysSnapshot = new bool[numMaxKeyStrokes];
+	keysRealtime = new bool[numMaxKeyStrokes];
 
-	memset(teclasSnapshot, 0, sizeof(bool) * numMaxTeclas);
-	memset(teclasTempoReal, 0, sizeof(bool) * numMaxTeclas);
+	memset(keysSnapshot, 0, sizeof(bool) * numMaxKeyStrokes);
+	memset(keysRealtime, 0, sizeof(bool) * numMaxKeyStrokes);
 
     rawInputDevice[0].usUsagePage = 0x01;
-    rawInputDevice[0].usUsage = 0x02;	//mouse
+    rawInputDevice[0].usUsage = 0x02; //mouse
     rawInputDevice[0].dwFlags = 0;
 	rawInputDevice[0].hwndTarget = window->hWnd;
     RegisterRawInputDevices(rawInputDevice, 1, sizeof(rawInputDevice[0]));
@@ -763,13 +587,13 @@ RawInput::RawInput(const Window * const window)
 
 RawInput::~RawInput()
 {
-	memset(ratoSnapshot, 0, sizeof(ratoSnapshot));
-	memset(ratoPosAccum, 0, sizeof(ratoPosAccum));
+	memset(mouseSnapshot, 0, sizeof(mouseSnapshot));
+	memset(mousePosAccum, 0, sizeof(mousePosAccum));
 
-	delete[] teclasSnapshot;
-	delete[] teclasTempoReal;
-	teclasSnapshot = nullptr;
-	teclasTempoReal = nullptr;
+	delete[] keysSnapshot;
+	delete[] keysRealtime;
+	keysSnapshot = nullptr;
+	keysRealtime = nullptr;
 }
 
 void RawInput::ProcessRawInput(const RAWINPUT * const rawInputData)
@@ -781,8 +605,8 @@ void RawInput::ProcessRawInput(const RAWINPUT * const rawInputData)
 
 	if (rawInputData->header.dwType == RIM_TYPEMOUSE) 
 	{
-		ratoPosAccum[0] += rawInputData->data.mouse.lLastX;
-		ratoPosAccum[1] += rawInputData->data.mouse.lLastY;
+		mousePosAccum[0] += rawInputData->data.mouse.lLastX;
+		mousePosAccum[1] += rawInputData->data.mouse.lLastY;
 	}
 }
 
@@ -791,44 +615,44 @@ void RawInput::ProcessKey(bool keyDown, WPARAM wParam, LPARAM lParam)
 	int virtualKeyCode;
 
 	virtualKeyCode = wParam;
-	if (virtualKeyCode >= numMaxTeclas)
+	if (virtualKeyCode >= numMaxKeyStrokes)
 		return;
 
 	std::lock_guard<std::mutex> lock(mutex);
 
-	teclasTempoReal[virtualKeyCode] = keyDown;
+	keysRealtime[virtualKeyCode] = keyDown;
 }
 
 void RawInput::Snapshot()
 {
 	std::lock_guard<std::mutex> lock(mutex);
 
-	ratoSnapshot[0] = ratoPosAccum[0];
-	ratoSnapshot[1] = ratoPosAccum[1];
-	ratoSnapshot[2] = ratoPosAccum[2];
-	ratoPosAccum[0] = ratoPosAccum[1] = ratoPosAccum[2] = 0.0f;
+	mouseSnapshot[0] = mousePosAccum[0];
+	mouseSnapshot[1] = mousePosAccum[1];
+	mouseSnapshot[2] = mousePosAccum[2];
+	mousePosAccum[0] = mousePosAccum[1] = mousePosAccum[2] = 0.0f;
 
-	memcpy(teclasSnapshot, teclasTempoReal, sizeof(bool) * numMaxTeclas);
+	memcpy(keysSnapshot, keysRealtime, sizeof(bool) * numMaxKeyStrokes);
 }
 
 bool RawInput::KStatus(const int &vcode) const	
 {
-	if (vcode >= numMaxTeclas)
+	if (vcode >= numMaxKeyStrokes)
 		return false;
-	return teclasSnapshot[vcode];
+	return keysSnapshot[vcode];
 }
 
 float RawInput::MStatusPosX() const
 {
-	return ratoSnapshot[0];
+	return mouseSnapshot[0];
 }
 
 float RawInput::MStatusPosY() const
 {
-	return ratoSnapshot[1];
+	return mouseSnapshot[1];
 }
 
 float RawInput::MStatusPosZ() const
 {
-	return ratoSnapshot[2];
+	return mouseSnapshot[2];
 }
