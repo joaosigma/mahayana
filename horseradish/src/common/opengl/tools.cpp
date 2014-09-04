@@ -220,12 +220,12 @@ int ImmediateMode::draw()
 			}
 
 			//posso actualizar os buffers
-			HorseRadish::OpenGL::glBindBuffer(GL_ARRAY_BUFFER, this->glArrayBufferID);
-			HorseRadish::OpenGL::glBufferSubData(GL_ARRAY_BUFFER, 0, numElementosDesenhados * 4 * sizeof(VertexDataLayout), this->bufferData);
-			HorseRadish::OpenGL::glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->glElementArrayBufferID);
-			HorseRadish::OpenGL::glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, sizeof(unsigned short) * numElementosDesenhados * 6, this->bufferIndices);
+			HorseRadish::OpenGL::glNamedBufferSubData(this->glArrayBufferID, 0, numElementosDesenhados * 4 * sizeof(VertexDataLayout), this->bufferData);
+			HorseRadish::OpenGL::glNamedBufferSubData(this->glElementArrayBufferID, 0, sizeof(unsigned short) * numElementosDesenhados * 6, this->bufferIndices);
 
 			//e mando desenhar
+			HorseRadish::OpenGL::glBindBuffer(GL_ARRAY_BUFFER, this->glArrayBufferID);
+			HorseRadish::OpenGL::glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->glElementArrayBufferID);
 			HorseRadish::OpenGL::glDrawRangeElements(GL_TRIANGLES, 0, numElementosDesenhados * 4, numElementosDesenhados * 6, GL_UNSIGNED_SHORT, (void*)0);
 		}
 	}
@@ -239,12 +239,12 @@ int ImmediateMode::draw()
 		if (numElementosDesenhados > 0)
 		{
 			//posso actualizar os buffers
-			HorseRadish::OpenGL::glBindBuffer(GL_ARRAY_BUFFER, this->glArrayBufferID);
-			HorseRadish::OpenGL::glBufferSubData(GL_ARRAY_BUFFER, 0, numElementosDesenhados * 3 * sizeof(VertexDataLayout), this->bufferData);
-			HorseRadish::OpenGL::glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->glElementArrayBufferID);
-			HorseRadish::OpenGL::glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, sizeof(unsigned short) * numElementosDesenhados * 3, this->bufferIndices);
+			HorseRadish::OpenGL::glNamedBufferSubData(this->glArrayBufferID, 0, numElementosDesenhados * 3 * sizeof(VertexDataLayout), this->bufferData);
+			HorseRadish::OpenGL::glNamedBufferSubData(this->glElementArrayBufferID, 0, sizeof(unsigned short) * numElementosDesenhados * 3, this->bufferIndices);
 
 			//e mando desenhar
+			HorseRadish::OpenGL::glBindBuffer(GL_ARRAY_BUFFER, this->glArrayBufferID);
+			HorseRadish::OpenGL::glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->glElementArrayBufferID);
 			HorseRadish::OpenGL::glDrawRangeElements(GL_TRIANGLES, 0, numElementosDesenhados * 3, numElementosDesenhados * 3, GL_UNSIGNED_SHORT, (void*)0);
 		}
 	}
@@ -258,12 +258,12 @@ int ImmediateMode::draw()
 		if (numElementosDesenhados > 0)
 		{
 			//posso actualizar os buffers
-			HorseRadish::OpenGL::glBindBuffer(GL_ARRAY_BUFFER, this->glArrayBufferID);
-			HorseRadish::OpenGL::glBufferSubData(GL_ARRAY_BUFFER, 0, numElementosDesenhados * 2 * sizeof(VertexDataLayout), this->bufferData);
-			HorseRadish::OpenGL::glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->glElementArrayBufferID);
-			HorseRadish::OpenGL::glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, sizeof(unsigned short) * numElementosDesenhados * 2, this->bufferIndices);
+			HorseRadish::OpenGL::glNamedBufferSubData(this->glArrayBufferID, 0, numElementosDesenhados * 2 * sizeof(VertexDataLayout), this->bufferData);
+			HorseRadish::OpenGL::glNamedBufferSubData(this->glElementArrayBufferID, 0, sizeof(unsigned short) * numElementosDesenhados * 2, this->bufferIndices);
 
 			//e mando desenhar
+			HorseRadish::OpenGL::glBindBuffer(GL_ARRAY_BUFFER, this->glArrayBufferID);
+			HorseRadish::OpenGL::glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->glElementArrayBufferID);
 			HorseRadish::OpenGL::glDrawRangeElements(GL_LINES, 0, numElementosDesenhados * 2, numElementosDesenhados * 2, GL_UNSIGNED_SHORT, (void*)0);
 		}
 	}
@@ -277,12 +277,12 @@ int ImmediateMode::draw()
 		if (numElementosDesenhados > 0)
 		{
 			//posso actualizar os buffers
-			HorseRadish::OpenGL::glBindBuffer(GL_ARRAY_BUFFER, this->glArrayBufferID);
-			HorseRadish::OpenGL::glBufferSubData(GL_ARRAY_BUFFER, 0, curVertex * sizeof(VertexDataLayout), this->bufferData);
-			HorseRadish::OpenGL::glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->glElementArrayBufferID);
-			HorseRadish::OpenGL::glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, sizeof(unsigned short) * this->curVertex, this->bufferIndices);
+			HorseRadish::OpenGL::glNamedBufferSubData(this->glArrayBufferID, 0, curVertex * sizeof(VertexDataLayout), this->bufferData);
+			HorseRadish::OpenGL::glNamedBufferSubData(this->glElementArrayBufferID, 0, sizeof(unsigned short) * this->curVertex, this->bufferIndices);
 
 			//e mando desenhar
+			HorseRadish::OpenGL::glBindBuffer(GL_ARRAY_BUFFER, this->glArrayBufferID);
+			HorseRadish::OpenGL::glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->glElementArrayBufferID);
 			HorseRadish::OpenGL::glDrawRangeElements(GL_LINE_STRIP, 0, this->curVertex, this->curVertex, GL_UNSIGNED_SHORT, (void*)0);
 		}
 	}
@@ -350,28 +350,32 @@ ImmediateMode::ImmediateMode(const int maxVertexCount)
 	maxElementArray = ((this->maxVertexCount / 4) * 6) + 6;
 	
 	//crio o VBO para os dados
-	HorseRadish::OpenGL::glGenBuffers(1, &this->glArrayBufferID);
-	HorseRadish::OpenGL::glBindBuffer(GL_ARRAY_BUFFER, this->glArrayBufferID);
-	HorseRadish::OpenGL::glBufferData(GL_ARRAY_BUFFER, this->maxVertexCount * sizeof(VertexDataLayout), nullptr, GL_DYNAMIC_DRAW);
+	HorseRadish::OpenGL::glCreateBuffers(1, &this->glArrayBufferID); //GL_ARRAY_BUFFER
+	HorseRadish::OpenGL::glNamedBufferStorage(this->glArrayBufferID, this->maxVertexCount * sizeof(VertexDataLayout), nullptr, GL_DYNAMIC_STORAGE_BIT);
 
 	//crio o VBO para os indices
-	HorseRadish::OpenGL::glGenBuffers(1, &this->glElementArrayBufferID);
-	HorseRadish::OpenGL::glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->glElementArrayBufferID);
-	HorseRadish::OpenGL::glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned short) * maxElementArray, nullptr, GL_DYNAMIC_DRAW);
+	HorseRadish::OpenGL::glCreateBuffers(1, &this->glElementArrayBufferID); //GL_ELEMENT_ARRAY_BUFFER
+	HorseRadish::OpenGL::glNamedBufferStorage(this->glElementArrayBufferID, sizeof(unsigned short) * maxElementArray, nullptr, GL_DYNAMIC_STORAGE_BIT);
 	
 	//crio o VAO
-	HorseRadish::OpenGL::glGenVertexArrays(1, &this->glVertexArrayID);
-	HorseRadish::OpenGL::glBindVertexArray(this->glVertexArrayID);
-	HorseRadish::OpenGL::glBindBuffer(GL_ARRAY_BUFFER, this->glArrayBufferID);
-	HorseRadish::OpenGL::glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->glElementArrayBufferID);
-	HorseRadish::OpenGL::glEnableVertexAttribArray(0);
-	HorseRadish::OpenGL::glEnableVertexAttribArray(1);
-	HorseRadish::OpenGL::glEnableVertexAttribArray(4);
-	HorseRadish::OpenGL::glVertexAttribPointer(0, 3, GL_FLOAT, false, sizeof(VertexDataLayout), (void*)0);
-	HorseRadish::OpenGL::glVertexAttribPointer(1, 2, GL_FLOAT, false, sizeof(VertexDataLayout), (void*)12);
-	HorseRadish::OpenGL::glVertexAttribPointer(4, 4, GL_UNSIGNED_BYTE, true, sizeof(VertexDataLayout), (void*)20);
-	HorseRadish::OpenGL::glBindVertexArray(0);
+	HorseRadish::OpenGL::glCreateVertexArrays(1, &this->glVertexArrayID);
 
+	HorseRadish::OpenGL::glEnableVertexArrayAttrib(this->glVertexArrayID, 0);
+	HorseRadish::OpenGL::glEnableVertexArrayAttrib(this->glVertexArrayID, 1);
+	HorseRadish::OpenGL::glEnableVertexArrayAttrib(this->glVertexArrayID, 4);
+
+	HorseRadish::OpenGL::glVertexArrayAttribBinding(this->glVertexArrayID, 0, 0);
+	HorseRadish::OpenGL::glVertexArrayAttribFormat(this->glVertexArrayID, 0, 3, GL_FLOAT, false, 0);
+
+	HorseRadish::OpenGL::glVertexArrayAttribBinding(this->glVertexArrayID, 1, 0);
+	HorseRadish::OpenGL::glVertexArrayAttribFormat(this->glVertexArrayID, 1, 2, GL_FLOAT, false, 12);
+
+	HorseRadish::OpenGL::glVertexArrayAttribBinding(this->glVertexArrayID, 4, 0);
+	HorseRadish::OpenGL::glVertexArrayAttribFormat(this->glVertexArrayID, 4, 4, GL_UNSIGNED_BYTE, true, 20);
+
+	HorseRadish::OpenGL::glVertexArrayElementBuffer(this->glVertexArrayID, this->glElementArrayBufferID);
+	HorseRadish::OpenGL::glVertexArrayVertexBuffer(this->glVertexArrayID, 0, this->glArrayBufferID, 0, sizeof(VertexDataLayout));
+	
 	//crio os buffers
 	this->bufferData = new VertexDataLayout[this->maxVertexCount]; 
 	this->bufferIndices = new unsigned short[maxElementArray];
@@ -421,10 +425,8 @@ void ImmediateMode::Draw()
 
 int ImmediateMode::EndDraw()
 {
-	int numElementosDesenhados;
-
 	//mando desenhar
-	numElementosDesenhados = this->draw();
+	auto numElementosDesenhados = this->draw();
 
 	//como acabei o desenho, tenho de limpar tudo
 	this->resetState();

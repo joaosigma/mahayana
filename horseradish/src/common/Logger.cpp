@@ -143,9 +143,7 @@ void Logger::writeToFile(bool resetData)
 				streamWriter.WriteString("}\t", false);
 
 				//posso escrever o conteúdo da entrada
-				streamWriter.WriteInt8('{');
 				streamWriter.Write(Logger::getEntryData(curEntry), Logger::getEntryDataSize(curEntry) - 1);
-				streamWriter.WriteInt8('}');
 
 				//mudo de linha
 				streamWriter.Write(HorseRadish::Platform::NewLine, HorseRadish::Platform::NewLineSize);

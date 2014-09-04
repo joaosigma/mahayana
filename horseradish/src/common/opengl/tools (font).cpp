@@ -47,27 +47,31 @@ FontManager::FontManager()
 	}
 
 	//crio o VBO para os dados
-	HorseRadish::OpenGL::glGenBuffers(1, &this->glArrayBufferID);
-	HorseRadish::OpenGL::glBindBuffer(GL_ARRAY_BUFFER, this->glArrayBufferID);
-	HorseRadish::OpenGL::glBufferData(GL_ARRAY_BUFFER, sizeof(Font::VertexDataLayout) * Font::numMaxChar * 4, nullptr, GL_DYNAMIC_DRAW);
+	HorseRadish::OpenGL::glCreateBuffers(1, &this->glArrayBufferID); //GL_ARRAY_BUFFER
+	HorseRadish::OpenGL::glNamedBufferStorage(this->glArrayBufferID, sizeof(Font::VertexDataLayout) * Font::numMaxChar * 4, nullptr, GL_DYNAMIC_STORAGE_BIT);
 
 	//crio o VBO para os indices
-	HorseRadish::OpenGL::glGenBuffers(1, &this->glElementArrayBufferID);
-	HorseRadish::OpenGL::glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->glElementArrayBufferID);
-	HorseRadish::OpenGL::glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned short) * Font::numMaxChar * 5, fontIndexArray, GL_STREAM_DRAW);
+	HorseRadish::OpenGL::glCreateBuffers(1, &this->glElementArrayBufferID); //GL_ARRAY_BUFFER
+	HorseRadish::OpenGL::glNamedBufferStorage(this->glElementArrayBufferID, sizeof(unsigned short) * Font::numMaxChar * 5, fontIndexArray, GL_DYNAMIC_STORAGE_BIT);
 	
 	//crio o VAO
-	HorseRadish::OpenGL::glGenVertexArrays(1, &this->glVertexArrayID);
-	HorseRadish::OpenGL::glBindVertexArray(this->glVertexArrayID);
-	HorseRadish::OpenGL::glBindBuffer(GL_ARRAY_BUFFER, this->glArrayBufferID);
-	HorseRadish::OpenGL::glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->glElementArrayBufferID);
-	HorseRadish::OpenGL::glEnableVertexAttribArray(0);
-	HorseRadish::OpenGL::glEnableVertexAttribArray(1);
-	HorseRadish::OpenGL::glEnableVertexAttribArray(4);
-	HorseRadish::OpenGL::glVertexAttribPointer(0, 2, GL_FLOAT, false, sizeof(Font::VertexDataLayout), (void*)0);
-	HorseRadish::OpenGL::glVertexAttribPointer(1, 2, GL_FLOAT, false, sizeof(Font::VertexDataLayout), (void*)8);
-	HorseRadish::OpenGL::glVertexAttribPointer(4, 4, GL_UNSIGNED_BYTE, true, sizeof(Font::VertexDataLayout), (void*)16);
-	HorseRadish::OpenGL::glBindVertexArray(0);
+	HorseRadish::OpenGL::glCreateVertexArrays(1, &this->glVertexArrayID);
+
+	HorseRadish::OpenGL::glEnableVertexArrayAttrib(this->glVertexArrayID, 0);
+	HorseRadish::OpenGL::glEnableVertexArrayAttrib(this->glVertexArrayID, 1);
+	HorseRadish::OpenGL::glEnableVertexArrayAttrib(this->glVertexArrayID, 4);
+
+	HorseRadish::OpenGL::glVertexArrayAttribBinding(this->glVertexArrayID, 0, 0);
+	HorseRadish::OpenGL::glVertexArrayAttribFormat(this->glVertexArrayID, 0, 2, GL_FLOAT, false, 0);
+	
+	HorseRadish::OpenGL::glVertexArrayAttribBinding(this->glVertexArrayID, 1, 0);
+	HorseRadish::OpenGL::glVertexArrayAttribFormat(this->glVertexArrayID, 1, 2, GL_FLOAT, false, 8);
+
+	HorseRadish::OpenGL::glVertexArrayAttribBinding(this->glVertexArrayID, 4, 0);
+	HorseRadish::OpenGL::glVertexArrayAttribFormat(this->glVertexArrayID, 4, 4, GL_UNSIGNED_BYTE, true, 16);
+
+	HorseRadish::OpenGL::glVertexArrayElementBuffer(this->glVertexArrayID, this->glElementArrayBufferID);
+	HorseRadish::OpenGL::glVertexArrayVertexBuffer(this->glVertexArrayID, 0, this->glArrayBufferID, 0, sizeof(Font::VertexDataLayout));
 }
 
 FontManager::~FontManager()
@@ -180,23 +184,16 @@ Font::~Font()
 
 void Font::commitGL() const
 {
-	//se não tenho nada para escrever
 	if (numCharWritten == 0)
 		return;
 
-	//sempre de qualquer maneira, tenho de actualizar o VBO com os dados
-	HorseRadish::OpenGL::glBindBuffer(GL_ARRAY_BUFFER, this->fontManager->glArrayBufferID);
-	HorseRadish::OpenGL::glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(VertexDataLayout) * numCharWritten * 4, fontDataArray);
+	HorseRadish::OpenGL::glNamedBufferSubData(this->fontManager->glArrayBufferID, 0, sizeof(VertexDataLayout) * numCharWritten * 4, fontDataArray);
 
-	//exijo que sempre antes de fazer commit, o paint tenha sido activado
 	assert(paintStarted);
 
-	//basta desenhar
+	HorseRadish::OpenGL::glBindBuffer(GL_ARRAY_BUFFER, this->fontManager->glArrayBufferID);
 	HorseRadish::OpenGL::glDrawRangeElements(GL_TRIANGLE_STRIP, 0, numCharWritten * 4, numCharWritten * 5, GL_UNSIGNED_SHORT, (void*)0);
 
-	//não é preciso desligar propriamente nada do que em cima foi activado (se é que foi, pq o paintStarted pode estar a true)
-
-	//como acabei de mandar tudo para o GL, o número de caracteres escritos passou para zero
 	numCharWritten = 0;
 }
 
@@ -558,12 +555,12 @@ bool Font::initFont(const char * const fontFilePath)
 	imgFinal->ChangeFormat(HorseRadish::Imaging::Image::RGBA);
 
 	//crio a textura
-	HorseRadish::OpenGL::glGenTextures(1, &this->glTexID);
-	HorseRadish::OpenGL::Extensions::glTextureStorage2DEXT(this->glTexID, GL_TEXTURE_RECTANGLE, 1, GL_RGBA8, imgFinal->GetWidth(), imgFinal->GetHeight());
-	HorseRadish::OpenGL::Extensions::glTextureSubImage2DEXT(this->glTexID, GL_TEXTURE_RECTANGLE, 0, 0, 0, imgFinal->GetWidth(), imgFinal->GetHeight(), GL_RGBA, GL_UNSIGNED_BYTE, imgFinal->GetPixelData());
+	HorseRadish::OpenGL::glCreateTextures(GL_TEXTURE_RECTANGLE, 1, &this->glTexID);
+	HorseRadish::OpenGL::glTextureStorage2D(this->glTexID, 1, GL_RGBA8, imgFinal->GetWidth(), imgFinal->GetHeight());
+	HorseRadish::OpenGL::glTextureSubImage2D(this->glTexID, 0, 0, 0, imgFinal->GetWidth(), imgFinal->GetHeight(), GL_RGBA, GL_UNSIGNED_BYTE, imgFinal->GetPixelData());
 
 	//crio o sampler a usar na textura
-	HorseRadish::OpenGL::glGenSamplers(1, &this->glSamplerID);
+	HorseRadish::OpenGL::glCreateSamplers(1, &this->glSamplerID);
 	HorseRadish::OpenGL::glSamplerParameteri(this->glSamplerID, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	HorseRadish::OpenGL::glSamplerParameteri(this->glSamplerID, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	HorseRadish::OpenGL::glSamplerParameteri(this->glSamplerID, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
@@ -851,7 +848,7 @@ void Font::paintBegin(const float * const tranformationMatrix)
 		return;
 
 	//coloco a textura, sampler e o VAO (que inclui VBO e ponteiros, etc.)
-	HorseRadish::OpenGL::Extensions::glBindMultiTextureEXT(GL_TEXTURE0, GL_TEXTURE_RECTANGLE, this->glTexID);
+	HorseRadish::OpenGL::glBindTextureUnit(0, this->glTexID);
 	HorseRadish::OpenGL::glBindSampler(0, this->glSamplerID);
 	HorseRadish::OpenGL::glBindVertexArray(this->fontManager->glVertexArrayID);
 

@@ -2,7 +2,7 @@
 #ifndef __HOPENGL_OBJECTS__
 #define __HOPENGL_OBJECTS__
 
-#include "openGL.h"
+#include "openGL.hpp"
 #include "openGLext.hpp"
 #include "common\Image.hpp"
 #include "common\Mesh.hpp"
@@ -59,7 +59,7 @@ private:
 public:
 	Sampler() : ObjectGL()
 	{
-		HorseRadish::OpenGL::glGenSamplers(1, &this->glID);
+		HorseRadish::OpenGL::glCreateSamplers(1, &this->glID);
 	}
 
 	static void UnBind(const int textureUnit)
@@ -203,14 +203,14 @@ public:
 	Texture(unsigned int glTarget) : ObjectGL()
 	{
 		this->glTarget = glTarget;
-		HorseRadish::OpenGL::glGenTextures(1, &this->glID);
+		HorseRadish::OpenGL::glCreateTextures(glTarget, 1, &this->glID);
 	}
 
 	void Bind(const int textureUnit) const
 	{
 		if ((textureUnit < 0) || (textureUnit > 31))
 			return;
-		HorseRadish::OpenGL::Extensions::glBindMultiTextureEXT(GL_TEXTURE0 + textureUnit, this->glTarget, this->glID);
+		HorseRadish::OpenGL::glBindTextureUnit(textureUnit, this->glID);
 	}
 };
 
@@ -280,7 +280,7 @@ public:
 	VertexBuffer(unsigned int glTarget) : ObjectGL()
 	{
 		this->glTarget = glTarget;
-		HorseRadish::OpenGL::glGenBuffers(1, &this->glID);
+		HorseRadish::OpenGL::glCreateBuffers(1, &this->glID);
 	}
 
 	bool LoadBuffer(const void * const data, const int &dataSize, const UsageType &usage) const;
@@ -320,7 +320,7 @@ public:
 	PixelBuffer(unsigned int glTarget) : ObjectGL()
 	{
 		this->glTarget = glTarget;
-		HorseRadish::OpenGL::glGenBuffers(1, &this->glID);
+		HorseRadish::OpenGL::glCreateBuffers(1, &this->glID);
 	}
 
 	bool LoadBuffer(const void * const data, const int &dataSize, const UsageType &usage) const;
@@ -347,7 +347,7 @@ private:
 public:
 	VertexArray() : ObjectGL()
 	{
-		HorseRadish::OpenGL::glGenVertexArrays(1, &this->glID);
+		HorseRadish::OpenGL::glCreateVertexArrays(1, &this->glID);
 	}
 
 	void Bind() const
@@ -370,7 +370,7 @@ private:
 public:
 	RenderBuffer() : ObjectGL()
 	{
-		HorseRadish::OpenGL::glGenRenderbuffers(1, &this->glID);
+		HorseRadish::OpenGL::glCreateRenderbuffers(1, &this->glID);
 	}
 
 	void Init(const int &format, const int &width, const int &height) const;
@@ -390,7 +390,7 @@ private:
 public:
 	FrameBuffer() : ObjectGL()
 	{
-		HorseRadish::OpenGL::glGenFramebuffers(1, &this->glID);
+		HorseRadish::OpenGL::glCreateFramebuffers(1, &this->glID);
 	}
 
 	bool GetStatusComplete() const;
@@ -561,7 +561,7 @@ public:
 class Context
 {
 public:
-	enum Extensions {FilterAnisotropic = (1<<0), CompressionS3 = (1<<1), CompressionVTC = (1<<2), TextureStorage = (1<<3), MapBufferAlignment = (1<<4), ShadingLanguage420Pack = (1<<5), DebugOutput = (1<<6), DirectStateAccess = (1<<7)};
+	enum Extensions {FilterAnisotropic = (1<<0), CompressionS3 = (1<<1), CompressionVTC = (1<<2)};
 	enum InformationType {Version, Vendor, Renderer, GLSLVersion, MaxDrawBuffers, MaxColorAttachments, MaxTextureSize, MaxTexture3DSize, MaxTextureCubemapSize, MaxTextureRectSize};
 	enum CounterType {Frames, Triangles, Vertices};
 

@@ -578,7 +578,7 @@ void fazSemDados(const ImgData * const imagem, const Objects::Texture* const tex
 	if (texture->glTarget==GL_TEXTURE_1D)
 	{
 		//o de primeiro nivel
-		HorseRadish::OpenGL::Extensions::glTextureStorage1DEXT(texture->glID, GL_TEXTURE_1D, Texture::CalculateNumMipMaps(imagem->width), internalFormat, imagem->width);
+		HorseRadish::OpenGL::glTextureStorage1D(texture->glID, Texture::CalculateNumMipMaps(imagem->width), internalFormat, imagem->width);
 
 		//já tá
 		return;
@@ -588,7 +588,7 @@ void fazSemDados(const ImgData * const imagem, const Objects::Texture* const tex
 	if (texture->glTarget==GL_TEXTURE_2D)
 	{
 		//o de primeiro nivel
-		HorseRadish::OpenGL::Extensions::glTextureStorage2DEXT(texture->glID, GL_TEXTURE_2D, Texture::CalculateNumMipMaps(imagem->width, imagem->height), internalFormat, imagem->width, imagem->height);
+		HorseRadish::OpenGL::glTextureStorage2D(texture->glID, Texture::CalculateNumMipMaps(imagem->width, imagem->height), internalFormat, imagem->width, imagem->height);
 
 		//já tá
 		return;
@@ -598,11 +598,13 @@ void fazSemDados(const ImgData * const imagem, const Objects::Texture* const tex
 	if (texture->glTarget==GL_TEXTURE_3D)
 	{
 		//o de primeiro nivel
-		HorseRadish::OpenGL::Extensions::glTextureStorage3DEXT(texture->glID, GL_TEXTURE_3D, Texture::CalculateNumMipMaps(imagem->width, imagem->height, texture->depth), internalFormat, imagem->width, imagem->height, texture->depth);
+		HorseRadish::OpenGL::glTextureStorage3D(texture->glID, Texture::CalculateNumMipMaps(imagem->width, imagem->height, texture->depth), internalFormat, imagem->width, imagem->height, texture->depth);
 
 		//já tá
 		return;
 	}
+
+	assert(false);
 }
 
 static
@@ -668,22 +670,22 @@ void fazTexturas(const ImgData * const imagem, const Objects::Texture* const tex
 		{
 			//nao preciso de compressão (ou ela falhou)
 			switch(texture->glTarget){
-				case GL_TEXTURE_1D:		HorseRadish::OpenGL::Extensions::glTextureStorage1DEXT(texture->glID, GL_TEXTURE_1D, Texture::CalculateNumMipMaps(novaImagem->width), internalFormat, novaImagem->width);
-										HorseRadish::OpenGL::Extensions::glTextureSubImage1DEXT(texture->glID, GL_TEXTURE_1D, 0, 0, novaImagem->width, toGLFormat(novaImagem->format), toGLType(novaImagem->type), novaImagem->data);
+				case GL_TEXTURE_1D:		HorseRadish::OpenGL::glTextureStorage1D(texture->glID, Texture::CalculateNumMipMaps(novaImagem->width), internalFormat, novaImagem->width);
+										HorseRadish::OpenGL::glTextureSubImage1D(texture->glID, 0, 0, novaImagem->width, toGLFormat(novaImagem->format), toGLType(novaImagem->type), novaImagem->data);
 										break;
 				case GL_TEXTURE_2D:		
-										HorseRadish::OpenGL::Extensions::glTextureStorage2DEXT(texture->glID, GL_TEXTURE_2D, Texture::CalculateNumMipMaps(novaImagem->width, novaImagem->height), internalFormat, novaImagem->width, novaImagem->height);
-										HorseRadish::OpenGL::Extensions::glTextureSubImage2DEXT(texture->glID, GL_TEXTURE_2D, 0, 0, 0, novaImagem->width, novaImagem->height, toGLFormat(novaImagem->format), toGLType(novaImagem->type), novaImagem->data);
+										HorseRadish::OpenGL::glTextureStorage2D(texture->glID, Texture::CalculateNumMipMaps(novaImagem->width, novaImagem->height), internalFormat, novaImagem->width, novaImagem->height);
+										HorseRadish::OpenGL::glTextureSubImage2D(texture->glID, 0, 0, 0, novaImagem->width, novaImagem->height, toGLFormat(novaImagem->format), toGLType(novaImagem->type), novaImagem->data);
 										break;
 				case GL_TEXTURE_3D:		
-										HorseRadish::OpenGL::Extensions::glTextureStorage3DEXT(texture->glID, GL_TEXTURE_3D, Texture::CalculateNumMipMaps(novaImagem->width, novaImagem->height, texture->depth), internalFormat, novaImagem->width, novaImagem->height, texture->depth);
-										HorseRadish::OpenGL::Extensions::glTextureSubImage3DEXT(texture->glID, GL_TEXTURE_3D, 0, 0, 0, 0, novaImagem->width, novaImagem->height, texture->depth, toGLFormat(novaImagem->format), toGLType(novaImagem->type), novaImagem->data);
+										HorseRadish::OpenGL::glTextureStorage3D(texture->glID, Texture::CalculateNumMipMaps(novaImagem->width, novaImagem->height, texture->depth), internalFormat, novaImagem->width, novaImagem->height, texture->depth);
+										HorseRadish::OpenGL::glTextureSubImage3D(texture->glID, 0, 0, 0, 0, novaImagem->width, novaImagem->height, texture->depth, toGLFormat(novaImagem->format), toGLType(novaImagem->type), novaImagem->data);
 										break;
 				}
 		}
 
 		//mando gerar os mipmaps e prontos
-		HorseRadish::OpenGL::Extensions::glGenerateTextureMipmapEXT(texture->glID, texture->glTarget);
+		HorseRadish::OpenGL::glGenerateTextureMipmap(texture->glID);
 		return;
 	}
 
@@ -712,19 +714,19 @@ void fazTexturas(const ImgData * const imagem, const Objects::Texture* const tex
 
 		//e agora se querem mipmaps, tenho de os fazer
 		if (!(flags & STEXTURE_NO_MIPMAPS))
-			HorseRadish::OpenGL::Extensions::glGenerateTextureMipmapEXT(texture->glID, GL_TEXTURE_2D);
+			HorseRadish::OpenGL::glGenerateTextureMipmap(texture->glID);
 
 		//e ja tá
 		return;
 	}
 
 	//não é pra comprimir, mando tudo normalmente
-	HorseRadish::OpenGL::Extensions::glTextureStorage2DEXT(texture->glID, GL_TEXTURE_2D, Texture::CalculateNumMipMaps(novaImagem->width, novaImagem->height), internalFormat, novaImagem->width, novaImagem->height);
-	HorseRadish::OpenGL::Extensions::glTextureSubImage2DEXT(texture->glID, GL_TEXTURE_2D, 0, 0, 0, novaImagem->width, novaImagem->height, toGLFormat(novaImagem->format), toGLType(novaImagem->type), novaImagem->data);
+	HorseRadish::OpenGL::glTextureStorage2D(texture->glID, Texture::CalculateNumMipMaps(novaImagem->width, novaImagem->height), internalFormat, novaImagem->width, novaImagem->height);
+	HorseRadish::OpenGL::glTextureSubImage2D(texture->glID, 0, 0, 0, novaImagem->width, novaImagem->height, toGLFormat(novaImagem->format), toGLType(novaImagem->type), novaImagem->data);
 
 	//se for preciso mipmaps
 	if (!(flags & STEXTURE_NO_MIPMAPS))
-		HorseRadish::OpenGL::Extensions::glGenerateTextureMipmapEXT(texture->glID, GL_TEXTURE_2D);
+		HorseRadish::OpenGL::glGenerateTextureMipmap(texture->glID);
 }
 
 //§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§
@@ -1238,19 +1240,19 @@ const Objects::Texture* ObjectsManager::createRect(const bool immutable, const I
 	if (immutable == true)
 	{
 		//tenho de a criar com esta função
-		HorseRadish::OpenGL::Extensions::glTextureStorage2DEXT(textura->glID, GL_TEXTURE_RECTANGLE, 1, internalFormat, img->width, img->height);
+		HorseRadish::OpenGL::glTextureStorage2D(textura->glID, 1, internalFormat, img->width, img->height);
 
 		//se não tenho dados já posso sair
 		if (img->data == nullptr)
 			return textura;
 
 		//mando os dados para a textura
-		HorseRadish::OpenGL::Extensions::glTextureSubImage2DEXT(textura->glID, GL_TEXTURE_RECTANGLE, 0, 0, 0, img->width, img->height, iGLFormat, iGLType, img->data);
+		HorseRadish::OpenGL::glTextureSubImage2D(textura->glID, 0, 0, 0, img->width, img->height, iGLFormat, iGLType, img->data);
 	}
 	else
 	{
 		//crio a textura normalmente
-		HorseRadish::OpenGL::Extensions::glTextureImage2DEXT(textura->glID, GL_TEXTURE_RECTANGLE, 0, internalFormat, img->width, img->height, 0, iGLFormat, iGLType, img->data);
+		HorseRadish::OpenGL::glTexImage2D(textura->glID, 0, internalFormat, img->width, img->height, 0, iGLFormat, iGLType, img->data);
 	}
 
 	//posso bazar

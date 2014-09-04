@@ -4,7 +4,7 @@
 #include "common\Common.hpp"
 #include "common\Containers.hpp"
 #include "common\Logger.hpp"
-#include "common\opengl\openGL.h"
+#include "common\opengl\openGL.hpp"
 #include "common\opengl\objects.hpp"
 #include "common\openGL\tools.hpp"
 
@@ -972,7 +972,7 @@ void ConsoleTabExtra::DrawContent(HorseRadish::Render::Renderer2D * const render
 	HorseRadish::OpenGL::glUniform4fv(render2D->glUniformCache->GetUniformPos(render2D->shaders.progDeferredDebug->glID, "colorScale"), 1, (const float *)colorScale);
 
 	//a textura a mostrar
-	HorseRadish::OpenGL::Extensions::glBindMultiTextureEXT(GL_TEXTURE0, rtAlvo->glTarget, rtAlvo->glID);
+	HorseRadish::OpenGL::glBindTextureUnit(0, rtAlvo->glID);
 
 	//para ajudar
 	auto glImmediateMode = render2D->glImmediateMode;

@@ -91,7 +91,7 @@
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
-      <AdditionalIncludeDirectories>$(SolutionDir)$(ProjectName)\src;$(SolutionDir)$(ProjectName)\external_includes\freetype2;$(SolutionDir)$(ProjectName)\external_includes\ffmpeg;$(SolutionDir)$(ProjectName)\external_includes\turbojpeg;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)$(ProjectName)\src;$(SolutionDir)$(ProjectName)\external_includes\gl;$(SolutionDir)$(ProjectName)\external_includes\freetype2;$(SolutionDir)$(ProjectName)\external_includes\ffmpeg;$(SolutionDir)$(ProjectName)\external_includes\turbojpeg;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
     </ClCompile>
     <Link>
@@ -110,7 +110,7 @@
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
-      <AdditionalIncludeDirectories>$(SolutionDir)$(ProjectName)\src;$(SolutionDir)$(ProjectName)\external_includes\freetype2;$(SolutionDir)$(ProjectName)\external_includes\ffmpeg;$(SolutionDir)$(ProjectName)\external_includes\turbojpeg;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)$(ProjectName)\src;$(SolutionDir)$(ProjectName)\external_includes\gl;$(SolutionDir)$(ProjectName)\external_includes\freetype2;$(SolutionDir)$(ProjectName)\external_includes\ffmpeg;$(SolutionDir)$(ProjectName)\external_includes\turbojpeg;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -130,7 +130,7 @@
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
-      <AdditionalIncludeDirectories>$(SolutionDir)$(ProjectName)\src;$(SolutionDir)$(ProjectName)\external_includes\freetype2;$(SolutionDir)$(ProjectName)\external_includes\ffmpeg;$(SolutionDir)$(ProjectName)\external_includes\turbojpeg;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)$(ProjectName)\src;$(SolutionDir)$(ProjectName)\external_includes\gl;$(SolutionDir)$(ProjectName)\external_includes\freetype2;$(SolutionDir)$(ProjectName)\external_includes\ffmpeg;$(SolutionDir)$(ProjectName)\external_includes\turbojpeg;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
     </ClCompile>
     <Link>
@@ -153,7 +153,7 @@
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
-      <AdditionalIncludeDirectories>$(SolutionDir)$(ProjectName)\src;$(SolutionDir)$(ProjectName)\external_includes\freetype2;$(SolutionDir)$(ProjectName)\external_includes\ffmpeg;$(SolutionDir)$(ProjectName)\external_includes\turbojpeg;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)$(ProjectName)\src;$(SolutionDir)$(ProjectName)\external_includes\gl;$(SolutionDir)$(ProjectName)\external_includes\freetype2;$(SolutionDir)$(ProjectName)\external_includes\ffmpeg;$(SolutionDir)$(ProjectName)\external_includes\turbojpeg;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -356,7 +356,7 @@
     <ClInclude Include="..\..\src\common\MeshFactory.hpp" />
     <ClInclude Include="..\..\src\common\meshFactory\mf.hpp" />
     <ClInclude Include="..\..\src\common\opengl\objects.hpp" />
-    <ClInclude Include="..\..\src\common\opengl\openGL.h" />
+    <ClInclude Include="..\..\src\common\opengl\openGL.hpp" />
     <ClInclude Include="..\..\src\common\opengl\openGLext.hpp" />
     <ClInclude Include="..\..\src\common\opengl\tools.hpp" />
     <ClInclude Include="..\..\src\common\Path.hpp" />

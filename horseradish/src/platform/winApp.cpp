@@ -3,7 +3,7 @@
 #include "common\UTF.hpp"
 #include "common\Image.hpp"
 #include "common\ImageFactory.hpp"
-#include "common\opengl\openGL.h"
+#include "common\opengl\openGL.hpp"
 
 #include <stdlib.h>
 #include <stdio.h>

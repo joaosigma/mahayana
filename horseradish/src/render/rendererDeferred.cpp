@@ -35,7 +35,7 @@ void RendererDeferred::renderGBuffer(const HorseRadish::OpenGL::Tools::Camera * 
 	hrViewport->updateGL();
 
 	//os buffers para onde vou escrever
-	HorseRadish::OpenGL::GLenum mrt[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3 };
+	GLenum mrt[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3 };
 	HorseRadish::OpenGL::glDrawBuffers(4, mrt);
 
 	//preparo o Z
@@ -218,25 +218,26 @@ void RendererDeferred::loadGeometry()
 		this->glObjectManager->ObjectDelete(this->vbos.vaoMesh);
 	this->vbos.vaoMesh = nullptr;
 	
-#define VBO_POSITION_OFFSET(start)		((void*)(((intptr_t)start)+0))
-#define VBO_TEXCOORD_OFFSET(start)		((void*)(((intptr_t)start)+12))
-#define VBO_NORMAL_OFFSET(start)		((void*)(((intptr_t)start)+20))
-#define VBO_TANGENT4_OFFSET(start)		((void*)(((intptr_t)start)+32))
-
 	//crio o novo VAO
 	this->vbos.vaoMesh = (HorseRadish::OpenGL::Objects::VertexArray*)this->glObjectManager->ObjectCreate(HorseRadish::OpenGL::Objects::ObjectsManager::VertexArray);
-	this->vbos.vaoMesh->Bind();
-	this->vbos.vboMeshData->Bind();
-	this->vbos.vboMeshIndexData->Bind();
-	HorseRadish::OpenGL::glEnableVertexAttribArray(0);
-	HorseRadish::OpenGL::glEnableVertexAttribArray(1);
-	HorseRadish::OpenGL::glEnableVertexAttribArray(2);
-	HorseRadish::OpenGL::glEnableVertexAttribArray(3);
-	HorseRadish::OpenGL::glVertexAttribPointer(0, 3, GL_FLOAT, false, 64, VBO_POSITION_OFFSET(0));
-	HorseRadish::OpenGL::glVertexAttribPointer(1, 2, GL_FLOAT, false, 64, VBO_TEXCOORD_OFFSET(0));
-	HorseRadish::OpenGL::glVertexAttribPointer(2, 3, GL_FLOAT, false, 64, VBO_NORMAL_OFFSET(0));
-	HorseRadish::OpenGL::glVertexAttribPointer(3, 4, GL_FLOAT, false, 64, VBO_TANGENT4_OFFSET(0));
-	HorseRadish::OpenGL::glBindVertexArray(0);
+	
+	HorseRadish::OpenGL::glEnableVertexArrayAttrib(this->vbos.vaoMesh->glID, 0);
+	HorseRadish::OpenGL::glEnableVertexArrayAttrib(this->vbos.vaoMesh->glID, 1);
+	HorseRadish::OpenGL::glEnableVertexArrayAttrib(this->vbos.vaoMesh->glID, 2);
+	HorseRadish::OpenGL::glEnableVertexArrayAttrib(this->vbos.vaoMesh->glID, 3);
+
+	HorseRadish::OpenGL::glVertexArrayAttribBinding(this->vbos.vaoMesh->glID, 0, 0);
+	HorseRadish::OpenGL::glVertexArrayAttribBinding(this->vbos.vaoMesh->glID, 1, 0);
+	HorseRadish::OpenGL::glVertexArrayAttribBinding(this->vbos.vaoMesh->glID, 2, 0);
+	HorseRadish::OpenGL::glVertexArrayAttribBinding(this->vbos.vaoMesh->glID, 3, 0);
+
+	HorseRadish::OpenGL::glVertexArrayAttribFormat(this->vbos.vaoMesh->glID, 0, 3, GL_FLOAT, false, 0);
+	HorseRadish::OpenGL::glVertexArrayAttribFormat(this->vbos.vaoMesh->glID, 1, 2, GL_FLOAT, false, 12);
+	HorseRadish::OpenGL::glVertexArrayAttribFormat(this->vbos.vaoMesh->glID, 2, 3, GL_FLOAT, false, 20);
+	HorseRadish::OpenGL::glVertexArrayAttribFormat(this->vbos.vaoMesh->glID, 4, 4, GL_FLOAT, false, 32);
+
+	HorseRadish::OpenGL::glVertexArrayElementBuffer(this->vbos.vaoMesh->glID, this->vbos.vboMeshIndexData->glID);
+	HorseRadish::OpenGL::glVertexArrayVertexBuffer(this->vbos.vaoMesh->glID, 0, this->vbos.vboMeshData->glID, 0, 64);
 }
 
 TextureSet::Texture* RendererDeferred::findTexType(TextureSet * const texSet, const int texType)

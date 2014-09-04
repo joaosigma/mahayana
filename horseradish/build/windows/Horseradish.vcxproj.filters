@@ -84,9 +84,6 @@
     <ClCompile Include="..\..\src\common\opengl\objects.cpp">
       <Filter>common\opengl</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\common\opengl\openGL.cpp">
-      <Filter>common\opengl</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\common\opengl\openGLext.cpp">
       <Filter>common\opengl</Filter>
     </ClCompile>
@@ -535,6 +532,9 @@
     <ClCompile Include="..\..\src\libs\squirrel\sqvm.cpp">
       <Filter>libs\squirrel</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\common\opengl\openGL.cpp">
+      <Filter>common\opengl</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\common\imageFactory\ifHDRI.hpp">
@@ -547,9 +547,6 @@
       <Filter>common\meshFactory</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\common\opengl\objects.hpp">
-      <Filter>common\opengl</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\common\opengl\openGL.h">
       <Filter>common\opengl</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\common\opengl\openGLext.hpp">
@@ -1113,6 +1110,9 @@
     </ClInclude>
     <ClInclude Include="..\..\src\libs\squirrel\sqvm.h">
       <Filter>libs\squirrel</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\common\opengl\openGL.hpp">
+      <Filter>common\opengl</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

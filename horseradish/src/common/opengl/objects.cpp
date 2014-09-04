@@ -45,24 +45,26 @@ int Texture::CalculateNumMipMaps(const int width, const int height, const int de
 //§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§
 bool VertexBuffer::LoadBuffer(const void * const data, const int &dataSize, const UsageType &usage) const
 {
-	//verifico parametros
 	if (dataSize <= 0)
 		return false;
 
-	//faço bind ao buffer correcto
-	HorseRadish::OpenGL::glBindBuffer(this->glTarget, this->glID);
-
-	//coloco os dados no buffer com o usage correcto
-	if (usage == VertexBuffer::Stream)
-		HorseRadish::OpenGL::glBufferData(this->glTarget, dataSize, data, GL_STREAM_DRAW);
-	else if (usage == VertexBuffer::Static)
-		HorseRadish::OpenGL::glBufferData(this->glTarget, dataSize, data, GL_STATIC_DRAW);
-	else if (usage == VertexBuffer::Dynamic)
-		HorseRadish::OpenGL::glBufferData(this->glTarget, dataSize, data, GL_DYNAMIC_DRAW);
-	else
+	GLenum glUsage = 0;
+	switch (usage)
+	{
+	case VertexBuffer::Stream:
+		glUsage = GL_STREAM_DRAW;
+		break;
+	case VertexBuffer::Static:
+		glUsage = GL_STATIC_DRAW;
+		break;
+	case VertexBuffer::Dynamic:
+		glUsage = GL_DYNAMIC_DRAW;
+		break;
+	default:
 		return false;
+	}
 
-	//já tá!
+	HorseRadish::OpenGL::glNamedBufferData(this->glID, dataSize, data, glUsage);
 	return true;
 }
 
@@ -71,34 +73,34 @@ bool VertexBuffer::LoadMeshData(HorseRadish::Geometry::Mesh * const mesh, const 
 	const void *data;
 	int dataSize;
 
-	//verifico parametros
 	if (mesh == nullptr)
 		return false;
 
-	//se pode ser um objecto do tipo array e element buffer
 	if (this->glTarget != GL_ARRAY_BUFFER)
 		return false;
 
-	//buscar este valores
 	data = (const void*)mesh->SingleBufferPointer();
 	dataSize = mesh->GetSize();
 	if ((data == nullptr) || (dataSize <= 0))
 		return false;
 
-	//faço bind ao buffer correcto
-	HorseRadish::OpenGL::glBindBuffer(this->glTarget, this->glID);
-
-	//coloco os dados no buffer com o usage correcto
-	if (usage == VertexBuffer::Stream)
-		HorseRadish::OpenGL::glBufferData(this->glTarget, dataSize, data, GL_STREAM_DRAW);
-	else if (usage == VertexBuffer::Static)
-		HorseRadish::OpenGL::glBufferData(this->glTarget, dataSize, data, GL_STATIC_DRAW);
-	else if(usage == VertexBuffer::Dynamic)
-		HorseRadish::OpenGL::glBufferData(this->glTarget, dataSize, data, GL_DYNAMIC_DRAW);
-	else
+	GLenum glUsage = 0;
+	switch (usage)
+	{
+	case VertexBuffer::Stream:
+		glUsage = GL_STREAM_DRAW;
+		break;
+	case VertexBuffer::Static:
+		glUsage = GL_STATIC_DRAW;
+		break;
+	case VertexBuffer::Dynamic:
+		glUsage = GL_DYNAMIC_DRAW;
+		break;
+	default:
 		return false;
+	}
 
-	//chegando aqui correu tudo bem
+	HorseRadish::OpenGL::glNamedBufferData(this->glID, dataSize, data, glUsage);
 	return true;
 }
 
@@ -107,15 +109,12 @@ bool VertexBuffer::LoadMeshIndex(HorseRadish::Geometry::Mesh * const mesh, const
 	const void *data;
 	int dataSize;
 
-	//verifico parametros
 	if (mesh==nullptr)
 		return false;
 
-	//se pode ser um objecto do tipo array e element buffer
 	if (this->glTarget != GL_ELEMENT_ARRAY_BUFFER)
 		return false;
 
-	//buscar este valores
 	data = (const void*)mesh->GetIndices();
 	dataSize = 0;
 	if (mesh->GetIndexType() == HorseRadish::Geometry::Mesh::Int16)
@@ -125,32 +124,32 @@ bool VertexBuffer::LoadMeshIndex(HorseRadish::Geometry::Mesh * const mesh, const
 	if ((data == nullptr) || (dataSize <= 0))
 		return false;
 
-	//faço bind ao buffer correcto
-	HorseRadish::OpenGL::glBindBuffer(this->glTarget, this->glID);
-
-	//coloco os dados no buffer com o usage correcto
-	if (usage == VertexBuffer::Stream)
-		HorseRadish::OpenGL::glBufferData(this->glTarget, dataSize, data, GL_STREAM_DRAW);
-	else if (usage == VertexBuffer::Static)
-		HorseRadish::OpenGL::glBufferData(this->glTarget, dataSize, data, GL_STATIC_DRAW);
-	else if(usage == VertexBuffer::Dynamic)
-		HorseRadish::OpenGL::glBufferData(this->glTarget, dataSize, data, GL_DYNAMIC_DRAW);
-	else
+	GLenum glUsage = 0;
+	switch (usage)
+	{
+	case VertexBuffer::Stream:
+		glUsage = GL_STREAM_DRAW;
+		break;
+	case VertexBuffer::Static:
+		glUsage = GL_STATIC_DRAW;
+		break;
+	case VertexBuffer::Dynamic:
+		glUsage = GL_DYNAMIC_DRAW;
+		break;
+	default:
 		return false;
+	}
 
-	//chegando aqui correu tudo bem
+	HorseRadish::OpenGL::glNamedBufferData(this->glID, dataSize, data, glUsage);
 	return true;
 }
 
 bool VertexBuffer::UpdateBuffer(const void * const data, const int &dataSize, const int &startOffset) const
 {
-	//verifico parametros
 	if ((data == nullptr) || (dataSize <= 0) || (startOffset < 0))
 		return false;
 
-	//faço bind e coloco os novos dados
-	HorseRadish::OpenGL::glBindBuffer(this->glTarget, this->glID);
-	HorseRadish::OpenGL::glBufferSubData(this->glTarget, startOffset, dataSize, data);
+	HorseRadish::OpenGL::glNamedBufferSubData(this->glID, startOffset, dataSize, data);
 	return true;
 }
 
@@ -176,36 +175,35 @@ void VertexBuffer::Unbind() const
 //§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§
 bool PixelBuffer::LoadBuffer(const void * const data, const int &dataSize, const UsageType &usage) const
 {
-	//verifico parametros
 	if (dataSize <= 0)
 		return false;
 
-	//faço bind ao buffer correcto
-	HorseRadish::OpenGL::glBindBuffer(this->glTarget, this->glID);
+	GLenum glUsage = 0;
+	switch (usage)
+	{
+		case VertexBuffer::Stream:
+			glUsage = GL_STREAM_DRAW;
+			break;
+		case VertexBuffer::Static:
+			glUsage = GL_STATIC_DRAW;
+			break;
+		case VertexBuffer::Dynamic:
+			glUsage = GL_DYNAMIC_DRAW;
+			break;
+		default:
+			return false;
+	}
 
-	//coloco os dados no buffer com o usage correcto
-	if (usage == VertexBuffer::Stream)
-		HorseRadish::OpenGL::glBufferData(this->glTarget, dataSize, data, GL_STREAM_DRAW);
-	else if (usage == VertexBuffer::Static)
-		HorseRadish::OpenGL::glBufferData(this->glTarget, dataSize, data, GL_STATIC_DRAW);
-	else if (usage == VertexBuffer::Dynamic)
-		HorseRadish::OpenGL::glBufferData(this->glTarget, dataSize, data, GL_DYNAMIC_DRAW);
-	else
-		return false;
-
-	//já tá!
+	HorseRadish::OpenGL::glNamedBufferData(this->glID, dataSize, data, glUsage);
 	return true;
 }
 
 bool PixelBuffer::UpdateBuffer(const void * const data, const int &dataSize, const int &startOffset) const
 {
-	//verifico parametros
 	if ((data == nullptr) || (dataSize <= 0) || (startOffset < 0))
 		return false;
 
-	//faço bind e coloco os novos dados
-	HorseRadish::OpenGL::glBindBuffer(this->glTarget, this->glID);
-	HorseRadish::OpenGL::glBufferSubData(this->glTarget, startOffset, dataSize, data);
+	HorseRadish::OpenGL::glNamedBufferSubData(this->glID, startOffset, dataSize, data);
 	return true;
 }
 
@@ -235,13 +233,10 @@ void PixelBuffer::Unbind() const
 //§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§
 void RenderBuffer::Init(const int &format, const int &width, const int &height) const
 {
-	//verificar algumas coisas
 	if ((format == 0) || (width <= 0) || (height <= 0))
 		return;
 
-	//basta fazer bind e iniciar o renderbuffer
-	HorseRadish::OpenGL::glBindRenderbuffer(GL_RENDERBUFFER, this->glID);
-	HorseRadish::OpenGL::glRenderbufferStorage(GL_RENDERBUFFER, format, width, height);
+	HorseRadish::OpenGL::glNamedRenderbufferStorage(this->glID, format, width, height);
 }
 
 //§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§
@@ -249,21 +244,14 @@ void RenderBuffer::Init(const int &format, const int &width, const int &height) 
 //§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§
 bool FrameBuffer::GetStatusComplete() const
 {
-	//faço bind ao framebuffer
-	HorseRadish::OpenGL::glBindFramebuffer(GL_FRAMEBUFFER, this->glID);
-
-	//toca a ver o que se passou
-	switch(HorseRadish::OpenGL::glCheckFramebufferStatus(GL_FRAMEBUFFER))
+	switch (HorseRadish::OpenGL::glCheckNamedFramebufferStatus(this->glID, GL_FRAMEBUFFER))
 	{
-		//completo
 		case GL_FRAMEBUFFER_COMPLETE:
 				return true;
 
-		//completo mas não é suportado por esta implementação
 		case GL_FRAMEBUFFER_UNSUPPORTED:
 				return false;
 
-		//existe qualquer erro com o framebuffer (não dependente da implementação)
 		case GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT:
 				return false;
 		case GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT:
@@ -276,33 +264,16 @@ bool FrameBuffer::GetStatusComplete() const
 			return false;
 		}
 
-	//chegando aqui vai falhar sempre
 	return false;
 }
 
 void FrameBuffer::AttachTColor(const Texture * const textureToAttach, const int attachUnit) const
 {
-	//verificar algumas coisas
 	if ((textureToAttach == nullptr) || (attachUnit < 0))
 		return;
 
-	//se for para colocar uma textura 2D
-	if (textureToAttach->glTarget == GL_TEXTURE_2D)
-	{
-		//faço bind ao framebuffer a ligo-o à textura
-		HorseRadish::OpenGL::glBindFramebuffer(GL_FRAMEBUFFER, this->glID);
-		HorseRadish::OpenGL::glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + attachUnit, GL_TEXTURE_2D, textureToAttach->glID, 0);
-		return;
-	}
-
-	//se for para colocar uma textura RECT
-	if (textureToAttach->glTarget == GL_TEXTURE_RECTANGLE)
-	{
-		//faço bind ao framebuffer a ligo-o à textura
-		HorseRadish::OpenGL::glBindFramebuffer(GL_FRAMEBUFFER, this->glID);
-		HorseRadish::OpenGL::glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + attachUnit, GL_TEXTURE_RECTANGLE, textureToAttach->glID, 0);
-		return;
-	}
+	if ((textureToAttach->glTarget == GL_TEXTURE_2D) || (textureToAttach->glTarget == GL_TEXTURE_RECTANGLE))
+		HorseRadish::OpenGL::glNamedFramebufferTexture(this->glID, GL_COLOR_ATTACHMENT0 + attachUnit, textureToAttach->glID, 0);
 }
 
 void FrameBuffer::AttachTColor(const Texture * const textureToAttach, const int attachUnit, const int cubemapFaceIndex) const
@@ -312,55 +283,32 @@ void FrameBuffer::AttachTColor(const Texture * const textureToAttach, const int 
 		return;
 
 	//faço bind ao framebuffer a ligo-o à textura
-	HorseRadish::OpenGL::glBindFramebuffer(GL_FRAMEBUFFER, this->glID);
-	HorseRadish::OpenGL::glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + attachUnit, GL_TEXTURE_CUBE_MAP_POSITIVE_X + cubemapFaceIndex, textureToAttach->glID, 0);
+	HorseRadish::OpenGL::glNamedFramebufferTextureLayer(this->glID, GL_COLOR_ATTACHMENT0 + attachUnit, textureToAttach->glID, 0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + cubemapFaceIndex);
 }
 
 void FrameBuffer::AttachTDepth(const Texture * const textureToAttach) const
 {
-	//verificar isto
 	if (textureToAttach == nullptr)
 		return;
 
-	//se for para colocar uma textura 2D
-	if (textureToAttach->glTarget == GL_TEXTURE_2D)
-	{
-		//faço bind ao framebuffer a ligo-o à textura
-		HorseRadish::OpenGL::glBindFramebuffer(GL_FRAMEBUFFER, this->glID);
-		HorseRadish::OpenGL::glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, textureToAttach->glID, 0);
-		return;
-	}
-
-	//se for para colocar uma textura RECT
-	if (textureToAttach->glTarget == GL_TEXTURE_RECTANGLE)
-	{
-		//faço bind ao framebuffer a ligo-o à textura
-		HorseRadish::OpenGL::glBindFramebuffer(GL_FRAMEBUFFER, this->glID);
-		HorseRadish::OpenGL::glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_RECTANGLE, textureToAttach->glID, 0);
-		return;
-	}
+	if ((textureToAttach->glTarget == GL_TEXTURE_2D) || (textureToAttach->glTarget == GL_TEXTURE_RECTANGLE))
+		HorseRadish::OpenGL::glNamedFramebufferTexture(this->glID, GL_DEPTH_ATTACHMENT, textureToAttach->glID, 0);
 }
 
 void FrameBuffer::AttachRColor(const RenderBuffer * const renderbufferToAttach, const int attachUnit) const
 {
-	//verificar algumas coisas
 	if (renderbufferToAttach == nullptr)
 		return;
 
-	//faço bind ao framebuffer a ligo-o à renderbuffer
-	HorseRadish::OpenGL::glBindFramebuffer(GL_FRAMEBUFFER, this->glID);
-	HorseRadish::OpenGL::glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + attachUnit, GL_RENDERBUFFER, renderbufferToAttach->glID);
+	HorseRadish::OpenGL::glNamedFramebufferRenderbuffer(this->glID, GL_COLOR_ATTACHMENT0 + attachUnit, GL_RENDERBUFFER, renderbufferToAttach->glID);
 }
 
 void FrameBuffer::AttachRDepth(const RenderBuffer * const renderbufferToAttach) const
 {
-	//verificar algumas coisas
 	if (renderbufferToAttach == nullptr)
 		return;
 
-	//faço bind ao framebuffer a ligo-o à renderbuffer
-	HorseRadish::OpenGL::glBindFramebuffer(GL_FRAMEBUFFER, this->glID);
-    HorseRadish::OpenGL::glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, renderbufferToAttach->glID);
+	HorseRadish::OpenGL::glNamedFramebufferRenderbuffer(this->glID, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, renderbufferToAttach->glID);
 }
 
 //§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§
@@ -373,7 +321,7 @@ bool Shader::SupplyCode(const char * const sourceCode) const
 		return false;
 
 	//insiro o código
-	HorseRadish::OpenGL::glShaderSource(this->glID, 1, (const HorseRadish::OpenGL::GLchar**)(&sourceCode), nullptr);
+	HorseRadish::OpenGL::glShaderSource(this->glID, 1, (const GLchar**)(&sourceCode), nullptr);
 	return true;
 }
 
@@ -392,7 +340,7 @@ bool Shader::SupplyCode(const char * const sourceCode, const char * const textDe
 	//insiro o código
 	sourceStrings[0] = textDefines;
 	sourceStrings[1] = sourceCode;
-	HorseRadish::OpenGL::glShaderSource(this->glID, 2, (const HorseRadish::OpenGL::GLchar**)sourceStrings, nullptr);
+	HorseRadish::OpenGL::glShaderSource(this->glID, 2, (const GLchar**)sourceStrings, nullptr);
 	return true;
 }
 
@@ -412,7 +360,7 @@ bool Shader::SupplyCodeFile(const HorseRadish::Streams::Stream *fileStream) cons
 		return false;
 
 	//agora é simples, basta mandar para lá o código
-	HorseRadish::OpenGL::glShaderSource(this->glID, 1, (const HorseRadish::OpenGL::GLchar**)(&ficheiro), &tamanho);
+	HorseRadish::OpenGL::glShaderSource(this->glID, 1, (const GLchar**)(&ficheiro), &tamanho);
 
 	//se os dados foram copiados
 	if (dataCopiada == true)
@@ -445,7 +393,7 @@ bool Shader::SupplyCodeFile(const HorseRadish::Streams::Stream *fileStream, cons
 	sourceStrings[0] = textDefines;
 	sourceLengths[1] = fileSize;
 	sourceStrings[1] = (const char*)fileData;
-	HorseRadish::OpenGL::glShaderSource(this->glID, 2, (const HorseRadish::OpenGL::GLchar**)sourceStrings, sourceLengths);
+	HorseRadish::OpenGL::glShaderSource(this->glID, 2, (const GLchar**)sourceStrings, sourceLengths);
 
 	//se os dados foram copiados
 	if (dataCopiada == true)
@@ -1185,16 +1133,6 @@ void Context::InitializeContext()
 		this->extensionsAvailable |= Context::CompressionS3;
 	if (HorseRadish::OpenGL::Extensions::ExtensionExists("GL_NV_texture_compression_vtc"))
 		this->extensionsAvailable |= Context::CompressionVTC;
-	if (HorseRadish::OpenGL::Extensions::ExtensionExists("GL_ARB_texture_storage"))
-		this->extensionsAvailable |= Context::TextureStorage;
-	if (HorseRadish::OpenGL::Extensions::ExtensionExists("GL_ARB_map_buffer_alignment"))
-		this->extensionsAvailable |= Context::MapBufferAlignment;
-	if (HorseRadish::OpenGL::Extensions::ExtensionExists("GL_ARB_shading_language_420pack"))
-		this->extensionsAvailable |= Context::ShadingLanguage420Pack;
-	if (HorseRadish::OpenGL::Extensions::ExtensionExists("GL_ARB_debug_output"))
-		this->extensionsAvailable |= Context::DebugOutput;
-	if (HorseRadish::OpenGL::Extensions::ExtensionExists("GL_EXT_direct_state_access"))
-		this->extensionsAvailable |= Context::DirectStateAccess;
 	
 	//preciso de alguma informação
 	this->info.glslVersion.Set(HorseRadish::String::ASCII, HorseRadish::OpenGL::glGetString(GL_SHADING_LANGUAGE_VERSION));
@@ -1238,8 +1176,7 @@ void Context::DispatchDebugMessages() const
 {
 	int numMsgsLogged;
 
-	//se o contexto não está criado ou a extensão não é suportada
-	if ((this->contextCreated == false) || (this->IsExtensionPresent(Extensions::DebugOutput) == false))
+	if (this->contextCreated == false)
 		return;
 
 	//verifico se tenho alguma coisa guardada
@@ -1247,20 +1184,20 @@ void Context::DispatchDebugMessages() const
 	if (numMsgsLogged <= 0)
 		return;
 
-	HorseRadish::OpenGL::GLenum listSources[5], listTypes[5], listIDs[5], listSeverities[5];
-	HorseRadish::OpenGL::GLsizei messageLogSize, listLengths[5];
-	HorseRadish::OpenGL::GLchar *messageLog, *messageLogWalker;
-	HorseRadish::OpenGL::GLuint messagesRead;
+	GLenum listSources[5], listTypes[5], listIDs[5], listSeverities[5];
+	GLsizei messageLogSize, listLengths[5];
+	GLchar *messageLog, *messageLogWalker;
+	GLuint messagesRead;
 
 	//preciso de espaço para o conteúdo das mensagens
-	messageLogSize = sizeof(HorseRadish::OpenGL::GLchar) * 5 * HorseRadish::Platform::KiloByte;
-	messageLog = new HorseRadish::OpenGL::GLchar[messageLogSize];
+	messageLogSize = sizeof(GLchar) * 5 * HorseRadish::Platform::KiloByte;
+	messageLog = new GLchar[messageLogSize];
 
 	//enquanto tiver coisas a ler
 	while (numMsgsLogged > 0)
 	{
 		//leio de 5 em 5
-		messagesRead = HorseRadish::OpenGL::Extensions::glGetDebugMessageLogARB(5, messageLogSize, listSources, listTypes, listIDs, listSeverities, listLengths, messageLog);
+		messagesRead = HorseRadish::OpenGL::glGetDebugMessageLog(5, messageLogSize, listSources, listTypes, listIDs, listSeverities, listLengths, messageLog);
 
 		//já li estas
 		numMsgsLogged -= messagesRead;
@@ -1270,7 +1207,7 @@ void Context::DispatchDebugMessages() const
 		for(int i=0; i<messagesRead; i++)
 		{
 			//mando a mensagem
-			HorseRadish::OpenGL::Extensions::glDebugMessageInsertARB(listSources[i], listTypes[i], listIDs[i], listSeverities[i], listLengths[i], messageLogWalker);
+			HorseRadish::OpenGL::glDebugMessageInsert(listSources[i], listTypes[i], listIDs[i], listSeverities[i], listLengths[i], messageLogWalker);
 
 			//avanço com o log
 			messageLogWalker += listLengths[i];

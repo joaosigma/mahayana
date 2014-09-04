@@ -2,7 +2,7 @@
 #ifndef __HOPENGL_TOOLS__
 #define __HOPENGL_TOOLS__
 
-#include "openGL.h"
+#include "openGL.hpp"
 #include "objects.hpp"
 #include "common\Ray.hpp"
 #include "common\Containers.hpp"
@@ -77,7 +77,7 @@ private:
 		unsigned char cr, cg, cb, ca;
 	};
 
-	HorseRadish::OpenGL::GLuint glArrayBufferID, glElementArrayBufferID, glVertexArrayID;
+	GLuint glArrayBufferID, glElementArrayBufferID, glVertexArrayID;
 	VertexDataLayout *bufferData;
 	unsigned short *bufferIndices;
 	int maxVertexCount, curVertex;
@@ -125,7 +125,7 @@ class FontManager
 {
 private:
 	HorseRadish::Containers::Array<Font*> fonts;
-	HorseRadish::OpenGL::GLuint glArrayBufferID, glElementArrayBufferID, glVertexArrayID;
+	GLuint glArrayBufferID, glElementArrayBufferID, glVertexArrayID;
 
 	friend class Font;
 

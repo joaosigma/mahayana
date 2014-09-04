@@ -1,6 +1,4 @@
 #pragma once
-#ifndef __HPLATFORM__
-#define __HPLATFORM__
 
 #include "String.hpp"
 
@@ -66,5 +64,3 @@ namespace HorseRadish
 	};
 
 } //HorseRadish
-
-#endif

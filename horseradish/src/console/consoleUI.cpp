@@ -3,7 +3,7 @@
 #include "common\ImageFactory.hpp"
 #include "common\Common.hpp"
 #include "common\Containers.hpp"
-#include "common\opengl\openGL.h"
+#include "common\opengl\openGL.hpp"
 #include "common\opengl\openGLext.hpp"
 #include "common\opengl\objects.hpp"
 #include "common\openGL\tools.hpp"
@@ -201,7 +201,7 @@ void ConsoleGUI::drawConsoleBackground(HorseRadish::Render::Renderer2D * const r
 	if (texConsoleLogo != nullptr)
 	{
 		//a textura para o logo
-		HorseRadish::OpenGL::Extensions::glBindMultiTextureEXT(GL_TEXTURE0, texConsoleLogo->glTarget, texConsoleLogo->glID);
+		HorseRadish::OpenGL::glBindTextureUnit(0, texConsoleLogo->glID);
 
 		//o programa em causa e todos os uniforms que preciso
 		renderData->shaders.prog2DDrawTex->Bind();

@@ -1,6 +1,4 @@
 #pragma once
-#ifndef __HTYPES__
-#define __HTYPES__
 
 #include <xmmintrin.h>
 
@@ -10,30 +8,24 @@
 
 namespace HorseRadish
 {
-	//o tamanho do sizeof (e para aritmética de ponteiros)
 	typedef size_t hSize;
 	typedef ptrdiff_t hPrtDiff;
 
-	//o que é usado para caracteres
 	typedef signed char hChar;
 
-	//inteiros com sinal
 	typedef signed __int8 hInt8;
 	typedef signed __int16 hInt16;
 	typedef signed __int32 hInt32;
 	typedef signed __int64 hInt64;
 
-	//inteiros sem sinal
 	typedef unsigned __int8 hUInt8;
 	typedef unsigned __int16 hUInt16;
 	typedef unsigned __int32 hUInt32;
 	typedef unsigned __int64 hUInt64;
 
-	//virgula flutuante
 	typedef float hFloat;
 	typedef double hDouble;
 
-	//para guardar dados com 128 bits
 	typedef HALIGN_16BYTES union{
 		 float               f32[4];
 		 double              d64[2];
@@ -48,7 +40,6 @@ namespace HorseRadish
 		 __m128              m128;
 	} hData128;
 
-	//para guardar dados com 160 bits
 	typedef HALIGN_16BYTES union{
 		 float               f32[5];
 		 __int8              i8[20];
@@ -58,7 +49,4 @@ namespace HorseRadish
 		 unsigned __int16    ui16[10];
 		 unsigned __int32    ui32[5];
 	} hData160;
-
 }
-
-#endif

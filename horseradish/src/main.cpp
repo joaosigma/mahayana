@@ -46,7 +46,7 @@
 #include "common\sorting.hpp"
 #include "common\math.hpp"
 #include "common\smartpointers.hpp"
-#include "common\opengl\openGL.h"
+#include "common\opengl\openGL.hpp"
 #include "common\opengl\openGLext.hpp"
 #include "common\opengl\objects.hpp"
 #include "render\world.hpp"
@@ -779,7 +779,7 @@ bool systemInitialize(const HINSTANCE hInstance, const PWSTR lpCmdLine)
 		gbMainConsole->VarSetDataS("r_glDriver", openglDriverName.GetData());	
 
 	//mando carregar a biblioteca do OpenGL
-	if (HorseRadish::OpenGL::OpenGLLoadLibrary((const HorseRadish::hChar*)gbMainConsole->VarGetDataS("r_glDriver")) == false)
+	if (HorseRadish::OpenGL::OpenGLLoadLibrary(gbMainConsole->VarGetDataS("r_glDriver")) == false)
 	{
 		gbMainConsole->LogError("Error linking OpenGL driver!!");
 		Window::MsgBoxErro("Unable to load OpenGL driver!\nApplication cannot proceed.");
@@ -994,11 +994,10 @@ void writeOpenGLInfo(Console &console, const HorseRadish::OpenGL::Objects::Conte
 		console.LogTab(HorseRadish::String("Maximum rectangle texture size: %dx%d", infoValueInt, infoValueInt).GetData(), 2);
 }
 
-void CALLBACK openglDebugMessagesCallback(HorseRadish::OpenGL::GLenum source, HorseRadish::OpenGL::GLenum type, HorseRadish::OpenGL::GLuint id, HorseRadish::OpenGL::GLenum severity, HorseRadish::OpenGL::GLsizei length, const HorseRadish::OpenGL::GLchar* message, HorseRadish::OpenGL::GLvoid* userParam)
+void CALLBACK openglDebugMessagesCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *message, const void *userParam)
 {
 	const char *glSource, *glType, *glSeverity;
 
-	//isto dá jeito
 	auto appConsole = (Console*)userParam;
 
 	//por omissão
@@ -1074,23 +1073,22 @@ bool openglInitialize(const HorseRadish::OpenGL::Objects::Context &glContext)
 {
 	int glMajorVersion, glMinorVersion;
 
-	//inicio todas as extensões necessárias de base (do OpenGL 3.2)
 	if (HorseRadish::OpenGL::OpenGLGetProcs() == false)
 	{
-		gbMainConsole->LogError("Unable to load required functions to work with OpenGL 3.2 (try updating your drivers).");
+		gbMainConsole->LogError("Unable to load required functions to work with OpenGL 4.5 (try updating your drivers).");
 		gbWindow->WindowKill();
 		return false;
 	}
 
 	//inicio extensões auxiliares
-	HorseRadish::OpenGL::Extensions::ExtensionsLoad((const HorseRadish::hChar*)gbMainConsole->VarGetDataS("r_glDriver"));
+	HorseRadish::OpenGL::Extensions::ExtensionsLoad(gbMainConsole->VarGetDataS("r_glDriver"));
 
-	//certifico-me que estou com OpenGL 3
+	//certifico-me que estou com OpenGL 4.5
 	HorseRadish::OpenGL::glGetIntegerv(GL_MAJOR_VERSION, &glMajorVersion);
 	HorseRadish::OpenGL::glGetIntegerv(GL_MINOR_VERSION, &glMinorVersion);
-	if ((glMajorVersion < 3) || ((glMajorVersion == 3) && (glMinorVersion < 2)))
+	if ((glMajorVersion < 4) || ((glMajorVersion == 4) && (glMinorVersion < 5)))
 	{
-		gbMainConsole->LogError("OpenGL version 3.2 or higher is required (try updating your drivers).");
+		gbMainConsole->LogError("OpenGL version 4.5 or higher is required (try updating your drivers).");
 		gbWindow->WindowKill();
 		return false;
 	}
@@ -1270,10 +1268,6 @@ static
 void showInitialCredits(HorseRadish::Render::Renderer2D * const renderData, OpenglContext * const glContext, HorseRadish::OpenGL::Tools::Viewport * const renderViewport)
 {
 	VideoStream *videoStream;
-	HorseRadish::OpenGL::Tools::ImmediateMode *glImmediateMode;
-	HorseRadish::OpenGL::Objects::ObjectsManager *glObjects;
-	const HorseRadish::OpenGL::Objects::Texture *texVideo;
-	const HorseRadish::OpenGL::Objects::PixelBuffer *pboVideo;
 	float videoColor;
 	int videoWidth, videoHeight;
 	HorseRadish::hInt64 frameLastID;
@@ -1317,15 +1311,14 @@ void showInitialCredits(HorseRadish::Render::Renderer2D * const renderData, Open
 	videoStream->GetVideoDims(videoWidth, videoHeight);
 
 	//para ajudar
-	glImmediateMode = renderData->glImmediateMode;
-	glObjects = new HorseRadish::OpenGL::Objects::ObjectsManager(glContext);
+	auto glImmediateMode = renderData->glImmediateMode;
+	auto glObjects = new HorseRadish::OpenGL::Objects::ObjectsManager(glContext);
 
 	//crio a textura que vai mostrar o video
-	texVideo = glObjects->CreateRect(true, nullptr, videoWidth, videoHeight, HorseRadish::OpenGL::Objects::ObjectsManager::RGBA32);
-	texVideo->Bind(0);
-	
+	auto texVideo = glObjects->CreateRect(true, nullptr, videoWidth, videoHeight, HorseRadish::OpenGL::Objects::ObjectsManager::RGBA32);
+
 	//o PBO que vou usar para transferir as coisas para a textura criada
-	pboVideo = (HorseRadish::OpenGL::Objects::PixelBuffer*)glObjects->ObjectCreate(HorseRadish::OpenGL::Objects::ObjectsManager::PixelUnpackBuffer);
+	auto pboVideo = (HorseRadish::OpenGL::Objects::PixelBuffer*)glObjects->ObjectCreate(HorseRadish::OpenGL::Objects::ObjectsManager::PixelUnpackBuffer);
 	if (pboVideo != nullptr)
 	{
 		//crio espaço no PBO
@@ -1346,6 +1339,7 @@ void showInitialCredits(HorseRadish::Render::Renderer2D * const renderData, Open
 	texUpdated = false;
 	videoExiting = false;
 	videoColor = 1.0f;
+	
 
 	//ciclo infinito da thread
 	while (appExitAction.load() == AppExitAction::NONE)
@@ -1384,12 +1378,12 @@ void showInitialCredits(HorseRadish::Render::Renderer2D * const renderData, Open
 				pboVideo->UpdateBuffer(frameData, videoStream->GetVideoFrameDataSize(), 0);
 
 				//actualizo a textura com os dados do PBO
-				HorseRadish::OpenGL::glTexSubImage2D(GL_TEXTURE_RECTANGLE, 0, 0, 0, videoWidth, videoHeight, GL_BGR, GL_UNSIGNED_BYTE, (void*)0);
+				HorseRadish::OpenGL::glTextureSubImage2D(texVideo->glID, 0, 0, 0, videoWidth, videoHeight, GL_BGR, GL_UNSIGNED_BYTE, (void*)0);
 			}
 			else
 			{
 				//coloco os dados directamente na textura
-				HorseRadish::OpenGL::glTexSubImage2D(GL_TEXTURE_RECTANGLE, 0, 0, 0, videoWidth, videoHeight, GL_BGR, GL_UNSIGNED_BYTE, frameData);
+				HorseRadish::OpenGL::glTextureSubImage2D(texVideo->glID, 0, 0, 0, videoWidth, videoHeight, GL_BGR, GL_UNSIGNED_BYTE, frameData);
 			}
 
 			//já a posso usar
@@ -1402,6 +1396,8 @@ void showInitialCredits(HorseRadish::Render::Renderer2D * const renderData, Open
 		//se já posso usar a textura
 		if (texUpdated == true)
 		{
+			texVideo->Bind(0);
+
 			//desenho o quadrado
 			glImmediateMode->BeginDraw(HorseRadish::OpenGL::Tools::ImmediateMode::Quads);
 				glImmediateMode->AddColorF((videoColor < 0.0f) ? 0.0f : videoColor);
@@ -1493,7 +1489,7 @@ void renderThreadFunc()
 	gbMainConsole->Log("#150,150,0.->#255,255,255.Render thread initialized.");
 
 	//crio o contexto
-	glContext = new OpenglContext(gbWindow, (const HorseRadish::hChar*)gbMainConsole->VarGetDataS("r_glDriver"), 3, 3, (gbMainConsole->VarGetDataI("r_glDebug") != 0), false);
+	glContext = new OpenglContext(gbWindow, (const HorseRadish::hChar*)gbMainConsole->VarGetDataS("r_glDriver"), 4, 5, (gbMainConsole->VarGetDataI("r_glDebug") != 0), false);
 	if (glContext == nullptr)
 	{
 		systemExit(AppExitAction::ERROR_RENDER);
@@ -1514,19 +1510,21 @@ void renderThreadFunc()
 	glContext->InitializeContext();
 
 	//preciso destas extensões
-	if (glContext->IsExtensionPresent((OpenglContext::Extensions)(OpenglContext::TextureStorage | OpenglContext::MapBufferAlignment | OpenglContext::ShadingLanguage420Pack | OpenglContext::DirectStateAccess)) == false)
+	/*if (glContext->IsExtensionPresent((OpenglContext::Extensions)()) == false)
 	{
 		Window::MsgBoxErro("The following OpenGL extensions are required:\n   - GL_ARB_texture_storage\n   - GL_ARB_map_buffer_alignmentn\n   - GL_ARB_shading_language_420pack\n   - GL_EXT_direct_state_access\nApplication cannot proceed.");
 		systemExit(AppExitAction::ERROR_RENDER);
 		return;
-	}
+	}*/
 
 	//se estou em modo de debug
-	if ((gbMainConsole->VarGetDataI("r_glDebug") != 0) && (glContext->IsExtensionPresent(OpenglContext::DebugOutput) == true))
+	if (gbMainConsole->VarGetDataI("r_glDebug") != 0)
 	{
 		//quero receber todo o tipo de mensagens e digo para onde devo recebé-las
-		HorseRadish::OpenGL::Extensions::glDebugMessageControlARB(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, true);
-		HorseRadish::OpenGL::Extensions::glDebugMessageCallbackARB(openglDebugMessagesCallback, gbMainConsole);
+		HorseRadish::OpenGL::glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, true);
+		HorseRadish::OpenGL::glDebugMessageCallback(openglDebugMessagesCallback, gbMainConsole);
+		HorseRadish::OpenGL::glEnable(GL_DEBUG_OUTPUT);
+		HorseRadish::OpenGL::glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
 
 		//como já posso ter mensagens pendentes, mando-as para o callback
 		glContext->DispatchDebugMessages();
