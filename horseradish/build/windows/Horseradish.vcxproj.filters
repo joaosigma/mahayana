@@ -135,9 +135,6 @@
     <ClCompile Include="..\..\src\common\Matrix.cpp">
       <Filter>common</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\common\MemManager.cpp">
-      <Filter>common</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\common\Mesh.cpp">
       <Filter>common</Filter>
     </ClCompile>
@@ -535,6 +532,9 @@
     <ClCompile Include="..\..\src\common\opengl\openGL.cpp">
       <Filter>common\opengl</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\common\Types.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\common\imageFactory\ifHDRI.hpp">
@@ -567,12 +567,6 @@
     <ClInclude Include="..\..\src\common\Color.hpp">
       <Filter>common</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\common\Common.hpp">
-      <Filter>common</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\common\Containers.hpp">
-      <Filter>common</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\common\Encoders.hpp">
       <Filter>common</Filter>
     </ClInclude>
@@ -598,12 +592,6 @@
       <Filter>common</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\common\Matrix.hpp">
-      <Filter>common</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\common\MemContainers.hpp">
-      <Filter>common</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\common\MemManager.hpp">
       <Filter>common</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\common\Mesh.hpp">
@@ -634,9 +622,6 @@
       <Filter>common</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\common\ScopedAction.hpp">
-      <Filter>common</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\common\SmartPointers.hpp">
       <Filter>common</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\common\Sorting.hpp">

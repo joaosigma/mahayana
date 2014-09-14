@@ -24,9 +24,9 @@ namespace HorseRadish
 		};
 
 	public:
-		enum PriorityType { Normal, High, Highest };
-		enum OperatingSystemType { Windows, Linux };
-		enum SystemInfo { DisplayWidth, DisplayHeight, DisplayColorBits, DisplayFrequency, OperatingSystemName, SystemFolder, MachineName, CurrentUsername, MemoryTotal, MemoryFree, CleanBoot, CurrentFolder, ExecutableFullPath };
+		enum class PriorityType { Normal, High, Highest };
+		enum class OperatingSystemType { Windows, Linux };
+		enum class SystemInfo { DisplayWidth, DisplayHeight, DisplayColorBits, DisplayFrequency, OperatingSystemName, SystemFolder, MachineName, CurrentUsername, MemoryTotal, MemoryFree, CleanBoot, CurrentFolder, ExecutableFullPath };
 
 	public:
 		static const HorseRadish::hChar NewLine[];

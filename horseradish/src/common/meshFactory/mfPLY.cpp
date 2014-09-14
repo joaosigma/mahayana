@@ -4,10 +4,6 @@
 #include "common\MeshFactory.hpp"
 #include "common\Stream.hpp"
 
-//os includes habituais
-#include <windows.h>
-#include <stdio.h>
-
 using namespace HorseRadish;
 
 #define PLY_FORMAT_ASCII	0x123a
@@ -90,7 +86,7 @@ bool leLinha(HorseRadish::Streams::StreamReader * const streamReader, HorseRadis
 	buffer[i+1]='\0';
 
 	readTo.SetEmpty();
-	readTo.Set(HorseRadish::String::UTF8, buffer);
+	readTo.Set(HorseRadish::String::Encoding::UTF8, buffer);
 	readTo.RemoveAllChars(13);
 	readTo.RemoveAllChars(10);
 
@@ -268,7 +264,7 @@ Geometry::Model * iniciaModelo(const int numVertex, const int numFaces)
 		return nullptr;
 
 	//mando criar já uma mesh
-	modeloReturn->arrayMesh.Add();
+	modeloReturn->arrayMesh.push_back(Geometry::Model::MeshData());
 
 	//e prontos, tenho a minha mesh pronta a ser utilizada
 	modeloReturn->arrayMesh[0].meshName[0]='\0';

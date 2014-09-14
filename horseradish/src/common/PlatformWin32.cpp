@@ -87,13 +87,13 @@ namespace HorseRadish
 	{
 		switch (priorityType)
 		{
-		case Platform::Normal:
+		case Platform::PriorityType::Normal:
 			return (::SetPriorityClass(GetCurrentProcess(), NORMAL_PRIORITY_CLASS) == TRUE);
 			break;
-		case Platform::High:
+		case Platform::PriorityType::High:
 			return (::SetPriorityClass(GetCurrentProcess(), ABOVE_NORMAL_PRIORITY_CLASS) == TRUE);
 			break;
-		case Platform::Highest:
+		case Platform::PriorityType::Highest:
 			return (::SetPriorityClass(GetCurrentProcess(), HIGH_PRIORITY_CLASS) == TRUE);
 			break;
 		default:
@@ -107,13 +107,13 @@ namespace HorseRadish
 	{
 		switch (priorityType)
 		{
-		case Platform::Normal:
+		case Platform::PriorityType::Normal:
 			return (::SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_NORMAL) == TRUE);
 			break;
-		case Platform::High:
+		case Platform::PriorityType::High:
 			return (::SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_ABOVE_NORMAL) == TRUE);
 			break;
-		case Platform::Highest:
+		case Platform::PriorityType::Highest:
 			return (::SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_HIGHEST) == TRUE);
 			break;
 		default:
@@ -152,55 +152,55 @@ namespace HorseRadish
 		bufferAux[0] = '\0';
 		bufferAuxCharCount = sizeof(bufferAux) / sizeof(TCHAR);
 
-		if (systemInfo == Platform::ExecutableFullPath)
+		if (systemInfo == Platform::SystemInfo::ExecutableFullPath)
 		{
 			auto resultado = GetModuleFileName(0, bufferAux, bufferAuxCharCount);
 			if ((resultado == 0) || (resultado > bufferAuxCharCount))
 				return false;
 
-			infoValue.Set(HorseRadish::String::Windows, bufferAux);
+			infoValue.Set(HorseRadish::String::Encoding::Windows, bufferAux);
 			return true;
 		}
 
-		if (systemInfo == Platform::CurrentFolder)
+		if (systemInfo == Platform::SystemInfo::CurrentFolder)
 		{
 			auto resultado = GetCurrentDirectory(bufferAuxCharCount, bufferAux);
 			if ((resultado == 0) || (resultado > bufferAuxCharCount))
 				return false;
 
-			infoValue.Set(HorseRadish::String::Windows, bufferAux);
+			infoValue.Set(HorseRadish::String::Encoding::Windows, bufferAux);
 			return true;
 		}
 
-		if (systemInfo == Platform::SystemFolder)
+		if (systemInfo == Platform::SystemInfo::SystemFolder)
 		{
 			auto resultado = GetSystemDirectory(bufferAux, bufferAuxCharCount);
 			if ((resultado == 0) || (resultado > bufferAuxCharCount))
 				return false;
 
-			infoValue.Set(HorseRadish::String::Windows, bufferAux);
+			infoValue.Set(HorseRadish::String::Encoding::Windows, bufferAux);
 			return true;
 		}
 
-		if (systemInfo == Platform::MachineName)
+		if (systemInfo == Platform::SystemInfo::MachineName)
 		{
 			if (GetComputerName(bufferAux, &bufferAuxCharCount) == FALSE)
 				return false;
 
-			infoValue.Set(HorseRadish::String::Windows, bufferAux);
+			infoValue.Set(HorseRadish::String::Encoding::Windows, bufferAux);
 			return true;
 		}
 
-		if (systemInfo == Platform::CurrentUsername)
+		if (systemInfo == Platform::SystemInfo::CurrentUsername)
 		{
 			if (GetUserName(bufferAux, &bufferAuxCharCount) == FALSE)
 				return false;
 
-			infoValue.Set(HorseRadish::String::Windows, bufferAux);
+			infoValue.Set(HorseRadish::String::Encoding::Windows, bufferAux);
 			return true;
 		}
 
-		if (systemInfo == Platform::OperatingSystemName)
+		if (systemInfo == Platform::SystemInfo::OperatingSystemName)
 		{
 			OSVERSIONINFOEX versionInfo;
 
@@ -210,13 +210,13 @@ namespace HorseRadish
 				return false;
 
 			if ((versionInfo.dwMajorVersion == 6) && (versionInfo.dwMinorVersion == 1) && (versionInfo.wProductType == VER_NT_WORKSTATION))
-				infoValue.SetPrintf(HorseRadish::String::UTF8, "Windows 7 (%d.%d)", versionInfo.dwMajorVersion, versionInfo.dwMinorVersion);
+				infoValue.SetPrintf(HorseRadish::String::Encoding::UTF8, "Windows 7 (%d.%d)", versionInfo.dwMajorVersion, versionInfo.dwMinorVersion);
 			else if ((versionInfo.dwMajorVersion == 6) && (versionInfo.dwMinorVersion == 0) && (versionInfo.wProductType != VER_NT_WORKSTATION))
-				infoValue.SetPrintf(HorseRadish::String::UTF8, "Windows Vista (%d.%d)", versionInfo.dwMajorVersion, versionInfo.dwMinorVersion);
+				infoValue.SetPrintf(HorseRadish::String::Encoding::UTF8, "Windows Vista (%d.%d)", versionInfo.dwMajorVersion, versionInfo.dwMinorVersion);
 			else if ((versionInfo.dwMajorVersion == 5) && (versionInfo.dwMinorVersion == 1))
-				infoValue.SetPrintf(HorseRadish::String::UTF8, "Windows XP (%d.%d)", versionInfo.dwMajorVersion, versionInfo.dwMinorVersion);
+				infoValue.SetPrintf(HorseRadish::String::Encoding::UTF8, "Windows XP (%d.%d)", versionInfo.dwMajorVersion, versionInfo.dwMinorVersion);
 			else
-				infoValue.SetPrintf(HorseRadish::String::UTF8, "Windows (%d.%d)", versionInfo.dwMajorVersion, versionInfo.dwMinorVersion);
+				infoValue.SetPrintf(HorseRadish::String::Encoding::UTF8, "Windows (%d.%d)", versionInfo.dwMajorVersion, versionInfo.dwMinorVersion);
 
 			if (versionInfo.wServicePackMajor > 0)
 			{
@@ -236,7 +236,6 @@ namespace HorseRadish
 	{
 		infoValue = -1;
 
-		//se for para a memória
 		if ((systemInfo == SystemInfo::MemoryTotal) || (systemInfo == SystemInfo::MemoryFree))
 		{
 			MEMORYSTATUS memoryStatus;
@@ -266,7 +265,6 @@ namespace HorseRadish
 			if (EnumDisplaySettingsEx(nullptr, ENUM_REGISTRY_SETTINGS, &deviceMode, 0) == FALSE)
 				return false;
 
-			//conforme o que foi pedido
 			if (systemInfo == SystemInfo::DisplayWidth)
 			{
 				infoValue = deviceMode.dmPelsWidth;
@@ -314,7 +312,7 @@ namespace HorseRadish
 		startInfo.cb = sizeof(STARTUPINFO);
 		startInfo.lpDesktop = L"";
 
-		HorseRadish::UTF::ConvertUTF8To(commandLine, HorseRadish::UTF::Windows, commandLineWChar, sizeof(commandLineWChar));
+		HorseRadish::UTF::ConvertUTF8To(commandLine, HorseRadish::UTF::Encoding::Windows, commandLineWChar, sizeof(commandLineWChar));
 
 		CreateProcess(nullptr, commandLineWChar, nullptr, nullptr, FALSE, 0, nullptr, nullptr, &startInfo, &processInfo);
 

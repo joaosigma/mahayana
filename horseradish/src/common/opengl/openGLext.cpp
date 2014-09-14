@@ -186,7 +186,7 @@ namespace HorseRadish
 			void ExtensionsLoad(const char* const openGLModuleName)
 			{
 				wchar_t openGLModuleNameWChar[128];
-				HorseRadish::UTF::ConvertUTF8To(openGLModuleName, HorseRadish::UTF::Windows, openGLModuleNameWChar, sizeof(openGLModuleNameWChar));
+				HorseRadish::UTF::ConvertUTF8To(openGLModuleName, HorseRadish::UTF::Encoding::Windows, openGLModuleNameWChar, sizeof(openGLModuleNameWChar));
 
 				auto ptrWGlGetProcAddress = (PFNWGLGETPROCADDRESSPROC)GetProcAddress(GetModuleHandle(openGLModuleNameWChar), "wglGetProcAddress");
 				if (ptrWGlGetProcAddress == nullptr)

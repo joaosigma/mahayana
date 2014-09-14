@@ -1,6 +1,4 @@
 #pragma once
-#ifndef __HSCRIPTING__
-#define __HSCRIPTING__
 
 #include "console\console.hpp"
 
@@ -8,9 +6,8 @@
 
 namespace HorseRadish
 {
-
-class Scripting
-{
+	class Scripting
+	{
 	public:
 		static Console::Console *console;
 		static bool initialized;
@@ -20,8 +17,6 @@ class Scripting
 		static void Terminate();
 
 		static bool ExecuteScript(const char * const script);
-};
+	};
 
-}//namespace HorseRadish
-
-#endif
+} //HorseRadish

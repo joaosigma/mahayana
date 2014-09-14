@@ -28,7 +28,7 @@ class Context;
 class ObjectGL
 {
 private:
-	virtual void objectDestroy() =  0;
+	virtual void objectDestroy() = 0;
 
 	friend class ObjectsManager;
 
@@ -36,7 +36,9 @@ public:
 	unsigned int glID;
 
 public:
-	ObjectGL() { this->glID = 0; }
+	ObjectGL()
+		: glID(0)
+	{ }
 };
 
 //§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§
@@ -45,10 +47,10 @@ public:
 class Sampler : public ObjectGL
 {
 public:
-	enum FilterType {Point, Linear, PointMipPoint, PointMipLinear, LinearMipPoint, LinearMipLinear};
-	enum CompareMode {CompareRefToTexture, None};
-	enum CompareFunc {LesserEqual, GreaterEqual, Lesser, Greater, Equal, NotEqual, Always, Never};
-	enum WrapType {Repeat, ClampEdge};
+	enum FilterType { Point, Linear, PointMipPoint, PointMipLinear, LinearMipPoint, LinearMipLinear };
+	enum CompareMode { CompareRefToTexture, None };
+	enum CompareFunc { LesserEqual, GreaterEqual, Lesser, Greater, Equal, NotEqual, Always, Never };
+	enum WrapType { Repeat, ClampEdge };
 
 private:
 	void objectDestroy()
@@ -57,7 +59,8 @@ private:
 	}
 
 public:
-	Sampler() : ObjectGL()
+	Sampler()
+		: ObjectGL()
 	{
 		HorseRadish::OpenGL::glCreateSamplers(1, &this->glID);
 	}
@@ -119,13 +122,12 @@ public:
 
 	void SetBorderColor(const float &r, const float &g, const float &b, const float &a) const
 	{
-		float borderColor[] = {r, g, b, a};
+		float borderColor[] = { r, g, b, a };
 		HorseRadish::OpenGL::glSamplerParameterfv(this->glID, GL_TEXTURE_BORDER_COLOR, borderColor);
 	}
 
 	void SetBorderColor(const float * const borderColor) const
 	{
-		//preciso de ter alguma coisa
 		if (borderColor == nullptr)
 			return;
 
@@ -177,8 +179,8 @@ public:
 class Texture : public ObjectGL
 {
 public:
-	enum FilterType {Point, Linear, PointMipPoint, PointMipLinear, LinearMipPoint, LinearMipLinear};
-	enum WrapType {Repeat, ClampEdge};
+	enum FilterType { Point, Linear, PointMipPoint, PointMipLinear, LinearMipPoint, LinearMipLinear };
+	enum WrapType { Repeat, ClampEdge };
 
 	unsigned int glTarget;
 	unsigned short width, height, depth;
@@ -195,14 +197,16 @@ public:
 	static int CalculateNumMipMaps(const int width, const int height, const int depth);
 
 public:
-	Texture() : ObjectGL()
+	Texture()
+		: ObjectGL()
+		, glTarget(0), width(0), height(0), depth(0)
 	{
-		this->glTarget = 0;
-		this->width = this->height = this->depth = 0;
 	}
-	Texture(unsigned int glTarget) : ObjectGL()
+
+	Texture(unsigned int glTarget)
+		: ObjectGL()
+		, glTarget(glTarget), width(0), height(0), depth(0)
 	{
-		this->glTarget = glTarget;
 		HorseRadish::OpenGL::glCreateTextures(glTarget, 1, &this->glID);
 	}
 
@@ -226,7 +230,8 @@ private:
 	}
 
 public:
-	Query() : ObjectGL()
+	Query()
+		: ObjectGL()
 	{
 		HorseRadish::OpenGL::glGenQueries(1, &this->glID);
 	}
@@ -235,23 +240,26 @@ public:
 	{
 		HorseRadish::OpenGL::glBeginQuery(GL_SAMPLES_PASSED, this->glID);
 	}
+
 	void EndQuery() const
 	{
 		HorseRadish::OpenGL::glEndQuery(GL_SAMPLES_PASSED);
 	}
+
 	unsigned int GetResult() const
 	{
-		unsigned int resultado;
+		unsigned int queryResult;
 
-		HorseRadish::OpenGL::glGetQueryObjectuiv(this->glID, GL_QUERY_RESULT, &resultado);
-		return resultado;
+		HorseRadish::OpenGL::glGetQueryObjectuiv(this->glID, GL_QUERY_RESULT, &queryResult);
+		return queryResult;
 	}
+
 	bool ResultAvailable() const
 	{
-		int resultado;
+		int queryResult;
 
-		HorseRadish::OpenGL::glGetQueryObjectiv(this->glID, GL_QUERY_RESULT_AVAILABLE, &resultado);
-		return (resultado != 0);
+		HorseRadish::OpenGL::glGetQueryObjectiv(this->glID, GL_QUERY_RESULT_AVAILABLE, &queryResult);
+		return (queryResult != 0);
 	}
 };
 
@@ -268,7 +276,7 @@ public:
 		Stream,
 		Static,
 		Dynamic
-		};
+	};
 
 private:
 	void objectDestroy()
@@ -277,9 +285,10 @@ private:
 	}
 
 public:
-	VertexBuffer(unsigned int glTarget) : ObjectGL()
+	VertexBuffer(unsigned int glTarget)
+		: ObjectGL()
+		, glTarget(glTarget)
 	{
-		this->glTarget = glTarget;
 		HorseRadish::OpenGL::glCreateBuffers(1, &this->glID);
 	}
 
@@ -308,7 +317,7 @@ public:
 		Stream,
 		Static,
 		Dynamic
-		};
+	};
 
 private:
 	void objectDestroy()
@@ -317,9 +326,10 @@ private:
 	}
 
 public:
-	PixelBuffer(unsigned int glTarget) : ObjectGL()
+	PixelBuffer(unsigned int glTarget)
+		: ObjectGL()
+		, glTarget(glTarget)
 	{
-		this->glTarget = glTarget;
 		HorseRadish::OpenGL::glCreateBuffers(1, &this->glID);
 	}
 
@@ -345,7 +355,8 @@ private:
 	}
 
 public:
-	VertexArray() : ObjectGL()
+	VertexArray()
+		: ObjectGL()
 	{
 		HorseRadish::OpenGL::glCreateVertexArrays(1, &this->glID);
 	}
@@ -368,7 +379,8 @@ private:
 	}
 
 public:
-	RenderBuffer() : ObjectGL()
+	RenderBuffer()
+		: ObjectGL()
 	{
 		HorseRadish::OpenGL::glCreateRenderbuffers(1, &this->glID);
 	}
@@ -388,7 +400,8 @@ private:
 	}
 
 public:
-	FrameBuffer() : ObjectGL()
+	FrameBuffer()
+		: ObjectGL()
 	{
 		HorseRadish::OpenGL::glCreateFramebuffers(1, &this->glID);
 	}
@@ -428,11 +441,10 @@ private:
 	}
 
 public:
-	Shader(const ShaderType &shaderType) : ObjectGL()
+	Shader(const ShaderType &shaderType)
+		: ObjectGL()
+		, shaderType(shaderType), glTarget(0)
 	{
-		this->shaderType = shaderType;
-
-		this->glTarget = 0;
 		if (this->shaderType == Vertex)
 			this->glTarget = GL_VERTEX_SHADER;
 		else if (this->shaderType == Fragment)
@@ -462,7 +474,8 @@ private:
 	}
 
 public:
-	Program() : ObjectGL()
+	Program()
+		: ObjectGL()
 	{
 		this->glID = HorseRadish::OpenGL::glCreateProgram();
 	}

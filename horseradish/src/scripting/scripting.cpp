@@ -6,43 +6,42 @@
 
 namespace HorseRadish
 {
+	Console::Console* Scripting::console = nullptr;
+	bool Scripting::initialized = false;
 
-Console::Console* Scripting::console = nullptr;
-bool Scripting::initialized = false;
+	HSQUIRRELVM squirrelVM;
 
-HSQUIRRELVM squirrelVM;
+	void Scripting::Initialize(Console::Console *console, const bool devMode)
+	{
+		if (Scripting::initialized)
+			return;
 
-void Scripting::Initialize(Console::Console *console, const bool devMode)
-{
-	if (Scripting::initialized)
-		return;
+		Scripting::console = console;
 
-	Scripting::console = console;
+		squirrelVM = sq_open(1024);
 
-	squirrelVM = sq_open(1024);
+		Scripting::initialized = true;
+	}
 
-	Scripting::initialized = true;
-}
+	void Scripting::Terminate()
+	{
+		if (Scripting::initialized == false)
+			return;
 
-void Scripting::Terminate()
-{
-	if (Scripting::initialized == false)
-		return;
+		sq_close(squirrelVM);
+		squirrelVM = nullptr;
 
-	sq_close(squirrelVM);
-	squirrelVM = nullptr;
+		Scripting::console = nullptr;
+		Scripting::initialized = false;
+	}
 
-	Scripting::console = nullptr;
-	Scripting::initialized = false;
-}
-
-bool Scripting::ExecuteScript(const char * const script)
-{
-	if (script == nullptr || script[0] == '\0')
-		return true;
+	bool Scripting::ExecuteScript(const char * const script)
+	{
+		if (script == nullptr || script[0] == '\0')
+			return true;
 
 
-	return false;
-}
+		return false;
+	}
 
-}//namespace HorseRadish
+} //HorseRadish

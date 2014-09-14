@@ -180,7 +180,6 @@
     <ClCompile Include="..\..\src\common\Machine.cpp" />
     <ClCompile Include="..\..\src\common\Math.cpp" />
     <ClCompile Include="..\..\src\common\Matrix.cpp" />
-    <ClCompile Include="..\..\src\common\MemManager.cpp" />
     <ClCompile Include="..\..\src\common\Mesh.cpp" />
     <ClCompile Include="..\..\src\common\MeshFactory.cpp" />
     <ClCompile Include="..\..\src\common\meshFactory\mf3DS.cpp" />
@@ -208,6 +207,7 @@
     <ClCompile Include="..\..\src\common\Stream.cpp" />
     <ClCompile Include="..\..\src\common\String.cpp" />
     <ClCompile Include="..\..\src\common\Timer.cpp" />
+    <ClCompile Include="..\..\src\common\Types.cpp" />
     <ClCompile Include="..\..\src\common\UTF.cpp" />
     <ClCompile Include="..\..\src\console\console.cpp" />
     <ClCompile Include="..\..\src\console\consoleUI.cpp" />
@@ -337,8 +337,6 @@
     <ClInclude Include="..\..\src\common\BAreas.hpp" />
     <ClInclude Include="..\..\src\common\BVolumes.hpp" />
     <ClInclude Include="..\..\src\common\Color.hpp" />
-    <ClInclude Include="..\..\src\common\Common.hpp" />
-    <ClInclude Include="..\..\src\common\Containers.hpp" />
     <ClInclude Include="..\..\src\common\Encoders.hpp" />
     <ClInclude Include="..\..\src\common\FileSystem.hpp" />
     <ClInclude Include="..\..\src\common\Hashing.hpp" />
@@ -350,8 +348,6 @@
     <ClInclude Include="..\..\src\common\Machine.hpp" />
     <ClInclude Include="..\..\src\common\Math.hpp" />
     <ClInclude Include="..\..\src\common\Matrix.hpp" />
-    <ClInclude Include="..\..\src\common\MemContainers.hpp" />
-    <ClInclude Include="..\..\src\common\MemManager.hpp" />
     <ClInclude Include="..\..\src\common\Mesh.hpp" />
     <ClInclude Include="..\..\src\common\MeshFactory.hpp" />
     <ClInclude Include="..\..\src\common\meshFactory\mf.hpp" />
@@ -368,7 +364,6 @@
     <ClInclude Include="..\..\src\common\Random.hpp" />
     <ClInclude Include="..\..\src\common\Ray.hpp" />
     <ClInclude Include="..\..\src\common\ScopedAction.hpp" />
-    <ClInclude Include="..\..\src\common\SmartPointers.hpp" />
     <ClInclude Include="..\..\src\common\Sorting.hpp" />
     <ClInclude Include="..\..\src\common\Stream.hpp" />
     <ClInclude Include="..\..\src\common\String.hpp" />

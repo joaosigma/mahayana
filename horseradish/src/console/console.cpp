@@ -1,81 +1,63 @@
+#include "console.hpp"
+
 #include "common\platform.hpp"
 #include "common\math.hpp"
 
-#include <windows.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <functional>
-
-#include "console.hpp"
 
 namespace HorseRadish
 {
 namespace Console
 {
 
-//define o número máximo de argumentos
 #define NUM_ARGUMENTS 10
 
-//quantos espaços tem cada tab
 const int Console::tabNumSpaces = 4;
 
-//§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§
-//§§§   -= Coisas auxiliares locais =-   §§§
-//§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§
 bool Console::divideCommand(const char * const command)
 {
-	bool resultado;
-	const char *read;
-	char subCommand[128],*write;
+	char subCommand[128];
 
-	//toca a passar por tudo
-	resultado=true;
-	write=subCommand;
-	for(read=command; (*read)!='\0'; read++)
+	bool resultado = true;
+	auto write = subCommand;
+	for (auto read = command; (*read) != '\0'; read++)
 	{
-		//copia (excepto se for um espaço e estiver no inicio
-		if (write==subCommand && *read==' ')
+		if (write == subCommand && *read == ' ')
 			continue;
-		*write=*read;
+		*write = *read;
 		write++;
 
-		//se encontrar ';' tem vários comandos
-		if ((*read)==';')
+		if ((*read) == ';')
 		{
-			*(write-1)='\0';
-			if (subCommand[0]!='\0')
+			*(write - 1) = '\0';
+			if (subCommand[0] != '\0')
 				resultado &= this->Process(subCommand);
-			write=subCommand;
+			write = subCommand;
 			continue;
 		}
 
-		//dentro de aspas não conta
-		if ((*read)=='"')
+		if ((*read) == '"')
 		{
-			for(read++; (*read)!='\0' && (*read)!='"'; read++,write++)
-				*write=*read;
-			if ((*read)=='"')
-				*(write++)=*read;
+			for (read++; (*read) != '\0' && (*read) != '"'; read++, write++)
+				*write = *read;
+			if ((*read) == '"')
+				*(write++) = *read;
 			continue;
 		}
 	}
 
-	//fecho e mando
-	*write='\0';
-	if (subCommand[0]!='\0')
+	*write = '\0';
+	if (subCommand[0] != '\0')
 		resultado &= this->Process(subCommand);
 
-	//se um dos comandos falhou, digo que no todo, falharam
 	return resultado;
 }
 
 bool Console::setVarI(DATA_NO * const parametros, const int data)
 {
-	//verificar parametros
 	if ((parametros == nullptr) || (parametros->isCommand == true) || (parametros->varData.tipo != VarType::Integer))
 		return false;
 
-	//se não tenho callback, basta copiar o valor (tendo o cuidado de clampar se for esse o caso)
 	if (!parametros->varData.callback)
 	{
 		parametros->varData.value.integer = data;
@@ -84,28 +66,22 @@ bool Console::setVarI(DATA_NO * const parametros, const int data)
 		return true;
 	}
 
-	//old value
 	auto oldValue = parametros->varData.value.integer;
 
-	//posso copiar o valor (tendo o cuidado de clampar se for esse o caso)
 	parametros->varData.value.integer = data;
 	if (parametros->varData.flags & VarFlags::Clamp)
 		parametros->varData.value.integer = HorseRadish::Math::iClampZero(parametros->varData.value.integer);
 
-	//chamo agora a callback da variável
 	parametros->varData.callback(*this, parametros->id, parametros->varData.tipo, &parametros->varData.value.integer, &oldValue);
 
-	//tá tudo bem
 	return true;
 }
 
 bool Console::setVarF(DATA_NO * const parametros, const float data)
 {
-	//verificar parametros
 	if ((parametros == nullptr) || (parametros->isCommand == true) || (parametros->varData.tipo != VarType::Float))
 		return false;
 
-	//se não tenho callback, basta copiar o valor (tendo o cuidado de clampar se for esse o caso)
 	if (!parametros->varData.callback)
 	{
 		parametros->varData.value.numeric = data;
@@ -114,166 +90,131 @@ bool Console::setVarF(DATA_NO * const parametros, const float data)
 		return true;
 	}
 
-	//old value
 	auto oldValue = parametros->varData.value.numeric;
 
-	//posso copiar o valor (tendo o cuidado de clampar se for esse o caso)
 	parametros->varData.value.numeric = data;
 	if (parametros->varData.flags & VarFlags::Clamp)
 		parametros->varData.value.numeric = HorseRadish::Math::fClamp(parametros->varData.value.numeric, 0.0f, 1.0f);
 
-	//chamo agora a callback da variável
 	parametros->varData.callback(*this, parametros->id, parametros->varData.tipo, &parametros->varData.value.numeric, &oldValue);
 
-	//tá tudo bem
 	return true;
 }
 
 bool Console::setVarS(DATA_NO * const parametros, const char *data)
 {
-	//verificar parametros
 	if ((parametros == nullptr) || (parametros->isCommand == true) || (parametros->varData.tipo != VarType::String) || (data == nullptr))
 		return false;
 
-	//se não tenho callback, basta copiar o valor
 	if (!parametros->varData.callback)
 	{
 		strcpy_s(parametros->varData.value.string, 128, data);
 		return true;
 	}
 
-	//old value
 	auto oldValue = parametros->varData.value.string;
 
-	//posso copiar o valor
 	strcpy_s(parametros->varData.value.string, 128, data);
 
-	//chamo agora a callback da variável
 	parametros->varData.callback(*this, parametros->id, parametros->varData.tipo, (char*)parametros->varData.value.string, (const char*)oldValue);
 
-	//tá tudo bem
 	return true;
 }
 
 bool Console::parseCommand(const char * const command, ARG_DATA * const argList, int &argNumber)
 {
 	const char *read;
-	char *writer;
 
-	//limpo isto para começar
 	argNumber=0;
 	argList[0].data[0]='\0';
 
-	//ignoro espaços em branco e verifico se não tenho nada
 	for(read=command; (*read)!='\0' && (*read)==' '; read++);
 	if (*read=='\0')
 		return false;
 
-	//toca a fazer parse
-	writer=argList[argNumber].data;
+	auto writer=argList[argNumber].data;
 	while(*read!='\0')
 	{
-		//se for um espaço, movo para o proximo argumento
 		if (*read==' ')
 		{
-			//como todos os espaços
 			for(; (*read)!='\0' && (*read)==' '; read++);
 
-			//se terminei
 			if (*read=='\0')
 			{
 				argNumber++;
 				return true;
 			}
 
-			//toca a andar
 			argNumber++;
 			writer=argList[argNumber].data;
 			*writer='\0';
 			continue;
 		}
 
-		//se entrar dentro de parentesis
 		if (*read=='(')
 		{
-			//copio até terminar o parentesis
 			for(; (*read)!='\0' && (*read)!=')'; read++)
 			{
-				//se permito aspas dentro de (
 				if (*read=='"')
 				{
 					this->LogError("ConsoleParser: can't use '\"' inside a () pair.");
 					return false;
 				}
 
-				//não copio espacos em branco
 				if (*read==' ')
 					continue;
 
-				//posso copiar nas calmas!
 				*(writer++)=*read;
 				*writer='\0';
 			}
 
-			//se terminei é barraca
 			if (*read=='\0')
 			{
 				this->LogError("ConsoleParser: expected ')' at the end of sentence.");
 				return false;
 			}
 
-			//copio o ultimo ')', mas isso nao implica mudar de argumento
 			*(writer++)=*read;
 			*writer='\0';
 			read++;
 			continue;
 		}
 
-		//se entrar dentro de aspas
 		if (*read=='"')
 		{
-			//copio até terminar o parentesis (não copio o parentesis)
 			for(read++; (*read)!='\0' && (*read)!='"'; read++)
 				*(writer++)=*read;
 
-			//fechar
 			*writer='\0';
 
-			//se terminei é barraca
 			if (*read=='\0')
 			{
 				this->LogError("ConsoleParser: expected '\"' at the end of sentence.");
 				return false;
 			}
 
-			//passo o ultimo '"', mas isso nao implica mudar de argumento
 			read++;
 			continue;
 		}
 
-		//adiciono
 		*(writer++)=*read;
 		*writer='\0';
 		read++;
 	}
 
-	//tenho de marcar aquele onde estou
 	argNumber++;
 
-	//chegando aqui tá tudo bem
 	return true;
 }
 
 void Console::doThreeArgOperation(DATA_NO * const spec, const ARG_DATA * const argList)
 {
-	//se for uma string, só pode ter +=
 	if (spec->varData.tipo == VarType::String && argList[1].data[0] != '+')
 	{
 		this->LogError("Error in second argument: string variavels can only accept +=");
 		return;
 	}
 
-	//se for do tipo string, posso já fazer a operação
 	if (spec->varData.tipo == VarType::String)
 	{
 		char finalResult[128];
@@ -284,7 +225,6 @@ void Console::doThreeArgOperation(DATA_NO * const spec, const ARG_DATA * const a
 		return;
 	}
 
-	//se for do tipo int
 	if (spec->varData.tipo == VarType::Integer)
 	{
 		if (argList[1].data[0] == '+')
@@ -298,7 +238,6 @@ void Console::doThreeArgOperation(DATA_NO * const spec, const ARG_DATA * const a
 		return;
 	}
 
-	//se for do tipo float
 	if (spec->varData.tipo == VarType::Float)
 	{
 		if (argList[1].data[0] == '+')
@@ -315,14 +254,11 @@ void Console::doThreeArgOperation(DATA_NO * const spec, const ARG_DATA * const a
 
 void Console::doThreeArgSetCondition(DATA_NO * const spec, const ARG_DATA * const argList)
 {
-	//se for para fazer coisas verdadeiras e a condição estava errada
 	if (argList[1].data[0] == '?' && argList[1].data[1] == '\0' && spec->varData.condition == false)
 		return;
-	//se for para fazer coisas falsas e a condição estava certa, saio
 	if (argList[1].data[0] == '?' && argList[1].data[1] == '!' && spec->varData.condition == true)
 		return;
 
-	//posso fazer o que tenho a fazer
 	if (spec->varData.tipo == VarType::Integer)
 	{
 		Console::setVarI(spec, atoi(argList[2].data));
@@ -342,10 +278,8 @@ void Console::doThreeArgSetCondition(DATA_NO * const spec, const ARG_DATA * cons
 
 void Console::doThreeArgCheckCondition(DATA_NO * const spec, const ARG_DATA * const argList)
 {
-	//se for para verificar se é igual ou diferente
 	if ((argList[1].data[0] == '=' || argList[1].data[0] == '!') && argList[1].data[1] == '=')
 	{
-		//verifico sempre se é igual
 		if (spec->varData.tipo == VarType::Integer)
 			spec->varData.condition = (spec->varData.value.integer == atoi(argList[2].data));
 		else if (spec->varData.tipo == VarType::Float)
@@ -353,16 +287,13 @@ void Console::doThreeArgCheckCondition(DATA_NO * const spec, const ARG_DATA * co
 		else if (spec->varData.tipo == VarType::String)
 			spec->varData.condition = (strcmp(spec->varData.value.string, argList[2].data) == 0);
 
-		//se pediram pra ver a diferença, basta mudar a condição e prontos
 		if (argList[1].data[0] == '!')
 			spec->varData.condition = !spec->varData.condition;
 		return;
 	}
 
-	//se for para verificar se é menor ou maior
 	if ((argList[1].data[0] == '<' || argList[1].data[0] == '>') && argList[1].data[1] == '\0')
 	{
-		//verifico sempre se é menor
 		if (spec->varData.tipo == VarType::Integer)
 			spec->varData.condition = (spec->varData.value.integer < atoi(argList[2].data));
 		else if (spec->varData.tipo == VarType::Float)
@@ -370,13 +301,11 @@ void Console::doThreeArgCheckCondition(DATA_NO * const spec, const ARG_DATA * co
 		else if (spec->varData.tipo == VarType::String)
 			spec->varData.condition = (strcmp(spec->varData.value.string, argList[2].data) < 0);
 
-		//se pediram pra ver o maior, basta mudar a condição e prontos
 		if (argList[1].data[0] == '>')
 			spec->varData.condition = !spec->varData.condition;
 		return;
 	}
 
-	//se for para verificar se é <= (não se pode usar o mesmo if para o >=)
 	if (argList[1].data[0] == '<' && argList[1].data[1] == '=')
 	{
 		if (spec->varData.tipo == VarType::Integer)
@@ -388,7 +317,6 @@ void Console::doThreeArgCheckCondition(DATA_NO * const spec, const ARG_DATA * co
 		return;
 	}
 
-	//se for para verificar se é >= (não se pode usar o mesmo if para o <=)
 	if (argList[1].data[0] == '>' && argList[1].data[1] == '=')
 	{
 		if (spec->varData.tipo == VarType::Integer)
@@ -403,37 +331,30 @@ void Console::doThreeArgCheckCondition(DATA_NO * const spec, const ARG_DATA * co
 
 void Console::doThreeArgVarCommand(DATA_NO * const spec, const ARG_DATA * const argList)
 {
-	//verifico se o 2 argumento é na verdade ? ou ?!
 	if ((argList[1].data[0]=='?' && argList[1].data[1]=='\0') || (argList[1].data[0]=='?' && argList[1].data[1]=='!' && argList[1].data[2]=='\0') )
 	{
-		//não posso se for readonly
 		if (spec->varData.flags & VarFlags::ReadOnly)
 		{
 			this->LogError("Variable is read-only.");
 			return;
 		}
 
-		//posso avançar
 		doThreeArgSetCondition(spec,argList);
 		return;
 	}
 
-	//verifico se o 2 argumento é na verdade +=, -=, *= ou /=
 	if (argList[1].data[2]=='\0' && argList[1].data[1]=='=' && (argList[1].data[0]=='+' || argList[1].data[0]=='-' || argList[1].data[0]=='*' || argList[1].data[0]=='/') )
 		{
-		//não posso se for readonly
 		if (spec->varData.flags & VarFlags::ReadOnly)
 			{
 			this->LogError("Variable is read-only.");
 			return;
 			}
 
-		//posso avançar
 		doThreeArgOperation(spec,argList);
 		return;
 		}
 
-	//verifico se o 2 argumento é na verdade <,>,<=,>=,== ou !=
 	if ( (argList[1].data[0]=='<' || argList[1].data[0]=='>') && argList[1].data[0]=='\0')
 		{
 		doThreeArgCheckCondition(spec,argList);
@@ -445,7 +366,6 @@ void Console::doThreeArgVarCommand(DATA_NO * const spec, const ARG_DATA * const 
 		return;
 		}
 
-	//chegando aqui, deu barraca
 	this->LogError("Error in second argument: expected +=, -=, *=, /=, <=, >=, <, >, ==, !=, ? or ?!");
 }
 
@@ -453,26 +373,22 @@ void Console::doFiveArgVarCommand(DATA_NO * const spec, const ARG_DATA * const a
 {
 	const char *ptrToUse;
 
-	//o segundo argumento tem de ser ?
 	if (argList[1].data[0] != '?' || argList[1].data[1] != '\0')
 	{
 		this->LogError("Error in second argument: expected ?");
 		return;
 	}
 
-	//o quarto argumento tem de ser :
 	if (argList[3].data[0] != ':' || argList[3].data[1] != '\0')
 	{
 		this->LogError("Error in fourth argument: expected :");
 		return;
 	}
 
-	//por defeito uso a condição verdadeira, mas se a condição estava falsa
 	ptrToUse = argList[2].data;
 	if (spec->varData.condition == false)
 		ptrToUse = argList[4].data;
 
-	//posso fazer o que tenho a fazer
 	if (spec->varData.tipo == VarType::Integer)
 		Console::setVarI(spec, atoi(ptrToUse));
 	else if (spec->varData.tipo == VarType::Float)
@@ -485,10 +401,8 @@ bool Console::isForcedNoEcho(const char * const command)
 {
 	const char *read;
 
-	//ignoro espaços em branco
 	for (read = command; (*read) != '\0' && (*read) == ' '; read++);
 
-	//se tiver um '}' é para o comando não echoar
 	if (*read == '}')
 		return true;
 	return false;
@@ -498,14 +412,11 @@ bool Console::isSeveralExpressions(const char * const command)
 {
 	const char *read;
 
-	//toca a passar por tudo
 	for (read = command; (*read) != '\0'; read++)
 	{
-		//se encontrar ; tem vários comandos
 		if ((*read) == ';')
 			return true;
 
-		//dentro de aspas não conta
 		if ((*read) == '"')
 		{
 			for (read++; (*read) != '\0' && (*read) != '"'; read++);
@@ -514,7 +425,6 @@ bool Console::isSeveralExpressions(const char * const command)
 		}
 	}
 
-	//chegando aqui, não encontrei nada, logo não tem varios comandos
 	return false;
 }
 
@@ -522,10 +432,8 @@ bool Console::checkValue(const char *value, unsigned char &realValue)
 {
 	unsigned int resultado;
 
-	//iniciar ambos a zero
 	resultado=realValue=0;
 
-	//se não for vazio ('\0'), tem de ser um numero
 	if (value[2]=='\0')
 		return true;
 	if (value[2]<'0' || value[2]>'9')
@@ -533,7 +441,6 @@ bool Console::checkValue(const char *value, unsigned char &realValue)
 	resultado+=value[2]-'0';
 	realValue=(unsigned char)resultado;
 
-	//se não for vazio ('\0'), tem de ser um numero
 	if (value[1]=='\0')
 		return true;
 	if (value[1]<'0' || value[1]>'9')
@@ -541,18 +448,15 @@ bool Console::checkValue(const char *value, unsigned char &realValue)
 	resultado+=(value[1]-'0')*10;
 	realValue=(unsigned char)resultado;
 
-	//se não for vazio ('\0'), tem de ser um numero mas só entre [0,2]
 	if (value[0]=='\0')
 		return true;
 	if (value[0]<'0' || value[0]>'2')
 		return false;
 	resultado+=(value[0]-'0')*100;
 
-	//basta só verificar se não está acima de 255
 	if (resultado>255)
 		return false;
 
-	//correu tudo bem
 	realValue=(unsigned char)resultado;
 	return true;
 }
@@ -564,63 +468,47 @@ bool Console::checkSentence(const char *sentence, int &numSpecialChar)
 	unsigned char temp;
 	int i, numVirgulas,curValCount;
 
-	//posso iniciar isto a zero
 	numSpecialChar=0;
 
-	//verifico os parametros
 	if (sentence==nullptr || sentence[0]=='\0')
 		return false;
 
-	//para cada caracter da frase
 	for(const char *walker = sentence; *walker != '\0'; walker++)
 	{
-		//se nao for este, sigo
 		if (*walker != '#')
 			continue;
 
-		//apartir daqui é pq encontrei um caracter #
 		numSpecialChar++;
 
-		//guardo esta posição, e vou pra frente
 		walkerNext = walker + 1;
 
-		//o caso mínimo é ter #,,. (preto), logo a string não pode chegar 3 bytes à frente
-		//nem sequer ter um ponto à frente
 		if (walkerNext[0]=='\0' || walkerNext[0]=='.' || walkerNext[1]=='\0' || walkerNext[2]=='\0')
 			return false;
 
-		//posso verificar o caso simples: #,,.
 		if (walkerNext[0]==',' && walkerNext[1]==',' && walkerNext[2]=='.')
 		{
-			walker+=3;	//estou num for, logo em cima é adicionado
+			walker+=3;
 			continue;
 		}
 
-		//conto o numero de virgulas
 		for(numVirgulas=i=0; *walkerNext!='.' && *walkerNext!='\0'; i++,walkerNext++)
 		{
 			if (*walkerNext==',')
 				numVirgulas++;
 		}
 
-		//agora, só tenho de verificar se tenho 2 virgulas e estou no ponto
 		if (numVirgulas!=2 || *walkerNext!='.')
 			return false;
 
-		//chegando aqui, sei que tenho um caracter # válido, tirando um pormenor!
-		//os valores pra R,G e B têm de estar entre [0,255]
 		valR[0]=valR[1]=valR[2]=0;
 		valG[0]=valG[1]=valG[2]=0;
 		valB[0]=valB[1]=valB[2]=0;
 
-		///posso já avançar com o ponteiro
 		walker=walkerNext;
 		
-		//basta começar a escrever em cada val[R|G|B] (ando de trás pra frente)
 		curValCount=2;
 		for(walkerNext--,curVal=valB; *walkerNext!='#'; walkerNext--)
 		{
-			//se tenho de mudar de linha
 			if (*walkerNext==',')
 			{
 				//inicio a contagem
@@ -629,21 +517,17 @@ bool Console::checkSentence(const char *sentence, int &numSpecialChar)
 				if (curVal==valG)	{curVal=valR; continue;}
 			}
 
-			//se vou copiar um a mais, é porque a frase tá mal feita entre virgulas e o ponto
 			if (curValCount<0)
 				return false;
 
-			//copio o valor
 			curVal[curValCount--]=*walkerNext;
 		}
 
-		//basta verificar os valores de cada um dos val[R|G|B]
 		if (Console::checkValue(valR, temp)==false)	return false;
 		if (Console::checkValue(valG, temp)==false)	return false;
 		if (Console::checkValue(valB, temp)==false)	return false;
 	}
 
-	//chegando aqui, está tudo bem
 	return true;
 }
 
@@ -717,9 +601,6 @@ void Console::addToLogger(const char *sentence, int colorCount)
 	this->logger->Log(&coresData, (sizeof(DataRGB::CheckRGB) * coresData.numCores) + sizeof(int), useDataColor);
 }
 
-//§§§§§§§§§§§§§§§§§§§§§§§§
-//§§§§§§ Classe Console	§§
-//§§§§§§§§§§§§§§§§§§§§§§§§
 bool Console::addPhrase(const char *Frase, int nespacos)
 {
 	char useData[MAX_LOG_SIZE];
@@ -915,29 +796,23 @@ void Console::PrintHelp(const char *what)
 
 bool Console::RegisterBind(const int key, const int flagMod, const char *toWhat)
 {
-	BINDS *newBinds;
-
-	//basta verificar isto
 	if ( (key<SCONSOLE_KEY_A) || ((key-SCONSOLE_KEY_A)>=SCONSOLE_NUMKEYS) || toWhat==nullptr)
 		return false;
 
-	//preciso de alguma coisa pra registar
 	if (toWhat[0]=='\0')
 		return false;
 
-	//procuro pela tecla
-	for(int i=0, numElements = this->binds.GetNumElements(); i< numElements; i++)
+	for (auto& curBind : this->binds)
 	{
-		//se encontrei, fixe, posso usar
-		if (this->binds[i].key==key && this->binds[i].mod==flagMod)
+		if (curBind.key == key && curBind.mod == flagMod)
 		{
-			strcpy_s(this->binds[i].cmd, 116, toWhat);
+			strcpy_s(curBind.cmd, 116, toWhat);
 			return true;
 		}
 	}
 
-	//preciso de mais espaço
-	newBinds = this->binds.Add();
+	this->binds.push_back(BINDS());
+	auto newBinds = &this->binds[this->binds.size() - 1];
 	if (newBinds == nullptr)
 		return false;
 
@@ -950,29 +825,22 @@ bool Console::RegisterBind(const int key, const int flagMod, const char *toWhat)
 
 void Console::BindEmitKey(const int key, const int flagMod)
 {
-	BINDS *walker;
-
-	//tenho de verificar isto
 	if ( (key<SCONSOLE_KEY_A) || ((key-SCONSOLE_KEY_A)>=SCONSOLE_NUMKEYS))
 		return;
 
-	//procuro
-	for(int i=0, numElements = this->binds.GetNumElements(); i< numElements; i++)
+	for (const auto& curBind : this->binds)
 	{
-		//se não for esta
-		if (this->binds[i].key!=key || this->binds[i].mod!=flagMod)
+		if (curBind.key != key || curBind.mod != flagMod)
 			continue;
 
-		//executo o comando e pronto
-		this->Process(this->binds[i].cmd);
+		this->Process(curBind.cmd);
 		return;
 	}
 }
 
 void Console::BindClear()
 {	
-	//basta chamar isto
-	this->binds.Clear(true);
+	this->binds.clear();
 }
 
 void Console::FormatPrint(const char *bufferIn, char *bufferOut, const unsigned int bufferOutSize)
@@ -1384,48 +1252,48 @@ void Console::PrintBinds()
 	this->Log("#66,245,10.Binds available:");
 
 	//se não tenho nada
-	if (this->binds.GetNumElements() <= 0)
+	if (this->binds.empty())
 	{
 		this->LogTab("<none>", 2);
 		return;
 	}
 
 	//para cada bind
-	for(int i=0, numElements = this->binds.GetNumElements(); i< numElements; i++)
+	for(const auto& curBind : this->binds)
 	{
 		//as letras
-		if ( (this->binds[i].key>=SCONSOLE_KEY_A) && (this->binds[i].key<=SCONSOLE_KEY_Z) )
+		if ( (curBind.key>=SCONSOLE_KEY_A) && (curBind.key<=SCONSOLE_KEY_Z) )
 		{
-			this->LogTab(HorseRadish::String("<key %c> %s",'A'+this->binds[i].key-SCONSOLE_KEY_A,this->binds[i].cmd).GetData(), 2);
+			this->LogTab(HorseRadish::String("<key %c> %s",'A'+curBind.key-SCONSOLE_KEY_A,curBind.cmd).GetData(), 2);
 			continue;
 		}
 
 		//os Fs
-		if ( (this->binds[i].key>=SCONSOLE_KEY_F1) && (this->binds[i].key<=SCONSOLE_KEY_F12) )
+		if ( (curBind.key>=SCONSOLE_KEY_F1) && (curBind.key<=SCONSOLE_KEY_F12) )
 		{
-			this->LogTab(HorseRadish::String("<F%d> %s",this->binds[i].key-SCONSOLE_KEY_F1+1,this->binds[i].cmd).GetData(), 2);
+			this->LogTab(HorseRadish::String("<F%d> %s",curBind.key-SCONSOLE_KEY_F1+1,curBind.cmd).GetData(), 2);
 			continue;
 		}
 
 		//os numeros
-		if ( (this->binds[i].key>=SCONSOLE_KEY_0) && (this->binds[i].key<=SCONSOLE_KEY_9) )
+		if ( (curBind.key>=SCONSOLE_KEY_0) && (curBind.key<=SCONSOLE_KEY_9) )
 		{
-			this->LogTab(HorseRadish::String("<key %d> %s",this->binds[i].key-SCONSOLE_KEY_0,this->binds[i].cmd).GetData(), 2);
+			this->LogTab(HorseRadish::String("<key %d> %s",curBind.key-SCONSOLE_KEY_0,curBind.cmd).GetData(), 2);
 			continue;
 		}
 
 		//o resto
-		switch(this->binds[i].key)
+		switch(curBind.key)
 		{
-			case SCONSOLE_KEY_ESCAPE:	this->LogTab(HorseRadish::String("<escape> %s", this->binds[i].cmd).GetData(), 2);break;
-			case SCONSOLE_KEY_ENTER:	this->LogTab(HorseRadish::String("<enter> %s", this->binds[i].cmd).GetData(), 2);	break;
-			case SCONSOLE_KEY_SPACE:	this->LogTab(HorseRadish::String("<space> %s", this->binds[i].cmd).GetData(), 2);	break;
-			case SCONSOLE_KEY_TAB:		this->LogTab(HorseRadish::String("<tab> %s", this->binds[i].cmd).GetData(), 2);	break;
-			case SCONSOLE_KEY_PAUSE:	this->LogTab(HorseRadish::String("<pause> %s", this->binds[i].cmd).GetData(), 2);	break;
-			case SCONSOLE_KEY_UP:		this->LogTab(HorseRadish::String("<up> %s", this->binds[i].cmd).GetData(), 2);	break;
-			case SCONSOLE_KEY_DOWN:		this->LogTab(HorseRadish::String("<down> %s", this->binds[i].cmd).GetData(), 2);	break;
-			case SCONSOLE_KEY_LEFT:		this->LogTab(HorseRadish::String("<left> %s", this->binds[i].cmd).GetData(), 2);	break;
-			case SCONSOLE_KEY_RIGHT:	this->LogTab(HorseRadish::String("<right> %s", this->binds[i].cmd).GetData(), 2);	break;
+			case SCONSOLE_KEY_ESCAPE:	this->LogTab(HorseRadish::String("<escape> %s", curBind.cmd).GetData(), 2);break;
+			case SCONSOLE_KEY_ENTER:	this->LogTab(HorseRadish::String("<enter> %s", curBind.cmd).GetData(), 2);	break;
+			case SCONSOLE_KEY_SPACE:	this->LogTab(HorseRadish::String("<space> %s", curBind.cmd).GetData(), 2);	break;
+			case SCONSOLE_KEY_TAB:		this->LogTab(HorseRadish::String("<tab> %s", curBind.cmd).GetData(), 2);	break;
+			case SCONSOLE_KEY_PAUSE:	this->LogTab(HorseRadish::String("<pause> %s", curBind.cmd).GetData(), 2);	break;
+			case SCONSOLE_KEY_UP:		this->LogTab(HorseRadish::String("<up> %s", curBind.cmd).GetData(), 2);	break;
+			case SCONSOLE_KEY_DOWN:		this->LogTab(HorseRadish::String("<down> %s", curBind.cmd).GetData(), 2);	break;
+			case SCONSOLE_KEY_LEFT:		this->LogTab(HorseRadish::String("<left> %s", curBind.cmd).GetData(), 2);	break;
+			case SCONSOLE_KEY_RIGHT:	this->LogTab(HorseRadish::String("<right> %s", curBind.cmd).GetData(), 2);	break;
 		}
 	}
 }
@@ -1709,5 +1577,5 @@ void Console::LogLoopback(Console::CallbackLoop errorLoopbackFunc)
 	loopbackFuncError = errorLoopbackFunc;
 }
 
-}//namespace Console
-}//namespace HorseRadish
+} //Console
+} //HorseRadish

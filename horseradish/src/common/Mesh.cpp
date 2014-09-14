@@ -1,12 +1,10 @@
 #include "Mesh.hpp"
+
 #include "Math.hpp"
 #include "Vector.hpp"
 
-#include <windows.h>
-#include <stdio.h>
-#include <malloc.h>
-#include <vector>
 #include <set>
+#include <vector>
 #include <assert.h>
 
 namespace HorseRadish
@@ -29,10 +27,10 @@ bool rayTriIntersect(const float * const origin, const float * const dir, const 
 	edge2.z=vert2[2]-vert0[2];
 
 	//begin calculating determinant - also used to calculate U parameter
-	pvec.CalcCrossProduct(dir,(const float*)edge2);
+	pvec.StoreCrossProduct(dir,(const float*)edge2);
 
 	//se o determinante for zero, o ray está no mesmo plano do triangulo
-	det=edge1.Dot(pvec);
+	det=edge1.GetDot(pvec);
 	if (HorseRadish::Math::isZero(det))
 		return false;
 
@@ -40,10 +38,10 @@ bool rayTriIntersect(const float * const origin, const float * const dir, const 
 	tvec.x=origin[0]-vert0[0];
 	tvec.y=origin[1]-vert0[1];
 	tvec.z=origin[2]-vert0[2];
-	qvec.CalcCrossProduct(tvec,edge1);
+	qvec.StoreCrossProduct(tvec, edge1);
 
 	//calcula-se o parametro U
-	u=tvec.Dot(pvec);
+	u = tvec.GetDot(pvec);
 
 	//para optimizar, verifica-se de acordo com o sinal do determinante
 	if (det > 0.0f)
@@ -53,7 +51,7 @@ bool rayTriIntersect(const float * const origin, const float * const dir, const 
 			return false;
 
 		//calculate V parameter and test bounds
-		v = qvec.Dot(dir);
+		v = qvec.GetDot(dir);
 		if ((v<0.0) || ((u+v)>det))
 			return false;
 	}
@@ -64,7 +62,7 @@ bool rayTriIntersect(const float * const origin, const float * const dir, const 
 			return false;
 
 		//calculate V parameter and test bounds
-		v=qvec.Dot(dir);
+		v = qvec.GetDot(dir);
 		if ((v>0.0) || ((u+v)<det))
 			return false;
 	}
@@ -106,10 +104,10 @@ void __fastcall somaVecCheckDir(float * const dest, const float * const vec)
 	HorseRadish::Vector v1,v2;
 
 	v1=dest;
-	v1.Normaliza();
+	v1.Normalize();
 	v2=dest;
-	v2.Normaliza();
-	if (v1.Dot(v2)<0)
+	v2.Normalize();
+	if (v1.GetDot(v2)<0)
 		{
 		dest[0]-=vec[0];
 		dest[1]-=vec[1];
@@ -303,57 +301,42 @@ bool optimize_vertex_cache_order( std::vector<unsigned int> &tri_indices, unsign
 }
 
 static
-void calcSpec(const int shaderModel, HorseRadish::Vector &specular, const float *camPos, const float *lightPos, const float *lightColor, const float *vPos, const float *vNormal)
+void calcSpec(const HorseRadish::Geometry::Mesh::ShadeModel shaderModel, HorseRadish::Vector& specular, const HorseRadish::Vector& camPos, const HorseRadish::Vector& lightPos, const HorseRadish::Vector& lightColor, const float* vPos, const float* vNormal)
 {
-	HorseRadish::Vector viewVec,lightVec,auxVec;
+	HorseRadish::Vector viewVec, lightVec, auxVec;
 
-	//iniciar assim
-	specular.Set(0.0f,0.0f,0.0f);
+	specular.Set(0.0f, 0.0f, 0.0f);
 
-	//usar Phong
-	if (shaderModel == MESH_SHADE_PHONG)
+	if (shaderModel == HorseRadish::Geometry::Mesh::ShadeModel::Phong)
 	{
-		//só verificar isto
-		if (lightPos==nullptr || camPos==nullptr || lightColor==nullptr)
-			return;
-
-		//o lightVec
 		lightVec.Set(lightPos);
-		lightVec-=vPos;
-		lightVec.Normaliza();
+		lightVec -= vPos;
+		lightVec.Normalize();
 
-		//o viewVec
 		viewVec.Set(camPos);
-		viewVec-=vPos;
-		viewVec.Normaliza();
+		viewVec -= vPos;
+		viewVec.Normalize();
 
-		//refleccção
 		auxVec.Set(vNormal);
-		auxVec*=(-2.0f * lightVec.Dot(vNormal));
-		auxVec+=lightVec;
-		auxVec.Normaliza();
-		
+		auxVec *= (-2.0f * lightVec.GetDot(vNormal));
+		auxVec += lightVec;
+		auxVec.Normalize();
+
 		specular.Set(lightColor);
-		specular*=pow(HorseRadish::Math::fClamp(auxVec.Dot(viewVec),0.0f,1.0f),16.0f);
+		specular *= pow(HorseRadish::Math::fClamp(auxVec.GetDot(viewVec), 0.0f, 1.0f), 16.0f);
 		return;
 	}
 
-	//usar Blinn
-	if (shaderModel == MESH_SHADE_BLINN)
+	if (shaderModel == HorseRadish::Geometry::Mesh::ShadeModel::Blinn)
 	{
-		//só verificar isto
-		if (lightPos==nullptr || camPos==nullptr || lightColor==nullptr)
-			return;
-
-		//o half vector
 		auxVec.Set(vPos);
-		auxVec*=-2.0f;
-		auxVec+=camPos;
-		auxVec+=lightPos;
-		auxVec.Normaliza();
-		
+		auxVec *= -2.0f;
+		auxVec += camPos;
+		auxVec += lightPos;
+		auxVec.Normalize();
+
 		specular.Set(lightColor);
-		specular*=pow(HorseRadish::Math::fMax(auxVec.Dot(vNormal),0.0f),16.0f);
+		specular *= pow(HorseRadish::Math::fMax(auxVec.GetDot(vNormal), 0.0f), 16.0f);
 		return;
 	}
 }
@@ -836,11 +819,11 @@ bool Mesh::zeroAreaTri(Mesh * const mesh, const unsigned int &v1, const unsigned
 	d01-=p2;
 	d02-=p3;
 
-	prod.CalcCrossProduct(d01,d02);
+	prod.StoreCrossProduct(d01, d02);
 	return HorseRadish::Math::isZero(prod.x*prod.x + prod.y*prod.y + prod.z*prod.z);
 }
 
-void Mesh::createFull(Mesh *mesh, const int flags)
+void Mesh::createFull(Mesh *mesh, const MeshOrthoTypes flags)
 {
 	HorseRadish::Vector dir1,dir2,normal,vecAux,tangent,binormal,sdir,tdir;
 	float *pPos,*pTex,*pNor,*pTan,*pBin,*walkN,*walkT,*walkB,s1,s2,t1,t2,r;
@@ -876,7 +859,7 @@ void Mesh::createFull(Mesh *mesh, const int flags)
 	//para todos os vertices, inicio a zero
 	if (stride3==3)
 	{
-		if (!(flags & MESH_ORTHO_KEEP_NORMALS))
+		if (!(flags & MeshOrthoKeepNormals))
 			memset(walkN, 0, sizeof(float)*3*mesh->numElements);
 		memset(walkT, 0, sizeof(float)*3*mesh->numElements);
 		memset(walkB, 0, sizeof(float)*3*mesh->numElements);
@@ -885,7 +868,7 @@ void Mesh::createFull(Mesh *mesh, const int flags)
 	{
 		for(i=0; i<mesh->numElements; i++,walkN+=stride3,walkT+=stride3,walkB+=stride3)
 		{
-			if (!(flags & MESH_ORTHO_KEEP_NORMALS))
+			if (!(flags & MeshOrthoKeepNormals))
 				walkN[0]=walkN[1]=walkN[2]=0.0f;
 			walkT[0]=walkT[1]=walkT[2]=0.0f;
 			walkB[0]=walkB[1]=walkB[2]=0.0f;
@@ -907,8 +890,8 @@ void Mesh::createFull(Mesh *mesh, const int flags)
 		dir2-=pPos+index1*stride3;
 
 		//posso calcular a normal
-		normal.CalcCrossProduct(dir1,dir2);
-		normal.Normaliza();
+		normal.StoreCrossProduct(dir1, dir2);
+		normal.Normalize();
 
 		//as direcções das texturas
 		s1=pTex[index2*stride2+0]-pTex[index1*stride2+0];
@@ -932,7 +915,7 @@ void Mesh::createFull(Mesh *mesh, const int flags)
 		index3*=stride3;
 
 		//soma as contribiuções dos vertices
-		if (!(flags & MESH_ORTHO_KEEP_NORMALS))
+		if (!(flags & MeshOrthoKeepNormals))
 		{
 			somaVect(pNor+index1,normal);
 			somaVect(pNor+index2,normal);
@@ -960,33 +943,33 @@ void Mesh::createFull(Mesh *mesh, const int flags)
 		tdir.Set(walkB);
 
 		//tenho de normalizar a normal
-		normal.Normaliza();
+		normal.Normalize();
 
 		//calculo a tangente
 		vecAux.Set(normal);
-		vecAux*=normal.Dot(sdir);
+		vecAux*=normal.GetDot(sdir);
 		tangent.x=sdir.x-vecAux.x;
 		tangent.y=sdir.y-vecAux.y;
 		tangent.z=sdir.z-vecAux.z;
-		tangent.Normaliza();
+		tangent.Normalize();
 
 		//calculo a binormal
-		vecAux.CalcCrossProduct(normal,sdir);
-		if (vecAux.Dot(tdir)<0.0f)
-			binormal.CalcCrossProduct(tangent,normal);
+		vecAux.StoreCrossProduct(normal, sdir);
+		if (vecAux.GetDot(tdir)<0.0f)
+			binormal.StoreCrossProduct(tangent, normal);
 		else
-			binormal.CalcCrossProduct(normal,tangent);
-		binormal.Normaliza();
+			binormal.StoreCrossProduct(normal, tangent);
+		binormal.Normalize();
 
 		//escrevo as cenas
-		if (!(flags & MESH_ORTHO_KEEP_NORMALS))
+		if (!(flags & MeshOrthoKeepNormals))
 			normal.Write(walkN);
 		tangent.Write(walkT);
 		binormal.Write(walkB);
 	}
 
 	//se tiver de fazer esta cena por vértice
-	if (flags & MESH_ORTHO_PER_POSITION_NRM)
+	if (flags & MeshOrthoPerPositionNormal)
 	{
 		//criar esta coisinha
 		vertTouched=new bool[mesh->numElements];
@@ -1030,9 +1013,9 @@ void Mesh::createFull(Mesh *mesh, const int flags)
 					continue;
 
 				//primeiro normalizo tudo e volto a escrever
-				normal.Set(pNor+i*stride3);		normal.Normaliza();			normal.Write(pNor+i*stride3);
-				tangent.Set(pTan+i*stride3);	tangent.Normaliza();		tangent.Write(pTan+i*stride3);
-				binormal.Set(pBin+i*stride3);	binormal.Normaliza();		binormal.Write(pBin+i*stride3);
+				normal.Set(pNor+i*stride3);		normal.Normalize();			normal.Write(pNor+i*stride3);
+				tangent.Set(pTan+i*stride3);	tangent.Normalize();		tangent.Write(pTan+i*stride3);
+				binormal.Set(pBin+i*stride3);	binormal.Normalize();		binormal.Write(pBin+i*stride3);
 
 				//tenho de escrever a nova normal nos outros pontos todos
 				for(j=i+1; j<mesh->numElements; j++)
@@ -1055,7 +1038,7 @@ void Mesh::createFull(Mesh *mesh, const int flags)
 	}
 }
 
-void Mesh::createTangent4(Mesh *mesh, const int flags)
+void Mesh::createTangent4(Mesh *mesh, const MeshOrthoTypes flags)
 {
 	HorseRadish::Vector dir1,dir2,normal,vecAux,tangent,sdir,tdir;
 	float *pPos,*pTex,*pNor,*pGen,*walkN,*walkG,s1,s2,t1,t2,r,*novoArray,weight;
@@ -1123,8 +1106,8 @@ void Mesh::createTangent4(Mesh *mesh, const int flags)
 		dir2-=pPos+index1*stride3;
 
 		//posso calcular a normal
-		normal.CalcCrossProduct(dir1,dir2);
-		normal.Normaliza();
+		normal.StoreCrossProduct(dir1, dir2);
+		normal.Normalize();
 
 		//as direcções das texturas
 		s1=pTex[index2*stride2+0]-pTex[index1*stride2+0];
@@ -1155,25 +1138,25 @@ void Mesh::createTangent4(Mesh *mesh, const int flags)
 		continue;
 
 		//calculo o "peso" para o primeiro vértice
-		dir1=pPos+index2*stride3;		dir1-=pPos+index1*stride3;	dir1.Normaliza();
-		dir2=pPos+index3*stride3;		dir2-=pPos+index1*stride3;	dir2.Normaliza();	
-		weight=acosf(dir1.Dot(dir2));
+		dir1=pPos+index2*stride3;		dir1-=pPos+index1*stride3;	dir1.Normalize();
+		dir2=pPos+index3*stride3;		dir2-=pPos+index1*stride3;	dir2.Normalize();	
+		weight=acosf(dir1.GetDot(dir2));
 		somaVect(pNor+index1*stride3,normal*weight);
 		/*somaVect(pGen+index1*stride4,sdir*weight);
 		somaVect(novoArray+index1*3,tdir*weight);*/
 
 		//calculo o "peso" para o segundo vértice
-		dir1=pPos+index3*stride3;		dir1-=pPos+index2*stride3;	dir1.Normaliza();
-		dir2=pPos+index1*stride3;		dir2-=pPos+index2*stride3;	dir2.Normaliza();	
-		weight=acosf(dir1.Dot(dir2));
+		dir1=pPos+index3*stride3;		dir1-=pPos+index2*stride3;	dir1.Normalize();
+		dir2=pPos+index1*stride3;		dir2-=pPos+index2*stride3;	dir2.Normalize();	
+		weight=acosf(dir1.GetDot(dir2));
 		somaVect(pNor+index2*stride3,normal*weight);
 		/*somaVect(pGen+index2*stride4,sdir*weight);
 		somaVect(novoArray+index2*3,tdir*weight);*/
 
 		//calculo o "peso" para o terceiro vértice
-		dir1=pPos+index1*stride3;		dir1-=pPos+index3*stride3;	dir1.Normaliza();
-		dir2=pPos+index2*stride3;		dir2-=pPos+index3*stride3;	dir2.Normaliza();	
-		weight=acosf(dir1.Dot(dir2));
+		dir1=pPos+index1*stride3;		dir1-=pPos+index3*stride3;	dir1.Normalize();
+		dir2=pPos+index2*stride3;		dir2-=pPos+index3*stride3;	dir2.Normalize();	
+		weight=acosf(dir1.GetDot(dir2));
 		somaVect(pNor+index3*stride3,normal*weight);
 		/*somaVect(pGen+index3*stride4,sdir*weight);
 		somaVect(novoArray+index3*3,tdir*weight);*/
@@ -1192,20 +1175,20 @@ void Mesh::createTangent4(Mesh *mesh, const int flags)
 		tdir.Set(novoArray+i*3);
 
 		//tenho de normalizar a normal
-		normal.Normaliza();
+		normal.Normalize();
 
 		//calculo a tangente
 		vecAux.Set(normal);
-		vecAux*=normal.Dot(sdir);
+		vecAux*=normal.GetDot(sdir);
 		tangent.x=sdir.x-vecAux.x;
 		tangent.y=sdir.y-vecAux.y;
 		tangent.z=sdir.z-vecAux.z;
-		tangent.Normaliza();
+		tangent.Normalize();
 
 		//calculo a binormal
 		r=1.0f;
-		vecAux.CalcCrossProduct(normal,sdir);
-		if (vecAux.Dot(tdir)<0.0f)
+		vecAux.StoreCrossProduct(normal, sdir);
+		if (vecAux.GetDot(tdir)<0.0f)
 			r=-1.0f;
 
 		//escrevo as cenas
@@ -1218,7 +1201,7 @@ void Mesh::createTangent4(Mesh *mesh, const int flags)
 	free(novoArray);
 
 	//se tiver de fazer esta cena por vértice
-	if (flags & MESH_ORTHO_PER_POSITION_NRM)
+	if (flags & MeshOrthoPerPositionNormal)
 	{
 		//criar esta coisinha
 		vertTouched=(bool*)malloc(sizeof(bool)*mesh->numElements);
@@ -1261,8 +1244,8 @@ void Mesh::createTangent4(Mesh *mesh, const int flags)
 					continue;
 
 				//primeiro normalizo tudo e volto a escrever
-				normal.Set(pNor+i*stride3);		normal.Normaliza();			normal.Write(pNor+i*stride3);
-				tangent.Set(pGen+i*stride4);	tangent.Normaliza();		tangent.Write(pGen+i*stride4);
+				normal.Set(pNor+i*stride3);		normal.Normalize();			normal.Write(pNor+i*stride3);
+				tangent.Set(pGen+i*stride4);	tangent.Normalize();		tangent.Write(pGen+i*stride4);
 
 				//tenho de escrever a nova normal nos outros pontos todos
 				for(j=i+1; j<mesh->numElements; j++)
@@ -1284,7 +1267,7 @@ void Mesh::createTangent4(Mesh *mesh, const int flags)
 	}
 }
 
-void Mesh::createNormals(Mesh *mesh, const int flags)
+void Mesh::createNormals(Mesh *mesh, const MeshOrthoTypes flags)
 {
 	float *normalWalker,*posWalker,*escreveNorm,weight;
 	bool hasBro,*vertTouched;
@@ -1343,29 +1326,29 @@ void Mesh::createNormals(Mesh *mesh, const int flags)
 		i3*=stride;
 
 		//calculo a normal desta face
-		norm.CalcNormal(posWalker+i1,posWalker+i2,posWalker+i3);
+		norm.StoreNormal(posWalker + i1, posWalker + i2, posWalker + i3);
 
 		//calculo o "peso" para o primeiro vértice
-		v1=posWalker+i2;		v1-=posWalker+i1;	v1.Normaliza();
-		v2=posWalker+i3;		v2-=posWalker+i1;	v2.Normaliza();	
-		weight=acosf(v1.Dot(v2));
+		v1=posWalker+i2;		v1-=posWalker+i1;	v1.Normalize();
+		v2=posWalker+i3;		v2-=posWalker+i1;	v2.Normalize();	
+		weight=acosf(v1.GetDot(v2));
 		somaVect(normalWalker+i1,norm*weight);
 
 		//calculo o "peso" para o segundo vértice
-		v1=posWalker+i3;		v1-=posWalker+i2;	v1.Normaliza();
-		v2=posWalker+i1;		v2-=posWalker+i2;	v2.Normaliza();	
-		weight=acosf(v1.Dot(v2));
+		v1=posWalker+i3;		v1-=posWalker+i2;	v1.Normalize();
+		v2=posWalker+i1;		v2-=posWalker+i2;	v2.Normalize();	
+		weight=acosf(v1.GetDot(v2));
 		somaVect(normalWalker+i2,norm*weight);
 
 		//calculo o "peso" para o terceiro vértice
-		v1=posWalker+i1;		v1-=posWalker+i3;	v1.Normaliza();
-		v2=posWalker+i2;		v2-=posWalker+i3;	v2.Normaliza();	
-		weight=acosf(v1.Dot(v2));
+		v1=posWalker+i1;		v1-=posWalker+i3;	v1.Normalize();
+		v2=posWalker+i2;		v2-=posWalker+i3;	v2.Normalize();	
+		weight=acosf(v1.GetDot(v2));
 		somaVect(normalWalker+i3,norm*weight);
 	}
 
 	//se tiver de fazer o smooth por vértice de posição idêntica
-	if (flags & MESH_ORTHO_PER_POSITION_NRM)
+	if (flags & MeshOrthoPerPositionNormal)
 	{
 		//criar esta coisinha
 		vertTouched=new bool[mesh->numElements];
@@ -1431,14 +1414,14 @@ void Mesh::createNormals(Mesh *mesh, const int flags)
 	}
 
 	//normalizo as normais
-	if (!(flags & MESH_ORTHO_NO_FINAL_NRM))
+	if (!(flags & MeshOrthoNoFinalNormalization))
 	{
 		normalWalker=mesh->FindAttribData(Mesh::Normal);
 		for(i=0; i<mesh->numElements; i++)
 		{
 			//normalizo
 			norm.Set(normalWalker);
-			norm.Normaliza();
+			norm.Normalize();
 
 			//copio e avanço com o ponteiro
 			norm.Write(normalWalker);
@@ -2615,11 +2598,11 @@ bool Mesh::RayIntersect(const float *rayOrigin, const float *rayDir, float *dist
 		}
 
 		//calculo a normal
-		normal.CalcNormal(p1,p2,p3);
-		normal.Normaliza();
+		normal.StoreNormal(p1, p2, p3);
+		normal.Normalize();
 
 		//se a normal não está de frente para o raio, cago no assunto
-		if (normal.Dot(rayDir)>0.0f)
+		if (normal.GetDot(rayDir)>0.0f)
 			continue;
 
 		//verifico então se intersecta o triangulo
@@ -2628,7 +2611,7 @@ bool Mesh::RayIntersect(const float *rayOrigin, const float *rayDir, float *dist
 
 		//tenho a certeza que acertou e se for menor, aproveito-o
 		wasHit=true;
-		minDist=HorseRadish::Math::fMin(minDist,hit.GetDist(rayOrigin));
+		minDist=HorseRadish::Math::fMin(minDist,hit.GetDistance(rayOrigin));
 	}
 
 	//se não houve nenhum hit, posso bazar
@@ -2715,8 +2698,7 @@ void Mesh::InvertFaces()
 
 float Mesh::GetIndexCacheRatio(const unsigned int numCacheEntries)
 {
-	int *cache,hits,index;
-	bool cacheHit;
+	int hits,index;
 
 	//verificar este parametro
 	if (checkMesh(this)==false)
@@ -2729,7 +2711,7 @@ float Mesh::GetIndexCacheRatio(const unsigned int numCacheEntries)
 		return 1.0f;
 
 	//preciso da memória
-	cache = (int*)malloc(sizeof(int)*numCacheEntries);
+	auto cache = reinterpret_cast<int*>(malloc(sizeof(int)*numCacheEntries));
 	if (cache == nullptr)
 		return 0.0f;
 	
@@ -2745,7 +2727,7 @@ float Mesh::GetIndexCacheRatio(const unsigned int numCacheEntries)
 		index=getIndex(this,i);
 
 		//procuro se tenho este indice na cache
-		cacheHit = false;
+		bool cacheHit = false;
 		for(int j=0; j<numCacheEntries; j++)
 		{
 			if (cache[j] == index)
@@ -3067,13 +3049,13 @@ void Mesh::EliminateDegenerateTri()
 	}
 }
 
-void Mesh::Ortho(const int flags)
+void Mesh::Ortho(const MeshOrthoTypes flags)
 {
 	//só normais
-	if (flags & MESH_ORTHO_CREATE_NORMALS)
+	if (flags & MeshOrthoCreateNormals)
 	{
 		//isto é estupido
-		if (flags & MESH_ORTHO_KEEP_NORMALS)
+		if (flags & MeshOrthoKeepNormals)
 			return;
 
 		//mandar seguir
@@ -3084,7 +3066,7 @@ void Mesh::Ortho(const int flags)
 	}
 
 	//espaço orthonormal completo com binormais e tangents
-	if (flags & MESH_ORTHO_CREATE_FULL)
+	if (flags & MeshOrthoCreateFull)
 	{
 		//posso mandar ir normalmente
 		createFull(this, flags);
@@ -3092,7 +3074,7 @@ void Mesh::Ortho(const int flags)
 	}
 
 	//espaço completo com tangent4 (usar w)
-	if (flags & MESH_ORTHO_CREATE_TANGENT4)
+	if (flags & MeshOrthoCreateTangent4)
 	{
 		//posso mandar ir normalmente
 		createTangent4(this, flags);
@@ -3100,112 +3082,86 @@ void Mesh::Ortho(const int flags)
 	}
 }
 
-bool Mesh::Shade(const int lightModel, const float *lightPos, const float * lightDiffuse, const float *lightSpecular, const float *camPos)
+bool Mesh::Shade(const ShadeModel shadeModel, const Vector& lightPos, const Vector& lightDiffuse, const Vector& lightSpecular, const Vector& camPos)
 {
-	HorseRadish::Vector finalColor,lightVec,viewVec,diffuse,specular,auxVec;
-	float *posWalker,*normalWalker,*colorWalker;
-	int i,stride3,stride1;
+	HorseRadish::Vector finalColor, lightVec, viewVec, diffuse, specular;
+	int stride3, stride1;
 
-	//boa mesh e maxDist tem de ser sempre maior do que 0
-	if (checkMesh(this, (Mesh::MeshAtributeType)(Mesh::Pos | Mesh::Normal))==false || lightPos==nullptr)
+	if (checkMesh(this, (Mesh::MeshAtributeType)(Mesh::Pos | Mesh::Normal)) == false || lightPos == nullptr)
 		return 0;
 
-	//por agora tenho de ter ou um ou o outro
-	if ( (lightModel & MESH_SHADE_PHONG)==false && (lightModel & MESH_SHADE_BLINN)==false)
+	if (((static_cast<int>(shadeModel)& static_cast<int>(ShadeModel::Phong)) == static_cast<int>(ShadeModel::Phong)) && ((static_cast<int>(shadeModel)& static_cast<int>(ShadeModel::Blinn)) == static_cast<int>(ShadeModel::Blinn)))
 		return 0;
 
-	//preciso de pelos menos uma coisa pra fazer a iluminação
-	if (lightDiffuse==nullptr && (lightSpecular==nullptr || camPos==nullptr))
+	auto posWalker = this->FindAttribData(Mesh::Pos);
+	auto normalWalker = this->FindAttribData(Mesh::Normal);
+	float *colorWalker = nullptr;
+	if (static_cast<int>(shadeModel)& static_cast<int>(ShadeModel::ColorFloat))
+		colorWalker = this->FindAttribGenericData(Mesh::Generic3, 1);
+	else
+		colorWalker = this->FindAttribGenericData(Mesh::Generic1, 1);
+
+	if (posWalker == nullptr || normalWalker == nullptr || colorWalker == nullptr)
 		return 0;
 
-	//obter isto dá muito jeito
-	posWalker=this->FindAttribData(Mesh::Pos);
-	normalWalker=this->FindAttribData(Mesh::Normal);
-	colorWalker=nullptr;
-	if (lightModel & MESH_SHADE_COLOR_FLOAT)
-		colorWalker=this->FindAttribGenericData(Mesh::Generic3, 1);
-	else if (lightModel & MESH_SHADE_COLOR_UBYTE)
-		colorWalker=this->FindAttribGenericData(Mesh::Generic1, 1);
-	
-	//tenho de ter isto tudo, logo dá jeito verificar
-	if (posWalker==nullptr || normalWalker==nullptr || colorWalker==nullptr)
-		return 0;
-
-	//os strides
-	stride1=1;
-	stride3=3;
-	if (this->strideAttrib!=0)
+	stride1 = 1;
+	stride3 = 3;
+	if (this->strideAttrib != 0)
 	{
-		stride1=stride3=this->strideAttrib/sizeof(float);
+		stride1 = stride3 = this->strideAttrib / sizeof(float);
 	}
 
-	//para todos os elementos
-	for(i=0; i<this->numElements; i++,posWalker+=stride3,normalWalker+=stride3)
+	for (int i = 0; i < this->numElements; i++, posWalker += stride3, normalWalker += stride3)
 	{
-		//qual modelo devo usar pra calcular a cor
-		finalColor.Set(0.0f,0.0f,0.0f);
-		
-		//o lightVec
+		finalColor.Set(0.0f, 0.0f, 0.0f);
+
 		lightVec.Set(lightPos);
-		lightVec-=posWalker;
-		lightVec.Normaliza();
+		lightVec -= posWalker;
+		lightVec.Normalize();
 
-		//a parte difusa
-		diffuse.Set(0.0f,0.0f,0.0f);
-		if (lightDiffuse)
+		diffuse.Set(lightDiffuse);
+		diffuse *= HorseRadish::Math::fMax(lightVec.GetDot(normalWalker), 0.0f);
+
+		specular.Set(0.0f, 0.0f, 0.0f);
+		if (static_cast<int>(shadeModel)& static_cast<int>(ShadeModel::Blinn))
+			calcSpec(ShadeModel::Blinn, specular, camPos, lightPos, lightSpecular, posWalker, normalWalker);
+		else if (static_cast<int>(shadeModel)& static_cast<int>(ShadeModel::Phong))
+			calcSpec(ShadeModel::Phong, specular, camPos, lightPos, lightSpecular, posWalker, normalWalker);
+
+		finalColor.Set(0.0f, 0.0f, 0.0f);
+		if (static_cast<int>(shadeModel)& static_cast<int>(ShadeModel::Add_Light))
 		{
-			diffuse.Set(lightDiffuse);
-			diffuse*=HorseRadish::Math::fMax(lightVec.Dot(normalWalker),0.0f);
-		}
-
-		//a parte especular
-		specular.Set(0.0f,0.0f,0.0f);
-		if (lightModel & MESH_SHADE_BLINN)
-			calcSpec(MESH_SHADE_BLINN,specular,camPos,lightPos,lightSpecular,posWalker,normalWalker);
-		else if (lightModel & MESH_SHADE_PHONG)
-			calcSpec(MESH_SHADE_PHONG,specular,camPos,lightPos,lightSpecular,posWalker,normalWalker);
-
-		//se for para somar, vou antes ler a cor antiga, senão fica a zero!
-		finalColor.Set(0.0f,0.0f,0.0f);
-		if (lightModel & MESH_SHADE_ADD_LIGHT)
-		{
-			if (lightModel & MESH_SHADE_COLOR_FLOAT)
+			if (static_cast<int>(shadeModel)& static_cast<int>(ShadeModel::ColorFloat))
 			{
 				finalColor.Set(colorWalker);
 			}
 			else
 			{
-				finalColor.x=((float)((unsigned char*)colorWalker)[0])*0.003921568627f;
-				finalColor.y=((float)((unsigned char*)colorWalker)[1])*0.003921568627f;
-				finalColor.z=((float)((unsigned char*)colorWalker)[2])*0.003921568627f;
+				finalColor.x = ((float)((unsigned char*)colorWalker)[0])*0.003921568627f;
+				finalColor.y = ((float)((unsigned char*)colorWalker)[1])*0.003921568627f;
+				finalColor.z = ((float)((unsigned char*)colorWalker)[2])*0.003921568627f;
 			}
 		}
 
-		//a cor final fica assim
-		finalColor+=diffuse;
-		finalColor+=specular;
+		finalColor += diffuse;
+		finalColor += specular;
 
-		//clampar sempre que vou pra ubyte
-		if (lightModel & MESH_SHADE_COLOR_UBYTE)
-			finalColor.Clamp(0.0f,1.0);
-		
-		//escrever e avancar com a cor
-		if (lightModel & MESH_SHADE_COLOR_FLOAT)
+		if (static_cast<int>(shadeModel)& static_cast<int>(ShadeModel::ColorFloat))
 		{
 			finalColor.Write(colorWalker);
-			colorWalker+=stride3;
+			colorWalker += stride3;
 		}
 		else
 		{
-			finalColor*=255.0f;
-			((unsigned char*)colorWalker)[0]=(unsigned char)finalColor.x;
-			((unsigned char*)colorWalker)[1]=(unsigned char)finalColor.y;
-			((unsigned char*)colorWalker)[2]=(unsigned char)finalColor.z;
-			colorWalker+=stride1;
+			finalColor.Clamp(0.0f, 1.0);
+			finalColor *= 255.0f;
+			((unsigned char*)colorWalker)[0] = (unsigned char)finalColor.x;
+			((unsigned char*)colorWalker)[1] = (unsigned char)finalColor.y;
+			((unsigned char*)colorWalker)[2] = (unsigned char)finalColor.z;
+			colorWalker += stride1;
 		}
 	}
 
-	//já está
 	return true;
 }
 
@@ -3279,18 +3235,15 @@ void Mesh::ReorderTriIndex()
 	delete meshNova;
 }
 
-bool Mesh::TexGen(const int texGenType, const float *values)
+bool Mesh::TexGen(const TexGenModel texGenType, const float *values)
 {
-	float *posWalker,*normalWalker,*texWalker;
-	int i,stride3,stride2;
+	int stride3,stride2;
 
-	//boa mesh
 	if (checkMesh(this)==false)
 		return false;
 
-	//obter isto dá muito jeito
-	posWalker=this->FindAttribData(Mesh::Pos);
-	texWalker=this->FindAttribData(Mesh::TexCoords);
+	auto posWalker=this->FindAttribData(Mesh::Pos);
+	auto texWalker = this->FindAttribData(Mesh::TexCoords);
 	
 	//tenho de ter isto tudo, logo dá jeito verificar
 	if (posWalker==nullptr || texWalker==nullptr)
@@ -3305,10 +3258,10 @@ bool Mesh::TexGen(const int texGenType, const float *values)
 	}
 
 	//agora de acordo com o que quiser fazer
-	if (texGenType == MESH_TEXGEN_OBJECT_LINEAR)
+	if (texGenType == TexGenModel::ObjectLinear)
 	{
 		//para todos os elementos
-		for(i=0; i<this->numElements; i++,posWalker+=stride3,texWalker+=stride2)
+		for(int i=0; i<this->numElements; i++,posWalker+=stride3,texWalker+=stride2)
 		{
 			//posso copiar isto
 			texWalker[0]=posWalker[0];
@@ -3327,7 +3280,7 @@ bool Mesh::TexGen(const int texGenType, const float *values)
 	}
 
 	//agora de acordo com o que quiser fazer
-	if (texGenType == MESH_TEXGEN_SPHERE_MAP)
+	if (texGenType == TexGenModel::SphereMap)
 	{
 		//vars auxiliares
 		HorseRadish::Vector centro,fVec,uVec;
@@ -3342,14 +3295,14 @@ bool Mesh::TexGen(const int texGenType, const float *values)
 		centro.z=minP[0]+HorseRadish::Math::fAbs(maxP[2]-minP[2])*0.5f;
 
 		//para todos os elementos
-		for(i=0; i<this->numElements; i++,posWalker+=stride3,texWalker+=stride2)
+		for (int i = 0; i<this->numElements; i++, posWalker += stride3, texWalker += stride2)
 		{
 			uVec.x=centro.x-posWalker[0];
 			uVec.y=centro.y-posWalker[1];
 			uVec.z=centro.z-posWalker[2];
 
 			fVec=uVec;
-			uVec*=2.0f*uVec.Dot(uVec);
+			uVec*=2.0f*uVec.GetDot(uVec);
 			fVec-=uVec;
 
 			m=2.0f*sqrt(fVec.x*fVec.x + fVec.y*fVec.y + (fVec.z+1.0)*(fVec.z+1.0));
@@ -3364,7 +3317,7 @@ bool Mesh::TexGen(const int texGenType, const float *values)
 	}
 
 	//agora de acordo com o que quiser fazer
-	if (texGenType == MESH_TEXGEN_NORMAL_MAP)
+	if (texGenType == TexGenModel::NormalMap)
 	{
 		//vars auxiliares
 		HorseRadish::Vector centro,fVec,uVec;
@@ -3384,14 +3337,14 @@ bool Mesh::TexGen(const int texGenType, const float *values)
 		centro.z=minP[0]+HorseRadish::Math::fAbs(maxP[2]-minP[2])*0.5f;
 
 		//para todos os elementos
-		for(i=0; i<this->numElements; i++,normalWalker+=stride3,texWalker+=stride2)
+		for (int i = 0; i<this->numElements; i++, normalWalker += stride3, texWalker += stride2)
 		{
 			uVec.x=normalWalker[0];
 			uVec.y=normalWalker[1];
 			uVec.z=normalWalker[2];
 
 			fVec=uVec;
-			uVec*=2.0f*uVec.Dot(uVec);
+			uVec*=2.0f*uVec.GetDot(uVec);
 			fVec-=uVec;
 
 			invM=2.0f*sqrt(fVec.x*fVec.x + fVec.y*fVec.y + (fVec.z+1.0)*(fVec.z+1.0));
@@ -3545,6 +3498,8 @@ bool Mesh::DeserializeHRF(Streams::StreamReader * const streamReader)
 
 	//posso ler os indices do ficheiro
 	streamReader->Read(this->pIndex, this->IndexSize());
+
+	return true;
 }
 
 bool Mesh::Serialize(Streams::StreamWriter * const streamWriter)
@@ -3578,22 +3533,17 @@ bool Mesh::Serialize(Streams::StreamWriter * const streamWriter)
 
 bool Mesh::SerializeHRF(Streams::StreamWriter * const streamWriter)
 {
-	int dataSize, indexSize;
-
-	//tenho de ter esta config
 	if ((this->numAttrib != 5) || (this->attrib[0].attribType != Mesh::Pos) || (this->attrib[1].attribType != Mesh::TexCoords) || (this->attrib[2].attribType != Mesh::Normal) || (this->attrib[3].attribType != Mesh::Tangent4) || (this->attrib[4].attribType != Mesh::Generic4))
 		return false;
 	if (this->SingleBufferPointer() == nullptr)
 		return false;
 
-	//escrevo quantos vertices e indices tenho, assim como outros tipos de dados
 	streamWriter->WriteInt32(this->numElements);
 	streamWriter->WriteInt32(this->numIndex);
 	streamWriter->WriteInt32(this->numAttrib);
 	streamWriter->WriteInt32(this->strideAttrib);
 	streamWriter->WriteInt32(this->typeIndex);
 
-	//certifico-me que tenho tudo o que é preciso
 	/*if (this->FindAttribData(Mesh::Pos) == nullptr)
 		this->NewAttrib(Mesh::Pos, this->numElements);
 	if (this->FindAttribData(Mesh::TexCoords) == nullptr)
@@ -3603,26 +3553,20 @@ bool Mesh::SerializeHRF(Streams::StreamWriter * const streamWriter)
 	if (this->FindAttribData(Mesh::Tangent4) == nullptr)
 		this->NewAttrib(Mesh::Tangent4, this->numElements);
 
-	//mando calcular algumas coisas
 	this->Ortho(MESH_ORTHO_CREATE_TANGENT4);
 
-	//ordeno tudo como deve de ser
 	MeshAtributeType treta[] = {Mesh::Pos, Mesh::TexCoords, Mesh::Normal, Mesh::Tangent4};
 	this->ReorderAttrib(treta, 4, true);
 
-	//falta um genérico
 	this->NewAttrib(Mesh::Generic4, this->numElements);
 
-	//tudo para um único buffer
 	this->SingleBuffer();*/
 
-	//basta escrever os dados
 	streamWriter->Write(this->SingleBufferPointer(), this->GetSize());
 	streamWriter->Write(this->pIndex, this->IndexSize());
 
-	//correu tudo bem
 	return true;
 }
 
-}//namespace Geometry
-}//namespace HorseRadish
+} //Geometry
+} //HorseRadish

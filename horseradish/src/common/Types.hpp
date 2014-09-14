@@ -49,4 +49,11 @@ namespace HorseRadish
 		 unsigned __int16    ui16[10];
 		 unsigned __int32    ui32[5];
 	} hData160;
+
+	bool operator == (const hData128& a, const hData128& b);
+	bool operator != (const hData128& a, const hData128& b);
+	bool operator < (const hData128& a, const hData128& b);
+	bool operator > (const hData128& a, const hData128& b);
+	bool operator <= (const hData128& a, const hData128& b);
+	bool operator >= (const hData128& a, const hData128& b);
 }

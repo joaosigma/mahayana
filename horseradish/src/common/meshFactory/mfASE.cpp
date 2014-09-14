@@ -2,9 +2,6 @@
 #include "common\MeshFactory.hpp"
 #include "common\Stream.hpp"
 
-#include <windows.h>
-#include <stdlib.h>
-
 using namespace HorseRadish;
 
 struct ASE_TVERTEX{
@@ -21,15 +18,12 @@ struct ASE_FACE{
 static
 Geometry::Model::MeshData* criaMesh(Geometry::Model * const modelo)
 {
-	Geometry::Model::MeshData *novo;
-
 	if (modelo==nullptr)
 		return nullptr;
 
-	//crio uma nova mesh
-	novo = modelo->arrayMesh.Add();
+	modelo->arrayMesh.push_back(Geometry::Model::MeshData());
+	auto novo = &modelo->arrayMesh[modelo->arrayMesh.size() - 1];
 
-	//preparo as coisas e já tá
 	novo->meshName[0]='\0';
 	novo->materialName[0]='\0';
 	return novo;
@@ -733,7 +727,7 @@ Geometry::Model* readMemASE(const void *file, const unsigned int fileSize)
 	}
 
 	//se nao tiver nada, nao devolvo nada
-	if (modelo->arrayMesh.GetNumElements() <= 0)
+	if (modelo->arrayMesh.empty())
 	{
 		delete modelo;
 		return nullptr;

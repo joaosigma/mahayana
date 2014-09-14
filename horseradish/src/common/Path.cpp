@@ -1,261 +1,205 @@
 #include "Path.hpp"
 #include "Platform.hpp"
 
-//§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§
-//§§§§§§ Funções auxiliares locais		§§
-//§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§
-
 namespace HorseRadish
 {
-namespace IO
-{
-
-//§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§
-//§§§§§§ A classe principal que implementa o sistema de ficheiros		§§
-//§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§
-void Path::validadePath()
-{
-	//se for preciso mudar '/' para '\\'
-	if (HorseRadish::Platform::DirectorySeparatorChar != '/')
-		HorseRadish::String::Replace('/', HorseRadish::Platform::DirectorySeparatorChar);
-
-	//removo sempre duplicados
-	HorseRadish::String::RemoveDoubles(HorseRadish::Platform::DirectorySeparatorChar);
-
-	//removo sempre espaços a mais
-	HorseRadish::String::Trim(' ');
-}
-
-Path::Path()
-{
-	//basta limpar isto
-	HorseRadish::String::SetEmpty();
-}
-
-Path::Path(const HorseRadish::hChar * const path)
-{
-	//basta chamar esta função
-	this->Set(path);
-}
-
-Path::Path(const char * const path)
-{
-	//basta chamar esta função
-	this->Set((const HorseRadish::hChar *)path);
-}
-
-Path::Path(const HorseRadish::String &path)
-{
-	//basta chamar esta função
-	this->Set((const HorseRadish::hChar *)path.GetData());
-}
-
-Path::Path(const KnownPath &knownPath)
-{
-	//basta chamar esta função
-	this->Set(knownPath);
-}
-
-Path::~Path()
-{
-	//basta limpar isto
-	HorseRadish::String::SetEmpty();
-}
-
-void Path::Clear()
-{
-	//basta limpar isto
-	HorseRadish::String::SetEmpty();
-}
-
-void Path::Set(const HorseRadish::hChar * const path)
-{
-	//começo por limpar qualquer caminho anterior
-	HorseRadish::String::SetEmpty();
-
-	//se tiver alguma coisa, guardo-a
-	if ((path != nullptr) && (*path != '\0'))
-		HorseRadish::String::Set(path);
-
-	//operações de manutenção
-	validadePath();
-}
-
-void Path::Set(const HorseRadish::String &path)
-{
-	//guardo o caminho indicado
-	HorseRadish::String::Set(path);
-
-	//operações de manutenção
-	validadePath();
-}
-
-void Path::Set(const Path &path)
-{
-	//basta guardar o caminho indicado
-	HorseRadish::String::Set(path);
-}
-
-void Path::Set(const Path &path1, const Path &path2)
-{
-	//fico com o primeiro e adiciono simplesmente o último
-	HorseRadish::String::Set(path1);
-	this->Combine(path2);
-}
-
-void Path::Set(const Path::KnownPath &knownPath)
-{
-	//se for para a pasta do sistema
-	if (knownPath == Path::SystemFolder)
+	namespace IO
 	{
-		//basta ler daqui e pronto
-		HorseRadish::Platform::GetSystemInfo(HorseRadish::Platform::SystemFolder, *this);
-		return;
-	}
+		void Path::validadePath()
+		{
+			if (HorseRadish::Platform::DirectorySeparatorChar != '/')
+				HorseRadish::String::Replace('/', HorseRadish::Platform::DirectorySeparatorChar);
 
-	//se for para a pasta actual
-	if (knownPath == Path::CurrentFolder)
-	{
-		//basta ler daqui e pronto
-		HorseRadish::Platform::GetSystemInfo(HorseRadish::Platform::CurrentFolder, *this);
-		return;
-	}
+			HorseRadish::String::RemoveDoubles(HorseRadish::Platform::DirectorySeparatorChar);
 
-	//chegando aqui, temos problema
-	HorseRadish::String::SetEmpty();
-}
+			HorseRadish::String::Trim(' ');
+		}
 
-void Path::Combine(const Path &pathToAppend)
-{
-	//se não tenho nada
-	if (pathToAppend.IsEmpty() == true)
-		return;
+		Path::Path()
+		{
+			HorseRadish::String::SetEmpty();
+		}
 
-	//se não tenho nada actualmente
-	if (HorseRadish::String::IsEmpty() == true)
-	{
-		//fico com o path enviado e pronto
-		HorseRadish::String::Set(pathToAppend);
-		return;
-	}
+		Path::Path(const HorseRadish::hChar * const path)
+		{
+			this->Set(path);
+		}
 
-	//se actualmente o caminho não termina com o separador correcto, adiciono-o
-	if (HorseRadish::String::EndsWith(HorseRadish::Platform::DirectorySeparatorChar) == false)
-		HorseRadish::String::operator+=(HorseRadish::Platform::DirectorySeparatorChar);
+		Path::Path(const char * const path)
+		{
+			this->Set((const HorseRadish::hChar *)path);
+		}
 
-	//posso acrescentar o caminho
-	HorseRadish::String::operator+=(pathToAppend);
+		Path::Path(const HorseRadish::String &path)
+		{
+			this->Set((const HorseRadish::hChar *)path.GetData());
+		}
 
-	//não preciso de todas as operações manutenção, só remover duplicados
-	HorseRadish::String::RemoveDoubles(HorseRadish::Platform::DirectorySeparatorChar);
-}
+		Path::Path(const KnownPath &knownPath)
+		{
+			this->Set(knownPath);
+		}
 
-void Path::Combine(const HorseRadish::hChar * const pathToAppend)
-{
-	//se não tenho nada
-	if ((pathToAppend == nullptr) || (*pathToAppend == '\0'))
-		return;
+		Path::~Path()
+		{
+			HorseRadish::String::SetEmpty();
+		}
 
-	//se não tenho nada actualmente
-	if (HorseRadish::String::IsEmpty(true) == true)
-	{
-		//fico com o path enviado, verifico-o e pronto
-		HorseRadish::String::Set(pathToAppend);
-		validadePath();
-		return;
-	}
+		void Path::Clear()
+		{
+			HorseRadish::String::SetEmpty();
+		}
 
-	//se actualmente o caminho não termina com o separador correcto, adiciono-o
-	if (HorseRadish::String::EndsWith(HorseRadish::Platform::DirectorySeparatorChar) == false)
-		HorseRadish::String::operator+=(HorseRadish::Platform::DirectorySeparatorChar);
+		void Path::Set(const HorseRadish::hChar * const path)
+		{
+			HorseRadish::String::SetEmpty();
 
-	//posso acrescentar o caminho
-	HorseRadish::String::operator+=(pathToAppend);
+			if ((path != nullptr) && (*path != '\0'))
+				HorseRadish::String::Set(path);
 
-	//operações de manutenção
-	validadePath();
-}
+			validadePath();
+		}
 
-void Path::Combine(const HorseRadish::String &pathToAppend)
-{
-	//se não tenho nada actualmente
-	if (HorseRadish::String::IsEmpty(true) == true)
-	{
-		//fico com o path enviado, verifico-o e pronto
-		HorseRadish::String::Set(pathToAppend);
-		validadePath();
-		return;
-	}
+		void Path::Set(const HorseRadish::String &path)
+		{
+			HorseRadish::String::Set(path);
 
-	//se actualmente o caminho não termina com o separador correcto, adiciono-o
-	if (HorseRadish::String::EndsWith(HorseRadish::Platform::DirectorySeparatorChar) == false)
-		HorseRadish::String::operator+=(HorseRadish::Platform::DirectorySeparatorChar);
+			validadePath();
+		}
 
-	//posso acrescentar o caminho
-	HorseRadish::String::operator+=(pathToAppend);
+		void Path::Set(const Path &path)
+		{
+			HorseRadish::String::Set(path);
+		}
 
-	//operações de manutenção
-	validadePath();
-}
+		void Path::Set(const Path &path1, const Path &path2)
+		{
+			HorseRadish::String::Set(path1);
+			this->Combine(path2);
+		}
 
-void Path::RemoveLastComponent()
-{
-	this->RemoveComponents(1);
-}
+		void Path::Set(const Path::KnownPath &knownPath)
+		{
+			if (knownPath == Path::KnownPath::SystemFolder)
+			{
+				HorseRadish::Platform::GetSystemInfo(HorseRadish::Platform::SystemInfo::SystemFolder, *this);
+				return;
+			}
 
-void Path::RemoveComponents(const HorseRadish::hUInt8 &numComponents)
-{
-	if (numComponents <= 0)
-		return;
+			if (knownPath == Path::KnownPath::CurrentFolder)
+			{
+				HorseRadish::Platform::GetSystemInfo(HorseRadish::Platform::SystemInfo::CurrentFolder, *this);
+				return;
+			}
 
-	auto iterator = HorseRadish::String::Iterator(*this);
-	iterator.Last();
+			HorseRadish::String::SetEmpty();
+		}
 
-	auto componentsRemoved = 0;
-	for (; iterator.IsFirst() == false; iterator--)
-	{
-		if (*iterator != HorseRadish::Platform::DirectorySeparatorChar)
-			continue;
+		void Path::Combine(const Path &pathToAppend)
+		{
+			if (pathToAppend.IsEmpty() == true)
+				return;
 
-		componentsRemoved++;
-		if (componentsRemoved >= numComponents)
-			break;
-	}
+			if (HorseRadish::String::IsEmpty() == true)
+			{
+				HorseRadish::String::Set(pathToAppend);
+				return;
+			}
 
-	HorseRadish::String::CloseAt(iterator.GetCaracterPosition());
-}
+			if (HorseRadish::String::EndsWith(HorseRadish::Platform::DirectorySeparatorChar) == false)
+				HorseRadish::String::operator+=(HorseRadish::Platform::DirectorySeparatorChar);
 
-void Path::RemoveFile()
-{
-	//tiro o iterator e movo para o fim
-	auto iterator = HorseRadish::String::Iterator(*this);
-	iterator.Last();
+			HorseRadish::String::operator+=(pathToAppend);
 
-	//enquanto não chegar ao separador (ou ao início do caminho)
-	while ((*iterator != HorseRadish::Platform::DirectorySeparatorChar) && (iterator.IsFirst() == false))
-		iterator--;
+			HorseRadish::String::RemoveDoubles(HorseRadish::Platform::DirectorySeparatorChar);
+		}
 
-	//fecho a string onde achei o separador
-	HorseRadish::String::CloseAt(iterator.GetCaracterPosition());
-}
+		void Path::Combine(const HorseRadish::hChar * const pathToAppend)
+		{
+			if ((pathToAppend == nullptr) || (*pathToAppend == '\0'))
+				return;
 
-Path& Path::operator+=(const Path& path)
-{
-	//basta mandar combinar
-	this->Combine(path);
+			if (HorseRadish::String::IsEmpty(true) == true)
+			{
+				HorseRadish::String::Set(pathToAppend);
+				validadePath();
+				return;
+			}
 
-	//devolvo-me
-	return *this;
-}
+			if (HorseRadish::String::EndsWith(HorseRadish::Platform::DirectorySeparatorChar) == false)
+				HorseRadish::String::operator+=(HorseRadish::Platform::DirectorySeparatorChar);
 
-Path& Path::operator+=(const HorseRadish::hChar * const path)
-{
-	//basta mandar combinar
-	this->Combine(path);
+			HorseRadish::String::operator+=(pathToAppend);
 
-	//devolvo-me
-	return *this;
-}
+			validadePath();
+		}
 
-}//namespace IO
-}//namespace HorseRadish
+		void Path::Combine(const HorseRadish::String &pathToAppend)
+		{
+			if (HorseRadish::String::IsEmpty(true) == true)
+			{
+				HorseRadish::String::Set(pathToAppend);
+				validadePath();
+				return;
+			}
+
+			if (HorseRadish::String::EndsWith(HorseRadish::Platform::DirectorySeparatorChar) == false)
+				HorseRadish::String::operator+=(HorseRadish::Platform::DirectorySeparatorChar);
+
+			HorseRadish::String::operator+=(pathToAppend);
+
+			validadePath();
+		}
+
+		void Path::RemoveLastComponent()
+		{
+			this->RemoveComponents(1);
+		}
+
+		void Path::RemoveComponents(const HorseRadish::hUInt8 &numComponents)
+		{
+			if (numComponents <= 0)
+				return;
+
+			auto iterator = HorseRadish::String::Iterator(*this);
+			iterator.Last();
+
+			auto componentsRemoved = 0;
+			for (; iterator.IsFirst() == false; iterator--)
+			{
+				if (*iterator != HorseRadish::Platform::DirectorySeparatorChar)
+					continue;
+
+				componentsRemoved++;
+				if (componentsRemoved >= numComponents)
+					break;
+			}
+
+			HorseRadish::String::CloseAt(iterator.GetCaracterPosition());
+		}
+
+		void Path::RemoveFile()
+		{
+			auto iterator = HorseRadish::String::Iterator(*this);
+			iterator.Last();
+
+			while ((*iterator != HorseRadish::Platform::DirectorySeparatorChar) && (iterator.IsFirst() == false))
+				iterator--;
+
+			HorseRadish::String::CloseAt(iterator.GetCaracterPosition());
+		}
+
+		Path& Path::operator+=(const Path& path)
+		{
+			this->Combine(path);
+			return *this;
+		}
+
+		Path& Path::operator+=(const HorseRadish::hChar * const path)
+		{
+			this->Combine(path);
+			return *this;
+		}
+
+	} //IO
+} //HorseRadish

@@ -1,6 +1,4 @@
 #pragma once
-#ifndef __HRANDOM__
-#define __HRANDOM__
 
 #include <random>
 
@@ -28,6 +26,4 @@ namespace HorseRadish
 		int GetDistributionBinomial(const int nDraw, const double pChange);
 	};
 
-} //namespace HorseRadish
-
-#endif
+} //HorseRadish

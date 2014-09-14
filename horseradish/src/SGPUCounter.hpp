@@ -1,13 +1,10 @@
 #pragma once
-#ifndef __SGPU_COUNTER__
-#define __SGPU_COUNTER__
 
-#include "common\common.hpp"
-#include "common\containers.hpp"
+#include "common\Math.hpp"
+#include "common\String.hpp"
 
-//§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§
-//§§§§   -= Classe SGPUCounter =-	§§§§
-//§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§
+#include <vector>
+
 class SGPUCounter
 {
 	struct CounterData{
@@ -19,7 +16,7 @@ class SGPUCounter
 	};
 	unsigned int numMaxSamples;
 	mutable unsigned int curSample;
-	HorseRadish::Containers::Array<CounterData> arrayCounters;
+	std::vector<CounterData> arrayCounters;
 
 public:
 	SGPUCounter(unsigned int maxSaveSamples);
@@ -32,8 +29,8 @@ public:
 	bool addGPUCounter(const char * const counterName);
 	bool addGPUCounter(const char * const counterName, const float r, const float g, const float b);
 	void reset();
-	void sampleCounter(const char * const counterName, const float &newSample) const;
-	void sampleMoveNext() const;
+	void sampleCounter(const char * const counterName, const float &newSample);
+	void sampleMoveNext();
 
 	const char* getCounterName(const unsigned int counterNumber) const;
 	unsigned int getCounterNumber(const char * const counterName) const;
@@ -48,5 +45,3 @@ public:
 	float getValueAvg(const unsigned int counterNumber) const;
 	void getValuesMinMax(const unsigned int counterNumber, float * const valueMin, float * const valueMax) const;
 };
-
-#endif

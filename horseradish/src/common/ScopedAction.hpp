@@ -1,6 +1,4 @@
 #pragma once
-#ifndef __HSCOPED_ACTION__
-#define __HSCOPED_ACTION__
 
 #include "Types.hpp"
 
@@ -29,6 +27,4 @@ namespace HorseRadish
 		}
 	};
 
-} //namespace HorseRadish
-
-#endif
+} //HorseRadish

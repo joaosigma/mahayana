@@ -1,6 +1,5 @@
 #include "winApp.hpp"
 
-#include "common\Common.hpp"
 #include "common\UTF.hpp"
 #include "common\opengl\openGL.hpp"
 
@@ -90,7 +89,7 @@ bool Window::WindowInit(WNDPROC procFunc, const HorseRadish::hChar *windowTitle,
 	windowRect.right = winWidth;
 	windowRect.bottom = winHeight;
 
-	HorseRadish::UTF::ConvertUTF8To("HorseRadish graphics engine...", HorseRadish::UTF::Windows, this->className, sizeof(this->className));
+	HorseRadish::UTF::ConvertUTF8To("HorseRadish graphics engine...", HorseRadish::UTF::Encoding::Windows, this->className, sizeof(this->className));
 
 	{
 		WNDCLASSEXW windowClass;
@@ -157,7 +156,7 @@ bool Window::WindowInit(WNDPROC procFunc, const HorseRadish::hChar *windowTitle,
 
 	{
 		wchar_t windowTitleWChar[256];
-		HorseRadish::UTF::ConvertUTF8To(windowTitle, HorseRadish::UTF::Windows, windowTitleWChar, sizeof(windowTitleWChar));
+		HorseRadish::UTF::ConvertUTF8To(windowTitle, HorseRadish::UTF::Encoding::Windows, windowTitleWChar, sizeof(windowTitleWChar));
 
 		this->hWnd = CreateWindowEx(dwExStyle, this->className, windowTitleWChar, dwStyle, desktopRect.left + 5, desktopRect.top + 5, (windowRect.right - windowRect.left), (windowRect.bottom - windowRect.top), HWND_DESKTOP, nullptr, this->hInstance, nullptr);
 		if (this->hWnd == nullptr)
@@ -238,7 +237,7 @@ void Window::MsgBoxInfo(const HorseRadish::String &msg)
 {
 	wchar_t msgConverted[512];
 
-	msg.Convert(HorseRadish::String::Windows, msgConverted, sizeof(msgConverted));
+	msg.Convert(HorseRadish::String::Encoding::Windows, msgConverted, sizeof(msgConverted));
 	MessageBox(nullptr, msgConverted, L"Info", MB_OK | MB_ICONINFORMATION);
 }
 
@@ -246,7 +245,7 @@ void Window::MsgBoxInfo(const char * const msg)
 {
 	HorseRadish::String msgConvertida;
 
-	msgConvertida.Set(HorseRadish::String::UTF8, msg);
+	msgConvertida.Set(HorseRadish::String::Encoding::UTF8, msg);
 	Window::MsgBoxInfo(msgConvertida);
 }
 
@@ -254,7 +253,7 @@ void Window::MsgBoxWarn(const HorseRadish::String &msg)
 {
 	wchar_t msgConverted[512];
 
-	msg.Convert(HorseRadish::String::Windows, msgConverted, sizeof(msgConverted));
+	msg.Convert(HorseRadish::String::Encoding::Windows, msgConverted, sizeof(msgConverted));
 	MessageBox(nullptr, msgConverted, L"Warning", MB_OK | MB_ICONWARNING);
 }
 
@@ -262,7 +261,7 @@ void Window::MsgBoxWarn(const char * const msg)
 {
 	HorseRadish::String msgConverted;
 
-	msgConverted.Set(HorseRadish::String::UTF8, msg);
+	msgConverted.Set(HorseRadish::String::Encoding::UTF8, msg);
 	Window::MsgBoxWarn(msgConverted);
 }
 
@@ -270,7 +269,7 @@ void Window::MsgBoxError(const HorseRadish::String &msg)
 {
 	wchar_t msgConverted[512];
 
-	msg.Convert(HorseRadish::String::Windows, msgConverted, sizeof(msgConverted));
+	msg.Convert(HorseRadish::String::Encoding::Windows, msgConverted, sizeof(msgConverted));
 	MessageBox(nullptr, msgConverted, L"Error", MB_OK | MB_ICONERROR);
 }
 
@@ -278,7 +277,7 @@ void Window::MsgBoxError(const char * const msg)
 {
 	HorseRadish::String msgConverted;
 
-	msgConverted.Set(HorseRadish::String::UTF8, msg);
+	msgConverted.Set(HorseRadish::String::Encoding::UTF8, msg);
 	Window::MsgBoxError(msgConverted);
 }
 
@@ -289,7 +288,7 @@ bool Window::CommandLineHasParam(PWSTR cmdLine, const HorseRadish::hChar * const
 	if ((cmdLine == nullptr) || (parameterName == nullptr))
 		return false;
 
-	commandLine.Set(HorseRadish::String::Windows, cmdLine);
+	commandLine.Set(HorseRadish::String::Encoding::Windows, cmdLine);
 
 	for(HorseRadish::String::Tokenizer tok(commandLine, ' '); tok.IsLast() == false; )
 	{
@@ -315,7 +314,7 @@ bool Window::CommandLineGetParam(PWSTR cmdLine, const HorseRadish::hChar * const
 	if ((cmdLine == nullptr) || (parameterName == nullptr))
 		return false;
 
-	commandLine.Set(HorseRadish::String::Windows, cmdLine);
+	commandLine.Set(HorseRadish::String::Encoding::Windows, cmdLine);
 
 	for(HorseRadish::String::Tokenizer tok(commandLine, ' '); tok.IsLast() == false; )
 	{
@@ -440,7 +439,7 @@ OpenglContext::OpenglContext(const Window * const window, const HorseRadish::hCh
 
 	{
 		wchar_t openGLModuleNameWChar[128];
-		HorseRadish::UTF::ConvertUTF8To(openGLModuleName, HorseRadish::UTF::Windows, openGLModuleNameWChar, sizeof(openGLModuleNameWChar));
+		HorseRadish::UTF::ConvertUTF8To(openGLModuleName, HorseRadish::UTF::Encoding::Windows, openGLModuleNameWChar, sizeof(openGLModuleNameWChar));
 
 		openglModule = GetModuleHandle(openGLModuleNameWChar);
 		if (openglModule == nullptr)

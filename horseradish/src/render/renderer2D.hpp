@@ -1,6 +1,4 @@
 #pragma once
-#ifndef __HR_RENDER_RENDERER_2D__
-#define __HR_RENDER_RENDERER_2D__
 
 #include "renderer.hpp"
 
@@ -60,5 +58,3 @@ namespace HorseRadish
 
 	}
 }
-
-#endif

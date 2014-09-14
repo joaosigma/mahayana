@@ -14,7 +14,6 @@
 #include <time.h>
 #include <float.h>
 #include <process.h>
-#include <windows.h>
 #include <thread>
 #include <atomic>
 
@@ -30,8 +29,6 @@
 #include "common\types.hpp"
 #include "common\Encoders.hpp"
 #include "common\hashing.hpp"
-#include "common\common.hpp"
-#include "common\memcontainers.hpp"
 #include "common\timer.hpp"
 #include "common\random.hpp"
 #include "common\utf.hpp"
@@ -45,7 +42,6 @@
 #include "common\logger.hpp"
 #include "common\sorting.hpp"
 #include "common\math.hpp"
-#include "common\smartpointers.hpp"
 #include "common\opengl\openGL.hpp"
 #include "common\opengl\openGLext.hpp"
 #include "common\opengl\objects.hpp"
@@ -739,13 +735,13 @@ void parseAppConfFile(const HorseRadish::IO::Path &filePath)
 	HorseRadish::Streams::FileStream fileStream(filePath, true, false);
 
 	//crio um stream para poder mais facilmente ler cada linha individualmente
-	HorseRadish::Streams::StreamReader streamReader(&fileStream);
+	HorseRadish::Streams::StreamReader streamReader(fileStream);
 
 	//enquanto não chegar ao fim do documento
 	while(streamReader.CanRead() == true)
 	{
 		//leio a linha
-		if (streamReader.ReadLineString(linhaDados, HorseRadish::String::UTF8) <= 0)
+		if (streamReader.ReadLineString(linhaDados, HorseRadish::String::Encoding::UTF8) <= 0)
 			continue;
 
 		//se for um comentário
@@ -802,7 +798,7 @@ bool systemInitialize(const HINSTANCE hInstance, const PWSTR lpCmdLine)
 	{
 		//só aceito estes dois valores
 		if ((processPriority == 1) || (processPriority == 2))
-			HorseRadish::Platform::SetProcessPriority( (processPriority == 1) ? HorseRadish::Platform::High : HorseRadish::Platform::Highest );
+			HorseRadish::Platform::SetProcessPriority((processPriority == 1) ? HorseRadish::Platform::PriorityType::High : HorseRadish::Platform::PriorityType::Highest);
 	}
 
 	//verifico se foi pedido para ficar em modo de editor
@@ -827,7 +823,7 @@ bool systemInitialize(const HINSTANCE hInstance, const PWSTR lpCmdLine)
 		return false;
 
 	//monto a directoria actual e a anterior
-	auto currentFolder = HorseRadish::IO::Path(HorseRadish::IO::Path::CurrentFolder);
+	auto currentFolder = HorseRadish::IO::Path(HorseRadish::IO::Path::KnownPath::CurrentFolder);
 	gbFileSystem->MountPath(currentFolder, nullptr);
 	currentFolder.RemoveLastComponent();
 	gbFileSystem->MountPath(currentFolder, nullptr);
@@ -916,29 +912,29 @@ void writeSystemInfo(Console &console)
 		if (HorseRadish::Machine::CPUGetProcessorName(auxInfo) == true)
 			console.LogTab(HorseRadish::String("CPU processor name: %s.", auxInfo.GetData()).GetData(), 2);
 
-		HorseRadish::Platform::GetSystemInfo(HorseRadish::Platform::MemoryTotal, memTotal);
+		HorseRadish::Platform::GetSystemInfo(HorseRadish::Platform::SystemInfo::MemoryTotal, memTotal);
 		auxInfo.SetMemory(memTotal);
 		console.LogTab(HorseRadish::String("Total physical memory: %s", auxInfo.GetData()).GetData(), 2);
 
-		HorseRadish::Platform::GetSystemInfo(HorseRadish::Platform::MemoryFree, memFree);
+		HorseRadish::Platform::GetSystemInfo(HorseRadish::Platform::SystemInfo::MemoryFree, memFree);
 		auxInfo.SetMemory(memFree);
 		console.LogTab(HorseRadish::String("Free physical memory: %s", auxInfo.GetData()).GetData(), 2);
 
-		HorseRadish::Platform::GetSystemInfo(HorseRadish::Platform::DisplayWidth, displayWidth);
-		HorseRadish::Platform::GetSystemInfo(HorseRadish::Platform::DisplayHeight, displayHeight);
-		HorseRadish::Platform::GetSystemInfo(HorseRadish::Platform::DisplayColorBits, displayColorBits);
-		HorseRadish::Platform::GetSystemInfo(HorseRadish::Platform::DisplayFrequency, displayFrequency);
+		HorseRadish::Platform::GetSystemInfo(HorseRadish::Platform::SystemInfo::DisplayWidth, displayWidth);
+		HorseRadish::Platform::GetSystemInfo(HorseRadish::Platform::SystemInfo::DisplayHeight, displayHeight);
+		HorseRadish::Platform::GetSystemInfo(HorseRadish::Platform::SystemInfo::DisplayColorBits, displayColorBits);
+		HorseRadish::Platform::GetSystemInfo(HorseRadish::Platform::SystemInfo::DisplayFrequency, displayFrequency);
 		console.LogTab(HorseRadish::String("Desktop resolution: %dx%dx%d@%d", displayWidth, displayHeight, displayColorBits, displayFrequency).GetData(), 2);
 
-		HorseRadish::Platform::GetSystemInfo(HorseRadish::Platform::OperatingSystemName, auxInfo);
+		HorseRadish::Platform::GetSystemInfo(HorseRadish::Platform::SystemInfo::OperatingSystemName, auxInfo);
 		console.LogTab(HorseRadish::String("Operating system: %s", auxInfo.GetData()).GetData(), 2);
 
 		console.LogTab(HorseRadish::Platform::IsArch64() ? "Build type: x86 64bit" : "Build type: x86 32bit", 2);
 
-		HorseRadish::Platform::GetSystemInfo(HorseRadish::Platform::MachineName, auxInfo);
+		HorseRadish::Platform::GetSystemInfo(HorseRadish::Platform::SystemInfo::MachineName, auxInfo);
 		console.LogTab(HorseRadish::String("Machine name: %s", auxInfo.GetData()).GetData(), 2);
 
-		HorseRadish::Platform::GetSystemInfo(HorseRadish::Platform::CurrentUsername, auxInfo);
+		HorseRadish::Platform::GetSystemInfo(HorseRadish::Platform::SystemInfo::CurrentUsername, auxInfo);
 		console.LogTab(HorseRadish::String("User name: %s", auxInfo.GetData()).GetData(), 2);
 
 	//para testar UTF8
@@ -1144,7 +1140,7 @@ bool windowInitialize()
 		gbMainConsole->Log("#150,150,0.->#255,255,255.Windows system (editor) initialized.");*/
 
 		//qual o nome base a usar para criar a string
-		baseName.SetPrintf(HorseRadish::String::UTF8, "horseradish_%d", GetCurrentProcessId());
+		baseName.SetPrintf(HorseRadish::String::Encoding::UTF8, "horseradish_%d", GetCurrentProcessId());
 
 		//TODO: isto não deveria estr em ANSI
 		//registo uma mensagem para falar com o editor
@@ -1226,23 +1222,17 @@ bool windowInitialize()
 static
 void windowShutdown()
 {
-	//limpo isto tudo
 	//SAudio::SAudioClose();
 
-	//apagar algumas coisas
 	delete gbRawInput;
 	gbRawInput = nullptr;
 
-	//basta fechar a janela
 	gbWindow->WindowKill();
 
-	//se estou no editor tenho de fechar algumas coisas
 	if (gbEditorParam != nullptr)
 	{
-		//espero pelo mutex
 		WaitForSingleObject(gbEditorParam->hMutex, INFINITE);
 
-		//fecho os handles todos que for preciso
 		if (gbEditorParam->mappedBuffer != nullptr)
 			UnmapViewOfFile(gbEditorParam->mappedBuffer); 
 		if (gbEditorParam->hMapObject != nullptr)
@@ -1254,12 +1244,10 @@ void windowShutdown()
 		if (gbEditorParam->hMutex != nullptr)
 			CloseHandle(gbEditorParam->hMutex);
 		
-		//limpo tudo agora
 		delete gbEditorParam;
 		gbEditorParam = nullptr;
 	}
 
-	//não esqueçer a janela
 	delete gbWindow;
 	gbWindow = nullptr;
 }
@@ -1267,7 +1255,6 @@ void windowShutdown()
 static
 void showInitialCredits(HorseRadish::Render::Renderer2D * const renderData, OpenglContext * const glContext, HorseRadish::OpenGL::Tools::Viewport * const renderViewport)
 {
-	VideoStream *videoStream;
 	float videoColor;
 	int videoWidth, videoHeight;
 	HorseRadish::hInt64 frameLastID;
@@ -1275,14 +1262,11 @@ void showInitialCredits(HorseRadish::Render::Renderer2D * const renderData, Open
 	bool videoExiting, texUpdated;
 	HorseRadish::Timer timerSaida;
 
-	//preciso de inicializar a componente do video
 	VideoStream::Initialize();
 
-	//preciso de ficar em projecção 2D
 	renderViewport->setProjection(HorseRadish::OpenGL::Tools::Viewport::Proj2D);
 	renderViewport->updateGL();
 
-	//preparo algumas coisas
 	HorseRadish::OpenGL::glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	HorseRadish::OpenGL::glDisable(GL_BLEND);
 	HorseRadish::OpenGL::glDisable(GL_DEPTH_TEST);
@@ -1290,58 +1274,44 @@ void showInitialCredits(HorseRadish::Render::Renderer2D * const renderData, Open
 	HorseRadish::OpenGL::glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 	HorseRadish::OpenGL::glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
-	//mostro tudo a preto
 	HorseRadish::OpenGL::glClear(GL_COLOR_BUFFER_BIT);
 	glContext->SwapBuffers();
 
-	//abro o ficheiro com o video
-	videoStream = new VideoStream(3, PixelFormat::PIX_FMT_BGR24, "..\\media\\icredits.mkv");
+	auto videoStream = new VideoStream(3, PixelFormat::PIX_FMT_BGR24, "..\\media\\icredits.mkv");
 	if ((videoStream == nullptr) || (videoStream->IsValid() == false))
 	{
-		//ele pode existir (ou seja, está inválido)
 		if (videoStream != nullptr)
 			delete videoStream;
 
-		//posso sair
 		videoStream = nullptr;
 		return;
 	}
 
-	//preciso das dimensões do video
 	videoStream->GetVideoDims(videoWidth, videoHeight);
 
-	//para ajudar
 	auto glImmediateMode = renderData->glImmediateMode;
 	auto glObjects = new HorseRadish::OpenGL::Objects::ObjectsManager(glContext);
 
-	//crio a textura que vai mostrar o video
 	auto texVideo = glObjects->CreateRect(true, nullptr, videoWidth, videoHeight, HorseRadish::OpenGL::Objects::ObjectsManager::RGBA32);
 
-	//o PBO que vou usar para transferir as coisas para a textura criada
 	auto pboVideo = (HorseRadish::OpenGL::Objects::PixelBuffer*)glObjects->ObjectCreate(HorseRadish::OpenGL::Objects::ObjectsManager::PixelUnpackBuffer);
 	if (pboVideo != nullptr)
 	{
-		//crio espaço no PBO
 		pboVideo->Bind();
 		pboVideo->LoadBuffer(nullptr, videoStream->GetVideoFrameDataSize(), HorseRadish::OpenGL::Objects::PixelBuffer::Stream);
 	}
 
-	//posso usar o programa do texto para mostrar a textura
 	HorseRadish::OpenGL::glUseProgram(renderData->shaders.prog2DText->glID);
 	HorseRadish::OpenGL::glUniform1i(HorseRadish::OpenGL::glGetUniformLocation(renderData->shaders.prog2DText->glID, "texTextSampler"), 0);
 	HorseRadish::OpenGL::glUniformMatrix4fv(HorseRadish::OpenGL::glGetUniformLocation(renderData->shaders.prog2DText->glID, "transformationMatrix"), 1, GL_FALSE, renderViewport->getProj2D());
 
-	//preciso de calcular o rectangulo onde devo mostrar o video
 	videoStream->GetVideoRect(renderViewport->getWidth(), renderViewport->getHeight(), true, videoRect);
 
-	//por omissão
 	frameLastID = -1;
 	texUpdated = false;
 	videoExiting = false;
 	videoColor = 1.0f;
-	
 
-	//ciclo infinito da thread
 	while (appExitAction.load() == AppExitAction::NONE)
 	{
 		bool frameIsAhead;
@@ -1349,103 +1319,80 @@ void showInitialCredits(HorseRadish::Render::Renderer2D * const renderData, Open
 		double frameDurationS;
 		const void* frameData;
 
-		//limpo qualquer coisa antes
 		HorseRadish::OpenGL::glClear(GL_COLOR_BUFFER_BIT);
 
-		//se já estou de saída
 		if (videoExiting == true)
 		{
-			//se já acabei
 			if (videoColor <= 0.0f)
 				break;
 
-			//ajusto a cor
 			videoColor = 1.0f - timerSaida.GetTimeS();
 		}
 
-		//tiro o ponteiro para o buffer da frame (se já não existe, ou o relógio se atrasou ou cheguei ao fim do video)
 		frameData = videoStream->GetFrame(frameIsAhead, frameID, frameDurationS);
 		if ((frameData == nullptr) && (frameIsAhead == false))
 			break;
 
-		//se a frame devolvida é outra
 		if ((frameData != nullptr) && (frameID != frameLastID))
 		{
-			//actualizo a textura com os novos dados (verifico se estou ou não a usar PBO)
 			if (pboVideo != nullptr)
 			{
-				//actualizo o PBO
 				pboVideo->UpdateBuffer(frameData, videoStream->GetVideoFrameDataSize(), 0);
 
-				//actualizo a textura com os dados do PBO
 				HorseRadish::OpenGL::glTextureSubImage2D(texVideo->glID, 0, 0, 0, videoWidth, videoHeight, GL_BGR, GL_UNSIGNED_BYTE, (void*)0);
 			}
 			else
 			{
-				//coloco os dados directamente na textura
 				HorseRadish::OpenGL::glTextureSubImage2D(texVideo->glID, 0, 0, 0, videoWidth, videoHeight, GL_BGR, GL_UNSIGNED_BYTE, frameData);
 			}
 
-			//já a posso usar
 			texUpdated = true;
 
-			//guardo o novo ID
 			frameLastID = frameID;
 		}
 
-		//se já posso usar a textura
 		if (texUpdated == true)
 		{
 			texVideo->Bind(0);
 
-			//desenho o quadrado
-			glImmediateMode->BeginDraw(HorseRadish::OpenGL::Tools::ImmediateMode::Quads);
-				glImmediateMode->AddColorF((videoColor < 0.0f) ? 0.0f : videoColor);
+			glImmediateMode->BeginDraw(HorseRadish::OpenGL::Tools::ImmediateMode::GeometryType::Quads);
+			glImmediateMode->AddColorF((videoColor < 0.0f) ? 0.0f : videoColor);
 
-				glImmediateMode->AddTexCoord(0.0f, videoHeight);
-				glImmediateMode->AddPosition(videoRect.x, videoRect.y);
+			glImmediateMode->AddTexCoord(0.0f, videoHeight);
+			glImmediateMode->AddPosition(videoRect.x, videoRect.y);
 
-				glImmediateMode->AddTexCoord(videoWidth, videoHeight);
-				glImmediateMode->AddPosition(videoRect.x + videoRect.width, videoRect.y);
+			glImmediateMode->AddTexCoord(videoWidth, videoHeight);
+			glImmediateMode->AddPosition(videoRect.x + videoRect.width, videoRect.y);
 
-				glImmediateMode->AddTexCoord(videoWidth, 0.0f);
-				glImmediateMode->AddPosition(videoRect.x + videoRect.width, videoRect.y + videoRect.height);
+			glImmediateMode->AddTexCoord(videoWidth, 0.0f);
+			glImmediateMode->AddPosition(videoRect.x + videoRect.width, videoRect.y + videoRect.height);
 
-				glImmediateMode->AddTexCoord(0.0f, 0.0f);
-				glImmediateMode->AddPosition(videoRect.x, videoRect.y + videoRect.height);
+			glImmediateMode->AddTexCoord(0.0f, 0.0f);
+			glImmediateMode->AddPosition(videoRect.x, videoRect.y + videoRect.height);
 			glImmediateMode->EndDraw();
 		}
 
-		//espero pelo mutex (variável numMsgListaMain), mando a mensagem para o GUI da consola e liberto o mutex
 		if (gbThreadParams->numMsgListaMain > 0)
 		{
-			//tranco a consola e passo por todas as mensagens e actualizo a consola e o overlay
-			for(unsigned int curMsgIndex=0; curMsgIndex<gbThreadParams->numMsgListaMain; curMsgIndex++)
+			for (unsigned int curMsgIndex = 0; curMsgIndex < gbThreadParams->numMsgListaMain; curMsgIndex++)
 			{
-				//mando processar as teclas
 				if (gbThreadParams->listaMain[curMsgIndex].message == WM_KEYUP)
 				{
-					//digo que quero começar a sair do vídeo
 					timerSaida.ReStart();
 					videoExiting = true;
 				}
 			}
 
-			//já não tenho nada na lista
 			gbThreadParams->numMsgListaMain = 0;
 		}
 
-		//mando processar a próxima frame do video (não é necessário, mas dá sempre jeito fazê-lo aqui)
 		videoStream->Process();
 
-		//mostro o que desenhei
 		glContext->SwapBuffers();
 
-		//só faz sentido recalcular a duração da frame se ela já existir
 		frameDurationS = 0.0;
 		if (frameIsAhead == false)
 		{
-			//ao chamar videoStream->Process, posso tirar a duração da frame com mais precisão
 			frameDurationS = videoStream->GetFrameDuration(frameID);
 			if (frameDurationS < 0.01)
 				frameDurationS = 0.0;
@@ -1454,15 +1401,12 @@ void showInitialCredits(HorseRadish::Render::Renderer2D * const renderData, Open
 		std::this_thread::sleep_for(std::chrono::milliseconds(HorseRadish::Math::ftoi(frameDurationS * 1000.0)));
 	}
 
-	//limpar o último conteúdo
 	HorseRadish::OpenGL::glClear(GL_COLOR_BUFFER_BIT);
 	glContext->SwapBuffers();
 
-	//se tenho um PBO
 	if (pboVideo != nullptr)
 		pboVideo->Unbind();
 
-	//apago tudo o que tiver de apagar
 	delete glObjects;
 	delete videoStream;
 	glObjects = nullptr;
@@ -1651,11 +1595,11 @@ void renderThreadFunc()
 		HorseRadish::Streams::FileStream fileStream(HorseRadish::IO::Path("c:/Users/Sigma/Desktop/test_scene.hrf"), true, false);
 
 		renderData->Cleanup();
-		if (renderData->ImportHRF(&fileStream) < 0)
+		if (renderData->ImportHRF(fileStream) < 0)
 			renderData->Cleanup();
 		renderData->LoadData(glObjectManager, gbFileSystem, texManagerMain);
 
-		rendererDeferred->LoadWorld(gbFileSystem);
+		rendererDeferred->LoadWorld(*gbFileSystem);
 	}
 	//**********
 	//***************
@@ -1844,7 +1788,6 @@ void renderThreadFunc()
 		timerFrame.ReStart();
 	}
 
-	//apago o GUI da consola
 	delete consolaGUI;
 	consolaGUI = nullptr;
 
@@ -1854,26 +1797,19 @@ void renderThreadFunc()
 	delete renderer2D;
 	renderer2D = nullptr;
 
-	//apago tudo o que esteja na cena e dou cabo da própria cena
 	renderData->Cleanup();
 
-	//já não preciso de contar nada do GPU
 	//delete renderData->stats.gpuCounter;
 	//renderData->stats.gpuCounter = nullptr;
 
-	//apago tudo do render
-
-	//já não preciso disto
 	delete camera;
 	delete viewport;
 	camera = nullptr;
 	viewport = nullptr;
 
-	//posso apagar o render
 	delete renderData;
 	renderData = nullptr;
 
-	//posso ver-me livre das texturas
 	delete texManagerMain;
 	delete texManagerRender;
 	delete texManagerGUI;
@@ -1881,11 +1817,9 @@ void renderThreadFunc()
 	texManagerRender = nullptr;
 	texManagerGUI = nullptr;
 
-	//limpo isto tudo
 	delete glObjectManager;
 	glObjectManager = nullptr;
 
-	//apago o contexto
 	delete glContext;
 	glContext = nullptr;
 }
@@ -1912,29 +1846,23 @@ bool messageLoop()
 	return true;
 }
 
-//funções para processar as mensagens vindas do editor
 void editorProcessMemory()
 {
 	int mensagemTipo;
 
-	//faço reset ào evento e tenho sempre de fazer lock à memória
 	ResetEvent(gbEditorParam->hEventEditorWrote);
 	WaitForSingleObject(gbEditorParam->hMutex,INFINITE);
 
-	//leio o tipo de mensagem
 	mensagemTipo = ((int*)gbEditorParam->mappedBuffer)[0];
 
-	//se for do tipo 2 (para carregar uma geometria)
 	if (mensagemTipo == 2)
 	{
 		HorseRadish::String pathFicheiro;
 		int formatoInterno;
 
-		//leio o que me mandaram
 		pathFicheiro.Set(HorseRadish::String::Encoding::UTF8, gbEditorParam->mappedBufferChar + sizeof(int));
 		formatoInterno = ((int*)(gbEditorParam->mappedBufferChar + sizeof(int) + pathFicheiro.GetSizeBytes() + 1))[0];
 
-		//meto o inicio a zero e posso libertar o mutex
 		((int*)gbEditorParam->mappedBufferChar)[0] = 0;
 		ReleaseMutex(gbEditorParam->hMutex);
 
@@ -1946,21 +1874,17 @@ void editorProcessMemory()
 static
 void editorProcessMessages(WPARAM wParam, LPARAM lParam)
 {
-	//se o editor está simplesmente a dizer "Olá"
 	if (wParam == 1)
 	{
-		//basta escrever olá no ecran
 		gbMainConsole->LogInfo("Editor said: Hi! I'm alive and well...");
 		//GUISMSAdd("Editor said: Hi! I'm alive and well...", CONSOLE_SMS_TIME, 0.0f, 1.0f, 0.0f);
 		return;
 	}
 
-	//alguem pressionou uma tecla ou o WM_MOUSEWHEEL
 	if ((wParam == 2) || (wParam == 3) || (wParam == 4) || (wParam == 5))
 	{
 		MSG msgAux;
 
-		//crio uma mensagem auxiliar para mandar para a consola
 		memset(&msgAux, 0, sizeof(MSG));
 		switch(wParam)
 		{
@@ -1971,7 +1895,6 @@ void editorProcessMessages(WPARAM wParam, LPARAM lParam)
 		}
 		msgAux.wParam = lParam;
 		
-		//mando esta mensagem para a consola
 		//GUIConsoleMSG(&msgAux);
 		return;
 	}
@@ -1979,7 +1902,6 @@ void editorProcessMessages(WPARAM wParam, LPARAM lParam)
 	gbMainConsole->Log(HorseRadish::String("Mensagem id: %d", wParam).GetData());
 }
 
-//função principal para receber mensagens do windows
 LRESULT CALLBACK windowsMessages(HWND hWnd, UINT messageID, WPARAM wParam, LPARAM lParam)
 {
 	if (messageID == WM_INPUT)
@@ -2042,7 +1964,6 @@ LRESULT CALLBACK windowsMessages(HWND hWnd, UINT messageID, WPARAM wParam, LPARA
 						
 		case WM_LBUTTONUP:
 		case WM_RBUTTONUP:
-						//se estou em modo de editor, ganho o focus
 						if (gbEditorParam != nullptr)
 						{
 							gbWindow->SetFocus();
@@ -2052,7 +1973,6 @@ LRESULT CALLBACK windowsMessages(HWND hWnd, UINT messageID, WPARAM wParam, LPARA
 						
 	}
 
-	//mando para o tratamento por omissão
 	return DefWindowProc(hWnd, messageID, wParam, lParam);
 }
 
@@ -2067,7 +1987,7 @@ int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PWSTR lpCmdLine, int n
 	int infoValue;
 
 	//check if we have a clean boot
-	if ((HorseRadish::Platform::GetSystemInfo(HorseRadish::Platform::CleanBoot, infoValue) == false) || (infoValue == 0))
+	if ((HorseRadish::Platform::GetSystemInfo(HorseRadish::Platform::SystemInfo::CleanBoot, infoValue) == false) || (infoValue == 0))
 	{
 		Window::MsgBoxWarn("The OS did not boot normally!\nFor security reasons the application will now exit.");
 		return 0;

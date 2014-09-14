@@ -1,10 +1,6 @@
 #pragma once
-#ifndef __CONSOLE_GUI__
-#define __CONSOLE_GUI__
 
 #include "common\Platform.hpp"
-#include "common\Common.hpp"
-#include "common\Containers.hpp"
 #include "common\Timer.hpp"
 #include "common\String.hpp"
 #include "common\Primitives2D.hpp"
@@ -12,166 +8,165 @@
 #include "common\openGL\tools.hpp"
 #include "render\renderer2D.hpp"
 #include "render\rendererDeferred.hpp"
-
 #include "console.hpp"
+
+#include <vector>
 
 namespace HorseRadish
 {
-namespace Console
-{
-namespace UI
-{
-
-class ConsoleGUI
-{
-public:
-	class ConsoleTab
+	namespace Console
 	{
-	protected:
-		HorseRadish::String tabName;
-		HorseRadish::Primitives2D::Point<int> tabContentAreaPos, tabContentScreenDelta;
-		HorseRadish::Primitives2D::Size<int> tabContentAreaSize;
-		int tabTextAreaWidth;
+		namespace UI
+		{
+			class ConsoleGUI
+			{
+			public:
+				class ConsoleTab
+				{
+				protected:
+					HorseRadish::String tabName;
+					HorseRadish::Primitives2D::Point<int> tabContentAreaPos, tabContentScreenDelta;
+					HorseRadish::Primitives2D::Size<int> tabContentAreaSize;
+					int tabTextAreaWidth;
 
-	public:
-		ConsoleTab();
-		virtual ~ConsoleTab();
+				public:
+					ConsoleTab();
+					virtual ~ConsoleTab();
 
-		const HorseRadish::String* GetText();
-		int GetTextAreaWidth();
+					const HorseRadish::String* GetText();
+					int GetTextAreaWidth();
 
-		void SetTextAreaWidth(const int &width);
-		void SetContentAreaSize(const int &width, const int &height);
-		void SetContentAreaOrigin(const int &x, const int &y);
-		void SetContentScreenDelta(const int &x, const int &y);
-		
-		virtual void DrawContent(HorseRadish::Render::Renderer2D* const render2D, const HorseRadish::Matrix &transformMatrix) = 0;
-		virtual void ProcessMSG(const MSG * const msg) = 0;
-	};
+					void SetTextAreaWidth(const int &width);
+					void SetContentAreaSize(const int &width, const int &height);
+					void SetContentAreaOrigin(const int &x, const int &y);
+					void SetContentScreenDelta(const int &x, const int &y);
 
-	enum TypeSMS{
-		SMSFrame,
-		SMSTime
-		};
-	enum TypeFunction{
-		FunctionConsole = (1 << 0),
-		FunctionInfo = (1 << 1),
-		FunctionSMS = (1 << 2),
-		FunctionAll = 0xFFFF
-		};
+					virtual void DrawContent(HorseRadish::Render::Renderer2D* const render2D, const HorseRadish::Matrix &transformMatrix) = 0;
+					virtual void ProcessMSG(const MSG * const msg) = 0;
+				};
 
-private:
-	struct ConteudoSMS{
-		HorseRadish::String texto;
-		float cor[3], alpha;
-		TypeSMS type;
-		HorseRadish::Timer tempo;
-		bool fading;
-	};
+				enum TypeSMS{
+					SMSFrame,
+					SMSTime
+				};
+				enum TypeFunction{
+					FunctionConsole = (1 << 0),
+					FunctionInfo = (1 << 1),
+					FunctionSMS = (1 << 2),
+					FunctionAll = 0xFFFF
+				};
 
-	const HorseRadish::OpenGL::Objects::Texture *texConsoleLogo;
-	HorseRadish::Render::Renderer2D *renderData;
-	Console *mainConsole;
+			private:
+				struct ConteudoSMS{
+					HorseRadish::String texto;
+					float cor[3], alpha;
+					TypeSMS type;
+					HorseRadish::Timer tempo;
+					bool fading;
+				};
 
-	int consoleSelectedTab;
-	bool consoleVisible;
-	HorseRadish::Primitives2D::Rectangle<int> consoleRect;
-	HorseRadish::Primitives2D::Size<int> consoleLogoSize, consoleTabSpace;
-	HorseRadish::Containers::Array<ConsoleTab*> consoleTabPages;
-	
-	int infoNumVars, infoMaxWidth;
-	bool infoVisible;
-	HorseRadish::Containers::Array<HorseRadish::String> infoArrayVars;
-	
-	int smsMaxEntries, smsNumEntries;
-	bool smsVisible;
-	ConteudoSMS *smsEntries;
+				const HorseRadish::OpenGL::Objects::Texture *texConsoleLogo;
+				HorseRadish::Render::Renderer2D *renderData;
+				Console *mainConsole;
 
-	static const int tabContentMargin; //pixels
-	static const int infoVarSlack; //pixels
-	static const int smsMessageSlack; //pixels
-	static const float smsTimeVisible, smsTime2Hide; //segundos
+				int consoleSelectedTab;
+				bool consoleVisible;
+				std::vector<ConsoleTab*> consoleTabPages;
+				HorseRadish::Primitives2D::Rectangle<int> consoleRect;
+				HorseRadish::Primitives2D::Size<int> consoleLogoSize, consoleTabSpace;
 
-	void infoCheckWidth(const HorseRadish::OpenGL::Tools::Font * const guiFont);
-	void drawConsoleBackground(HorseRadish::Render::Renderer2D * const render2D, const HorseRadish::Matrix &transformMatrix, const float &consoleAlpha);
-	void drawConsole(HorseRadish::Render::Renderer2D * const render2D, const HorseRadish::OpenGL::Tools::Viewport * const hrViewport);
-	void drawInfo(HorseRadish::Render::Renderer2D * const render2D, const HorseRadish::OpenGL::Tools::Viewport * const hrViewport);
-	void drawSMS(HorseRadish::Render::Renderer2D * const render2D, const HorseRadish::OpenGL::Tools::Viewport * const hrViewport);
-public:
-	ConsoleGUI(Console *console, HorseRadish::Render::Renderer2D* const render2D, HorseRadish::OpenGL::Objects::ObjectsManager* const textureManager);
-	~ConsoleGUI();
+				int infoMaxWidth;
+				bool infoVisible;
+				std::vector<HorseRadish::String> infoArrayVars;
 
-	void Draw(const HorseRadish::OpenGL::Tools::Viewport * const hrViewport);
-	bool GUIVisivel(const TypeFunction &function) const;
+				int smsMaxEntries, smsNumEntries;
+				bool smsVisible;
+				ConteudoSMS *smsEntries;
 
-	ConsoleTab* ConsoleGetSelectedTab() const;
-	void ConsoleAddTab(ConsoleTab * const newConsoleTab);
-	void ConsoleProcessMSG(const MSG * const msg);
-	void ConsoleVisible(const bool visible);
-	bool ConsoleConsumesInput();
+				static const int tabContentMargin; //pixels
+				static const int infoVarSlack; //pixels
+				static const int smsMessageSlack; //pixels
+				static const float smsTimeVisible, smsTime2Hide; //segundos
 
-	void InfoAddVar(const char * const varName);
-	void InfoVisible(const bool visible);
+				void infoCheckWidth(const HorseRadish::OpenGL::Tools::Font * const guiFont);
+				void drawConsoleBackground(HorseRadish::Render::Renderer2D * const render2D, const HorseRadish::Matrix &transformMatrix, const float &consoleAlpha);
+				void drawConsole(HorseRadish::Render::Renderer2D * const render2D, const HorseRadish::OpenGL::Tools::Viewport * const hrViewport);
+				void drawInfo(HorseRadish::Render::Renderer2D * const render2D, const HorseRadish::OpenGL::Tools::Viewport * const hrViewport);
+				void drawSMS(HorseRadish::Render::Renderer2D * const render2D, const HorseRadish::OpenGL::Tools::Viewport * const hrViewport);
+			public:
+				ConsoleGUI(Console *console, HorseRadish::Render::Renderer2D* const render2D, HorseRadish::OpenGL::Objects::ObjectsManager* const textureManager);
+				~ConsoleGUI();
 
-	void SMSAdd(const char * const what, const TypeSMS &type, const float &r, const float &g, const float &b);
-	void SMSAdd(const char * const what, const TypeSMS &type);
-	void SMSVisible(const bool visible);
-};
+				void Draw(const HorseRadish::OpenGL::Tools::Viewport * const hrViewport);
+				bool GUIVisivel(const TypeFunction &function) const;
 
-class ConsoleUserHistory;
-class ConsoleUserPrompt;
+				ConsoleTab* ConsoleGetSelectedTab() const;
+				void ConsoleAddTab(ConsoleTab * const newConsoleTab);
+				void ConsoleProcessMSG(const MSG * const msg);
+				void ConsoleVisible(const bool visible);
+				bool ConsoleConsumesInput();
 
-class ConsoleTabConsole : public ConsoleGUI::ConsoleTab
-{
-	struct LINHA_TEXTO{
-		const void *metadata;
-		HorseRadish::String texto;
-		bool active;
-	}*listaTexto;
-	int numMaxLinhasTexto;
-	HorseRadish::Timer cursorTimer;
-	bool cursorVisivel;
-	ConsoleUserHistory *userHistory;
-	ConsoleUserPrompt *userPrompt;
-	Console *mainConsole;
-	int textoOffset;
+				void InfoAddVar(const char * const varName);
+				void InfoVisible(const bool visible);
 
-public:
-	ConsoleTabConsole(Console *mainConsole);
-	~ConsoleTabConsole();
+				void SMSAdd(const char * const what, const TypeSMS &type, const float &r, const float &g, const float &b);
+				void SMSAdd(const char * const what, const TypeSMS &type);
+				void SMSVisible(const bool visible);
+			};
 
-	void DrawContent(HorseRadish::Render::Renderer2D* const render2D, const HorseRadish::Matrix &transformMatrix);
-	void ProcessMSG(const MSG * const msg);
-	bool CriaTextoConsola(HorseRadish::Render::Renderer2D* const render2D);
-	void ActualizaTextoConsola();
-};
+			class ConsoleUserHistory;
+			class ConsoleUserPrompt;
 
-class ConsoleTabStats : public ConsoleGUI::ConsoleTab
-{
-public:
-	ConsoleTabStats();
-	~ConsoleTabStats();
+			class ConsoleTabConsole : public ConsoleGUI::ConsoleTab
+			{
+				struct LINHA_TEXTO{
+					const void *metadata;
+					HorseRadish::String texto;
+					bool active;
+				}*listaTexto;
+				int numMaxLinhasTexto;
+				HorseRadish::Timer cursorTimer;
+				bool cursorVisivel;
+				ConsoleUserHistory *userHistory;
+				ConsoleUserPrompt *userPrompt;
+				Console *mainConsole;
+				int textoOffset;
 
-	void DrawContent(HorseRadish::Render::Renderer2D* const render2D, const HorseRadish::Matrix &transformMatrix);
-	void ProcessMSG(const MSG * const msg);
-};
+			public:
+				ConsoleTabConsole(Console *mainConsole);
+				~ConsoleTabConsole();
 
-class ConsoleTabExtra : public ConsoleGUI::ConsoleTab
-{
-private:
-	int currentRT;
-	HorseRadish::Render::RendererDeferred *renderDeferred;
+				void DrawContent(HorseRadish::Render::Renderer2D* const render2D, const HorseRadish::Matrix &transformMatrix);
+				void ProcessMSG(const MSG * const msg);
+				bool CriaTextoConsola(HorseRadish::Render::Renderer2D* const render2D);
+				void ActualizaTextoConsola();
+			};
 
-public:
-	ConsoleTabExtra(HorseRadish::Render::RendererDeferred * const renderDeferred);
-	~ConsoleTabExtra();
+			class ConsoleTabStats : public ConsoleGUI::ConsoleTab
+			{
+			public:
+				ConsoleTabStats();
+				~ConsoleTabStats();
 
-	void DrawContent(HorseRadish::Render::Renderer2D * const render2D, const HorseRadish::Matrix &transformMatrix);
-	void ProcessMSG(const MSG * const msg);
-};
+				void DrawContent(HorseRadish::Render::Renderer2D* const render2D, const HorseRadish::Matrix &transformMatrix);
+				void ProcessMSG(const MSG * const msg);
+			};
 
-}//namespace UI
-}//namespace Console
-}//namespace HorseRadish
+			class ConsoleTabExtra : public ConsoleGUI::ConsoleTab
+			{
+			private:
+				int currentRT;
+				HorseRadish::Render::RendererDeferred *renderDeferred;
 
-#endif
+			public:
+				ConsoleTabExtra(HorseRadish::Render::RendererDeferred * const renderDeferred);
+				~ConsoleTabExtra();
+
+				void DrawContent(HorseRadish::Render::Renderer2D * const render2D, const HorseRadish::Matrix &transformMatrix);
+				void ProcessMSG(const MSG * const msg);
+			};
+
+		} //UI
+	} //Console
+} //HorseRadish
+

@@ -1560,7 +1560,7 @@ namespace HorseRadish
 				return false;
 
 			wchar_t openGLLibraryNameWChar[128];
-			HorseRadish::UTF::ConvertUTF8To(glLibName, HorseRadish::UTF::Windows, openGLLibraryNameWChar, sizeof(openGLLibraryNameWChar));
+			HorseRadish::UTF::ConvertUTF8To(glLibName, HorseRadish::UTF::Encoding::Windows, openGLLibraryNameWChar, sizeof(openGLLibraryNameWChar));
 
 			openGLModule = LoadLibrary(openGLLibraryNameWChar);
 			return (openGLModule != nullptr);

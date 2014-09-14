@@ -2,9 +2,6 @@
 #include "common\Mesh.hpp"
 #include "common\MeshFactory.hpp"
 
-#include <windows.h>
-#include <stdlib.h>
-
 using namespace HorseRadish;
 
 #define SMD_FLAG_TEX	(1<<0)
@@ -14,7 +11,6 @@ using namespace HorseRadish;
 static
 bool carregaSMD(const void * const fileData, const unsigned int fileSize, Geometry::Model * const modelo)
 {
-	Geometry::Model::MeshData *curModel;
 	unsigned char *fwalker;
 	Geometry::Mesh *curMesh;
 	float *walker;
@@ -48,10 +44,10 @@ bool carregaSMD(const void * const fileData, const unsigned int fileSize, Geomet
 			return false;
 
 		//crio uma nova mesh
-		modelo->arrayMesh.Add();
+		modelo->arrayMesh.push_back(Geometry::Model::MeshData());
 
 		//qual o modelo e mesh que estou a usar
-		curModel = &modelo->arrayMesh[curIndex];
+		auto curModel = &modelo->arrayMesh[modelo->arrayMesh.size() - 1];
 		curMesh = &curModel->mesh;
 
 		//leio o nome do objecto

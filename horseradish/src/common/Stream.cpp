@@ -1,4 +1,5 @@
 #include "Stream.hpp"
+
 #include "ScopedAction.hpp"
 #include "UTF.hpp"
 
@@ -7,779 +8,641 @@
 
 namespace HorseRadish
 {
-namespace Streams
-{
+	namespace Streams
+	{
+		Stream::~Stream()
+		{}
 
-//§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§
-//§§§§§§	 Stream class	§§§§§
-//§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§
-
-//tenho de declarar um corpo ao destructor
-Stream::~Stream() 
-{}
-
-//§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§
-//§§§§§§	 MemoryStream class	§§§§§
-//§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§
-MemoryStream::MemoryStream(const void * const bufferData, int bufferSize, bool canWrite, const MemoryStream::ManagementType &managementType)
-{
-	//guardo simplesmente isto tudo
-	this->data = bufferData;
-	this->dataSize = bufferSize;
-	this->canWrite = canWrite;
-	this->managementType = managementType;
-
-	//ajusto algumas coisas
-	if ((this->data == nullptr) || (this->dataSize < 0))
-		this->dataSize = 0;
-
-	//não estou fechado
-	this->closed = false;
-
-	//ajusto este ponteiros
-	this->dataBegin = reinterpret_cast<const hUInt8*>(this->data);
-	this->dataEnd = this->dataBegin + this->dataSize;
-	this->dataWalker = this->dataBegin;
-}
-MemoryStream::~MemoryStream()
-{
-	//se ainda não fechei, fecho
-	if (this->closed == false)
-		this->Close();
-}
-
-void MemoryStream::Close()
-{
-	//como é para fechar
-	this->closed = true;
-
-	//se for para gerir a memória
-	if ((this->managementType != ManagementType::None) && (this->data != nullptr))
-		free((void*)this->data);
-
-	//limpo o resto
-	this->data = nullptr;
-	this->dataBegin = nullptr;
-	this->dataEnd = nullptr;
-	this->dataWalker = nullptr;
-	this->dataSize = 0;
-	this->canWrite = false;
-}
-void MemoryStream::Flush()
-{ }
-
-bool MemoryStream::CanRead() const
-{
-	//se já fechou
-	if (closed == true)
-		return false;
-
-	//posso ler se ainda não cheguei ao fim
-	return (this->dataWalker < this->dataEnd);
-}
-bool MemoryStream::CanRead(int numBytes) const
-{
-	//se nem sequer posso ler
-	if (this->CanRead() == false)
-		return false;
-
-	//não dá jeito
-	if (numBytes < 0)
-		return false;
-
-	//basta verificar quanto posso ler
-	return (numBytes <= (this->dataEnd - this->dataWalker));
-}
-bool MemoryStream::CanWrite() const
-{
-	//nunca posso escrever
-	return this->canWrite;
-}
-bool MemoryStream::CanWrite(int numBytes) const
-{
-	//nunca posso escrever
-	return this->canWrite;
-}
-int MemoryStream::GetLength() const
-{
-	//basta devolver isto
-	return dataSize;
-}
-int MemoryStream::GetPosition() const
-{
-	//basta fazer estas contas
-	return (this->dataWalker - this->dataBegin);
-}
-
-int MemoryStream::Read(void * const outBuffer, int numBytes)
-{
-	//cuidado para não ler mais do que devia
-	if (numBytes > (this->dataEnd - this->dataWalker))
-		numBytes = (this->dataEnd - this->dataWalker);
-
-	//se não for para ler nada
-	if (numBytes <= 0)
-		return 0;
-	
-	//copio os bytes, avanço o ponteiro e já está
-	memcpy(outBuffer, this->dataWalker, numBytes);
-	this->dataWalker += numBytes;
-	return numBytes;
-}
-
-int MemoryStream::ReadLine(void * const outBuffer, const int bufferSize)
-{
-	int lerMesmo;
-	char *outBufferWalker;
-
-	//verificar isto
-	if ((outBuffer == nullptr) || (bufferSize <= 0))
-		return 0;
-
-	//se nem sequer posso ler nada
-	if (this->CanRead() == false)
-		return 0;
-
-	//vou precisar disto
-	outBufferWalker = reinterpret_cast<char*>(outBuffer);
-	
-	//tenho de ter cuidado com o numero de bytes que vou ler para nao 
-	//arrebentar o buffer do ficheiro
-	lerMesmo = 0;
-	do{
-		//se estou numa nova linha
-		if (*this->dataWalker == '\n')
+		MemoryStream::MemoryStream(MemoryStream&& stream)
 		{
-			//ignoro a própria linha e posso sair
-			this->dataWalker++;
-			return lerMesmo;
+			this->data = stream.data;
+			this->dataBegin = stream.dataBegin;
+			this->dataEnd = stream.dataEnd;
+			this->dataWalker = stream.dataWalker;
+			this->dataSize = stream.dataSize;
+			this->closed = stream.closed;
+			this->canWrite = stream.canWrite;
+			this->managementType = stream.managementType;
+
+			stream.dataSize = 0;
+			stream.closed = true;
+			stream.canWrite = false;
+			stream.managementType = ManagementType::None;
+			stream.data = stream.dataBegin = stream.dataEnd = stream.dataWalker = nullptr;
 		}
 
-		//se estou numa nova linha
-		if (*this->dataWalker == '\r')
+		MemoryStream::MemoryStream(const void * const bufferData, int bufferSize, bool canWrite, const MemoryStream::ManagementType &managementType)
+			: data(bufferData)
+			, dataSize(bufferSize)
+			, canWrite(canWrite)
+			, managementType(managementType)
 		{
-			//ignoro a própria linha
-			this->dataWalker++;
+			if ((this->data == nullptr) || (this->dataSize < 0))
+				this->dataSize = 0;
 
-			//se ainda posso ler
-			if (this->dataWalker < this->dataEnd)
-			{
-				//se ainda estou numa linha (o caso \r\n)
+			this->closed = false;
+
+			this->dataBegin = reinterpret_cast<const hUInt8*>(this->data);
+			this->dataEnd = this->dataBegin + this->dataSize;
+			this->dataWalker = this->dataBegin;
+		}
+
+		MemoryStream::~MemoryStream()
+		{
+			if (this->closed == false)
+				this->Close();
+		}
+
+		void MemoryStream::Close()
+		{
+			this->closed = true;
+
+			if ((this->managementType != ManagementType::None) && (this->data != nullptr))
+				free((void*)this->data);
+
+			this->data = nullptr;
+			this->dataBegin = nullptr;
+			this->dataEnd = nullptr;
+			this->dataWalker = nullptr;
+			this->dataSize = 0;
+			this->canWrite = false;
+		}
+
+		void MemoryStream::Flush()
+		{ }
+
+		bool MemoryStream::CanRead() const
+		{
+			if (closed == true)
+				return false;
+
+			return (this->dataWalker < this->dataEnd);
+		}
+
+		bool MemoryStream::CanRead(int numBytes) const
+		{
+			if (this->CanRead() == false)
+				return false;
+
+			if (numBytes < 0)
+				return false;
+
+			return (numBytes <= (this->dataEnd - this->dataWalker));
+		}
+
+		bool MemoryStream::CanWrite() const
+		{
+			return this->canWrite;
+		}
+
+		bool MemoryStream::CanWrite(int numBytes) const
+		{
+			return this->canWrite;
+		}
+
+		int MemoryStream::GetLength() const
+		{
+			return dataSize;
+		}
+
+		int MemoryStream::GetPosition() const
+		{
+			return (this->dataWalker - this->dataBegin);
+		}
+
+		int MemoryStream::Read(void * const outBuffer, int numBytes)
+		{
+			if (numBytes > (this->dataEnd - this->dataWalker))
+				numBytes = (this->dataEnd - this->dataWalker);
+
+			if (numBytes <= 0)
+				return 0;
+
+			memcpy(outBuffer, this->dataWalker, numBytes);
+			this->dataWalker += numBytes;
+			return numBytes;
+		}
+
+		int MemoryStream::ReadLine(void * const outBuffer, const int bufferSize)
+		{
+			if ((outBuffer == nullptr) || (bufferSize <= 0))
+				return 0;
+
+			if (this->CanRead() == false)
+				return 0;
+
+			auto outBufferWalker = reinterpret_cast<char*>(outBuffer);
+
+			auto actualRead = 0;
+			do{
 				if (*this->dataWalker == '\n')
+				{
 					this->dataWalker++;
+					return actualRead;
+				}
+
+				if (*this->dataWalker == '\r')
+				{
+					this->dataWalker++;
+
+					if (this->dataWalker < this->dataEnd)
+					{
+						if (*this->dataWalker == '\n')
+							this->dataWalker++;
+					}
+
+					return actualRead;
+				}
+
+				*outBufferWalker = *this->dataWalker;
+
+				actualRead++;
+				this->dataWalker++;
+
+				if (actualRead >= bufferSize)
+					return -actualRead;
+
+				outBufferWalker++;
+			} while (this->dataWalker < this->dataEnd);
+
+			return -actualRead;
+		}
+
+		int MemoryStream::ReadUntil(void * const outBuffer, const int bufferSize, const char goal)
+		{
+			if ((outBuffer == nullptr) || (bufferSize <= 0))
+				return 0;
+
+			if (this->CanRead() == false)
+				return 0;
+
+			auto outBufferWalker = reinterpret_cast<char*>(outBuffer);
+
+			auto actualRead = 0;
+			do{
+				*outBufferWalker = *this->dataWalker;
+
+				actualRead++;
+				this->dataWalker++;
+
+				if (*outBufferWalker == goal)
+					return actualRead;
+
+				if (actualRead >= bufferSize)
+					return -actualRead;
+
+				outBufferWalker++;
+			} while (this->dataWalker < this->dataEnd);
+
+			return -actualRead;
+		}
+
+		const void* MemoryStream::ReadContent(int &contentSize, bool &contentCopied) const
+		{
+			contentSize = this->dataSize;
+
+			contentCopied = false;
+
+			return this->data;
+		}
+
+		int MemoryStream::Write(const void * const inBuffer, int numBytes)
+		{
+			if (this->canWrite == false)
+				return 0;
+
+			memcpy((void*)this->dataWalker, inBuffer, numBytes);
+			this->dataWalker += numBytes;
+			return numBytes;
+		}
+
+		int MemoryStream::Seek(const int offset, const SeekOrigin seekOrigin)
+		{
+			if (seekOrigin == Stream::Begin)
+				this->dataWalker = this->dataBegin + offset;
+			else if (seekOrigin == Stream::End)
+				this->dataWalker = this->dataEnd + offset;
+			else if (seekOrigin == Stream::Current)
+				this->dataWalker += offset;
+
+			if (this->dataWalker < this->dataBegin)
+				this->dataWalker = this->dataBegin;
+			if (this->dataWalker > this->dataEnd)
+				this->dataWalker = this->dataEnd;
+
+			return this->GetPosition();
+		}
+
+		bool FileStream::openFile(const HorseRadish::hChar * const filePath, bool toRead, bool toWrite)
+		{
+			this->toRead = toRead;
+			this->toWrite = toWrite;
+
+			this->closed = false;
+			this->fileHandle = nullptr;
+
+			if ((toRead == false) && (toWrite == false))
+				return false;
+
+			wchar_t filePathWChar[128];
+			HorseRadish::UTF::ConvertUTF8To(filePath, HorseRadish::UTF::Encoding::Windows, filePathWChar, sizeof(filePathWChar));
+
+			if ((toRead == true) && (toWrite == true))
+				this->fileHandle = CreateFile(filePathWChar, GENERIC_READ | GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
+			else if (toRead == true)
+				this->fileHandle = CreateFile(filePathWChar, GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+			else if (toWrite == true)
+				this->fileHandle = CreateFile(filePathWChar, GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
+
+			if (this->fileHandle == INVALID_HANDLE_VALUE)
+			{
+				this->fileHandle = nullptr;
+				return false;
 			}
 
-			//posso sair
-			return lerMesmo;
+			return true;
 		}
 
-		//leio este
-		*outBufferWalker = *this->dataWalker;
-
-		//avanço para a frente e tranco a string
-		lerMesmo++;
-		this->dataWalker++;
-
-		//se cheguei ao fim do buffer, tenho de indicar que não tenho mais espaço
-		if (lerMesmo >= bufferSize)
-			return -lerMesmo;
-
-		//para onde vou escrever o próximo
-		outBufferWalker++;
-	}while(this->dataWalker < this->dataEnd);
-
-	//devolvo somente os que li
-	//mas chegando aqui foi por ter chegado ao fim do ficheiro, logo devolvo negativo
-	return -lerMesmo;
-}
-
-int MemoryStream::ReadUntil(void * const outBuffer, const int bufferSize, const char goal)
-{
-	int lerMesmo;
-	char *outBufferWalker;
-
-	//verificar isto
-	if ((outBuffer == nullptr) || (bufferSize <= 0))
-		return 0;
-
-	//se nem sequer posso ler nada
-	if (this->CanRead() == false)
-		return 0;
-
-	//vou precisar disto
-	outBufferWalker = reinterpret_cast<char*>(outBuffer);
-	
-	//tenho de ter cuidado com o numero de bytes que vou ler para nao 
-	//arrebentar o buffer do ficheiro
-	lerMesmo = 0;
-	do{
-		//leio este
-		*outBufferWalker = *this->dataWalker;
-
-		//avanço para a frente e tranco a string
-		lerMesmo++;
-		this->dataWalker++;
-
-		//se li o caracter final
-		if (*outBufferWalker == goal)
-			return lerMesmo;
-
-		//se cheguei ao fim do buffer, tenho de indicar que não tenho mais espaço
-		if (lerMesmo >= bufferSize)
-			return -lerMesmo;
-
-		//para onde vou escrever o próximo
-		outBufferWalker++;
-	}while(this->dataWalker < this->dataEnd);
-
-	//devolvo somente os que li
-	//mas chegando aqui foi por ter chegado ao fim do ficheiro, logo devolvo negativo
-	return -lerMesmo;
-}
-const void* MemoryStream::ReadContent(int &contentSize, bool &contentCopied) const
-{
-	//gravo o tamanho
-	contentSize = this->dataSize;
-
-	//como não estou a fazer uma cópia
-	contentCopied = false;
-
-	//e posso devolver o buffer
-	return this->data;
-}
-int MemoryStream::Write(const void * const inBuffer, int numBytes)
-{
-	//se não posso escrever
-	if (this->canWrite == false)
-		return 0;
-
-	//gravo os bytes, avanço o ponteiro e já está
-	memcpy((void*)this->dataWalker, inBuffer, numBytes);
-	this->dataWalker += numBytes;
-	return numBytes;
-}
-int MemoryStream::Seek(const int offset, const SeekOrigin seekOrigin)
-{
-	//efectuo sempre a operação, independente do offset e tipo
-	if (seekOrigin == Stream::Begin)
-		this->dataWalker = this->dataBegin + offset;
-	else if (seekOrigin == Stream::End)
-		this->dataWalker = this->dataEnd + offset;
-	else if (seekOrigin == Stream::Current)
-		this->dataWalker += offset;
-
-	//certifico-me que não saio do buffer
-	if (this->dataWalker < this->dataBegin)
-		this->dataWalker = this->dataBegin;
-	if (this->dataWalker > this->dataEnd)
-		this->dataWalker = this->dataEnd;
-
-	//devolvo a posição onde está
-	return this->GetPosition();
-}
-
-//§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§
-//§§§§§§	 FileStream class	§§§§§
-//§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§*/
-bool FileStream::openFile(const HorseRadish::hChar * const filePath, bool toRead, bool toWrite)
-{
-	wchar_t filePathWChar[128];
-
-	//guardo isto
-	this->toRead = toRead;
-	this->toWrite = toWrite;
-
-	//assumo que não estou fechado nem tenho nehum ponteiro para qualquer ficheiro
-	this->closed = false;
-	this->fileHandle = nullptr;
-
-	//se não é para fazer nada
-	if ((toRead == false) && (toWrite == false))
-		return false;
-
-	//tenho de converter a string para WideChar
-	HorseRadish::UTF::ConvertUTF8To(filePath, HorseRadish::UTF::Windows, filePathWChar, sizeof(filePathWChar));
-
-	//tento abrir o ficheiro, conforme o tipo pedido
-	if ((toRead == true) && (toWrite == true))
-		this->fileHandle = CreateFile(filePathWChar, GENERIC_READ | GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
-	else if (toRead == true)
-		this->fileHandle = CreateFile(filePathWChar, GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
-	else if (toWrite == true)
-		this->fileHandle = CreateFile(filePathWChar, GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
-
-	//se não tenho nada de jeito
-	if (this->fileHandle == INVALID_HANDLE_VALUE)
-	{
-		this->fileHandle = nullptr;
-		return false;
-	}
-
-	//tá tudo bem
-	return true;
-}
-
-FileStream::FileStream(const HorseRadish::hChar * const filePath, bool toRead, bool toWrite)
-{
-	//por omissão
-	this->toRead = this->toWrite = false;
-	this->closed = false;
-	this->fileHandle = nullptr;
-
-	//abro o ficheiro
-	this->openFile(filePath, toRead, toWrite);
-}
-FileStream::~FileStream()
-{
-	//se ainda não fechei, fecho
-	if (this->closed == false)
-		this->Close();
-}
-
-void FileStream::Close()
-{
-	//se tiver alguma coisa, fecho-a
-	if (this->fileHandle != nullptr)
-		CloseHandle(this->fileHandle);
-
-	//como é para fechar
-	this->closed = true;
-
-	//limpo o resto
-	this->toRead = false;
-	this->toWrite = false;
-	this->fileHandle = nullptr;
-}
-void FileStream::Flush()
-{
-	//se tiver alguma coisa, posso fazer flush dele
-	if (this->fileHandle != nullptr)
-		FlushFileBuffers(this->fileHandle);
-}
-
-bool FileStream::CanRead() const
-{
-	//se já fechou
-	if (closed == true)
-		return false;
-
-	//se o ficheiro não foi aberto para leitura
-	if (this->toRead == false)
-		return false;
-
-	//posso ler se ainda não cheguei ao fim do ficheiro
-	return (SetFilePointer(this->fileHandle, 0, nullptr, FILE_CURRENT) < GetFileSize(this->fileHandle, nullptr));
-}
-bool FileStream::CanRead(int numBytes) const
-{
-	//se já fechou
-	if (closed == true)
-		return false;
-
-	//se o ficheiro não foi aberto para leitura
-	if (this->toRead == false)
-		return false;
-
-	//posso ler se ainda tenho mais bytes dos que os indicados
-	return ((GetFileSize(this->fileHandle, nullptr) - SetFilePointer(this->fileHandle, 0, nullptr, FILE_CURRENT)) >= numBytes );
-}
-bool FileStream::CanWrite() const
-{
-	//se já fechou
-	if (closed == true)
-		return false;
-
-	//posso escrever se o ficheiro foi aberto para escrita
-	return (this->toWrite);
-}
-bool FileStream::CanWrite(int numBytes) const
-{
-	//basta devolver se posso ler
-	return (this->CanWrite());
-}
-int FileStream::GetLength() const
-{
-	//se não tenho ficheiro
-	if (this->fileHandle == nullptr)
-		return 0;
-
-	//basta devolver o tamanho dele
-	return GetFileSize(this->fileHandle, nullptr);
-}
-int FileStream::GetPosition() const
-{
-	//se não tenho ficheiro
-	if (this->fileHandle == nullptr)
-		return 0;
-
-	//basta devolver o tamanho dele
-	return SetFilePointer(this->fileHandle, 0, nullptr, FILE_CURRENT);
-}
-
-bool FileStream::IsValid() const
-{
-	//basta o file handle ser diferente de null
-	return (this->fileHandle != nullptr);
-}
-
-int FileStream::Read(void * const outBuffer, int numBytes)
-{
-	DWORD bytesRead;
-
-	//verificar isto
-	if ((outBuffer == nullptr) || (numBytes <= 0))
-		return 0;
-
-	//se não tenho ficheiro
-	if (this->fileHandle == nullptr)
-		return -1;
-
-	//posso mandar ler
-	if (ReadFile(this->fileHandle, outBuffer, numBytes, &bytesRead, nullptr) == 0)
-		return -1;
-
-	//li estes bytes
-	return bytesRead;
-}
-
-int FileStream::ReadLine(void * const outBuffer, const int bufferSize)
-{
-	int lerMesmo;
-	DWORD bytesRead;
-	char dataRead, *outBufferWalker;
-
-	//verificar isto
-	if ((outBuffer == nullptr) || (bufferSize <= 0))
-		return 0;
-
-	//se nem sequer posso ler nada
-	if (this->CanRead() == false)
-		return 0;
-
-	//vou precisar disto
-	outBufferWalker = reinterpret_cast<char*>(outBuffer);
-	
-	//tenho de ter cuidado com o numero de bytes que vou ler para nao 
-	//arrebentar o buffer do ficheiro
-	lerMesmo = 0;
-	while(true)
-	{
-		//leio um caracter
-		if (ReadFile(this->fileHandle, &dataRead, 1, &bytesRead, nullptr) == 0)
-			break;
-
-		//tiver de ler um byte
-		if (bytesRead != 1)
-			break;
-
-		//se estou numa nova linha, posso já sair
-		if (dataRead == '\n')
-			return lerMesmo;
-
-		//se estou numa nova linha
-		if (dataRead == '\r')
+		FileStream::FileStream(FileStream&& stream)
 		{
-			//volto a ler um caracter
-			if (ReadFile(this->fileHandle, &dataRead, 1, &bytesRead, nullptr) == 0)
-				break;
+			this->fileHandle = stream.fileHandle;
+			this->toRead = stream.toRead;
+			this->toWrite = stream.toWrite;
+			this->closed = stream.closed;
 
-			//tiver de ler um byte
-			if (bytesRead != 1)
-				break;
-
-			//se não for um '\n', tenho de voltar a trás (não era o caso \r\n)
-			if (dataRead != '\n')
-				SetFilePointer(this->fileHandle, -1, nullptr, FILE_CURRENT);
-
-			//posso sair
-			return lerMesmo;
+			stream.fileHandle = nullptr;
+			stream.toRead = stream.toWrite = false;
+			stream.closed = true;
 		}
 
-		//guardo o caracter lido
-		*outBufferWalker = dataRead;
-		lerMesmo++;
+		FileStream::FileStream(const HorseRadish::hChar * const filePath, bool toRead, bool toWrite)
+		{
+			this->toRead = this->toWrite = false;
+			this->closed = false;
+			this->fileHandle = nullptr;
 
-		//se cheguei ao fim do buffer, tenho de indicar que não tenho mais espaço
-		if (lerMesmo >= bufferSize)
-			return -lerMesmo;
+			this->openFile(filePath, toRead, toWrite);
+		}
 
-		//para onde vou escrever o próximo
-		outBufferWalker++;
-	}
+		FileStream::~FileStream()
+		{
+			if (this->closed == false)
+				this->Close();
+		}
 
-	//devolvo somente os que li
-	//mas chegando aqui foi por ter chegado ao fim do ficheiro, logo devolvo negativo
-	return -lerMesmo;
-}
+		void FileStream::Close()
+		{
+			if (this->fileHandle != nullptr)
+				CloseHandle(this->fileHandle);
 
-int FileStream::ReadUntil(void * const outBuffer, const int bufferSize, const char goal)
-{
-	int lerMesmo;
-	DWORD bytesRead;
-	char *outBufferWalker;
+			this->closed = true;
 
-	//verificar isto
-	if ((outBuffer == nullptr) || (bufferSize <= 0))
-		return 0;
+			this->toRead = false;
+			this->toWrite = false;
+			this->fileHandle = nullptr;
+		}
 
-	//se nem sequer posso ler nada
-	if (this->CanRead() == false)
-		return 0;
+		void FileStream::Flush()
+		{
+			if (this->fileHandle != nullptr)
+				FlushFileBuffers(this->fileHandle);
+		}
 
-	//vou precisar disto
-	outBufferWalker = reinterpret_cast<char*>(outBuffer);
-	
-	//tenho de ter cuidado com o numero de bytes que vou ler para nao 
-	//arrebentar o buffer do ficheiro
-	lerMesmo = 0;
-	while(true)
-	{
-		//leio um caracter
-		if (ReadFile(this->fileHandle, outBufferWalker, 1, &bytesRead, nullptr) == 0)
-			break;
+		bool FileStream::CanRead() const
+		{
+			if (closed == true)
+				return false;
 
-		//tiver de ler um byte
-		if (bytesRead != 1)
-			break;
+			if (this->toRead == false)
+				return false;
 
-		//li mais um caracter
-		lerMesmo++;
+			return (SetFilePointer(this->fileHandle, 0, nullptr, FILE_CURRENT) < GetFileSize(this->fileHandle, nullptr));
+		}
 
-		//se li o caracter final
-		if (*outBufferWalker == goal)
-			return lerMesmo;
+		bool FileStream::CanRead(int numBytes) const
+		{
+			if (closed == true)
+				return false;
 
-		//se cheguei ao fim do buffer, tenho de indicar que não tenho mais espaço
-		if (lerMesmo >= bufferSize)
-			return -lerMesmo;
+			if (this->toRead == false)
+				return false;
 
-		//para onde vou escrever o próximo
-		outBufferWalker++;
-	}
+			return ((GetFileSize(this->fileHandle, nullptr) - SetFilePointer(this->fileHandle, 0, nullptr, FILE_CURRENT)) >= numBytes);
+		}
 
-	//devolvo somente os que li
-	//mas chegando aqui foi por ter chegado ao fim do ficheiro, logo devolvo negativo
-	return -lerMesmo;
-}
+		bool FileStream::CanWrite() const
+		{
+			if (closed == true)
+				return false;
 
-const void* FileStream::ReadContent(int &contentSize, bool &contentCopied) const
-{
-	int curPos, outBufferSize;
-	DWORD bytesRead;
-	bool readSuccess;
-	void *outBuffer;
+			return (this->toWrite);
+		}
 
-	//por omissão
-	contentSize = 0;
+		bool FileStream::CanWrite(int numBytes) const
+		{
+			return (this->CanWrite());
+		}
 
-	//sendo um ficheiro vou fazer sempre uma cópia
-	contentCopied = true;
+		int FileStream::GetLength() const
+		{
+			if (this->fileHandle == nullptr)
+				return 0;
 
-	//se não tenho ficheiro
-	if (this->fileHandle == nullptr)
-		return nullptr;
+			return GetFileSize(this->fileHandle, nullptr);
+		}
 
-	//leio o tamanho do ficheiro e tento alocar espaço para o ler todo
-	outBufferSize = GetFileSize(this->fileHandle, nullptr);
-	outBuffer = malloc(outBufferSize);
-	if (outBuffer == nullptr)
-		return nullptr;
+		int FileStream::GetPosition() const
+		{
+			if (this->fileHandle == nullptr)
+				return 0;
 
-	//obtenho a posição actual do ficheiro e coloco-o no inicio
-	curPos = SetFilePointer(this->fileHandle, 0, nullptr, FILE_CURRENT);
-	SetFilePointer(this->fileHandle, 0, nullptr, FILE_BEGIN);
+			return SetFilePointer(this->fileHandle, 0, nullptr, FILE_CURRENT);
+		}
 
-	//leio tudo
-	readSuccess = (ReadFile(this->fileHandle, outBuffer, outBufferSize, &bytesRead, nullptr) != 0);
+		bool FileStream::IsValid() const
+		{
+			return (this->fileHandle != nullptr);
+		}
 
-	//volto a colocar o ficheiro na posição correcta
-	SetFilePointer(this->fileHandle, curPos, nullptr, FILE_BEGIN);
+		int FileStream::Read(void * const outBuffer, int numBytes)
+		{
+			DWORD bytesRead;
 
-	//se falhou a ler ou não li tudo, dá erro
-	if ((readSuccess == false) || (outBufferSize != bytesRead))
-	{
-		free(outBuffer);
-		return nullptr;
-	}
+			if ((outBuffer == nullptr) || (numBytes <= 0))
+				return 0;
 
-	//chegando aqui correu tudo bem
-	contentSize = outBufferSize;
-	return outBuffer;
-}
+			if (this->fileHandle == nullptr)
+				return -1;
 
-int FileStream::Write(const void * const inBuffer, int numBytes)
-{
-	DWORD bytesWritten;
+			if (ReadFile(this->fileHandle, outBuffer, numBytes, &bytesRead, nullptr) == 0)
+				return -1;
 
-	//verificar isto
-	if ((inBuffer == nullptr) || (numBytes <= 0))
-		return 0;
+			return bytesRead;
+		}
 
-	//se não tenho ficheiro
-	if (this->fileHandle == nullptr)
-		return -1;
+		int FileStream::ReadLine(void * const outBuffer, const int bufferSize)
+		{
+			DWORD bytesRead;
+			char dataRead;
 
-	//posso mandar escrever
-	if (WriteFile(this->fileHandle, inBuffer, numBytes, &bytesWritten, nullptr) == 0)
-		return -1;
+			if ((outBuffer == nullptr) || (bufferSize <= 0))
+				return 0;
 
-	//escrevi estes bytes
-	return bytesWritten;
-}
+			if (this->CanRead() == false)
+				return 0;
 
-int FileStream::Seek(const int offset, const SeekOrigin seekOrigin)
-{
-	//se não tenho ficheiro
-	if (this->fileHandle == nullptr)
-		return -1;
+			auto outBufferWalker = reinterpret_cast<char*>(outBuffer);
 
-	//conforme a operação a fazer
-	if (seekOrigin == Stream::Begin)
-		return SetFilePointer(this->fileHandle, offset, nullptr, FILE_BEGIN);
-	if (seekOrigin == Stream::End)
-		return SetFilePointer(this->fileHandle, offset, nullptr, FILE_END);
-	if (seekOrigin == Stream::Current)
-		return SetFilePointer(this->fileHandle, offset, nullptr, FILE_CURRENT);
+			auto actualRead = 0;
+			while (true)
+			{
+				if (ReadFile(this->fileHandle, &dataRead, 1, &bytesRead, nullptr) == 0)
+					break;
 
-	//chegando aqui alguma coisa está mal
-	return -1;
-}
+				if (bytesRead != 1)
+					break;
 
-void* FileStream::ReadEntireFile(const HorseRadish::hChar * const filePath, int &fileSize)
-{
-	HANDLE fileHandle;
-	DWORD bytesRead;
-	wchar_t filePathWChar[128];
+				if (dataRead == '\n')
+					return actualRead;
 
-	//por omissão
-	fileSize = 0;
+				if (dataRead == '\r')
+				{
+					if (ReadFile(this->fileHandle, &dataRead, 1, &bytesRead, nullptr) == 0)
+						break;
 
-	//verifico isto
-	if (filePath == nullptr)
-		return nullptr;
+					if (bytesRead != 1)
+						break;
 
-	//tenho de converter a string para WideChar
-	HorseRadish::UTF::ConvertUTF8To(filePath, HorseRadish::UTF::Windows, filePathWChar, sizeof(filePathWChar));
+					if (dataRead != '\n')
+						SetFilePointer(this->fileHandle, -1, nullptr, FILE_CURRENT);
 
-	//tento abrir o ficheiro
-	fileHandle = CreateFile(filePathWChar, GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
-	if (fileHandle == INVALID_HANDLE_VALUE)
-		return nullptr;
+					return actualRead;
+				}
 
-	//para me certificar que tenho sempre de "fechar" o ficheiro
-	ScopedAction scopedAction([&]()
-	{
-		CloseHandle(fileHandle);
-	});
+				*outBufferWalker = dataRead;
+				actualRead++;
 
-	//leio o tamanho do ficheiro e tento alocar espaço para o ler todo
-	auto outBufferSize = GetFileSize(fileHandle, nullptr);
-	auto outBuffer = malloc(outBufferSize);
-	if (outBuffer == nullptr)
-		return nullptr;
+				if (actualRead >= bufferSize)
+					return -actualRead;
 
-	//leio tudo
-	if ((ReadFile(fileHandle, outBuffer, outBufferSize, &bytesRead, nullptr) == 0) || (outBufferSize !=bytesRead))
-	{
-		free(outBuffer);
-		return nullptr;
-	}
+				outBufferWalker++;
+			}
 
-	//chegando aqui correu tudo bem
-	fileSize = outBufferSize;
-	return outBuffer;
-}
+			return -actualRead;
+		}
 
-HorseRadish::String FileStream::ReadEntireFileAsString(const HorseRadish::hChar * const filePath)
-{
-	HANDLE fileHandle;
-	DWORD bytesRead;
-	wchar_t filePathWChar[128];
+		int FileStream::ReadUntil(void * const outBuffer, const int bufferSize, const char goal)
+		{
+			DWORD bytesRead;
 
-	//verifico isto
-	if (filePath == nullptr)
-		return HorseRadish::String();
+			if ((outBuffer == nullptr) || (bufferSize <= 0))
+				return 0;
 
-	//tenho de converter a string para WideChar
-	HorseRadish::UTF::ConvertUTF8To(filePath, HorseRadish::UTF::Windows, filePathWChar, sizeof(filePathWChar));
+			if (this->CanRead() == false)
+				return 0;
 
-	//tento abrir o ficheiro
-	fileHandle = CreateFile(filePathWChar, GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
-	if (fileHandle == INVALID_HANDLE_VALUE)
-		return HorseRadish::String();
+			auto outBufferWalker = reinterpret_cast<char*>(outBuffer);
 
-	//para me certificar que tenho sempre de "fechar" o ficheiro
-	ScopedAction scopedAction([&]()
-	{
-		CloseHandle(fileHandle);
-	});
+			auto actualRead = 0;
+			while (true)
+			{
+				if (ReadFile(this->fileHandle, outBufferWalker, 1, &bytesRead, nullptr) == 0)
+					break;
 
-	//leio o tamanho do ficheiro e tento alocar espaço para o ler todo
-	auto outBufferSize = GetFileSize(fileHandle, nullptr);
-	auto finalString = HorseRadish::String();
+				if (bytesRead != 1)
+					break;
 
-	finalString.Capacity(outBufferSize + 1);
+				actualRead++;
 
-	//leio tudo
-	if ((ReadFile(fileHandle, (void*)finalString.GetData(), outBufferSize, &bytesRead, nullptr) == 0) || (outBufferSize != bytesRead))
-		return HorseRadish::String();
+				if (*outBufferWalker == goal)
+					return actualRead;
 
-	//chegando aqui correu tudo bem
-	finalString.CloseAt(outBufferSize);
-	return finalString;
-}
+				if (actualRead >= bufferSize)
+					return -actualRead;
 
-bool FileStream::StreamDump(Stream* stream, const HorseRadish::hChar * const filePath)
-{
-	int filePos, bytesRead;
-	DWORD bytesWritten;
-	unsigned char auxBuffer[1024];
-	HANDLE fileHandle;
-	wchar_t filePathWChar[256];
+				outBufferWalker++;
+			}
 
-	//verificar parametros
-	if ((stream == nullptr) || (stream->CanRead() == false) || (filePath == nullptr))
-		return false;
+			return -actualRead;
+		}
 
-	//tenho de converter a string para WideChar
-	HorseRadish::UTF::ConvertUTF8To(filePath, HorseRadish::UTF::Windows, filePathWChar, sizeof(filePathWChar));
+		const void* FileStream::ReadContent(int &contentSize, bool &contentCopied) const
+		{
+			DWORD bytesRead;
 
-	//tenho de abrir o ficheiro
-	fileHandle = CreateFile(filePathWChar, GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
-	if (fileHandle == nullptr)
-		return false;
+			contentSize = 0;
+			contentCopied = true;
 
-	//guardo a posição actual e movo o stream para o início
-	filePos = stream->GetPosition();
-	stream->Seek(0, Stream::Begin);
+			if (this->fileHandle == nullptr)
+				return nullptr;
 
-	//enquanto tenho coisas a ler
-	while (true)
-	{
-		//leio alguns bytes do stream
-		bytesRead = stream->Read(auxBuffer, sizeof(auxBuffer));
-		if (bytesRead <= 0)
-			break;
+			auto outBufferSize = GetFileSize(this->fileHandle, nullptr);
+			auto outBuffer = malloc(outBufferSize);
+			if (outBuffer == nullptr)
+				return nullptr;
 
-		//escrevo esses bytes
-		WriteFile(fileHandle, auxBuffer, bytesRead, &bytesWritten, nullptr);
-		if (bytesWritten != bytesRead)
-			break;
+			auto curPos = SetFilePointer(this->fileHandle, 0, nullptr, FILE_CURRENT);
+			SetFilePointer(this->fileHandle, 0, nullptr, FILE_BEGIN);
 
-		//se já li bytes a menos, já li tudo
-		if (bytesRead < sizeof(auxBuffer))
-			break;
-	}
+			auto readSuccess = (ReadFile(this->fileHandle, outBuffer, outBufferSize, &bytesRead, nullptr) != 0);
 
-	//posso fechar o ficheiro
-	CloseHandle(fileHandle);
+			SetFilePointer(this->fileHandle, curPos, nullptr, FILE_BEGIN);
 
-	//reponho a posição anterior do stream
-	stream->Seek(filePos, Stream::Begin);
+			if ((readSuccess == false) || (outBufferSize != bytesRead))
+			{
+				free(outBuffer);
+				return nullptr;
+			}
 
-	//chegando aqui correu tudo bem
-	return true;
-}
+			contentSize = outBufferSize;
+			return outBuffer;
+		}
 
-}//namespace Streams
-}//namespace HorseRadish
+		int FileStream::Write(const void * const inBuffer, int numBytes)
+		{
+			DWORD bytesWritten;
+
+			if ((inBuffer == nullptr) || (numBytes <= 0))
+				return 0;
+
+			if (this->fileHandle == nullptr)
+				return -1;
+
+			if (WriteFile(this->fileHandle, inBuffer, numBytes, &bytesWritten, nullptr) == 0)
+				return -1;
+
+			return bytesWritten;
+		}
+
+		int FileStream::Seek(const int offset, const SeekOrigin seekOrigin)
+		{
+			if (this->fileHandle == nullptr)
+				return -1;
+
+			if (seekOrigin == Stream::Begin)
+				return SetFilePointer(this->fileHandle, offset, nullptr, FILE_BEGIN);
+			if (seekOrigin == Stream::End)
+				return SetFilePointer(this->fileHandle, offset, nullptr, FILE_END);
+			if (seekOrigin == Stream::Current)
+				return SetFilePointer(this->fileHandle, offset, nullptr, FILE_CURRENT);
+
+			return -1;
+		}
+
+		void* FileStream::ReadEntireFile(const HorseRadish::hChar * const filePath, int &fileSize)
+		{
+			HANDLE fileHandle;
+			DWORD bytesRead;
+
+			fileSize = 0;
+
+			if (filePath == nullptr)
+				return nullptr;
+
+			{
+				wchar_t filePathWChar[128];
+				HorseRadish::UTF::ConvertUTF8To(filePath, HorseRadish::UTF::Encoding::Windows, filePathWChar, sizeof(filePathWChar));
+
+				fileHandle = CreateFile(filePathWChar, GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+				if (fileHandle == INVALID_HANDLE_VALUE)
+					return nullptr;
+			}
+
+			ScopedAction scopedAction([&]()
+			{
+				CloseHandle(fileHandle);
+			});
+
+			auto outBufferSize = GetFileSize(fileHandle, nullptr);
+			auto outBuffer = malloc(outBufferSize);
+			if (outBuffer == nullptr)
+				return nullptr;
+
+			if ((ReadFile(fileHandle, outBuffer, outBufferSize, &bytesRead, nullptr) == 0) || (outBufferSize != bytesRead))
+			{
+				free(outBuffer);
+				return nullptr;
+			}
+
+			fileSize = outBufferSize;
+			return outBuffer;
+		}
+
+		HorseRadish::String FileStream::ReadEntireFileAsString(const HorseRadish::hChar * const filePath)
+		{
+			HANDLE fileHandle;
+			DWORD bytesRead;
+
+			if (filePath == nullptr)
+				return HorseRadish::String();
+
+			{
+				wchar_t filePathWChar[128];
+				HorseRadish::UTF::ConvertUTF8To(filePath, HorseRadish::UTF::Encoding::Windows, filePathWChar, sizeof(filePathWChar));
+
+				fileHandle = CreateFile(filePathWChar, GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+				if (fileHandle == INVALID_HANDLE_VALUE)
+					return HorseRadish::String();
+			}
+
+			ScopedAction scopedAction([&]()
+			{
+				CloseHandle(fileHandle);
+			});
+
+			auto outBufferSize = GetFileSize(fileHandle, nullptr);
+			auto finalString = HorseRadish::String();
+
+			finalString.Capacity(outBufferSize + 1);
+
+			if ((ReadFile(fileHandle, (void*)finalString.GetData(), outBufferSize, &bytesRead, nullptr) == 0) || (outBufferSize != bytesRead))
+				return HorseRadish::String();
+
+			finalString.CloseAt(outBufferSize);
+			return finalString;
+		}
+
+		bool FileStream::StreamDump(Stream* stream, const HorseRadish::hChar * const filePath)
+		{
+			HANDLE fileHandle;
+			DWORD bytesWritten;
+			unsigned char auxBuffer[1024];
+
+			if ((stream == nullptr) || (stream->CanRead() == false) || (filePath == nullptr))
+				return false;
+
+			{
+				wchar_t filePathWChar[256];
+				HorseRadish::UTF::ConvertUTF8To(filePath, HorseRadish::UTF::Encoding::Windows, filePathWChar, sizeof(filePathWChar));
+
+				fileHandle = CreateFile(filePathWChar, GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
+				if (fileHandle == nullptr)
+					return false;
+			}
+
+			auto filePos = stream->GetPosition();
+			stream->Seek(0, Stream::Begin);
+
+			while (true)
+			{
+				auto bytesRead = stream->Read(auxBuffer, sizeof(auxBuffer));
+				if (bytesRead <= 0)
+					break;
+
+				WriteFile(fileHandle, auxBuffer, bytesRead, &bytesWritten, nullptr);
+				if (bytesWritten != bytesRead)
+					break;
+
+				if (bytesRead < sizeof(auxBuffer))
+					break;
+			}
+
+			CloseHandle(fileHandle);
+
+			stream->Seek(filePos, Stream::Begin);
+
+			return true;
+		}
+
+	} //Streams
+} //HorseRadish

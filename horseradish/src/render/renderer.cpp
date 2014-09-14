@@ -12,6 +12,5 @@ namespace HorseRadish
 		Renderer::~Renderer()
 		{
 		}
-
 	}
 }

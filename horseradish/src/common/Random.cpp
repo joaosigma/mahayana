@@ -68,4 +68,4 @@ namespace HorseRadish
 		return dist(mtwister);
 	}
 
-} //namespace HorseRadish
+} //HorseRadish

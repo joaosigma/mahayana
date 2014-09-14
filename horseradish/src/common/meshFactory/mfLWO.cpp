@@ -2,8 +2,6 @@
 #include "common\Mesh.hpp"
 #include "common\MeshFactory.hpp"
 
-#include <windows.h>
-
 using namespace HorseRadish;
 
 /*§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§
@@ -825,7 +823,7 @@ Geometry::Model *criaModelo()
 	for(numMeshes=0,meshWalker=ListaMeshes; meshWalker!=nullptr; meshWalker=meshWalker->prox,numMeshes++)
 	{
 		//crio uma nova mesh
-		modelo->arrayMesh.Add();
+		modelo->arrayMesh.push_back(Geometry::Model::MeshData());
 
 		//de momento nada de materiais e posso já copiar o nome
 		strcpy(modelo->arrayMesh[numMeshes].meshName,meshWalker->nome);
@@ -855,7 +853,7 @@ Geometry::Model *criaModelo()
 		}
 
 		//normais e já tá
-		modelo->arrayMesh[numMeshes].mesh.Ortho(MESH_ORTHO_CREATE_NORMALS);	
+		modelo->arrayMesh[numMeshes].mesh.Ortho(HorseRadish::Geometry::Mesh::MeshOrthoCreateNormals);
 	}
 
 	//BUGGGGYYYYY

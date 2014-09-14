@@ -1,24 +1,20 @@
 #pragma once
-#ifndef __CONSOLE__
-#define __CONSOLE__
 
 #include "common\Logger.hpp"
-#include "common\Containers.hpp"
 #include "common\String.hpp"
 #include "common\Path.hpp"
 #include "common\Avl-tree.hpp"
 
+#include <vector>
 #include <functional>
 
 namespace HorseRadish
 {
-namespace Console
-{
+	namespace Console
+	{
 
-//o máximo de string que se pode fazer log
 #define MAX_LOG_SIZE	512
 
-//as keys que se podem usar (é preferivel criar umas à mão)
 #define SCONSOLE_NUMKEYS		57
 #define SCONSOLE_KEY_A			0xa0a0
 #define SCONSOLE_KEY_B			0xa0a1
@@ -82,140 +78,136 @@ namespace Console
 #define SCONSOLE_KEY_MALT		(1<<6)
 #define SCONSOLE_KEY_MCONTROL	(1<<7)
 
-class Console
+		class Console
+		{
+		public:
+			enum class VarType : int
+			{
+				Integer = 0xcca7,
+				Float = 0xcca8,
+				String = 0xcca9
+			};
 
-{
-public:
-	
-	enum class VarType : int
-	{
-		Integer = 0xcca7,
-		Float = 0xcca8,
-		String = 0xcca9
-	};
+			enum VarFlags
+			{
+				None = 0,
+				ReadOnly = (1 << 0), //the value can't be change through the console, only commands
+				Clamp = (1 << 1), //the value is always clamped (ints: [0, +inf]; floats: [0, 1])
+				Constant = (1 << 2), //the value can NEVER be changed
+				Archive = (1 << 3), //the value is saved whenever it's changed (it's persistent)
+				Server = (1 << 4), //the value is shared with the server
+				Cheat = (1 << 5) //the value can only be changed when cheats are enabled
+			};
 
-	enum VarFlags
-	{
-		None = 0,
-		ReadOnly = (1 << 0), //the value can't be change through the console, only commands
-		Clamp = (1 << 1), //the value is always clamped (ints: [0, +inf]; floats: [0, 1])
-		Constant = (1 << 2), //the value can NEVER be changed
-		Archive = (1 << 3), //the value is saved whenever it's changed (it's persistent)
-		Server = (1 << 4), //the value is shared with the server
-		Cheat = (1 << 5) //the value can only be changed when cheats are enabled
-	};
+			typedef std::function<void(Console &console, const unsigned int msgID, const unsigned int numParam, const char **param)> CallbackCommand;
+			typedef std::function<void(Console &console, const unsigned int varID, const VarType type, void * const curVal, const void * const oldVal)> CallbackVariable;
+			typedef std::function<void(Console &console, const char * msg)> CallbackLoop;
 
-	typedef std::function<void(Console &console, const unsigned int msgID, const unsigned int numParam, const char **param)> CallbackCommand;
-	typedef std::function<void(Console &console, const unsigned int varID, const VarType type, void * const curVal, const void * const oldVal)> CallbackVariable;
-	typedef std::function<void(Console &console, const char * msg)> CallbackLoop;
+			HorseRadish::Logging::Logger *logger;
 
-	HorseRadish::Logging::Logger *logger;
-private:
-	struct BINDS{
-		char cmd[116];
-		int key, mod;
-	};
+		private:
+			struct BINDS{
+				char cmd[116];
+				int key, mod;
+			};
 
-	struct ARG_DATA{
-		char data[MAX_LOG_SIZE];
-	};
-	//é melhor definir estas coisas aqui
-	struct COMANDO{
-		Console::CallbackCommand callback;
-	};
-	struct VARIABLE{
-		VarType tipo;
-		VarFlags flags;
-		bool condition;
-		Console::CallbackVariable callback;
+			struct ARG_DATA{
+				char data[MAX_LOG_SIZE];
+			};
+			struct COMANDO{
+				Console::CallbackCommand callback;
+			};
+			struct VARIABLE{
+				VarType tipo;
+				VarFlags flags;
+				bool condition;
+				Console::CallbackVariable callback;
 
-		union{
-		 float numeric;
-		 __int32 integer;
-		 char string[128];
-		} value;
-	};
+				union{
+					float numeric;
+					__int32 integer;
+					char string[128];
+				} value;
+			};
 
-	struct DATA_NO{
-		unsigned int id;
-		bool isCommand;
-		char nome[32],desc[128],printStr[64];
+			struct DATA_NO{
+				unsigned int id;
+				bool isCommand;
+				char nome[32], desc[128], printStr[64];
 
-		VARIABLE varData;
-		COMANDO cmdData;
-	};
-	
-	CallbackLoop loopbackFuncError;
-	bool changeOccured, doEchoLog, doEchoError;
-	HorseRadish::AVLTree<DATA_NO> *treeConsole;
-	HorseRadish::Containers::Array<BINDS> binds;
-	ARG_DATA *argList;
+				VARIABLE varData;
+				COMANDO cmdData;
+			};
 
-	static const int tabNumSpaces;
-	
-	static bool checkValue(const char *value, unsigned char &realValue);
-	static bool checkSentence(const char *sentence, int &numSpecialChar);
-	static bool isForcedNoEcho(const char * const command);
-	static bool isSeveralExpressions(const char * const command);
+			CallbackLoop loopbackFuncError;
+			bool changeOccured, doEchoLog, doEchoError;
+			HorseRadish::AVLTree<DATA_NO> *treeConsole;
+			std::vector<BINDS> binds;
+			ARG_DATA *argList;
 
-	bool addPhrase(const char *Frase, int nespacos = 0);
-	void addToLogger(const char *sentence, int colorCount);
-	//void finishTABComplete(const NO * const arvore, const char * const string, char * const bufferOut);
-	bool parseCommand(const char * const command, ARG_DATA * const argList, int &argNumber);
-	void doThreeArgOperation(DATA_NO * const spec, const ARG_DATA * const argList);
-	void doThreeArgSetCondition(DATA_NO * const spec, const ARG_DATA * const argList);
-	void doThreeArgCheckCondition(DATA_NO * const spec, const ARG_DATA * const argList);
-	void doThreeArgVarCommand(DATA_NO * const spec, const ARG_DATA * const argList);
-	void doFiveArgVarCommand(DATA_NO * const spec, const ARG_DATA * const argList);
-	bool divideCommand(const char * const command);
-	bool setVarI(DATA_NO * const parametros, const int data);
-	bool setVarF(DATA_NO * const parametros, const float data);
-	bool setVarS(DATA_NO * const parametros, const char *data);
+			static const int tabNumSpaces;
 
-public:
-	Console(const HorseRadish::IO::Path &fileOutputPath);
-	~Console();
+			static bool checkValue(const char *value, unsigned char &realValue);
+			static bool checkSentence(const char *sentence, int &numSpecialChar);
+			static bool isForcedNoEcho(const char * const command);
+			static bool isSeveralExpressions(const char * const command);
 
-	void Terminate();
-	void SetEcho(const bool echoLog, const bool echoErrors);
-	void PrintHelp(const char *what);
+			bool addPhrase(const char *Frase, int nespacos = 0);
+			void addToLogger(const char *sentence, int colorCount);
+			//void finishTABComplete(const NO * const arvore, const char * const string, char * const bufferOut);
+			bool parseCommand(const char * const command, ARG_DATA * const argList, int &argNumber);
+			void doThreeArgOperation(DATA_NO * const spec, const ARG_DATA * const argList);
+			void doThreeArgSetCondition(DATA_NO * const spec, const ARG_DATA * const argList);
+			void doThreeArgCheckCondition(DATA_NO * const spec, const ARG_DATA * const argList);
+			void doThreeArgVarCommand(DATA_NO * const spec, const ARG_DATA * const argList);
+			void doFiveArgVarCommand(DATA_NO * const spec, const ARG_DATA * const argList);
+			bool divideCommand(const char * const command);
+			bool setVarI(DATA_NO * const parametros, const int data);
+			bool setVarF(DATA_NO * const parametros, const float data);
+			bool setVarS(DATA_NO * const parametros, const char *data);
 
-	bool RegisterBind(const int key, const int flagMod, const char *toWhat);
-	void RegisterCommand(const unsigned int ID, const char *cmdName, const char *cmdDescription, CallbackCommand callbackFunc);
-	bool RegisterVariable(const unsigned int ID, const char *varName, const VarType type, const char *varDescription, const char *printString, CallbackVariable callbackFunc);
+		public:
+			Console(const HorseRadish::IO::Path &fileOutputPath);
+			~Console();
 
-	void BindEmitKey(const int key, const int flagMod);
-	void BindClear();
-	void FormatPrint(const char *bufferIn, char *bufferOut, const unsigned int bufferOutSize);
-	void TABComplete(const char *bufferIn, char *bufferOut, const unsigned int bufferOutSize, std::function<void (const HorseRadish::String &hit)> callbackHitAction);
-	
-	bool VarSetDataI(const char *name, const int data);
-	bool VarSetDataF(const char *name, const float data);
-	bool VarSetDataS(const char *name, const char *data);
-	bool VarGetType(const char *name, Console::VarType &varType);
-	void VarSetAttrib(const char *name, const VarFlags flagGrant, const VarFlags flagDeny);
-	int VarGetDataI(const char *name);
-	float VarGetDataF(const char *name);
-	const char* VarGetDataS(const char *name);
-	const char* VarPrint(const char *varName, char *bufferOut, const int bufferSize);
+			void Terminate();
+			void SetEcho(const bool echoLog, const bool echoErrors);
+			void PrintHelp(const char *what);
 
-	bool AsChanged();
+			bool RegisterBind(const int key, const int flagMod, const char *toWhat);
+			void RegisterCommand(const unsigned int ID, const char *cmdName, const char *cmdDescription, CallbackCommand callbackFunc);
+			bool RegisterVariable(const unsigned int ID, const char *varName, const VarType type, const char *varDescription, const char *printString, CallbackVariable callbackFunc);
 
-	void PrintCommands(bool fullDescription);
-	void PrintVars(bool fullDescription);
-	void PrintBinds();
+			void BindEmitKey(const int key, const int flagMod);
+			void BindClear();
+			void FormatPrint(const char *bufferIn, char *bufferOut, const unsigned int bufferOutSize);
+			void TABComplete(const char *bufferIn, char *bufferOut, const unsigned int bufferOutSize, std::function<void(const HorseRadish::String &hit)> callbackHitAction);
 
-	bool Process(const char *command);
+			bool VarSetDataI(const char *name, const int data);
+			bool VarSetDataF(const char *name, const float data);
+			bool VarSetDataS(const char *name, const char *data);
+			bool VarGetType(const char *name, Console::VarType &varType);
+			void VarSetAttrib(const char *name, const VarFlags flagGrant, const VarFlags flagDeny);
+			int VarGetDataI(const char *name);
+			float VarGetDataF(const char *name);
+			const char* VarGetDataS(const char *name);
+			const char* VarPrint(const char *varName, char *bufferOut, const int bufferSize);
 
-	void LogLoopback(CallbackLoop errorLoopbackFunc);
-	bool Log(const char *s);
-	bool LogError(const char *s);
-	bool LogInfo(const char *s);
-	bool LogTab(const char *s, const unsigned short numTabs);
-	bool LogTabColor(const char *s, const unsigned short numTabs, const unsigned char colorR, const unsigned char colorG, const unsigned char colorB);
-};
+			bool AsChanged();
 
-}//namespace Console
-}//namespace HorseRadish
+			void PrintCommands(bool fullDescription);
+			void PrintVars(bool fullDescription);
+			void PrintBinds();
 
-#endif
+			bool Process(const char *command);
+
+			void LogLoopback(CallbackLoop errorLoopbackFunc);
+			bool Log(const char *s);
+			bool LogError(const char *s);
+			bool LogInfo(const char *s);
+			bool LogTab(const char *s, const unsigned short numTabs);
+			bool LogTabColor(const char *s, const unsigned short numTabs, const unsigned char colorR, const unsigned char colorG, const unsigned char colorB);
+		};
+
+	} //Console
+} //HorseRadish

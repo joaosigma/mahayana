@@ -1135,10 +1135,10 @@ void Context::InitializeContext()
 		this->extensionsAvailable |= Context::CompressionVTC;
 	
 	//preciso de alguma informação
-	this->info.glslVersion.Set(HorseRadish::String::ASCII, HorseRadish::OpenGL::glGetString(GL_SHADING_LANGUAGE_VERSION));
-	this->info.renderer.Set(HorseRadish::String::ASCII, HorseRadish::OpenGL::glGetString(GL_RENDERER));
-	this->info.vendor.Set(HorseRadish::String::ASCII, HorseRadish::OpenGL::glGetString(GL_VENDOR));
-	this->info.version.Set(HorseRadish::String::ASCII, HorseRadish::OpenGL::glGetString(GL_VERSION));
+	this->info.glslVersion.Set(HorseRadish::String::Encoding::ASCII, HorseRadish::OpenGL::glGetString(GL_SHADING_LANGUAGE_VERSION));
+	this->info.renderer.Set(HorseRadish::String::Encoding::ASCII, HorseRadish::OpenGL::glGetString(GL_RENDERER));
+	this->info.vendor.Set(HorseRadish::String::Encoding::ASCII, HorseRadish::OpenGL::glGetString(GL_VENDOR));
+	this->info.version.Set(HorseRadish::String::Encoding::ASCII, HorseRadish::OpenGL::glGetString(GL_VERSION));
 	HorseRadish::OpenGL::glGetIntegerv(GL_MAX_DRAW_BUFFERS, &this->info.maxDrawBuffers);
 	HorseRadish::OpenGL::glGetIntegerv(GL_MAX_COLOR_ATTACHMENTS, &this->info.maxColorAttachments);
 	HorseRadish::OpenGL::glGetIntegerv(GL_MAX_TEXTURE_SIZE, &this->info.maxTextureSize);

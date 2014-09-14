@@ -741,7 +741,7 @@ const Objects::Texture* ObjectsManager::Create1D(const HorseRadish::IO::Path &pa
 	HorseRadish::Streams::FileStream fileStream(path, true, false);
 
 	//leio a imagem
-	img = HorseRadish::Imaging::Factory::Read(&HorseRadish::Streams::StreamReader(&fileStream));
+	img = HorseRadish::Imaging::Factory::Read(HorseRadish::Streams::StreamReader(fileStream));
 	if (img == nullptr)
 	{
 		//SConsole::SConsolePLog(logID,HorseRadish::String("Unable to open file \"%s\"",path));
@@ -835,7 +835,7 @@ const Objects::Texture* ObjectsManager::Create2D(const HorseRadish::IO::Path &pa
 	HorseRadish::Streams::FileStream fileStream(path, true, false);
 
 	//leio a imagem
-	img = HorseRadish::Imaging::Factory::Read(&HorseRadish::Streams::StreamReader(&fileStream));
+	img = HorseRadish::Imaging::Factory::Read(HorseRadish::Streams::StreamReader(fileStream));
 	if (img == nullptr)
 	{
 		//SConsole::SConsolePLog(logID,HorseRadish::String("Unable to open file \"%s\"",path));
@@ -1018,7 +1018,7 @@ const Objects::Texture* ObjectsManager::CreateCube(const HorseRadish::IO::Path &
 	HorseRadish::Streams::FileStream fileStream(path, true, false);
 
 	//leio a imagem
-	img = HorseRadish::Imaging::Factory::Read(&HorseRadish::Streams::StreamReader(&fileStream));
+	img = HorseRadish::Imaging::Factory::Read(HorseRadish::Streams::StreamReader(fileStream));
 	if (img == nullptr)
 	{
 		//SConsole::SConsolePLog(logID,HorseRadish::String("Unable to open file \"%s\"",path));
@@ -1154,7 +1154,7 @@ const Objects::Texture* ObjectsManager::CreateRect(const bool immutable, const H
 	HorseRadish::Streams::FileStream fileStream(path, true, false);
 
 	//leio a imagem
-	img = HorseRadish::Imaging::Factory::Read(&HorseRadish::Streams::StreamReader(&fileStream));
+	img = HorseRadish::Imaging::Factory::Read(HorseRadish::Streams::StreamReader(fileStream));
 	if (img == nullptr)
 	{
 		//SConsole::SConsolePLog(logID,HorseRadish::String("Unable to open file \"%s\"",path));

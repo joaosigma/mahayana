@@ -1,6 +1,4 @@
 #pragma once
-#ifndef __HTIMER__
-#define __HTIMER__
 
 #include "Types.hpp"
 
@@ -33,6 +31,4 @@ namespace HorseRadish
 		void AddMS(const double miliseconds);
 	};
 
-} //namespace HorseRadish
-
-#endif
+} //HorseRadish

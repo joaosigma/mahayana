@@ -1,11 +1,8 @@
 #pragma once
-#ifndef __HR_VIDEO__
-#define __HR_VIDEO__
 
 #include "common\Platform.hpp"
 #include "common\Types.hpp"
 #include "common\Timer.hpp"
-#include "common\Containers.hpp"
 #include "common\Image.hpp"
 #include "common\Primitives2D.hpp"
 
@@ -54,11 +51,11 @@ private:
 	void processAVFrame();
 	void recycleVideoFrameQueue();
 	VideoFrame* getLatestFrame() const;
-	
+
 public:
 	explicit VideoStream(const unsigned int maxFramesQueue, const PixelFormat frameTargetPixelFormat, const char * const videoFilePath);
 	~VideoStream();
-	
+
 	static void Initialize();
 
 	void Process();
@@ -79,5 +76,3 @@ public:
 	void GetVideoRect(const int winWidth, const int winHeight, const bool maintainAspectRatio, HorseRadish::Primitives2D::Rectangle<int> &rect) const;
 	void GetVideoRectCenter(const float scale, const int winWidth, const int winHeight, HorseRadish::Primitives2D::Rectangle<int> &rect) const;
 };
-
-#endif
