@@ -8,23 +8,18 @@ namespace HorseRadish
 {
 	namespace Render
 	{
-		void RendererDeferred::renderGBuffer(const HorseRadish::OpenGL::Tools::Camera * const hrCamera, const HorseRadish::OpenGL::Tools::Viewport * const hrViewport)
+		void RendererDeferred::renderGBuffer(const Tools::Camera& hrCamera, const HorseRadish::OpenGL::Tools::Viewport& hrViewport)
 		{
-			HorseRadish::Matrix matrixTransformacao, matrixModelView, matrixIdentidade;
+			HorseRadish::Matrix matrixModelView;
 
-			matrixTransformacao.SetIdentidade();
-			matrixModelView.SetIdentidade();
-			matrixIdentidade.SetIdentidade();
-
-			this->vbos.vaoMesh->Bind();
-
-			matrixTransformacao.Set(hrViewport->getProjCurrent());
-			matrixModelView.Set(hrCamera->GetModelView());
+			HorseRadish::Matrix matrixTransformacao = hrViewport.getProjection(HorseRadish::OpenGL::Tools::Viewport::ProjectionType::Proj3D);
+			matrixModelView.Set(hrCamera.GetModelView());
 			matrixTransformacao *= matrixModelView;
 
-			this->fbos.fboDeferredGBuffer->Bind();
+			vbos.vaoMesh.bind();
+			fbos.fboDeferredGBuffer.bind();
 
-			hrViewport->updateGL();
+			HorseRadish::OpenGL::glViewport(0, 0, hrViewport.getWidth(), hrViewport.getHeight());
 
 			GLenum mrt[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3 };
 			HorseRadish::OpenGL::glDrawBuffers(4, mrt);
@@ -40,45 +35,46 @@ namespace HorseRadish
 
 			HorseRadish::OpenGL::glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-			this->shaders.progDeferredGBuffer->Bind();
-			HorseRadish::OpenGL::glUniformMatrix4fv(this->glUniformCache->GetUniformPos(this->shaders.progDeferredGBuffer->glID, "matView"), 1, GL_FALSE, matrixModelView);
-			HorseRadish::OpenGL::glUniformMatrix4fv(this->glUniformCache->GetUniformPos(this->shaders.progDeferredGBuffer->glID, "matTrans"), 1, GL_FALSE, matrixTransformacao);
-			HorseRadish::OpenGL::glUniform1f(this->glUniformCache->GetUniformPos(this->shaders.progDeferredGBuffer->glID, "farClipPlane"), hrViewport->getZFar());
+			HorseRadish::OpenGL::glUseProgram(0);
+			HorseRadish::OpenGL::glProgramUniformMatrix4fv(this->shaders.deferred.vertex.getId(), this->shaders.deferred.vertex.getUniformLocation("matView"), 1, false, matrixModelView);
+			HorseRadish::OpenGL::glProgramUniformMatrix4fv(this->shaders.deferred.vertex.getId(), this->shaders.deferred.vertex.getUniformLocation("matTrans"), 1, false, matrixTransformacao);
+			HorseRadish::OpenGL::glProgramUniform1f(this->shaders.deferred.fragment.getId(), this->shaders.deferred.fragment.getUniformLocation("farClipPlane"), hrViewport.getZFar());
+			HorseRadish::OpenGL::glBindProgramPipeline(this->shaders.deferred.pipeline.getId());
 
-			this->samplers.samplerNormals->Bind(1);
-			this->samplers.samplerAlbedo->Bind(0);
+			this->samplers.samplerNormals.bind(1);
+			this->samplers.samplerAlbedo.bind(0);
 
 			for (auto& curSurf : this->renderWorld->renderContent.surfaces)
 			{
-				if (curSurf == nullptr)
+				if ((curSurf == nullptr) || (curSurf->texData == nullptr))
 					break;
 
 				auto curGeom = curSurf->geometry;
 
-				if (curSurf->texData.lighting.normal != nullptr)
-					curSurf->texData.lighting.normal->Bind(1);
+				if (curSurf->texData->lighting.normal.isValid())
+					curSurf->texData->lighting.normal.bind(1);
 				else
-					this->texDefaultNormals->Bind(1);
+					this->texDefaultNormals.bind(1);
 
-				if (curSurf->texData.lighting.diffuse != nullptr)
-					curSurf->texData.lighting.diffuse->Bind(0);
+				if (curSurf->texData->lighting.diffuse.isValid())
+					curSurf->texData->lighting.diffuse.bind(0);
 				else
-					this->texDefaultAlbedo->Bind(0);
+					this->texDefaultAlbedo.bind(0);
 
 				HorseRadish::OpenGL::glDrawRangeElementsBaseVertex(GL_TRIANGLES, 0, curGeom->mesh.GetNumElements(), curGeom->mesh.GetNumIndices(), curGeom->mesh.GetIndexType(), curGeom->renderTriListOffset, curGeom->renderVBOVertexOffset);
 
-				this->stats.numGlDrawElements++;
-				this->stats.numTris += curGeom->mesh.GetNumIndices() / 3;
+				this->mStats.numGlDrawElements++;
+				this->mStats.numTris += curGeom->mesh.GetNumIndices() / 3;
 			}
 
 			HorseRadish::OpenGL::glBindVertexArray(0);
 			HorseRadish::OpenGL::glUseProgram(0);
 		}
 
-		void RendererDeferred::renderFinal(const HorseRadish::OpenGL::Tools::Camera * const hrCamera, const HorseRadish::OpenGL::Tools::Viewport * const hrViewport)
+		void RendererDeferred::renderFinal(const Tools::Camera& hrCamera, const HorseRadish::OpenGL::Tools::Viewport& hrViewport)
 		{
-			int winX = hrViewport->getWidth();
-			int winY = hrViewport->getHeight();
+			auto winX = hrViewport.getWidth();
+			auto winY = hrViewport.getHeight();
 
 			HorseRadish::OpenGL::glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
@@ -86,46 +82,34 @@ namespace HorseRadish
 			HorseRadish::OpenGL::glDisable(GL_DEPTH_TEST);
 			HorseRadish::OpenGL::glDepthMask(GL_FALSE);
 
-			this->shaders.progPPSimpleColor->Bind();
-			HorseRadish::OpenGL::glUniformMatrix4fv(this->glUniformCache->GetUniformPos(this->shaders.progPPSimpleColor->glID, "projectionMatrix"), 1, GL_FALSE, hrViewport->getProj2D());
+			HorseRadish::OpenGL::glUseProgram(0);
+			HorseRadish::OpenGL::glProgramUniformMatrix4fv(this->shaders.postprocess.vertex.getId(), this->shaders.postprocess.vertex.getUniformLocation("projectionMatrix"), 1, false, hrViewport.getProjection(HorseRadish::OpenGL::Tools::Viewport::ProjectionType::Proj2D));
+			HorseRadish::OpenGL::glBindProgramPipeline(this->shaders.postprocess.pipeline.getId());
 
-			this->fbos.samplerTexs->Bind(4);
-			this->fbos.samplerTexs->Bind(3);
-			this->fbos.samplerTexs->Bind(2);
-			this->fbos.samplerTexs->Bind(1);
-			this->fbos.samplerTexs->Bind(0);
+			fbos.samplerTexs.bind(4);
+			fbos.samplerTexs.bind(3);
+			fbos.samplerTexs.bind(2);
+			fbos.samplerTexs.bind(1);
+			fbos.samplerTexs.bind(0);
 
-			this->fbos.texDeferredZ->Bind(4);
-			this->fbos.texDeferredMiscB->Bind(3);
-			this->fbos.texDeferredMiscA->Bind(2);
-			this->fbos.texDeferredNormals->Bind(1);
-			this->fbos.texDeferredAlbedo->Bind(0);
-			this->glImmediateMode->BeginDraw(HorseRadish::OpenGL::Tools::ImmediateMode::GeometryType::Quads);
-			this->glImmediateMode->AddColorF(1.0f);
+			fbos.texDeferredZ.bind(4);
+			fbos.texDeferredMiscB.bind(3);
+			fbos.texDeferredMiscA.bind(2);
+			fbos.texDeferredNormals.bind(1);
+			fbos.texDeferredAlbedo.bind(0);
 
-			this->glImmediateMode->AddTexCoord(0.0f, 0.0f);
-			this->glImmediateMode->AddPosition(0.0f, 0.0f);
-
-			this->glImmediateMode->AddTexCoord(winX, 0.0f);
-			this->glImmediateMode->AddPosition(winX, 0.0f);
-
-			this->glImmediateMode->AddTexCoord(winX, winY);
-			this->glImmediateMode->AddPosition(winX, winY);
-
-			this->glImmediateMode->AddTexCoord(0.0f, winY);
-			this->glImmediateMode->AddPosition(0.0f, winY);
-			this->glImmediateMode->EndDraw();
+			glImmediateMode->beginDraw(HorseRadish::OpenGL::Tools::ImmediateMode::GeometryType::Quads);
+				glImmediateMode->setColorF(1.0f);
+				glImmediateMode->addQuadTexCoords(0.0f, 0.0f, winX, winY, false);
+			glImmediateMode->endDraw();
 		}
 
 		void RendererDeferred::loadGeometry()
 		{
 			int poolVertex, poolIndex, baseVertexOffset;
 
-			if (this->vbos.vboMeshData != nullptr)
-				this->glObjectManager->ObjectDelete(this->vbos.vboMeshData);
-			if (this->vbos.vboMeshIndexData != nullptr)
-				this->glObjectManager->ObjectDelete(this->vbos.vboMeshIndexData);
-			this->vbos.vboMeshData = this->vbos.vboMeshIndexData = nullptr;
+			vbos.vboMeshData.reset();
+			vbos.vboMeshIndexData.reset();
 			this->vbos.vboMeshSize = this->vbos.vboMeshIndexSize = 0;
 
 			for (const auto& pGeom : this->renderWorld->geometries)
@@ -137,10 +121,8 @@ namespace HorseRadish
 					this->vbos.vboMeshIndexSize += pGeom.mesh.GetNumIndices()*sizeof(unsigned int);
 			}
 
-			this->vbos.vboMeshData = (HorseRadish::OpenGL::Objects::VertexBuffer*)this->glObjectManager->ObjectCreate(HorseRadish::OpenGL::Objects::ObjectsManager::ArrayBuffer);
-			this->vbos.vboMeshIndexData = (HorseRadish::OpenGL::Objects::VertexBuffer*)this->glObjectManager->ObjectCreate(HorseRadish::OpenGL::Objects::ObjectsManager::ElementBuffer);
-			this->vbos.vboMeshData->LoadBuffer(nullptr, this->vbos.vboMeshSize, HorseRadish::OpenGL::Objects::VertexBuffer::Static);
-			this->vbos.vboMeshIndexData->LoadBuffer(nullptr, this->vbos.vboMeshIndexSize, HorseRadish::OpenGL::Objects::VertexBuffer::Static);
+			vbos.vboMeshData.init(OpenGL::Objects::Buffer::Type::ArrayBuffer, vbos.vboMeshSize, OpenGL::Objects::Buffer::UsageType::FrequentOnlyWrite);
+			vbos.vboMeshIndexData.init(OpenGL::Objects::Buffer::Type::ElementArrayBuffer, vbos.vboMeshIndexSize, OpenGL::Objects::Buffer::UsageType::FrequentOnlyWrite);
 
 			baseVertexOffset = 0;
 			poolVertex = poolIndex = 0;
@@ -152,7 +134,8 @@ namespace HorseRadish
 				pGeom.renderTriListOffset = (void*)poolIndex;
 
 				dataSize = pGeom.mesh.GetSize();
-				this->vbos.vboMeshData->UpdateBuffer(pGeom.mesh.SingleBufferPointer(), dataSize, poolVertex);
+
+				vbos.vboMeshData.writeData(pGeom.mesh.SingleBufferPointer(), dataSize, poolVertex);
 				poolVertex += dataSize;
 
 				baseVertexOffset += pGeom.mesh.GetNumElements();
@@ -162,33 +145,30 @@ namespace HorseRadish
 				else
 					indexSize = pGeom.mesh.GetNumIndices()*sizeof(unsigned int);
 
-				this->vbos.vboMeshIndexData->UpdateBuffer(pGeom.mesh.GetIndices(), indexSize, poolIndex);
+				vbos.vboMeshIndexData.writeData(pGeom.mesh.GetIndices(), indexSize, poolIndex);
 				poolIndex += indexSize;
 			}
 
-			if (this->vbos.vaoMesh != nullptr)
-				this->glObjectManager->ObjectDelete(this->vbos.vaoMesh);
-			this->vbos.vaoMesh = nullptr;
+			vbos.vaoMesh.reset();
+			vbos.vaoMesh.init();
 
-			this->vbos.vaoMesh = (HorseRadish::OpenGL::Objects::VertexArray*)this->glObjectManager->ObjectCreate(HorseRadish::OpenGL::Objects::ObjectsManager::VertexArray);
+			HorseRadish::OpenGL::glEnableVertexArrayAttrib(vbos.vaoMesh.getId(), 0);
+			HorseRadish::OpenGL::glEnableVertexArrayAttrib(vbos.vaoMesh.getId(), 1);
+			HorseRadish::OpenGL::glEnableVertexArrayAttrib(vbos.vaoMesh.getId(), 2);
+			HorseRadish::OpenGL::glEnableVertexArrayAttrib(vbos.vaoMesh.getId(), 3);
 
-			HorseRadish::OpenGL::glEnableVertexArrayAttrib(this->vbos.vaoMesh->glID, 0);
-			HorseRadish::OpenGL::glEnableVertexArrayAttrib(this->vbos.vaoMesh->glID, 1);
-			HorseRadish::OpenGL::glEnableVertexArrayAttrib(this->vbos.vaoMesh->glID, 2);
-			HorseRadish::OpenGL::glEnableVertexArrayAttrib(this->vbos.vaoMesh->glID, 3);
+			HorseRadish::OpenGL::glVertexArrayAttribBinding(vbos.vaoMesh.getId(), 0, 0);
+			HorseRadish::OpenGL::glVertexArrayAttribBinding(vbos.vaoMesh.getId(), 1, 0);
+			HorseRadish::OpenGL::glVertexArrayAttribBinding(vbos.vaoMesh.getId(), 2, 0);
+			HorseRadish::OpenGL::glVertexArrayAttribBinding(vbos.vaoMesh.getId(), 3, 0);
 
-			HorseRadish::OpenGL::glVertexArrayAttribBinding(this->vbos.vaoMesh->glID, 0, 0);
-			HorseRadish::OpenGL::glVertexArrayAttribBinding(this->vbos.vaoMesh->glID, 1, 0);
-			HorseRadish::OpenGL::glVertexArrayAttribBinding(this->vbos.vaoMesh->glID, 2, 0);
-			HorseRadish::OpenGL::glVertexArrayAttribBinding(this->vbos.vaoMesh->glID, 3, 0);
+			HorseRadish::OpenGL::glVertexArrayAttribFormat(vbos.vaoMesh.getId(), 0, 3, GL_FLOAT, false, 0);
+			HorseRadish::OpenGL::glVertexArrayAttribFormat(vbos.vaoMesh.getId(), 1, 2, GL_FLOAT, false, 12);
+			HorseRadish::OpenGL::glVertexArrayAttribFormat(vbos.vaoMesh.getId(), 2, 3, GL_FLOAT, false, 20);
+			HorseRadish::OpenGL::glVertexArrayAttribFormat(vbos.vaoMesh.getId(), 4, 4, GL_FLOAT, false, 32);
 
-			HorseRadish::OpenGL::glVertexArrayAttribFormat(this->vbos.vaoMesh->glID, 0, 3, GL_FLOAT, false, 0);
-			HorseRadish::OpenGL::glVertexArrayAttribFormat(this->vbos.vaoMesh->glID, 1, 2, GL_FLOAT, false, 12);
-			HorseRadish::OpenGL::glVertexArrayAttribFormat(this->vbos.vaoMesh->glID, 2, 3, GL_FLOAT, false, 20);
-			HorseRadish::OpenGL::glVertexArrayAttribFormat(this->vbos.vaoMesh->glID, 4, 4, GL_FLOAT, false, 32);
-
-			HorseRadish::OpenGL::glVertexArrayElementBuffer(this->vbos.vaoMesh->glID, this->vbos.vboMeshIndexData->glID);
-			HorseRadish::OpenGL::glVertexArrayVertexBuffer(this->vbos.vaoMesh->glID, 0, this->vbos.vboMeshData->glID, 0, 64);
+			HorseRadish::OpenGL::glVertexArrayElementBuffer(vbos.vaoMesh.getId(), vbos.vboMeshIndexData.getId());
+			HorseRadish::OpenGL::glVertexArrayVertexBuffer(vbos.vaoMesh.getId(), 0, vbos.vboMeshData.getId(), 0, 64);
 		}
 
 		TextureSet::Texture* RendererDeferred::findTexType(TextureSet * const texSet, const int texType)
@@ -205,48 +185,94 @@ namespace HorseRadish
 			return nullptr;
 		}
 
-		const HorseRadish::OpenGL::Objects::Texture* RendererDeferred::loadDiffuse(HorseRadish::IO::FileSystem &fileSystem, TextureSet::Texture* texture)
+		void RendererDeferred::loadDiffuse(HorseRadish::IO::FileSystem &fileSystem, TextureSet::Texture* texture, HorseRadish::OpenGL::Objects::Texture& targetTexture)
 		{
 			if ((texture == nullptr) || (texture->type != 1))
-				return nullptr;
+				return;
 
 			auto fileStream = fileSystem.FileRead(texture->filePath.GetData());
-			if (fileStream == nullptr)
-				return nullptr;
+			if (!fileStream)
+				return;
 
 			auto curImage = HorseRadish::Imaging::Factory::Read(HorseRadish::Streams::StreamReader(*fileStream));
-
-			delete fileStream;
-
 			if (curImage == nullptr)
-				return nullptr;
+				return;
 
-			auto glTex = this->glTextureManager->Create2D(curImage, HorseRadish::OpenGL::Objects::ObjectsManager::RGBA32, 0);
+			HorseRadish::OpenGL::Objects::Texture::DataFormat texFormat;
+			switch (curImage->GetFormat())
+			{
+			case HorseRadish::Imaging::Image::RGB:		texFormat = HorseRadish::OpenGL::Objects::Texture::DataFormat::RGB; break;
+			case HorseRadish::Imaging::Image::RGBA:		texFormat = HorseRadish::OpenGL::Objects::Texture::DataFormat::RGBA; break;
+			case HorseRadish::Imaging::Image::BGR:		texFormat = HorseRadish::OpenGL::Objects::Texture::DataFormat::BGR; break;
+			case HorseRadish::Imaging::Image::BGRA:		texFormat = HorseRadish::OpenGL::Objects::Texture::DataFormat::BGRA; break;
+			case HorseRadish::Imaging::Image::Red:		texFormat = HorseRadish::OpenGL::Objects::Texture::DataFormat::R; break;
+			case HorseRadish::Imaging::Image::Green:	texFormat = HorseRadish::OpenGL::Objects::Texture::DataFormat::G; break;
+			case HorseRadish::Imaging::Image::Blue:		texFormat = HorseRadish::OpenGL::Objects::Texture::DataFormat::B; break;
+			default:
+				delete curImage;
+				return;
+			}
+
+			HorseRadish::OpenGL::Objects::Texture::DataType texType;
+			switch (curImage->GetType())
+			{
+			case HorseRadish::Imaging::Image::UByte:		texType = HorseRadish::OpenGL::Objects::Texture::DataType::UBYTE; break;
+			case HorseRadish::Imaging::Image::Float:		texType = HorseRadish::OpenGL::Objects::Texture::DataType::FLOAT; break;
+			default:
+				delete curImage;
+				return;
+			}
+
+			targetTexture.init(HorseRadish::OpenGL::Objects::Texture::Type::Tex2D, HorseRadish::OpenGL::Objects::Texture::StorageType::RGBA_8, curImage->GetWidth(), curImage->GetHeight());
+			targetTexture.uploadData(0, 0, 0, curImage->GetWidth(), curImage->GetHeight(), texFormat, texType, curImage->GetPixelData());
+			targetTexture.genMipmaps();
 
 			delete curImage;
-			return glTex;
 		}
 
-		const HorseRadish::OpenGL::Objects::Texture* RendererDeferred::loadNormal(HorseRadish::IO::FileSystem &fileSystem, TextureSet::Texture* texture)
+		void RendererDeferred::loadNormal(HorseRadish::IO::FileSystem &fileSystem, TextureSet::Texture* texture, HorseRadish::OpenGL::Objects::Texture& targetTexture)
 		{
 			if ((texture == nullptr) || (texture->type != 3))
-				return nullptr;
+				return;
 
 			auto fileStream = fileSystem.FileRead(texture->filePath.GetData());
-			if (fileStream == nullptr)
-				return nullptr;
+			if (!fileStream)
+				return;
 
 			auto curImage = HorseRadish::Imaging::Factory::Read(HorseRadish::Streams::StreamReader(*fileStream));
-
-			delete fileStream;
-
 			if (curImage == nullptr)
-				return nullptr;
+				return;
 
-			auto glTex = this->glTextureManager->Create2D(curImage, HorseRadish::OpenGL::Objects::ObjectsManager::RGBA32, STEXTURE_NORMAL_MAP_MIPS);
+			HorseRadish::OpenGL::Objects::Texture::DataFormat texFormat;
+			switch (curImage->GetFormat())
+			{
+			case HorseRadish::Imaging::Image::RGB:		texFormat = HorseRadish::OpenGL::Objects::Texture::DataFormat::RGB; break;
+			case HorseRadish::Imaging::Image::RGBA:		texFormat = HorseRadish::OpenGL::Objects::Texture::DataFormat::RGBA; break;
+			case HorseRadish::Imaging::Image::BGR:		texFormat = HorseRadish::OpenGL::Objects::Texture::DataFormat::BGR; break;
+			case HorseRadish::Imaging::Image::BGRA:		texFormat = HorseRadish::OpenGL::Objects::Texture::DataFormat::BGRA; break;
+			case HorseRadish::Imaging::Image::Red:		texFormat = HorseRadish::OpenGL::Objects::Texture::DataFormat::R; break;
+			case HorseRadish::Imaging::Image::Green:	texFormat = HorseRadish::OpenGL::Objects::Texture::DataFormat::G; break;
+			case HorseRadish::Imaging::Image::Blue:		texFormat = HorseRadish::OpenGL::Objects::Texture::DataFormat::B; break;
+			default:
+				delete curImage;
+				return;
+			}
+
+			HorseRadish::OpenGL::Objects::Texture::DataType texType;
+			switch (curImage->GetType())
+			{
+			case HorseRadish::Imaging::Image::UByte:		texType = HorseRadish::OpenGL::Objects::Texture::DataType::UBYTE; break;
+			case HorseRadish::Imaging::Image::Float:		texType = HorseRadish::OpenGL::Objects::Texture::DataType::FLOAT; break;
+			default:
+				delete curImage;
+				return;
+			}
+
+			targetTexture.init(HorseRadish::OpenGL::Objects::Texture::Type::Tex2D, HorseRadish::OpenGL::Objects::Texture::StorageType::RGBA_8, curImage->GetWidth(), curImage->GetHeight());
+			targetTexture.uploadData(0, 0, 0, curImage->GetWidth(), curImage->GetHeight(), texFormat, texType, curImage->GetPixelData());
+			targetTexture.genMipmaps();
 
 			delete curImage;
-			return glTex;
 		}
 
 		void RendererDeferred::loadTextures(HorseRadish::IO::FileSystem &fileSystem)
@@ -256,63 +282,34 @@ namespace HorseRadish
 				if (curSurf.texSet == nullptr)
 					continue;
 
-				curSurf.texData.lighting.diffuse = loadDiffuse(fileSystem, findTexType(curSurf.texSet, 1));
-				curSurf.texData.lighting.normal = loadNormal(fileSystem, findTexType(curSurf.texSet, 3));
+				if (curSurf.texData == nullptr)
+					curSurf.texData = new HorseRadish::Render::Surface::TextureData();
+
+				curSurf.texData->lighting.diffuse.reset();
+				loadDiffuse(fileSystem, findTexType(curSurf.texSet, 1), curSurf.texData->lighting.diffuse);
+
+				curSurf.texData->lighting.normal.reset();
+				loadNormal(fileSystem, findTexType(curSurf.texSet, 3), curSurf.texData->lighting.normal);
 			}
 		}
 
-		RendererDeferred::RendererDeferred(HorseRadish::OpenGL::Objects::Context * const glContext, HorseRadish::Render::World* const renderWorld)
+		RendererDeferred::RendererDeferred(const HorseRadish::OpenGL::Objects::Context& glContext, HorseRadish::Render::World* const renderWorld)
 			: Renderer(glContext), renderWorld(renderWorld)
 		{
-			this->glObjectManager = new HorseRadish::OpenGL::Objects::ObjectsManager(glContext);
-			this->glTextureManager = new HorseRadish::OpenGL::Objects::ObjectsManager(glContext);
-			this->glUniformCache = new HorseRadish::OpenGL::Tools::UniformCache();
 			this->glImmediateMode = new HorseRadish::OpenGL::Tools::ImmediateMode(102);
 
-			this->texDefaultAlbedo = this->glObjectManager->Create2D(HorseRadish::IO::Path("media\\defaultAlbedo.png"), HorseRadish::OpenGL::Objects::ObjectsManager::RGBA32, 0);
-			this->texDefaultNormals = this->glObjectManager->Create2D(HorseRadish::IO::Path("media\\defaultNormals.png"), HorseRadish::OpenGL::Objects::ObjectsManager::RGBA32, STEXTURE_NORMAL_MAP_MIPS);
+			//this->texDefaultAlbedo = this->glObjectManager->Create2D(HorseRadish::IO::Path("media\\defaultAlbedo.png"), HorseRadish::OpenGL::Objects::ObjectsManager::TargetType::RGBA32, 0);
+			//this->texDefaultNormals = this->glObjectManager->Create2D(HorseRadish::IO::Path("media\\defaultNormals.png"), HorseRadish::OpenGL::Objects::ObjectsManager::TargetType::RGBA32, STEXTURE_NORMAL_MAP_MIPS);
 		}
 
 		RendererDeferred::~RendererDeferred()
 		{
-			this->glObjectManager->ObjectDelete(this->fbos.fboDeferredGBuffer);
-			this->glObjectManager->ObjectDelete(this->fbos.samplerTexs);
-			this->glObjectManager->ObjectDelete(this->fbos.texDeferredAlbedo);
-			this->glObjectManager->ObjectDelete(this->fbos.texDeferredNormals);
-			this->glObjectManager->ObjectDelete(this->fbos.texDeferredMiscA);
-			this->glObjectManager->ObjectDelete(this->fbos.texDeferredMiscB);
-			this->glObjectManager->ObjectDelete(this->fbos.texDeferredZ);
-			this->glObjectManager->ObjectDelete(this->shaders.progDeferredGBuffer);
-			this->glObjectManager->ObjectDelete(this->shaders.progMainDebug);
-			this->glObjectManager->ObjectDelete(this->shaders.progPerVertexLightDir);
-			this->glObjectManager->ObjectDelete(this->shaders.progPPSimpleColor);
-			this->glObjectManager->ObjectDelete(this->shaders.renderZPass);
-			this->fbos.fboDeferredGBuffer = nullptr;
-			this->fbos.samplerTexs = nullptr;
-			this->fbos.texDeferredAlbedo = nullptr;
-			this->fbos.texDeferredNormals = nullptr;
-			this->fbos.texDeferredMiscA = nullptr;
-			this->fbos.texDeferredMiscB = nullptr;
-			this->fbos.texDeferredZ = nullptr;
-			this->shaders.progDeferredGBuffer = nullptr;
-			this->shaders.progMainDebug = nullptr;
-			this->shaders.progPerVertexLightDir = nullptr;
-			this->shaders.progPPSimpleColor = nullptr;
-			this->shaders.renderZPass = nullptr;
+			this->texDefaultAlbedo.reset();
+			this->texDefaultNormals.reset();
 
-			this->glObjectManager->ObjectDelete(this->texDefaultAlbedo);
-			this->glObjectManager->ObjectDelete(this->texDefaultNormals);
-
-			delete this->glObjectManager;
-			delete this->glTextureManager;
-			delete this->glUniformCache;
 			delete this->glImmediateMode;
 
-			this->glObjectManager = nullptr;
-			this->glTextureManager = nullptr;
-			this->glUniformCache = nullptr;
 			this->glImmediateMode = nullptr;
-			this->texDefaultAlbedo = this->texDefaultNormals = nullptr;
 		}
 
 		void RendererDeferred::Initialize(const int &renderWidth, const int &renderHeight, HorseRadish::IO::FileSystem * const fileSystem)
@@ -329,55 +326,51 @@ namespace HorseRadish
 			this->shadersWatchFolderID = this->fileSystem->WatchChangeCreate(pathShaders, false, HorseRadish::IO::FileSystem::FileLastWrite);
 
 			//FBOs
-			this->fbos.fboDeferredGBuffer = (HorseRadish::OpenGL::Objects::FrameBuffer*)this->glObjectManager->ObjectCreate(HorseRadish::OpenGL::Objects::ObjectsManager::FrameBuffer);
-			this->fbos.texDeferredAlbedo = this->glObjectManager->CreateRect(true, nullptr, renderWidth, renderHeight, HorseRadish::OpenGL::Objects::ObjectsManager::RGBA64);
-			this->fbos.texDeferredNormals = this->glObjectManager->CreateRect(true, nullptr, renderWidth, renderHeight, HorseRadish::OpenGL::Objects::ObjectsManager::RGBA64);
-			this->fbos.texDeferredMiscA = this->glObjectManager->CreateRect(true, nullptr, renderWidth, renderHeight, HorseRadish::OpenGL::Objects::ObjectsManager::RGBA64);
-			this->fbos.texDeferredMiscB = this->glObjectManager->CreateRect(true, nullptr, renderWidth, renderHeight, HorseRadish::OpenGL::Objects::ObjectsManager::RGBA64);
-			this->fbos.texDeferredZ = this->glObjectManager->CreateRect(true, nullptr, renderWidth, renderHeight, HorseRadish::OpenGL::Objects::ObjectsManager::Depth24);
+			fbos.texDeferredAlbedo.init(HorseRadish::OpenGL::Objects::Texture::Type::TexRectangle, HorseRadish::OpenGL::Objects::Texture::StorageType::RGBA_16F, renderWidth, renderHeight);
+			fbos.texDeferredNormals.init(HorseRadish::OpenGL::Objects::Texture::Type::TexRectangle, HorseRadish::OpenGL::Objects::Texture::StorageType::RGBA_16F, renderWidth, renderHeight);
+			fbos.texDeferredMiscA.init(HorseRadish::OpenGL::Objects::Texture::Type::TexRectangle, HorseRadish::OpenGL::Objects::Texture::StorageType::RGBA_16F, renderWidth, renderHeight);
+			fbos.texDeferredMiscB.init(HorseRadish::OpenGL::Objects::Texture::Type::TexRectangle, HorseRadish::OpenGL::Objects::Texture::StorageType::RGBA_16F, renderWidth, renderHeight);
+			fbos.texDeferredZ.init(HorseRadish::OpenGL::Objects::Texture::Type::TexRectangle, HorseRadish::OpenGL::Objects::Texture::StorageType::DEPTH_24, renderWidth, renderHeight);
 
-			this->fbos.fboDeferredGBuffer->AttachTColor(this->fbos.texDeferredAlbedo, 0);
-			this->fbos.fboDeferredGBuffer->AttachTColor(this->fbos.texDeferredNormals, 1);
-			this->fbos.fboDeferredGBuffer->AttachTColor(this->fbos.texDeferredMiscA, 2);
-			this->fbos.fboDeferredGBuffer->AttachTColor(this->fbos.texDeferredMiscB, 3);
-			this->fbos.fboDeferredGBuffer->AttachTDepth(this->fbos.texDeferredZ);
-			this->fbos.fboDeferredGBuffer->GetStatusComplete();
+			fbos.fboDeferredGBuffer.reset();
+			fbos.fboDeferredGBuffer.init();
+			fbos.fboDeferredGBuffer.attachTColor(fbos.texDeferredAlbedo, 0)
+									.attachTColor(fbos.texDeferredNormals, 1)
+									.attachTColor(fbos.texDeferredMiscA, 2)
+									.attachTColor(fbos.texDeferredMiscB, 3)
+									.attachTDepth(fbos.texDeferredZ);
+			fbos.fboDeferredGBuffer.isStatusComplete();
 
 			//samplers for the FBOs
-			this->fbos.samplerTexs = (HorseRadish::OpenGL::Objects::Sampler*)this->glObjectManager->ObjectCreate(HorseRadish::OpenGL::Objects::ObjectsManager::Sampler);
-			this->fbos.samplerTexs->SetMinFilter(HorseRadish::OpenGL::Objects::Sampler::Point);
-			this->fbos.samplerTexs->SetMagFilter(HorseRadish::OpenGL::Objects::Sampler::Point);
-			this->fbos.samplerTexs->SetWrap(HorseRadish::OpenGL::Objects::Sampler::ClampEdge);
+			this->fbos.samplerTexs.init();
+			this->fbos.samplerTexs.setMinFilter(HorseRadish::OpenGL::Objects::Sampler::FilterType::Point);
+			this->fbos.samplerTexs.setMagFilter(HorseRadish::OpenGL::Objects::Sampler::FilterType::Point);
+			this->fbos.samplerTexs.setWrap(HorseRadish::OpenGL::Objects::Sampler::WrapType::ClampEdge);
 
 			HorseRadish::OpenGL::glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 			//shaders
-			this->shaders.progDeferredGBuffer = (const HorseRadish::OpenGL::Objects::Program*)this->glObjectManager->ObjectCreate(HorseRadish::OpenGL::Objects::ObjectsManager::Program);
-			this->glObjectManager->ShadersRead(fileSystem, this->shaders.progDeferredGBuffer, "shaders/deferred_gbuffer.vshader", "shaders/deferred_gbuffer.fshader", nullptr);
-			this->shaders.progMainDebug = (const HorseRadish::OpenGL::Objects::Program*)this->glObjectManager->ObjectCreate(HorseRadish::OpenGL::Objects::ObjectsManager::Program);
-			this->glObjectManager->ShadersRead(fileSystem, this->shaders.progMainDebug, "shaders/mainDebug.vshader", "shaders/mainDebug.fshader", nullptr);
-			this->shaders.progPerVertexLightDir = (const HorseRadish::OpenGL::Objects::Program*)this->glObjectManager->ObjectCreate(HorseRadish::OpenGL::Objects::ObjectsManager::Program);
-			this->glObjectManager->ShadersRead(fileSystem, this->shaders.progPerVertexLightDir, "shaders/pvLightDirectional.vshader", "shaders/pvLightDirectional.fshader", nullptr);
+			this->shaders.deferred.vertex.init(HorseRadish::OpenGL::Objects::ShaderProgram::Type::Vertex, fileSystem->readFileAsString("shaders/deferred_gbuffer.vshader"));
+			this->shaders.deferred.fragment.init(HorseRadish::OpenGL::Objects::ShaderProgram::Type::Fragment, fileSystem->readFileAsString("shaders/deferred_gbuffer.fshader"));
+			this->shaders.deferred.pipeline.init();
+			this->shaders.deferred.pipeline.setStage(this->shaders.deferred.vertex);
+			this->shaders.deferred.pipeline.setStage(this->shaders.deferred.fragment);
 
-			this->shaders.progPPSimpleColor = (const HorseRadish::OpenGL::Objects::Program*)this->glObjectManager->ObjectCreate(HorseRadish::OpenGL::Objects::ObjectsManager::Program);
-			this->glObjectManager->ShadersRead(fileSystem, this->shaders.progPPSimpleColor, "shaders/ppSimpleColor.vshader", "shaders/ppSimpleColor.fshader", nullptr);
-
-			this->shaders.renderZPass = (const HorseRadish::OpenGL::Objects::Program*)this->glObjectManager->ObjectCreate(HorseRadish::OpenGL::Objects::ObjectsManager::Program);
-			this->glObjectManager->ShadersRead(fileSystem, this->shaders.renderZPass, "shaders/rZPass.vshader", "shaders/rZPass.fshader", nullptr);
+			this->shaders.postprocess.vertex.init(HorseRadish::OpenGL::Objects::ShaderProgram::Type::Vertex, fileSystem->readFileAsString("shaders/ppSimpleColor.vshader"));
+			this->shaders.postprocess.fragment.init(HorseRadish::OpenGL::Objects::ShaderProgram::Type::Fragment, fileSystem->readFileAsString("shaders/ppSimpleColor.fshader"));
+			this->shaders.postprocess.pipeline.init();
+			this->shaders.postprocess.pipeline.setStage(this->shaders.postprocess.vertex);
+			this->shaders.postprocess.pipeline.setStage(this->shaders.postprocess.fragment);
 
 			//samplers
-			this->samplers.samplerAlbedo = (HorseRadish::OpenGL::Objects::Sampler*)this->glObjectManager->ObjectCreate(HorseRadish::OpenGL::Objects::ObjectsManager::Sampler);
-			this->samplers.samplerAlbedo->SetMinFilter(HorseRadish::OpenGL::Objects::Sampler::LinearMipPoint);
-			this->samplers.samplerAlbedo->SetMagFilter(HorseRadish::OpenGL::Objects::Sampler::Linear);
-			this->glObjectManager->SamplerSetAnisotropy(this->samplers.samplerAlbedo, 8.0f);
+			this->samplers.samplerAlbedo.init(HorseRadish::OpenGL::Objects::Sampler::FilterType::Linear, HorseRadish::OpenGL::Objects::Sampler::FilterType::LinearMipPoint);
+			this->samplers.samplerAlbedo.setAnisotropy(mGlContext, 8.0f);
 
-			this->samplers.samplerNormals = (HorseRadish::OpenGL::Objects::Sampler*)this->glObjectManager->ObjectCreate(HorseRadish::OpenGL::Objects::ObjectsManager::Sampler);
-			this->samplers.samplerNormals->SetMinFilter(HorseRadish::OpenGL::Objects::Sampler::LinearMipPoint);
-			this->samplers.samplerNormals->SetMagFilter(HorseRadish::OpenGL::Objects::Sampler::Linear);
-			this->glObjectManager->SamplerSetAnisotropy(this->samplers.samplerAlbedo, 8.0f);
+			this->samplers.samplerNormals.init(HorseRadish::OpenGL::Objects::Sampler::FilterType::Linear, HorseRadish::OpenGL::Objects::Sampler::FilterType::LinearMipPoint);
+			this->samplers.samplerNormals.setAnisotropy(mGlContext, 8.0f);
 		}
 
-		const HorseRadish::OpenGL::Objects::Texture* RendererDeferred::GetRTTexture(const RendererDeferred::RenderTargetType &renderTargetType) const
+		/*const HorseRadish::OpenGL::Objects::Texture* RendererDeferred::GetRTTexture(const RendererDeferred::RenderTargetType &renderTargetType) const
 		{
 			if (renderTargetType == RendererDeferred::RenderTargetType::Albedo)
 				return this->fbos.texDeferredAlbedo;
@@ -388,7 +381,7 @@ namespace HorseRadish
 			if (renderTargetType == RendererDeferred::RenderTargetType::MiscB)
 				return this->fbos.texDeferredMiscB;
 			return nullptr;
-		}
+		}*/
 
 		void RendererDeferred::LoadWorld(HorseRadish::IO::FileSystem &fileSystem)
 		{
@@ -397,7 +390,7 @@ namespace HorseRadish
 			loadTextures(fileSystem);
 		}
 
-		void RendererDeferred::Render(const HorseRadish::OpenGL::Tools::Camera * const hrCamera, const HorseRadish::OpenGL::Tools::Viewport * const hrViewport)
+		void RendererDeferred::Render(const Tools::Camera& hrCamera, const HorseRadish::OpenGL::Tools::Viewport& hrViewport)
 		{
 			if (this->fileSystem->WatchChanged(this->shadersWatchFolderID) == true)
 				this->fileSystem = this->fileSystem;

@@ -3,6 +3,7 @@
 #include "Types.hpp"
 #include "Vector.hpp"
 #include "Math.hpp"
+#include "Encoders.hpp"
 
 #include <xmmintrin.h>
 #include <emmintrin.h>
@@ -230,40 +231,66 @@ namespace HorseRadish
 			_mm_storeu_ps(valF, valFinal);
 		}
 
+		static Color ParseColorFromHTML(const char *hexColor)
+		{
+			if (*hexColor == '#')
+				hexColor++;
+
+			Color color;
+			color.r = Encoders::DecodeHexByte(hexColor + 0);
+			color.g = Encoders::DecodeHexByte(hexColor + 2);
+			color.b = Encoders::DecodeHexByte(hexColor + 4);
+			color.a = 255.0f;
+			_mm_storeu_ps(&color.r, _mm_mul_ps(_mm_loadu_ps(&color.r), Math::SIMD::fUByteMaxInv));
+
+			return color;
+		}
+
+		static void ParseColorToHTML(const Color &color, char * const hexColor)
+		{
+			unsigned char colorUByte[4];
+
+			ConvertColor(colorUByte, &color.r, true);
+
+			Encoders::EncodeHexByte(colorUByte[0], hexColor + 0);
+			Encoders::EncodeHexByte(colorUByte[1], hexColor + 2);
+			Encoders::EncodeHexByte(colorUByte[2], hexColor + 4);
+		}
+
 	public:
 		float r, g, b, a;
 
-		inline Color()
+		Color()
 		{
 			_mm_storeu_ps(&r, _mm_setzero_ps());
 		}
 
-		inline Color(const Color &c)
+		Color(const Color &c)
 		{
 			_mm_storeu_ps(&r, _mm_loadu_ps(&c.r));
 		}
 
-		inline Color(const Vector &v)
+		explicit Color(const Vector &v)
 		{
 			_mm_storeu_ps(&r, _mm_loadu_ps(&v.x)); a = 1.0f;
 		}
 
-		inline Color(const Vector4 &v)
+		explicit Color(const Vector4 &v)
 		{
 			_mm_storeu_ps(&r, _mm_loadu_ps(&v.x));
 		}
 
-		explicit inline Color(const float scalar)
+		explicit Color(const float scalar)
 		{
 			_mm_storeu_ps(&r, _mm_load_ps1(&scalar));
 		}
 
-		explicit inline Color(const float cr, const float cg, const float cb, const float ca)
+		explicit Color(const float cr, const float cg, const float cb, const float ca)
 		{
 			r = cr; g = cg; b = cb; a = ca;
 		}
 
-		explicit inline Color(const float * const c)
+		explicit Color(const float * const c)
 		{
 			_mm_storeu_ps(&r, _mm_loadu_ps(c));
 		}

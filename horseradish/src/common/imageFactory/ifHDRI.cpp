@@ -2,8 +2,6 @@
 
 #include "common\imageFactory.hpp"
 
-#include <stdio.h>
-
 #define SCANLINE_MINELEN	8				// minimum scanline length for encoding
 #define SCANLINE_MAXELEN	0x7fff			// maximum scanline length for encoding
 

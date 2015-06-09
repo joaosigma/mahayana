@@ -1,6 +1,6 @@
 #include "BVolumes.hpp"
 
-#include <assert.h>
+#include <cassert>
 
 namespace HorseRadish
 {

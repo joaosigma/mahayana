@@ -4,8 +4,8 @@ namespace HorseRadish
 {
 	namespace Render
 	{
-		Renderer::Renderer(HorseRadish::OpenGL::Objects::Context * const glContext)
-			: glContext(glContext)
+		Renderer::Renderer(const HorseRadish::OpenGL::Objects::Context& glContext)
+			: mGlContext(glContext)
 		{
 		}
 

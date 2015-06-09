@@ -43,11 +43,26 @@
     <Filter Include="libs\lodepng">
       <UniqueIdentifier>{4b0361e6-f669-489f-8c4c-1c8bed24135b}</UniqueIdentifier>
     </Filter>
-    <Filter Include="scripting">
-      <UniqueIdentifier>{5cdd04aa-c0c6-439b-9a36-8918226a641c}</UniqueIdentifier>
-    </Filter>
     <Filter Include="libs\squirrel">
       <UniqueIdentifier>{52ef2aa5-1fe8-470e-87b1-06677b908183}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="engine">
+      <UniqueIdentifier>{f8ef15b6-8464-4338-8f39-421ebc89a217}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="libs\cppformat">
+      <UniqueIdentifier>{da850c5a-1156-4750-a01b-e129ad7504f6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="render\tools">
+      <UniqueIdentifier>{7fb52b8f-685a-4433-b358-764f7655b71e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="common\opengl\tools">
+      <UniqueIdentifier>{aad8dd6c-3cec-4b55-af62-29c0cb1159ce}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="libs\stb">
+      <UniqueIdentifier>{96cea2fa-b4b9-4790-a97e-9590d5422d35}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="libs\sdf">
+      <UniqueIdentifier>{99fce4de-c5ba-4be6-a666-3a9e3f2a368a}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -78,25 +93,7 @@
     <ClCompile Include="..\..\src\common\meshFactory\mfSMD.cpp">
       <Filter>common\meshFactory</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\common\opengl\objects (textures).cpp">
-      <Filter>common\opengl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\common\opengl\objects.cpp">
-      <Filter>common\opengl</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\common\opengl\openGLext.cpp">
-      <Filter>common\opengl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\common\opengl\tools (camera).cpp">
-      <Filter>common\opengl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\common\opengl\tools (font).cpp">
-      <Filter>common\opengl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\common\opengl\tools (viewport frustum).cpp">
-      <Filter>common\opengl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\common\opengl\tools.cpp">
       <Filter>common\opengl</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\common\BAreas.cpp">
@@ -121,12 +118,6 @@
       <Filter>common</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\common\ImageFactory.cpp">
-      <Filter>common</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\common\Logger.cpp">
-      <Filter>common</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\common\Machine.cpp">
       <Filter>common</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\common\Math.cpp">
@@ -170,9 +161,6 @@
     </ClCompile>
     <ClCompile Include="..\..\src\common\UTF.cpp">
       <Filter>common</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\console\console.cpp">
-      <Filter>console</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\console\consoleUI.cpp">
       <Filter>console</Filter>
@@ -462,9 +450,6 @@
     <ClCompile Include="..\..\src\libs\zlib\minizip\zip.c">
       <Filter>libs\zlib\minizip</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\platform\winApp.cpp">
-      <Filter>platform</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\render\renderer.cpp">
       <Filter>render</Filter>
     </ClCompile>
@@ -490,8 +475,17 @@
     <ClCompile Include="..\..\src\common\PlatformWin32.cpp">
       <Filter>common</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\scripting\scripting.cpp">
-      <Filter>scripting</Filter>
+    <ClCompile Include="..\..\src\common\opengl\openGL.cpp">
+      <Filter>common\opengl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\common\Types.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\engine\engine.cpp">
+      <Filter>engine</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\engine\runtime.cpp">
+      <Filter>engine</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\libs\squirrel\sqapi.cpp">
       <Filter>libs\squirrel</Filter>
@@ -523,17 +517,77 @@
     <ClCompile Include="..\..\src\libs\squirrel\sqstate.cpp">
       <Filter>libs\squirrel</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\libs\squirrel\sqstdaux.cpp">
+      <Filter>libs\squirrel</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\libs\squirrel\sqstdblob.cpp">
+      <Filter>libs\squirrel</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\libs\squirrel\sqstdio.cpp">
+      <Filter>libs\squirrel</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\libs\squirrel\sqstdmath.cpp">
+      <Filter>libs\squirrel</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\libs\squirrel\sqstdrex.cpp">
+      <Filter>libs\squirrel</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\libs\squirrel\sqstdstream.cpp">
+      <Filter>libs\squirrel</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\libs\squirrel\sqstdstring.cpp">
+      <Filter>libs\squirrel</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\libs\squirrel\sqstdsystem.cpp">
+      <Filter>libs\squirrel</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\libs\squirrel\sqtable.cpp">
       <Filter>libs\squirrel</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\libs\squirrel\sqvm.cpp">
       <Filter>libs\squirrel</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\common\opengl\openGL.cpp">
+    <ClCompile Include="..\..\src\libs\cppformat\format.cc">
+      <Filter>libs\cppformat</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\engine\logger.cpp">
+      <Filter>engine</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\engine\engineRender.cpp">
+      <Filter>engine</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\platform\window.cpp">
+      <Filter>platform</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\platform\windowImplWin32.cpp">
+      <Filter>platform</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\render\scene.cpp">
+      <Filter>render</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\render\stage.cpp">
+      <Filter>render</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\common\opengl\context.cpp">
       <Filter>common\opengl</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\common\Types.cpp">
-      <Filter>common</Filter>
+    <ClCompile Include="..\..\src\render\tools\font.cpp">
+      <Filter>render\tools</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\render\tools\camera.cpp">
+      <Filter>render\tools</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\common\opengl\tools\frustum.cpp">
+      <Filter>common\opengl\tools</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\common\opengl\tools\immediateMode.cpp">
+      <Filter>common\opengl\tools</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\common\opengl\tools\viewport.cpp">
+      <Filter>common\opengl\tools</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\libs\sdf\sdf.cpp">
+      <Filter>libs\sdf</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -550,9 +604,6 @@
       <Filter>common\opengl</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\common\opengl\openGLext.hpp">
-      <Filter>common\opengl</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\common\opengl\tools.hpp">
       <Filter>common\opengl</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\common\AVL-tree.hpp">
@@ -580,12 +631,6 @@
       <Filter>common</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\common\ImageFactory.hpp">
-      <Filter>common</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\common\Logger.hpp">
-      <Filter>common</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\common\Machine.hpp">
       <Filter>common</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\common\Math.hpp">
@@ -644,9 +689,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\common\Vector.hpp">
       <Filter>common</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\console\console.hpp">
-      <Filter>console</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\console\consoleUI.hpp">
       <Filter>console</Filter>
@@ -1011,9 +1053,6 @@
     <ClInclude Include="..\..\src\libs\zlib\minizip\zip.h">
       <Filter>libs\zlib\minizip</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\platform\winApp.hpp">
-      <Filter>platform</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\render\renderer.hpp">
       <Filter>render</Filter>
     </ClInclude>
@@ -1042,8 +1081,14 @@
     <ClInclude Include="..\..\src\common\PlatformWin32.hpp">
       <Filter>common</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\scripting\scripting.hpp">
-      <Filter>scripting</Filter>
+    <ClInclude Include="..\..\src\common\opengl\openGL.hpp">
+      <Filter>common\opengl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\engine\engine.hpp">
+      <Filter>engine</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\engine\runtime.hpp">
+      <Filter>engine</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\libs\squirrel\sqarray.h">
       <Filter>libs\squirrel</Filter>
@@ -1078,6 +1123,30 @@
     <ClInclude Include="..\..\src\libs\squirrel\sqstate.h">
       <Filter>libs\squirrel</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\libs\squirrel\sqstdaux.h">
+      <Filter>libs\squirrel</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\libs\squirrel\sqstdblob.h">
+      <Filter>libs\squirrel</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\libs\squirrel\sqstdblobimpl.h">
+      <Filter>libs\squirrel</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\libs\squirrel\sqstdio.h">
+      <Filter>libs\squirrel</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\libs\squirrel\sqstdmath.h">
+      <Filter>libs\squirrel</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\libs\squirrel\sqstdstream.h">
+      <Filter>libs\squirrel</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\libs\squirrel\sqstdstring.h">
+      <Filter>libs\squirrel</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\libs\squirrel\sqstdsystem.h">
+      <Filter>libs\squirrel</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\libs\squirrel\sqstring.h">
       <Filter>libs\squirrel</Filter>
     </ClInclude>
@@ -1096,8 +1165,62 @@
     <ClInclude Include="..\..\src\libs\squirrel\sqvm.h">
       <Filter>libs\squirrel</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\common\opengl\openGL.hpp">
+    <ClInclude Include="..\..\src\libs\cppformat\format.h">
+      <Filter>libs\cppformat</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\engine\logger.hpp">
+      <Filter>engine</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\platform\window.hpp">
+      <Filter>platform</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\platform\windowImplWin32.hpp">
+      <Filter>platform</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\render\scene.hpp">
+      <Filter>render</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\render\stage.hpp">
+      <Filter>render</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\common\opengl\context.hpp">
       <Filter>common\opengl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\render\tools\font.hpp">
+      <Filter>render\tools</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\render\tools\camera.hpp">
+      <Filter>render\tools</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\common\opengl\tools\frustum.hpp">
+      <Filter>common\opengl\tools</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\common\opengl\tools\immediateMode.hpp">
+      <Filter>common\opengl\tools</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\common\opengl\tools\viewport.hpp">
+      <Filter>common\opengl\tools</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\libs\stb\stb_dxt.h">
+      <Filter>libs\stb</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\libs\stb\stb_image.h">
+      <Filter>libs\stb</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\libs\stb\stb_image_resize.h">
+      <Filter>libs\stb</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\libs\stb\stb_image_write.h">
+      <Filter>libs\stb</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\libs\stb\stb_rect_pack.h">
+      <Filter>libs\stb</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\libs\stb\stb_truetype.h">
+      <Filter>libs\stb</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\libs\sdf\sdf.h">
+      <Filter>libs\sdf</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

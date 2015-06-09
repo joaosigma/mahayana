@@ -2,8 +2,6 @@
 
 #include "common\platform.hpp"
 
-#include <stdio.h>
-
 #define BSP_POS_OPAQUE		(1<<0)
 #define BSP_POS_AREA		(1<<1)
 #define BSP_POS_NODE		(1<<2)
@@ -76,10 +74,10 @@ void SCULLING::recurseAreaPortal(const AREA * const area, const PORTAL * const p
 
 		getDataFromArea(moveArea, output, outputCount, outputTypeCount);
 
-		//novoNear.SetFromPoints(area->portals[curPortal]->pontos[0],area->portals[curPortal]->pontos[1],area->portals[curPortal]->pontos[2]);
-		newFrustum.SetFrustum(frustum);
-		/*newFrustum.SetIndividualPlane(SFRUSTUM::PLANE_NEAR,novoNear);
-		if (newFrustum.DotNormals(SFRUSTUM::PLANE_NEAR,SFRUSTUM::PLANE_FAR)>0.0f)
+		//novoNear.setFromPoints(area->portals[curPortal]->pontos[0],area->portals[curPortal]->pontos[1],area->portals[curPortal]->pontos[2]);
+		newFrustum.setFrustum(frustum);
+		/*newFrustum.setIndividualPlane(SFRUSTUM::PLANE_NEAR,novoNear);
+		if (newFrustum.dotNormals(SFRUSTUM::PLANE_NEAR,SFRUSTUM::PLANE_FAR)>0.0f)
 		{
 		novoNear.NegateNormal();
 		newFrustum.SetIndividualPlane(SFRUSTUM::PLANE_NEAR,novoNear);
@@ -117,10 +115,10 @@ void SCULLING::recurseAreaPortalDebug(const AREA * const area, const PORTAL * co
 		if (curPortal->neg == area)
 			moveArea = curPortal->pos;
 
-		//novoNear.SetFromPoints(area->portals[curPortal]->pontos[0],area->portals[curPortal]->pontos[1],area->portals[curPortal]->pontos[2]);
-		newFrustum.SetFrustum(frustum);
-		/*newFrustum.SetIndividualPlane(SFRUSTUM::PLANE_NEAR,novoNear);
-		if (newFrustum.DotNormals(SFRUSTUM::PLANE_NEAR,SFRUSTUM::PLANE_FAR)>0.0f)
+		//novoNear.setFromPoints(area->portals[curPortal]->pontos[0],area->portals[curPortal]->pontos[1],area->portals[curPortal]->pontos[2]);
+		newFrustum.setFrustum(frustum);
+		/*newFrustum.setIndividualPlane(SFRUSTUM::PLANE_NEAR,novoNear);
+		if (newFrustum.dotNormals(SFRUSTUM::PLANE_NEAR,SFRUSTUM::PLANE_FAR)>0.0f)
 		{
 		novoNear.NegateNormal();
 		newFrustum.SetIndividualPlane(SFRUSTUM::PLANE_NEAR,novoNear);
@@ -259,7 +257,7 @@ void SCULLING::areaMergeBBox(const unsigned int areaIndex, const HorseRadish::BB
 
 bool SCULLING::areaAddData(const unsigned int areaIndex, const unsigned int typeObject, void* const dataObject)
 {
-	if ((areaIndex >= this->areas.size()) || (typeObject>SCULLING_MAX_AREA_OBJECTS))
+	if ((areaIndex >= this->areas.size()) || (typeObject>SCULLING::MaxAreaObjects))
 		return false;
 
 	this->areas[areaIndex].data[typeObject].push_back(dataObject);
@@ -268,7 +266,7 @@ bool SCULLING::areaAddData(const unsigned int areaIndex, const unsigned int type
 
 void SCULLING::areaClearData(const unsigned int areaIndex, const unsigned int typeObject)
 {
-	if ((areaIndex >= this->areas.size()) || (typeObject>SCULLING_MAX_AREA_OBJECTS))
+	if ((areaIndex >= this->areas.size()) || (typeObject>SCULLING::MaxAreaObjects))
 		return;
 
 	this->areas[areaIndex].data[typeObject].clear();
@@ -276,7 +274,7 @@ void SCULLING::areaClearData(const unsigned int areaIndex, const unsigned int ty
 
 int SCULLING::areaGetTypeCount(const unsigned int areaIndex, const unsigned int typeObject) const
 {
-	if ((areaIndex >= this->areas.size()) || (typeObject>SCULLING_MAX_AREA_OBJECTS))
+	if ((areaIndex >= this->areas.size()) || (typeObject>SCULLING::MaxAreaObjects))
 		return 0;
 
 	return this->areas[areaIndex].data[typeObject].size();
@@ -284,7 +282,7 @@ int SCULLING::areaGetTypeCount(const unsigned int areaIndex, const unsigned int 
 
 void* SCULLING::areaGetTypeData(const unsigned int areaIndex, const unsigned int typeObject, const unsigned int dataIndex) const
 {
-	if ((areaIndex >= this->areas.size()) || (typeObject>SCULLING_MAX_AREA_OBJECTS))
+	if ((areaIndex >= this->areas.size()) || (typeObject>SCULLING::MaxAreaObjects))
 		return 0;
 	if (dataIndex >= areas[areaIndex].data[typeObject].size())
 		return 0;
@@ -301,7 +299,7 @@ void SCULLING::areaGetBBox(const unsigned int areaIndex, HorseRadish::BBox * con
 
 void SCULLING::transverse(const HorseRadish::OpenGL::Tools::Frustum * const frustum, void*** const output, unsigned int * const outputCount, const int outputTypeCount) const
 {
-	if (this->areas.empty() || output == nullptr || outputCount == nullptr || outputTypeCount <= 0 || outputTypeCount > SCULLING_MAX_AREA_OBJECTS)
+	if (this->areas.empty() || output == nullptr || outputCount == nullptr || outputTypeCount <= 0 || outputTypeCount > SCULLING::MaxAreaObjects)
 		return;
 
 	for (int i = 0; i < outputTypeCount; i++)

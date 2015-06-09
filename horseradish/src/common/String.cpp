@@ -4,8 +4,8 @@
 #include "Encoders.hpp"
 #include "Platform.hpp"
 
-#include <time.h>
-#include <assert.h>
+#include <ctime>
+#include <cassert>
 
 namespace HorseRadish
 {
@@ -103,9 +103,9 @@ bool String::validateChar(const HorseRadish::hChar * const charPtr)
     return true;
 }
 
-bool String::validateString(const HorseRadish::hChar * const stringData, unsigned short * const dataCharCount, unsigned short * const dataByteCount)
+bool String::validateString(const HorseRadish::hChar * const stringData, unsigned int * const dataCharCount, unsigned int * const dataByteCount)
 {
-	unsigned short numChar;
+	unsigned int numChar;
 	const HorseRadish::hChar *walker;
 
 	numChar = 0;
@@ -120,7 +120,7 @@ bool String::validateString(const HorseRadish::hChar * const stringData, unsigne
 	if (dataCharCount != nullptr)
 		*dataCharCount = numChar;
 	if (dataByteCount != nullptr)
-		*dataByteCount = (unsigned short)(walker - stringData);
+		*dataByteCount = static_cast<unsigned int>(walker - stringData);
 
 	return true;
 }
@@ -144,7 +144,7 @@ void String::calcStrParams()
 	for(; *walker != '\0'; walker += String::trailingBytesUTF8[(HorseRadish::hUInt8)*walker] + 1)
 		this->numChars++;
 
-	this->numBytes = (unsigned short)(walker - this->actualBuffer);
+	this->numBytes = static_cast<unsigned int>(walker - this->actualBuffer);
 }
 
 bool String::adjustRequiredBuffer(const unsigned int &numBytesRequired, const bool &copyData)
@@ -445,7 +445,7 @@ void String::GetSubStr(String &subStr, const unsigned int startChar, const unsig
 	memcpy(subStr.actualBuffer, walker, walkerEnd - walker);
 
 	subStr.numChars = numCharsCopied;
-	subStr.numBytes = (unsigned short)(walkerEnd - walker);
+	subStr.numBytes = static_cast<unsigned int>(walkerEnd - walker);
 	subStr.actualBuffer[subStr.numBytes] = '\0';
 }
 
@@ -642,7 +642,7 @@ bool String::StartsWith(const String &compareTo) const
 	if (this->numBytes < compareTo.numBytes)
 		return false;
 
-	for(unsigned short i=0; i<compareTo.numBytes && compareTo.actualBuffer[i]!='\0'; i++)
+	for (unsigned int i = 0; i < compareTo.numBytes && compareTo.actualBuffer[i] != '\0'; i++)
 	{
 		if (this->actualBuffer[i] != compareTo.actualBuffer[i])
 			return false;
@@ -656,7 +656,7 @@ bool String::StartsWith(const HorseRadish::hChar * const compareTo) const
 	if ((compareTo == nullptr) || (*compareTo == '\0'))
 		return false;
 
-	for(unsigned short i = 0; ((i < this->numBytes) && (this->actualBuffer[i] != '\0')); i++)
+	for (unsigned int i = 0; ((i < this->numBytes) && (this->actualBuffer[i] != '\0')); i++)
 	{
 		if (compareTo[i] == '\0')
 			return true;
@@ -952,6 +952,33 @@ int String::Set(const String &nova)
 	return this->numChars;
 }
 
+int String::SetFromBuffer(const void * const nova, const unsigned int numBytes)
+{
+	if ((nova == nullptr) || (numBytes <= 0))
+	{
+		this->SetEmpty();
+		return this->numChars;
+	}
+
+	if (nova != this->actualBuffer)
+	{
+		this->adjustRequiredBuffer(numBytes, false);
+		memcpy(this->actualBuffer, nova, numBytes);
+	}
+
+	unsigned int bytesRead = 0;
+	for (unsigned int bytesRead = 0; bytesRead < numBytes;)
+	{
+		bytesRead += String::trailingBytesUTF8[static_cast<HorseRadish::hUInt8>(this->actualBuffer[bytesRead])] + 1;
+		this->numChars++;
+	}
+
+	this->numBytes = numBytes;
+	this->actualBuffer[this->numBytes] = '\0';
+
+	return this->numChars;
+}
+
 int String::SetPrintf(const Encoding flagFormat, const char *fmt, ...)
 {
 	va_list ap;
@@ -1085,24 +1112,18 @@ void String::SetMemory(const unsigned int bytes, const bool useMetric)
 
 void String::SetCurrentTime()
 {
-	tm newtime;
-	__time32_t aclock;
+	std::time_t t = std::time(nullptr);
+	std::tm lt = *std::localtime(&t);
 
-	_time32(&aclock);
-	_localtime32_s(&newtime,&aclock);
-
-	this->SetPrintf(String::Encoding::ASCII, "%d:%.2d:%.2d", newtime.tm_hour, newtime.tm_min, newtime.tm_sec);
+	this->SetPrintf(String::Encoding::ASCII, "%d:%.2d:%.2d", lt.tm_hour, lt.tm_min, lt.tm_sec);
 }
 
 void String::SetCurrentDate()
 {
-	tm newtime;
-	__time32_t aclock;
+	std::time_t t = std::time(nullptr);
+	std::tm lt = *std::localtime(&t);
 
-	_time32(&aclock);
-	_localtime32_s(&newtime,&aclock);
-
-	this->SetPrintf(String::Encoding::ASCII, "%.2d/%.2d/%d", newtime.tm_mday, newtime.tm_mon + 1, newtime.tm_year + 1900);
+	this->SetPrintf(String::Encoding::ASCII, "%.2d/%.2d/%d", lt.tm_mday, lt.tm_mon + 1, lt.tm_year + 1900);
 }
 
 void String::RemoveAllChars(const unsigned int unicodeChar)
@@ -1426,20 +1447,20 @@ void String::AppendAtPos(const unsigned int unicodeNewChar, const unsigned int p
 
 void String::CloseAt(const unsigned int charPos)
 {
-	if (charPos == 0)
+	if ((charPos == 0) || (charPos >= this->numChars))
 	{
-		this->SetEmpty();
+		if (charPos == 0)
+			this->SetEmpty();
 		return;
 	}
 
-	auto walker = this->actualBuffer;
-	for(unsigned int i=0; i<charPos; i++)
-		walker += String::trailingBytesUTF8[(HorseRadish::hUInt8)*walker] + 1;
+	unsigned int numBytes = 0;
+	for (unsigned int i = 0; i < charPos; i++)
+		numBytes += String::trailingBytesUTF8[static_cast<HorseRadish::hUInt8>(this->actualBuffer[numBytes])] + 1;
 
-	*walker = '\0';
-
-	this->numBytes = (unsigned short)(walker - this->actualBuffer);
 	this->numChars = charPos;
+	this->numBytes = numBytes;
+	this->actualBuffer[this->numBytes] = '\0';
 }
 
 bool String::IsEmpty(const bool checkOnlyWhiteSpaces) const

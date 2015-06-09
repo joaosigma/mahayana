@@ -2,7 +2,7 @@
 
 #include "Math.hpp"
 
-#include <string.h>
+#include <cstring>
 #include <xmmintrin.h>
 
 namespace HorseRadish
@@ -230,14 +230,14 @@ namespace HorseRadish
 		_mm_storeu_ps(result + 12, curRowFinal);
 	}
 
-	Matrix::Matrix(const float *s)
+	Matrix::Matrix()
 	{
-		memcpy(m, s, sizeof(float) * 16);
+		std::memset(m, 0, sizeof(float) * 16);
 	}
 
 	Matrix::Matrix(const Matrix &mat)
 	{
-		memcpy(m, mat.m, sizeof(float) * 16);
+		std::memcpy(m, mat.m, sizeof(float) * 16);
 	}
 
 	Matrix::Matrix(const Matrix3 &mat)
@@ -247,6 +247,11 @@ namespace HorseRadish
 		m[8] = mat.m[6];	m[9] = mat.m[7];	m[10] = mat.m[8];
 		m[3] = m[7] = m[11] = m[12] = m[13] = m[14] = 0.0f;
 		m[15] = 1.0f;
+	}
+
+	Matrix::Matrix(const float *s)
+	{
+		std::memcpy(m, s, sizeof(float) * 16);
 	}
 
 	void Matrix::operator*=(const Matrix &s)
@@ -573,7 +578,7 @@ namespace HorseRadish
 
 			quat[3] = s*0.5f;
 
-			s = 0.5 / s;
+			s = 0.5f / s;
 
 			quat[0] = (m[6] - m[9])*s;
 			quat[1] = (m[8] - m[2])*s;
@@ -593,7 +598,7 @@ namespace HorseRadish
 
 				quat[0] = s*0.5f;
 				if (s != 0.0)
-					s = 0.5 / s;
+					s = 0.5f / s;
 
 				quat[1] = (m[1] + m[4])*s;
 				quat[2] = (m[2] + m[8])*s;
@@ -719,7 +724,7 @@ namespace HorseRadish
 
 	void Matrix::Write(float * const s) const
 	{
-		memcpy(s, m, sizeof(float) * 16);
+		std::memcpy(s, m, sizeof(float) * 16);
 	}
 
 	void Matrix::Transpose(Matrix &dest) const
@@ -858,7 +863,7 @@ namespace HorseRadish
 		result[12] *= det;	result[13] *= det;	result[14] *= det;	result[15] *= det;
 
 		//basta copiar para mim próprio e pronto
-		memcpy(m, result, sizeof(float) * 16);
+		std::memcpy(m, result, sizeof(float) * 16);
 	}
 
 	void Matrix::InverseTranspose(Matrix &dest) const
@@ -967,14 +972,14 @@ namespace HorseRadish
 		result[12] *= det;	result[13] *= det;	result[14] *= det;	result[15] *= det;
 
 		//basta copiar para mim próprio e pronto
-		memcpy(m, result, sizeof(float) * 16);
+		std::memcpy(m, result, sizeof(float) * 16);
 	}
 
 	void Matrix::InverseHomogenous(Matrix &dest) const
 	{
 		float aux1, aux2;
 
-		memcpy(dest.m, m, sizeof(float) * 16);
+		std::memcpy(dest.m, m, sizeof(float) * 16);
 
 		aux1 = dest.m[1];	dest.m[1] = dest.m[4];	dest.m[4] = aux1;
 		aux1 = dest.m[2];	dest.m[2] = dest.m[8];	dest.m[8] = aux1;
@@ -1135,22 +1140,22 @@ namespace HorseRadish
 
 	void Matrix::Set(const float *src)
 	{
-		memcpy(m, src, sizeof(float) * 16);
+		std::memcpy(m, src, sizeof(float) * 16);
 	}
 
 	void Matrix::Set(const Matrix &mat)
 	{
-		memcpy(m, mat.m, sizeof(float) * 16);
+		std::memcpy(m, mat.m, sizeof(float) * 16);
 	}
 
 	void Matrix::SetZero(void)
 	{
-		memset(m, 0, sizeof(float) * 16);
+		std::memset(m, 0, sizeof(float) * 16);
 	}
 
 	void Matrix::SetIdentidade(void)
 	{
-		memset(m, 0, sizeof(float) * 16);
+		std::memset(m, 0, sizeof(float) * 16);
 		m[0] = m[5] = m[10] = m[15] = 1.0f;
 	}
 
@@ -1482,12 +1487,12 @@ namespace HorseRadish
 		posS = Math::fClamp(sat, -1.0f, 1.0f);
 		minusS = 1.0f - posS;
 
-		m[0] = minusS*0.3086 + posS;
-		m[1] = m[2] = minusS*0.3086;
-		m[4] = m[6] = minusS*0.6094;
-		m[5] = minusS*0.6094 + posS;
-		m[8] = m[9] = minusS*0.0820;
-		m[10] = minusS*0.0820 + posS;
+		m[0] = minusS*0.3086f + posS;
+		m[1] = m[2] = minusS*0.3086f;
+		m[4] = m[6] = minusS*0.6094f;
+		m[5] = minusS*0.6094f + posS;
+		m[8] = m[9] = minusS*0.0820f;
+		m[10] = minusS*0.0820f + posS;
 
 		m[3] = m[7] = m[11] = m[12] = m[13] = m[14] = 0.0f;
 		m[15] = 1.0f;
@@ -2014,10 +2019,9 @@ namespace HorseRadish
 		m[14] = -1.0f;
 	}
 
-
-	Matrix3::Matrix3(const float *s)
+	Matrix3::Matrix3()
 	{
-		memcpy(m, s, sizeof(float) * 9);
+		std::memset(m, 0, sizeof(float) * 9);
 	}
 
 	Matrix3::Matrix3(const Matrix &mat)
@@ -2029,14 +2033,19 @@ namespace HorseRadish
 
 	Matrix3::Matrix3(const Matrix3 &mat)
 	{
-		memcpy(m, mat.m, sizeof(float) * 9);
+		std::memcpy(m, mat.m, sizeof(float) * 9);
+	}
+
+	Matrix3::Matrix3(const float *s)
+	{
+		std::memcpy(m, s, sizeof(float) * 9);
 	}
 
 	void Matrix3::operator*=(const Matrix &s)
 	{
 		float matAux[9];
 
-		memcpy(matAux, m, sizeof(float) * 9);
+		std::memcpy(matAux, m, sizeof(float) * 9);
 
 		m[0] = s.m[0] * matAux[0] + s.m[1] * matAux[3] + s.m[2] * matAux[6];
 		m[1] = s.m[0] * matAux[1] + s.m[1] * matAux[4] + s.m[2] * matAux[7];
@@ -2055,7 +2064,7 @@ namespace HorseRadish
 	{
 		float matAux[9];
 
-		memcpy(matAux, m, sizeof(float) * 9);
+		std::memcpy(matAux, m, sizeof(float) * 9);
 
 		m[0] = s.m[0] * matAux[0] + s.m[1] * matAux[3] + s.m[2] * matAux[6];
 		m[1] = s.m[0] * matAux[1] + s.m[1] * matAux[4] + s.m[2] * matAux[7];
@@ -2075,7 +2084,7 @@ namespace HorseRadish
 	{
 		float matAux[9];
 
-		memcpy(matAux, m, sizeof(float) * 9);
+		std::memcpy(matAux, m, sizeof(float) * 9);
 
 		m[0] = s[0] * matAux[0] + s[1] * matAux[3] + s[2] * matAux[6];
 		m[1] = s[0] * matAux[1] + s[1] * matAux[4] + s[2] * matAux[7];
@@ -2367,7 +2376,7 @@ namespace HorseRadish
 
 	void Matrix3::Write(float * const s) const
 	{
-		memcpy(s, m, sizeof(float) * 9);
+		std::memcpy(s, m, sizeof(float) * 9);
 	}
 
 	void Matrix3::Transpose(Matrix3 &dest) const
@@ -2467,7 +2476,7 @@ namespace HorseRadish
 
 	void Matrix3::Set(const float *src)
 	{
-		memcpy(m, src, sizeof(float) * 9);
+		std::memcpy(m, src, sizeof(float) * 9);
 	}
 
 	void Matrix3::Set(const Matrix &mat)
@@ -2479,17 +2488,17 @@ namespace HorseRadish
 
 	void Matrix3::Set(const Matrix3 &mat)
 	{
-		memcpy(m, mat.m, sizeof(float) * 9);
+		std::memcpy(m, mat.m, sizeof(float) * 9);
 	}
 
 	void Matrix3::SetZero(void)
 	{
-		memset(m, 0, sizeof(float) * 9);
+		std::memset(m, 0, sizeof(float) * 9);
 	}
 
 	void Matrix3::SetIdentidade(void)
 	{
-		memset(m, 0, sizeof(float) * 9);
+		std::memset(m, 0, sizeof(float) * 9);
 		m[0] = m[4] = m[8] = 1.0f;
 	}
 

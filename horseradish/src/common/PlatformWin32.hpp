@@ -10,7 +10,6 @@
 	#define NOGDICAPMASKS
 	#define NOMENUS
 	#define NOICONS
-	#define NOKEYSTATES
 	#define NOSYSCOMMANDS
 	#define NOSHOWWINDOW
 	#define NOCTLMGR

@@ -5,7 +5,7 @@
 
 #include <set>
 #include <vector>
-#include <assert.h>
+#include <cassert>
 
 namespace HorseRadish
 {

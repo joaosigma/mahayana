@@ -4,10 +4,8 @@
 
 #include <functional>
 
-#include "PlatformWin32.hpp"
+namespace HorseRadish {
 
-namespace HorseRadish
-{
 	class Platform
 	{
 	public:
@@ -24,8 +22,10 @@ namespace HorseRadish
 		};
 
 	public:
+		enum CPUFeature { SSE = (1 << 0), SSE2 = (1 << 1), HyperThreading = (1 << 2), CMov = (1 << 3) };
+
 		enum class PriorityType { Normal, High, Highest };
-		enum class OperatingSystemType { Windows, Linux };
+		enum class OperatingSystemType { Windows, Linux, Android, iOS, OSX };
 		enum class SystemInfo { DisplayWidth, DisplayHeight, DisplayColorBits, DisplayFrequency, OperatingSystemName, SystemFolder, MachineName, CurrentUsername, MemoryTotal, MemoryFree, CleanBoot, CurrentFolder, ExecutableFullPath };
 
 	public:
@@ -35,9 +35,9 @@ namespace HorseRadish
 		static const unsigned int DirectorySeparatorChar;
 		static const unsigned int VolumeSeparatorChar;
 
-		static const int KiloByte;
-		static const int MegaByte;
-		static const int GigaByte;
+		static const unsigned int KiloByte;
+		static const unsigned int MegaByte;
+		static const unsigned int GigaByte;
 
 		static bool SetProcessPriority(const PriorityType &priorityType);
 		static bool SetThreadPriority(const PriorityType &priorityType);
@@ -47,6 +47,10 @@ namespace HorseRadish
 
 		static bool IsArch64();
 
+		static bool CPUGetVendorID(String &outputValue);
+		static bool CPUGetProcessorName(String &outputValue);
+		static bool CPUCheckFeatures(const CPUFeature &featuresCheck);
+
 		static bool GetSystemInfo(const SystemInfo &systemInfo, HorseRadish::String &infoValue);
 		static bool GetSystemInfo(const SystemInfo &systemInfo, int &infoValue);
 
@@ -55,6 +59,14 @@ namespace HorseRadish
 		static bool ClipboardGetStrings(std::function<bool(const HorseRadish::String &)> funcCallback);
 		static bool ClipboardGetFiles(std::function<bool(const HorseRadish::String &)> funcCallback);
 
+		static void AsmBufferClear(void* dest, size_t bytes);
+		static void AsmBufferCopy(void* dest, const void* src, size_t bytes);
+		static void AsmBufferCopyAligned(void* dest, const void* src, size_t multiple128Bytes);
+		static void AsmBufferSetUBYTE(void* dest, unsigned char val, size_t bytes);
+		static void AsmBufferSetUI32(void* dest, unsigned int val, size_t bytes);
+		static void AsmFloat2UByte(unsigned char *dest, const float *src, const unsigned int num, const float mulVal, const float addVal);
+		static void AsmUByte2Float(float *dest, const unsigned char *src, const unsigned int num, const float mulVal, const float addVal);
+
 		static bool StdInOutErrRedirect();
 		static void StdInOutErrClose();
 		static void StdErrClear();
@@ -62,5 +74,4 @@ namespace HorseRadish
 		static bool StdErrRead(void *outBuffer, const int outBufferSize, int &bytesWritten);
 		static bool StdOutRead(void *outBuffer, const int outBufferSize, int &bytesWritten);
 	};
-
-} //HorseRadish
+}

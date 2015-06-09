@@ -3,9 +3,6 @@
 #include "ScopedAction.hpp"
 #include "UTF.hpp"
 
-#include <malloc.h>
-#include <memory.h>
-
 namespace HorseRadish
 {
 	namespace Streams
@@ -197,15 +194,6 @@ namespace HorseRadish
 			return -actualRead;
 		}
 
-		const void* MemoryStream::ReadContent(int &contentSize, bool &contentCopied) const
-		{
-			contentSize = this->dataSize;
-
-			contentCopied = false;
-
-			return this->data;
-		}
-
 		int MemoryStream::Write(const void * const inBuffer, int numBytes)
 		{
 			if (this->canWrite == false)
@@ -231,6 +219,27 @@ namespace HorseRadish
 				this->dataWalker = this->dataEnd;
 
 			return this->GetPosition();
+		}
+
+		std::unique_ptr<MemoryStream> MemoryStream::readEntireContent() const
+		{
+			return std::unique_ptr<MemoryStream>(new MemoryStream(this->data, this->dataSize, false, MemoryStream::ManagementType::None));
+		}
+
+		const hUInt8* MemoryStream::getData() const
+		{
+			return dataBegin;
+		}
+
+		std::string MemoryStream::toStr() const
+		{
+			std::string finalStr;
+			finalStr.resize(this->dataSize + 1);
+
+			memcpy(&finalStr[0], this->data, this->dataSize);
+			reinterpret_cast<char*>(&finalStr[0])[this->dataSize] = '\0';
+
+			return finalStr;
 		}
 
 		bool FileStream::openFile(const HorseRadish::hChar * const filePath, bool toRead, bool toWrite)
@@ -466,38 +475,6 @@ namespace HorseRadish
 			return -actualRead;
 		}
 
-		const void* FileStream::ReadContent(int &contentSize, bool &contentCopied) const
-		{
-			DWORD bytesRead;
-
-			contentSize = 0;
-			contentCopied = true;
-
-			if (this->fileHandle == nullptr)
-				return nullptr;
-
-			auto outBufferSize = GetFileSize(this->fileHandle, nullptr);
-			auto outBuffer = malloc(outBufferSize);
-			if (outBuffer == nullptr)
-				return nullptr;
-
-			auto curPos = SetFilePointer(this->fileHandle, 0, nullptr, FILE_CURRENT);
-			SetFilePointer(this->fileHandle, 0, nullptr, FILE_BEGIN);
-
-			auto readSuccess = (ReadFile(this->fileHandle, outBuffer, outBufferSize, &bytesRead, nullptr) != 0);
-
-			SetFilePointer(this->fileHandle, curPos, nullptr, FILE_BEGIN);
-
-			if ((readSuccess == false) || (outBufferSize != bytesRead))
-			{
-				free(outBuffer);
-				return nullptr;
-			}
-
-			contentSize = outBufferSize;
-			return outBuffer;
-		}
-
 		int FileStream::Write(const void * const inBuffer, int numBytes)
 		{
 			DWORD bytesWritten;
@@ -529,15 +506,41 @@ namespace HorseRadish
 			return -1;
 		}
 
-		void* FileStream::ReadEntireFile(const HorseRadish::hChar * const filePath, int &fileSize)
+		std::unique_ptr<MemoryStream> FileStream::readEntireContent() const
+		{
+			if (this->fileHandle == nullptr)
+				return std::unique_ptr<MemoryStream>();
+
+			auto outBufferSize = GetFileSize(this->fileHandle, nullptr);
+
+			void* outBuffer = malloc(outBufferSize);
+			if (outBuffer == nullptr)
+				return std::unique_ptr<MemoryStream>();
+
+			auto curPos = SetFilePointer(this->fileHandle, 0, nullptr, FILE_CURRENT);
+			SetFilePointer(this->fileHandle, 0, nullptr, FILE_BEGIN);
+
+			DWORD bytesRead;
+			auto readSuccess = (ReadFile(this->fileHandle, outBuffer, outBufferSize, &bytesRead, nullptr) != 0);
+
+			SetFilePointer(this->fileHandle, curPos, nullptr, FILE_BEGIN);
+
+			if ((readSuccess == false) || (outBufferSize != bytesRead))
+			{
+				free(outBuffer);
+				return std::unique_ptr<MemoryStream>();
+			}
+
+			return std::unique_ptr<MemoryStream>(new MemoryStream(outBuffer, outBufferSize, false, MemoryStream::ManagementType::ManagedStatic));
+		}
+
+		std::unique_ptr<MemoryStream> FileStream::ReadEntireFile(const HorseRadish::hChar * const filePath)
 		{
 			HANDLE fileHandle;
 			DWORD bytesRead;
 
-			fileSize = 0;
-
 			if (filePath == nullptr)
-				return nullptr;
+				return std::unique_ptr<MemoryStream>();
 
 			{
 				wchar_t filePathWChar[128];
@@ -545,7 +548,7 @@ namespace HorseRadish
 
 				fileHandle = CreateFile(filePathWChar, GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
 				if (fileHandle == INVALID_HANDLE_VALUE)
-					return nullptr;
+					return std::unique_ptr<MemoryStream>();
 			}
 
 			ScopedAction scopedAction([&]()
@@ -556,16 +559,15 @@ namespace HorseRadish
 			auto outBufferSize = GetFileSize(fileHandle, nullptr);
 			auto outBuffer = malloc(outBufferSize);
 			if (outBuffer == nullptr)
-				return nullptr;
+				return std::unique_ptr<MemoryStream>();
 
 			if ((ReadFile(fileHandle, outBuffer, outBufferSize, &bytesRead, nullptr) == 0) || (outBufferSize != bytesRead))
 			{
 				free(outBuffer);
-				return nullptr;
+				return std::unique_ptr<MemoryStream>();
 			}
 
-			fileSize = outBufferSize;
-			return outBuffer;
+			return std::unique_ptr<MemoryStream>(new MemoryStream(outBuffer, outBufferSize, false, MemoryStream::ManagementType::ManagedStatic));
 		}
 
 		HorseRadish::String FileStream::ReadEntireFileAsString(const HorseRadish::hChar * const filePath)
@@ -598,7 +600,7 @@ namespace HorseRadish
 			if ((ReadFile(fileHandle, (void*)finalString.GetData(), outBufferSize, &bytesRead, nullptr) == 0) || (outBufferSize != bytesRead))
 				return HorseRadish::String();
 
-			finalString.CloseAt(outBufferSize);
+			finalString.SetFromBuffer(finalString.GetData(), outBufferSize);
 			return finalString;
 		}
 

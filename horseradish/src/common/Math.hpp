@@ -2,10 +2,9 @@
 
 #include "Types.hpp"
 
+#include <cmath>
 #include <xmmintrin.h>
 #include <emmintrin.h>
-#include <stdlib.h>
-#include <math.h>
 
 #pragma warning( push )
 #pragma warning( disable : 4800 )	//remove warning "forcing value to bool 'true' or 'false' (performance warning)"
@@ -87,6 +86,7 @@ namespace HorseRadish
 		static unsigned int			iPow2(const unsigned int &exp);
 		static int					iLog2(const float &f);
 		static int					iLog2(const int &i);
+		static int					iLog2(const unsigned int &i);
 		static int					iPrevPowerOfTwo(const int &x);
 		static int					iProxPowerOfTwo(const int &x);
 		static bool					iIsPowerOfTwo(const int &x);
@@ -451,6 +451,12 @@ namespace HorseRadish
 
 	inline
 		int Math::iLog2(const int &i)
+	{
+		return iLog2((float)i);
+	}
+
+	inline
+		int Math::iLog2(const unsigned int &i)
 	{
 		return iLog2((float)i);
 	}

@@ -4,8 +4,6 @@
 #include "Vector.hpp"
 #include "meshFactory\mf.hpp"
 
-#include <string.h>
-
 //vertices for the Teapot
 static float vertTP[306][3]={{1.4f ,0.0f ,2.4f}, {1.4f ,-0.784f ,2.4f},
 {0.784f ,-1.4f ,2.4f}, {0.0f ,-1.4f ,2.4f}, {1.3375f ,0.0f ,2.53125f},
@@ -829,9 +827,6 @@ namespace HorseRadish
 
 		Mesh* Factory::CreatePlane(const float width, const float height, const int precision)
 		{
-			float realWidth, realHeight, offsetW, offsetH, offsetTex;
-			int index, jump;
-
 			if (width <= 0.0f || height <= 0.0f || precision <= 0)
 				return nullptr;
 
@@ -839,7 +834,7 @@ namespace HorseRadish
 			if (mesh == nullptr)
 				return nullptr;
 
-			for (int i = 0, index = jump = 0; i < mesh->numIndex; i += 6)
+			for (int i = 0, index = 0, jump = 0; i < mesh->numIndex; i += 6)
 			{
 				((unsigned int*)mesh->pIndex)[i + 0] = index;
 				((unsigned int*)mesh->pIndex)[i + 1] = index + 1;
@@ -858,11 +853,12 @@ namespace HorseRadish
 				}
 			}
 
-			realWidth = width*0.5f;
-			realHeight = height*0.5f;
-			offsetW = width / ((float)precision);
-			offsetH = height / ((float)precision);
-			offsetTex = 1.0f / ((float)precision);
+			float realWidth = width*0.5f;
+			float realHeight = height*0.5f;
+			float offsetW = width / static_cast<float>(precision);
+			float offsetH = height / static_cast<float>(precision);
+			float offsetTex = 1.0f / static_cast<float>(precision);
+
 			auto walker = mesh->FindAttribData(Mesh::Pos);
 			auto walkerT = mesh->FindAttribData(Mesh::TexCoords);
 			auto walkerN = mesh->FindAttribData(Mesh::Normal);
@@ -871,12 +867,12 @@ namespace HorseRadish
 			{
 				for (int j = 0; j <= precision; j++, walker += 3, walkerT += 2, walkerN += 3)
 				{
-					walker[0] = offsetW*((float)j) - realWidth;
-					walker[1] = offsetH*((float)i) - realHeight;
+					walker[0] = offsetW * static_cast<float>(j) - realWidth;
+					walker[1] = offsetH * static_cast<float>(i) - realHeight;
 					walker[2] = 0.0f;
 
-					walkerT[0] = offsetTex*((float)j);
-					walkerT[1] = offsetTex*((float)i);
+					walkerT[0] = offsetTex * static_cast<float>(j);
+					walkerT[1] = offsetTex * static_cast<float>(i);
 
 					walkerN[0] = walkerN[1] = 0.0f;
 					walkerN[2] = 1.0f;

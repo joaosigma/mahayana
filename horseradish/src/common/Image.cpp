@@ -1975,14 +1975,14 @@ namespace HorseRadish
 					for (; walkerB < metaB; walkerB++)
 					{
 						pixel = ((float)(*walkerB))*0.003921568627450980392156862f;
-						*walkerB = HorseRadish::Color::ConvertColor(std::min(pixel, opVal));
+						*walkerB = HorseRadish::Color::ConvertColor((pixel < opVal) ? pixel : opVal);
 					}
 					break;
 				case HorseRadish::Imaging::Image::Max:
 					for (; walkerB < metaB; walkerB++)
 					{
 						pixel = ((float)(*walkerB))*0.003921568627450980392156862f;
-						*walkerB = HorseRadish::Color::ConvertColor(std::max(pixel, opVal));
+						*walkerB = HorseRadish::Color::ConvertColor((pixel > opVal) ? pixel : opVal);
 					}
 					break;
 				case HorseRadish::Imaging::Image::Pow:
@@ -2115,13 +2115,13 @@ namespace HorseRadish
 			case HorseRadish::Imaging::Image::Min:
 				for (; walkerF < metaF; walkerF++)
 				{
-					*walkerF = std::min((*walkerF), opVal);
+					*walkerF = (*walkerF < opVal) ? *walkerF : opVal;
 				}
 				break;
 			case HorseRadish::Imaging::Image::Max:
 				for (; walkerF < metaF; walkerF++)
 				{
-					*walkerF = std::max((*walkerF), opVal);
+					*walkerF = (*walkerF > opVal) ? *walkerF : opVal;
 				}
 				break;
 			case HorseRadish::Imaging::Image::Pow:

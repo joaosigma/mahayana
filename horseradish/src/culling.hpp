@@ -1,23 +1,26 @@
 #pragma once
 
-#include "common\opengl\tools.hpp"
+#include "common\Vector.hpp"
+#include "common\opengl\tools\frustum.hpp"
 
 #include <array>
 #include <vector>
-
-#define SCULLING_MAX_AREA_OBJECTS	3
-
-typedef void (APIENTRY * SCULLING_DEBUG_CALLBACK_AREA)	(const bool areaOfCamera, const HorseRadish::BBox &bbox);
-typedef void (APIENTRY * SCULLING_DEBUG_CALLBACK_PORTAL)(const HorseRadish::Vector &p1, const HorseRadish::Vector &p2, const HorseRadish::Vector &p3, const HorseRadish::Vector &p4);
+#include <functional>
 
 class SCULLING
 {
+public:
+	static const int MaxAreaObjects = 3;
+	typedef std::function<void(const bool areaOfCamera, const HorseRadish::BBox &bbox)> SCULLING_DEBUG_CALLBACK_AREA;
+	typedef std::function<void(const HorseRadish::Vector &p1, const HorseRadish::Vector &p2, const HorseRadish::Vector &p3, const HorseRadish::Vector &p4)> SCULLING_DEBUG_CALLBACK_PORTAL;
+
+private:
 	struct AREA;
 	struct PORTAL;
 	struct BNODE;
 
 	struct AREA{
-		std::array<std::vector<void*>, SCULLING_MAX_AREA_OBJECTS> data;
+		std::array<std::vector<void*>, SCULLING::MaxAreaObjects> data;
 		std::vector<PORTAL*> portals;
 		HorseRadish::BBox bbox;
 	};

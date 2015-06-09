@@ -1,8 +1,8 @@
 #pragma once
 
 #include "renderer.hpp"
-
-#include "console\console.hpp"
+#include "tools\font.hpp"
+#include "common\openGL\tools\immediateMode.hpp"
 
 namespace HorseRadish
 {
@@ -12,48 +12,32 @@ namespace HorseRadish
 		{
 		public:
 			struct Shaders{
-				const HorseRadish::OpenGL::Objects::Program *progDeferredGBuffer;
-				const HorseRadish::OpenGL::Objects::Program *progMainDebug;
-				const HorseRadish::OpenGL::Objects::Program *progPerVertexLightDir;
-
-				const HorseRadish::OpenGL::Objects::Program *prog2DDrawNoTex, *prog2DDrawTex;
-				const HorseRadish::OpenGL::Objects::Program *prog2DText;
-
-				const HorseRadish::OpenGL::Objects::Program *progDeferredDebug;
-
-				const HorseRadish::OpenGL::Objects::Program *progPPSimpleColor;
-
-				const HorseRadish::OpenGL::Objects::Program *renderZPass;
-
-				const HorseRadish::OpenGL::Objects::Program *progDebugTex;
+				struct {
+					HorseRadish::OpenGL::Objects::ShaderProgram progVertex;
+					HorseRadish::OpenGL::Objects::ShaderProgram progFragment;
+					HorseRadish::OpenGL::Objects::ProgramPipeline progPipeline;
+				} drawNoTex, text;
 
 			}shaders;
 
 			struct GUI{
-				HorseRadish::OpenGL::Tools::Font *font, *fontConsole;
-				HorseRadish::OpenGL::Tools::FontManager *fontManager;
-
-				GUI() : font(nullptr), fontConsole(0), fontManager(nullptr) { }
+				std::unique_ptr<Tools::Font> font;
 			}gui;
 
 			struct AuxTools{
-				HorseRadish::OpenGL::Tools::UniformCache *uniformCache;
 				HorseRadish::OpenGL::Tools::ImmediateMode *glImmediateMode;
 				float curTimeS, lastTimeS;
 
-				AuxTools(){ this->uniformCache = nullptr; this->glImmediateMode = nullptr; this->curTimeS = this->lastTimeS = 0.0f; }
+				AuxTools(){ this->glImmediateMode = nullptr; this->curTimeS = this->lastTimeS = 0.0f; }
 			}auxTools;
 
-			HorseRadish::OpenGL::Objects::ObjectsManager *glObjectManager;
-			HorseRadish::OpenGL::Tools::UniformCache *glUniformCache;
-			HorseRadish::OpenGL::Tools::ImmediateMode *glImmediateMode;
+			std::unique_ptr<HorseRadish::OpenGL::Tools::ImmediateMode> glImmediateMode;
 			int renderWidth, renderHeight;
 
 		public:
-			Renderer2D(HorseRadish::OpenGL::Objects::Context * const glContext);
-			~Renderer2D();
+			Renderer2D(const HorseRadish::OpenGL::Objects::Context& glContext);
 
-			void Initialize(const int &renderWidth, const int &renderHeight, HorseRadish::IO::FileSystem * const fileSystem, HorseRadish::Console::Console *mainConsole);
+			void Initialize(const int &renderWidth, const int &renderHeight, HorseRadish::IO::FileSystem * const fileSystem, const char* const textFont, int textSize);
 		};
 
 	}

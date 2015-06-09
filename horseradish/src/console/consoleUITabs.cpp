@@ -1,12 +1,14 @@
 #include "common\Platform.hpp"
 #include "common\Timer.hpp"
 #include "common\ImageFactory.hpp"
-#include "common\Logger.hpp"
+
+#include "engine\logger.hpp"
+
 #include "common\opengl\openGL.hpp"
 #include "common\opengl\objects.hpp"
-#include "common\openGL\tools.hpp"
 
 #include "consoleUI.hpp"
+#include "render\tools\font.hpp"
 
 namespace HorseRadish
 {
@@ -14,12 +16,11 @@ namespace HorseRadish
 	{
 		namespace UI
 		{
-
-			static
 			class ConsoleUserHistory
 			{
 				static const int maxLogSize = 256;
 				static const int maxHistorySize = maxLogSize * 20;
+
 				char *dataMain, *dataNext, *dataLast, *dataPointer, *pointerPush;
 				char dataReadLocal[maxLogSize];
 				unsigned int numEntradas;
@@ -111,7 +112,6 @@ namespace HorseRadish
 				}
 			};
 
-			static
 			class ConsoleUserPrompt
 			{
 				HorseRadish::String localData;
@@ -125,7 +125,7 @@ namespace HorseRadish
 					cursorPos = 0;
 					changeOccured = true;
 				}
-				~ConsoleUserPrompt(){ return; };
+				~ConsoleUserPrompt(){ }
 
 				bool getCursorState(const bool reset)
 				{
@@ -158,11 +158,14 @@ namespace HorseRadish
 					localData.Set(HorseRadish::String::Encoding::UTF8, novaString);
 					cursorPos = localData.GetSizeChars();
 				}
-				void  setUserInputKEYDOWN(const unsigned int keyVal)
+
+				void setUserInputKEYDOWN(const Window::Message &msg)
 				{
-					if (HIBYTE((WORD)GetKeyState(VK_RCONTROL)))
+					auto virtualKey = static_cast<Window::VirtualKeys>(msg.getParam());
+
+					if ((msg.getFlags().piecesShort.short1 & static_cast<int>(Window::Message::MessageFlags::ControlKey)) != 0)
 					{
-						if (keyVal == VK_LEFT && cursorPos != 0)
+						if (virtualKey == Window::VirtualKeys::Left && cursorPos != 0)
 						{
 							changeOccured = true;
 							for (cursorPos--; cursorPos != 0; cursorPos--)
@@ -172,7 +175,7 @@ namespace HorseRadish
 							}
 							return;
 						}
-						if (keyVal == VK_RIGHT && cursorPos < localData.GetSizeChars())
+						if (virtualKey == Window::VirtualKeys::Right && cursorPos < localData.GetSizeChars())
 						{
 							changeOccured = true;
 							for (cursorPos++; cursorPos < localData.GetSizeChars(); cursorPos++)
@@ -186,30 +189,30 @@ namespace HorseRadish
 						return;
 					}
 
-					switch (keyVal){
-					case VK_LEFT:
+					switch (virtualKey)
+					{
+					case Window::VirtualKeys::Left:
 						if (cursorPos == 0)
 							return;
 						cursorPos--;
 						changeOccured = true;
 						break;
 
-					case VK_RIGHT:
+					case Window::VirtualKeys::Right:
 						if (cursorPos >= localData.GetSizeChars())
 							return;
 						cursorPos++;
 						changeOccured = true;
 						break;
-					case VK_HOME:
+					case Window::VirtualKeys::Home:
 						cursorPos = 0;
 						changeOccured = true;
 						break;
-					case VK_END:
+					case Window::VirtualKeys::End:
 						cursorPos = localData.GetSizeChars();
 						changeOccured = true;
 						break;
-
-					case VK_DELETE:
+					case Window::VirtualKeys::Delete:
 						if (cursorPos >= localData.GetSizeChars())
 							return;
 						localData.RemoveAt(cursorPos);
@@ -217,8 +220,11 @@ namespace HorseRadish
 						break;
 					}
 				}
-				void  setUserInputCHAR(const unsigned int keyVal)
+
+				void  setUserInputCHAR(const Window::Message &msg)
 				{
+					auto keyVal = msg.getParam();
+
 					if (keyVal == '#' || keyVal == 9 || keyVal == '\\' || keyVal == 27)
 						return;
 
@@ -312,11 +318,10 @@ namespace HorseRadish
 				}
 			};
 
-			ConsoleTabConsole::ConsoleTabConsole(Console *mainConsole) : ConsoleGUI::ConsoleTab()
+			ConsoleTabConsole::ConsoleTabConsole(std::function<void(const char * const)> inputCb, std::shared_ptr<Engine::Logger> logger) : ConsoleGUI::ConsoleTab()
 			{
-				this->mainConsole = mainConsole;
-
-				this->tabName.Set(HorseRadish::String::Encoding::ASCII, "Console");
+				this->mInputCb = inputCb;
+				this->mLogger = logger;
 
 				this->userHistory = new ConsoleUserHistory();
 				this->userPrompt = new ConsoleUserPrompt();
@@ -344,42 +349,32 @@ namespace HorseRadish
 
 			void ConsoleTabConsole::DrawContent(HorseRadish::Render::Renderer2D* const render2D, const HorseRadish::Matrix &transformMatrix)
 			{
-				unsigned int charActual;
-				int contentAreaLimits[2], numCores, corActual;
-				float curX, userTextY, textH, textY, textX;
-				HorseRadish::OpenGL::Tools::ImmediateMode *glImmediateMode;
-				HorseRadish::OpenGL::Tools::Font *guiFont;
-
-#pragma pack (push)
-#pragma pack (1)
-				struct DataRGB{
-					unsigned int pos;
-					unsigned char r, g, b;
-				}*dataCores;
-#pragma pack (pop)
+				int contentAreaLimits[2];
+				float userTextY, textH, textY, textX;
 
 				contentAreaLimits[0] = this->tabContentAreaPos.x + this->tabContentAreaSize.width;
 				contentAreaLimits[1] = this->tabContentAreaPos.y + this->tabContentAreaSize.height;
 
-				render2D->shaders.prog2DDrawNoTex->Bind();
-				HorseRadish::OpenGL::glUniformMatrix4fv(render2D->glUniformCache->GetUniformPos(render2D->shaders.prog2DDrawNoTex->glID, "transformationMatrix"), 1, GL_FALSE, transformMatrix);
+				HorseRadish::OpenGL::glUseProgram(0);
+				HorseRadish::OpenGL::glBindProgramPipeline(render2D->shaders.drawNoTex.progFragment.getId());
+				HorseRadish::OpenGL::glProgramUniformMatrix4fv(render2D->shaders.drawNoTex.progVertex.getId(), render2D->shaders.drawNoTex.progVertex.getUniformLocation("transformationMatrix"), 1, false, transformMatrix);
 
-				glImmediateMode = render2D->glImmediateMode;
-				guiFont = render2D->gui.fontConsole;
+				auto& glImmediateMode = render2D->glImmediateMode;
+				auto& guiFont = render2D->gui.font;
 
-				glImmediateMode->BeginDraw(HorseRadish::OpenGL::Tools::ImmediateMode::GeometryType::Quads);
-				glImmediateMode->AddColor(128, 128, 128, 255);
-				glImmediateMode->AddQuad(this->tabContentAreaPos.x, this->tabContentAreaPos.y, 10.0f, 10 + guiFont->getMaxHeight());
-				glImmediateMode->EndDraw();
+				glImmediateMode->beginDraw(HorseRadish::OpenGL::Tools::ImmediateMode::GeometryType::Quads);
+					glImmediateMode->setColor(128, 128, 128, 255);
+					glImmediateMode->addQuad(this->tabContentAreaPos.x, this->tabContentAreaPos.y, 10.0f, 10 + guiFont->getMaxHeight());
+				glImmediateMode->endDraw();
 
 				HorseRadish::OpenGL::glLineWidth(2.0f);
 				HorseRadish::OpenGL::glEnable(GL_LINE_SMOOTH);
 
-				glImmediateMode->BeginDraw(HorseRadish::OpenGL::Tools::ImmediateMode::GeometryType::Lines);
-				glImmediateMode->AddColor(128, 128, 128, 255);
-				//glImmediateMode->AddLineH(this->tabContentAreaPos.x, contentAreaLimits[0], this->tabContentAreaPos.y);
-				glImmediateMode->AddLineH(this->tabContentAreaPos.x, contentAreaLimits[0], this->tabContentAreaPos.y + 10 + guiFont->getMaxHeight());
-				glImmediateMode->EndDraw();
+				glImmediateMode->beginDraw(HorseRadish::OpenGL::Tools::ImmediateMode::GeometryType::Lines);
+					glImmediateMode->setColor(128, 128, 128, 255);
+					//glImmediateMode->addLineH(this->tabContentAreaPos.x, contentAreaLimits[0], this->tabContentAreaPos.y);
+					glImmediateMode->addLineH(this->tabContentAreaPos.x, contentAreaLimits[0], this->tabContentAreaPos.y + 10 + guiFont->getMaxHeight());
+				glImmediateMode->endDraw();
 
 				HorseRadish::OpenGL::glLineWidth(1.0f);
 				HorseRadish::OpenGL::glDisable(GL_LINE_SMOOTH);
@@ -393,6 +388,7 @@ namespace HorseRadish
 				textX = this->tabContentAreaPos.x + 20.0f;
 				textY = floorf(userTextY + textH);
 
+				guiFont->setColor(1.0f, 1.0f, 1.0f, 1.0f);
 				for (int indexLinha = 0; indexLinha < numMaxLinhasTexto; indexLinha++)
 				{
 					auto curLinha = this->listaTexto + indexLinha;
@@ -406,43 +402,51 @@ namespace HorseRadish
 					if (curLinha->texto.IsEmpty(true) == true)
 						continue;
 
-					numCores = 0;
-					if (curLinha->metadata != nullptr)
+					if (!curLinha->formatted)
 					{
-						numCores = *((int*)curLinha->metadata);
-						dataCores = (DataRGB*)(((const char*)curLinha->metadata) + sizeof(int));
-					}
-
-					if (numCores <= 0)
-					{
+						if (curLinha->type == Engine::Logger::EntryType::Error)
+							guiFont->setColor(1.0f, 0.0f, 0.0f, 1.0f);
+						else if (curLinha->type == Engine::Logger::EntryType::Warning)
+							guiFont->setColor(1.0f, 0.42f, 0.17f, 1.0f);
+						else
+							guiFont->setColor(1.0f, 1.0f, 1.0f, 1.0f);
 						guiFont->write(textX, textY, curLinha->texto);
 						continue;
 					}
 
-					if ((numCores == 1) && (dataCores[0].pos == 0))
-					{
-						guiFont->setColor(HorseRadish::Color::ConvertColor(dataCores[0].r), HorseRadish::Color::ConvertColor(dataCores[0].g), HorseRadish::Color::ConvertColor(dataCores[0].b), 1.0f);
-						guiFont->write(textX, textY, curLinha->texto);
-						guiFont->setColor(1.0f, 1.0f, 1.0f, 1.0f);
-						continue;
-					}
-
-					curX = textX;
-					corActual = 0;
-
+					auto curX = textX;
 					HorseRadish::String::Iterator it(curLinha->texto);
-					for (; (charActual = *it) != '\0'; it++)
+					for (; *it != '\0'; it++)
 					{
-						if (it.GetBytePosition() == dataCores[corActual].pos)
+						auto walker = curLinha->texto.GetData() + it.GetBytePosition();
+						if ((walker[0] == '$') && (walker[1] == '{'))
 						{
-							guiFont->setColor(HorseRadish::Color::ConvertColor(dataCores[corActual].r), HorseRadish::Color::ConvertColor(dataCores[corActual].g), HorseRadish::Color::ConvertColor(dataCores[corActual].b), 1.0f);
+							if ((walker == curLinha->texto.GetData()) || (walker[-1] != '$'))
+							{
+								walker += 2;
+								auto walkerEnd = walker;
+								for (; *walkerEnd != '}'; walkerEnd++);
 
-							corActual++;
-							if (corActual >= numCores)
-								break;
+								it += (walkerEnd - walker) + 2;
+
+								if ((*walker == '#') && ((walkerEnd - walker) == 7))
+									guiFont->setColor(Color::ParseColorFromHTML(walker));
+								else if (strncmp(walker, "red", walkerEnd - walker) == 0)
+									guiFont->setColor(1.0f, 0.0f, 0.0f, 1.0f);
+								else if (strncmp(walker, "green", walkerEnd - walker) == 0)
+									guiFont->setColor(0.0f, 1.0f, 0.0f, 1.0f);
+								else if (strncmp(walker, "bgreen", walkerEnd - walker) == 0)
+									guiFont->setColor(0.08f, 1.0f, 0.39f, 1.0f);
+								else if (strncmp(walker, "olive", walkerEnd - walker) == 0)
+									guiFont->setColor(0.59f, 0.59f, 0.0f, 1.0f);
+								else if (strncmp(walker, "default", walkerEnd - walker) == 0)
+									guiFont->setColor(1.0f, 1.0f, 1.0f, 1.0f);
+
+								continue;
+							}
 						}
 
-						curX += guiFont->writeChar(curX, textY, charActual);
+						curX += guiFont->writeChar(curX, textY, *it);
 					}
 
 					guiFont->write(curX, textY, it);
@@ -450,11 +454,6 @@ namespace HorseRadish
 				}
 
 				HorseRadish::String unicodeStr;
-
-				unicodeStr.Set(HorseRadish::String::Encoding::UTF8, mainConsole->VarGetDataS("sys_Version"));
-				guiFont->setColor(1.0f, 1.0f, 1.0f, 0.7f);
-				guiFont->write(contentAreaLimits[0] - guiFont->getStringWidth(unicodeStr) - 5.0f, userTextY + textH + 4.0f, unicodeStr);
-				guiFont->setColor(1.0f, 1.0f, 1.0f, 1.0f);
 
 				if (userPrompt->getCursorState(true))
 				{
@@ -483,7 +482,6 @@ namespace HorseRadish
 					}
 				}
 
-				guiFont->draw();
 				guiFont->paintEnd();
 
 				if (cursorTimer.GetTimeMS() > 750.0f)
@@ -493,63 +491,62 @@ namespace HorseRadish
 				}
 			}
 
-			void ConsoleTabConsole::ProcessMSG(const MSG * const msg)
+			void ConsoleTabConsole::ProcessMSG(const Window::Message &msg)
 			{
-				if (msg->message == WM_MOUSEWHEEL)
+				if (msg.getType() == Window::Message::MessageType::MouseWheel)
 				{
-					if ((int)msg->wParam > 0)
-						this->textoOffset = HorseRadish::Math::iMin(this->textoOffset + 1, this->mainConsole->logger->GetNumberCurrentEntries() - 5);
-					else
-						this->textoOffset = HorseRadish::Math::iClampZero(this->textoOffset - 1);
+					this->textoOffset += static_cast<signed short>(msg.getFlags().piecesShort.short0);
+					if (this->textoOffset < 0)
+						this->textoOffset = 0;
 
 					this->ActualizaTextoConsola();
 					return;
 				}
 
-				if ((msg->message != WM_CHAR) && (msg->message != WM_KEYDOWN))
+				if ((msg.getType() != Window::Message::MessageType::CharacterKey) && (msg.getType() != Window::Message::MessageType::VirtualKey))
 					return;
 
-				if (msg->message == WM_KEYDOWN)
+				if (msg.getType() == Window::Message::MessageType::VirtualKey)
 				{
-					if (msg->wParam == 33)
+					if (msg.getParam() == static_cast<int>(Window::VirtualKeys::PageUp))
 					{
-						this->textoOffset = HorseRadish::Math::iMin(this->textoOffset + 1, this->mainConsole->logger->GetNumberCurrentEntries() - 5);
+						this->textoOffset++;
 						this->ActualizaTextoConsola();
 						return;
 					}
-					if (msg->wParam == 34)
+					if (msg.getParam() == static_cast<int>(Window::VirtualKeys::PageDown))
 					{
-						this->textoOffset = HorseRadish::Math::iClampZero(this->textoOffset - 1);
+						this->textoOffset -= (this->textoOffset > 0) ? 1 : 0;
 						this->ActualizaTextoConsola();
 						return;
 					}
 
-					if (msg->wParam == VK_HOME && HIBYTE(GetKeyState(VK_RCONTROL)))
-					{
-						this->textoOffset = mainConsole->logger->GetNumberCurrentEntries() - 5;
-						this->ActualizaTextoConsola();
-						return;
-					}
-					if (msg->wParam == VK_END && HIBYTE(GetKeyState(VK_RCONTROL)))
+					if (msg.getParam() == static_cast<int>(Window::VirtualKeys::Home))
 					{
 						this->textoOffset = 0;
 						this->ActualizaTextoConsola();
 						return;
 					}
-					if (msg->wParam == VK_UP)
+					if (msg.getParam() == static_cast<int>(Window::VirtualKeys::End))
+					{
+						this->textoOffset = 0;
+						this->ActualizaTextoConsola();
+						return;
+					}
+					if (msg.getParam() == static_cast<int>(Window::VirtualKeys::Up))
 					{
 						userHistory->PointerGoUp();
 						userPrompt->setInput(userHistory->PointerFrase());
 						return;
 					}
-					if (msg->wParam == VK_DOWN)
+					if (msg.getParam() == static_cast<int>(Window::VirtualKeys::Down))
 					{
 						userHistory->PointerGoDown();
 						userPrompt->setInput(userHistory->PointerFrase());
 						return;
 					}
 
-					if (msg->wParam == VK_TAB)
+					if (msg.getParam() == static_cast<int>(Window::VirtualKeys::Tab))
 					{
 						const char *string;
 						char dest[256];
@@ -571,13 +568,13 @@ namespace HorseRadish
 
 						primeiroHit = true;
 						dest[0] = '\0';
-						mainConsole->TABComplete(string, dest, sizeof(dest), [&](const HorseRadish::String &hit)
+						/*mainConsole->TABComplete(string, dest, sizeof(dest), [&](const HorseRadish::String &hit)
 						{
 							if (primeiroHit == true)
 								mainConsole->LogInfo(HorseRadish::String(">%s", dest).GetData());
 							primeiroHit = false;
 							mainConsole->LogTab(hit.GetData(), 2);
-						});
+						});*/
 
 						if (dest[0] != '\0')
 							userPrompt->setInput(dest);
@@ -585,7 +582,7 @@ namespace HorseRadish
 					}
 				}
 
-				if (msg->message == WM_CHAR && msg->wParam == 13)
+				if (msg.getType() == Window::Message::MessageType::CharacterKey && msg.getParam() == 13)
 				{
 					const char *texto;
 
@@ -595,23 +592,24 @@ namespace HorseRadish
 
 					userHistory->AddPhrase(texto);
 
-					mainConsole->Process(texto);
+					if (mInputCb)
+						mInputCb(texto);
 
 					userPrompt->setInput("");
 					return;
 				}
 
-				if (msg->message == WM_KEYDOWN)
-					userPrompt->setUserInputKEYDOWN(msg->wParam);
-				else if (msg->message == WM_CHAR)
-					userPrompt->setUserInputCHAR(msg->wParam);
+				if (msg.getType() == Window::Message::MessageType::VirtualKey)
+					userPrompt->setUserInputKEYDOWN(msg);
+				else if (msg.getType() == Window::Message::MessageType::CharacterKey)
+					userPrompt->setUserInputCHAR(msg);
 			}
 
 			bool ConsoleTabConsole::CriaTextoConsola(HorseRadish::Render::Renderer2D* const renderData)
 			{
 				int posY, meta, textH;
 
-				textH = renderData->gui.fontConsole->getMaxHeight();
+				textH = renderData->gui.font->getMaxHeight();
 
 				posY = this->tabContentAreaPos.y + textH + 5;
 				meta = this->tabContentAreaSize.height - textH - 5;
@@ -629,271 +627,26 @@ namespace HorseRadish
 
 			void ConsoleTabConsole::ActualizaTextoConsola()
 			{
-				for (int i = 0; i < this->numMaxLinhasTexto; i++)
+				int curLine = 0;
+
+				mLogger->IterateLast([&](const Engine::Logger::EntryType entryType, const Engine::Logger::ModuleType moduleType, const bool isFormatted, const char * const log) -> bool
 				{
-					this->listaTexto[i].active = false;
-					this->listaTexto[i].metadata = nullptr;
-				}
+					if (curLine >= this->numMaxLinhasTexto)
+						return false;
+					
+					auto curLinha = this->listaTexto + curLine;
+					curLine++;
+					
+					curLinha->active = true;
+					curLinha->type = entryType;
+					curLinha->texto.Set(HorseRadish::String::Encoding::UTF8, log);
+					curLinha->formatted = isFormatted;
+					return true;
 
-				std::function<bool(const void * const metadata, const int metadataSize, const char * const data, const int dataSize)> iterator = [&](const void * const metadata, const int metadataSize, const char * const data, const int dataSize) -> bool
-				{
-					for (int indexLinha = 0; indexLinha < this->numMaxLinhasTexto; indexLinha++)
-					{
-						auto curLinha = this->listaTexto + indexLinha;
-						if (curLinha->active == true)
-							continue;
+				}, this->textoOffset);
 
-						curLinha->active = true;
-						curLinha->texto.Set(HorseRadish::String::Encoding::UTF8, data);
-						curLinha->metadata = (metadataSize <= 0) ? nullptr : metadata;
-						return true;
-					}
-
-					return false;
-				};
-
-				mainConsole->logger->Iterate(true, iterator, this->textoOffset);
-			}
-
-
-			ConsoleTabStats::ConsoleTabStats() : ConsoleGUI::ConsoleTab()
-			{
-				tabName.Set(HorseRadish::String::Encoding::ASCII, "Stats");
-			}
-
-			ConsoleTabStats::~ConsoleTabStats()
-			{
-			}
-
-			void ConsoleTabStats::DrawContent(HorseRadish::Render::Renderer2D* const render2D, const HorseRadish::Matrix &transformMatrix)
-			{
-				/*SGPUCounter *gpuCounter;
-				int inboxX,inboxY,inboxWidth,inboxHeight;
-				int numMaxSamples,maxLegendWidth,textH;
-				float convX, posLegendaY;
-				HorseRadish::OpenGL::Tools::ImmediateMode *glImmediateMode;
-				HorseRadish::OpenGL::Tools::Font *guiFont;
-
-				//se não nada de contadores
-				if ((renderData->stats.gpuCounter==nullptr) || (renderData->stats.gpuCounter->getNumCounters()<=0))
-				return;
-
-				//para facilitar a vida
-				gpuCounter = renderData->stats.gpuCounter;
-
-				//o programa em causa e todos os uniforms que preciso
-				renderData->shaders.prog2DDrawNoTex->Bind();
-				HorseRadish::OpenGL::glUniformMatrix4fv(renderData->glUniformCache->GetUniformPos(renderData->shaders.prog2DDrawNoTex->glID, "transformationMatrix"),1,GL_FALSE, transformMatrix);
-
-				//para ajudar
-				glImmediateMode = renderData->glImmediateMode;
-				guiFont = renderData->gui.font;
-
-				//a altura máxima do texto
-				textH = guiFont->getMaxHeight();
-
-				//preciso de calcular o tamanho máximo do nome dos counters
-				maxLegendWidth = 0;
-				for(int i=1; i<=gpuCounter->getNumCounters(); i++)
-				{
-				HorseRadish::String unicodeStr;
-
-				//tiro a string e vejo o tamanho máximo
-				unicodeStr.Set(HorseRadish::String::Encoding::UTF8, gpuCounter->getCounterName(i));
-				maxLegendWidth = HorseRadish::Math::iMax(maxLegendWidth, guiFont->getStringWidth(unicodeStr));
-				}
-
-				//calculo isto pra a área de gráfico
-				inboxX = this->tabContentAreaPos.x + 15 + maxLegendWidth;
-				inboxY = this->tabContentAreaPos.y + 5;
-				inboxWidth = this->tabContentAreaSize.width - 20 - maxLegendWidth;
-				inboxHeight = this->tabContentAreaSize.height - 5*2;
-
-				//posso já saber o máximo de samples a usar e como transformar pra pixel
-				numMaxSamples=gpuCounter->getMaxNumSamples();
-				convX=((float)inboxWidth)/((float)numMaxSamples);
-
-				//toca a passar por todos os counters e desenho-os
-				for(int i=0; i<gpuCounter->getNumCounters(); i++)
-				{
-				int curX,curY;
-				float valueYScale, valueYTrans;
-
-				//se o contador for em percentagem
-				if (gpuCounter->getCounterIsPercent(i+1)==true)
-				{
-				//como os valores estão em 0 e 100, basta ajustar a escala até cima e não é preciso translação
-				valueYScale = ((float)inboxHeight)*0.01f;
-				valueYTrans = 0.0f;
-				}
-				else
-				{
-				float valorMin, valorMax;
-
-				gpuCounter->getValuesMinMax(i+1, &valorMin, &valorMax);
-
-				valueYScale = ((float)inboxHeight) / (valorMax-valorMin);
-				valueYTrans = -valorMin;
-				}
-
-				//começo a desenhar a linestrip deste contador
-				glImmediateMode->BeginDraw(HorseRadish::OpenGL::Tools::ImmediateMode::LineStrip);
-				//a cor do contador
-				glImmediateMode->AddColorRGB(gpuCounter->getCounterColor(i+1));
-
-				//para cada sample do contador
-				for(int j=1; j<=numMaxSamples; j++)
-				{
-				//calculo o X e Y a usar
-				curX=inboxX + HorseRadish::Math::ftoi(convX*((float)j));
-				curY=inboxY + HorseRadish::Math::ftoi((gpuCounter->getValue(i+1,j) + valueYTrans) * valueYScale);
-
-				//posso desenhar
-				glImmediateMode->AddPosition(curX,curY);
-				}
-
-				//fim da linha
-				glImmediateMode->EndDraw();
-				}
-
-				//desenho duas linhas a representar as barras do gráfico
-				HorseRadish::OpenGL::glLineWidth(2.0f);
-				glImmediateMode->BeginDraw(HorseRadish::OpenGL::Tools::ImmediateMode::LineStrip);
-				glImmediateMode->AddColor(255, 255, 255, 255);
-				glImmediateMode->AddPosition(inboxX,inboxY+inboxHeight);
-				glImmediateMode->AddPosition(inboxX,inboxY);
-				glImmediateMode->AddPosition(inboxX+inboxWidth,inboxY);
-				glImmediateMode->EndDraw();
-				HorseRadish::OpenGL::glLineWidth(1.0f);
-
-				//digo à fonte para ligar tudo o que precisa para desenhar com a minima mudança de estados
-				guiFont->paintBegin(transformMatrix);
-
-				//onde vou desenhar a legenda
-				posLegendaY = (this->tabContentAreaPos.y + this->tabContentAreaSize.height) - (textH + 5);
-
-				//para cada contador
-				for(int i=0; i<gpuCounter->getNumCounters(); i++)
-				{
-				HorseRadish::String unicodeStr;
-
-				//tiro a string
-				unicodeStr.Set(HorseRadish::String::Encoding::UTF8, gpuCounter->getCounterName(i+1));
-
-				//ajusto a cor e escrevo o texto
-				guiFont->setColor(gpuCounter->getCounterColor(i+1));
-				guiFont->write(this->tabContentAreaPos.x + 5, posLegendaY, unicodeStr);
-
-				//isto tem de descer
-				posLegendaY -= (textH + 5);
-				}
-
-				//digo à fonte para acabar de desenhar o texto que falta e para desactivar os estados que alterou
-				guiFont->draw();
-				guiFont->paintEnd();*/
-			}
-
-			void ConsoleTabStats::ProcessMSG(const MSG * const msg)
-			{
-			}
-
-			ConsoleTabExtra::ConsoleTabExtra(HorseRadish::Render::RendererDeferred * const renderDeferred) : ConsoleGUI::ConsoleTab()
-			{
-				tabName.Set(HorseRadish::String::Encoding::ASCII, "Extra large");
-
-				this->renderDeferred = renderDeferred;
-
-				this->currentRT = 0;
-			}
-
-			ConsoleTabExtra::~ConsoleTabExtra()
-			{
-			}
-
-			void ConsoleTabExtra::DrawContent(HorseRadish::Render::Renderer2D * const render2D, const HorseRadish::Matrix &transformMatrix)
-			{
-				const HorseRadish::OpenGL::Objects::Texture *rtAlvo;
-				HorseRadish::Color colorScale;
-
-				colorScale.Set(1.0f);
-
-				rtAlvo = nullptr;
-				if (this->currentRT == 0)
-				{
-					rtAlvo = this->renderDeferred->GetRTTexture(HorseRadish::Render::RendererDeferred::Albedo);
-				}
-				else if (this->currentRT == 1)
-				{
-					rtAlvo = this->renderDeferred->GetRTTexture(HorseRadish::Render::RendererDeferred::Normals);
-				}
-				else if (this->currentRT == 2)
-				{
-					rtAlvo = this->renderDeferred->GetRTTexture(HorseRadish::Render::RendererDeferred::MiscA);
-				}
-				else if (this->currentRT == 3)
-				{
-					rtAlvo = this->renderDeferred->GetRTTexture(HorseRadish::Render::RendererDeferred::MiscB);
-				}
-
-				if (rtAlvo == nullptr)
-					return;
-
-				render2D->shaders.progDeferredDebug->Bind();
-				HorseRadish::OpenGL::glUniformMatrix4fv(render2D->glUniformCache->GetUniformPos(render2D->shaders.progDeferredDebug->glID, "transformationMatrix"), 1, GL_FALSE, transformMatrix);
-				HorseRadish::OpenGL::glUniform4fv(render2D->glUniformCache->GetUniformPos(render2D->shaders.progDeferredDebug->glID, "colorScale"), 1, (const float *)colorScale);
-
-				HorseRadish::OpenGL::glBindTextureUnit(0, rtAlvo->glID);
-
-				auto glImmediateMode = render2D->glImmediateMode;
-
-				glImmediateMode->BeginDraw(HorseRadish::OpenGL::Tools::ImmediateMode::GeometryType::Quads);
-				glImmediateMode->AddColorF(1.0f);
-
-				glImmediateMode->AddTexCoord(this->tabContentAreaPos.x + this->tabContentScreenDelta.x, this->tabContentAreaPos.y + this->tabContentScreenDelta.y);
-				glImmediateMode->AddPosition(this->tabContentAreaPos.x, this->tabContentAreaPos.y);
-
-				glImmediateMode->AddTexCoord(this->tabContentAreaPos.x + this->tabContentAreaSize.width + this->tabContentScreenDelta.x, this->tabContentAreaPos.y + this->tabContentScreenDelta.y);
-				glImmediateMode->AddPosition(this->tabContentAreaPos.x + this->tabContentAreaSize.width, this->tabContentAreaPos.y);
-
-				glImmediateMode->AddTexCoord(this->tabContentAreaPos.x + this->tabContentAreaSize.width + this->tabContentScreenDelta.x, this->tabContentAreaPos.y + this->tabContentAreaSize.height + this->tabContentScreenDelta.y);
-				glImmediateMode->AddPosition(this->tabContentAreaPos.x + this->tabContentAreaSize.width, this->tabContentAreaPos.y + this->tabContentAreaSize.height);
-
-				glImmediateMode->AddTexCoord(this->tabContentAreaPos.x + this->tabContentScreenDelta.x, this->tabContentAreaPos.y + this->tabContentAreaSize.height + this->tabContentScreenDelta.y);
-				glImmediateMode->AddPosition(this->tabContentAreaPos.x, this->tabContentAreaPos.y + this->tabContentAreaSize.height);
-				glImmediateMode->EndDraw();
-
-				auto guiFont = render2D->gui.fontConsole;
-
-				guiFont->paintBegin(transformMatrix);
-				guiFont->setColor(1.0f, 1.0f, 1.0f);
-				if (this->currentRT == 0)
-					guiFont->write(10.0f, this->tabContentAreaSize.height - guiFont->getMaxHeight(), HorseRadish::String("RT: albedo"));
-				else if (this->currentRT == 1)
-					guiFont->write(10.0f, this->tabContentAreaSize.height - guiFont->getMaxHeight(), HorseRadish::String("RT: albedo"));
-
-				guiFont->draw();
-				guiFont->paintEnd();
-			}
-
-			void ConsoleTabExtra::ProcessMSG(const MSG * const msg)
-			{
-				if (msg->message == WM_KEYDOWN)
-				{
-					if (msg->wParam == VK_PRIOR)
-					{
-						this->currentRT--;
-						if (this->currentRT < 0)
-							this->currentRT = 3;
-						return;
-					}
-					if (msg->wParam == VK_NEXT)
-					{
-						this->currentRT++;
-						if (this->currentRT > 3)
-							this->currentRT = 0;
-						return;
-					}
-				}
+				for (; curLine < this->numMaxLinhasTexto; curLine++)
+					this->listaTexto[curLine].active = false;
 			}
 
 		} //UI

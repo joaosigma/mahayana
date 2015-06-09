@@ -12,7 +12,7 @@ namespace HorseRadish
 	public:
 		class Iterator
 		{
-			unsigned short byteIndex, charIndex;
+			unsigned int byteIndex, charIndex;
 			const String &string;
 
 			friend class String;
@@ -170,7 +170,7 @@ namespace HorseRadish
 
 		class Tokenizer
 		{
-			unsigned short byteIndex;
+			unsigned int byteIndex;
 			unsigned int tokenUnicode;
 			const String &string;
 
@@ -324,14 +324,14 @@ namespace HorseRadish
 
 	private:
 		HorseRadish::hChar *actualBuffer;
-		unsigned short numBytes, numChars;
+		unsigned int numBytes, numChars;
 		std::vector<HorseRadish::hChar> bufferHeap;
-		HorseRadish::hChar bufferLocal[64 - (sizeof(void*) * 2) - (sizeof(short) * 2)];
+		HorseRadish::hChar bufferLocal[64 - (sizeof(void*) * 2) - (sizeof(int) * 2)];
 
 		static unsigned int lengthUTF8(const unsigned int &unicodeChar);
 		static unsigned int unicode2utf8(const unsigned int &unicodeChar, HorseRadish::hChar * const bufferWrite);
 		static bool validateChar(const HorseRadish::hChar * const charPtr);
-		static bool validateString(const HorseRadish::hChar * const stringData, unsigned short * const dataCharCount, unsigned short * const dataByteCount);
+		static bool validateString(const HorseRadish::hChar * const stringData, unsigned int * const dataCharCount, unsigned int * const dataByteCount);
 		static bool isutf8(const HorseRadish::hChar &value);
 
 		static const unsigned __int32 offsetsFromUTF8[6];
@@ -365,6 +365,7 @@ namespace HorseRadish
 		int Set(const Encoding &flagFormat, const void * const nova, const int &numCharToEncode = -1);
 		int Set(const HorseRadish::hChar * const nova);
 		int Set(const String &nova);
+		int SetFromBuffer(const void * const nova, const unsigned int numBytes);
 		int SetPrintf(const Encoding flagFormat, const char *fmt, ...);
 		int SetLine(const Encoding flagFormat, const void * const from);
 		void SetTime(const unsigned int seconds);

@@ -1,12 +1,13 @@
 #pragma once
 
+#include "tools\camera.hpp"
+
 #include "common\Mesh.hpp"
 #include "common\MeshFactory.hpp"
 #include "common\FileSystem.hpp"
 #include "common\OpenGL\objects.hpp"
-#include "common\OpenGL\tools.hpp"
-
-#include "console\console.hpp"
+#include "common\OpenGL\tools\frustum.hpp"
+#include "common\OpenGL\tools\viewport.hpp"
 
 #include <vector>
 
@@ -40,7 +41,7 @@ namespace HorseRadish
 			}matrices;
 
 			struct Textures{
-				const HorseRadish::OpenGL::Objects::ObjectGL *spotTex, *attenTex, *cubeEnvTex;
+				//const HorseRadish::OpenGL::Objects::ObjectGL *spotTex, *attenTex, *cubeEnvTex;
 			}textures;
 
 		public:
@@ -104,24 +105,17 @@ namespace HorseRadish
 			Geometry *geometry;
 
 			TextureSet *texSet;
-			union TextureData
+			struct TextureData
 			{
 				struct Lighting
 				{
-					const HorseRadish::OpenGL::Objects::Texture *diffuse;
-					const HorseRadish::OpenGL::Objects::Texture *normal;
-					const HorseRadish::OpenGL::Objects::Texture *spec;
-					const HorseRadish::OpenGL::Objects::Texture *misc;
+					HorseRadish::OpenGL::Objects::Texture diffuse;
+					HorseRadish::OpenGL::Objects::Texture normal;
+					HorseRadish::OpenGL::Objects::Texture spec;
+					HorseRadish::OpenGL::Objects::Texture misc;
 				}lighting;
 
-				struct General
-				{
-					const HorseRadish::OpenGL::Objects::Texture *tex0;
-					const HorseRadish::OpenGL::Objects::Texture *tex1;
-					const HorseRadish::OpenGL::Objects::Texture *tex2;
-					const HorseRadish::OpenGL::Objects::Texture *tex3;
-				}general;
-			}texData;
+			}*texData;
 
 			struct RenderValues{
 				float distToCam;
@@ -153,14 +147,14 @@ namespace HorseRadish
 
 		public:
 			struct Shadering{
-				const HorseRadish::OpenGL::Objects::ObjectGL **shaderMapTex;
-				const HorseRadish::OpenGL::Objects::ObjectGL *progGLSL;
+				//const HorseRadish::OpenGL::Objects::ObjectGL **shaderMapTex;
+				//const HorseRadish::OpenGL::Objects::ObjectGL *progGLSL;
 				int numShaderMaps;
 			};
 
 			struct Lighting{
 				float specPow, parallaxScale, parallaxBias;
-				const HorseRadish::OpenGL::Objects::ObjectGL *texNormal, *texSpec, *texDiffuse, *texAux;
+				//const HorseRadish::OpenGL::Objects::ObjectGL *texNormal, *texSpec, *texDiffuse, *texAux;
 			};
 
 			const MaterialLibrary *materialLib;
@@ -276,8 +270,8 @@ namespace HorseRadish
 			int CreateGeometryCOLLADA(HorseRadish::Streams::StreamReader &streamReader, const Geometry::GeometryType geomType, const bool joinModels);
 			int CreateSurface(const Surface::SurfaceType surfType, int surfaceParentID, Material * const material, Geometry * const geometry);
 
-			void LoadData(HorseRadish::OpenGL::Objects::ObjectsManager *glObjectManager, HorseRadish::IO::FileSystem * const fileSystem, HorseRadish::OpenGL::Objects::ObjectsManager* const textureManager);
-			void PrepareNextFrame(const HorseRadish::OpenGL::Tools::Camera * const hrCamera, const HorseRadish::OpenGL::Tools::Viewport * const hrViewport);
+			void LoadData(HorseRadish::IO::FileSystem * const fileSystem);
+			void PrepareNextFrame(const Tools::Camera& hrCamera, const HorseRadish::OpenGL::Tools::Viewport& hrViewport);
 		};
 
 	} //Render

@@ -1,18 +1,22 @@
 #pragma once
 
-#include "Platform.hpp"
 #include "String.hpp"
 #include "Types.hpp"
 #include "Math.hpp"
 #include "Path.hpp"
 
+#include "Platform.hpp"
+
+#include <memory>
 #include <windows.h>
-#include <stdio.h>
 
 namespace HorseRadish
 {
 	namespace Streams
 	{
+		class MemoryStream;
+		class FileStream;
+
 		class Stream
 		{
 		public:
@@ -34,9 +38,10 @@ namespace HorseRadish
 			virtual int Read(void * const outBuffer, int numBytes) = 0;
 			virtual int ReadLine(void * const outBuffer, const int bufferSize) = 0;
 			virtual int ReadUntil(void * const outBuffer, const int bufferSize, const char goal) = 0;
-			virtual const void* ReadContent(int &contentSize, bool &contentCopied) const = 0;
 			virtual int Write(const void * const inBuffer, int numBytes) = 0;
 			virtual int Seek(const int offset, const SeekOrigin seekOrigin) = 0;
+
+			virtual std::unique_ptr<MemoryStream> readEntireContent() const = 0;
 		};
 
 		class MemoryStream : public Stream
@@ -72,9 +77,13 @@ namespace HorseRadish
 			int Read(void * const outBuffer, int numBytes);
 			int ReadLine(void * const outBuffer, const int bufferSize);
 			int ReadUntil(void * const outBuffer, const int bufferSize, const char goal);
-			const void* ReadContent(int &contentSize, bool &contentCopied) const;
 			int Write(const void * const inBuffer, int numBytes);
 			int Seek(const int offset, const SeekOrigin seekOrigin);
+
+			std::unique_ptr<MemoryStream> readEntireContent() const;
+
+			const hUInt8* getData() const;
+			std::string toStr() const;
 		};
 
 		class FileStream : public Stream
@@ -107,11 +116,12 @@ namespace HorseRadish
 			int Read(void * const outBuffer, int numBytes);
 			int ReadLine(void * const outBuffer, const int bufferSize);
 			int ReadUntil(void * const outBuffer, const int bufferSize, const char goal);
-			const void* ReadContent(int &contentSize, bool &contentCopied) const;
 			int Write(const void * const inBuffer, int numBytes);
 			int Seek(const int offset, const SeekOrigin seekOrigin);
 
-			static void* ReadEntireFile(const HorseRadish::hChar * const filePath, int &fileSize);
+			std::unique_ptr<MemoryStream> readEntireContent() const;
+
+			static std::unique_ptr<MemoryStream> ReadEntireFile(const HorseRadish::hChar * const filePath);
 			static HorseRadish::String ReadEntireFileAsString(const HorseRadish::hChar * const filePath);
 			static bool StreamDump(Stream* stream, const HorseRadish::hChar * const filePath);
 		};
@@ -125,8 +135,10 @@ namespace HorseRadish
 				: stream(stream)
 			{ }
 
-			~StreamReader()
-			{ }
+			const Stream& getStream() const
+			{
+				return stream;
+			}
 
 			bool ReadInt8(hInt8 &outBuffer)
 			{
@@ -259,11 +271,6 @@ namespace HorseRadish
 				return (stream.ReadUntil(outBuffer, bufferSize, goal));
 			}
 
-			const void* ReadContent(int &contentSize, bool &contentCopied) const
-			{
-				return (stream.ReadContent(contentSize, contentCopied));
-			}
-
 			int GetPosition() const
 			{
 				return (stream.GetPosition());
@@ -294,8 +301,10 @@ namespace HorseRadish
 				: stream(stream)
 			{ }
 
-			~StreamWriter()
-			{ }
+			const Stream& getStream() const
+			{
+				return stream;
+			}
 
 			bool WriteInt8(const hInt8 &inValue)
 			{
@@ -428,8 +437,10 @@ namespace HorseRadish
 				: stream(stream)
 			{ }
 
-			~TextWriter()
-			{ }
+			const Stream& getStream() const
+			{
+				return stream;
+			}
 
 			bool Write(const char * const string, bool writeLine = false)
 			{
@@ -450,21 +461,6 @@ namespace HorseRadish
 					sucesso &= (stream.Write(HorseRadish::Platform::NewLine, HorseRadish::Platform::NewLineSize) == HorseRadish::Platform::NewLineSize);
 
 				return sucesso;
-			}
-
-			bool WriteFormat(const char * const format, ...)
-			{
-				if ((format == nullptr) || (format <= 0))
-					return 0;
-
-				va_list ap;
-				char resultadoPrintf[512];
-
-				va_start(ap, format);
-				vsnprintf_s(resultadoPrintf, sizeof(resultadoPrintf), _TRUNCATE, format, ap);
-				va_end(ap);
-
-				return (this->Write(resultadoPrintf));
 			}
 
 			void WriteLine()

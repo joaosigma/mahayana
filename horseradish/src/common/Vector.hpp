@@ -3,8 +3,8 @@
 #include "Types.hpp"
 #include "Math.hpp"
 
+#include <cassert>
 #include <xmmintrin.h>
-#include <assert.h>
 
 namespace HorseRadish
 {
@@ -160,13 +160,13 @@ namespace HorseRadish
 
 		inline float operator[](int index) const
 		{
-			assert(index < 3); assert(index >= 0);
+			assert((index >= 0) && (index < 3));
 			return (&x)[index];
 		}
 
 		inline float& operator[](int index)
 		{
-			assert(index < 3); assert(index >= 0);
+			assert((index >= 0) && (index < 3));
 			return (&x)[index];
 		}
 
@@ -578,6 +578,11 @@ namespace HorseRadish
 			_mm_storeu_ps(&x, _mm_loadu_ps(&s.x)); w = 1.0f;
 		}
 
+		inline Vector4(const Vector &s, const float vw)
+		{
+			_mm_storeu_ps(&x, _mm_loadu_ps(&s.x)); w = vw;
+		}
+
 		inline Vector4(const Vector4 &s)
 		{
 			_mm_storeu_ps(&x, _mm_loadu_ps(&s.x));
@@ -673,13 +678,13 @@ namespace HorseRadish
 
 		inline float operator[](int index) const
 		{
-			assert(index < 4); assert(index >= 0);
+			assert((index >= 0) && (index < 4));
 			return (&x)[index];
 		}
 
 		inline float& operator[](int index)
 		{
-			assert(index < 4); assert(index >= 0);
+			assert((index >= 0) && (index < 4));
 			return (&x)[index];
 		}
 

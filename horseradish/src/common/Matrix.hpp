@@ -19,12 +19,11 @@ namespace HorseRadish
 		static void asmMult(float * const result, const float * const mat1, const float * const mat2);
 
 	public:
-		Matrix(){ return; }
-		~Matrix(){ return; }
+		Matrix();
+		Matrix(const Matrix &mat);
+		Matrix(const Matrix3 &mat);
 		explicit Matrix(const float * const s);
-		explicit Matrix(const Matrix &mat);
-		explicit Matrix(const Matrix3 &mat);
-
+		
 		void operator*=(const Matrix &s);
 		void operator*=(const Matrix3 &s);
 		void operator*=(const float *s);
@@ -155,11 +154,10 @@ namespace HorseRadish
 		friend class Matrix;
 
 	public:
-		Matrix3(){ return; }
-		~Matrix3(){ return; }
+		Matrix3();
+		Matrix3(const Matrix &mat);
+		Matrix3(const Matrix3 &mat);
 		explicit Matrix3(const float * const s);
-		explicit Matrix3(const Matrix &mat);
-		explicit Matrix3(const Matrix3 &mat);
 
 		void operator*=(const Matrix &s);
 		void operator*=(const Matrix3 &s);

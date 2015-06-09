@@ -584,7 +584,7 @@ namespace HorseRadish
 		GLAPI void (APIENTRYP glVertexBindingDivisor) (GLuint bindingindex, GLuint divisor);
 		GLAPI void (APIENTRYP glDebugMessageControl) (GLenum source, GLenum type, GLenum severity, GLsizei count, const GLuint *ids, GLboolean enabled);
 		GLAPI void (APIENTRYP glDebugMessageInsert) (GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *buf);
-		GLAPI void (APIENTRYP glDebugMessageCallback) (GLDEBUGPROC callback, const void *userParam);
+		GLAPI void (APIENTRYP glDebugMessageCallback) (GLDEBUGPROC callback, void *userParam);
 		GLAPI GLuint (APIENTRYP glGetDebugMessageLog) (GLuint count, GLsizei bufSize, GLenum *sources, GLenum *types, GLuint *ids, GLenum *severities, GLsizei *lengths, GLchar *messageLog);
 		GLAPI void (APIENTRYP glPushDebugGroup) (GLenum source, GLuint id, GLsizei length, const GLchar *message);
 		GLAPI void (APIENTRYP glPopDebugGroup) (void);

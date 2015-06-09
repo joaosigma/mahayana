@@ -1,6 +1,9 @@
 #pragma once
 
 #include "renderer.hpp"
+#include "tools\camera.hpp"
+#include "common\openGL\tools\viewport.hpp"
+#include "common\openGL\tools\immediateMode.hpp"
 
 namespace HorseRadish
 {
@@ -15,35 +18,35 @@ namespace HorseRadish
 
 			struct VBOs{
 				unsigned int vboMeshSize, vboMeshIndexSize;
-				const HorseRadish::OpenGL::Objects::VertexBuffer *vboMeshData, *vboMeshIndexData;
-				const HorseRadish::OpenGL::Objects::VertexArray *vaoMesh;
+				HorseRadish::OpenGL::Objects::Buffer vboMeshData, vboMeshIndexData;
+				HorseRadish::OpenGL::Objects::VertexArray vaoMesh;
 
-				VBOs() : vboMeshSize(0), vboMeshIndexSize(0), vboMeshData(nullptr), vboMeshIndexData(nullptr), vaoMesh(nullptr) { }
+				VBOs() : vboMeshSize(0), vboMeshIndexSize(0) { }
 			};
 
 			struct FBOs{
-				const HorseRadish::OpenGL::Objects::FrameBuffer *fboDeferredGBuffer;
-				const HorseRadish::OpenGL::Objects::Sampler *samplerTexs;
-				const HorseRadish::OpenGL::Objects::Texture *texDeferredZ, *texDeferredAlbedo, *texDeferredNormals, *texDeferredMiscA, *texDeferredMiscB;
-
-				FBOs() : fboDeferredGBuffer(nullptr), texDeferredZ(0), texDeferredAlbedo(nullptr), texDeferredNormals(nullptr), texDeferredMiscA(nullptr), texDeferredMiscB(nullptr) { }
+				HorseRadish::OpenGL::Objects::Sampler samplerTexs;
+				HorseRadish::OpenGL::Objects::FrameBuffer fboDeferredGBuffer;
+				HorseRadish::OpenGL::Objects::Texture texDeferredZ, texDeferredAlbedo, texDeferredNormals, texDeferredMiscA, texDeferredMiscB;
 			};
 
 			struct Shaders{
-				const HorseRadish::OpenGL::Objects::Program *progDeferredGBuffer;
-				const HorseRadish::OpenGL::Objects::Program *progMainDebug;
-				const HorseRadish::OpenGL::Objects::Program *progPerVertexLightDir;
+				struct {
+					HorseRadish::OpenGL::Objects::ShaderProgram vertex;
+					HorseRadish::OpenGL::Objects::ShaderProgram fragment;
+					HorseRadish::OpenGL::Objects::ProgramPipeline pipeline;
+				} deferred;
 
-				const HorseRadish::OpenGL::Objects::Program *progPPSimpleColor;
-
-				const HorseRadish::OpenGL::Objects::Program *renderZPass;
-
-				Shaders() : progDeferredGBuffer(nullptr), progMainDebug(nullptr), progPerVertexLightDir(nullptr), progPPSimpleColor(nullptr), renderZPass(nullptr) { }
+				struct {
+					HorseRadish::OpenGL::Objects::ShaderProgram vertex;
+					HorseRadish::OpenGL::Objects::ShaderProgram fragment;
+					HorseRadish::OpenGL::Objects::ProgramPipeline pipeline;
+				} postprocess;
 			};
 
 			struct Samplers{
-				const HorseRadish::OpenGL::Objects::Sampler *samplerAlbedo;
-				const HorseRadish::OpenGL::Objects::Sampler *samplerNormals;
+				HorseRadish::OpenGL::Objects::Sampler samplerAlbedo;
+				HorseRadish::OpenGL::Objects::Sampler samplerNormals;
 			};
 
 			HorseRadish::Render::World *renderWorld;
@@ -52,32 +55,29 @@ namespace HorseRadish
 			Shaders shaders;
 			Samplers samplers;
 			HorseRadish::IO::FileSystem *fileSystem;
-			HorseRadish::OpenGL::Objects::ObjectsManager *glObjectManager;
-			HorseRadish::OpenGL::Objects::ObjectsManager *glTextureManager;
-			HorseRadish::OpenGL::Tools::UniformCache *glUniformCache;
 			HorseRadish::OpenGL::Tools::ImmediateMode *glImmediateMode;
 			int renderWidth, renderHeight, shadersWatchFolderID;
-			const HorseRadish::OpenGL::Objects::Texture *texDefaultAlbedo, *texDefaultNormals;
+			HorseRadish::OpenGL::Objects::Texture texDefaultAlbedo, texDefaultNormals;
 
-			void renderGBuffer(const HorseRadish::OpenGL::Tools::Camera * const hrCamera, const HorseRadish::OpenGL::Tools::Viewport * const hrViewport);
-			void renderFinal(const HorseRadish::OpenGL::Tools::Camera * const hrCamera, const HorseRadish::OpenGL::Tools::Viewport * const hrViewport);
+			void renderGBuffer(const Tools::Camera& hrCamera, const HorseRadish::OpenGL::Tools::Viewport& hrViewport);
+			void renderFinal(const Tools::Camera& hrCamera, const HorseRadish::OpenGL::Tools::Viewport& hrViewport);
 			void loadGeometry();
 			TextureSet::Texture* findTexType(TextureSet * const texSet, const int texType);
-			const HorseRadish::OpenGL::Objects::Texture* loadDiffuse(HorseRadish::IO::FileSystem &fileSystem, TextureSet::Texture* texture);
-			const HorseRadish::OpenGL::Objects::Texture* loadNormal(HorseRadish::IO::FileSystem &fileSystem, TextureSet::Texture* texture);
+			void loadDiffuse(HorseRadish::IO::FileSystem &fileSystem, TextureSet::Texture* texture, HorseRadish::OpenGL::Objects::Texture& targetTexture);
+			void loadNormal(HorseRadish::IO::FileSystem &fileSystem, TextureSet::Texture* texture, HorseRadish::OpenGL::Objects::Texture& targetTexture);
 			void loadTextures(HorseRadish::IO::FileSystem &fileSystem);
 
 		public:
-			RendererDeferred(HorseRadish::OpenGL::Objects::Context * const glContext, HorseRadish::Render::World* const renderWorld);
+			RendererDeferred(const HorseRadish::OpenGL::Objects::Context& glContext, HorseRadish::Render::World* const renderWorld);
 			~RendererDeferred();
 
 			void Initialize(const int &renderWidth, const int &renderHeight, HorseRadish::IO::FileSystem * const fileSystem);
 
-			const HorseRadish::OpenGL::Objects::Texture* GetRTTexture(const RenderTargetType &renderTargetType) const;
+			//const HorseRadish::OpenGL::Objects::Texture* GetRTTexture(const RenderTargetType &renderTargetType) const;
 
 			void LoadWorld(HorseRadish::IO::FileSystem &fileSystem);
 
-			void Render(const HorseRadish::OpenGL::Tools::Camera * const hrCamera, const HorseRadish::OpenGL::Tools::Viewport * const hrViewport);
+			void Render(const Tools::Camera& hrCamera, const HorseRadish::OpenGL::Tools::Viewport& hrViewport);
 		};
 
 	} //Render

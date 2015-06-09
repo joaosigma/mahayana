@@ -28,9 +28,11 @@ namespace HorseRadish
 		static HorseRadish::String EncodeHex(const void * const buffer, unsigned int bufferSize, bool toUppercase);
 		static void EncodeHex(const void * const buffer, unsigned int bufferSize, bool toUppercase, HorseRadish::String &stringOut);
 		static void EncodeHex(const void * const buffer, unsigned int bufferSize, bool toUppercase, HorseRadish::Streams::Stream &streamOut);
+		static void EncodeHexByte(const unsigned char valByte, char * const outHex);
 
 		static unsigned int DecodeHexRequiredSize(unsigned int numHexChars);
 		static unsigned int DecodeHex(const HorseRadish::String &dataHex, HorseRadish::Streams::Stream &streamOut);
+		static unsigned char DecodeHexByte(const char * const dataHex);
 	};
 
 } //HorseRadish

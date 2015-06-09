@@ -7,7 +7,6 @@ namespace HorseRadish
 {
 	namespace Imaging
 	{
-
 		class Factory {
 		public:
 

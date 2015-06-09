@@ -218,6 +218,14 @@ namespace HorseRadish
 		}
 	}
 
+	void Encoders::EncodeHexByte(const unsigned char valByte, char * const outHex)
+	{
+		auto hexPair = Encoders::hexEncodeLookupUpper + (valByte * 2);
+		
+		outHex[0] = hexPair[0];
+		outHex[1] = hexPair[1];
+	}
+
 	unsigned int Encoders::DecodeHexRequiredSize(unsigned int numHexChars)
 	{
 		return (numHexChars / 2);
@@ -242,6 +250,11 @@ namespace HorseRadish
 		}
 
 		return bytesWritten;
+	}
+
+	unsigned char Encoders::DecodeHexByte(const char * const dataHex)
+	{
+		return ((Encoders::hexDecodeLookup[dataHex[0]] << 4) | Encoders::hexDecodeLookup[dataHex[1]]);
 	}
 
 	const char Encoders::base64Chars[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";

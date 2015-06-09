@@ -37,9 +37,6 @@ namespace HorseRadish
 			this->insideCamera = false;
 			this->noShadows = true;
 			this->scissor[0] = this->scissor[1] = this->scissor[2] = this->scissor[3] = 0;
-			this->textures.spotTex = nullptr;
-			this->textures.attenTex = nullptr;
-			this->textures.cubeEnvTex = nullptr;
 		}
 
 		Light::~Light()
@@ -68,18 +65,21 @@ namespace HorseRadish
 		}
 
 		Surface::Surface()
+			: texData(nullptr)
 		{
 			this->id = -1;
 			this->type = Static;
 			this->material = nullptr;
 			this->geometry = nullptr;
 			this->texSet = nullptr;
-			this->texData.general.tex0 = this->texData.general.tex1 = this->texData.general.tex2 = this->texData.general.tex3 = nullptr;
 			this->renderValues.distToCam = 0.0f;
 		}
 
 		Surface::~Surface()
 		{
+			if (texData)
+				delete texData;
+			texData = nullptr;
 		}
 
 		Material::Material()
@@ -699,23 +699,23 @@ namespace HorseRadish
 			return newSurfTotal.id;
 		}
 
-		void World::LoadData(HorseRadish::OpenGL::Objects::ObjectsManager *glObjectManager, HorseRadish::IO::FileSystem * const fileSystem, HorseRadish::OpenGL::Objects::ObjectsManager* const textureManager)
+		void World::LoadData(HorseRadish::IO::FileSystem * const fileSystem)
 		{
 			this->renderContent.surfaces.resize(this->surfacesTotal.size() + 1);
 			this->renderContent.surfaces[0] = nullptr;
 		}
 
-		void World::PrepareNextFrame(const HorseRadish::OpenGL::Tools::Camera * const hrCamera, const HorseRadish::OpenGL::Tools::Viewport * const hrViewport)
+		void World::PrepareNextFrame(const Tools::Camera& hrCamera, const HorseRadish::OpenGL::Tools::Viewport& hrViewport)
 		{
 			HorseRadish::OpenGL::Tools::Frustum camFrustum;
 			HorseRadish::Vector camPos;
 
-			camPos = hrCamera->GetPos();
+			camPos = hrCamera.GetPos();
 
-			camFrustum.SetCamPosition(camPos);
-			camFrustum.SetZNear(hrViewport->getZNear());
-			camFrustum.SetZFar(hrViewport->getZFar());
-			camFrustum.CalculateFrustum(hrViewport->getProj3D(), hrCamera->GetModelView());
+			camFrustum.setCamPosition(camPos);
+			camFrustum.setZNear(hrViewport.getZNear());
+			camFrustum.setZFar(hrViewport.getZFar());
+			camFrustum.calculateFrustum(hrViewport.getProjection(HorseRadish::OpenGL::Tools::Viewport::ProjectionType::Proj3D), hrCamera.GetModelView());
 
 			int numValidSurfaces = 0;
 			for (auto& curSurf : this->surfacesTotal)

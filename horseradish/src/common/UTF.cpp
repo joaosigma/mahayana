@@ -2,7 +2,9 @@
 
 #include "Types.hpp"
 
-#include <windows.h>
+#include <codecvt>
+#include <locale>
+#include <cwchar>
 
 namespace HorseRadish
 {
@@ -73,7 +75,14 @@ namespace HorseRadish
 			return -1;
 
 		if (targetEncoding == UTF::Encoding::Windows)
-			return MultiByteToWideChar(CP_UTF8, 0, (LPCCH)stringIn.GetData(), -1, (LPWSTR)outBuffer, outBufferSize);
+		{
+			auto finalStr = std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t>().from_bytes(stringIn.GetData());
+			auto finalSize = (finalStr.size() < outBufferSize) ? finalStr.size() : (outBufferSize - 1);
+			
+			memcpy(outBuffer, finalStr.c_str(), sizeof(wchar_t) * finalSize);
+			reinterpret_cast<wchar_t*>(outBuffer)[finalSize] = '\0';
+			return finalSize;
+		}
 
 		return 0;
 	}
@@ -84,7 +93,14 @@ namespace HorseRadish
 			return -1;
 
 		if (targetEncoding == UTF::Encoding::Windows)
-			return MultiByteToWideChar(CP_UTF8, 0, (LPCCH)bufferInUTF8, -1, (LPWSTR)outBuffer, outBufferSize);
+		{
+			auto finalStr = std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t>().from_bytes(reinterpret_cast<const char*>(bufferInUTF8));
+			auto finalSize = (finalStr.size() < outBufferSize) ? finalStr.size() : (outBufferSize - 1);
+
+			memcpy(outBuffer, finalStr.c_str(), sizeof(wchar_t) * finalSize);
+			reinterpret_cast<wchar_t*>(outBuffer)[finalSize] = '\0';
+			return finalSize;
+		}
 
 		return 0;
 	}
@@ -219,8 +235,12 @@ namespace HorseRadish
 
 		if (inEncoding == UTF::Encoding::Windows)
 		{
-			auto numChars = WideCharToMultiByte(CP_UTF8, 0, (LPCWSTR)inBuffer, -1, (LPSTR)outBuffer, outBufferSize, nullptr, nullptr);
-			return (numChars - 1);
+			auto finalStr = std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t>().to_bytes(reinterpret_cast<const wchar_t*>(inBuffer));
+			auto finalSize = (finalStr.size() < outBufferSize) ? finalStr.size() : (outBufferSize - 1);
+
+			memcpy(outBuffer, finalStr.c_str(), finalSize);
+			reinterpret_cast<char*>(outBuffer)[finalSize] = '\0';
+			return finalSize;
 		}
 
 		return 0;

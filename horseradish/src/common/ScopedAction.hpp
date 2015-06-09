@@ -2,7 +2,6 @@
 
 #include "Types.hpp"
 
-#include <assert.h>
 #include <functional>
 
 namespace HorseRadish

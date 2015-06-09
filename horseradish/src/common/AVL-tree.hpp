@@ -6,135 +6,146 @@
 
 namespace HorseRadish
 {
-	template <class T>
+	template <class TKey, class TValue>
 	class AVLTree
 	{
-		struct No{
+		struct Node {
 			int height;
-			unsigned int caracter;
-			T *dados;
-			No *meio, *esquerda, *direita, *pai;
+			TKey key;
+			Node *bMiddle, *bLeft, *bRight, *bRoot;
+
+			TValue value;
+			bool valueSet;
+
+			Node()
+				: height(-1), bMiddle(nullptr), bLeft(nullptr), bRight(nullptr), bRoot(nullptr), valueSet(false)
+			{ }
+
+			Node(Node * const bRoot, int height)
+				: height(height), bMiddle(nullptr), bLeft(nullptr), bRight(nullptr), bRoot(bRoot), valueSet(false)
+			{ }
+
+			bool isBalanced() const
+			{
+				int l = bLeft ? bLeft->height : -1;
+				int r = bRight ? bRight->height : -1;
+
+				return (HorseRadish::Math::iAbs(l - r) < 2);
+			}
+
+			bool isLeftHeavier() const
+			{
+				if (bRight == nullptr)
+					return true;
+				if (bLeft == nullptr)
+					return false;
+
+				return (bLeft->height > bRight->height);
+			}
+
+			void updateWeight()
+			{
+				height = HorseRadish::Math::iMax(bLeft ? bLeft->height : -1, bRight ? bRight->height : -1) + 1;
+			}
 		};
-		No *mainTree;
+		Node *mainTree;
 
-		int avlCalcPeso(No * const tree)
+		void avlRotateLL(Node * const tree)
 		{
-			if (tree == nullptr)
-				return -1;
-			return (HorseRadish::Math::iMax(tree->esquerda ? tree->esquerda->height : -1, tree->direita ? tree->direita->height : -1) + 1);
-		}
-		bool avlIsBalanced(No * const tree)
-		{
-			int l, r;
-
-			l = r = -1;
-			if (tree->esquerda)
-				l = tree->esquerda->height;
-			if (tree->direita)
-				r = tree->direita->height;
-
-			return (HorseRadish::Math::iAbs(l - r) < 2);
-		}
-		void avlRotateLL(No * const tree)
-		{
-			No *novoRoot;
-
 			//o meu pai passa a ter o meu filho (tenho de ver onde estou no meu pai)
-			if (tree->pai)
+			if (tree->bRoot)
 			{
 				//isto não pode acontecer se eu vim de um meio (quebro a string se muda-se de sitio)
-				if (tree->pai->meio == tree)
+				if (tree->bRoot->bMiddle == tree)
 					return;
 
 				//posso mudar
-				if (tree->pai->esquerda == tree)
-					tree->pai->esquerda = tree->esquerda;
+				if (tree->bRoot->bLeft == tree)
+					tree->bRoot->bLeft = tree->bLeft;
 				else
-					tree->pai->direita = tree->esquerda;
+					tree->bRoot->bRight = tree->bLeft;
 			}
 			else
 			{
-				this->mainTree = tree->esquerda;
+				this->mainTree = tree->bLeft;
 			}
 
 			//não esquecer que o filho tem um ponteiro para o pai, logo, tem de actualizar isso tambem
-			tree->esquerda->pai = tree->pai;
+			tree->bLeft->bRoot = tree->bRoot;
 
 			//mas eu deixo de ter um filho à esquerda (que é o meu filho que agora perdi), mas ganho os deles
-			novoRoot = tree->esquerda;
-			tree->esquerda = novoRoot->direita;
-			if (novoRoot->direita)
-				novoRoot->direita->pai = tree;
+			auto novoRoot = tree->bLeft;
+			tree->bLeft = novoRoot->bRight;
+			if (novoRoot->bRight)
+				novoRoot->bRight->bRoot = tree;
 
 			//como eu agora vou passar a ser filho do meu filho sei que tenho um valor maior que o dele, logo
 			//tenho de ser o seu filho da direita, logo o meu pai também passa a ser ele
-			novoRoot->direita = tree;
-			tree->pai = novoRoot;
+			novoRoot->bRight = tree;
+			tree->bRoot = novoRoot;
 
 			//recalculo o meu peso e o mesmo para o meu antigo filho
-			tree->height = avlCalcPeso(tree);
-			novoRoot->height = avlCalcPeso(novoRoot);
+			tree->updateWeight();
+			novoRoot->updateWeight();
 		}
-		void avlRotateRR(No * const tree)
-		{
-			No *novoRoot;
 
+		void avlRotateRR(Node * const tree)
+		{
 			//o meu pai passa a ter o meu filho (tenho de ver onde estou no meu pai)
-			if (tree->pai)
+			if (tree->bRoot)
 			{
 				//isto não pode acontecer se eu vim de um meio (quebro a string se muda-se de sitio)
-				if (tree->pai->meio == tree)
+				if (tree->bRoot->bMiddle == tree)
 					return;
 
 				//posso mudar
-				if (tree->pai->esquerda == tree)
-					tree->pai->esquerda = tree->direita;
+				if (tree->bRoot->bLeft == tree)
+					tree->bRoot->bLeft = tree->bRight;
 				else
-					tree->pai->direita = tree->direita;
+					tree->bRoot->bRight = tree->bRight;
 			}
 			else
 			{
-				this->mainTree = tree->direita;
+				this->mainTree = tree->bRight;
 			}
 
 			//não esquecer que o filho tem um ponteiro para o pai, logo, tem de actualizar isso tambem
-			tree->direita->pai = tree->pai;
+			tree->bRight->bRoot = tree->bRoot;
 
 			//mas eu deixo de ter um filho à esquerda (que é o meu filho que agora perdi), mas ganho os deles
-			novoRoot = tree->direita;
-			tree->direita = novoRoot->esquerda;
-			if (novoRoot->esquerda)
-				novoRoot->esquerda->pai = tree;
+			auto novoRoot = tree->bRight;
+			tree->bRight = novoRoot->bLeft;
+			if (novoRoot->bLeft)
+				novoRoot->bLeft->bRoot = tree;
 
 			//como eu agora vou passar a ser filho do meu filho sei que tenho um valor maior que o dele, logo
 			//tenho de ser o seu filho da direita, logo o meu pai também passa a ser ele
-			novoRoot->esquerda = tree;
-			tree->pai = novoRoot;
+			novoRoot->bLeft = tree;
+			tree->bRoot = novoRoot;
 
 			//recalculo o meu peso e o mesmo para o meu antigo filho
-			tree->height = avlCalcPeso(tree);
-			novoRoot->height = avlCalcPeso(novoRoot);
+			tree->updateWeight();
+			novoRoot->updateWeight();
 		}
-		void avlRotateLR(No * const tree)
-		{
-			No *novoRoot, *lRoot, *rRoot;
 
+		void avlRotateLR(Node * const tree)
+		{
 			//qual o novo root
-			novoRoot = tree->esquerda->direita;
-			novoRoot->pai = tree->pai;
+			auto novoRoot = tree->bLeft->bRight;
+			novoRoot->bRoot = tree->bRoot;
 
 			//o meu pai passa a ter o meu neto (tenho de ver onde estou no meu pai)
-			if (tree->pai)
+			if (tree->bRoot)
 			{
 				//isto não pode acontecer se eu vim de um meio (quebro a string se muda-se de sitio)
-				if (tree->pai->meio == tree)
+				if (tree->bRoot->bMiddle == tree)
 					return;
 
 				//posso mudar
-				if (tree->pai->esquerda == tree)
-					tree->pai->esquerda = novoRoot;
+				if (tree->bRoot->bLeft == tree)
+					tree->bRoot->bLeft = novoRoot;
 				else
-					tree->pai->direita = novoRoot;
+					tree->bRoot->bRight = novoRoot;
 			}
 			else
 			{
@@ -142,46 +153,45 @@ namespace HorseRadish
 			}
 
 			//guardo os lados do novo root
-			lRoot = novoRoot->esquerda;
-			rRoot = novoRoot->direita;
+			auto lRoot = novoRoot->bLeft;
+			auto rRoot = novoRoot->bRight;
 
 			//os novos filhos do root
-			novoRoot->esquerda = tree->esquerda;
-			novoRoot->direita = tree;
-			tree->pai = novoRoot;
-			tree->esquerda->pai = novoRoot;
+			novoRoot->bLeft = tree->bLeft;
+			novoRoot->bRight = tree;
+			tree->bRoot = novoRoot;
+			tree->bLeft->bRoot = novoRoot;
 
 			//arranjos os outros dois
-			novoRoot->esquerda->direita = lRoot;
-			novoRoot->direita->esquerda = rRoot;
-			if (lRoot)	lRoot->pai = novoRoot->esquerda;
-			if (rRoot)	rRoot->pai = novoRoot->direita;
+			novoRoot->bLeft->bRight = lRoot;
+			novoRoot->bRight->bLeft = rRoot;
+			if (lRoot)	lRoot->bRoot = novoRoot->bLeft;
+			if (rRoot)	rRoot->bRoot = novoRoot->bRight;
 
 			//recalculo o meu peso e o mesmo para o meu antigo filho
-			novoRoot->height = avlCalcPeso(novoRoot);
-			novoRoot->esquerda->height = avlCalcPeso(novoRoot->esquerda);
-			novoRoot->direita->height = avlCalcPeso(novoRoot->direita);
+			novoRoot->updateWeight();
+			novoRoot->bLeft->updateWeight();
+			novoRoot->bRight->updateWeight();
 		}
-		void avlRotateRL(No * const tree)
-		{
-			No *novoRoot, *lRoot, *rRoot;
 
+		void avlRotateRL(Node * const tree)
+		{
 			//qual o novo root
-			novoRoot = tree->direita->esquerda;
-			novoRoot->pai = tree->pai;
+			auto novoRoot = tree->bRight->bLeft;
+			novoRoot->bRoot = tree->bRoot;
 
 			//o meu pai passa a ter o meu filho (tenho de ver onde estou no meu pai)
-			if (tree->pai)
+			if (tree->bRoot)
 			{
 				//isto não pode acontecer se eu vim de um meio (quebro a string se muda-se de sitio)
-				if (tree->pai->meio == tree)
+				if (tree->bRoot->bMiddle == tree)
 					return;
 
 				//posso mudar
-				if (tree->pai->esquerda == tree)
-					tree->pai->esquerda = novoRoot;
+				if (tree->bRoot->bLeft == tree)
+					tree->bRoot->bLeft = novoRoot;
 				else
-					tree->pai->direita = novoRoot;
+					tree->bRoot->bRight = novoRoot;
 			}
 			else
 			{
@@ -189,435 +199,343 @@ namespace HorseRadish
 			}
 
 			//guardo os lados do novo root
-			lRoot = novoRoot->esquerda;
-			rRoot = novoRoot->direita;
+			auto lRoot = novoRoot->bLeft;
+			auto rRoot = novoRoot->bRight;
 
 			//os novos filhos do root
-			novoRoot->esquerda = tree;
-			novoRoot->direita = tree->direita;
-			tree->pai = novoRoot;
-			tree->direita->pai = novoRoot;
+			novoRoot->bLeft = tree;
+			novoRoot->bRight = tree->bRight;
+			tree->bRoot = novoRoot;
+			tree->bRight->bRoot = novoRoot;
 
 			//arranjos os outros dois
-			novoRoot->esquerda->direita = lRoot;
-			novoRoot->direita->esquerda = rRoot;
-			if (lRoot)	lRoot->pai = novoRoot->esquerda;
-			if (rRoot)	rRoot->pai = novoRoot->direita;
+			novoRoot->bLeft->bRight = lRoot;
+			novoRoot->bRight->bLeft = rRoot;
+			if (lRoot)	lRoot->bRoot = novoRoot->bLeft;
+			if (rRoot)	rRoot->bRoot = novoRoot->bRight;
 
 			//recalculo o meu peso e o mesmo para o meu antigo filho
-			novoRoot->height = avlCalcPeso(novoRoot);
-			novoRoot->esquerda->height = avlCalcPeso(novoRoot->esquerda);
-			novoRoot->direita->height = avlCalcPeso(novoRoot->direita);
-		}
-		bool avlLeftHeavier(const No * const tree)
-		{
-			//assumo que tem de haver pelo menos um filho e por isso nao verifico se right==left==nullptr
-			if (tree->direita == nullptr)
-				return true;
-			if (tree->esquerda == nullptr)
-				return false;
-
-			return (tree->esquerda->height > tree->direita->height);
+			novoRoot->updateWeight();
+			novoRoot->bLeft->updateWeight();
+			novoRoot->bRight->updateWeight();
 		}
 
-		void treeAdd(const char * const string, No * const tree, T* const noData)
+		void treeAddData(Node * const node, const char * const string, const TValue &data)
 		{
-			//se tiver no proprio caracter e acabei a string, só tenho de escrever os dados
-			if (tree->caracter == *string && *(string + 1) == '\0')
+			//we just finished, just store the value
+			if (node->key == *string && *(string + 1) == '\0')
 			{
-				//guardo o ponteiro e já está
-				tree->dados = noData;
+				node->value = data;
+				node->valueSet = true;
 				return;
 			}
 
-			//se tiver no proprio caracter e estou aqui é porque não acabei, logo crio no meio e sigo
-			if (tree->caracter == *string)
+			//we found the key we are looking for, just go down the middle
+			if (node->key == *string)
 			{
-				//se ainda não tenho nada
-				if (tree->meio == nullptr)
+				if (node->bMiddle == nullptr)
 				{
-					tree->meio = new No();
-					tree->meio->height = 0;
-					tree->meio->pai = tree;
-					tree->meio->caracter = *(string + 1);
-					tree->meio->dados = nullptr;
-					tree->meio->direita = tree->meio->esquerda = tree->meio->meio = nullptr;
+					node->bMiddle = new Node(node, 0);
+					node->bMiddle->key = *(string + 1);
 				}
 
-				//senão, desco pelo meio
-				treeAdd(string + 1, tree->meio, noData);
+				treeAddData(node->bMiddle, string + 1, data);
 				return;
 			}
 
-			//se o valor a guardar for mais pequeno
-			if (*string < tree->caracter)
+			//decide if we should go left or right
+			if (*string < node->key)
 			{
-				//se não tiver lá nada, crio o filho
-				if (tree->esquerda == nullptr)
+				if (node->bLeft == nullptr)
 				{
-					//crio o novo filho e preencho os campos
-					tree->esquerda = new No();
-					tree->esquerda->height = 0;
-					tree->esquerda->direita = tree->esquerda->esquerda = tree->esquerda->meio = nullptr;
-					tree->esquerda->caracter = *string;
-					tree->esquerda->pai = tree;
-					tree->esquerda->dados = nullptr;
+					node->bLeft = new Node(node, 0);
+					node->bLeft->key = *string;
 				}
 
-				//senão, desco pelo meu filho
-				treeAdd(string, tree->esquerda, noData);
+				treeAddData(node->bLeft, string, data);
 			}
-			//se o valor não é igual nem menor de onde estou, tem de ser maior
 			else
 			{
-				//se não tiver lá nada, crio o filho
-				if (tree->direita == nullptr)
+				if (node->bRight == nullptr)
 				{
-					//crio o novo filho e preencho os campos
-					tree->direita = new No();
-					tree->direita->height = 0;
-					tree->direita->direita = tree->direita->esquerda = tree->direita->meio = nullptr;
-					tree->direita->caracter = *string;
-					tree->direita->pai = tree;
-					tree->direita->dados = nullptr;
+					node->bRight = new Node(node, 0);
+					node->bRight->key = *string;
 				}
 
-				//senão, desco pelo meu filho
-				treeAdd(string, tree->direita, noData);
+				treeAddData(node->bRight, string, data);
 			}
 
-			//chegando aqui já tá inserido, mas pode não estar balanceado
-			//calculo o novo peso e vejo se tenho de fazer alguma coisa
-			tree->height = avlCalcPeso(tree);
-			if (avlIsBalanced(tree) == true)
+			//because we may have added stuff to the left or right of the tree, we should check if the tree is balances
+			/*node->updateWeight();
+			if (node->isBalanced())
 				return;
 
-			//chegando aqui tenho mesmo de balancear a árvore
-
-			//para os casos LL e LR
-			/*if (avlLeftHeavier(tree))
+			if (node->isLeftHeavier())
 			{
-			if (avlLeftHeavier(tree->esquerda))
-			avlRotateLL(tree);
-			else
-			avlRotateLR(tree);
-			}
-			//para os casos RR e RL
-			else
-			{
-			if (avlLeftHeavier(tree->direita))
-			avlRotateRL(tree);
-			else
-			avlRotateRR(tree);
-			}*/
-
-			//e já tá
-			return;
-		}
-
-		T* treeFindCount(const int countTarget, int countCurrent, const No * const arvore)
-		{
-			if (arvore == nullptr)
-				return nullptr;
-
-			if (arvore->dados != nullptr)
-			{
-				countCurrent++;
-				if (countCurrent == countTarget)
-					return arvore->dados;
-			}
-
-			T *res;
-
-			res = treeFindCount(countTarget, countCurrent, arvore->esquerda);
-			if (res != nullptr)
-				return res;
-
-			res = treeFindCount(countTarget, countCurrent, arvore->meio);
-			if (res != nullptr)
-				return res;
-
-			res = treeFindCount(countTarget, countCurrent, arvore->direita);
-			if (res != nullptr)
-				return res;
-
-			return nullptr;
-		}
-		T* treeFind(const char * const string, const No * const arvore)
-		{
-			if (arvore == nullptr || string == nullptr)
-				return nullptr;
-
-			//achou este caracter
-			if (arvore->caracter == (*string))
-			{
-				if ((*(string + 1)) == '\0')
-					return arvore->dados;
-				return treeFind(string + 1, arvore->meio);
-			}
-
-			//vai para onde deve
-			if (arvore->caracter < (*string))
-				return treeFind(string, arvore->direita);
-			return treeFind(string, arvore->esquerda);
-		}
-		void treeDeleteData(No * const arvore)
-		{
-			//se não tenho nada
-			if (arvore == nullptr)
-				return;
-
-			//se tiver alguma a apagar
-			if (arvore->dados)
-			{
-				delete arvore->dados;
-				arvore->dados = nullptr;
-			}
-
-			//faço o mesmo para os outros nós
-			treeDeleteData(arvore->direita);
-			treeDeleteData(arvore->meio);
-			treeDeleteData(arvore->esquerda);
-		}
-		void treeHitCount(const No * const arvore, const char * const string, int &count, std::function<void(T*)> actionDataHit)
-		{
-			if ((*string) != '\0')
-			{
-				if (arvore->caracter > (*string))
-				{
-					if (arvore->esquerda)
-						treeHitCount(arvore->esquerda, string, count, actionDataHit);
-					return;
-				}
-				if (arvore->caracter < (*string))
-				{
-					if (arvore->direita)
-						treeHitCount(arvore->direita, string, count, actionDataHit);
-					return;
-				}
-			}
-
-			if ((*string) == '\0')
-			{
-				if (arvore->dados)
-				{
-					count++;
-					if (actionDataHit != nullptr)
-						actionDataHit(arvore->dados);
-				}
-
-				if (arvore->esquerda)
-					treeHitCount(arvore->esquerda, string, count, actionDataHit);
-				if (arvore->direita)
-					treeHitCount(arvore->direita, string, count, actionDataHit);
-				if (arvore->meio)
-					treeHitCount(arvore->meio, string, count, actionDataHit);
-				return;
-			}
-
-			if (arvore->meio)
-				treeHitCount(arvore->meio, string + 1, count, actionDataHit);
-		}
-		void treeFinish(const No * const arvore, const char * const string, char *dest)
-		{
-			if ((*string) != '\0')
-			{
-				if (arvore->caracter > (*string))
-				{
-					if (arvore->esquerda)
-						treeFinish(arvore->esquerda, string, dest);
-					return;
-				}
-				if (arvore->caracter < (*string))
-				{
-					if (arvore->direita)
-						treeFinish(arvore->direita, string, dest);
-					return;
-				}
-			}
-
-			if ((*string) == '\0')
-			{
-				if (arvore->esquerda)
-				{
-					if (arvore->direita || arvore->meio)
-						return;
-					treeFinish(arvore->esquerda, string, dest);
-					return;
-				}
-				if (arvore->direita)
-				{
-					if (arvore->esquerda || arvore->meio)
-						return;
-					treeFinish(arvore->direita, string, dest);
-					return;
-				}
-				if (arvore->meio)
-				{
-					if (arvore->direita || arvore->esquerda)
-						return;
-					*(dest++) = arvore->caracter;
-					*dest = '\0';
-					if (arvore->dados == nullptr)
-						treeFinish(arvore->meio, string, dest);
-					return;
-				}
-
-				*(dest++) = arvore->caracter;
-				*(dest++) = ' ';
-				*dest = '\0';
-				return;
-			}
-
-			*(dest++) = *string;
-			*dest = '\0';
-			if (arvore->meio)
-				treeFinish(arvore->meio, string + 1, dest);
-		}
-		void forEachData(const No * const arvore, std::function<void(T*)> funcCallback, int &numHits)
-		{
-			if (arvore->dados != nullptr)
-			{
-				numHits++;
-
-				if (funcCallback != nullptr)
-					funcCallback(arvore->dados);
-			}
-
-			if (arvore->esquerda)
-				forEachData(arvore->esquerda, funcCallback, numHits);
-			if (arvore->meio)
-				forEachData(arvore->meio, funcCallback, numHits);
-			if (arvore->direita)
-				forEachData(arvore->direita, funcCallback, numHits);
-		}
-		void finishTABComplete(const No * const arvore, const char * const string, char * const bufferOut)
-		{
-			static int pos;
-			static bool acabou;
-
-			if (string == nullptr || string[0] == '\0')
-				return;
-
-			//pro primeiro caso
-			if (arvore == this->mainTree)
-			{
-				bufferOut[0] = '\0';
-				pos = 0;
-				acabou = false;
-			}
-
-			if (arvore->dados != nullptr && acabou)
-			{
-				bufferOut[pos] = arvore->caracter;
-				bufferOut[pos + 1] = '\0';
-				//this->LogTabColor(bufferOut,2,140,140,140);
-			}
-
-			if (acabou && string[pos] > arvore->caracter && arvore->esquerda)
-				finishTABComplete(arvore->esquerda, string, bufferOut);
-			else if (arvore->esquerda)
-				finishTABComplete(arvore->esquerda, string, bufferOut);
-
-			if (arvore->meio)
-			{
-				if (!acabou)
-				{
-					if (string[pos] == arvore->caracter)
-					{
-						bufferOut[pos] = arvore->caracter;
-						bufferOut[pos + 1] = '\0';
-						pos++;
-						if (string[pos] == '\0')
-						{
-							acabou = true;
-							//if (arvore->dados)
-							//this->LogTab(bufferOut,2);
-						}
-						finishTABComplete(arvore->meio, string, bufferOut);
-						pos--;
-						acabou = false;
-					}
-				}
+				if (node->bLeft->isLeftHeavier())
+					avlRotateLL(node);
 				else
-				{
-					bufferOut[pos] = arvore->caracter;
-					bufferOut[pos + 1] = '\0';
-					pos++;
-					finishTABComplete(arvore->meio, string, bufferOut);
-					pos--;
-				}
+					avlRotateLR(node);
 			}
-
-			if (acabou && string[pos] < arvore->caracter && arvore->direita)
-				finishTABComplete(arvore->direita, string, bufferOut);
-			else if (arvore->direita)
-				finishTABComplete(arvore->direita, string, bufferOut);
+			else
+			{
+				if (node->bRight->isLeftHeavier())
+					avlRotateRL(node);
+				else
+					avlRotateRR(node);
+			}*/
 		}
 
 	public:
 		AVLTree()
+			: mainTree(nullptr)
 		{
-			//por omissão
-			this->mainTree = nullptr;
 		}
+
 		~AVLTree()
 		{
-			//limpo tudo
 			this->mainTree = nullptr;
 		}
 
-		T* FindData(const char *what)
+		void addData(const char * const string, const TValue &data)
 		{
-			return this->treeFind(what, this->mainTree);
-		}
-		T* FindCount(const int countTarget, int countCurrent)
-		{
-			return this->treeFindCount(countTarget, countCurrent, this->mainTree);
-		}
-		void HitCount(const char * const string, int &count, std::function<void(T*)> actionDataHit)
-		{
-			this->treeHitCount(this->mainTree, string, count, actionDataHit);
-		}
-		void Finish(const char * const string, char *dest)
-		{
-			this->treeFinish(this->mainTree, string, dest);
-		}
-		void Add(const char * const string, T * const data)
-		{
-			//verificar isto
-			if ((string == nullptr) || (data == nullptr))
+			if (string == nullptr || *string == '\0')
 				return;
 
-			//se a àrvore está vazia, tenho de a criar
 			if (this->mainTree == nullptr)
 			{
-				//crio o primeiro nó
-				this->mainTree = new No();
-				this->mainTree->height = 0;
-				this->mainTree->pai = nullptr;
-				this->mainTree->caracter = *string;
-				this->mainTree->dados = nullptr;
-				this->mainTree->direita = this->mainTree->esquerda = this->mainTree->meio = nullptr;
+				this->mainTree = new Node(nullptr, 0);
+				this->mainTree->key = *string;
 			}
 
-			//avanço pela raíz da árvore
-			treeAdd(string, this->mainTree, data);
+			treeAddData(this->mainTree, string, data);
 		}
-		void DeleteData()
+
+		bool hasData(const char *what) const
 		{
-			treeDeleteData(this->mainTree);
+			TValue data;
+			return findData(what, data);
 		}
-		int ForEachData(std::function<void(T*)> funcCallback)
+
+		TValue getData(const char * const what, TValue defaultValue = TValue()) const
 		{
-			int numHits;
+			TValue data;
+			if (findData(what, data))
+				return data;
 
-			//passo por toda a árvore
-			numHits = 0;
-			forEachData(this->mainTree, funcCallback, numHits);
+			return defaultValue;
+		}
 
-			//posso devolver o número de hits
-			return numHits;
+		bool findData(const char * const what, TValue &value) const
+		{
+			if (what == nullptr || *what == '\0')
+				return false;
+
+			std::function<bool(const Node * const, const char * const)> findFunc = [&](const Node * const node, const char * const string)
+			{
+				if (node == nullptr)
+					return false;
+
+				if (node->key == (*string))
+				{
+					if ((*(string + 1)) == '\0')
+					{
+						if (!node->valueSet)
+							return false;
+
+						value = node->value;
+						return true;
+					}
+
+					return findFunc(node->bMiddle, string + 1);
+				}
+
+				if (node->key < (*string))
+					return findFunc(node->bRight, string);
+				return findFunc(node->bLeft, string);
+			};
+
+			return findFunc(this->mainTree, what);
+		}
+
+		int findAll(const char * const what, const std::function<void(const TValue&)> actionFoundData = nullptr) const
+		{
+			int count;
+
+			std::function<void(const Node * const, const char * const)> findAllFunc = [&](const Node * const node, const char * const string)
+			{
+				if ((*string) != '\0')
+				{
+					if (node->key > (*string))
+					{
+						if (node->bLeft)
+							findAllFunc(node->bLeft, string);
+						return;
+					}
+					if (node->key < (*string))
+					{
+						if (node->bRight)
+							findAllFunc(node->bRight, string);
+						return;
+					}
+				}
+
+				if ((*string) == '\0')
+				{
+					if (node->valueSet)
+					{
+						count++;
+						if (actionFoundData)
+							actionFoundData(node->value);
+					}
+
+					if (node->bLeft)
+						findAllFunc(node->bLeft, string);
+					if (node->bRight)
+						findAllFunc(node->bRight, string);
+					if (node->bMiddle)
+						findAllFunc(node->bMiddle, string);
+					return;
+				}
+
+				if (node->bMiddle)
+					findAllFunc(node->bMiddle, string + 1);
+			};
+
+			count = 0;
+			findAllFunc(this->mainTree, what);
+
+			return count;
+		}
+
+		int findAll(const std::function<void(const TValue&)> actionFoundData = nullptr) const
+		{
+			int count;
+
+			std::function<void(const Node * const)> findAllFunc = [&](const Node * const node)
+			{
+				if (node->valueSet)
+				{
+					count++;
+					if (actionFoundData)
+						actionFoundData(node->value);
+				}
+
+				if (node->bLeft)
+					findAllFunc(node->bLeft);
+				if (node->bMiddle)
+					findAllFunc(node->bMiddle);
+				if (node->bRight)
+					findAllFunc(node->bRight);
+			};
+
+			count = 0;
+			findAllFunc(this->mainTree);
+
+			return count;
+		}
+
+		int findAllWithKeys(const std::function<void(const std::string&, const TValue&)> actionFoundData = nullptr) const
+		{
+			int count;
+			std::string curKey;
+
+			std::function<void(const Node * const)> findAllFunc = [&](const Node * const node)
+			{
+				if (node->valueSet)
+				{
+					count++;
+					if (actionFoundData)
+					{
+						curKey += node->key;
+						actionFoundData(curKey, node->value);
+						curKey.erase(curKey.size() - 1);
+					}
+				}
+
+				if (node->bLeft)
+					findAllFunc(node->bLeft);
+				if (node->bMiddle)
+				{
+					curKey += node->key;
+					findAllFunc(node->bMiddle);
+					curKey.erase(curKey.size() - 1);
+				}
+				if (node->bRight)
+					findAllFunc(node->bRight);
+			};
+
+			count = 0;
+			findAllFunc(this->mainTree);
+
+			return count;
+		}
+
+		void nextBestKeyMatch(const char * const what, char *dest) const
+		{
+			std::function<void(const Node * const, const char * const)> nextBestKeyMatchFunc = [&](const Node * const node, const char * const string)
+			{
+				if ((*string) != '\0')
+				{
+					if (node->key > (*string))
+					{
+						if (node->bLeft)
+							nextBestKeyMatchFunc(node->bLeft, string);
+						return;
+					}
+
+					if (node->key < (*string))
+					{
+						if (node->bRight)
+							nextBestKeyMatchFunc(node->bRight, string);
+						return;
+					}
+				}
+
+				if ((*string) == '\0')
+				{
+					if (node->bLeft)
+					{
+						if (node->bRight || node->bMiddle)
+							return;
+
+						nextBestKeyMatchFunc(node->bLeft, string);
+						return;
+					}
+
+					if (node->bRight)
+					{
+						if (node->bLeft || node->bMiddle)
+							return;
+
+						nextBestKeyMatchFunc(node->bRight, string);
+						return;
+					}
+
+					if (node->bMiddle)
+					{
+						if (node->bRight || node->bLeft)
+							return;
+
+						*(dest++) = node->key;
+
+						if (!node->valueSet)
+							nextBestKeyMatchFunc(node->bMiddle, string);
+						return;
+					}
+
+					*(dest++) = node->key;
+					return;
+				}
+
+				*(dest++) = *string;
+
+				if (node->bMiddle)
+					nextBestKeyMatchFunc(node->bMiddle, string + 1);
+			};
+
+			nextBestKeyMatchFunc(this->mainTree, what);
+			*dest = '\0';
 		}
 	};
 

@@ -194,18 +194,14 @@ namespace HorseRadish
 
 		HorseRadish::Imaging::Image* Factory::ReadPNG(HorseRadish::Streams::StreamReader &streamReader)
 		{
-			int streamBufferSize;
-			bool streamCopied;
 			unsigned int imgW, imgH;
 			LodePNGState pngState;
 			HorseRadish::Imaging::Image *newImage;
 
-			auto streamBuffer = streamReader.ReadContent(streamBufferSize, streamCopied);
-			if (streamBuffer == nullptr)
-				return nullptr;
+			auto streamContent = streamReader.getStream().readEntireContent();
 
 			lodepng_state_init(&pngState);
-			if (lodepng_inspect(&imgW, &imgH, &pngState, static_cast<const unsigned char*>(streamBuffer), streamBufferSize) != 0)
+			if (lodepng_inspect(&imgW, &imgH, &pngState, static_cast<const unsigned char*>(streamContent->getData()), streamContent->GetLength()) != 0)
 				return nullptr;
 
 			newImage = nullptr;
@@ -217,7 +213,7 @@ namespace HorseRadish
 
 				outW = outH = 0;
 				outBuffer = nullptr;
-				if (lodepng_decode32(&outBuffer, &outW, &outH, static_cast<const unsigned char *>(streamBuffer), streamBufferSize) != 0)
+				if (lodepng_decode32(&outBuffer, &outW, &outH, static_cast<const unsigned char *>(streamContent->getData()), streamContent->GetLength()) != 0)
 					return nullptr;
 
 				if (outBuffer != nullptr)
@@ -230,15 +226,12 @@ namespace HorseRadish
 
 				outW = outH = 0;
 				outBuffer = nullptr;
-				if (lodepng_decode24(&outBuffer, &outW, &outH, static_cast<const unsigned char *>(streamBuffer), streamBufferSize) != 0)
+				if (lodepng_decode24(&outBuffer, &outW, &outH, static_cast<const unsigned char *>(streamContent->getData()), streamContent->GetLength()) != 0)
 					return nullptr;
 
 				if (outBuffer != nullptr)
 					newImage = new HorseRadish::Imaging::Image(outW, outH, HorseRadish::Imaging::Image::UByte, HorseRadish::Imaging::Image::RGBA, outBuffer, true);
 			}
-
-			if (streamCopied == true)
-				free((void*)streamBuffer);
 
 			return newImage;
 		}

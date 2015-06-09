@@ -1110,18 +1110,11 @@ tinyxml2::XMLDocument* documentOpenMem(const void *fileData, const int fileSize,
 §§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§*/
 Geometry::Model* mfReadCollada(HorseRadish::Streams::StreamReader &streamReader)
 {
-	int streamContentSize;
-	bool streamContentCopied;
+	auto streamContent = streamReader.getStream().readEntireContent();
 
-	auto streamContent = streamReader.ReadContent(streamContentSize, streamContentCopied);
-
-	auto xmlDoc = documentOpenMem(streamContent, streamContentSize, nullptr, 0, nullptr);
+	auto xmlDoc = documentOpenMem(streamContent->getData(), streamContent->GetLength(), nullptr, 0, nullptr);
 	if (xmlDoc <= 0)
-	{
-		if (streamContentCopied == true)
-			delete streamContent;
 		return nullptr;
-	}
 
 	auto modelo = new Geometry::Model();
 	if (modelo == nullptr)
@@ -1129,8 +1122,6 @@ Geometry::Model* mfReadCollada(HorseRadish::Streams::StreamReader &streamReader)
 		xmlDoc->Clear();
 		delete xmlDoc;
 
-		if (streamContentCopied == true)
-			delete streamContent;
 		return nullptr;
 	}
 
@@ -1138,9 +1129,6 @@ Geometry::Model* mfReadCollada(HorseRadish::Streams::StreamReader &streamReader)
 
 	xmlDoc->Clear();
 	delete xmlDoc;
-
-	if (streamContentCopied == true)
-		delete streamContent;
 
 	return modelo;
 }

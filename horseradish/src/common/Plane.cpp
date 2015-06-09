@@ -2,8 +2,6 @@
 
 #include "Math.hpp"
 
-#include <memory.h>
-
 namespace HorseRadish
 {
 	Plane::Plane(const Plane &plane)

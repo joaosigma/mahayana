@@ -117,22 +117,19 @@ namespace HorseRadish
 		{
 		}
 
-		Streams::Stream* FileSystem::MountDataPath::FileRead(const HorseRadish::hChar * const filePath)
+		std::unique_ptr<Streams::Stream> FileSystem::MountDataPath::FileRead(const HorseRadish::hChar * const filePath)
 		{
 			HorseRadish::IO::Path pathFinal;
 
 			pathFinal.Set(this->baseFolder);
 			pathFinal += (const HorseRadish::hChar*)filePath;
 
-			auto fileStream = new HorseRadish::Streams::FileStream(pathFinal, true, false);
+			auto fileStream = std::unique_ptr<Streams::FileStream>(new Streams::FileStream(pathFinal, true, false));
 
 			if (fileStream->IsValid() == false)
-			{
-				delete fileStream;
-				return nullptr;
-			}
+				std::unique_ptr<Streams::FileStream>();
 
-			return fileStream;
+			return std::move(fileStream);
 		}
 
 		bool FileSystem::MountDataPath::FileExists(const HorseRadish::hChar * const filePath)
@@ -238,10 +235,10 @@ namespace HorseRadish
 		{
 		}
 
-		Streams::Stream* FileSystem::MountDataZip::FileRead(const HorseRadish::hChar * const filePath)
+		std::unique_ptr<Streams::Stream> FileSystem::MountDataZip::FileRead(const HorseRadish::hChar * const filePath)
 		{
 			if ((filePath == nullptr) || (*filePath == '\0'))
-				return nullptr;
+				return std::unique_ptr<Streams::Stream>();
 
 			ZipEntry fileProxy;
 			memset(&fileProxy, 0, sizeof(ZipEntry));
@@ -264,14 +261,9 @@ namespace HorseRadish
 
 			unzCloseCurrentFile(this->zipFile);
 
-			auto memStream = new Streams::MemoryStream(fileData, fileZipIndex->fileSize, false, Streams::MemoryStream::ManagementType::None);
-			if (memStream == nullptr)
-			{
-				free(fileData);
-				return nullptr;
-			}
+			auto memStream = std::unique_ptr<Streams::Stream>(new Streams::MemoryStream(fileData, fileZipIndex->fileSize, false, Streams::MemoryStream::ManagementType::None));
 
-			return memStream;
+			return std::move(memStream);
 		}
 
 		bool FileSystem::MountDataZip::FileExists(const HorseRadish::hChar * const filePath)
@@ -403,28 +395,26 @@ namespace HorseRadish
 			return true;
 		}
 
-		Streams::Stream* FileSystem::FileRead(const char * const filePath)
+		std::unique_ptr<Streams::Stream> FileSystem::FileRead(const char * const filePath)
 		{
 			if ((filePath == nullptr) || (*filePath == '\0'))
-				return nullptr;
+				return std::unique_ptr<Streams::Stream>();
 
 			for (auto& curMount : this->listMounts)
 			{
 				if ((curMount->GetMountType() == FileSystem::MountTypePath) && (curMount->FileExists(reinterpret_cast<const HorseRadish::hChar*>(filePath)) == false))
 					continue;
 
-				auto fileStream = curMount->FileRead(reinterpret_cast<const HorseRadish::hChar*>(filePath));
-				if (fileStream != nullptr)
-					return fileStream;
+				return curMount->FileRead(reinterpret_cast<const HorseRadish::hChar*>(filePath));
 			}
 
-			return nullptr;
+			return std::unique_ptr<Streams::Stream>();
 		}
 
-		Streams::Stream* FileSystem::FileRead(const char * const filePath, const FileSystem::MountType mountType)
+		std::unique_ptr<Streams::Stream> FileSystem::FileRead(const char * const filePath, const FileSystem::MountType mountType)
 		{
 			if ((filePath == nullptr) || (*filePath == '\0'))
-				return nullptr;
+				return std::unique_ptr<Streams::Stream>();
 
 			for (auto& curMount : this->listMounts)
 			{
@@ -434,12 +424,23 @@ namespace HorseRadish
 				if ((curMount->GetMountType() == FileSystem::MountTypePath) && (curMount->FileExists(reinterpret_cast<const HorseRadish::hChar*>(filePath)) == false))
 					continue;
 
-				auto fileStream = curMount->FileRead(reinterpret_cast<const HorseRadish::hChar*>(filePath));
-				if (fileStream != nullptr)
-					return fileStream;
+				return curMount->FileRead(reinterpret_cast<const HorseRadish::hChar*>(filePath));
 			}
 
-			return nullptr;
+			return std::unique_ptr<Streams::Stream>();
+		}
+
+		std::string FileSystem::readFileAsString(const char * const filePath)
+		{
+			auto fileStream = this->FileRead(filePath);
+			if (!fileStream)
+				return std::string();
+
+			auto fileData = fileStream->readEntireContent();
+			if (!fileData)
+				return std::string();
+
+			return fileData->toStr();
 		}
 
 		int FileSystem::WatchChangeCreate(const HorseRadish::hChar * const baseFolder, bool includeSubFolders, const FileSystem::ChangeType changeType)

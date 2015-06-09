@@ -26,6 +26,26 @@ namespace HorseRadish
 	typedef float hFloat;
 	typedef double hDouble;
 
+	union hSplitUInt32{
+		struct PacketBytes{
+			hUInt8 byte0;
+			hUInt8 byte1;
+			hUInt8 byte2;
+			hUInt8 byte3;
+		} piecesBytes;
+
+		struct PacketShorts{
+			hUInt16 short0;
+			hUInt16 short1;
+		} piecesShort;
+
+		hUInt32 valueWord;
+
+		hSplitUInt32(hUInt32 valueWord)
+			: valueWord(valueWord)
+		{ }
+	};
+
 	typedef HALIGN_16BYTES union{
 		 float               f32[4];
 		 double              d64[2];
