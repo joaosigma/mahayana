@@ -1,7 +1,5 @@
 #pragma once
 
-#include "String.hpp"
-
 #include <functional>
 
 namespace HorseRadish {
@@ -29,7 +27,7 @@ namespace HorseRadish {
 		enum class SystemInfo { DisplayWidth, DisplayHeight, DisplayColorBits, DisplayFrequency, OperatingSystemName, SystemFolder, MachineName, CurrentUsername, MemoryTotal, MemoryFree, CleanBoot, CurrentFolder, ExecutableFullPath };
 
 	public:
-		static const HorseRadish::hChar NewLine[];
+		static const char* NewLine;
 		static const int NewLineSize;
 
 		static const unsigned int DirectorySeparatorChar;
@@ -47,17 +45,17 @@ namespace HorseRadish {
 
 		static bool IsArch64();
 
-		static bool CPUGetVendorID(String &outputValue);
-		static bool CPUGetProcessorName(String &outputValue);
+		static bool CPUGetVendorID(std::string& outputValue);
+		static bool CPUGetProcessorName(std::string& outputValue);
 		static bool CPUCheckFeatures(const CPUFeature &featuresCheck);
 
-		static bool GetSystemInfo(const SystemInfo &systemInfo, HorseRadish::String &infoValue);
+		static bool GetSystemInfo(const SystemInfo &systemInfo, std::string& infoValue);
 		static bool GetSystemInfo(const SystemInfo &systemInfo, int &infoValue);
 
-		static bool InstanciateProcess(const char * const commandLine);
+		static bool InstanciateProcess(const std::string& commandLine);
 
-		static bool ClipboardGetStrings(std::function<bool(const HorseRadish::String &)> funcCallback);
-		static bool ClipboardGetFiles(std::function<bool(const HorseRadish::String &)> funcCallback);
+		static bool ClipboardGetStrings(std::function<bool(const std::string&)> funcCallback);
+		static bool ClipboardGetFiles(std::function<bool(const std::string&)> funcCallback);
 
 		static void AsmBufferClear(void* dest, size_t bytes);
 		static void AsmBufferCopy(void* dest, const void* src, size_t bytes);

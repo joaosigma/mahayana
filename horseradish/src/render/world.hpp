@@ -82,7 +82,7 @@ namespace HorseRadish
 
 			struct Texture{
 				int type, format, filter, flags;
-				HorseRadish::String filePath;
+				std::string filePath;
 			};
 			std::vector<Texture> texs;
 
@@ -176,28 +176,28 @@ namespace HorseRadish
 			struct Shadering
 			{
 				struct ShaderMap{
-					HorseRadish::String name, mapName;
+					std::string name, mapName;
 					unsigned short mapFlagType, mapFlagFormat, mapFlagBit, mapFlagWrap, mapFlagFilter;
 				};
 				struct ShaderParam
 				{
-					HorseRadish::String name, paramName;
+					std::string name, paramName;
 					float paramValue;
 				};
 
 				int shaderingNeeds;
-				HorseRadish::String progVertex, progFragment;
+				std::string progVertex, progFragment;
 				int blendSFactor, blendDFactor;
 				std::vector<ShaderMap> shaderMaps;
 				std::vector<ShaderParam> shaderParams;
 			};
 
 			struct Lighting{
-				HorseRadish::String nomeBump, nomeNormal, nomeSpec, nomeColor, nomeOcclusion;
+				std::string nomeBump, nomeNormal, nomeSpec, nomeColor, nomeOcclusion;
 				float specPow, heightScale, parallaxScale, parallaxBias;
 			};
 
-			HorseRadish::String nomeMaterial, nomeFicheiro, descMaterial;
+			std::string nomeMaterial, nomeFicheiro, descMaterial;
 			unsigned int nomeMaterialMD5;
 			Shadering dataShadering;
 			Lighting dataLighting;

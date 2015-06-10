@@ -1,38 +1,34 @@
 #include "Path.hpp"
 #include "Platform.hpp"
+#include "stringUtils.hpp"
 
 namespace HorseRadish
 {
 	namespace IO
 	{
-		void Path::validadePath()
+		void Path::cleanPath()
 		{
 			if (HorseRadish::Platform::DirectorySeparatorChar != '/')
-				HorseRadish::String::Replace('/', HorseRadish::Platform::DirectorySeparatorChar);
+				HorseRadish::StringUtils::replace(mPath, '/', HorseRadish::Platform::DirectorySeparatorChar);
+				
+			HorseRadish::StringUtils::replace(mPath, "//", HorseRadish::StringUtils::conv2UTF8(HorseRadish::Platform::DirectorySeparatorChar));
 
-			HorseRadish::String::RemoveDoubles(HorseRadish::Platform::DirectorySeparatorChar);
-
-			HorseRadish::String::Trim(' ');
+			HorseRadish::StringUtils::trim(mPath);
 		}
 
 		Path::Path()
+		{ }
+
+		Path::Path(const char* const path)
+			: mPath(path)
 		{
-			HorseRadish::String::SetEmpty();
+			cleanPath();
 		}
 
-		Path::Path(const HorseRadish::hChar * const path)
+		Path::Path(const std::string& path)
+			: mPath(path)
 		{
-			this->Set(path);
-		}
-
-		Path::Path(const char * const path)
-		{
-			this->Set((const HorseRadish::hChar *)path);
-		}
-
-		Path::Path(const HorseRadish::String &path)
-		{
-			this->Set((const HorseRadish::hChar *)path.GetData());
+			cleanPath();
 		}
 
 		Path::Path(const KnownPath &knownPath)
@@ -40,41 +36,30 @@ namespace HorseRadish
 			this->Set(knownPath);
 		}
 
-		Path::~Path()
-		{
-			HorseRadish::String::SetEmpty();
-		}
-
 		void Path::Clear()
 		{
-			HorseRadish::String::SetEmpty();
+			mPath.clear();
 		}
 
-		void Path::Set(const HorseRadish::hChar * const path)
+		void Path::Set(const std::string& path)
 		{
-			HorseRadish::String::SetEmpty();
-
-			if ((path != nullptr) && (*path != '\0'))
-				HorseRadish::String::Set(path);
-
-			validadePath();
+			mPath = path;
+			cleanPath();
 		}
 
-		void Path::Set(const HorseRadish::String &path)
+		void Path::Set(const char* const path)
 		{
-			HorseRadish::String::Set(path);
+			mPath.clear();
 
-			validadePath();
-		}
+			if (path != nullptr)
+				mPath = path;
 
-		void Path::Set(const Path &path)
-		{
-			HorseRadish::String::Set(path);
+			cleanPath();
 		}
 
 		void Path::Set(const Path &path1, const Path &path2)
 		{
-			HorseRadish::String::Set(path1);
+			mPath = path1.mPath;
 			this->Combine(path2);
 		}
 
@@ -82,17 +67,23 @@ namespace HorseRadish
 		{
 			if (knownPath == Path::KnownPath::SystemFolder)
 			{
-				HorseRadish::Platform::GetSystemInfo(HorseRadish::Platform::SystemInfo::SystemFolder, *this);
+				std::string path;
+				HorseRadish::Platform::GetSystemInfo(HorseRadish::Platform::SystemInfo::SystemFolder, path);
+
+				mPath = path;
 				return;
 			}
 
 			if (knownPath == Path::KnownPath::CurrentFolder)
 			{
-				HorseRadish::Platform::GetSystemInfo(HorseRadish::Platform::SystemInfo::CurrentFolder, *this);
+				std::string path;
+				HorseRadish::Platform::GetSystemInfo(HorseRadish::Platform::SystemInfo::CurrentFolder, path);
+
+				mPath = path;
 				return;
 			}
 
-			HorseRadish::String::SetEmpty();
+			mPath.clear();
 		}
 
 		void Path::Combine(const Path &pathToAppend)
@@ -100,55 +91,41 @@ namespace HorseRadish
 			if (pathToAppend.IsEmpty() == true)
 				return;
 
-			if (HorseRadish::String::IsEmpty() == true)
+			if (!mPath.empty())
 			{
-				HorseRadish::String::Set(pathToAppend);
-				return;
+				auto separator = HorseRadish::StringUtils::conv2UTF8(HorseRadish::Platform::DirectorySeparatorChar);
+
+				auto pos = mPath.find_last_of(separator);
+				if ((pos != std::string::npos) && (pos != (mPath.size() - separator.size())))
+					mPath += separator;
 			}
 
-			if (HorseRadish::String::EndsWith(HorseRadish::Platform::DirectorySeparatorChar) == false)
-				HorseRadish::String::operator+=(HorseRadish::Platform::DirectorySeparatorChar);
-
-			HorseRadish::String::operator+=(pathToAppend);
-
-			HorseRadish::String::RemoveDoubles(HorseRadish::Platform::DirectorySeparatorChar);
+			mPath += pathToAppend.mPath;
+			HorseRadish::StringUtils::replace(mPath, "//", HorseRadish::StringUtils::conv2UTF8(HorseRadish::Platform::DirectorySeparatorChar));
 		}
 
-		void Path::Combine(const HorseRadish::hChar * const pathToAppend)
+		void Path::Combine(const char* const pathToAppend)
 		{
 			if ((pathToAppend == nullptr) || (*pathToAppend == '\0'))
 				return;
 
-			if (HorseRadish::String::IsEmpty(true) == true)
+			if (!mPath.empty())
 			{
-				HorseRadish::String::Set(pathToAppend);
-				validadePath();
-				return;
-			}
+				auto separator = HorseRadish::StringUtils::conv2UTF8(HorseRadish::Platform::DirectorySeparatorChar);
 
-			if (HorseRadish::String::EndsWith(HorseRadish::Platform::DirectorySeparatorChar) == false)
-				HorseRadish::String::operator+=(HorseRadish::Platform::DirectorySeparatorChar);
+				auto pos = mPath.find_last_of(separator);
+				if ((pos != std::string::npos) && (pos != (mPath.size() - separator.size())))
+					mPath += separator;
+			}		
 
-			HorseRadish::String::operator+=(pathToAppend);
+			mPath += pathToAppend;
 
-			validadePath();
+			cleanPath();
 		}
 
-		void Path::Combine(const HorseRadish::String &pathToAppend)
+		void Path::Combine(const std::string& pathToAppend)
 		{
-			if (HorseRadish::String::IsEmpty(true) == true)
-			{
-				HorseRadish::String::Set(pathToAppend);
-				validadePath();
-				return;
-			}
-
-			if (HorseRadish::String::EndsWith(HorseRadish::Platform::DirectorySeparatorChar) == false)
-				HorseRadish::String::operator+=(HorseRadish::Platform::DirectorySeparatorChar);
-
-			HorseRadish::String::operator+=(pathToAppend);
-
-			validadePath();
+			this->Combine(pathToAppend.c_str());
 		}
 
 		void Path::RemoveLastComponent()
@@ -156,37 +133,44 @@ namespace HorseRadish
 			this->RemoveComponents(1);
 		}
 
-		void Path::RemoveComponents(const HorseRadish::hUInt8 &numComponents)
+		void Path::RemoveComponents(const unsigned int numComponents)
 		{
 			if (numComponents <= 0)
 				return;
 
-			auto iterator = HorseRadish::String::Iterator(*this);
-			iterator.Last();
+			auto reversed = HorseRadish::StringUtils::reverseCopy(mPath);
 
-			auto componentsRemoved = 0;
-			for (; iterator.IsFirst() == false; iterator--)
+			unsigned int charPos = 0, componentsRemoved = 0;
+			for (const auto& curChar : HorseRadish::StringUtils::utf8Wrapper(reversed))
 			{
-				if (*iterator != HorseRadish::Platform::DirectorySeparatorChar)
-					continue;
+				if (curChar == HorseRadish::Platform::DirectorySeparatorChar)
+				{
+					componentsRemoved++;
+					if (componentsRemoved >= numComponents)
+						break;
+				}
 
-				componentsRemoved++;
-				if (componentsRemoved >= numComponents)
-					break;
+				charPos++;
 			}
 
-			HorseRadish::String::CloseAt(iterator.GetCaracterPosition());
+			std::string finalPath(mPath, 0, reversed.size() - charPos - 1);
+			this->Set(finalPath);
 		}
 
 		void Path::RemoveFile()
 		{
-			auto iterator = HorseRadish::String::Iterator(*this);
-			iterator.Last();
+			auto reversed = HorseRadish::StringUtils::reverseCopy(mPath);
 
-			while ((*iterator != HorseRadish::Platform::DirectorySeparatorChar) && (iterator.IsFirst() == false))
-				iterator--;
-
-			HorseRadish::String::CloseAt(iterator.GetCaracterPosition());
+			unsigned int charPos = 0;
+			for (const auto& curChar : HorseRadish::StringUtils::utf8Wrapper(reversed))
+			{
+				if (curChar == HorseRadish::Platform::DirectorySeparatorChar)
+					break;
+				charPos++;
+			}
+				
+			std::string finalPath(mPath, 0, reversed.size() - charPos - 1);
+			this->Set(finalPath);
 		}
 
 		Path& Path::operator+=(const Path& path)
@@ -195,7 +179,13 @@ namespace HorseRadish
 			return *this;
 		}
 
-		Path& Path::operator+=(const HorseRadish::hChar * const path)
+		Path& Path::operator+=(const char* const path)
+		{
+			this->Combine(path);
+			return *this;
+		}
+
+		Path& Path::operator+=(const std::string& path)
 		{
 			this->Combine(path);
 			return *this;

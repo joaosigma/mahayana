@@ -1,14 +1,13 @@
 #pragma once
 
 #include "common\Math.hpp"
-#include "common\String.hpp"
 
 #include <vector>
 
 class SGPUCounter
 {
 	struct CounterData{
-		HorseRadish::String name;
+		std::string name;
 		float *values, minValue, maxValue;
 		unsigned int index;
 		bool isPercent;
@@ -22,18 +21,18 @@ public:
 	SGPUCounter(unsigned int maxSaveSamples);
 	~SGPUCounter();
 
-	bool addCounter(const char * const counterName);
-	bool addCounter(const char * const counterName, bool isPercent);
-	bool addCounter(const char * const counterName, const float r, const float g, const float b);
-	bool addCounter(const char * const counterName, bool isPercent, const float r, const float g, const float b);
-	bool addGPUCounter(const char * const counterName);
-	bool addGPUCounter(const char * const counterName, const float r, const float g, const float b);
+	bool addCounter(const std::string& counterName);
+	bool addCounter(const std::string& counterName, bool isPercent);
+	bool addCounter(const std::string& counterName, const float r, const float g, const float b);
+	bool addCounter(const std::string& counterName, bool isPercent, const float r, const float g, const float b);
+	bool addGPUCounter(const std::string& counterName);
+	bool addGPUCounter(const std::string& counterName, const float r, const float g, const float b);
 	void reset();
-	void sampleCounter(const char * const counterName, const float &newSample);
+	void sampleCounter(const std::string& counterName, const float &newSample);
 	void sampleMoveNext();
 
-	const char* getCounterName(const unsigned int counterNumber) const;
-	unsigned int getCounterNumber(const char * const counterName) const;
+	std::string getCounterName(const unsigned int counterNumber) const;
+	unsigned int getCounterNumber(const std::string& counterName) const;
 	bool getCounterIsPercent(const unsigned int counterNumber) const;
 	const float* getCounterColor(const unsigned int counterNumber) const;
 	int getNumCounters() const;

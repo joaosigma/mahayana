@@ -1,5 +1,5 @@
 ﻿#include "openGL.hpp"
-#include "common\UTF.hpp"
+#include "common\stringUtils.hpp"
 
 static HINSTANCE openGLModule;
 
@@ -1559,10 +1559,9 @@ namespace HorseRadish
 			if (openGLModule != nullptr)
 				return false;
 
-			wchar_t openGLLibraryNameWChar[128];
-			HorseRadish::UTF::ConvertUTF8To(glLibName, HorseRadish::UTF::Encoding::Windows, openGLLibraryNameWChar, sizeof(openGLLibraryNameWChar));
-
-			openGLModule = LoadLibrary(openGLLibraryNameWChar);
+			auto openGLLibraryNameWChar = HorseRadish::StringUtils::conv2UTF16(glLibName);
+			
+			openGLModule = LoadLibrary(openGLLibraryNameWChar.c_str());
 			return (openGLModule != nullptr);
 		}
 

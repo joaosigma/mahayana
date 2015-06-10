@@ -1,8 +1,10 @@
 #include "Platform.hpp"
 #include "PlatformWin32.hpp"
 
-#include "UTF.hpp"
+#include "stringUtils.hpp"
 #include "ScopedAction.hpp"
+
+#include <libs\cppformat\format.h>
 
 #if defined(_WIN32)
 
@@ -10,6 +12,7 @@
 #include <shellapi.h>
 #include <io.h>
 #include <fcntl.h>
+#include <regex>
 
 struct RedirectData {
 
@@ -59,7 +62,7 @@ int pipeRead(HANDLE pipeHandle, void *outBuffer, const int outBufferSize)
 
 namespace HorseRadish
 {
-	const HorseRadish::hChar Platform::NewLine[] = "\r\n\0";
+	const char* Platform::NewLine = "\r\n\0";
 	const int Platform::NewLineSize = 2;
 
 	const unsigned int Platform::DirectorySeparatorChar = '\\';
@@ -143,7 +146,7 @@ namespace HorseRadish
 #endif
 	}
 
-	bool Platform::CPUGetVendorID(String &outputValue)
+	bool Platform::CPUGetVendorID(std::string& outputValue)
 	{
 		int cpuInfo[4];
 		char cpuString[128];
@@ -156,11 +159,11 @@ namespace HorseRadish
 		memcpy(cpuString + 4, cpuInfo + 3, sizeof(int));
 		memcpy(cpuString + 8, cpuInfo + 2, sizeof(int));
 
-		outputValue.Set(String::Encoding::ASCII, cpuString);
+		outputValue = cpuString;
 		return true;
 	}
 
-	bool Platform::CPUGetProcessorName(String &outputValue)
+	bool Platform::CPUGetProcessorName(std::string& outputValue)
 	{
 		int cpuInfo[4];
 		char cpuString[128];
@@ -170,7 +173,7 @@ namespace HorseRadish
 
 		if (cpuInfo[0] < 0x80000004)
 		{
-			outputValue.Set(String::Encoding::UTF8, "<empty>");
+			outputValue = "<empty>";
 			return true;
 		}
 
@@ -192,9 +195,8 @@ namespace HorseRadish
 		memcpy(cpuString + 40, cpuInfo + 2, sizeof(int));
 		memcpy(cpuString + 44, cpuInfo + 3, sizeof(int));
 
-		outputValue.Set(String::Encoding::ASCII, cpuString);
-		outputValue.RemoveDoubles(' ');
-		outputValue.Trim();
+		outputValue = cpuString;
+		HorseRadish::StringUtils::trim(outputValue);
 
 		return true;
 	}
@@ -233,12 +235,10 @@ namespace HorseRadish
 		return true;
 	}
 
-	bool Platform::GetSystemInfo(const SystemInfo &systemInfo, HorseRadish::String &infoValue)
+	bool Platform::GetSystemInfo(const SystemInfo &systemInfo, std::string& infoValue)
 	{
 		TCHAR bufferAux[32767];
 		DWORD bufferAuxCharCount;
-
-		infoValue.SetEmpty();
 
 		bufferAux[0] = '\0';
 		bufferAuxCharCount = sizeof(bufferAux) / sizeof(TCHAR);
@@ -249,7 +249,7 @@ namespace HorseRadish
 			if ((resultado == 0) || (resultado > bufferAuxCharCount))
 				return false;
 
-			infoValue.Set(HorseRadish::String::Encoding::Windows, bufferAux);
+			infoValue = HorseRadish::StringUtils::conv2UTF8(bufferAux);
 			return true;
 		}
 
@@ -259,7 +259,7 @@ namespace HorseRadish
 			if ((resultado == 0) || (resultado > bufferAuxCharCount))
 				return false;
 
-			infoValue.Set(HorseRadish::String::Encoding::Windows, bufferAux);
+			infoValue = HorseRadish::StringUtils::conv2UTF8(bufferAux);
 			return true;
 		}
 
@@ -269,7 +269,7 @@ namespace HorseRadish
 			if ((resultado == 0) || (resultado > bufferAuxCharCount))
 				return false;
 
-			infoValue.Set(HorseRadish::String::Encoding::Windows, bufferAux);
+			infoValue = HorseRadish::StringUtils::conv2UTF8(bufferAux);
 			return true;
 		}
 
@@ -278,7 +278,7 @@ namespace HorseRadish
 			if (GetComputerName(bufferAux, &bufferAuxCharCount) == FALSE)
 				return false;
 
-			infoValue.Set(HorseRadish::String::Encoding::Windows, bufferAux);
+			infoValue = HorseRadish::StringUtils::conv2UTF8(bufferAux);
 			return true;
 		}
 
@@ -287,7 +287,7 @@ namespace HorseRadish
 			if (GetUserName(bufferAux, &bufferAuxCharCount) == FALSE)
 				return false;
 
-			infoValue.Set(HorseRadish::String::Encoding::Windows, bufferAux);
+			infoValue = HorseRadish::StringUtils::conv2UTF8(bufferAux);
 			return true;
 		}
 
@@ -301,20 +301,20 @@ namespace HorseRadish
 				return false;
 
 			if ((versionInfo.dwMajorVersion == 6) && (versionInfo.dwMinorVersion == 1) && (versionInfo.wProductType == VER_NT_WORKSTATION))
-				infoValue.SetPrintf(HorseRadish::String::Encoding::UTF8, "Windows 7 (%d.%d)", versionInfo.dwMajorVersion, versionInfo.dwMinorVersion);
+				infoValue = fmt::format("Windows 7 ({0}.{1})", versionInfo.dwMajorVersion, versionInfo.dwMinorVersion);
 			else if ((versionInfo.dwMajorVersion == 6) && (versionInfo.dwMinorVersion == 0) && (versionInfo.wProductType != VER_NT_WORKSTATION))
-				infoValue.SetPrintf(HorseRadish::String::Encoding::UTF8, "Windows Vista (%d.%d)", versionInfo.dwMajorVersion, versionInfo.dwMinorVersion);
+				infoValue = fmt::format("Windows Vista ({0}.{1})", versionInfo.dwMajorVersion, versionInfo.dwMinorVersion);
 			else if ((versionInfo.dwMajorVersion == 5) && (versionInfo.dwMinorVersion == 1))
-				infoValue.SetPrintf(HorseRadish::String::Encoding::UTF8, "Windows XP (%d.%d)", versionInfo.dwMajorVersion, versionInfo.dwMinorVersion);
+				infoValue = fmt::format("Windows XP ({0}.{1})", versionInfo.dwMajorVersion, versionInfo.dwMinorVersion);
 			else
-				infoValue.SetPrintf(HorseRadish::String::Encoding::UTF8, "Windows (%d.%d)", versionInfo.dwMajorVersion, versionInfo.dwMinorVersion);
+				infoValue = fmt::format("Windows ({0}.{1})", versionInfo.dwMajorVersion, versionInfo.dwMinorVersion);
 
 			if (versionInfo.wServicePackMajor > 0)
 			{
 				if (versionInfo.wServicePackMinor > 0)
-					infoValue += HorseRadish::String(" SP%d.%d", versionInfo.wServicePackMajor, versionInfo.wServicePackMinor);
+					infoValue += fmt::format(" SP%d.%d", versionInfo.wServicePackMajor, versionInfo.wServicePackMinor);
 				else
-					infoValue += HorseRadish::String(" SP%d", versionInfo.wServicePackMajor);
+					infoValue += fmt::format(" SP%d", versionInfo.wServicePackMajor);
 			}
 
 			return true;
@@ -389,13 +389,12 @@ namespace HorseRadish
 		return false;
 	}
 
-	bool Platform::InstanciateProcess(const char * const commandLine)
+	bool Platform::InstanciateProcess(const std::string& commandLine)
 	{
 		STARTUPINFO startInfo;
 		PROCESS_INFORMATION processInfo;
-		wchar_t commandLineWChar[1024];
 
-		if ((commandLine == NULL) || (*commandLine == '\0'))
+		if (commandLine.empty())
 			return false;
 
 		memset(&startInfo, 0, sizeof(STARTUPINFO));
@@ -403,7 +402,12 @@ namespace HorseRadish
 		startInfo.cb = sizeof(STARTUPINFO);
 		startInfo.lpDesktop = L"";
 
-		HorseRadish::UTF::ConvertUTF8To(commandLine, HorseRadish::UTF::Encoding::Windows, commandLineWChar, sizeof(commandLineWChar));
+		wchar_t commandLineWChar[1024];
+		{
+			auto tmpBuffer = HorseRadish::StringUtils::conv2UTF16(commandLine);
+			if (tmpBuffer.size() < 1024)
+				memcpy(commandLineWChar, tmpBuffer.data(), sizeof(wchar_t) * tmpBuffer.size());
+		}
 
 		CreateProcess(nullptr, commandLineWChar, nullptr, nullptr, FALSE, 0, nullptr, nullptr, &startInfo, &processInfo);
 
@@ -413,10 +417,8 @@ namespace HorseRadish
 		return true;
 	}
 
-	bool Platform::ClipboardGetStrings(std::function<bool(const HorseRadish::String &)> funcCallback)
+	bool Platform::ClipboardGetStrings(std::function<bool(const std::string&)> funcCallback)
 	{
-		HorseRadish::String clipDataUTF8, curToken;
-
 		if (funcCallback == nullptr)
 			return false;
 
@@ -435,24 +437,23 @@ namespace HorseRadish
 		if (clipData == nullptr)
 			return false;
 
-		clipDataUTF8.Set(HorseRadish::String::Encoding::Windows, clipData);
+		auto clipDataUTF8 = HorseRadish::StringUtils::conv2UTF8(static_cast<const wchar_t*>(clipData));
 
-		for (HorseRadish::String::Tokenizer tokenizer(clipDataUTF8, '\n'); tokenizer.IsLast() == false;)
+		/*
+		TODO: VS 2013 issue
+
+		std::sregex_token_iterator first(clipDataUTF8.begin(), clipDataUTF8.end(), "\\n+", -1), last;
+		for (; first != last; first++)
 		{
-			tokenizer.Read(curToken);
-			if (curToken.GetSizeBytes() == 0)
-				continue;
-
-			if (funcCallback(curToken) == false)
+			if (!funcCallback(*first))
 				break;
-		}
+		}*/
 
 		return true;
 	}
 
-	bool Platform::ClipboardGetFiles(std::function<bool(const HorseRadish::String &)> funcCallback)
+	bool Platform::ClipboardGetFiles(std::function<bool(const std::string&)> funcCallback)
 	{
-		HorseRadish::String curFileUTF8;
 		wchar_t fileBufferWChar[512];
 
 		if (funcCallback == nullptr)
@@ -482,8 +483,7 @@ namespace HorseRadish
 			if (DragQueryFile(clipData, i, fileBufferWChar, sizeof(fileBufferWChar) / sizeof(wchar_t)) == 0)
 				continue;
 
-			curFileUTF8.Set(HorseRadish::String::Encoding::Windows, fileBufferWChar);
-
+			auto curFileUTF8 = HorseRadish::StringUtils::conv2UTF8(fileBufferWChar);
 			if (funcCallback(curFileUTF8) == false)
 				break;
 		}

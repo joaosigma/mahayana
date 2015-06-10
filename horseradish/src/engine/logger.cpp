@@ -251,7 +251,7 @@ namespace HorseRadish
 			if (logCapacityKB <= 0)
 				return;
 
-			mOutFileStream = new HorseRadish::Streams::FileStream(filePath, false, true);
+			mOutFileStream = new HorseRadish::Streams::FileStream(filePath.str(), false, true);
 			mWalkerFlush = mWalkerWrite;
 
 			if (threadedFlush)

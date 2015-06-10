@@ -64,6 +64,9 @@
     <Filter Include="libs\sdf">
       <UniqueIdentifier>{99fce4de-c5ba-4be6-a666-3a9e3f2a368a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="libs\forsyth">
+      <UniqueIdentifier>{1cfeb5fb-8b93-4a80-9cb8-ca9fd0cd1a4c}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\common\imageFactory\ifHDRI.cpp">
@@ -85,9 +88,6 @@
       <Filter>common\meshFactory</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\common\meshFactory\mfOBJ.cpp">
-      <Filter>common\meshFactory</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\common\meshFactory\mfPLY.cpp">
       <Filter>common\meshFactory</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\common\meshFactory\mfSMD.cpp">
@@ -153,13 +153,7 @@
     <ClCompile Include="..\..\src\common\Stream.cpp">
       <Filter>common</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\common\String.cpp">
-      <Filter>common</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\common\Timer.cpp">
-      <Filter>common</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\common\UTF.cpp">
       <Filter>common</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\console\consoleUI.cpp">
@@ -589,6 +583,12 @@
     <ClCompile Include="..\..\src\libs\sdf\sdf.cpp">
       <Filter>libs\sdf</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\libs\forsyth\forsythtriangleorderoptimizer.cpp">
+      <Filter>libs\forsyth</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\common\stringUtils.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\common\imageFactory\ifHDRI.hpp">
@@ -675,16 +675,10 @@
     <ClInclude Include="..\..\src\common\Stream.hpp">
       <Filter>common</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\common\String.hpp">
-      <Filter>common</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\common\Timer.hpp">
       <Filter>common</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\common\Types.hpp">
-      <Filter>common</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\common\UTF.hpp">
       <Filter>common</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\common\Vector.hpp">
@@ -1221,6 +1215,12 @@
     </ClInclude>
     <ClInclude Include="..\..\src\libs\sdf\sdf.h">
       <Filter>libs\sdf</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\libs\forsyth\forsythtriangleorderoptimizer.h">
+      <Filter>libs\forsyth</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\common\stringUtils.hpp">
+      <Filter>common</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

@@ -1,5 +1,5 @@
 #include "openGLext.hpp"
-#include "common\UTF.hpp"
+#include "common\stringUtils.hpp"
 
 #define GETADDR(var, name, type)  var = (type)wglProcAddressOpenGL(name);
 
@@ -185,10 +185,12 @@ namespace HorseRadish
 
 			void ExtensionsLoad(const char* const openGLModuleName)
 			{
-				wchar_t openGLModuleNameWChar[128];
-				HorseRadish::UTF::ConvertUTF8To(openGLModuleName, HorseRadish::UTF::Encoding::Windows, openGLModuleNameWChar, sizeof(openGLModuleNameWChar));
+				if (openGLModuleName == nullptr)
+					return;
 
-				auto ptrWGlGetProcAddress = (PFNWGLGETPROCADDRESSPROC)GetProcAddress(GetModuleHandle(openGLModuleNameWChar), "wglGetProcAddress");
+				auto openGLModuleNameWChar = HorseRadish::StringUtils::conv2UTF16(openGLModuleName);
+
+				auto ptrWGlGetProcAddress = (PFNWGLGETPROCADDRESSPROC)GetProcAddress(GetModuleHandle(openGLModuleNameWChar.c_str()), "wglGetProcAddress");
 				if (ptrWGlGetProcAddress == nullptr)
 					return;
 

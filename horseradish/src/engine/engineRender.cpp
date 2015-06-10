@@ -191,7 +191,7 @@ namespace HorseRadish
 			{
 				int glMajorVersion, glMinorVersion;
 
-				glContext = new OpenglContext(*mWindow, reinterpret_cast<const HorseRadish::hChar*>("OpenGL32.dll"), 4, 5, this->VarGet<bool>("renderer.glDebug"), false);
+				glContext = new OpenglContext(*mWindow, "OpenGL32.dll", 4, 5, this->VarGet<bool>("renderer.glDebug"), false);
 				if ((glContext == nullptr) || !glContext->IsValid())
 				{
 					std::string errorMsg = glContext->GetErrorMsg();
@@ -307,7 +307,7 @@ namespace HorseRadish
 			//**********
 			{
 				//HorseRadish::Streams::FileStream fileStream(HorseRadish::IO::Path("c:/Users/Sigma/Desktop/doom3.hrf"), true, false);
-				HorseRadish::Streams::FileStream fileStream(HorseRadish::IO::Path("c:/Users/Sigma/Desktop/test_scene.hrf"), true, false);
+				HorseRadish::Streams::FileStream fileStream("c:/Users/Sigma/Desktop/test_scene.hrf", true, false);
 
 				renderData->Cleanup();
 				if (renderData->ImportHRF(fileStream) < 0)
@@ -367,7 +367,7 @@ namespace HorseRadish
 					HorseRadish::OpenGL::glFinish();
 
 					//crio um ficheiro (ao sair do scope o ficheiro é fechado)
-					HorseRadish::Streams::FileStream fileStream(HorseRadish::IO::Path("screenshot.bmp"), false, true);
+					HorseRadish::Streams::FileStream fileStream("screenshot.bmp", false, true);
 
 					//basta mandar tirar o screenshot
 					//glContext->TakeScreenshot(fileStream); //should come from the framebuffers

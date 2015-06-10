@@ -114,18 +114,14 @@ namespace HorseRadish
 
 			class ConsoleUserPrompt
 			{
-				HorseRadish::String localData;
+				std::vector<unsigned int> unicodeStr;
 				unsigned int cursorPos;
 				bool changeOccured;
 
 			public:
 				ConsoleUserPrompt()
-				{
-					localData.SetEmpty();
-					cursorPos = 0;
-					changeOccured = true;
-				}
-				~ConsoleUserPrompt(){ }
+					: cursorPos(0), changeOccured(false)
+				{ }
 
 				bool getCursorState(const bool reset)
 				{
@@ -138,25 +134,23 @@ namespace HorseRadish
 					changeOccured = false;
 					return aux;
 				}
+
 				int getInputCursorPos() const { return cursorPos; }
-				const char *getInput() const { return localData.GetData(); }
 
-				void setInput(const char *novaString)
+				std::string getInput() const
 				{
-					if (novaString == nullptr)
-						return;
+					return HorseRadish::StringUtils::conv2UTF8(unicodeStr);
+				}
 
+				void setInput(const std::string& str)
+				{
 					changeOccured = true;
 
-					if (*novaString == '\0')
-					{
-						cursorPos = 0;
-						localData.SetEmpty();
-						return;
-					}
+					unicodeStr.clear();
+					for (const auto& curUnicode : HorseRadish::StringUtils::utf8Wrapper(str))
+						unicodeStr.push_back(curUnicode);
 
-					localData.Set(HorseRadish::String::Encoding::UTF8, novaString);
-					cursorPos = localData.GetSizeChars();
+					cursorPos = unicodeStr.size();
 				}
 
 				void setUserInputKEYDOWN(const Window::Message &msg)
@@ -170,17 +164,17 @@ namespace HorseRadish
 							changeOccured = true;
 							for (cursorPos--; cursorPos != 0; cursorPos--)
 							{
-								if (localData.GetUnicodeAt(cursorPos - 1) == ' ' && localData.GetUnicodeAt(cursorPos) != ' ')
+								if (unicodeStr[cursorPos - 1] == ' ' && unicodeStr[cursorPos] != ' ')
 									return;
 							}
 							return;
 						}
-						if (virtualKey == Window::VirtualKeys::Right && cursorPos < localData.GetSizeChars())
+						if (virtualKey == Window::VirtualKeys::Right && cursorPos < unicodeStr.size())
 						{
 							changeOccured = true;
-							for (cursorPos++; cursorPos < localData.GetSizeChars(); cursorPos++)
+							for (cursorPos++; cursorPos < unicodeStr.size(); cursorPos++)
 							{
-								if (localData.GetUnicodeAt(cursorPos - 1) == ' ' && localData.GetUnicodeAt(cursorPos) != ' ')
+								if (unicodeStr[cursorPos - 1] == ' ' && unicodeStr[cursorPos] != ' ')
 									return;
 							}
 							return;
@@ -199,7 +193,7 @@ namespace HorseRadish
 						break;
 
 					case Window::VirtualKeys::Right:
-						if (cursorPos >= localData.GetSizeChars())
+						if (cursorPos >= unicodeStr.size())
 							return;
 						cursorPos++;
 						changeOccured = true;
@@ -209,13 +203,14 @@ namespace HorseRadish
 						changeOccured = true;
 						break;
 					case Window::VirtualKeys::End:
-						cursorPos = localData.GetSizeChars();
+						cursorPos = unicodeStr.size();
 						changeOccured = true;
 						break;
 					case Window::VirtualKeys::Delete:
-						if (cursorPos >= localData.GetSizeChars())
+						if (cursorPos >= unicodeStr.size())
 							return;
-						localData.RemoveAt(cursorPos);
+
+						unicodeStr.erase(unicodeStr.begin() + cursorPos);
 						changeOccured = true;
 						break;
 					}
@@ -228,72 +223,36 @@ namespace HorseRadish
 					if (keyVal == '#' || keyVal == 9 || keyVal == '\\' || keyVal == 27)
 						return;
 
-					if (keyVal == 127)
-					{
-						const char *delStart, *delEnd;
-						unsigned int startCountIndex;
-
-						if (localData.GetSizeChars() == 0 || cursorPos == 0)
-							return;
-
-						delEnd = localData.GetData() + localData.GetCharByteIndex(cursorPos - 1);
-						delStart = delEnd - 1;
-						while ((delStart > localData.GetData()) && (*delStart == ' '))
-							delStart--;
-						while ((delStart > localData.GetData()) && (*delStart != ' '))
-							delStart--;
-						while ((delStart > localData.GetData()) && (*delStart == ' '))
-							delStart--;
-
-						if (delStart != localData.GetData())
-							delStart += 2;
-
-						startCountIndex = localData.GetCharPosIndex(delStart - localData.GetData());
-
-						if (cursorPos >= localData.GetSizeChars())
-						{
-							localData.CloseAt(startCountIndex);
-							cursorPos = localData.GetSizeChars();
-							changeOccured = true;
-							return;
-						}
-
-						localData.RemoveAt(startCountIndex, cursorPos - startCountIndex);
-						cursorPos = localData.GetCharPosIndex(startCountIndex);
-
-						changeOccured = true;
-						return;
-					}
-
 					if (keyVal == 22)
 					{
-						HorseRadish::String strUTF8;
+						std::string strUTF8;
 
-						if (HorseRadish::Platform::ClipboardGetStrings([&](const HorseRadish::String &curString) -> bool
+						if (HorseRadish::Platform::ClipboardGetStrings([&](const std::string& curString) -> bool
 						{
-							strUTF8.Set(curString);
+							strUTF8 = curString;
 							return false;
 						}) == false)
 						{
-							HorseRadish::Platform::ClipboardGetFiles([&](const HorseRadish::String &curString) -> bool
+							HorseRadish::Platform::ClipboardGetFiles([&](const std::string& curString) -> bool
 							{
-								strUTF8.Set(curString);
+								strUTF8 = curString;
 								return false;
 							});
 						}
 
-						if (cursorPos >= localData.GetSizeChars())
-							localData += strUTF8;
-						else
-							localData.AppendAtPos(strUTF8, cursorPos);
-						cursorPos += strUTF8.GetSizeChars();
+						for (const auto& curUnicode : HorseRadish::StringUtils::utf8Wrapper(strUTF8))
+						{
+							unicodeStr.insert(unicodeStr.begin() + cursorPos, curUnicode);
+							cursorPos++;
+						}
+
 						changeOccured = true;
 						return;
 					}
 
 					if (keyVal == 8)
 					{
-						if (localData.GetSizeChars() == 0)
+						if (unicodeStr.empty())
 							return;
 
 						if (cursorPos == 0)
@@ -302,17 +261,11 @@ namespace HorseRadish
 						changeOccured = true;
 						cursorPos--;
 
-						if ((cursorPos + 1) >= localData.GetSizeChars())
-						{
-							localData.Remove(1, HorseRadish::String::Position::End);
-							return;
-						}
-
-						localData.RemoveAt(cursorPos);
+						unicodeStr.erase(unicodeStr.begin() + cursorPos);
 						return;
 					}
 
-					localData.AppendAtPos(keyVal, cursorPos);
+					unicodeStr.insert(unicodeStr.begin() + cursorPos, keyVal);
 					cursorPos++;
 					changeOccured = true;
 				}
@@ -399,7 +352,7 @@ namespace HorseRadish
 					if (textY >= contentAreaLimits[1])
 						break;
 
-					if (curLinha->texto.IsEmpty(true) == true)
+					if (curLinha->texto.empty())
 						continue;
 
 					if (!curLinha->formatted)
@@ -415,45 +368,61 @@ namespace HorseRadish
 					}
 
 					auto curX = textX;
-					HorseRadish::String::Iterator it(curLinha->texto);
-					for (; *it != '\0'; it++)
+
+					unsigned int lastChar = 0;
+					HorseRadish::StringUtils::utf8Wrapper textWrapper(curLinha->texto);
+					for (HorseRadish::StringUtils::utf8Wrapper::const_iterator it = textWrapper.begin(), itEnd = textWrapper.end(); it != itEnd; ++it)
 					{
-						auto walker = curLinha->texto.GetData() + it.GetBytePosition();
-						if ((walker[0] == '$') && (walker[1] == '{'))
+						auto curChar = *it;
+
+						HorseRadish::StringUtils::utf8Wrapper::const_iterator itNext(it);
+						itNext++;
+						
+						if ((curChar == '$') && (lastChar != '$'))
 						{
-							if ((walker == curLinha->texto.GetData()) || (walker[-1] != '$'))
+							HorseRadish::StringUtils::utf8Wrapper::const_iterator itNext(it);
+							itNext++;
+
+							if ((*itNext == '{') )
 							{
-								walker += 2;
-								auto walkerEnd = walker;
-								for (; *walkerEnd != '}'; walkerEnd++);
+								it++;
+								it++;
 
-								it += (walkerEnd - walker) + 2;
+								std::string value;
+								value.reserve(10);
 
-								if ((*walker == '#') && ((walkerEnd - walker) == 7))
-									guiFont->setColor(Color::ParseColorFromHTML(walker));
-								else if (strncmp(walker, "red", walkerEnd - walker) == 0)
+								for (; (*it != '}') && (it != itEnd); it++)
+									value += *it;
+
+								HorseRadish::StringUtils::trim(value);
+								if (value.empty())
+									continue;
+
+								if (value[0] == '#')
+									guiFont->setColor(Color::ParseColorFromHTML(value.c_str()));
+								else if (value == "red")
 									guiFont->setColor(1.0f, 0.0f, 0.0f, 1.0f);
-								else if (strncmp(walker, "green", walkerEnd - walker) == 0)
+								else if (value == "green")
 									guiFont->setColor(0.0f, 1.0f, 0.0f, 1.0f);
-								else if (strncmp(walker, "bgreen", walkerEnd - walker) == 0)
+								else if (value == "bgreen")
 									guiFont->setColor(0.08f, 1.0f, 0.39f, 1.0f);
-								else if (strncmp(walker, "olive", walkerEnd - walker) == 0)
+								else if (value == "olive")
 									guiFont->setColor(0.59f, 0.59f, 0.0f, 1.0f);
-								else if (strncmp(walker, "default", walkerEnd - walker) == 0)
+								else if (value == "default")
 									guiFont->setColor(1.0f, 1.0f, 1.0f, 1.0f);
 
 								continue;
 							}
 						}
 
-						curX += guiFont->writeChar(curX, textY, *it);
+						lastChar = *it;
+						curX += guiFont->writeChar(curX, textY, lastChar);
 					}
 
-					guiFont->write(curX, textY, it);
 					guiFont->setColor(1.0f, 1.0f, 1.0f, 1.0f);
 				}
 
-				HorseRadish::String unicodeStr;
+				std::string unicodeStr;
 
 				if (userPrompt->getCursorState(true))
 				{
@@ -461,17 +430,14 @@ namespace HorseRadish
 					cursorTimer.ReStart();
 				}
 
-				unicodeStr.Set(HorseRadish::String::Encoding::UTF8, userPrompt->getInput());
+				unicodeStr = userPrompt->getInput();
 				guiFont->write(this->tabContentAreaPos.x + 15.0f, userTextY, unicodeStr);
-				if (cursorVisivel == true)
+				if (cursorVisivel)
 				{
-					int cursorPos, strLength;
-					unsigned int cursorChar;
+					auto cursorPos = userPrompt->getInputCursorPos();
+					auto strLength = guiFont->getStringWidth(unicodeStr, cursorPos);
 
-					cursorPos = userPrompt->getInputCursorPos();
-					strLength = guiFont->getStringWidth(unicodeStr, cursorPos);
-
-					cursorChar = unicodeStr.GetUnicodeAt(cursorPos);
+					auto cursorChar = HorseRadish::StringUtils::getUnicodeAt(unicodeStr, cursorPos);
 
 					guiFont->writeChar(this->tabContentAreaPos.x + 15.0f + strLength, userTextY, '_');
 					if (cursorChar != '\0' && cursorChar != ' ')
@@ -548,7 +514,7 @@ namespace HorseRadish
 
 					if (msg.getParam() == static_cast<int>(Window::VirtualKeys::Tab))
 					{
-						const char *string;
+						/*const char *string;
 						char dest[256];
 						bool primeiroHit;
 
@@ -568,32 +534,30 @@ namespace HorseRadish
 
 						primeiroHit = true;
 						dest[0] = '\0';
-						/*mainConsole->TABComplete(string, dest, sizeof(dest), [&](const HorseRadish::String &hit)
+						mainConsole->TABComplete(string, dest, sizeof(dest), [&](const HorseRadish::String &hit)
 						{
 							if (primeiroHit == true)
 								mainConsole->LogInfo(HorseRadish::String(">%s", dest).GetData());
 							primeiroHit = false;
 							mainConsole->LogTab(hit.GetData(), 2);
-						});*/
+						});
 
 						if (dest[0] != '\0')
-							userPrompt->setInput(dest);
+							userPrompt->setInput(dest);*/
 						return;
 					}
 				}
 
 				if (msg.getType() == Window::Message::MessageType::CharacterKey && msg.getParam() == 13)
 				{
-					const char *texto;
-
-					texto = userPrompt->getInput();
-					if (*texto == '\0')
+					auto inputStr = userPrompt->getInput();
+					if (inputStr.empty())
 						return;
 
-					userHistory->AddPhrase(texto);
+					userHistory->AddPhrase(inputStr.c_str());
 
 					if (mInputCb)
-						mInputCb(texto);
+						mInputCb(inputStr.c_str());
 
 					userPrompt->setInput("");
 					return;
@@ -639,7 +603,7 @@ namespace HorseRadish
 					
 					curLinha->active = true;
 					curLinha->type = entryType;
-					curLinha->texto.Set(HorseRadish::String::Encoding::UTF8, log);
+					curLinha->texto = log;
 					curLinha->formatted = isFormatted;
 					return true;
 

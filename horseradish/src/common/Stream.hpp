@@ -1,6 +1,5 @@
 #pragma once
 
-#include "String.hpp"
 #include "Types.hpp"
 #include "Math.hpp"
 #include "Path.hpp"
@@ -29,9 +28,9 @@ namespace HorseRadish
 			virtual void Flush() = 0;
 
 			virtual bool CanRead() const = 0;
-			virtual bool CanRead(int numBytes) const = 0;
+			virtual bool CanRead(unsigned int numBytes) const = 0;
 			virtual bool CanWrite() const = 0;
-			virtual bool CanWrite(int numBytes) const = 0;
+			virtual bool CanWrite(unsigned int numBytes) const = 0;
 			virtual int GetLength() const = 0;
 			virtual int GetPosition() const = 0;
 
@@ -68,9 +67,9 @@ namespace HorseRadish
 			void Flush();
 
 			bool CanRead() const;
-			bool CanRead(int numBytes) const;
+			bool CanRead(unsigned int numBytes) const;
 			bool CanWrite() const;
-			bool CanWrite(int numBytes) const;
+			bool CanWrite(unsigned int numBytes) const;
 			int GetLength() const;
 			int GetPosition() const;
 
@@ -91,11 +90,11 @@ namespace HorseRadish
 			HANDLE fileHandle;
 			bool toRead, toWrite, closed;
 
-			bool openFile(const HorseRadish::hChar * const filePath, bool toRead, bool toWrite);
+			bool openFile(const std::string& filePath, bool toRead, bool toWrite);
 
 		public:
 			FileStream(FileStream&& stream);
-			FileStream(const HorseRadish::hChar * const filePath, bool toRead, bool toWrite);
+			FileStream(const std::string& filePath, bool toRead, bool toWrite);
 			~FileStream();
 
 			FileStream(const FileStream&) = delete;
@@ -105,9 +104,9 @@ namespace HorseRadish
 			void Flush();
 
 			bool CanRead() const;
-			bool CanRead(int numBytes) const;
+			bool CanRead(unsigned int numBytes) const;
 			bool CanWrite() const;
-			bool CanWrite(int numBytes) const;
+			bool CanWrite(unsigned int numBytes) const;
 			int GetLength() const;
 			int GetPosition() const;
 
@@ -121,9 +120,9 @@ namespace HorseRadish
 
 			std::unique_ptr<MemoryStream> readEntireContent() const;
 
-			static std::unique_ptr<MemoryStream> ReadEntireFile(const HorseRadish::hChar * const filePath);
-			static HorseRadish::String ReadEntireFileAsString(const HorseRadish::hChar * const filePath);
-			static bool StreamDump(Stream* stream, const HorseRadish::hChar * const filePath);
+			static std::unique_ptr<MemoryStream> ReadEntireFile(const std::string& filePath);
+			static std::string ReadEntireFileAsString(const std::string& filePath);
+			static bool StreamDump(Stream* stream, const std::string& filePath);
 		};
 
 		class StreamReader
@@ -248,22 +247,6 @@ namespace HorseRadish
 			int ReadLine(void * const outBuffer, const int bufferSize)
 			{
 				return (stream.ReadLine(outBuffer, bufferSize));
-			}
-
-			int ReadLineString(HorseRadish::String &targetString, const HorseRadish::String::Encoding inputEncoding)
-			{
-				char lineBuffer[1024 * 2];
-
-				targetString.SetEmpty();
-
-				auto bytesLidos = stream.ReadLine(lineBuffer, sizeof(lineBuffer));
-				if ((bytesLidos < 0) || (bytesLidos >= sizeof(lineBuffer)))
-					return -bytesLidos;
-
-				lineBuffer[bytesLidos] = '\0';
-				targetString.Set(inputEncoding, lineBuffer);
-
-				return bytesLidos;
 			}
 
 			int ReadUntil(void * const outBuffer, const int bufferSize, const char goal)

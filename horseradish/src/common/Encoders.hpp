@@ -1,9 +1,8 @@
 #pragma once
 
-#include "Platform.hpp"
-#include "String.hpp"
-#include "Types.hpp"
 #include "Stream.hpp"
+
+#include <string>
 
 namespace HorseRadish
 {
@@ -18,20 +17,20 @@ namespace HorseRadish
 		static unsigned int findBase64Char(const char caracter);
 
 	public:
-		static HorseRadish::String EncodeBase64(const void * const buffer, unsigned int bufferSize);
-		static void EncodeBase64(const void * const buffer, unsigned int bufferSize, HorseRadish::String &stringOut);
+		static std::string EncodeBase64(const void * const buffer, unsigned int bufferSize);
+		static void EncodeBase64(const void * const buffer, unsigned int bufferSize, std::string &stringOut);
 		static void EncodeBase64(const void * const buffer, unsigned int bufferSize, HorseRadish::Streams::Stream &streamOut);
 
 		static unsigned int DecodeBase64RequiredSize(unsigned int numBase64Chars);
-		static unsigned int DecodeBase64(const HorseRadish::String &dataBase64, HorseRadish::Streams::Stream &streamOut);
+		static unsigned int DecodeBase64(const std::string &dataBase64, HorseRadish::Streams::Stream &streamOut);
 
-		static HorseRadish::String EncodeHex(const void * const buffer, unsigned int bufferSize, bool toUppercase);
-		static void EncodeHex(const void * const buffer, unsigned int bufferSize, bool toUppercase, HorseRadish::String &stringOut);
+		static std::string EncodeHex(const void * const buffer, unsigned int bufferSize, bool toUppercase);
+		static void EncodeHex(const void * const buffer, unsigned int bufferSize, bool toUppercase, std::string &stringOut);
 		static void EncodeHex(const void * const buffer, unsigned int bufferSize, bool toUppercase, HorseRadish::Streams::Stream &streamOut);
 		static void EncodeHexByte(const unsigned char valByte, char * const outHex);
 
 		static unsigned int DecodeHexRequiredSize(unsigned int numHexChars);
-		static unsigned int DecodeHex(const HorseRadish::String &dataHex, HorseRadish::Streams::Stream &streamOut);
+		static unsigned int DecodeHex(const std::string &dataHex, HorseRadish::Streams::Stream &streamOut);
 		static unsigned char DecodeHexByte(const char * const dataHex);
 	};
 

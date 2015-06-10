@@ -2,7 +2,6 @@
 
 #include "Path.hpp"
 #include "Stream.hpp"
-#include "String.hpp"
 #include "Types.hpp"
 
 #include "libs\zlib\zlib.h"
@@ -43,13 +42,13 @@ namespace HorseRadish
 				HorseRadish::IO::Path mountPoint;
 
 			public:
-				MountData(const HorseRadish::hChar * const mountPoint);
+				MountData(const char* const mountPoint);
 				virtual ~MountData();
 
 				virtual FileSystem::MountType GetMountType() const = 0;
 				virtual void FilesEnumerate() = 0;
-				virtual std::unique_ptr<Streams::Stream> FileRead(const HorseRadish::hChar * const filePath) = 0;
-				virtual bool FileExists(const HorseRadish::hChar * const filePath) = 0;
+				virtual std::unique_ptr<Streams::Stream> FileRead(const char* const filePath) = 0;
+				virtual bool FileExists(const char* const filePath) = 0;
 			};
 
 			class MountDataPath : public MountData
@@ -57,14 +56,14 @@ namespace HorseRadish
 				HorseRadish::IO::Path baseFolder;
 
 			public:
-				MountDataPath(const HorseRadish::hChar * const baseFolder, const HorseRadish::hChar * const mountPoint);
+				MountDataPath(const char* const baseFolder, const char* const mountPoint);
 				~MountDataPath();
 
 				FileSystem::MountType GetMountType() const;
 
 				void FilesEnumerate();
-				std::unique_ptr<Streams::Stream> FileRead(const HorseRadish::hChar * const filePath);
-				bool FileExists(const HorseRadish::hChar * const filePath);
+				std::unique_ptr<Streams::Stream> FileRead(const char* const filePath);
+				bool FileExists(const char* const filePath);
 			};
 
 			class MountDataZip : public MountData
@@ -82,15 +81,15 @@ namespace HorseRadish
 				std::vector<ZipEntry> listaEntradas;
 
 			public:
-				MountDataZip(const HorseRadish::hChar * const zipPath, const HorseRadish::hChar * const mountPoint);
+				MountDataZip(const char* const zipPath, const char* const mountPoint);
 				~MountDataZip();
 
 				FileSystem::MountType GetMountType() const;
 				int GetNumberFiles() const;
 
 				void FilesEnumerate();
-				std::unique_ptr<Streams::Stream> FileRead(const HorseRadish::hChar * const filePath);
-				bool FileExists(const HorseRadish::hChar * const filePath);
+				std::unique_ptr<Streams::Stream> FileRead(const char* const filePath);
+				bool FileExists(const char* const filePath);
 			};
 
 			unsigned int maxNumMounts;
@@ -101,18 +100,18 @@ namespace HorseRadish
 			FileSystem(unsigned int maxNumMounts);
 			~FileSystem();
 
-			static void FindFiles(const HorseRadish::hChar * const baseFolderAndFilter, const bool returnFilesFullPath, std::function<void(const HorseRadish::IO::Path &filePath, const HorseRadish::hUInt64 &fileSize)> actionFileFound);
-			static bool FileExists(const HorseRadish::hChar * const filePath);
+			static void FindFiles(const std::string& baseFolderAndFilter, const bool returnFilesFullPath, std::function<void(const HorseRadish::IO::Path &filePath, const HorseRadish::hUInt64 &fileSize)> actionFileFound);
+			static bool FileExists(const char* const filePath);
 
-			bool MountPath(const HorseRadish::IO::Path &baseFolder, const HorseRadish::hChar * const mountPoint);
-			bool MountZip(const HorseRadish::IO::Path &zipPath, const HorseRadish::hChar * const mountPoint, int * const numFilesZip = nullptr);
+			bool MountPath(const HorseRadish::IO::Path &baseFolder, const char* const mountPoint);
+			bool MountZip(const HorseRadish::IO::Path &zipPath, const char* const mountPoint, int * const numFilesZip = nullptr);
 
 			std::unique_ptr<Streams::Stream> FileRead(const char * const filePath);
 			std::unique_ptr<Streams::Stream> FileRead(const char * const filePath, const MountType mountType);
 
-			std::string readFileAsString(const char * const filePath);
+			std::string readFileAsString(const char* const filePath);
 
-			int WatchChangeCreate(const HorseRadish::hChar * const baseFolder, bool includeSubFolders, const ChangeType changeType);
+			int WatchChangeCreate(const char* const baseFolder, bool includeSubFolders, const ChangeType changeType);
 			void WatchChangeDelete(const int watchChangeID);
 			bool WatchChanged(const int watchChangeID);
 		};

@@ -47,7 +47,7 @@ namespace HorseRadish { namespace Engine {
 		int totalPacks = 0;
 
 		//for every pack/zip/7zip file
-		HorseRadish::IO::FileSystem::FindFiles((HorseRadish::hChar*)"d:/jogos/doom3/base/pak*.pk4", true, [&](const HorseRadish::IO::Path &filePath, const HorseRadish::hUInt64 &fileSize)
+		HorseRadish::IO::FileSystem::FindFiles("d:/jogos/doom3/base/pak*.pk4", true, [&](const HorseRadish::IO::Path &filePath, const HorseRadish::hUInt64 &fileSize)
 		{
 			int numFilesZip;
 
@@ -228,24 +228,23 @@ namespace HorseRadish { namespace Engine {
 
 	void Engine::logSysInfo()
 	{
-		HorseRadish::String auxInfo;
+		std::string auxInfo;
 		int memTotal, memFree, displayWidth, displayHeight, displayColorBits, displayFrequency;
 
 		//misc info
 		mLoggerRuntimeCtx->info("${olive}->${default}System information:");
 
 		if (HorseRadish::Platform::CPUGetVendorID(auxInfo))
-			mLoggerRuntimeCtx->info(fmt::format("   CPU vendor ID: {0}", auxInfo.GetData()));
+			mLoggerRuntimeCtx->info(fmt::format("   CPU vendor ID: {0}", auxInfo));
 		if (HorseRadish::Platform::CPUGetProcessorName(auxInfo))
-			mLoggerRuntimeCtx->info(fmt::format("   CPU processor name: {0}", auxInfo.GetData()));
+			mLoggerRuntimeCtx->info(fmt::format("   CPU processor name: {0}", auxInfo));
 
+		
 		HorseRadish::Platform::GetSystemInfo(HorseRadish::Platform::SystemInfo::MemoryTotal, memTotal);
-		auxInfo.SetMemory(memTotal);
-		mLoggerRuntimeCtx->info(fmt::format("   Total physical memory: {0}", auxInfo.GetData()));
+ 		mLoggerRuntimeCtx->info(fmt::format("   Total physical memory: {0}", HorseRadish::StringUtils::formatSize(memTotal)));
 
 		HorseRadish::Platform::GetSystemInfo(HorseRadish::Platform::SystemInfo::MemoryFree, memFree);
-		auxInfo.SetMemory(memFree);
-		mLoggerRuntimeCtx->info(fmt::format("   Free physical memory: {0}", auxInfo.GetData()));
+		mLoggerRuntimeCtx->info(fmt::format("   Free physical memory: {0}", HorseRadish::StringUtils::formatSize(memFree)));
 
 		HorseRadish::Platform::GetSystemInfo(HorseRadish::Platform::SystemInfo::DisplayWidth, displayWidth);
 		HorseRadish::Platform::GetSystemInfo(HorseRadish::Platform::SystemInfo::DisplayHeight, displayHeight);
@@ -254,15 +253,15 @@ namespace HorseRadish { namespace Engine {
 		mLoggerRuntimeCtx->info(fmt::format("   Desktop resolution: {0}x{1}x{2}@{3}", displayWidth, displayHeight, displayColorBits, displayFrequency));
 
 		HorseRadish::Platform::GetSystemInfo(HorseRadish::Platform::SystemInfo::OperatingSystemName, auxInfo);
-		mLoggerRuntimeCtx->info(fmt::format("   Operating system: {0}", auxInfo.GetData()));
+		mLoggerRuntimeCtx->info(fmt::format("   Operating system: {0}", auxInfo));
 
 		mLoggerRuntimeCtx->info(HorseRadish::Platform::IsArch64() ? "   Build type: x86 64bit" : "   Build type: x86 32bit");
 
 		HorseRadish::Platform::GetSystemInfo(HorseRadish::Platform::SystemInfo::MachineName, auxInfo);
-		mLoggerRuntimeCtx->info(fmt::format("   Machine name: {0}", auxInfo.GetData()));
+		mLoggerRuntimeCtx->info(fmt::format("   Machine name: {0}", auxInfo));
 
 		HorseRadish::Platform::GetSystemInfo(HorseRadish::Platform::SystemInfo::CurrentUsername, auxInfo);
-		mLoggerRuntimeCtx->info(fmt::format("   User name: {0}", auxInfo.GetData()));
+		mLoggerRuntimeCtx->info(fmt::format("   User name: {0}", auxInfo));
 
 		//test UTF8
 		mLoggerRuntimeCtx->info("${olive}->${default}UTF8 text test:");
@@ -305,12 +304,10 @@ namespace HorseRadish { namespace Engine {
 
 		//some vars can already be set
 		{
-			HorseRadish::String stringAux;
+			std::string strAux;
 
-			if (HorseRadish::Platform::CPUGetVendorID(stringAux) == true)
-				this->VarSet<std::string>("sys.info.cpuVendor", stringAux.GetData());
-			if (HorseRadish::Platform::CPUGetProcessorName(stringAux) == true)
-				this->VarSet<std::string>("sys.info.cpuName", stringAux.GetData());
+			if (HorseRadish::Platform::CPUGetVendorID(strAux)) this->VarSet<std::string>("sys.info.cpuVendor", strAux);
+			if (HorseRadish::Platform::CPUGetProcessorName(strAux)) this->VarSet<std::string>("sys.info.cpuName", strAux);
 			this->VarSet<std::string>("sys.info.build", fmt::format("Horseradish v1.0.0 (alpha build {0})", HorseRadish::Build::BuildNumber));
 		}
 
@@ -461,8 +458,7 @@ namespace HorseRadish { namespace Engine {
 			mLoggerRuntimeCtx->info("");
 
 			mWindow = std::make_shared<Window>(*mLogger);
-			if (!mWindow->WindowInit(reinterpret_cast<const HorseRadish::hChar*>("Horseradish engine v1.0"),
-										this->VarGet<int>("renderer.winWidth"), this->VarGet<int>("renderer.winHeight"), this->VarGet<bool>("renderer.winFullscreen")))
+			if (!mWindow->WindowInit("Horseradish engine v1.0", this->VarGet<int>("renderer.winWidth"), this->VarGet<int>("renderer.winHeight"), this->VarGet<bool>("renderer.winFullscreen")))
 			{
 				mWindow.reset();
 

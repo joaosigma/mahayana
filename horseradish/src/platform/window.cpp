@@ -16,12 +16,12 @@ std::string Window::GetErrorMsg() const
 	return mImpl->GetErrorMsg();
 }
 
-bool Window::WindowInit(const HorseRadish::hChar *windowTitle, const unsigned int winWidth, const unsigned int winHeight, const bool winFullscreen)
+bool Window::WindowInit(const std::string& windowTitle, const unsigned int winWidth, const unsigned int winHeight, const bool winFullscreen)
 {
 	return mImpl->WindowInit(windowTitle, winWidth, winHeight, winFullscreen);
 }
 
-bool Window::WindowEditorInit(const HorseRadish::hChar *windowTitle, const unsigned int winWidth, const unsigned int winHeight, const HWND handleWindowParent)
+bool Window::WindowEditorInit(const std::string& windowTitle, const unsigned int winWidth, const unsigned int winHeight, const HWND handleWindowParent)
 {
 	return mImpl->WindowEditorInit(windowTitle, winWidth, winHeight, handleWindowParent);
 }
@@ -71,7 +71,7 @@ void Window::ProcessMessages(std::function<void(const Message&)> cb, const bool 
 	mImpl->ProcessMessages(cb, resetQueue);
 }
 
-void Window::MsgBoxInfo(const HorseRadish::String &msg)
+void Window::MsgBoxInfo(const std::string& msg)
 {
 	WindowImpl::MsgBoxInfo(msg);
 }
@@ -81,7 +81,7 @@ void Window::MsgBoxInfo(const char * const msg)
 	WindowImpl::MsgBoxInfo(msg);
 }
 
-void Window::MsgBoxWarn(const HorseRadish::String &msg)
+void Window::MsgBoxWarn(const std::string& msg)
 {
 	WindowImpl::MsgBoxWarn(msg);
 }
@@ -91,7 +91,7 @@ void Window::MsgBoxWarn(const char * const msg)
 	WindowImpl::MsgBoxWarn(msg);
 }
 
-void Window::MsgBoxError(const HorseRadish::String &msg)
+void Window::MsgBoxError(const std::string& msg)
 {
 	WindowImpl::MsgBoxError(msg);
 }
@@ -101,7 +101,7 @@ void Window::MsgBoxError(const char * const msg)
 	WindowImpl::MsgBoxError(msg);
 }
 
-OpenglContext::OpenglContext(const Window &window, const HorseRadish::hChar *openGLModuleName, int contextMajorVersion, int contextMinorVersion, bool contextDebug, bool contextForwardCompatible)
+OpenglContext::OpenglContext(const Window &window, const std::string& openGLModuleName, int contextMajorVersion, int contextMinorVersion, bool contextDebug, bool contextForwardCompatible)
 	: mIsValid(false)
 	, mImpl(new OpenglContextImpl(*window.mImpl, openGLModuleName, contextMajorVersion, contextMinorVersion, contextDebug, contextForwardCompatible))
 {

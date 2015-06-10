@@ -185,7 +185,6 @@
     <ClCompile Include="..\..\src\common\meshFactory\mfCollada.cpp" />
     <ClCompile Include="..\..\src\common\meshFactory\mfLWO.cpp" />
     <ClCompile Include="..\..\src\common\meshFactory\mfOBJ.cpp" />
-    <ClCompile Include="..\..\src\common\meshFactory\mfPLY.cpp" />
     <ClCompile Include="..\..\src\common\meshFactory\mfSMD.cpp" />
     <ClCompile Include="..\..\src\common\opengl\context.cpp" />
     <ClCompile Include="..\..\src\common\opengl\openGL.cpp" />
@@ -201,10 +200,9 @@
     <ClCompile Include="..\..\src\common\Ray.cpp" />
     <ClCompile Include="..\..\src\common\Sorting.cpp" />
     <ClCompile Include="..\..\src\common\Stream.cpp" />
-    <ClCompile Include="..\..\src\common\String.cpp" />
+    <ClCompile Include="..\..\src\common\stringUtils.cpp" />
     <ClCompile Include="..\..\src\common\Timer.cpp" />
     <ClCompile Include="..\..\src\common\Types.cpp" />
-    <ClCompile Include="..\..\src\common\UTF.cpp" />
     <ClCompile Include="..\..\src\console\consoleUI.cpp" />
     <ClCompile Include="..\..\src\console\consoleUITabs.cpp" />
     <ClCompile Include="..\..\src\culling.cpp" />
@@ -286,6 +284,7 @@
     <ClCompile Include="..\..\src\libs\crunch\lzma_LzmaEnc.cpp" />
     <ClCompile Include="..\..\src\libs\crunch\lzma_LzmaLib.cpp" />
     <ClCompile Include="..\..\src\libs\crunch\lzma_Threads.cpp" />
+    <ClCompile Include="..\..\src\libs\forsyth\forsythtriangleorderoptimizer.cpp" />
     <ClCompile Include="..\..\src\libs\lodepng\lodepng.cpp" />
     <ClCompile Include="..\..\src\libs\sdf\sdf.cpp" />
     <ClCompile Include="..\..\src\libs\snappy\snappy-sinksource.cc" />
@@ -380,10 +379,9 @@
     <ClInclude Include="..\..\src\common\ScopedAction.hpp" />
     <ClInclude Include="..\..\src\common\Sorting.hpp" />
     <ClInclude Include="..\..\src\common\Stream.hpp" />
-    <ClInclude Include="..\..\src\common\String.hpp" />
+    <ClInclude Include="..\..\src\common\stringUtils.hpp" />
     <ClInclude Include="..\..\src\common\Timer.hpp" />
     <ClInclude Include="..\..\src\common\Types.hpp" />
-    <ClInclude Include="..\..\src\common\UTF.hpp" />
     <ClInclude Include="..\..\src\common\Vector.hpp" />
     <ClInclude Include="..\..\src\console\consoleUI.hpp" />
     <ClInclude Include="..\..\src\culling.hpp" />
@@ -491,6 +489,7 @@
     <ClInclude Include="..\..\src\libs\crunch\lzma_MyVersion.h" />
     <ClInclude Include="..\..\src\libs\crunch\lzma_Threads.h" />
     <ClInclude Include="..\..\src\libs\crunch\lzma_Types.h" />
+    <ClInclude Include="..\..\src\libs\forsyth\forsythtriangleorderoptimizer.h" />
     <ClInclude Include="..\..\src\libs\lodepng\lodepng.h" />
     <ClInclude Include="..\..\src\libs\lodepng\mylodepngoptions.h" />
     <ClInclude Include="..\..\src\libs\sdf\sdf.h" />

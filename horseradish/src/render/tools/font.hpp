@@ -3,6 +3,7 @@
 #include "common\opengl\openGL.hpp"
 #include "common\opengl\objects.hpp"
 #include "common\Color.hpp"
+#include "common\stringUtils.hpp"
 
 #include <array>
 #include <vector>
@@ -45,7 +46,6 @@ class Font
 
 	static int sMumMaxChar;
 	static unsigned short sBufferPadding;
-	static unsigned short sPrimitiveRestartIndex;
 
 private:
 	bool mValid;
@@ -82,16 +82,14 @@ private:
 	bool createCharData();
 	int getCharKerning(const CharacterData& leftCharData, unsigned short leftCharUnicodeID, unsigned short rightCharUnicodeID) const;
 	bool initFont(const char * const fontFilePath);
-	void internalWrite(const float &px, const float &py, HorseRadish::String::Iterator &strIt) const;
+	void internalWrite(const float &px, const float &py, const std::string& text) const;
 
 public:
 	Font(const int fontSize, const char * const fontFilePath, unsigned int glVertexProgramID, unsigned int glFragmentProgramID, unsigned int glProgramPipelineID);
 	~Font();
 
-	void write(const float &px, const float &py, HorseRadish::String::Iterator &iterator) const;
-	void write(HorseRadish::String::Iterator &iterator) const;
-	void write(const float &px, const float &py, const HorseRadish::String &text) const;
-	void write(const HorseRadish::String &text) const;
+	void write(const float &px, const float &py, const std::string& text) const;
+	void write(const std::string& text) const;
 	float writeChar(const unsigned int &unicodeChar) const;
 	float writeChar(const float &px, const float &py, const unsigned int &unicodeChar) const;
 
@@ -103,8 +101,8 @@ public:
 	bool getOperacional() const;
 	float getMaxHeight() const;
 	float getCharWidth(const unsigned int &unicodeChar) const;
-	float getStringWidth(const HorseRadish::String &text) const;
-	float getStringWidth(const HorseRadish::String &text, const unsigned int numMaxChar) const;
+	float getStringWidth(const std::string& text) const;
+	float getStringWidth(const std::string&, const unsigned int numMaxChar) const;
 
 	void paintBegin(const float * const tranformationMatrix, float scale = 1.0f);
 	void paintEnd();

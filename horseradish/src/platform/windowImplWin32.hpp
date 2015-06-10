@@ -6,7 +6,6 @@
 
 #include "common\Vector.hpp"
 #include "common\Platform.hpp"
-#include "common\String.hpp"
 #include "common\opengl\objects.hpp"
 #include "..\engine\logger.hpp"
 
@@ -24,12 +23,12 @@ class WindowImpl
 private:
 	HWND hWnd;
 	HMODULE hModule;
-	HorseRadish::Engine::Logger &mLogger;
 	bool closeRequested;
 	std::string errorMsg;
+	std::wstring mClassName;
 	DEVMODE originalDeviceMode;
-	wchar_t className[128];
 	bool isFullscreen, isInitialized;
+	HorseRadish::Engine::Logger &mLogger;
 
 	struct {
 		std::mutex lock;
@@ -55,8 +54,8 @@ public:
 
 	std::string GetErrorMsg() const;
 
-	bool WindowInit(const HorseRadish::hChar *windowTitle, const unsigned int winWidth, const unsigned int winHeight, const bool winFullscreen);
-	bool WindowEditorInit(const HorseRadish::hChar *windowTitle, const unsigned int winWidth, const unsigned int winHeight, const HWND handleWindowParent);
+	bool WindowInit(const std::string& windowTitle, const unsigned int winWidth, const unsigned int winHeight, const bool winFullscreen);
+	bool WindowEditorInit(const std::string& windowTitle, const unsigned int winWidth, const unsigned int winHeight, const HWND handleWindowParent);
 
 	bool SetWindowAlpha(const unsigned char &valorAlpha) const;
 	bool SendMessageClose() const;
@@ -70,11 +69,11 @@ public:
 	int MessageLoop(std::function<void()> closingCb);
 	void ProcessMessages(std::function<void(const Window::Message&)> cb, const bool resetQueue);
 
-	static void MsgBoxInfo(const HorseRadish::String &msg);
+	static void MsgBoxInfo(const std::string& msg);
 	static void MsgBoxInfo(const char * const msg);
-	static void MsgBoxWarn(const HorseRadish::String &msg);
+	static void MsgBoxWarn(const std::string& msg);
 	static void MsgBoxWarn(const char * const msg);
-	static void MsgBoxError(const HorseRadish::String &msg);
+	static void MsgBoxError(const std::string& msg);
 	static void MsgBoxError(const char * const msg);
 };
 
@@ -114,7 +113,7 @@ class OpenglContextImpl
 	bool auxWindowWGLExt(HINSTANCE hInstance, HMODULE openglModule);
 
 public:
-	OpenglContextImpl(const WindowImpl &window, const HorseRadish::hChar *openGLModuleName, int contextMajorVersion, int contextMinorVersion, bool contextDebug, bool contextForwardCompatible);
+	OpenglContextImpl(const WindowImpl &window, const std::string& openGLModuleName, int contextMajorVersion, int contextMinorVersion, bool contextDebug, bool contextForwardCompatible);
 	~OpenglContextImpl();
 
 	bool IsValid() const;

@@ -22,7 +22,6 @@ namespace HorseRadish { namespace Render { namespace Tools {
 
 int Font::sMumMaxChar = 512; //check out declaration of mState.charData
 unsigned short Font::sBufferPadding = 5;
-unsigned short Font::sPrimitiveRestartIndex = 65500;
 
 void Font::commitGL() const
 {
@@ -34,15 +33,14 @@ void Font::commitGL() const
 	assert(mState.paintStarted);
 
 	mGl.vertexArray.bind();
-	HorseRadish::OpenGL::glDrawRangeElements(GL_TRIANGLE_STRIP, 0, mState.numCharWritten * 4, mState.numCharWritten * 5, GL_UNSIGNED_SHORT, (void*)0);
+	HorseRadish::OpenGL::glDrawRangeElements(GL_TRIANGLES, 0, mState.numCharWritten * 4, mState.numCharWritten * 6, GL_UNSIGNED_SHORT, (void*)0);
 
 	mState.numCharWritten = 0;
 }
 
 bool Font::createCharData()
 {
-	int numCharPairs, numNormalChars, numExtraChars, curCharWrite;
-	HorseRadish::String strExtraChars;
+	int numCharPairs, numNormalChars, numExtraChars;
 
 	numCharPairs = sizeof(validFontCharacters) / sizeof(unsigned short);
 	if ((numCharPairs % 2) != 0)
@@ -59,24 +57,18 @@ bool Font::createCharData()
 	for (int curPair = 0; curPair < numCharPairs; curPair++)
 		numNormalChars += validFontCharacters[curPair * 2 + 1] - validFontCharacters[curPair * 2 + 0] + 1;
 
-	strExtraChars.Set(HorseRadish::String::Encoding::Windows, validAditionalFontCharacters);
-	numExtraChars = strExtraChars.GetSizeChars();
+	auto strExtraChars = HorseRadish::StringUtils::conv2UTF8(validAditionalFontCharacters);
 
-	mCharMap.reserve(numNormalChars + numExtraChars);
+	mCharMap.reserve(numNormalChars + (sizeof(validAditionalFontCharacters) / sizeof(wchar_t)));
 
-	curCharWrite = 0;
 	for (int curPair = 0; curPair < numCharPairs; curPair++)
 	{
-		for (int curCharIndex = validFontCharacters[curPair * 2 + 0]; curCharIndex <= validFontCharacters[curPair * 2 + 1]; curCharIndex++, curCharWrite++)
+		for (int curCharIndex = validFontCharacters[curPair * 2 + 0]; curCharIndex <= validFontCharacters[curPair * 2 + 1]; curCharIndex++)
 			mCharMap[curCharIndex];
 	}
 
-	assert(curCharWrite == numNormalChars);
-
-	for (int curCharIndex = 0; curCharIndex < numExtraChars; curCharIndex++, curCharWrite++)
-		mCharMap[curCharIndex];
-
-	assert(curCharWrite == mCharMap.size());
+	for (const auto& curChar : HorseRadish::StringUtils::utf8Wrapper(strExtraChars))
+		mCharMap[curChar];
 
 	return true;
 }
@@ -331,64 +323,64 @@ bool Font::initFont(const char * const fontFilePath)
 	return true;
 }
 
-void Font::internalWrite(const float &px, const float &py, HorseRadish::String::Iterator &strIt) const
+void Font::internalWrite(const float &px, const float &py, const std::string& text) const
 {
-	if (!mValid)
+	if (!mValid || text.empty())
 		return;
 
 	float posX = px;
 	float posY = py + (mFontInfo.baseHeight * mState.scale);
 
-	while (!strIt.IsLast())
+	unsigned char colorTemp[4];
+	mState.stateColor.Write(colorTemp);
+
+	auto writeData = mState.charData.data() + (mState.numCharWritten * 4);
+
+	unsigned int lastCharUnicode = 0;
+	for (const auto& curCharUnicode : StringUtils::utf8Wrapper(text))
 	{
-		auto writeData = mState.charData.data() + (mState.numCharWritten * 4);
+		if (curCharUnicode == 0)
+			break;
 
-		while (mState.numCharWritten < Font::sMumMaxChar)
+		std::unordered_map<unsigned short, CharacterData>::const_iterator it = mCharMap.find(curCharUnicode);
+		if (it == mCharMap.end())
+			continue;
+
+		const CharacterData& curCharData = it->second;
+		if (curCharData.skipDraw)
 		{
-			unsigned char colorTemp[4];
-
-			auto curCharUnicode = strIt.Read();
-			if (curCharUnicode == 0)
-				break;
-
-			std::unordered_map<unsigned short, CharacterData>::const_iterator it = mCharMap.find(curCharUnicode);
-			if (it == mCharMap.end())
-				continue;
-
-			const CharacterData& curCharData = it->second;
-
-			if (curCharData.skipDraw)
-			{
-				posX += curCharData.advanceX * mState.scale;
-				continue;
-			}
-
-			writeData[0].px = writeData[3].px = posX + curCharData.rect.offsetX * mState.scale;
-			writeData[1].px = writeData[2].px = writeData[0].px + curCharData.rect.width * mState.scale;
-			writeData[0].py = writeData[1].py = posY + curCharData.rect.offsetY * mState.scale;
-			writeData[2].py = writeData[3].py = writeData[0].py + curCharData.rect.height * mState.scale;
-
-			writeData[0].tu = writeData[3].tu = curCharData.rect.minUV[0];
-			writeData[1].tu = writeData[2].tu = curCharData.rect.maxUV[0];
-			writeData[0].tv = writeData[1].tv = curCharData.rect.minUV[1];
-			writeData[2].tv = writeData[3].tv = curCharData.rect.maxUV[1];
-
-			mState.stateColor.Write(colorTemp);
-			memcpy(writeData[0].rgba, colorTemp, sizeof(unsigned char) * 4);
-			memcpy(writeData[1].rgba, colorTemp, sizeof(unsigned char) * 4);
-			memcpy(writeData[2].rgba, colorTemp, sizeof(unsigned char) * 4);
-			memcpy(writeData[3].rgba, colorTemp, sizeof(unsigned char) * 4);
-
-			writeData += 4;
-			mState.numCharWritten++;
 			posX += curCharData.advanceX * mState.scale;
-
-			if (!mKerningData.empty())
-				posX += static_cast<float>(getCharKerning(curCharData, curCharUnicode, *strIt)) * mState.scale;
+			continue;
 		}
 
 		if (mState.numCharWritten >= Font::sMumMaxChar)
+		{
 			commitGL();
+			writeData = mState.charData.data() + (mState.numCharWritten * 4);
+		}
+		
+		if (lastCharUnicode && !mKerningData.empty())
+			posX += static_cast<float>(getCharKerning(curCharData, lastCharUnicode, curCharUnicode)) * mState.scale;
+		lastCharUnicode = curCharUnicode;
+
+		writeData[0].px = writeData[3].px = posX + curCharData.rect.offsetX * mState.scale;
+		writeData[1].px = writeData[2].px = writeData[0].px + curCharData.rect.width * mState.scale;
+		writeData[0].py = writeData[1].py = posY + curCharData.rect.offsetY * mState.scale;
+		writeData[2].py = writeData[3].py = writeData[0].py + curCharData.rect.height * mState.scale;
+
+		writeData[0].tu = writeData[3].tu = curCharData.rect.minUV[0];
+		writeData[1].tu = writeData[2].tu = curCharData.rect.maxUV[0];
+		writeData[0].tv = writeData[1].tv = curCharData.rect.minUV[1];
+		writeData[2].tv = writeData[3].tv = curCharData.rect.maxUV[1];
+
+		memcpy(writeData[0].rgba, colorTemp, sizeof(unsigned char) * 4);
+		memcpy(writeData[1].rgba, colorTemp, sizeof(unsigned char) * 4);
+		memcpy(writeData[2].rgba, colorTemp, sizeof(unsigned char) * 4);
+		memcpy(writeData[3].rgba, colorTemp, sizeof(unsigned char) * 4);
+
+		writeData += 4;
+		mState.numCharWritten++;
+		posX += curCharData.advanceX * mState.scale;
 	}
 }
 
@@ -429,18 +421,19 @@ Font::Font(const int fontSize, const char * const fontFilePath, unsigned int glV
 	glUniformMatrix = HorseRadish::OpenGL::glGetUniformLocation(glVertexProgramID, "transformationMatrix");
 
 	{
-		std::unique_ptr<unsigned short[]> fontIndexArray = std::unique_ptr<unsigned short[]>(new unsigned short[Font::sMumMaxChar * 5]);
+		std::unique_ptr<unsigned short[]> fontIndexArray = std::unique_ptr<unsigned short[]>(new unsigned short[Font::sMumMaxChar * 6]);
 		for (int i = 0, curIndex = 0; i < Font::sMumMaxChar; i++, curIndex += 4)
 		{
-			fontIndexArray[i * 5 + 0] = curIndex + 3;
-			fontIndexArray[i * 5 + 1] = curIndex + 0;
-			fontIndexArray[i * 5 + 2] = curIndex + 2;
-			fontIndexArray[i * 5 + 3] = curIndex + 1;
-			fontIndexArray[i * 5 + 4] = Font::sPrimitiveRestartIndex;
+			fontIndexArray[i * 6 + 0] = curIndex + 0;
+			fontIndexArray[i * 6 + 1] = curIndex + 1;
+			fontIndexArray[i * 6 + 2] = curIndex + 2;
+			fontIndexArray[i * 6 + 3] = curIndex + 0;
+			fontIndexArray[i * 6 + 4] = curIndex + 2;
+			fontIndexArray[i * 6 + 5] = curIndex + 3;
 		}
 
 		mGl.arrayBuffer.init(HorseRadish::OpenGL::Objects::Buffer::Type::ArrayBuffer, sizeof(Font::VertexDataLayout) * Font::sMumMaxChar * 4, HorseRadish::OpenGL::Objects::Buffer::UsageType::FrequentOnlyWrite);
-		mGl.elementArrayBuffer.init(HorseRadish::OpenGL::Objects::Buffer::Type::ElementArrayBuffer, fontIndexArray.get(), sizeof(unsigned short) * Font::sMumMaxChar * 5, HorseRadish::OpenGL::Objects::Buffer::UsageType::ServerStatic);
+		mGl.elementArrayBuffer.init(HorseRadish::OpenGL::Objects::Buffer::Type::ElementArrayBuffer, fontIndexArray.get(), sizeof(unsigned short) * Font::sMumMaxChar * 6, HorseRadish::OpenGL::Objects::Buffer::UsageType::ServerStatic);
 	}
 
 	mGl.vertexArray.init();
@@ -479,22 +472,12 @@ Font::~Font()
 	mCharMap.clear();
 }
 
-void Font::write(const float &px, const float &py, HorseRadish::String::Iterator &iterator) const
+void Font::write(const float &px, const float &py, const std::string& text) const
 {
-	internalWrite(px, py, iterator);
+	internalWrite(px, py, text);
 }
 
-void Font::write(HorseRadish::String::Iterator &iterator) const
-{
-	write(0.0f, 0.0f, iterator);
-}
-
-void Font::write(const float &px, const float &py, const HorseRadish::String &text) const
-{
-	internalWrite(px, py, HorseRadish::String::Iterator(text));
-}
-
-void Font::write(const HorseRadish::String &text) const
+void Font::write(const std::string& text) const
 {
 	write(0.0f, 0.0f, text);
 }
@@ -586,15 +569,15 @@ float Font::getCharWidth(const unsigned int &unicodeChar) const
 	return it->second.advanceX * mState.scale;
 }
 
-float Font::getStringWidth(const HorseRadish::String &text) const
+float Font::getStringWidth(const std::string& text) const
 {
-	if (!mValid || (text.GetSizeChars() == 0))
+	if (!mValid || text.empty())
 		return 0.0f;
 
 	float totalWidth = 0.0f;
-	for (HorseRadish::String::Iterator it(text); it.IsLast() == false; it++)
+	for (const auto& curCharUnicode : StringUtils::utf8Wrapper(text))
 	{
-		std::unordered_map<unsigned short, CharacterData>::const_iterator itChar = mCharMap.find(*it);
+		std::unordered_map<unsigned short, CharacterData>::const_iterator itChar = mCharMap.find(curCharUnicode);
 		if (itChar == mCharMap.end())
 			continue;
 
@@ -604,18 +587,22 @@ float Font::getStringWidth(const HorseRadish::String &text) const
 	return totalWidth * mState.scale;
 }
 
-float Font::getStringWidth(const HorseRadish::String &text, const unsigned int numMaxChar) const
+float Font::getStringWidth(const std::string& text, const unsigned int numMaxChar) const
 {
-	if (!mValid || (text.GetSizeChars() == 0) || (numMaxChar == 0))
+	if (!mValid || text.empty() || (numMaxChar == 0))
 		return 0.0f;
 
 	float totalWidth = 0.0f;
-	for (HorseRadish::String::Iterator it(text); it.IsLast() == false; it++)
+	unsigned int numChars = 0;
+
+	for (const auto& curCharUnicode : StringUtils::utf8Wrapper(text))
 	{
-		if (it.GetCaracterPosition() >= numMaxChar)
+		if (numChars >= numMaxChar)
 			break;
 
-		std::unordered_map<unsigned short, CharacterData>::const_iterator itChar = mCharMap.find(*it);
+		numChars++;
+
+		std::unordered_map<unsigned short, CharacterData>::const_iterator itChar = mCharMap.find(curCharUnicode);
 		if (itChar == mCharMap.end())
 			continue;
 
@@ -634,9 +621,6 @@ void Font::paintBegin(const float * const tranformationMatrix, float scale)
 	mGl.sampler.bind(0);
 	mGl.vertexArray.bind();
 
-	HorseRadish::OpenGL::glEnable(GL_PRIMITIVE_RESTART);
-	HorseRadish::OpenGL::glPrimitiveRestartIndex(Font::sPrimitiveRestartIndex);
-
 	HorseRadish::OpenGL::glProgramUniform1i(glFragmentProgramID, glUniformSampler, 0);
 	if (tranformationMatrix != nullptr)
 		HorseRadish::OpenGL::glProgramUniformMatrix4fv(glVertexProgramID, glUniformMatrix, 1, false, tranformationMatrix);
@@ -654,8 +638,6 @@ void Font::paintEnd()
 		return;
 
 	commitGL();
-
-	HorseRadish::OpenGL::glDisable(GL_PRIMITIVE_RESTART);
 
 	mState.paintStarted = false;
 }

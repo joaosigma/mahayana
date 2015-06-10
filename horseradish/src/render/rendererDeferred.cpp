@@ -190,7 +190,7 @@ namespace HorseRadish
 			if ((texture == nullptr) || (texture->type != 1))
 				return;
 
-			auto fileStream = fileSystem.FileRead(texture->filePath.GetData());
+			auto fileStream = fileSystem.FileRead(texture->filePath.c_str());
 			if (!fileStream)
 				return;
 
@@ -235,7 +235,7 @@ namespace HorseRadish
 			if ((texture == nullptr) || (texture->type != 3))
 				return;
 
-			auto fileStream = fileSystem.FileRead(texture->filePath.GetData());
+			auto fileStream = fileSystem.FileRead(texture->filePath.c_str());
 			if (!fileStream)
 				return;
 
@@ -321,9 +321,9 @@ namespace HorseRadish
 			this->fileSystem = fileSystem;
 
 			pathShaders.Set(HorseRadish::IO::Path::KnownPath::CurrentFolder);
-			pathShaders.Combine((HorseRadish::hChar*)"shaders");
+			pathShaders.Combine("shaders");
 
-			this->shadersWatchFolderID = this->fileSystem->WatchChangeCreate(pathShaders, false, HorseRadish::IO::FileSystem::FileLastWrite);
+			this->shadersWatchFolderID = this->fileSystem->WatchChangeCreate(pathShaders.str().c_str(), false, HorseRadish::IO::FileSystem::FileLastWrite);
 
 			//FBOs
 			fbos.texDeferredAlbedo.init(HorseRadish::OpenGL::Objects::Texture::Type::TexRectangle, HorseRadish::OpenGL::Objects::Texture::StorageType::RGBA_16F, renderWidth, renderHeight);

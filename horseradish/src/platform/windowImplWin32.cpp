@@ -2,7 +2,7 @@
 
 #if (defined(WIN32) || defined(_WIN32) || defined(__WIN32)) && !defined(__CYGWIN__)
 
-#include "common\UTF.hpp"
+#include "common\stringUtils.hpp"
 #include "common\opengl\openGL.hpp"
 
 #include <Windowsx.h>
@@ -223,7 +223,7 @@ WindowImpl::WindowImpl(HorseRadish::Engine::Logger &logger)
 	mRawInput.keysRealtime.fill(false);
 
 	memset(&this->originalDeviceMode, 0, sizeof(this->originalDeviceMode));
-	memset(this->className, 0, sizeof(this->className));
+	mClassName.clear();
 }
 
 WindowImpl::~WindowImpl()
@@ -235,18 +235,18 @@ std::string WindowImpl::GetErrorMsg() const
 	return errorMsg;
 }
 
-bool WindowImpl::WindowInit(const HorseRadish::hChar *windowTitle, const unsigned int winWidth, const unsigned int winHeight, const bool winFullscreen)
+bool WindowImpl::WindowInit(const std::string& windowTitle, const unsigned int winWidth, const unsigned int winHeight, const bool winFullscreen)
 {
 	DWORD dwExStyle, dwStyle;
 	RECT windowRect, desktopRect;
 
-	if (this->isInitialized == true)
+	if (this->isInitialized)
 	{
 		errorMsg = "window already initialized";
 		return false;
 	}
 
-	if ((windowTitle == nullptr) || (*windowTitle == '\0') || (winWidth == 0) || (winHeight == 0))
+	if (windowTitle.empty() || (winWidth == 0) || (winHeight == 0))
 	{
 		errorMsg = "incorrect data to properly create a window";
 		return false;
@@ -256,7 +256,7 @@ bool WindowImpl::WindowInit(const HorseRadish::hChar *windowTitle, const unsigne
 	windowRect.right = winWidth;
 	windowRect.bottom = winHeight;
 
-	HorseRadish::UTF::ConvertUTF8To("HorseRadish graphics engine...", HorseRadish::UTF::Encoding::Windows, this->className, sizeof(this->className));
+	mClassName = HorseRadish::StringUtils::conv2UTF16("HorseRadish graphics engine...");
 
 	this->hModule = GetModuleHandle(NULL); //safe since this is not a DLL
 
@@ -274,7 +274,7 @@ bool WindowImpl::WindowInit(const HorseRadish::hChar *windowTitle, const unsigne
 		windowClass.hCursor = nullptr;
 		windowClass.hbrBackground = nullptr;
 		windowClass.lpszMenuName = nullptr;
-		windowClass.lpszClassName = this->className;
+		windowClass.lpszClassName = mClassName.c_str();
 		if (RegisterClassEx(&windowClass) == 0)
 		{
 			errorMsg = "unable to register window class";
@@ -324,10 +324,9 @@ bool WindowImpl::WindowInit(const HorseRadish::hChar *windowTitle, const unsigne
 		desktopRect.bottom = desktopRect.left = desktopRect.right = desktopRect.top = 0;
 
 	{
-		wchar_t windowTitleWChar[256];
-		HorseRadish::UTF::ConvertUTF8To(windowTitle, HorseRadish::UTF::Encoding::Windows, windowTitleWChar, sizeof(windowTitleWChar));
+		auto windowTitleWChar = HorseRadish::StringUtils::conv2UTF16(windowTitle);
 
-		this->hWnd = CreateWindowEx(dwExStyle, this->className, windowTitleWChar, dwStyle, 
+		this->hWnd = CreateWindowEx(dwExStyle, mClassName.c_str(), windowTitleWChar.c_str(), dwStyle,
 			desktopRect.left + 5, desktopRect.top + 5, (windowRect.right - windowRect.left), (windowRect.bottom - windowRect.top),
 			HWND_DESKTOP, nullptr, this->hModule,
 			this);
@@ -336,7 +335,7 @@ bool WindowImpl::WindowInit(const HorseRadish::hChar *windowTitle, const unsigne
 		{
 			errorMsg = "unable to create window";
 
-			UnregisterClass(this->className, this->hModule);
+			UnregisterClass(mClassName.c_str(), this->hModule);
 			return false;
 		}
 	}
@@ -364,7 +363,7 @@ bool WindowImpl::WindowInit(const HorseRadish::hChar *windowTitle, const unsigne
 	return true;
 }
 
-bool WindowImpl::WindowEditorInit(const HorseRadish::hChar *windowTitle, const unsigned int winWidth, const unsigned int winHeight, const HWND handleWindowParent)
+bool WindowImpl::WindowEditorInit(const std::string& windowTitle, const unsigned int winWidth, const unsigned int winHeight, const HWND handleWindowParent)
 {
 	return false;
 }
@@ -463,7 +462,7 @@ int WindowImpl::MessageLoop(std::function<void()> closingCb)
 	}
 
 	//cleanup
-	if (UnregisterClass(this->className, this->hModule) == FALSE)
+	if (UnregisterClass(mClassName.c_str(), this->hModule) == FALSE)
 		mLogger.AddError(HorseRadish::Engine::Logger::ModuleType::Graphics, "Unable to unregister window class");
 
 	this->isInitialized = false;
@@ -483,52 +482,46 @@ void WindowImpl::ProcessMessages(std::function<void(const Window::Message&)> cb,
 		mEvents.queueSize = 0;
 }
 
-void WindowImpl::MsgBoxInfo(const HorseRadish::String &msg)
+void WindowImpl::MsgBoxInfo(const std::string& msg)
 {
-	wchar_t msgConverted[512];
+	auto msgWChar = HorseRadish::StringUtils::conv2UTF16(msg);
 
-	msg.Convert(HorseRadish::String::Encoding::Windows, msgConverted, sizeof(msgConverted));
-	MessageBox(nullptr, msgConverted, L"Info", MB_OK | MB_ICONINFORMATION);
+	MessageBox(nullptr, msgWChar.c_str(), L"Info", MB_OK | MB_ICONINFORMATION);
 }
 
 void WindowImpl::MsgBoxInfo(const char * const msg)
 {
-	HorseRadish::String msgConvertida;
+	auto msgWChar = HorseRadish::StringUtils::conv2UTF16(msg);
 
-	msgConvertida.Set(HorseRadish::String::Encoding::UTF8, msg);
-	WindowImpl::MsgBoxInfo(msgConvertida);
+	MessageBox(nullptr, msgWChar.c_str(), L"Info", MB_OK | MB_ICONINFORMATION);
 }
 
-void WindowImpl::MsgBoxWarn(const HorseRadish::String &msg)
+void WindowImpl::MsgBoxWarn(const std::string& msg)
 {
-	wchar_t msgConverted[512];
+	auto msgWChar = HorseRadish::StringUtils::conv2UTF16(msg);
 
-	msg.Convert(HorseRadish::String::Encoding::Windows, msgConverted, sizeof(msgConverted));
-	MessageBox(nullptr, msgConverted, L"Warning", MB_OK | MB_ICONWARNING);
+	MessageBox(nullptr, msgWChar.c_str(), L"Warning", MB_OK | MB_ICONWARNING);
 }
 
 void WindowImpl::MsgBoxWarn(const char * const msg)
 {
-	HorseRadish::String msgConverted;
+	auto msgWChar = HorseRadish::StringUtils::conv2UTF16(msg);
 
-	msgConverted.Set(HorseRadish::String::Encoding::UTF8, msg);
-	WindowImpl::MsgBoxWarn(msgConverted);
+	MessageBox(nullptr, msgWChar.c_str(), L"Warning", MB_OK | MB_ICONWARNING);
 }
 
-void WindowImpl::MsgBoxError(const HorseRadish::String &msg)
+void WindowImpl::MsgBoxError(const std::string& msg)
 {
-	wchar_t msgConverted[512];
+	auto msgWChar = HorseRadish::StringUtils::conv2UTF16(msg);
 
-	msg.Convert(HorseRadish::String::Encoding::Windows, msgConverted, sizeof(msgConverted));
-	MessageBox(nullptr, msgConverted, L"Error", MB_OK | MB_ICONERROR);
+	MessageBox(nullptr, msgWChar.c_str(), L"Error", MB_OK | MB_ICONERROR);
 }
 
 void WindowImpl::MsgBoxError(const char * const msg)
 {
-	HorseRadish::String msgConverted;
-
-	msgConverted.Set(HorseRadish::String::Encoding::UTF8, msg);
-	WindowImpl::MsgBoxError(msgConverted);
+	auto msgWChar = HorseRadish::StringUtils::conv2UTF16(msg);
+	
+	MessageBox(nullptr, msgWChar.c_str(), L"Error", MB_OK | MB_ICONERROR);
 }
 
 void OpenglContextImpl::loadWGLFunctions(HMODULE openglModule)
@@ -608,22 +601,21 @@ bool OpenglContextImpl::auxWindowWGLExt(HINSTANCE hInstance, HMODULE openglModul
 	return true;
 }
 
-OpenglContextImpl::OpenglContextImpl(const WindowImpl &window, const HorseRadish::hChar *openGLModuleName, int contextMajorVersion, int contextMinorVersion, bool contextDebug, bool contextForwardCompatible)
+OpenglContextImpl::OpenglContextImpl(const WindowImpl &window, const std::string& openGLModuleName, int contextMajorVersion, int contextMinorVersion, bool contextDebug, bool contextForwardCompatible)
 	: window(window)
 {
 	HMODULE openglModule;
 
-	if ( (this->window.hWnd == nullptr) || (openGLModuleName == nullptr) || (*openGLModuleName == '\0') || (contextMajorVersion < 3) || (contextMinorVersion < 0))
+	if ( (this->window.hWnd == nullptr) || openGLModuleName.empty() || (contextMajorVersion < 3) || (contextMinorVersion < 0))
 	{
 		errorMsg = "incorrect data to properly create a OpenGL context";
 		return;
 	}
 
 	{
-		wchar_t openGLModuleNameWChar[128];
-		HorseRadish::UTF::ConvertUTF8To(openGLModuleName, HorseRadish::UTF::Encoding::Windows, openGLModuleNameWChar, sizeof(openGLModuleNameWChar));
+		auto openGLModuleNameWChar = HorseRadish::StringUtils::conv2UTF16(openGLModuleName);
 
-		openglModule = GetModuleHandle(openGLModuleNameWChar);
+		openglModule = GetModuleHandle(openGLModuleNameWChar.c_str());
 		if (openglModule == nullptr)
 		{
 			errorMsg = "incorrect OpenGL module name";

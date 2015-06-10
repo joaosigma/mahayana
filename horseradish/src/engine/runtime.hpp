@@ -1,6 +1,7 @@
 #pragma once
 
 #include "logger.hpp"
+#include "common\stringUtils.hpp"
 
 #include <libs\squirrel\squirrel.h>
 
@@ -142,7 +143,7 @@ namespace HorseRadish { namespace Engine {
 
 				Runtime::parsePath(funcName, [&](const std::string& token, bool isLastToken) -> bool
 				{
-					std::wstring tokenWChar = std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t>().from_bytes(token);
+					auto tokenWChar = HorseRadish::StringUtils::conv2UTF16(token);
 
 					if (isLastToken)
 					{
@@ -220,7 +221,7 @@ namespace HorseRadish { namespace Engine {
 				auto pClass = new T(vm, instanceObj, ctx);
 
 				if (!ctx.mErrorThrown.empty())
-					return sq_throwerror(vm, std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t>().from_bytes(ctx.mErrorThrown).c_str());
+					return sq_throwerror(vm, HorseRadish::StringUtils::conv2UTF16(ctx.mErrorThrown).c_str());
 
 				sq_setinstanceup(vm, 1, pClass);
 				sq_setreleasehook(vm, 1, NativeClass<T>::vmDeleteClassInstance);
@@ -240,7 +241,7 @@ namespace HorseRadish { namespace Engine {
 				if (!SQ_SUCCEEDED(sq_getstring(vm, -1, &funcName)))
 					return sq_throwerror(vm, _SC("Internal error - func name not found"));
 
-				std::string utf8FuncName = std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t>().to_bytes(funcName);
+				auto utf8FuncName = HorseRadish::StringUtils::conv2UTF8(funcName);
 
 				auto funcTarget = NativeClass<T>::sFuncMap[utf8FuncName];
 				if (!funcTarget)
@@ -259,7 +260,7 @@ namespace HorseRadish { namespace Engine {
 				if (ctx.mReturnValueSet)
 					sq_pop(vm, 1);
 
-				return sq_throwerror(vm, std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t>().from_bytes(ctx.mErrorThrown).c_str());
+				return sq_throwerror(vm, HorseRadish::StringUtils::conv2UTF16(ctx.mErrorThrown).c_str());
 			}
 
 		public:
@@ -271,7 +272,7 @@ namespace HorseRadish { namespace Engine {
 			bool registerClassMethod(const char* const funcName, RegisteredClassFuncType funcCallback)
 			{
 				std::string funcNameStr(funcName);
-				std::wstring funcNameWChar = std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t>().from_bytes(funcNameStr);
+				std::wstring funcNameWChar = HorseRadish::StringUtils::conv2UTF16(funcNameStr);
 
 				sq_pushstring(mVM, funcNameWChar.c_str(), funcNameWChar.size());
 					sq_pushstring(mVM, funcNameWChar.c_str(), funcNameWChar.size()); //free var
@@ -285,7 +286,7 @@ namespace HorseRadish { namespace Engine {
 
 			bool registerClassTable(const char* const tableName)
 			{
-				std::wstring tableNameWChar = std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t>().from_bytes(std::string(tableName));
+				auto tableNameWChar = HorseRadish::StringUtils::conv2UTF16(tableName);
 
 				sq_pushstring(mVM, tableNameWChar.c_str(), tableNameWChar.size());
 				sq_newtable(mVM);
@@ -297,7 +298,7 @@ namespace HorseRadish { namespace Engine {
 
 			bool registerClassVar(const char* const varName)
 			{
-				std::wstring varNameWChar = std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t>().from_bytes(std::string(varName));
+				auto varNameWChar = HorseRadish::StringUtils::conv2UTF16(varName);
 
 				sq_pushstring(mVM, varNameWChar.c_str(), varNameWChar.size());
 				sq_pushnull(mVM);

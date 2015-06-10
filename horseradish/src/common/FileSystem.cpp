@@ -3,8 +3,8 @@
 #include "Math.hpp"
 #include "Hashing.hpp"
 #include "Sorting.hpp"
-#include "UTF.hpp"
 #include "Types.hpp"
+#include "stringUtils.hpp"
 
 #include <algorithm>
 
@@ -19,7 +19,7 @@ int ZCALLBACK zerror(voidpf opaque, voidpf stream)
 static
 voidpf ZCALLBACK zopen(voidpf opaque, const char* filename, int mode)
 {
-	auto fileStream = new HorseRadish::Streams::FileStream((const HorseRadish::hChar*)filename, true, false);
+	auto fileStream = new HorseRadish::Streams::FileStream(filename, true, false);
 	
 	return ((voidpf)fileStream);
 }
@@ -88,7 +88,7 @@ namespace HorseRadish
 {
 	namespace IO
 	{
-		FileSystem::MountData::MountData(const HorseRadish::hChar * const mountPoint)
+		FileSystem::MountData::MountData(const char* const mountPoint)
 		{
 			this->mountPoint.Set(mountPoint);
 		}
@@ -97,7 +97,7 @@ namespace HorseRadish
 			this->mountPoint.Clear();
 		}
 
-		FileSystem::MountDataPath::MountDataPath(const HorseRadish::hChar * const baseFolder, const HorseRadish::hChar * const mountPoint)
+		FileSystem::MountDataPath::MountDataPath(const char* const baseFolder, const char* const mountPoint)
 			: MountData(mountPoint)
 		{
 			this->baseFolder.Set(baseFolder);
@@ -117,14 +117,14 @@ namespace HorseRadish
 		{
 		}
 
-		std::unique_ptr<Streams::Stream> FileSystem::MountDataPath::FileRead(const HorseRadish::hChar * const filePath)
+		std::unique_ptr<Streams::Stream> FileSystem::MountDataPath::FileRead(const char* const filePath)
 		{
 			HorseRadish::IO::Path pathFinal;
 
-			pathFinal.Set(this->baseFolder);
-			pathFinal += (const HorseRadish::hChar*)filePath;
+			pathFinal = this->baseFolder;
+			pathFinal += filePath;
 
-			auto fileStream = std::unique_ptr<Streams::FileStream>(new Streams::FileStream(pathFinal, true, false));
+			auto fileStream = std::unique_ptr<Streams::FileStream>(new Streams::FileStream(pathFinal.str(), true, false));
 
 			if (fileStream->IsValid() == false)
 				std::unique_ptr<Streams::FileStream>();
@@ -132,17 +132,17 @@ namespace HorseRadish
 			return std::move(fileStream);
 		}
 
-		bool FileSystem::MountDataPath::FileExists(const HorseRadish::hChar * const filePath)
+		bool FileSystem::MountDataPath::FileExists(const char* const filePath)
 		{
 			HorseRadish::IO::Path pathFinal;
 
-			pathFinal.Set(this->baseFolder);
-			pathFinal += (const HorseRadish::hChar*)filePath;
+			pathFinal = this->baseFolder;
+			pathFinal += filePath;
 
-			return FileSystem::FileExists(pathFinal);
+			return FileSystem::FileExists(pathFinal.str().c_str());
 		}
 
-		FileSystem::MountDataZip::MountDataZip(const HorseRadish::hChar * const zipPath, const HorseRadish::hChar * const mountPoint)
+		FileSystem::MountDataZip::MountDataZip(const char* const zipPath, const char* const mountPoint)
 			: MountData(mountPoint)
 			, zipFile(nullptr), numFolders(0), numFiles(0)
 		{
@@ -153,7 +153,7 @@ namespace HorseRadish
 
 			overloadZLibIO(&zlibAPI);
 
-			this->zipFile = unzOpen2(this->zipPath.GetData(), &zlibAPI);
+			this->zipFile = unzOpen2(this->zipPath.str().c_str(), &zlibAPI);
 			if (this->zipFile == nullptr)
 				return;
 
@@ -235,7 +235,7 @@ namespace HorseRadish
 		{
 		}
 
-		std::unique_ptr<Streams::Stream> FileSystem::MountDataZip::FileRead(const HorseRadish::hChar * const filePath)
+		std::unique_ptr<Streams::Stream> FileSystem::MountDataZip::FileRead(const char* const filePath)
 		{
 			if ((filePath == nullptr) || (*filePath == '\0'))
 				return std::unique_ptr<Streams::Stream>();
@@ -266,7 +266,7 @@ namespace HorseRadish
 			return std::move(memStream);
 		}
 
-		bool FileSystem::MountDataZip::FileExists(const HorseRadish::hChar * const filePath)
+		bool FileSystem::MountDataZip::FileExists(const char* const filePath)
 		{
 			if ((filePath == nullptr) || (*filePath == '\0'))
 				return false;
@@ -301,21 +301,19 @@ namespace HorseRadish
 			this->maxNumMounts = 0;
 		}
 
-		void FileSystem::FindFiles(const HorseRadish::hChar * const baseFolderAndFilter, const bool returnFilesFullPath, std::function<void(const HorseRadish::IO::Path &filePath, const HorseRadish::hUInt64 &fileSize)> actionFileFound)
+		void FileSystem::FindFiles(const std::string& baseFolderAndFilter, const bool returnFilesFullPath, std::function<void(const HorseRadish::IO::Path &filePath, const HorseRadish::hUInt64 &fileSize)> actionFileFound)
 		{
 			HANDLE handleFind;
 			WIN32_FIND_DATA findData;
-			HorseRadish::String filePath;
 			HorseRadish::IO::Path basePath, fileFinalPath;
 
-			if ((baseFolderAndFilter == nullptr) || (actionFileFound == nullptr))
+			if (baseFolderAndFilter.empty() || (actionFileFound == nullptr))
 				return;
 
 			{
-				wchar_t baseFolderAndFilterWChar[256];
-				HorseRadish::UTF::ConvertUTF8To(baseFolderAndFilter, HorseRadish::UTF::Encoding::Windows, baseFolderAndFilterWChar, sizeof(baseFolderAndFilterWChar));
+				auto baseFolderAndFilterWChar = HorseRadish::StringUtils::conv2UTF16(baseFolderAndFilter);
 
-				handleFind = FindFirstFile(baseFolderAndFilterWChar, &findData);
+				handleFind = FindFirstFile(baseFolderAndFilterWChar.c_str(), &findData);
 				if (handleFind == INVALID_HANDLE_VALUE)
 					return;
 			}
@@ -328,13 +326,13 @@ namespace HorseRadish
 				if (findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
 					continue;
 
-				filePath.Set(HorseRadish::String::Encoding::Windows, findData.cFileName);
+				auto filePath = HorseRadish::StringUtils::conv2UTF8(findData.cFileName);
 
 				HorseRadish::hUInt64 fileSize = (findData.nFileSizeHigh * (MAXDWORD + 1)) + findData.nFileSizeLow;
 
 				if (returnFilesFullPath == true)
 				{
-					fileFinalPath.Set(basePath);
+					fileFinalPath = basePath;
 					fileFinalPath.Combine(filePath);
 				}
 				else
@@ -350,7 +348,7 @@ namespace HorseRadish
 			FindClose(handleFind);
 		}
 
-		bool FileSystem::FileExists(const HorseRadish::hChar * const filePath)
+		bool FileSystem::FileExists(const char* const filePath)
 		{
 			DWORD fileAtributes;
 
@@ -358,10 +356,9 @@ namespace HorseRadish
 				return false;
 
 			{
-				wchar_t filePathWChar[256];
-				HorseRadish::UTF::ConvertUTF8To(filePath, HorseRadish::UTF::Encoding::Windows, filePathWChar, sizeof(filePathWChar));
+				auto filePathWChar = HorseRadish::StringUtils::conv2UTF16(filePath);
 
-				fileAtributes = GetFileAttributes(filePathWChar);
+				fileAtributes = GetFileAttributes(filePathWChar.c_str());
 			}
 
 			if (fileAtributes == INVALID_FILE_ATTRIBUTES)
@@ -373,21 +370,21 @@ namespace HorseRadish
 			return true;
 		}
 
-		bool FileSystem::MountPath(const HorseRadish::IO::Path &baseFolder, const HorseRadish::hChar * const mountPoint)
+		bool FileSystem::MountPath(const HorseRadish::IO::Path &baseFolder, const char* const mountPoint)
 		{
 			if (this->listMounts.size() >= this->maxNumMounts)
 				return false;
 
-			this->listMounts.push_back(std::unique_ptr<MountDataPath>(new MountDataPath(baseFolder, mountPoint)));
+			this->listMounts.push_back(std::unique_ptr<MountDataPath>(new MountDataPath(baseFolder.str().c_str(), mountPoint)));
 			return true;
 		}
 
-		bool FileSystem::MountZip(const HorseRadish::IO::Path &zipPath, const HorseRadish::hChar * const mountPoint, int * const numFilesZip)
+		bool FileSystem::MountZip(const HorseRadish::IO::Path &zipPath, const char* const mountPoint, int * const numFilesZip)
 		{
 			if (this->listMounts.size() >= this->maxNumMounts)
 				return false;
 
-			this->listMounts.push_back(std::unique_ptr<MountDataZip>(new MountDataZip(zipPath, mountPoint)));
+			this->listMounts.push_back(std::unique_ptr<MountDataZip>(new MountDataZip(zipPath.str().c_str(), mountPoint)));
 
 			if (numFilesZip != nullptr)
 				*numFilesZip = static_cast<MountDataZip*>(this->listMounts[this->listMounts.size() - 1].get())->GetNumberFiles();
@@ -402,10 +399,10 @@ namespace HorseRadish
 
 			for (auto& curMount : this->listMounts)
 			{
-				if ((curMount->GetMountType() == FileSystem::MountTypePath) && (curMount->FileExists(reinterpret_cast<const HorseRadish::hChar*>(filePath)) == false))
+				if ((curMount->GetMountType() == FileSystem::MountTypePath) && (curMount->FileExists(filePath) == false))
 					continue;
 
-				return curMount->FileRead(reinterpret_cast<const HorseRadish::hChar*>(filePath));
+				return curMount->FileRead(filePath);
 			}
 
 			return std::unique_ptr<Streams::Stream>();
@@ -421,10 +418,10 @@ namespace HorseRadish
 				if (curMount->GetMountType() != mountType)
 					continue;
 
-				if ((curMount->GetMountType() == FileSystem::MountTypePath) && (curMount->FileExists(reinterpret_cast<const HorseRadish::hChar*>(filePath)) == false))
+				if ((curMount->GetMountType() == FileSystem::MountTypePath) && (curMount->FileExists(filePath) == false))
 					continue;
 
-				return curMount->FileRead(reinterpret_cast<const HorseRadish::hChar*>(filePath));
+				return curMount->FileRead(filePath);
 			}
 
 			return std::unique_ptr<Streams::Stream>();
@@ -443,7 +440,7 @@ namespace HorseRadish
 			return fileData->toStr();
 		}
 
-		int FileSystem::WatchChangeCreate(const HorseRadish::hChar * const baseFolder, bool includeSubFolders, const FileSystem::ChangeType changeType)
+		int FileSystem::WatchChangeCreate(const char* const baseFolder, bool includeSubFolders, const FileSystem::ChangeType changeType)
 		{
 			HANDLE handleChange;
 
@@ -451,8 +448,7 @@ namespace HorseRadish
 				return -1;
 
 			{
-				wchar_t baseFolderWChar[256];
-				HorseRadish::UTF::ConvertUTF8To(baseFolder, HorseRadish::UTF::Encoding::Windows, baseFolderWChar, sizeof(baseFolderWChar));
+				auto baseFolderWChar = HorseRadish::StringUtils::conv2UTF16(baseFolder);
 
 				DWORD changeFlags = 0;
 				if (changeType & FileName)
@@ -462,7 +458,7 @@ namespace HorseRadish
 				if (changeType & FileLastWrite)
 					changeFlags = FILE_NOTIFY_CHANGE_LAST_WRITE;
 
-				handleChange = FindFirstChangeNotification(baseFolderWChar, includeSubFolders ? TRUE : FALSE, changeFlags);
+				handleChange = FindFirstChangeNotification(baseFolderWChar.c_str(), includeSubFolders ? TRUE : FALSE, changeFlags);
 				if (handleChange == INVALID_HANDLE_VALUE)
 					return 0;
 			}

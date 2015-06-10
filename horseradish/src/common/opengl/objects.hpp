@@ -8,6 +8,7 @@
 
 #include "common\Math.hpp"
 
+#include <vector>
 #include <cassert>
 
 namespace HorseRadish { namespace OpenGL { namespace Objects {

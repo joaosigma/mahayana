@@ -1,4 +1,4 @@
-#ifdef HR_VS_MEMORY_LEAKS
+﻿#ifdef HR_VS_MEMORY_LEAKS
 	#define _CRTDBG_MAP_ALLOC
 	#define _CRTDBG_MAPALLOC
 	#include <stdlib.h>
@@ -6,10 +6,9 @@
 #endif
 
 #include "common\platform.hpp"
-#include "engine\engine.hpp"
+#include "common\stringUtils.hpp"
 
-#include <locale>
-#include <codecvt>
+#include "engine\engine.hpp"
 
 int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PWSTR lpCmdLine, int nCmdShow)
 {
@@ -52,7 +51,7 @@ int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PWSTR lpCmdLine, int n
 	_clearfp(); //clear previous exceptions
 #endif
 
-	auto cmdLine = std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t>().to_bytes(lpCmdLine);
+	auto cmdLine = HorseRadish::StringUtils::conv2UTF8(lpCmdLine);
 	
 	HorseRadish::Engine::Engine engine(cmdLine);
 	auto success = engine.MainLoop();

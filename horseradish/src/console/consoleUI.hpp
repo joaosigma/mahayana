@@ -2,7 +2,6 @@
 
 #include "common\Platform.hpp"
 #include "common\Timer.hpp"
-#include "common\String.hpp"
 #include "common\Primitives2D.hpp"
 #include "common\opengl\objects.hpp"
 #include "common\openGL\tools\viewport.hpp"
@@ -12,6 +11,7 @@
 
 #include "engine\logger.hpp"
 
+#include <string>
 #include <vector>
 
 namespace HorseRadish
@@ -69,7 +69,7 @@ namespace HorseRadish
 			class ConsoleTabConsole : public ConsoleGUI::ConsoleTab
 			{
 				struct LINHA_TEXTO{
-					HorseRadish::String texto;
+					std::string texto;
 					bool active, formatted;
 					Engine::Logger::EntryType type;
 				}*listaTexto;

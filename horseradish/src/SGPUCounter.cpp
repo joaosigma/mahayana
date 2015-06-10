@@ -12,18 +12,18 @@ SGPUCounter::SGPUCounter(unsigned int maxSaveSamples)
 SGPUCounter::~SGPUCounter()
 {	reset();}
 
-bool SGPUCounter::addCounter(const char * const counterName)
+bool SGPUCounter::addCounter(const std::string& counterName)
 {	return addCounter(counterName, false, 1.0f, 1.0f, 1.0f);}
 
-bool SGPUCounter::addCounter(const char * const counterName, bool isPercent)
+bool SGPUCounter::addCounter(const std::string& counterName, bool isPercent)
 {	return addCounter(counterName, isPercent, 1.0f, 1.0f, 1.0f);}
 
-bool SGPUCounter::addCounter(const char * const counterName, const float r, const float g, const float b)
+bool SGPUCounter::addCounter(const std::string& counterName, const float r, const float g, const float b)
 {	return addCounter(counterName, false, 1.0f, 1.0f, 1.0f);}
 
-bool SGPUCounter::addCounter(const char * const counterName, bool isPercent, const float r, const float g, const float b)
+bool SGPUCounter::addCounter(const std::string& counterName, bool isPercent, const float r, const float g, const float b)
 {
-	if (counterName==nullptr || *counterName=='\0')
+	if (counterName.empty())
 		return false;
 
 	auto valuesArray = new float[numMaxSamples];
@@ -32,15 +32,15 @@ bool SGPUCounter::addCounter(const char * const counterName, bool isPercent, con
 	auto& newCounter = this->arrayCounters[this->arrayCounters.size() - 1];
 
 	newCounter.isPercent = isPercent;
-	newCounter.index=0;
-	newCounter.name.Set(HorseRadish::String::Encoding::UTF8, counterName);
-	newCounter.values=valuesArray;
+	newCounter.index = 0;
+	newCounter.name = counterName;
+	newCounter.values = valuesArray;
 	newCounter.minValue = HorseRadish::Math::INFINITY;
 	newCounter.maxValue = -HorseRadish::Math::INFINITY;
-	newCounter.color[0]=r;
-	newCounter.color[1]=g;
-	newCounter.color[2]=b;
-	newCounter.color[3]=1.0f;
+	newCounter.color[0] = r;
+	newCounter.color[1] = g;
+	newCounter.color[2] = b;
+	newCounter.color[3] = 1.0f;
 	memset(newCounter.values, 0, sizeof(float)*numMaxSamples);
 	return true;
 }
@@ -54,8 +54,11 @@ void SGPUCounter::reset()
 	this->curSample = 0;
 }
 
-void SGPUCounter::sampleCounter(const char * const counterName, const float &newSample)
+void SGPUCounter::sampleCounter(const std::string& counterName, const float &newSample)
 {
+	if (counterName.empty())
+		return;
+
 	for (auto &counter : this->arrayCounters)
 	{
 		if (counter.name != counterName)
@@ -84,17 +87,17 @@ void SGPUCounter::sampleMoveNext()
 	}
 }
 
-const char* SGPUCounter::getCounterName(const unsigned int counterNumber) const
+std::string SGPUCounter::getCounterName(const unsigned int counterNumber) const
 {
 	if (counterNumber==0 || counterNumber>this->arrayCounters.size())
 		return nullptr;
 
-	return this->arrayCounters[counterNumber-1].name.GetData();
+	return this->arrayCounters[counterNumber-1].name;
 }
 
-unsigned int SGPUCounter::getCounterNumber(const char * const counterName) const
+unsigned int SGPUCounter::getCounterNumber(const std::string& counterName) const
 {
-	if (counterName==nullptr || *counterName=='\0')
+	if (counterName.empty())
 		return 0;
 
 	for(unsigned int i = 0; i < this->arrayCounters.size(); i++)

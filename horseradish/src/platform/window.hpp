@@ -1,7 +1,6 @@
 #pragma once
 
 #include "..\engine\logger.hpp"
-#include "common\String.hpp"
 #include "common\Vector.hpp"
 #include "common\opengl\objects.hpp"
 
@@ -84,8 +83,8 @@ public:
 
 	std::string GetErrorMsg() const;
 
-	bool WindowInit(const HorseRadish::hChar *windowTitle, const unsigned int winWidth, const unsigned int winHeight, const bool winFullscreen);
-	bool WindowEditorInit(const HorseRadish::hChar *windowTitle, const unsigned int winWidth, const unsigned int winHeight, const HWND handleWindowParent);
+	bool WindowInit(const std::string& windowTitle, const unsigned int winWidth, const unsigned int winHeight, const bool winFullscreen);
+	bool WindowEditorInit(const std::string& windowTitle, const unsigned int winWidth, const unsigned int winHeight, const HWND handleWindowParent);
 
 	bool SetWindowAlpha(const unsigned char &valorAlpha) const;
 	bool SendMessageClose() const;
@@ -99,11 +98,11 @@ public:
 	int MessageLoop(std::function<void()> closingCb);
 	void ProcessMessages(std::function<void(const Message&)> cb, const bool resetQueue);
 
-	static void MsgBoxInfo(const HorseRadish::String &msg);
+	static void MsgBoxInfo(const std::string& msg);
 	static void MsgBoxInfo(const char * const msg);
-	static void MsgBoxWarn(const HorseRadish::String &msg);
+	static void MsgBoxWarn(const std::string& msg);
 	static void MsgBoxWarn(const char * const msg);
-	static void MsgBoxError(const HorseRadish::String &msg);
+	static void MsgBoxError(const std::string& msg);
 	static void MsgBoxError(const char * const msg);
 };
 
@@ -114,7 +113,7 @@ private:
 	std::unique_ptr<OpenglContextImpl> mImpl;
 
 public:
-	OpenglContext(const Window &window, const HorseRadish::hChar *openGLModuleName, int contextMajorVersion, int contextMinorVersion, bool contextDebug, bool contextForwardCompatible);
+	OpenglContext(const Window &window, const std::string& openGLModuleName, int contextMajorVersion, int contextMinorVersion, bool contextDebug, bool contextForwardCompatible);
 	~OpenglContext();
 
 	bool IsValid() const;

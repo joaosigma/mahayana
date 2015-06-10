@@ -1,7 +1,7 @@
 #include "Stream.hpp"
 
 #include "ScopedAction.hpp"
-#include "UTF.hpp"
+#include "stringUtils.hpp"
 
 namespace HorseRadish
 {
@@ -76,7 +76,7 @@ namespace HorseRadish
 			return (this->dataWalker < this->dataEnd);
 		}
 
-		bool MemoryStream::CanRead(int numBytes) const
+		bool MemoryStream::CanRead(unsigned int numBytes) const
 		{
 			if (this->CanRead() == false)
 				return false;
@@ -92,7 +92,7 @@ namespace HorseRadish
 			return this->canWrite;
 		}
 
-		bool MemoryStream::CanWrite(int numBytes) const
+		bool MemoryStream::CanWrite(unsigned int numBytes) const
 		{
 			return this->canWrite;
 		}
@@ -242,7 +242,7 @@ namespace HorseRadish
 			return finalStr;
 		}
 
-		bool FileStream::openFile(const HorseRadish::hChar * const filePath, bool toRead, bool toWrite)
+		bool FileStream::openFile(const std::string& filePath, bool toRead, bool toWrite)
 		{
 			this->toRead = toRead;
 			this->toWrite = toWrite;
@@ -253,15 +253,14 @@ namespace HorseRadish
 			if ((toRead == false) && (toWrite == false))
 				return false;
 
-			wchar_t filePathWChar[128];
-			HorseRadish::UTF::ConvertUTF8To(filePath, HorseRadish::UTF::Encoding::Windows, filePathWChar, sizeof(filePathWChar));
+			auto filePathWChar = HorseRadish::StringUtils::conv2UTF16(filePath);
 
 			if ((toRead == true) && (toWrite == true))
-				this->fileHandle = CreateFile(filePathWChar, GENERIC_READ | GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
+				this->fileHandle = CreateFile(filePathWChar.c_str(), GENERIC_READ | GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
 			else if (toRead == true)
-				this->fileHandle = CreateFile(filePathWChar, GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+				this->fileHandle = CreateFile(filePathWChar.c_str(), GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
 			else if (toWrite == true)
-				this->fileHandle = CreateFile(filePathWChar, GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
+				this->fileHandle = CreateFile(filePathWChar.c_str(), GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
 
 			if (this->fileHandle == INVALID_HANDLE_VALUE)
 			{
@@ -284,7 +283,7 @@ namespace HorseRadish
 			stream.closed = true;
 		}
 
-		FileStream::FileStream(const HorseRadish::hChar * const filePath, bool toRead, bool toWrite)
+		FileStream::FileStream(const std::string& filePath, bool toRead, bool toWrite)
 		{
 			this->toRead = this->toWrite = false;
 			this->closed = false;
@@ -328,7 +327,7 @@ namespace HorseRadish
 			return (SetFilePointer(this->fileHandle, 0, nullptr, FILE_CURRENT) < GetFileSize(this->fileHandle, nullptr));
 		}
 
-		bool FileStream::CanRead(int numBytes) const
+		bool FileStream::CanRead(unsigned int numBytes) const
 		{
 			if (closed == true)
 				return false;
@@ -347,7 +346,7 @@ namespace HorseRadish
 			return (this->toWrite);
 		}
 
-		bool FileStream::CanWrite(int numBytes) const
+		bool FileStream::CanWrite(unsigned int numBytes) const
 		{
 			return (this->CanWrite());
 		}
@@ -534,19 +533,18 @@ namespace HorseRadish
 			return std::unique_ptr<MemoryStream>(new MemoryStream(outBuffer, outBufferSize, false, MemoryStream::ManagementType::ManagedStatic));
 		}
 
-		std::unique_ptr<MemoryStream> FileStream::ReadEntireFile(const HorseRadish::hChar * const filePath)
+		std::unique_ptr<MemoryStream> FileStream::ReadEntireFile(const std::string& filePath)
 		{
 			HANDLE fileHandle;
 			DWORD bytesRead;
 
-			if (filePath == nullptr)
+			if (filePath.empty())
 				return std::unique_ptr<MemoryStream>();
 
 			{
-				wchar_t filePathWChar[128];
-				HorseRadish::UTF::ConvertUTF8To(filePath, HorseRadish::UTF::Encoding::Windows, filePathWChar, sizeof(filePathWChar));
+				auto filePathWChar = HorseRadish::StringUtils::conv2UTF16(filePath);
 
-				fileHandle = CreateFile(filePathWChar, GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+				fileHandle = CreateFile(filePathWChar.c_str(), GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
 				if (fileHandle == INVALID_HANDLE_VALUE)
 					return std::unique_ptr<MemoryStream>();
 			}
@@ -570,21 +568,20 @@ namespace HorseRadish
 			return std::unique_ptr<MemoryStream>(new MemoryStream(outBuffer, outBufferSize, false, MemoryStream::ManagementType::ManagedStatic));
 		}
 
-		HorseRadish::String FileStream::ReadEntireFileAsString(const HorseRadish::hChar * const filePath)
+		std::string FileStream::ReadEntireFileAsString(const std::string& filePath)
 		{
 			HANDLE fileHandle;
 			DWORD bytesRead;
 
-			if (filePath == nullptr)
-				return HorseRadish::String();
+			if (filePath.empty())
+				return std::string();
 
 			{
-				wchar_t filePathWChar[128];
-				HorseRadish::UTF::ConvertUTF8To(filePath, HorseRadish::UTF::Encoding::Windows, filePathWChar, sizeof(filePathWChar));
+				auto filePathWChar = HorseRadish::StringUtils::conv2UTF16(filePath);
 
-				fileHandle = CreateFile(filePathWChar, GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+				fileHandle = CreateFile(filePathWChar.c_str(), GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
 				if (fileHandle == INVALID_HANDLE_VALUE)
-					return HorseRadish::String();
+					return std::string();
 			}
 
 			ScopedAction scopedAction([&]()
@@ -593,31 +590,28 @@ namespace HorseRadish
 			});
 
 			auto outBufferSize = GetFileSize(fileHandle, nullptr);
-			auto finalString = HorseRadish::String();
+			
+			std::unique_ptr<char[]> tmpBuffer(new char[outBufferSize]);
 
-			finalString.Capacity(outBufferSize + 1);
-
-			if ((ReadFile(fileHandle, (void*)finalString.GetData(), outBufferSize, &bytesRead, nullptr) == 0) || (outBufferSize != bytesRead))
-				return HorseRadish::String();
-
-			finalString.SetFromBuffer(finalString.GetData(), outBufferSize);
-			return finalString;
+			if ((ReadFile(fileHandle, tmpBuffer.get(), outBufferSize, &bytesRead, nullptr) == 0) || (outBufferSize != bytesRead))
+				return std::string();
+			
+			return std::string(tmpBuffer.get(), outBufferSize);
 		}
 
-		bool FileStream::StreamDump(Stream* stream, const HorseRadish::hChar * const filePath)
+		bool FileStream::StreamDump(Stream* stream, const std::string& filePath)
 		{
 			HANDLE fileHandle;
 			DWORD bytesWritten;
 			unsigned char auxBuffer[1024];
 
-			if ((stream == nullptr) || (stream->CanRead() == false) || (filePath == nullptr))
+			if ((stream == nullptr) || (stream->CanRead() == false) || (filePath.empty()))
 				return false;
 
 			{
-				wchar_t filePathWChar[256];
-				HorseRadish::UTF::ConvertUTF8To(filePath, HorseRadish::UTF::Encoding::Windows, filePathWChar, sizeof(filePathWChar));
+				auto filePathWChar = HorseRadish::StringUtils::conv2UTF16(filePath);
 
-				fileHandle = CreateFile(filePathWChar, GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
+				fileHandle = CreateFile(filePathWChar.c_str(), GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
 				if (fileHandle == nullptr)
 					return false;
 			}

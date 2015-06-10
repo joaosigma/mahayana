@@ -378,7 +378,7 @@ namespace HorseRadish
 					streamWriter->WriteInt16(curTex.filter);
 					streamWriter->WriteInt32(curTex.flags);
 
-					streamWriter->WriteString(curTex.filePath.GetData(), true);
+					streamWriter->WriteString(curTex.filePath.c_str(), true);
 				}
 			}
 
@@ -431,7 +431,7 @@ namespace HorseRadish
 					streamReader->ReadInt32(curTex.flags);
 
 					streamReader->ReadUntil(texPath, sizeof(texPath), '\0');
-					curTex.filePath.Set(HorseRadish::String::Encoding::UTF8, texPath);
+					curTex.filePath = texPath;
 				}
 			}
 
@@ -457,7 +457,7 @@ namespace HorseRadish
 				if (curSurf.material == nullptr)
 					streamWriter->WriteInt8(0);
 				else
-					streamWriter->WriteString(curSurf.material->materialLib->nomeMaterial.GetData(), true);
+					streamWriter->WriteString(curSurf.material->materialLib->nomeMaterial.c_str(), true);
 
 				streamWriter->WriteInt32(curSurf.geometry->id);
 				streamWriter->WriteInt32(curSurf.texSet->id);

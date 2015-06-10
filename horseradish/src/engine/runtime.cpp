@@ -1,7 +1,7 @@
 #include "runtime.hpp"
 
 #include "common\Stream.hpp"
-#include "common\String.hpp"
+#include "common\stringUtils.hpp"
 
 #include <libs\cppformat\format.h>
 #include <libs\squirrel\sqstdblob.h>
@@ -97,7 +97,7 @@ namespace HorseRadish
 			if (!SQ_SUCCEEDED(sq_getstring(mSqvm, paramIndex + 2, &sqVal)))
 				return false;
 
-			value = std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t>().to_bytes(sqVal);
+			value = HorseRadish::StringUtils::conv2UTF8(sqVal);
 			return true;
 		}
 
@@ -146,7 +146,7 @@ namespace HorseRadish
 			if (mReturnValueSet || !mErrorThrown.empty())
 				return;
 
-			sq_pushstring(mSqvm, std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t>().from_bytes(value).c_str(), -1);
+			sq_pushstring(mSqvm, HorseRadish::StringUtils::conv2UTF16(value).c_str(), -1);
 			mReturnValueSet = true;
 		}
 
@@ -155,7 +155,7 @@ namespace HorseRadish
 			if (mReturnValueSet || !mErrorThrown.empty())
 				return;
 
-			auto valueWChar = std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t>().from_bytes(value);
+			auto valueWChar = HorseRadish::StringUtils::conv2UTF16(value);
 
 			sq_pushstring(mSqvm, valueWChar.c_str(), valueWChar.size());
 			mReturnValueSet = true;
@@ -240,7 +240,7 @@ namespace HorseRadish
 			int curIndex = 0;
 			for (const auto& value : values)
 			{
-				auto valueWChar = std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t>().from_bytes(value);
+				auto valueWChar = HorseRadish::StringUtils::conv2UTF16(value);
 
 				sq_pushinteger(mSqvm, curIndex);
 				sq_pushstring(mSqvm, valueWChar.c_str(), valueWChar.size());
@@ -267,7 +267,7 @@ namespace HorseRadish
 			if (varName.empty())
 				return;
 
-			std::wstring varNameWChar = std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t>().from_bytes(varName);
+			auto varNameWChar = HorseRadish::StringUtils::conv2UTF16(varName);
 
 			sq_pushobject(mVM, mVMInstance);
 			sq_pushstring(mVM, varNameWChar.c_str(), varNameWChar.size());
@@ -281,7 +281,7 @@ namespace HorseRadish
 			if (varName.empty())
 				return;
 
-			std::wstring varNameWChar = std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t>().from_bytes(varName);
+			auto varNameWChar = HorseRadish::StringUtils::conv2UTF16(varName);
 
 			sq_pushobject(mVM, mVMInstance);
 			sq_pushstring(mVM, varNameWChar.c_str(), varNameWChar.size());
@@ -295,7 +295,7 @@ namespace HorseRadish
 			if (varName.empty())
 				return;
 
-			std::wstring varNameWChar = std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t>().from_bytes(varName);
+			auto varNameWChar = HorseRadish::StringUtils::conv2UTF16(varName);
 
 			sq_pushobject(mVM, mVMInstance);
 			sq_pushstring(mVM, varNameWChar.c_str(), varNameWChar.size());
@@ -309,7 +309,7 @@ namespace HorseRadish
 			if (varName.empty())
 				return;
 
-			std::wstring varNameWChar = std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t>().from_bytes(varName);
+			auto varNameWChar = HorseRadish::StringUtils::conv2UTF16(varName);
 
 			sq_pushobject(mVM, mVMInstance);
 			sq_pushstring(mVM, varNameWChar.c_str(), varNameWChar.size());
@@ -323,8 +323,8 @@ namespace HorseRadish
 			if (varName.empty())
 				return;
 
-			std::wstring varNameWChar = std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t>().from_bytes(varName);
-			std::wstring valueWChar = std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t>().from_bytes(value);
+			auto varNameWChar = HorseRadish::StringUtils::conv2UTF16(varName);
+			auto valueWChar = HorseRadish::StringUtils::conv2UTF16(value);
 
 			sq_pushobject(mVM, mVMInstance);
 			sq_pushstring(mVM, varNameWChar.c_str(), varNameWChar.size());
@@ -338,8 +338,8 @@ namespace HorseRadish
 			if (varName.empty())
 				return;
 
-			std::wstring varNameWChar = std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t>().from_bytes(varName);
-			std::wstring valueWChar = std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t>().from_bytes(value);
+			auto varNameWChar = HorseRadish::StringUtils::conv2UTF16(varName);
+			auto valueWChar = HorseRadish::StringUtils::conv2UTF16(value);
 
 			sq_pushobject(mVM, mVMInstance);
 			sq_pushstring(mVM, varNameWChar.c_str(), varNameWChar.size());
@@ -389,7 +389,7 @@ namespace HorseRadish
 
 			Runtime::parsePath(fullPath, [&](const std::string& token, bool isLastToken) -> bool
 			{
-				std::wstring tokenWChar = std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t>().from_bytes(token);
+				auto tokenWChar = HorseRadish::StringUtils::conv2UTF16(token);
 
 				if (isLastToken)
 				{
@@ -441,8 +441,8 @@ namespace HorseRadish
 				
 				runtime->mLogger.error(fmt::format("[{0}]: function [{1}()] {2}s line [{3}]",
 													stack_depth,
-													std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t>().to_bytes(func_name),
-													std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t>().to_bytes(source_file),
+													HorseRadish::StringUtils::conv2UTF8(func_name),
+													HorseRadish::StringUtils::conv2UTF8(source_file),
 													stack_info.line));
 
 				stack_depth++;
@@ -457,7 +457,7 @@ namespace HorseRadish
 				if (SQ_SUCCEEDED(sq_getstring(vm, 2, &error_message)))
 				{
 					auto runtime = reinterpret_cast<Runtime*>(sq_getforeignptr(vm));
-					runtime->mLogger.error(std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t>().to_bytes(error_message));
+					runtime->mLogger.error(HorseRadish::StringUtils::conv2UTF8(error_message));
 				}
 
 				squirrelStackTrace(vm);
@@ -470,10 +470,10 @@ namespace HorseRadish
 		{
 			auto runtime = reinterpret_cast<Runtime*>(sq_getforeignptr(vm));
 			runtime->mLogger.error(fmt::format("vm: '{0}' (Ln:{1} Col:{2}) : {3}.",
-												std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t>().to_bytes(file),
+												HorseRadish::StringUtils::conv2UTF8(file),
 												line,
 												column,
-												std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t>().to_bytes(description)));
+												HorseRadish::StringUtils::conv2UTF8(description)));
 		}
 
 		void Runtime::squirrelErrorFunction(HSQUIRRELVM vm, const SQChar *format, ...)
@@ -488,7 +488,7 @@ namespace HorseRadish
 			}
 
 			auto runtime = reinterpret_cast<Runtime*>(sq_getforeignptr(vm));
-			runtime->mLogger.error(std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t>().to_bytes(buffer));
+			runtime->mLogger.error(HorseRadish::StringUtils::conv2UTF8(buffer));
 		}
 
 		void Runtime::squirrelPrintFunction(HSQUIRRELVM vm, const SQChar *format, ...)
@@ -503,7 +503,7 @@ namespace HorseRadish
 			}
 
 			auto runtime = reinterpret_cast<Runtime*>(sq_getforeignptr(vm));
-			runtime->mLogger.info(std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t>().to_bytes(buffer));
+			runtime->mLogger.info(HorseRadish::StringUtils::conv2UTF8(buffer));
 		}
 
 		SQInteger Runtime::vmRegisteredFunc(HSQUIRRELVM sqvm)
@@ -514,7 +514,7 @@ namespace HorseRadish
 			if (!SQ_SUCCEEDED(sq_getstring(sqvm, -1, &funcName)))
 				return sq_throwerror(sqvm, _SC("Internal error - func name not found"));
 
-			std::string utf8FuncName = std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t>().to_bytes(funcName);
+			auto utf8FuncName = HorseRadish::StringUtils::conv2UTF8(funcName);
 
 			auto funcTarget = runtime->mFuncMap[utf8FuncName];
 			if (!funcTarget)
@@ -529,7 +529,7 @@ namespace HorseRadish
 			if (ctx.mReturnValueSet)
 				sq_pop(sqvm, 1);
 
-			return sq_throwerror(sqvm, std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t>().from_bytes(ctx.mErrorThrown).c_str());
+			return sq_throwerror(sqvm, HorseRadish::StringUtils::conv2UTF16(ctx.mErrorThrown).c_str());
 		}
 
 		void Runtime::vmPrintLastError(HSQUIRRELVM sqvm)
@@ -539,7 +539,7 @@ namespace HorseRadish
 			const SQChar *error;
 			sq_getlasterror(sqvm);
 			if (SQ_SUCCEEDED(sq_getstring(sqvm, -1, &error)))
-				runtime->mLogger.error(std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t>().to_bytes(error));
+				runtime->mLogger.error(HorseRadish::StringUtils::conv2UTF8(error));
 		}
 		
 		void Runtime::vmPushStackValue(HSQUIRRELVM sqvm, const int value)
@@ -559,13 +559,13 @@ namespace HorseRadish
 
 		void Runtime::vmPushStackValue(HSQUIRRELVM sqvm, const char * const value)
 		{
-			auto valueWChar = std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t>().from_bytes(value);
+			auto valueWChar = HorseRadish::StringUtils::conv2UTF16(value);
 			sq_pushstring(sqvm, valueWChar.c_str(), valueWChar.size());
 		}
 
 		void Runtime::vmPushStackValue(HSQUIRRELVM sqvm, const std::string &value)
 		{
-			auto valueWChar = std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t>().from_bytes(value);
+			auto valueWChar = HorseRadish::StringUtils::conv2UTF16(value);
 			sq_pushstring(sqvm, valueWChar.c_str(), valueWChar.size());
 		}
 
@@ -611,7 +611,7 @@ namespace HorseRadish
 			return Runtime::pushFullPathToStack(mVM, funcName, true, [&](const std::wstring& lastToken)
 			{
 				std::string fullFuncName = std::string(funcName);
-				std::wstring fullFuncNameWChar = std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t>().from_bytes(fullFuncName);
+				std::wstring fullFuncNameWChar = HorseRadish::StringUtils::conv2UTF16(fullFuncName);
 
 				sq_pushstring(mVM, lastToken.c_str(), lastToken.size());
 				sq_pushstring(mVM, fullFuncNameWChar.c_str(), fullFuncNameWChar.size()); //free var
@@ -636,7 +636,7 @@ namespace HorseRadish
 			sq_pushroottable(mVM);
 
 			{
-				std::wstring scriptWChar = std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t>().from_bytes(std::string(script));
+				auto scriptWChar = HorseRadish::StringUtils::conv2UTF16(script);
 
 				if (SQ_FAILED(sq_compilebuffer(mVM, scriptWChar.c_str(), scriptWChar.size(), _SC("main runtime"), SQTrue)))
 				{
@@ -661,15 +661,10 @@ namespace HorseRadish
 			sq_pushroottable(mVM);
 
 			{
-				std::unique_ptr<wchar_t[]> buffer(new wchar_t[1024 * 1024]);
-				int numChars = 0;
+				auto script = HorseRadish::Streams::FileStream::ReadEntireFileAsString(filePath);
+				auto scriptWChar = HorseRadish::StringUtils::conv2UTF16(script);
 
-				{
-					HorseRadish::String fileContent = HorseRadish::Streams::FileStream::ReadEntireFileAsString((const HorseRadish::hChar*)filePath);
-					numChars = fileContent.Convert(HorseRadish::String::Encoding::Windows, buffer.get(), 1024 * 1024);
-				}
-
-				if (SQ_FAILED(sq_compilebuffer(mVM, buffer.get(), numChars, _SC("main runtime"), SQTrue)))
+				if (SQ_FAILED(sq_compilebuffer(mVM, scriptWChar.c_str(), scriptWChar.size(), _SC("main runtime"), SQTrue)))
 				{
 					vmPrintLastError(mVM);
 					return false;

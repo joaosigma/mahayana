@@ -22,17 +22,17 @@ namespace HorseRadish
 		return -1;
 	}
 
-	HorseRadish::String Encoders::EncodeBase64(const void * const buffer, unsigned int bufferSize)
+	std::string Encoders::EncodeBase64(const void * const buffer, unsigned int bufferSize)
 	{
-		HorseRadish::String stringOut;
+		std::string stringOut;
 
 		Encoders::EncodeBase64(buffer, bufferSize, stringOut);
 		return stringOut;
 	}
 
-	void Encoders::EncodeBase64(const void * const buffer, unsigned int bufferSize, HorseRadish::String &stringOut)
+	void Encoders::EncodeBase64(const void * const buffer, unsigned int bufferSize, std::string &stringOut)
 	{
-		stringOut.Capacity(stringOut.GetSizeBytes() + (4 * (bufferSize + 3) / 3 + 2));
+		stringOut.reserve(stringOut.size() + (4 * (bufferSize + 3) / 3 + 2));
 
 		int i = 0;
 		unsigned char char_array_3[3];
@@ -127,9 +127,9 @@ namespace HorseRadish
 		return (3 * numBase64Chars / 4);
 	}
 
-	unsigned int Encoders::DecodeBase64(const HorseRadish::String &dataBase64, HorseRadish::Streams::Stream &streamOut)
+	unsigned int Encoders::DecodeBase64(const std::string &dataBase64, HorseRadish::Streams::Stream &streamOut)
 	{
-		int in_len = dataBase64.GetSizeChars();
+		int in_len = dataBase64.size();
 		int i = 0;
 		int in_ = 0;
 		int bytesWritten = 0;
@@ -181,17 +181,17 @@ namespace HorseRadish
 		return bytesWritten;
 	}
 
-	HorseRadish::String Encoders::EncodeHex(const void * const buffer, unsigned int bufferSize, bool toUppercase)
+	std::string Encoders::EncodeHex(const void * const buffer, unsigned int bufferSize, bool toUppercase)
 	{
-		HorseRadish::String stringOut;
+		std::string stringOut;
 
 		Encoders::EncodeHex(buffer, bufferSize, toUppercase, stringOut);
 		return stringOut;
 	}
 
-	void Encoders::EncodeHex(const void * const buffer, unsigned int bufferSize, bool toUppercase, HorseRadish::String &stringOut)
+	void Encoders::EncodeHex(const void * const buffer, unsigned int bufferSize, bool toUppercase, std::string &stringOut)
 	{
-		stringOut.Capacity(stringOut.GetSizeBytes() + ((bufferSize * 2) + 1));
+		stringOut.reserve(stringOut.size() + ((bufferSize * 2) + 1));
 
 		auto bufferHex = toUppercase ? Encoders::hexEncodeLookupUpper : Encoders::hexEncodeLookupLower;
 		auto bufferWalker = reinterpret_cast<const unsigned char*>(buffer);
@@ -231,14 +231,14 @@ namespace HorseRadish
 		return (numHexChars / 2);
 	}
 
-	unsigned int Encoders::DecodeHex(const HorseRadish::String &dataHex, HorseRadish::Streams::Stream &streamOut)
+	unsigned int Encoders::DecodeHex(const std::string &dataHex, HorseRadish::Streams::Stream &streamOut)
 	{
-		if ((dataHex.GetSizeBytes() != dataHex.GetSizeChars()) || ((dataHex.GetSizeChars() % 2) != 0))
+		if (dataHex.empty() || ((dataHex.size() % 2) != 0))
 			return 0;
 
-		int inSize = dataHex.GetSizeChars();
+		int inSize = dataHex.size();
 		int bytesWritten = 0;
-		auto *inWalker = reinterpret_cast<const unsigned char *>(dataHex.GetData());
+		auto *inWalker = reinterpret_cast<const unsigned char *>(dataHex.c_str());
 
 		for (int i = 0; i < inSize; i += 2)
 		{
