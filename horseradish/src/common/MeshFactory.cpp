@@ -1286,10 +1286,5 @@ namespace HorseRadish
 			return mfReadOBJ(streamReader);
 		}
 
-		Model* Factory::ReadCollada(HorseRadish::Streams::StreamReader &streamReader)
-		{
-			return mfReadCollada(streamReader);
-		}
-
 	} //Geometry
 } //HorseRadish

@@ -6,6 +6,5 @@
 
 using namespace HorseRadish;
 
-Geometry::Model* mfReadCollada(HorseRadish::Streams::StreamReader &streamReader);
 Geometry::Model* mfRead3DS(HorseRadish::Streams::StreamReader &streamReader);
 Geometry::Model* mfReadOBJ(HorseRadish::Streams::StreamReader &streamReader);

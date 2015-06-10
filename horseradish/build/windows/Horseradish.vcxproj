@@ -182,7 +182,6 @@
     <ClCompile Include="..\..\src\common\MeshFactory.cpp" />
     <ClCompile Include="..\..\src\common\meshFactory\mf3DS.cpp" />
     <ClCompile Include="..\..\src\common\meshFactory\mfASE.cpp" />
-    <ClCompile Include="..\..\src\common\meshFactory\mfCollada.cpp" />
     <ClCompile Include="..\..\src\common\meshFactory\mfLWO.cpp" />
     <ClCompile Include="..\..\src\common\meshFactory\mfOBJ.cpp" />
     <ClCompile Include="..\..\src\common\meshFactory\mfSMD.cpp" />
@@ -310,7 +309,6 @@
     <ClCompile Include="..\..\src\libs\squirrel\sqstdsystem.cpp" />
     <ClCompile Include="..\..\src\libs\squirrel\sqtable.cpp" />
     <ClCompile Include="..\..\src\libs\squirrel\sqvm.cpp" />
-    <ClCompile Include="..\..\src\libs\tinyxml2\tinyxml2.cpp" />
     <ClCompile Include="..\..\src\libs\zlib\adler32.c" />
     <ClCompile Include="..\..\src\libs\zlib\compress.c" />
     <ClCompile Include="..\..\src\libs\zlib\crc32.c" />
@@ -529,7 +527,6 @@
     <ClInclude Include="..\..\src\libs\stb\stb_image_write.h" />
     <ClInclude Include="..\..\src\libs\stb\stb_rect_pack.h" />
     <ClInclude Include="..\..\src\libs\stb\stb_truetype.h" />
-    <ClInclude Include="..\..\src\libs\tinyxml2\tinyxml2.h" />
     <ClInclude Include="..\..\src\libs\zlib\crc32.h" />
     <ClInclude Include="..\..\src\libs\zlib\deflate.h" />
     <ClInclude Include="..\..\src\libs\zlib\gzguts.h" />

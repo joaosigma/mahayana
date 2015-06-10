@@ -267,7 +267,6 @@ namespace HorseRadish
 
 			int CreateGeometry3DS(HorseRadish::Streams::StreamReader &streamReader, const Geometry::GeometryType geomType, const bool joinModels);
 			int CreateGeometryOBJ(HorseRadish::Streams::StreamReader &streamReader, const Geometry::GeometryType geomType, const bool joinModels);
-			int CreateGeometryCOLLADA(HorseRadish::Streams::StreamReader &streamReader, const Geometry::GeometryType geomType, const bool joinModels);
 			int CreateSurface(const Surface::SurfaceType surfType, int surfaceParentID, Material * const material, Geometry * const geometry);
 
 			void LoadData(HorseRadish::IO::FileSystem * const fileSystem);

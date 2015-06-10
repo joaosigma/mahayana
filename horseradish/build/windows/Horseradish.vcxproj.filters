@@ -37,9 +37,6 @@
     <Filter Include="libs\zlib\minizip">
       <UniqueIdentifier>{cf5739a6-c171-4a24-a2cd-95b74242c9ab}</UniqueIdentifier>
     </Filter>
-    <Filter Include="libs\tinyxml2">
-      <UniqueIdentifier>{de95f161-ba4a-4ea3-bdec-a034e52f03a5}</UniqueIdentifier>
-    </Filter>
     <Filter Include="libs\lodepng">
       <UniqueIdentifier>{4b0361e6-f669-489f-8c4c-1c8bed24135b}</UniqueIdentifier>
     </Filter>
@@ -79,9 +76,6 @@
       <Filter>common\meshFactory</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\common\meshFactory\mfASE.cpp">
-      <Filter>common\meshFactory</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\common\meshFactory\mfCollada.cpp">
       <Filter>common\meshFactory</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\common\meshFactory\mfLWO.cpp">
@@ -460,9 +454,6 @@
     <ClCompile Include="..\..\src\main.cpp" />
     <ClCompile Include="..\..\src\SGPUCounter.cpp" />
     <ClCompile Include="..\..\src\videoStream.cpp" />
-    <ClCompile Include="..\..\src\libs\tinyxml2\tinyxml2.cpp">
-      <Filter>libs\tinyxml2</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\libs\lodepng\lodepng.cpp">
       <Filter>libs\lodepng</Filter>
     </ClCompile>
@@ -1063,9 +1054,6 @@
     <ClInclude Include="..\..\src\culling.hpp" />
     <ClInclude Include="..\..\src\SGPUCounter.hpp" />
     <ClInclude Include="..\..\src\videoStream.hpp" />
-    <ClInclude Include="..\..\src\libs\tinyxml2\tinyxml2.h">
-      <Filter>libs\tinyxml2</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\libs\lodepng\lodepng.h">
       <Filter>libs\lodepng</Filter>
     </ClInclude>

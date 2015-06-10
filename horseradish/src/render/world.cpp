@@ -654,21 +654,6 @@ namespace HorseRadish
 			return numNewGeom;
 		}
 
-		int World::CreateGeometryCOLLADA(HorseRadish::Streams::StreamReader &streamReader, const Geometry::GeometryType geomType, const bool joinModels)
-		{
-			auto modelo = HorseRadish::Geometry::Factory::ReadCollada(streamReader);
-			if (modelo == nullptr)
-				return -2;
-
-			if (modelo->arrayMesh.empty())
-				return 0;
-
-			auto numNewGeom = processModel(modelo, geomType, joinModels);
-			delete modelo;
-
-			return numNewGeom;
-		}
-
 		int World::CreateSurface(const Surface::SurfaceType surfType, int surfaceParentID, Material * const material, Geometry * const geometry)
 		{
 			auto listaOriginal = this->surfacesTotal.data();

@@ -58,7 +58,6 @@ namespace HorseRadish
 
 			static Model* Read3DS(HorseRadish::Streams::StreamReader &streamReader);
 			static Model* ReadOBJ(HorseRadish::Streams::StreamReader &streamReader);
-			static Model* ReadCollada(HorseRadish::Streams::StreamReader &streamReader);
 		};
 
 	} //Geometry
