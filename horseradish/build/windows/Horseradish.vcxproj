@@ -91,15 +91,15 @@
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
-      <AdditionalIncludeDirectories>$(SolutionDir)$(ProjectName)\src;$(SolutionDir)$(ProjectName)\external_includes\gl;$(SolutionDir)$(ProjectName)\external_includes\freetype2;$(SolutionDir)$(ProjectName)\external_includes\ffmpeg;$(SolutionDir)$(ProjectName)\external_includes\turbojpeg;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)$(ProjectName)\src;$(SolutionDir)$(ProjectName)\external_includes\gl;$(SolutionDir)$(ProjectName)\external_includes\freetype2;$(SolutionDir)$(ProjectName)\external_includes\ffmpeg;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
-      <AdditionalLibraryDirectories>$(SolutionDir)$(ProjectName)\external_libs\x86\freetype2;$(SolutionDir)$(ProjectName)\external_libs\x86\ffmpeg;$(SolutionDir)$(ProjectName)\external_libs\x86\turbojpeg;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>avcodec.lib;avformat.lib;avutil.lib;swscale.lib;freetype253.lib;turbojpeg.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)$(ProjectName)\external_libs\x86\freetype2;$(SolutionDir)$(ProjectName)\external_libs\x86\ffmpeg;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>avcodec.lib;avformat.lib;avutil.lib;swscale.lib;freetype253.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -110,14 +110,14 @@
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
-      <AdditionalIncludeDirectories>$(SolutionDir)$(ProjectName)\src;$(SolutionDir)$(ProjectName)\external_includes\gl;$(SolutionDir)$(ProjectName)\external_includes\freetype2;$(SolutionDir)$(ProjectName)\external_includes\ffmpeg;$(SolutionDir)$(ProjectName)\external_includes\turbojpeg;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)$(ProjectName)\src;$(SolutionDir)$(ProjectName)\external_includes\gl;$(SolutionDir)$(ProjectName)\external_includes\freetype2;$(SolutionDir)$(ProjectName)\external_includes\ffmpeg;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
-      <AdditionalLibraryDirectories>$(SolutionDir)$(ProjectName)\external_libs\x64\freetype2;$(SolutionDir)$(ProjectName)\external_libs\x64\ffmpeg;$(SolutionDir)$(ProjectName)\external_libs\x64\turbojpeg;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>avcodec.lib;avformat.lib;avutil.lib;swscale.lib;freetype253.lib;turbojpeg.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)$(ProjectName)\external_libs\x64\freetype2;$(SolutionDir)$(ProjectName)\external_libs\x64\ffmpeg;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>avcodec.lib;avformat.lib;avutil.lib;swscale.lib;freetype253.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -130,7 +130,7 @@
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
-      <AdditionalIncludeDirectories>$(SolutionDir)$(ProjectName)\src;$(SolutionDir)$(ProjectName)\external_includes\gl;$(SolutionDir)$(ProjectName)\external_includes\freetype2;$(SolutionDir)$(ProjectName)\external_includes\ffmpeg;$(SolutionDir)$(ProjectName)\external_includes\turbojpeg;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)$(ProjectName)\src;$(SolutionDir)$(ProjectName)\external_includes\gl;$(SolutionDir)$(ProjectName)\external_includes\freetype2;$(SolutionDir)$(ProjectName)\external_includes\ffmpeg;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
     </ClCompile>
     <Link>
@@ -139,8 +139,8 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
-      <AdditionalLibraryDirectories>$(SolutionDir)$(ProjectName)\external_libs\x86\freetype2;$(SolutionDir)$(ProjectName)\external_libs\x86\ffmpeg;$(SolutionDir)$(ProjectName)\external_libs\x86\turbojpeg;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>avcodec.lib;avformat.lib;avutil.lib;swscale.lib;freetype253.lib;turbojpeg.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)$(ProjectName)\external_libs\x86\freetype2;$(SolutionDir)$(ProjectName)\external_libs\x86\ffmpeg;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>avcodec.lib;avformat.lib;avutil.lib;swscale.lib;freetype253.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -153,7 +153,7 @@
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
-      <AdditionalIncludeDirectories>$(SolutionDir)$(ProjectName)\src;$(SolutionDir)$(ProjectName)\external_includes\gl;$(SolutionDir)$(ProjectName)\external_includes\freetype2;$(SolutionDir)$(ProjectName)\external_includes\ffmpeg;$(SolutionDir)$(ProjectName)\external_includes\turbojpeg;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)$(ProjectName)\src;$(SolutionDir)$(ProjectName)\external_includes\gl;$(SolutionDir)$(ProjectName)\external_includes\freetype2;$(SolutionDir)$(ProjectName)\external_includes\ffmpeg;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -161,8 +161,8 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
-      <AdditionalLibraryDirectories>$(SolutionDir)$(ProjectName)\external_libs\x64\freetype2;$(SolutionDir)$(ProjectName)\external_libs\x64\ffmpeg;$(SolutionDir)$(ProjectName)\external_libs\x64\turbojpeg;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>avcodec.lib;avformat.lib;avutil.lib;swscale.lib;freetype253.lib;turbojpeg.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)$(ProjectName)\external_libs\x64\freetype2;$(SolutionDir)$(ProjectName)\external_libs\x64\ffmpeg;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>avcodec.lib;avformat.lib;avutil.lib;swscale.lib;freetype253.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -172,10 +172,7 @@
     <ClCompile Include="..\..\src\common\Encoders.cpp" />
     <ClCompile Include="..\..\src\common\FileSystem.cpp" />
     <ClCompile Include="..\..\src\common\Hashing.cpp" />
-    <ClCompile Include="..\..\src\common\Image.cpp" />
-    <ClCompile Include="..\..\src\common\ImageFactory.cpp" />
-    <ClCompile Include="..\..\src\common\imageFactory\ifHDRI.cpp" />
-    <ClCompile Include="..\..\src\common\imageFactory\ifTGA.cpp" />
+    <ClCompile Include="..\..\src\common\imageFactory.cpp" />
     <ClCompile Include="..\..\src\common\Math.cpp" />
     <ClCompile Include="..\..\src\common\Matrix.cpp" />
     <ClCompile Include="..\..\src\common\Mesh.cpp" />
@@ -309,6 +306,8 @@
     <ClCompile Include="..\..\src\libs\squirrel\sqstdsystem.cpp" />
     <ClCompile Include="..\..\src\libs\squirrel\sqtable.cpp" />
     <ClCompile Include="..\..\src\libs\squirrel\sqvm.cpp" />
+    <ClCompile Include="..\..\src\libs\stb\stb_image.cpp" />
+    <ClCompile Include="..\..\src\libs\stb\stb_image_resize.cpp" />
     <ClCompile Include="..\..\src\libs\zlib\adler32.c" />
     <ClCompile Include="..\..\src\libs\zlib\compress.c" />
     <ClCompile Include="..\..\src\libs\zlib\crc32.c" />
@@ -350,10 +349,9 @@
     <ClInclude Include="..\..\src\common\Encoders.hpp" />
     <ClInclude Include="..\..\src\common\FileSystem.hpp" />
     <ClInclude Include="..\..\src\common\Hashing.hpp" />
-    <ClInclude Include="..\..\src\common\Image.hpp" />
-    <ClInclude Include="..\..\src\common\ImageFactory.hpp" />
-    <ClInclude Include="..\..\src\common\imageFactory\ifHDRI.hpp" />
-    <ClInclude Include="..\..\src\common\imageFactory\ifTGA.hpp" />
+    <ClInclude Include="..\..\src\common\image.hpp" />
+    <ClInclude Include="..\..\src\common\imageFactory.hpp" />
+    <ClInclude Include="..\..\src\common\imageFormats.hpp" />
     <ClInclude Include="..\..\src\common\Math.hpp" />
     <ClInclude Include="..\..\src\common\Matrix.hpp" />
     <ClInclude Include="..\..\src\common\Mesh.hpp" />
@@ -524,7 +522,6 @@
     <ClInclude Include="..\..\src\libs\stb\stb_dxt.h" />
     <ClInclude Include="..\..\src\libs\stb\stb_image.h" />
     <ClInclude Include="..\..\src\libs\stb\stb_image_resize.h" />
-    <ClInclude Include="..\..\src\libs\stb\stb_image_write.h" />
     <ClInclude Include="..\..\src\libs\stb\stb_rect_pack.h" />
     <ClInclude Include="..\..\src\libs\stb\stb_truetype.h" />
     <ClInclude Include="..\..\src\libs\zlib\crc32.h" />

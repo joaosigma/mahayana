@@ -1,6 +1,7 @@
 #include "rendererDeferred.hpp"
 
-#include "common\ImageFactory.hpp"
+#include "common\stringUtils.hpp"
+#include "common\imageFactory.hpp"
 
 #include <algorithm>
 
@@ -193,41 +194,22 @@ namespace HorseRadish
 			auto fileStream = fileSystem.FileRead(texture->filePath.c_str());
 			if (!fileStream)
 				return;
+		
+			HorseRadish::Imaging::Image<unsigned char, HorseRadish::Imaging::ImageFormatRGB> targetImg;
 
-			auto curImage = HorseRadish::Imaging::Factory::Read(HorseRadish::Streams::StreamReader(*fileStream));
-			if (curImage == nullptr)
+			if (HorseRadish::StringUtils::endsWith(texture->filePath, ".jpg") || HorseRadish::StringUtils::endsWith(texture->filePath, ".jpeg"))
+				targetImg = HorseRadish::Imaging::Factory::readJPG(HorseRadish::Streams::StreamReader(*fileStream));
+			else if (HorseRadish::StringUtils::endsWith(texture->filePath, ".png"))
+				targetImg = HorseRadish::Imaging::Factory::readPNG(HorseRadish::Streams::StreamReader(*fileStream));
+						
+			if (targetImg.empty())
 				return;
 
-			HorseRadish::OpenGL::Objects::Texture::DataFormat texFormat;
-			switch (curImage->GetFormat())
-			{
-			case HorseRadish::Imaging::Image::RGB:		texFormat = HorseRadish::OpenGL::Objects::Texture::DataFormat::RGB; break;
-			case HorseRadish::Imaging::Image::RGBA:		texFormat = HorseRadish::OpenGL::Objects::Texture::DataFormat::RGBA; break;
-			case HorseRadish::Imaging::Image::BGR:		texFormat = HorseRadish::OpenGL::Objects::Texture::DataFormat::BGR; break;
-			case HorseRadish::Imaging::Image::BGRA:		texFormat = HorseRadish::OpenGL::Objects::Texture::DataFormat::BGRA; break;
-			case HorseRadish::Imaging::Image::Red:		texFormat = HorseRadish::OpenGL::Objects::Texture::DataFormat::R; break;
-			case HorseRadish::Imaging::Image::Green:	texFormat = HorseRadish::OpenGL::Objects::Texture::DataFormat::G; break;
-			case HorseRadish::Imaging::Image::Blue:		texFormat = HorseRadish::OpenGL::Objects::Texture::DataFormat::B; break;
-			default:
-				delete curImage;
-				return;
-			}
+			targetImg.removeGamma();
 
-			HorseRadish::OpenGL::Objects::Texture::DataType texType;
-			switch (curImage->GetType())
-			{
-			case HorseRadish::Imaging::Image::UByte:		texType = HorseRadish::OpenGL::Objects::Texture::DataType::UBYTE; break;
-			case HorseRadish::Imaging::Image::Float:		texType = HorseRadish::OpenGL::Objects::Texture::DataType::FLOAT; break;
-			default:
-				delete curImage;
-				return;
-			}
-
-			targetTexture.init(HorseRadish::OpenGL::Objects::Texture::Type::Tex2D, HorseRadish::OpenGL::Objects::Texture::StorageType::RGBA_8, curImage->GetWidth(), curImage->GetHeight());
-			targetTexture.uploadData(0, 0, 0, curImage->GetWidth(), curImage->GetHeight(), texFormat, texType, curImage->GetPixelData());
+			targetTexture.init(HorseRadish::OpenGL::Objects::Texture::Type::Tex2D, HorseRadish::OpenGL::Objects::Texture::StorageType::RGB_8, targetImg.width(), targetImg.height());
+			targetTexture.uploadData(0, 0, 0, targetImg.width(), targetImg.height(), HorseRadish::OpenGL::Objects::Texture::DataFormat::RGB, HorseRadish::OpenGL::Objects::Texture::DataType::UBYTE, targetImg.data());
 			targetTexture.genMipmaps();
-
-			delete curImage;
 		}
 
 		void RendererDeferred::loadNormal(HorseRadish::IO::FileSystem &fileSystem, TextureSet::Texture* texture, HorseRadish::OpenGL::Objects::Texture& targetTexture)
@@ -239,40 +221,19 @@ namespace HorseRadish
 			if (!fileStream)
 				return;
 
-			auto curImage = HorseRadish::Imaging::Factory::Read(HorseRadish::Streams::StreamReader(*fileStream));
-			if (curImage == nullptr)
+			HorseRadish::Imaging::Image<unsigned char, HorseRadish::Imaging::ImageFormatRGB> targetImg;
+
+			if (HorseRadish::StringUtils::endsWith(texture->filePath, ".png"))
+				targetImg = HorseRadish::Imaging::Factory::readPNG(HorseRadish::Streams::StreamReader(*fileStream));
+			else if (HorseRadish::StringUtils::endsWith(texture->filePath, ".jpg") || HorseRadish::StringUtils::endsWith(texture->filePath, ".jpeg"))
+				targetImg = HorseRadish::Imaging::Factory::readJPG(HorseRadish::Streams::StreamReader(*fileStream));
+
+			if (targetImg.empty())
 				return;
 
-			HorseRadish::OpenGL::Objects::Texture::DataFormat texFormat;
-			switch (curImage->GetFormat())
-			{
-			case HorseRadish::Imaging::Image::RGB:		texFormat = HorseRadish::OpenGL::Objects::Texture::DataFormat::RGB; break;
-			case HorseRadish::Imaging::Image::RGBA:		texFormat = HorseRadish::OpenGL::Objects::Texture::DataFormat::RGBA; break;
-			case HorseRadish::Imaging::Image::BGR:		texFormat = HorseRadish::OpenGL::Objects::Texture::DataFormat::BGR; break;
-			case HorseRadish::Imaging::Image::BGRA:		texFormat = HorseRadish::OpenGL::Objects::Texture::DataFormat::BGRA; break;
-			case HorseRadish::Imaging::Image::Red:		texFormat = HorseRadish::OpenGL::Objects::Texture::DataFormat::R; break;
-			case HorseRadish::Imaging::Image::Green:	texFormat = HorseRadish::OpenGL::Objects::Texture::DataFormat::G; break;
-			case HorseRadish::Imaging::Image::Blue:		texFormat = HorseRadish::OpenGL::Objects::Texture::DataFormat::B; break;
-			default:
-				delete curImage;
-				return;
-			}
-
-			HorseRadish::OpenGL::Objects::Texture::DataType texType;
-			switch (curImage->GetType())
-			{
-			case HorseRadish::Imaging::Image::UByte:		texType = HorseRadish::OpenGL::Objects::Texture::DataType::UBYTE; break;
-			case HorseRadish::Imaging::Image::Float:		texType = HorseRadish::OpenGL::Objects::Texture::DataType::FLOAT; break;
-			default:
-				delete curImage;
-				return;
-			}
-
-			targetTexture.init(HorseRadish::OpenGL::Objects::Texture::Type::Tex2D, HorseRadish::OpenGL::Objects::Texture::StorageType::RGBA_8, curImage->GetWidth(), curImage->GetHeight());
-			targetTexture.uploadData(0, 0, 0, curImage->GetWidth(), curImage->GetHeight(), texFormat, texType, curImage->GetPixelData());
+			targetTexture.init(HorseRadish::OpenGL::Objects::Texture::Type::Tex2D, HorseRadish::OpenGL::Objects::Texture::StorageType::RGB_8, targetImg.width(), targetImg.height());
+			targetTexture.uploadData(0, 0, 0, targetImg.width(), targetImg.height(), HorseRadish::OpenGL::Objects::Texture::DataFormat::RGB, HorseRadish::OpenGL::Objects::Texture::DataType::UBYTE, targetImg.data());
 			targetTexture.genMipmaps();
-
-			delete curImage;
 		}
 
 		void RendererDeferred::loadTextures(HorseRadish::IO::FileSystem &fileSystem)

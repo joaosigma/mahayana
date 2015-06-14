@@ -326,6 +326,8 @@ namespace HorseRadish
 			timerFrame.ReStart();
 			timerTotal.ReStart();
 
+			HorseRadish::OpenGL::glEnable(GL_FRAMEBUFFER_SRGB);
+
 			while (mCurState == State::Running)
 			{
 				//a primeira coisa é acertar os tempos

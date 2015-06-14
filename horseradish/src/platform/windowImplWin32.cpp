@@ -648,6 +648,11 @@ OpenglContextImpl::OpenglContextImpl(const WindowImpl &window, const std::string
 		errorMsg = "extension WGL_ARB_create_context_profile not supported";
 		return;
 	}
+	if ((wglExt == nullptr) || (strstr(wglExt, "WGL_ARB_create_context_profile") == nullptr))
+	{
+		errorMsg = "extension WGL_ARB_create_context_profile not supported";
+		return;
+	}
 
 	{
 		int pixelFormat;
@@ -664,6 +669,7 @@ OpenglContextImpl::OpenglContextImpl(const WindowImpl &window, const std::string
 			WGL_DEPTH_BITS_ARB, 0,
 			WGL_STENCIL_BITS_ARB, 0,
 			WGL_DOUBLE_BUFFER_ARB, GL_TRUE,
+			WGL_FRAMEBUFFER_SRGB_CAPABLE_ARB, GL_TRUE,
 			0, 0 };
 
 		this->usedPFD = -1;

@@ -22,7 +22,7 @@ class Font
 	struct KerningData
 	{
 		unsigned short char1, char2;
-		short offset;
+		float offset;
 
 		KerningData()
 			: char1(0), char2(0), offset(0)
@@ -80,7 +80,7 @@ private:
 
 	void commitGL() const;
 	bool createCharData();
-	int getCharKerning(const CharacterData& leftCharData, unsigned short leftCharUnicodeID, unsigned short rightCharUnicodeID) const;
+	float getCharKerning(const CharacterData& leftCharData, unsigned short leftCharUnicodeID, unsigned short rightCharUnicodeID) const;
 	bool initFont(const char * const fontFilePath);
 	void internalWrite(const float &px, const float &py, const std::string& text) const;
 

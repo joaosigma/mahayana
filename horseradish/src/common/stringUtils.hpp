@@ -198,6 +198,8 @@ namespace HorseRadish
 		static std::wstring conv2UTF16(const char* const strUTF8);
 		static std::vector<unsigned int> conv2Unicode(const std::string& strUTF8);
 
+		static bool endsWith(const std::string& str, const std::string& ending);
+
 		static std::string trimCopy(const std::string& str);
 		static void trim(std::string& str);
 

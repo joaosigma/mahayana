@@ -13,6 +13,7 @@ namespace HorseRadish
 	HALIGN_16BYTES
 	class Color
 	{
+		static const unsigned char SRGB2Linear[256];
 
 	public:
 		class KnownColors
@@ -231,30 +232,35 @@ namespace HorseRadish
 			_mm_storeu_ps(valF, valFinal);
 		}
 
-		static Color ParseColorFromHTML(const char *hexColor)
+		static Color ParseColorFromHTML(const char *hexColor, const bool gammaCorrect = true)
 		{
 			if (*hexColor == '#')
 				hexColor++;
 
 			Color color;
-			color.r = Encoders::DecodeHexByte(hexColor + 0);
-			color.g = Encoders::DecodeHexByte(hexColor + 2);
-			color.b = Encoders::DecodeHexByte(hexColor + 4);
-			color.a = 255.0f;
+			if (gammaCorrect)
+			{
+				color.r = Color::GammaCorrect(Encoders::DecodeHexByte(hexColor + 0));
+				color.g = Color::GammaCorrect(Encoders::DecodeHexByte(hexColor + 2));
+				color.b = Color::GammaCorrect(Encoders::DecodeHexByte(hexColor + 4));
+				color.a = 255.0f;
+			}
+			else
+			{
+				color.r = Encoders::DecodeHexByte(hexColor + 0);
+				color.g = Encoders::DecodeHexByte(hexColor + 2);
+				color.b = Encoders::DecodeHexByte(hexColor + 4);
+				color.a = 255.0f;
+			}
+
 			_mm_storeu_ps(&color.r, _mm_mul_ps(_mm_loadu_ps(&color.r), Math::SIMD::fUByteMaxInv));
 
 			return color;
 		}
 
-		static void ParseColorToHTML(const Color &color, char * const hexColor)
+		static unsigned char GammaCorrect(const unsigned char value)
 		{
-			unsigned char colorUByte[4];
-
-			ConvertColor(colorUByte, &color.r, true);
-
-			Encoders::EncodeHexByte(colorUByte[0], hexColor + 0);
-			Encoders::EncodeHexByte(colorUByte[1], hexColor + 2);
-			Encoders::EncodeHexByte(colorUByte[2], hexColor + 4);
+			return SRGB2Linear[value];
 		}
 
 	public:

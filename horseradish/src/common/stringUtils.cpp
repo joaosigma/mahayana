@@ -86,6 +86,11 @@ namespace HorseRadish
 		return vec;
 	}
 
+	bool StringUtils::endsWith(const std::string& str, const std::string& ending)
+	{
+		return (str.size() >= ending.size()) && equal(ending.rbegin(), ending.rend(), str.rbegin());
+	}
+
 	std::string StringUtils::trimCopy(const std::string& str)
 	{
 		if (str.empty())

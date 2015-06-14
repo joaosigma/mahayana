@@ -1,9 +1,8 @@
 #include "font.hpp"
 
-#include "common\opengl\openGLext.hpp"
-#include "common\Image.hpp"
+#include "common\image.hpp"
 #include "common\Platform.hpp"
-#include "common\ImageFactory.hpp"
+#include "common\opengl\openGLext.hpp"
 
 #include "libs\sdf\sdf.h"
 
@@ -40,7 +39,7 @@ void Font::commitGL() const
 
 bool Font::createCharData()
 {
-	int numCharPairs, numNormalChars, numExtraChars;
+	int numCharPairs, numNormalChars;
 
 	numCharPairs = sizeof(validFontCharacters) / sizeof(unsigned short);
 	if ((numCharPairs % 2) != 0)
@@ -226,9 +225,9 @@ bool Font::initFont(const char * const fontFilePath)
 		}
 	}	
 
-	auto imgFinal = new HorseRadish::Imaging::Image(texWidth, texHeight, HorseRadish::Imaging::Image::UByte, HorseRadish::Imaging::Image::Alpha);
-	imgFinal->Clear(0.0f, 0.0f, 0.0f, 0.0f);
-
+	HorseRadish::Imaging::Image<unsigned char, HorseRadish::Imaging::ImageFormatR> imgFinal(texWidth, texHeight);
+	imgFinal.clear(0, 0, 0, 0);
+	
 	for (auto& glyphData : validGlyphs)
 	{
 		CharacterData& charData = mCharMap[glyphData.unicodeId];
@@ -246,23 +245,20 @@ bool Font::initFont(const char * const fontFilePath)
 		FT_Glyph_To_Bitmap(&ftGlyph, FT_RENDER_MODE_NORMAL, nullptr, 1);
 		FT_BitmapGlyph bitmapGlyph = (FT_BitmapGlyph)ftGlyph;
 
-		HorseRadish::Imaging::Image imgAux(bitmapGlyph->bitmap.width + (Font::sBufferPadding * 2), bitmapGlyph->bitmap.rows + (Font::sBufferPadding * 2), HorseRadish::Imaging::Image::UByte, HorseRadish::Imaging::Image::Alpha);
-		imgAux.Clear(0.0f, 0.0f, 0.0f, 0.0f);
-		for (int y = 0; y < bitmapGlyph->bitmap.rows; y++)
-		{
-			auto ptr = (unsigned char*)imgAux.GetPixelData() + (y * imgAux.GetRowSize()) + (Font::sBufferPadding * imgAux.GetRowSize());
 
-			memcpy(ptr + Font::sBufferPadding, bitmapGlyph->bitmap.buffer + (y * bitmapGlyph->bitmap.width), bitmapGlyph->bitmap.width);
-		}
-		imgAux.Flip();
+		HorseRadish::Imaging::Image<unsigned char, HorseRadish::Imaging::ImageFormatR> imgAux(bitmapGlyph->bitmap.width + (Font::sBufferPadding * 2), bitmapGlyph->bitmap.rows + (Font::sBufferPadding * 2));
+		imgAux.clear(0, 0, 0, 0);
 
-		imgFinal->CopyRegion(&imgAux, glyphData.texX, glyphData.texY);
+		HorseRadish::Imaging::ImageView<unsigned char, HorseRadish::Imaging::ImageFormatR> imgGlyph(bitmapGlyph->bitmap.buffer, bitmapGlyph->bitmap.width, bitmapGlyph->bitmap.rows);
+
+		imgAux.setPixelRegion(imgGlyph, Font::sBufferPadding, Font::sBufferPadding, true);
+
+		imgFinal.setPixelRegion(imgAux, glyphData.texX, glyphData.texY);
 	}
 
 	//build distance map
-	sdfBuild((unsigned char*)imgFinal->GetPixelData(), imgFinal->GetWidth(), static_cast<float>(Font::sBufferPadding - 1), (const unsigned char*)imgFinal->GetPixelData(), imgFinal->GetWidth(), imgFinal->GetHeight(), imgFinal->GetWidth());
-
-	imgFinal->Scale(imgFinal->GetWidth() / 2, imgFinal->GetHeight() / 2, HorseRadish::Imaging::Image::SampleType::Bicubic2);
+	sdfBuild(imgFinal.data(), imgFinal.width(), static_cast<float>(Font::sBufferPadding - 1), imgFinal.data(), imgFinal.width(), imgFinal.height(), imgFinal.width());
+	imgFinal = imgFinal.resize(imgFinal.width() / 2, imgFinal.height() / 2);
 
 	if (FT_HAS_KERNING(ftFace) != 0)
 	{
@@ -314,11 +310,8 @@ bool Font::initFont(const char * const fontFilePath)
 		}
 	}
 
-	mGl.texture.init(HorseRadish::OpenGL::Objects::Texture::Type::Tex2D, HorseRadish::OpenGL::Objects::Texture::StorageType::R_8, imgFinal->GetWidth(), imgFinal->GetHeight());
-	mGl.texture.uploadData(0, 0, 0, imgFinal->GetWidth(), imgFinal->GetHeight(), HorseRadish::OpenGL::Objects::Texture::DataFormat::R, HorseRadish::OpenGL::Objects::Texture::DataType::UBYTE, imgFinal->GetPixelData());
-
-	delete imgFinal;
-	imgFinal = nullptr;
+	mGl.texture.init(HorseRadish::OpenGL::Objects::Texture::Type::Tex2D, HorseRadish::OpenGL::Objects::Texture::StorageType::R_8, imgFinal.width(), imgFinal.height());
+	mGl.texture.uploadData(0, 0, 0, imgFinal.width(), imgFinal.height(), HorseRadish::OpenGL::Objects::Texture::DataFormat::R, HorseRadish::OpenGL::Objects::Texture::DataType::UBYTE, imgFinal.data());
 
 	return true;
 }
@@ -360,7 +353,7 @@ void Font::internalWrite(const float &px, const float &py, const std::string& te
 		}
 		
 		if (lastCharUnicode && !mKerningData.empty())
-			posX += static_cast<float>(getCharKerning(curCharData, lastCharUnicode, curCharUnicode)) * mState.scale;
+			posX += getCharKerning(curCharData, lastCharUnicode, curCharUnicode) * mState.scale;
 		lastCharUnicode = curCharUnicode;
 
 		writeData[0].px = writeData[3].px = posX + curCharData.rect.offsetX * mState.scale;
@@ -384,10 +377,10 @@ void Font::internalWrite(const float &px, const float &py, const std::string& te
 	}
 }
 
-int Font::getCharKerning(const CharacterData& leftCharData, unsigned short leftCharUnicodeID, unsigned short rightCharUnicodeID) const
+float Font::getCharKerning(const CharacterData& leftCharData, unsigned short leftCharUnicodeID, unsigned short rightCharUnicodeID) const
 {
 	if ((leftCharData.kernData == nullptr) || (rightCharUnicodeID <= 0))
-		return 0;
+		return 0.0f;
 
 	for (const KerningData *curKerning = leftCharData.kernData; true; curKerning++)
 	{
@@ -398,7 +391,7 @@ int Font::getCharKerning(const CharacterData& leftCharData, unsigned short leftC
 			return curKerning->offset;
 	}
 
-	return 0;
+	return 0.0f;
 }
 
 Font::Font(const int fontSize, const char * const fontFilePath, unsigned int glVertexProgramID, unsigned int glFragmentProgramID, unsigned int glProgramPipelineID)
