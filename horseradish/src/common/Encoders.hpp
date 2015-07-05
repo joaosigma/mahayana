@@ -3,6 +3,7 @@
 #include "Stream.hpp"
 
 #include <string>
+#include <vector>
 
 namespace HorseRadish
 {
@@ -22,6 +23,8 @@ namespace HorseRadish
 		static void EncodeBase64(const void * const buffer, unsigned int bufferSize, HorseRadish::Streams::Stream &streamOut);
 
 		static unsigned int DecodeBase64RequiredSize(unsigned int numBase64Chars);
+		static unsigned int DecodeBase64(const std::string &dataBase64, void* bufferOut);
+		static unsigned int DecodeBase64(const std::string &dataBase64, std::vector<unsigned char> &bufferOut);
 		static unsigned int DecodeBase64(const std::string &dataBase64, HorseRadish::Streams::Stream &streamOut);
 
 		static std::string EncodeHex(const void * const buffer, unsigned int bufferSize, bool toUppercase);

@@ -5,6 +5,8 @@
 #include "libs\stb\stb_image.h"
 #include "libs\lodepng\lodepng.h"
 
+#include <memory>
+
 static
 int stbIORead(void *user, char *data, int size)
 {
@@ -96,6 +98,200 @@ bool Factory::savePNG(HorseRadish::Streams::StreamWriter &streamWriter, const Im
 	free(bufferOut);
 
 	return true;
+}
+
+Image<unsigned char, ImageFormatRGBA> Factory::readTGA(HorseRadish::Streams::StreamReader &streamReader)
+{
+	#pragma pack(1)
+	struct Tgaheader
+	{
+		__int8	descriptionlen;
+		__int8	cmaptype;
+		__int8	imagetype;
+		__int16	cmapstart;
+		__int16	cmapentries;
+		__int8	cmapbits;
+		__int16	xoffset;
+		__int16	yoffset;
+		__int16	width;
+		__int16	height;
+		__int8	bpp;
+		__int8	attrib;
+	};
+
+	Tgaheader header;
+	streamReader.Read(&header, sizeof(header));
+
+	if ((header.bpp != 8) && (header.bpp != 16) && (header.bpp != 24) && (header.bpp != 32))
+		return Image<unsigned char, ImageFormatRGBA>();
+
+	if (!(header.imagetype & 0x08) && (header.bpp == 24 || header.bpp == 32)) // plain format
+	{
+		Image<unsigned char, ImageFormatRGBA> newImage(header.width, header.height);
+
+		streamReader.Seek(header.descriptionlen + header.cmapentries * header.cmapbits / 8);
+
+		if (header.bpp == 24)
+		{
+			auto imgWalker = newImage.data();
+
+			for (int curPixel = newImage.getArea() - 1; curPixel >= 0; curPixel--, imgWalker += 4)
+			{
+				streamReader.Read(imgWalker, 3);
+				imgWalker[3] = 255;
+			}
+		}
+		else
+		{
+			streamReader.Read(newImage.data(), newImage.getArea() * 4);
+		}
+
+		if (header.attrib & (1 << 5))
+			newImage.flip();
+
+		return newImage;
+	}
+
+	Image<unsigned char, ImageFormatRGBA> newImage(header.width, header.height);
+	
+	std::unique_ptr<unsigned char[]> palette; //read palette
+	{
+		auto palSize = header.descriptionlen + header.cmapentries * header.cmapbits / 8;
+		if (palSize > 0)
+		{
+			palette.reset(new unsigned char[palSize]);
+			streamReader.Read(palette.get(), palSize);
+		}
+	}
+
+	unsigned int rawSize = newImage.getArea() * (header.bpp / 8);
+	std::unique_ptr<unsigned char[]> rawData = std::unique_ptr<unsigned char[]>(new unsigned char[rawSize]);
+
+	if (header.imagetype & 0x08) //raw data is compressed
+	{
+		unsigned char v[16];
+
+		unsigned int dataChannels = header.bpp / 8;
+		auto rawWalker = rawData.get();
+		while (rawSize > 0)
+		{
+			unsigned int c = 0;
+			streamReader.Read(&c, 0);
+
+			unsigned int count = (c & 0x7f) + 1;
+			rawSize -= count*dataChannels;
+			if (c & 0x80)
+			{
+				streamReader.Read(v, dataChannels);
+
+				while (count > 0)
+				{
+					memcpy(rawWalker, v, dataChannels);
+					rawWalker += dataChannels;
+					count--;
+				}
+			}
+			else
+			{
+				count *= dataChannels;
+
+				streamReader.Read(rawWalker, count);
+				rawWalker += count;
+			}
+		}
+	}
+	else
+	{
+		streamReader.Read(rawData.get(), rawSize);
+	}
+
+	auto imgWalker = newImage.data();
+	auto imgWidth = newImage.width();
+	auto imgHeight = newImage.height();
+
+	switch (header.bpp)
+	{
+	case 8:
+
+		if (palette)
+		{
+			for (unsigned int y = 0; y < imgHeight; y++)
+			{
+				auto rawWalker = rawData.get() + imgWidth * (imgHeight - y - 1);
+				for (unsigned int x = 0; x < imgWidth; x++)
+				{
+					unsigned int tempPixel = (*rawWalker) * 3;
+					rawWalker++;
+
+					imgWalker[0] = palette[tempPixel + 0];
+					imgWalker[1] = palette[tempPixel + 1];
+					imgWalker[2] = palette[tempPixel + 2];
+					imgWalker[3] = 255;
+					imgWalker += 4;
+				}
+			}
+			break;
+		}
+
+		for (unsigned int y = 0; y < imgHeight; y++)
+		{
+			auto rawWalker = rawData.get() + imgWidth*(imgHeight - y - 1);
+			for (unsigned int x = 0; x < imgWidth; x++)
+			{
+				imgWalker[0] = imgWalker[1] = imgWalker[2] = *rawWalker;
+				imgWalker[3] = 255;
+				rawWalker++;
+				imgWalker += 4;
+			}
+		}
+		break;
+
+	case 16:
+		for (unsigned int y = 0; y < imgHeight; y++)
+		{
+			for (unsigned int x = 0; x < imgWidth; x++)
+			{
+				__int16 temp = ((__int16 *)rawData.get())[(imgWidth * (imgHeight - y - 1) + x)];
+				unsigned int pixelPos = 4 * (y * imgWidth + x);
+
+				imgWalker[0] = (temp & 0x1F) << 3;
+				imgWalker[1] = ((temp >> 5) & 0x1F) << 3;
+				imgWalker[2] = ((temp >> 10) & 0x1F) << 3;
+				imgWalker[3] = (temp >> 15) ? 255 : 0;
+				imgWalker += 4;
+			}
+		}
+		break;
+
+	case 24:
+		for (unsigned int y = 0; y < imgHeight; y++)
+		{
+			auto rawWalker = rawData.get() + (imgWidth*(imgHeight - y - 1) * 3);
+			for (unsigned int x = 0; x < imgWidth; x++)
+			{
+				imgWalker[0] = rawWalker[0];
+				imgWalker[1] = rawWalker[1];
+				imgWalker[2] = rawWalker[2];
+				imgWalker[3] = 255;
+				rawWalker += 3;
+				imgWalker += 4;
+			}
+		}
+		break;
+
+	case 32:
+		for (unsigned int y = 0; y < imgHeight; y++)
+		{
+			memcpy(imgWalker, rawData.get() + (imgWidth*(imgHeight - y - 1) * 4), imgWidth * 4);
+			imgWalker += imgWidth * 4;
+		}
+		break;
+	}
+
+	if (header.attrib & (1 << 5))
+		newImage.flip();
+
+	return newImage;
 }
 
 Image<unsigned char, ImageFormatRGB> Factory::readJPG(HorseRadish::Streams::StreamReader &streamReader)

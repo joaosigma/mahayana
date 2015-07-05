@@ -46,14 +46,12 @@ Context::Context()
 	: mExtsAvailable(0)
 {
 	memset(&mInfo, 0, sizeof(Context::Info));
-	memset(&mStats, 0, sizeof(Context::Stats));
 }
 
 Context::~Context()
 {
 	mExtsAvailable = 0;
 	memset(&mInfo, 0, sizeof(Context::Info));
-	memset(&mStats, 0, sizeof(Context::Stats));
 }
 
 bool Context::isExtPresent(Context::Extensions extension) const
@@ -94,53 +92,6 @@ void Context::dispatchDebugMessages() const
 			messageLogWalker += listLengths[i];
 		}
 	}
-}
-
-void Context::counterReset(CounterType counterType)
-{
-	switch (counterType)
-	{
-	case CounterType::Frames:
-		mStats.frameCount = 0;
-		break;
-	case CounterType::Triangles:
-		mStats.triangleCount = 0;
-		break;
-	case CounterType::Vertices:
-		mStats.vertexCount = 0;
-		break;
-	}
-}
-
-void Context::counterIncrease(CounterType counterType, unsigned int amount)
-{
-	switch (counterType)
-	{
-	case CounterType::Frames:
-		mStats.frameCount += amount;
-		break;
-	case CounterType::Triangles:
-		mStats.triangleCount += amount;
-		break;
-	case CounterType::Vertices:
-		mStats.vertexCount += amount;
-		break;
-	}
-}
-
-unsigned int Context::counterGetValue(CounterType counterType) const
-{
-	switch (counterType)
-	{
-	case CounterType::Frames:
-		return mStats.frameCount;
-	case CounterType::Triangles:
-		return mStats.triangleCount;
-	case CounterType::Vertices:
-		return mStats.vertexCount;
-	}
-
-	return 0;
 }
 
 bool Context::getInfo(const InformationType &informationType, int &infoValue) const

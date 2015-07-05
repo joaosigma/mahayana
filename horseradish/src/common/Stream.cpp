@@ -8,24 +8,24 @@ namespace HorseRadish
 	namespace Streams
 	{
 		Stream::~Stream()
-		{}
+		{ }
 
-		MemoryStream::MemoryStream(MemoryStream&& stream)
+		MemoryStream::MemoryStream()
+			: data(nullptr), dataBegin(nullptr), dataEnd(nullptr), dataWalker(nullptr), dataSize(0), closed(false), canWrite(false), managementType(ManagementType::None)
+		{ }
+
+		MemoryStream::MemoryStream(int initialSize, bool canWrite)
+			: dataSize(initialSize)
+			, canWrite(canWrite)
+			, managementType(ManagementType::ManagedStatic)
 		{
-			this->data = stream.data;
-			this->dataBegin = stream.dataBegin;
-			this->dataEnd = stream.dataEnd;
-			this->dataWalker = stream.dataWalker;
-			this->dataSize = stream.dataSize;
-			this->closed = stream.closed;
-			this->canWrite = stream.canWrite;
-			this->managementType = stream.managementType;
+			this->data = malloc(this->dataSize);
 
-			stream.dataSize = 0;
-			stream.closed = true;
-			stream.canWrite = false;
-			stream.managementType = ManagementType::None;
-			stream.data = stream.dataBegin = stream.dataEnd = stream.dataWalker = nullptr;
+			this->closed = false;
+
+			this->dataBegin = reinterpret_cast<const hUInt8*>(this->data);
+			this->dataEnd = this->dataBegin + this->dataSize;
+			this->dataWalker = this->dataBegin;
 		}
 
 		MemoryStream::MemoryStream(const void * const bufferData, int bufferSize, bool canWrite, const MemoryStream::ManagementType &managementType)
@@ -50,6 +50,24 @@ namespace HorseRadish
 				this->Close();
 		}
 
+		MemoryStream::MemoryStream(MemoryStream&& stream)
+		{
+			this->data = stream.data;
+			this->dataBegin = stream.dataBegin;
+			this->dataEnd = stream.dataEnd;
+			this->dataWalker = stream.dataWalker;
+			this->dataSize = stream.dataSize;
+			this->closed = stream.closed;
+			this->canWrite = stream.canWrite;
+			this->managementType = stream.managementType;
+
+			stream.dataSize = 0;
+			stream.closed = true;
+			stream.canWrite = false;
+			stream.managementType = ManagementType::None;
+			stream.data = stream.dataBegin = stream.dataEnd = stream.dataWalker = nullptr;
+		}
+
 		void MemoryStream::Close()
 		{
 			this->closed = true;
@@ -57,10 +75,7 @@ namespace HorseRadish
 			if ((this->managementType != ManagementType::None) && (this->data != nullptr))
 				free((void*)this->data);
 
-			this->data = nullptr;
-			this->dataBegin = nullptr;
-			this->dataEnd = nullptr;
-			this->dataWalker = nullptr;
+			this->data = this->dataBegin = this->dataEnd = this->dataWalker = nullptr;
 			this->dataSize = 0;
 			this->canWrite = false;
 		}

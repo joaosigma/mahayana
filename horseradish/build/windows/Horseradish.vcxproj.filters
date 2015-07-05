@@ -13,17 +13,11 @@
     <Filter Include="render">
       <UniqueIdentifier>{db83a0d4-90bf-4e7b-85f7-be2052c60152}</UniqueIdentifier>
     </Filter>
-    <Filter Include="common\meshFactory">
-      <UniqueIdentifier>{13d094c8-c2f3-49ea-a57a-c8b01152cea2}</UniqueIdentifier>
-    </Filter>
     <Filter Include="common\opengl">
       <UniqueIdentifier>{e8bc98dd-0c74-4e1c-806b-2c00e40819ea}</UniqueIdentifier>
     </Filter>
     <Filter Include="libs\crunch">
       <UniqueIdentifier>{609bba41-6f88-49b8-ad4f-d2206471d455}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="libs\snappy">
-      <UniqueIdentifier>{1ce4c73a-b77d-46ef-bf66-db7d4e559d5b}</UniqueIdentifier>
     </Filter>
     <Filter Include="libs\zlib">
       <UniqueIdentifier>{7aed9e0e-816b-4850-a602-e909001be7d5}</UniqueIdentifier>
@@ -61,23 +55,26 @@
     <Filter Include="libs\forsyth">
       <UniqueIdentifier>{1cfeb5fb-8b93-4a80-9cb8-ca9fd0cd1a4c}</UniqueIdentifier>
     </Filter>
+    <Filter Include="libs\rapidjson">
+      <UniqueIdentifier>{a0fe0cdd-c992-49f0-b159-5513a0ae792f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="libs\rapidjson\error">
+      <UniqueIdentifier>{37659817-6b3f-40d6-bf68-f978e9ba13e8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="libs\rapidjson\internal">
+      <UniqueIdentifier>{0fe91e42-cf50-4c1a-afec-41afec637595}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="libs\rapidjson\msinttypes">
+      <UniqueIdentifier>{46ddf6c8-946f-480c-87ae-91039535fd8a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="libs\lz4">
+      <UniqueIdentifier>{d10adda5-2ee1-4dc6-b1a7-f0bffad32b18}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="libs\tinyobjloader">
+      <UniqueIdentifier>{a042a721-d846-4835-89c5-a84f69c965eb}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\src\common\meshFactory\mf3DS.cpp">
-      <Filter>common\meshFactory</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\common\meshFactory\mfASE.cpp">
-      <Filter>common\meshFactory</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\common\meshFactory\mfLWO.cpp">
-      <Filter>common\meshFactory</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\common\meshFactory\mfOBJ.cpp">
-      <Filter>common\meshFactory</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\common\meshFactory\mfSMD.cpp">
-      <Filter>common\meshFactory</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\common\opengl\openGLext.cpp">
       <Filter>common\opengl</Filter>
     </ClCompile>
@@ -103,12 +100,6 @@
       <Filter>common</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\common\Matrix.cpp">
-      <Filter>common</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\common\Mesh.cpp">
-      <Filter>common</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\common\MeshFactory.cpp">
       <Filter>common</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\common\Path.cpp">
@@ -360,15 +351,6 @@
     <ClCompile Include="..\..\src\libs\crunch\lzma_Threads.cpp">
       <Filter>libs\crunch</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\libs\snappy\snappy.cc">
-      <Filter>libs\snappy</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\libs\snappy\snappy-sinksource.cc">
-      <Filter>libs\snappy</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\libs\snappy\snappy-stubs-internal.cc">
-      <Filter>libs\snappy</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\libs\zlib\adler32.c">
       <Filter>libs\zlib</Filter>
     </ClCompile>
@@ -574,11 +556,20 @@
     <ClCompile Include="..\..\src\common\imageFactory.cpp">
       <Filter>common</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\libs\lz4\lz4.c">
+      <Filter>libs\lz4</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\libs\lz4\lz4hc.c">
+      <Filter>libs\lz4</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\libs\tinyobjloader\tiny_obj_loader.cc">
+      <Filter>libs\tinyobjloader</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\common\mesh.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\src\common\meshFactory\mf.hpp">
-      <Filter>common\meshFactory</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\common\opengl\objects.hpp">
       <Filter>common\opengl</Filter>
     </ClInclude>
@@ -610,12 +601,6 @@
       <Filter>common</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\common\Matrix.hpp">
-      <Filter>common</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\common\Mesh.hpp">
-      <Filter>common</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\common\MeshFactory.hpp">
       <Filter>common</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\common\Path.hpp">
@@ -960,21 +945,6 @@
     <ClInclude Include="..\..\src\libs\crunch\lzma_Types.h">
       <Filter>libs\crunch</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\libs\snappy\snappy.h">
-      <Filter>libs\snappy</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\libs\snappy\snappy-internal.h">
-      <Filter>libs\snappy</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\libs\snappy\snappy-sinksource.h">
-      <Filter>libs\snappy</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\libs\snappy\snappy-stubs-internal.h">
-      <Filter>libs\snappy</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\libs\snappy\snappy-stubs-public.h">
-      <Filter>libs\snappy</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\libs\zlib\crc32.h">
       <Filter>libs\zlib</Filter>
     </ClInclude>
@@ -1037,9 +1007,6 @@
     <ClInclude Include="..\..\src\SGPUCounter.hpp" />
     <ClInclude Include="..\..\src\videoStream.hpp" />
     <ClInclude Include="..\..\src\libs\lodepng\lodepng.h">
-      <Filter>libs\lodepng</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\libs\lodepng\mylodepngoptions.h">
       <Filter>libs\lodepng</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\common\PlatformWin32.hpp">
@@ -1196,6 +1163,108 @@
       <Filter>common</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\common\imageFormats.hpp">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\libs\rapidjson\allocators.h">
+      <Filter>libs\rapidjson</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\libs\rapidjson\document.h">
+      <Filter>libs\rapidjson</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\libs\rapidjson\encodedstream.h">
+      <Filter>libs\rapidjson</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\libs\rapidjson\encodings.h">
+      <Filter>libs\rapidjson</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\libs\rapidjson\filereadstream.h">
+      <Filter>libs\rapidjson</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\libs\rapidjson\filewritestream.h">
+      <Filter>libs\rapidjson</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\libs\rapidjson\memorybuffer.h">
+      <Filter>libs\rapidjson</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\libs\rapidjson\memorystream.h">
+      <Filter>libs\rapidjson</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\libs\rapidjson\pointer.h">
+      <Filter>libs\rapidjson</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\libs\rapidjson\prettywriter.h">
+      <Filter>libs\rapidjson</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\libs\rapidjson\rapidjson.h">
+      <Filter>libs\rapidjson</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\libs\rapidjson\reader.h">
+      <Filter>libs\rapidjson</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\libs\rapidjson\stringbuffer.h">
+      <Filter>libs\rapidjson</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\libs\rapidjson\writer.h">
+      <Filter>libs\rapidjson</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\libs\rapidjson\error\en.h">
+      <Filter>libs\rapidjson\error</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\libs\rapidjson\error\error.h">
+      <Filter>libs\rapidjson\error</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\libs\rapidjson\internal\biginteger.h">
+      <Filter>libs\rapidjson\internal</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\libs\rapidjson\internal\diyfp.h">
+      <Filter>libs\rapidjson\internal</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\libs\rapidjson\internal\dtoa.h">
+      <Filter>libs\rapidjson\internal</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\libs\rapidjson\internal\ieee754.h">
+      <Filter>libs\rapidjson\internal</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\libs\rapidjson\internal\itoa.h">
+      <Filter>libs\rapidjson\internal</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\libs\rapidjson\internal\meta.h">
+      <Filter>libs\rapidjson\internal</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\libs\rapidjson\internal\pow10.h">
+      <Filter>libs\rapidjson\internal</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\libs\rapidjson\internal\stack.h">
+      <Filter>libs\rapidjson\internal</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\libs\rapidjson\internal\strfunc.h">
+      <Filter>libs\rapidjson\internal</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\libs\rapidjson\internal\strtod.h">
+      <Filter>libs\rapidjson\internal</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\libs\rapidjson\msinttypes\inttypes.h">
+      <Filter>libs\rapidjson\msinttypes</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\libs\rapidjson\msinttypes\stdint.h">
+      <Filter>libs\rapidjson\msinttypes</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\libs\rapidjson\rapidjsonoptions.h">
+      <Filter>libs\rapidjson</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\libs\lodepng\lodepngoptions.h">
+      <Filter>libs\lodepng</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\libs\lz4\lz4.h">
+      <Filter>libs\lz4</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\libs\lz4\lz4hc.h">
+      <Filter>libs\lz4</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\libs\tinyobjloader\tiny_obj_loader.h">
+      <Filter>libs\tinyobjloader</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\common\mesh.hpp">
       <Filter>common</Filter>
     </ClInclude>
   </ItemGroup>

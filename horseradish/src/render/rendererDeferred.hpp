@@ -18,7 +18,7 @@ namespace HorseRadish
 
 			struct VBOs{
 				unsigned int vboMeshSize, vboMeshIndexSize;
-				HorseRadish::OpenGL::Objects::Buffer vboMeshData, vboMeshIndexData;
+				HorseRadish::OpenGL::Objects::Buffer vboMeshData, vboMeshIndexData, vboIndirectDraw;
 				HorseRadish::OpenGL::Objects::VertexArray vaoMesh;
 
 				VBOs() : vboMeshSize(0), vboMeshIndexSize(0) { }
@@ -62,9 +62,8 @@ namespace HorseRadish
 			void renderGBuffer(const Tools::Camera& hrCamera, const HorseRadish::OpenGL::Tools::Viewport& hrViewport);
 			void renderFinal(const Tools::Camera& hrCamera, const HorseRadish::OpenGL::Tools::Viewport& hrViewport);
 			void loadGeometry();
-			TextureSet::Texture* findTexType(TextureSet * const texSet, const int texType);
-			void loadDiffuse(HorseRadish::IO::FileSystem &fileSystem, TextureSet::Texture* texture, HorseRadish::OpenGL::Objects::Texture& targetTexture);
-			void loadNormal(HorseRadish::IO::FileSystem &fileSystem, TextureSet::Texture* texture, HorseRadish::OpenGL::Objects::Texture& targetTexture);
+			void loadDiffuse(HorseRadish::IO::FileSystem &fileSystem, const std::string& texFilePath, HorseRadish::OpenGL::Objects::Texture& targetTexture);
+			void loadNormal(HorseRadish::IO::FileSystem &fileSystem, const std::string& texFilePath, HorseRadish::OpenGL::Objects::Texture& targetTexture);
 			void loadTextures(HorseRadish::IO::FileSystem &fileSystem);
 
 		public:

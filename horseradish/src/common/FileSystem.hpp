@@ -10,6 +10,7 @@
 #include <vector>
 #include <memory>
 #include <functional>
+#include <unordered_map>
 
 namespace HorseRadish
 {
@@ -39,7 +40,7 @@ namespace HorseRadish
 			class MountData
 			{
 			protected:
-				HorseRadish::IO::Path mountPoint;
+				HorseRadish::IO::Path mMountPoint;
 
 			public:
 				MountData(const char* const mountPoint);
@@ -53,7 +54,7 @@ namespace HorseRadish
 
 			class MountDataPath : public MountData
 			{
-				HorseRadish::IO::Path baseFolder;
+				HorseRadish::IO::Path mBaseFolder;
 
 			public:
 				MountDataPath(const char* const baseFolder, const char* const mountPoint);
@@ -73,12 +74,10 @@ namespace HorseRadish
 				{
 					unz_file_pos filePos;
 					int fileSize;
-					hData128 fileNameMD5;
 				};
-				unzFile zipFile;
-				HorseRadish::IO::Path zipPath;
-				int numFolders, numFiles;
-				std::vector<ZipEntry> listaEntradas;
+				unzFile mZipFile;
+				HorseRadish::IO::Path mZipPath;
+				std::unordered_map<std::string, ZipEntry> mFileEntries;
 
 			public:
 				MountDataZip(const char* const zipPath, const char* const mountPoint);
@@ -92,9 +91,9 @@ namespace HorseRadish
 				bool FileExists(const char* const filePath);
 			};
 
-			unsigned int maxNumMounts;
-			std::vector<std::unique_ptr<MountData>> listMounts;
-			std::vector<WatchChangeData> listWatchChange;
+			unsigned int mMaxNumMounts;
+			std::vector<std::unique_ptr<MountData>> mListMounts;
+			std::vector<WatchChangeData> mListWatchChange;
 
 		public:
 			FileSystem(unsigned int maxNumMounts);

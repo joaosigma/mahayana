@@ -3,6 +3,7 @@
 #include "common\stringUtils.hpp"
 #include "common\imageFactory.hpp"
 
+#include <cstddef>
 #include <algorithm>
 
 namespace HorseRadish
@@ -45,28 +46,24 @@ namespace HorseRadish
 			this->samplers.samplerNormals.bind(1);
 			this->samplers.samplerAlbedo.bind(0);
 
-			for (auto& curSurf : this->renderWorld->renderContent.surfaces)
+			vbos.vboIndirectDraw.bind();
+			for (auto& curObject : this->renderWorld->mRenderData.objects)
 			{
-				if ((curSurf == nullptr) || (curSurf->texData == nullptr))
-					break;
+				auto& concept = this->renderWorld->mConcepts[curObject->conceptName];
 
-				auto curGeom = curSurf->geometry;
-
-				if (curSurf->texData->lighting.normal.isValid())
-					curSurf->texData->lighting.normal.bind(1);
+				if (concept.renderData.texNormal.isValid())
+					concept.renderData.texNormal.bind(1);
 				else
 					this->texDefaultNormals.bind(1);
 
-				if (curSurf->texData->lighting.diffuse.isValid())
-					curSurf->texData->lighting.diffuse.bind(0);
+				if (concept.renderData.texDiffuse.isValid())
+					concept.renderData.texDiffuse.bind(0);
 				else
 					this->texDefaultAlbedo.bind(0);
 
-				HorseRadish::OpenGL::glDrawRangeElementsBaseVertex(GL_TRIANGLES, 0, curGeom->mesh.GetNumElements(), curGeom->mesh.GetNumIndices(), curGeom->mesh.GetIndexType(), curGeom->renderTriListOffset, curGeom->renderVBOVertexOffset);
-
-				this->mStats.numGlDrawElements++;
-				this->mStats.numTris += curGeom->mesh.GetNumIndices() / 3;
+				HorseRadish::OpenGL::glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_SHORT, reinterpret_cast<void*>(concept.renderData.meshDrawIndirectOffset), 1, 0);
 			}
+			vbos.vboIndirectDraw.unbind();
 
 			HorseRadish::OpenGL::glBindVertexArray(0);
 			HorseRadish::OpenGL::glUseProgram(0);
@@ -107,47 +104,58 @@ namespace HorseRadish
 
 		void RendererDeferred::loadGeometry()
 		{
-			int poolVertex, poolIndex, baseVertexOffset;
-
 			vbos.vboMeshData.reset();
 			vbos.vboMeshIndexData.reset();
 			this->vbos.vboMeshSize = this->vbos.vboMeshIndexSize = 0;
 
-			for (const auto& pGeom : this->renderWorld->geometries)
+			for (const auto& concept : this->renderWorld->mConcepts)
 			{
-				this->vbos.vboMeshSize += (unsigned int)pGeom.mesh.GetSize();
-				if (pGeom.mesh.GetIndexType() == HorseRadish::Geometry::Mesh::Int16)
-					this->vbos.vboMeshIndexSize += pGeom.mesh.GetNumIndices()*sizeof(unsigned short);
-				else
-					this->vbos.vboMeshIndexSize += pGeom.mesh.GetNumIndices()*sizeof(unsigned int);
+				this->vbos.vboMeshSize += concept.second.mesh.sizeVertices();
+				this->vbos.vboMeshIndexSize += concept.second.mesh.sizeIndices();
 			}
 
 			vbos.vboMeshData.init(OpenGL::Objects::Buffer::Type::ArrayBuffer, vbos.vboMeshSize, OpenGL::Objects::Buffer::UsageType::FrequentOnlyWrite);
 			vbos.vboMeshIndexData.init(OpenGL::Objects::Buffer::Type::ElementArrayBuffer, vbos.vboMeshIndexSize, OpenGL::Objects::Buffer::UsageType::FrequentOnlyWrite);
 
-			baseVertexOffset = 0;
-			poolVertex = poolIndex = 0;
-			for (auto& pGeom : this->renderWorld->geometries)
+			int baseVertexOffset = 0;
+			int poolVertex = 0, poolIndex = 0;
+			int numGeoms = 0;
+			for (auto& concept : this->renderWorld->mConcepts)
 			{
-				int dataSize, indexSize;
+				numGeoms++;
+				concept.second.renderData.meshVBOVertexOffset = baseVertexOffset;
+				concept.second.renderData.meshTriListOffset = (void*)poolIndex;
 
-				pGeom.renderVBOVertexOffset = baseVertexOffset;
-				pGeom.renderTriListOffset = (void*)poolIndex;
+				vbos.vboMeshData.writeData(concept.second.mesh.dataVertices(), concept.second.mesh.sizeVertices(), poolVertex);
+				poolVertex += concept.second.mesh.sizeVertices();
 
-				dataSize = pGeom.mesh.GetSize();
+				baseVertexOffset += concept.second.mesh.numVertices();
 
-				vbos.vboMeshData.writeData(pGeom.mesh.SingleBufferPointer(), dataSize, poolVertex);
-				poolVertex += dataSize;
+				vbos.vboMeshIndexData.writeData(concept.second.mesh.dataIndices(), concept.second.mesh.sizeIndices(), poolIndex);
+				poolIndex += concept.second.mesh.sizeIndices();
+			}
 
-				baseVertexOffset += pGeom.mesh.GetNumElements();
+			{
+				auto drawCommands = std::unique_ptr<OpenGL::Objects::Buffer::DrawElementsIndirectCommand[]>(new OpenGL::Objects::Buffer::DrawElementsIndirectCommand[numGeoms]);
 
-				if (pGeom.mesh.GetIndexType() == HorseRadish::Geometry::Mesh::Int16)
-					indexSize = pGeom.mesh.GetNumIndices()*sizeof(unsigned short);
-				else
-					indexSize = pGeom.mesh.GetNumIndices()*sizeof(unsigned int);
+				numGeoms = 0;
+				for (auto& concept : this->renderWorld->mConcepts)
+				{
+					OpenGL::Objects::Buffer::DrawElementsIndirectCommand drawIndirect;
+					drawIndirect.baseInstance = 0;
+					drawIndirect.baseVertex = concept.second.renderData.meshVBOVertexOffset;
+					drawIndirect.count = concept.second.mesh.numIndices();
+					drawIndirect.firstIndex = ((unsigned int)concept.second.renderData.meshTriListOffset) / sizeof(unsigned short);
+					drawIndirect.instanceCount = 1;
 
-				vbos.vboMeshIndexData.writeData(pGeom.mesh.GetIndices(), indexSize, poolIndex);
-				poolIndex += indexSize;
+					concept.second.renderData.meshDrawIndirectOffset = sizeof(OpenGL::Objects::Buffer::DrawElementsIndirectCommand) * numGeoms;
+
+					drawCommands[numGeoms] = drawIndirect;
+					numGeoms++;
+				}
+
+				vbos.vboIndirectDraw.reset();
+				vbos.vboIndirectDraw.init(OpenGL::Objects::Buffer::Type::DrawIndirect, drawCommands.get(), sizeof(OpenGL::Objects::Buffer::DrawElementsIndirectCommand) * numGeoms, OpenGL::Objects::Buffer::UsageType::ServerStatic);
 			}
 
 			vbos.vaoMesh.reset();
@@ -163,94 +171,98 @@ namespace HorseRadish
 			HorseRadish::OpenGL::glVertexArrayAttribBinding(vbos.vaoMesh.getId(), 2, 0);
 			HorseRadish::OpenGL::glVertexArrayAttribBinding(vbos.vaoMesh.getId(), 3, 0);
 
-			HorseRadish::OpenGL::glVertexArrayAttribFormat(vbos.vaoMesh.getId(), 0, 3, GL_FLOAT, false, 0);
-			HorseRadish::OpenGL::glVertexArrayAttribFormat(vbos.vaoMesh.getId(), 1, 2, GL_FLOAT, false, 12);
-			HorseRadish::OpenGL::glVertexArrayAttribFormat(vbos.vaoMesh.getId(), 2, 3, GL_FLOAT, false, 20);
-			HorseRadish::OpenGL::glVertexArrayAttribFormat(vbos.vaoMesh.getId(), 4, 4, GL_FLOAT, false, 32);
+			HorseRadish::OpenGL::glVertexArrayAttribFormat(vbos.vaoMesh.getId(), 0, 3, GL_FLOAT, false, offsetof(HorseRadish::Geometry::Mesh::VertexData, pos));
+			HorseRadish::OpenGL::glVertexArrayAttribFormat(vbos.vaoMesh.getId(), 1, 2, GL_FLOAT, false, offsetof(HorseRadish::Geometry::Mesh::VertexData, uv));
+			HorseRadish::OpenGL::glVertexArrayAttribFormat(vbos.vaoMesh.getId(), 2, 3, GL_UNSIGNED_SHORT, true, offsetof(HorseRadish::Geometry::Mesh::VertexData, normal));
+			HorseRadish::OpenGL::glVertexArrayAttribFormat(vbos.vaoMesh.getId(), 4, 4, GL_UNSIGNED_SHORT, true, offsetof(HorseRadish::Geometry::Mesh::VertexData, tangent));
 
 			HorseRadish::OpenGL::glVertexArrayElementBuffer(vbos.vaoMesh.getId(), vbos.vboMeshIndexData.getId());
-			HorseRadish::OpenGL::glVertexArrayVertexBuffer(vbos.vaoMesh.getId(), 0, vbos.vboMeshData.getId(), 0, 64);
+			HorseRadish::OpenGL::glVertexArrayVertexBuffer(vbos.vaoMesh.getId(), 0, vbos.vboMeshData.getId(), 0, sizeof(HorseRadish::Geometry::Mesh::VertexData));
 		}
 
-		TextureSet::Texture* RendererDeferred::findTexType(TextureSet * const texSet, const int texType)
+		void RendererDeferred::loadDiffuse(HorseRadish::IO::FileSystem &fileSystem, const std::string& texFilePath, HorseRadish::OpenGL::Objects::Texture& targetTexture)
 		{
-			if ((texSet == nullptr) || texSet->texs.empty())
-				return nullptr;
-
-			for (auto& curTex : texSet->texs)
-			{
-				if (curTex.type == texType)
-					return &curTex;
-			}
-
-			return nullptr;
-		}
-
-		void RendererDeferred::loadDiffuse(HorseRadish::IO::FileSystem &fileSystem, TextureSet::Texture* texture, HorseRadish::OpenGL::Objects::Texture& targetTexture)
-		{
-			if ((texture == nullptr) || (texture->type != 1))
+			if (texFilePath.empty())
 				return;
 
-			auto fileStream = fileSystem.FileRead(texture->filePath.c_str());
+			auto fileStream = fileSystem.FileRead(texFilePath.c_str());
 			if (!fileStream)
 				return;
 		
-			HorseRadish::Imaging::Image<unsigned char, HorseRadish::Imaging::ImageFormatRGB> targetImg;
+			if (HorseRadish::StringUtils::endsWith(texFilePath, ".tga"))
+			{
+				HorseRadish::Imaging::Image<unsigned char, HorseRadish::Imaging::ImageFormatRGBA> targetImg;
 
-			if (HorseRadish::StringUtils::endsWith(texture->filePath, ".jpg") || HorseRadish::StringUtils::endsWith(texture->filePath, ".jpeg"))
-				targetImg = HorseRadish::Imaging::Factory::readJPG(HorseRadish::Streams::StreamReader(*fileStream));
-			else if (HorseRadish::StringUtils::endsWith(texture->filePath, ".png"))
-				targetImg = HorseRadish::Imaging::Factory::readPNG(HorseRadish::Streams::StreamReader(*fileStream));
-						
-			if (targetImg.empty())
-				return;
+				targetImg = HorseRadish::Imaging::Factory::readTGA(HorseRadish::Streams::StreamReader(*fileStream));
 
-			targetImg.removeGamma();
+				if (targetImg.empty())
+					return;
 
-			targetTexture.init(HorseRadish::OpenGL::Objects::Texture::Type::Tex2D, HorseRadish::OpenGL::Objects::Texture::StorageType::RGB_8, targetImg.width(), targetImg.height());
-			targetTexture.uploadData(0, 0, 0, targetImg.width(), targetImg.height(), HorseRadish::OpenGL::Objects::Texture::DataFormat::RGB, HorseRadish::OpenGL::Objects::Texture::DataType::UBYTE, targetImg.data());
-			targetTexture.genMipmaps();
+				targetImg.removeGamma();
+
+				targetTexture.init(HorseRadish::OpenGL::Objects::Texture::Type::Tex2D, HorseRadish::OpenGL::Objects::Texture::StorageType::RGBA_8, targetImg.width(), targetImg.height());
+				targetTexture.uploadData(0, 0, 0, targetImg.width(), targetImg.height(), HorseRadish::OpenGL::Objects::Texture::DataFormat::RGBA, HorseRadish::OpenGL::Objects::Texture::DataType::UBYTE, targetImg.data());
+				targetTexture.genMipmaps();
+			}
+			else
+			{
+				HorseRadish::Imaging::Image<unsigned char, HorseRadish::Imaging::ImageFormatRGB> targetImg;
+
+				if (HorseRadish::StringUtils::endsWith(texFilePath, ".jpg") || HorseRadish::StringUtils::endsWith(texFilePath, ".jpeg"))
+					targetImg = HorseRadish::Imaging::Factory::readJPG(HorseRadish::Streams::StreamReader(*fileStream));
+				else if (HorseRadish::StringUtils::endsWith(texFilePath, ".png"))
+					targetImg = HorseRadish::Imaging::Factory::readPNG(HorseRadish::Streams::StreamReader(*fileStream));
+
+				if (targetImg.empty())
+					return;
+
+				targetImg.removeGamma();
+
+				targetTexture.init(HorseRadish::OpenGL::Objects::Texture::Type::Tex2D, HorseRadish::OpenGL::Objects::Texture::StorageType::RGB_8, targetImg.width(), targetImg.height());
+				targetTexture.uploadData(0, 0, 0, targetImg.width(), targetImg.height(), HorseRadish::OpenGL::Objects::Texture::DataFormat::RGB, HorseRadish::OpenGL::Objects::Texture::DataType::UBYTE, targetImg.data());
+				targetTexture.genMipmaps();
+			}
 		}
 
-		void RendererDeferred::loadNormal(HorseRadish::IO::FileSystem &fileSystem, TextureSet::Texture* texture, HorseRadish::OpenGL::Objects::Texture& targetTexture)
+		void RendererDeferred::loadNormal(HorseRadish::IO::FileSystem &fileSystem, const std::string& texFilePath, HorseRadish::OpenGL::Objects::Texture& targetTexture)
 		{
-			if ((texture == nullptr) || (texture->type != 3))
+			if (texFilePath.empty())
 				return;
 
-			auto fileStream = fileSystem.FileRead(texture->filePath.c_str());
+			auto fileStream = fileSystem.FileRead(texFilePath.c_str());
 			if (!fileStream)
 				return;
 
-			HorseRadish::Imaging::Image<unsigned char, HorseRadish::Imaging::ImageFormatRGB> targetImg;
+			if (HorseRadish::StringUtils::endsWith(texFilePath, ".tga"))
+			{
+			}
+			else
+			{
+				HorseRadish::Imaging::Image<unsigned char, HorseRadish::Imaging::ImageFormatRGB> targetImg;
 
-			if (HorseRadish::StringUtils::endsWith(texture->filePath, ".png"))
-				targetImg = HorseRadish::Imaging::Factory::readPNG(HorseRadish::Streams::StreamReader(*fileStream));
-			else if (HorseRadish::StringUtils::endsWith(texture->filePath, ".jpg") || HorseRadish::StringUtils::endsWith(texture->filePath, ".jpeg"))
-				targetImg = HorseRadish::Imaging::Factory::readJPG(HorseRadish::Streams::StreamReader(*fileStream));
+				if (HorseRadish::StringUtils::endsWith(texFilePath, ".png"))
+					targetImg = HorseRadish::Imaging::Factory::readPNG(HorseRadish::Streams::StreamReader(*fileStream));
+				else if (HorseRadish::StringUtils::endsWith(texFilePath, ".jpg") || HorseRadish::StringUtils::endsWith(texFilePath, ".jpeg"))
+					targetImg = HorseRadish::Imaging::Factory::readJPG(HorseRadish::Streams::StreamReader(*fileStream));
 
-			if (targetImg.empty())
-				return;
+				if (targetImg.empty())
+					return;
 
-			targetTexture.init(HorseRadish::OpenGL::Objects::Texture::Type::Tex2D, HorseRadish::OpenGL::Objects::Texture::StorageType::RGB_8, targetImg.width(), targetImg.height());
-			targetTexture.uploadData(0, 0, 0, targetImg.width(), targetImg.height(), HorseRadish::OpenGL::Objects::Texture::DataFormat::RGB, HorseRadish::OpenGL::Objects::Texture::DataType::UBYTE, targetImg.data());
-			targetTexture.genMipmaps();
+				targetTexture.init(HorseRadish::OpenGL::Objects::Texture::Type::Tex2D, HorseRadish::OpenGL::Objects::Texture::StorageType::RGB_8, targetImg.width(), targetImg.height());
+				targetTexture.uploadData(0, 0, 0, targetImg.width(), targetImg.height(), HorseRadish::OpenGL::Objects::Texture::DataFormat::RGB, HorseRadish::OpenGL::Objects::Texture::DataType::UBYTE, targetImg.data());
+				targetTexture.genMipmaps();
+			}
 		}
 
 		void RendererDeferred::loadTextures(HorseRadish::IO::FileSystem &fileSystem)
 		{
-			for (auto& curSurf : this->renderWorld->surfacesTotal)
+			for (auto& concept : this->renderWorld->mConcepts)
 			{
-				if (curSurf.texSet == nullptr)
-					continue;
+				concept.second.renderData.texDiffuse.reset();
+				concept.second.renderData.texNormal.reset();
 
-				if (curSurf.texData == nullptr)
-					curSurf.texData = new HorseRadish::Render::Surface::TextureData();
-
-				curSurf.texData->lighting.diffuse.reset();
-				loadDiffuse(fileSystem, findTexType(curSurf.texSet, 1), curSurf.texData->lighting.diffuse);
-
-				curSurf.texData->lighting.normal.reset();
-				loadNormal(fileSystem, findTexType(curSurf.texSet, 3), curSurf.texData->lighting.normal);
+				loadDiffuse(fileSystem, concept.second.matDiffusePath, concept.second.renderData.texDiffuse);
+				loadNormal(fileSystem, concept.second.matNormalPath, concept.second.renderData.texNormal);
 			}
 		}
 

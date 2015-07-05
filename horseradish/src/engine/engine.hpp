@@ -98,36 +98,36 @@ namespace HorseRadish { namespace Engine {
 
 		class VariableInt : public IVariable
 		{
-			hInt64 value;
-			hInt64 clampMin, clampMax;
+			int64_t value;
+			int64_t clampMin, clampMax;
 			bool clampValue;
 
 		public:
-			VariableInt(const hInt64 defaultValue)
+			VariableInt(const int64_t defaultValue)
 				: IVariable(IVariable::VariableType::Integer), value(defaultValue), clampMin(0), clampMax(0), clampValue(false)
 			{}
 
-			VariableInt(const hInt64 defaultValue, const std::string& desc)
+			VariableInt(const int64_t defaultValue, const std::string& desc)
 				: IVariable(IVariable::VariableType::Integer, desc), value(defaultValue), clampMin(0), clampMax(0), clampValue(false)
 			{}
 
-			VariableInt(const hInt64 defaultValue, const hInt64 clampMinValue, const hInt64 clampMaxValue)
+			VariableInt(const int64_t defaultValue, const int64_t clampMinValue, const int64_t clampMaxValue)
 				: IVariable(IVariable::VariableType::Integer), value(defaultValue), clampMin(clampMinValue), clampMax(clampMaxValue), clampValue(true)
 			{}
 
-			VariableInt(const hInt64 defaultValue, const hInt64 clampMinValue, const hInt64 clampMaxValue, const std::string& desc)
+			VariableInt(const int64_t defaultValue, const int64_t clampMinValue, const int64_t clampMaxValue, const std::string& desc)
 				: IVariable(IVariable::VariableType::Integer, desc), value(defaultValue), clampMin(clampMinValue), clampMax(clampMaxValue), clampValue(true)
 			{}
 
 			VariableInt(const VariableInt&) = delete;
 			VariableInt& operator=(const VariableInt&) = delete;
 
-			hInt64 GetValue() const
+			int64_t GetValue() const
 			{
 				return value;
 			}
 
-			void SetValue(const hInt64 newValue)
+			void SetValue(const int64_t newValue)
 			{
 				value = newValue;
 				if (clampValue)
@@ -322,15 +322,15 @@ namespace HorseRadish { namespace Engine {
 } }
 
 template<> bool HorseRadish::Engine::Engine::VarGet<bool>(const char* const name) const;
-template<> int HorseRadish::Engine::Engine::VarGet<int>(const char* const name) const;
-template<> HorseRadish::hInt64 HorseRadish::Engine::Engine::VarGet<HorseRadish::hInt64>(const char* const name) const;
+template<> int32_t HorseRadish::Engine::Engine::VarGet<int32_t>(const char* const name) const;
+template<> int64_t HorseRadish::Engine::Engine::VarGet<int64_t>(const char* const name) const;
 template<> float HorseRadish::Engine::Engine::VarGet<float>(const char* const name) const;
 template<> double HorseRadish::Engine::Engine::VarGet<double>(const char* const name) const;
 template<> std::string HorseRadish::Engine::Engine::VarGet<std::string>(const char* const name) const;
 
 template<> void HorseRadish::Engine::Engine::VarSet(const char* const name, const bool& value);
-template<> void HorseRadish::Engine::Engine::VarSet(const char* const name, const int& value);
-template<> void HorseRadish::Engine::Engine::VarSet(const char* const name, const HorseRadish::hInt64& value);
+template<> void HorseRadish::Engine::Engine::VarSet(const char* const name, const int32_t& value);
+template<> void HorseRadish::Engine::Engine::VarSet(const char* const name, const int64_t& value);
 template<> void HorseRadish::Engine::Engine::VarSet(const char* const name, const float& value);
 template<> void HorseRadish::Engine::Engine::VarSet(const char* const name, const double& value);
 template<> void HorseRadish::Engine::Engine::VarSet(const char* const name, const std::string& value);

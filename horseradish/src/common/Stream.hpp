@@ -21,8 +21,10 @@ namespace HorseRadish
 		public:
 			enum SeekOrigin { Begin, Current, End };
 
-			Stream() { }
-			virtual ~Stream() = 0;
+			Stream()
+			{ }
+
+			virtual ~Stream();
 
 			virtual void Close() = 0;
 			virtual void Flush() = 0;
@@ -56,12 +58,16 @@ namespace HorseRadish
 			ManagementType managementType;
 
 		public:
-			MemoryStream(MemoryStream&& stream);
+			MemoryStream();
+
+			MemoryStream(int initialSize, bool canWrite);
 			MemoryStream(const void * const bufferData, int bufferSize, bool canWrite, const ManagementType &managementType);
 			~MemoryStream();
 
 			MemoryStream(const MemoryStream&) = delete;
 			const MemoryStream& operator=(const MemoryStream&) = delete;
+
+			MemoryStream(MemoryStream&& stream);
 
 			void Close();
 			void Flush();

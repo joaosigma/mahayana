@@ -127,8 +127,131 @@ namespace HorseRadish
 		return (3 * numBase64Chars / 4);
 	}
 
+	unsigned int Encoders::DecodeBase64(const std::string &dataBase64, void* bufferOut)
+	{
+		if (dataBase64.empty())
+			return 0;
+
+		int in_len = dataBase64.size();
+		int i = 0;
+		int in_ = 0;
+		int bytesWritten = 0;
+		unsigned char char_array_4[4], char_array_3[3];
+
+		while (in_len-- && (dataBase64[in_] != '=') && Encoders::isBase64Char(dataBase64[in_]))
+		{
+			char_array_4[i++] = dataBase64[in_];
+			in_++;
+			if (i == 4)
+			{
+				char_array_4[0] = Encoders::findBase64Char(char_array_4[0]);
+				char_array_4[1] = Encoders::findBase64Char(char_array_4[1]);
+				char_array_4[2] = Encoders::findBase64Char(char_array_4[2]);
+				char_array_4[3] = Encoders::findBase64Char(char_array_4[3]);
+
+				char_array_3[0] = (char_array_4[0] << 2) + ((char_array_4[1] & 0x30) >> 4);
+				char_array_3[1] = ((char_array_4[1] & 0xf) << 4) + ((char_array_4[2] & 0x3c) >> 2);
+				char_array_3[2] = ((char_array_4[2] & 0x3) << 6) + char_array_4[3];
+
+				memcpy(bufferOut, char_array_3, sizeof(unsigned char) * 3);
+				bufferOut = reinterpret_cast<unsigned char*>(bufferOut)+3;
+				bytesWritten += 3;
+
+				i = 0;
+			}
+		}
+
+		if (i)
+		{
+			for (int j = i; j < 4; j++)
+				char_array_4[j] = 0;
+
+			char_array_4[0] = Encoders::findBase64Char(char_array_4[0]);
+			char_array_4[1] = Encoders::findBase64Char(char_array_4[1]);
+			char_array_4[2] = Encoders::findBase64Char(char_array_4[2]);
+			char_array_4[3] = Encoders::findBase64Char(char_array_4[3]);
+
+			char_array_3[0] = (char_array_4[0] << 2) + ((char_array_4[1] & 0x30) >> 4);
+			char_array_3[1] = ((char_array_4[1] & 0xf) << 4) + ((char_array_4[2] & 0x3c) >> 2);
+			char_array_3[2] = ((char_array_4[2] & 0x3) << 6) + char_array_4[3];
+
+			for (int j = 0; (j < i - 1); j++)
+			{
+				memcpy(bufferOut, char_array_3 + j, sizeof(unsigned char));
+				bufferOut = reinterpret_cast<unsigned char*>(bufferOut);
+				bytesWritten++;
+			}
+		}
+
+		return bytesWritten;
+	}
+
+	unsigned int Encoders::DecodeBase64(const std::string &dataBase64, std::vector<unsigned char> &bufferOut)
+	{
+		if (dataBase64.empty())
+			return 0;
+
+		bufferOut.reserve(bufferOut.capacity() + Encoders::DecodeBase64RequiredSize(dataBase64.size()));
+
+		int in_len = dataBase64.size();
+		int i = 0;
+		int in_ = 0;
+		int bytesWritten = 0;
+		unsigned char char_array_4[4], char_array_3[3];
+
+		while (in_len-- && (dataBase64[in_] != '=') && Encoders::isBase64Char(dataBase64[in_]))
+		{
+			char_array_4[i++] = dataBase64[in_];
+			in_++;
+			if (i == 4)
+			{
+				char_array_4[0] = Encoders::findBase64Char(char_array_4[0]);
+				char_array_4[1] = Encoders::findBase64Char(char_array_4[1]);
+				char_array_4[2] = Encoders::findBase64Char(char_array_4[2]);
+				char_array_4[3] = Encoders::findBase64Char(char_array_4[3]);
+
+				char_array_3[0] = (char_array_4[0] << 2) + ((char_array_4[1] & 0x30) >> 4);
+				char_array_3[1] = ((char_array_4[1] & 0xf) << 4) + ((char_array_4[2] & 0x3c) >> 2);
+				char_array_3[2] = ((char_array_4[2] & 0x3) << 6) + char_array_4[3];
+
+				bufferOut.push_back(char_array_3[0]);
+				bufferOut.push_back(char_array_3[1]);
+				bufferOut.push_back(char_array_3[2]);
+				bytesWritten += 3;
+
+				i = 0;
+			}
+		}
+
+		if (i)
+		{
+			for (int j = i; j < 4; j++)
+				char_array_4[j] = 0;
+
+			char_array_4[0] = Encoders::findBase64Char(char_array_4[0]);
+			char_array_4[1] = Encoders::findBase64Char(char_array_4[1]);
+			char_array_4[2] = Encoders::findBase64Char(char_array_4[2]);
+			char_array_4[3] = Encoders::findBase64Char(char_array_4[3]);
+
+			char_array_3[0] = (char_array_4[0] << 2) + ((char_array_4[1] & 0x30) >> 4);
+			char_array_3[1] = ((char_array_4[1] & 0xf) << 4) + ((char_array_4[2] & 0x3c) >> 2);
+			char_array_3[2] = ((char_array_4[2] & 0x3) << 6) + char_array_4[3];
+
+			for (int j = 0; (j < i - 1); j++)
+			{
+				bufferOut.push_back(char_array_3[0]);
+				bytesWritten++;
+			}
+		}
+
+		return bytesWritten;
+	}
+
 	unsigned int Encoders::DecodeBase64(const std::string &dataBase64, HorseRadish::Streams::Stream &streamOut)
 	{
+		if (dataBase64.empty())
+			return 0;
+
 		int in_len = dataBase64.size();
 		int i = 0;
 		int in_ = 0;

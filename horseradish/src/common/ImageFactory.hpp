@@ -14,6 +14,8 @@ public:
 
 	static bool savePNG(HorseRadish::Streams::StreamWriter &streamWriter, const ImageView<unsigned char, ImageFormatRGB>& imgView);
 	static bool savePNG(HorseRadish::Streams::StreamWriter &streamWriter, const ImageView<unsigned char, ImageFormatRGBA>& imgView);
+
+	static Image<unsigned char, ImageFormatRGBA> readTGA(HorseRadish::Streams::StreamReader &streamReader);
 	
 	static Image<unsigned char, ImageFormatRGB> readJPG(HorseRadish::Streams::StreamReader &streamReader);
 

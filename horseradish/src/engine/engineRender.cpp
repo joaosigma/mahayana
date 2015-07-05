@@ -211,11 +211,11 @@ namespace HorseRadish
 					return;
 				}
 
-				/*if (glContext->IsExtensionPresent((OpenglContext::Extensions)()) == false)
+				if (!glContext->isExtPresent("GL_ARB_pipeline_statistics_query"))
 				{
-					exit(ExitAction::NOTHING, "Required extensions are not present");
+					exit(ExitAction::Nothing, "Required extensions are not present");
 					return;
-				}*/
+				}
 
 				openglInitialize();
 
@@ -306,15 +306,23 @@ namespace HorseRadish
 			//***************
 			//**********
 			{
-				//HorseRadish::Streams::FileStream fileStream(HorseRadish::IO::Path("c:/Users/Sigma/Desktop/doom3.hrf"), true, false);
-				HorseRadish::Streams::FileStream fileStream("c:/Users/Sigma/Desktop/test_scene.hrf", true, false);
+				
+				//HorseRadish::Streams::FileStream readStream("c:/Users/Sigma/Desktop/doom3.json", true, false);
+				//HorseRadish::Streams::FileStream readStream("c:/Users/Sigma/Desktop/test_scene.json", true, false);
+				HorseRadish::Streams::FileStream readStream("c:/Users/Sigma/Desktop/volund2.json", true, false);
 
 				renderData->Cleanup();
-				if (renderData->ImportHRF(fileStream) < 0)
+				if (!renderData->ImportJSON(HorseRadish::Streams::StreamReader(readStream)))
 					renderData->Cleanup();
+
+				//renderData->importObj("C:\\Users\\Sigma\\Desktop\\", "volund.obj");
+
 				renderData->LoadData(mFileSystem.get());
 
 				rendererDeferred->LoadWorld(*mFileSystem);
+				
+				/*HorseRadish::Streams::FileStream writeStream("c:/Users/Sigma/Desktop/volund2.json", false, true);
+				renderData->ExportJSON(HorseRadish::Streams::StreamWriter(writeStream));*/
 			}
 			//**********
 			//***************
@@ -328,186 +336,200 @@ namespace HorseRadish
 
 			HorseRadish::OpenGL::glEnable(GL_FRAMEBUFFER_SRGB);
 
-			while (mCurState == State::Running)
 			{
-				//a primeira coisa é acertar os tempos
-				renderer2D->auxTools.lastTimeS = renderer2D->auxTools.curTimeS;
-				renderer2D->auxTools.curTimeS = timerTotal.GetTimeS();
+				HorseRadish::OpenGL::Objects::Query::Group<8> renderGlQueryGroup(
+					{ HorseRadish::OpenGL::Objects::Query::Type::TimeElapsed, HorseRadish::OpenGL::Objects::Query::Type::SamplesPassed,
+					HorseRadish::OpenGL::Objects::Query::Type::VerticesSubmitted, HorseRadish::OpenGL::Objects::Query::Type::PrimitivesSubmitted,
+					HorseRadish::OpenGL::Objects::Query::Type::VertexShaderInvocations, HorseRadish::OpenGL::Objects::Query::Type::FragmentShaderInvocations,
+					HorseRadish::OpenGL::Objects::Query::Type::ClippingInputPrimitives, HorseRadish::OpenGL::Objects::Query::Type::ClippingOutputPrimitives });
 
-				//caso nao desenhe nada
-				HorseRadish::OpenGL::glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-				HorseRadish::OpenGL::glDepthMask(GL_TRUE);
-				HorseRadish::OpenGL::glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-				//desenho a cena normalmente
-				//renderData->RenderFrame(*camera, viewport);
-				rendererDeferred->Render(*camera, *viewport);
-
-				//desenho algum debug se existir
-				//renderData->RenderDebug(gbMainConsole, camera, viewport);
-
-				//finalmente (e porque isto foi tudo pra um FBO) faço o render final seguido de algum debug se existir
-				//renderData->RenderComposite(gbMainConsole, camera, viewport);
-				//renderData->RenderDebugComposite(gbMainConsole, camera, viewport);
-
+				while (mCurState == State::Running)
 				{
-					stage->drawScenes();
+					//a primeira coisa é acertar os tempos
+					renderer2D->auxTools.lastTimeS = renderer2D->auxTools.curTimeS;
+					renderer2D->auxTools.curTimeS = timerTotal.GetTimeS();
 
-					HorseRadish::OpenGL::glDisable(GL_BLEND);
+					//caso nao desenhe nada
+					HorseRadish::OpenGL::glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+					HorseRadish::OpenGL::glDepthMask(GL_TRUE);
+					HorseRadish::OpenGL::glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-					stage->drawComposite();
-				}
 
-				//leio o tempo que estive à espera para desenhar o 3D
-				timeSpentDrawing = timerFrame.GetTimeMS();
+					renderGlQueryGroup.queriesBegin();
 
-				//se for para tirar algum screenshot
-				if (this->VarGet<int>("sys.screenshot") > 0)
-				{
-					//diminuo o número de imagens a tirar e espero que todos os comandos do OpenGL acabei
-					this->VarSet("sys.screenshot", this->VarGet<int>("sys.screenshot") - 1);
-					HorseRadish::OpenGL::glFinish();
+					//desenho a cena normalmente
+					//renderData->RenderFrame(*camera, viewport);
+					rendererDeferred->Render(*camera, *viewport);
 
-					//crio um ficheiro (ao sair do scope o ficheiro é fechado)
-					HorseRadish::Streams::FileStream fileStream("screenshot.bmp", false, true);
+					renderGlQueryGroup.queriesEnd();
 
-					//basta mandar tirar o screenshot
-					//glContext->TakeScreenshot(fileStream); //should come from the framebuffers
-				}
+					//desenho algum debug se existir
+					//renderData->RenderDebug(gbMainConsole, camera, viewport);
 
-				//se alguma coisa da consola precisar de ser desenhado
-				if (consolaGUI->GUIVisivel())
-				{
-					//o opengl (não esquecer: não tenho depth buffer por defeito)
-					HorseRadish::OpenGL::glEnable(GL_BLEND);
-					HorseRadish::OpenGL::glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+					//finalmente (e porque isto foi tudo pra um FBO) faço o render final seguido de algum debug se existir
+					//renderData->RenderComposite(gbMainConsole, camera, viewport);
+					//renderData->RenderDebugComposite(gbMainConsole, camera, viewport);
 
-					//se for preciso, actualizo o texto da consola propriamente dita
-					//if (gbMainConsole->AsChanged() == true)
+					{
+						stage->drawScenes();
+
+						HorseRadish::OpenGL::glDisable(GL_BLEND);
+
+						stage->drawComposite();
+					}
+
+					//leio o tempo que estive à espera para desenhar o 3D
+					timeSpentDrawing = timerFrame.GetTimeMS();
+
+					//se for para tirar algum screenshot
+					if (this->VarGet<int>("sys.screenshot") > 0)
+					{
+						//diminuo o número de imagens a tirar e espero que todos os comandos do OpenGL acabei
+						this->VarSet("sys.screenshot", this->VarGet<int>("sys.screenshot") - 1);
+						HorseRadish::OpenGL::glFinish();
+
+						//crio um ficheiro (ao sair do scope o ficheiro é fechado)
+						HorseRadish::Streams::FileStream fileStream("screenshot.bmp", false, true);
+
+						//basta mandar tirar o screenshot
+						//glContext->TakeScreenshot(fileStream); //should come from the framebuffers
+					}
+
+					//se alguma coisa da consola precisar de ser desenhado
+					if (consolaGUI->GUIVisivel())
+					{
+						//o opengl (não esquecer: não tenho depth buffer por defeito)
+						HorseRadish::OpenGL::glEnable(GL_BLEND);
+						HorseRadish::OpenGL::glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+						//se for preciso, actualizo o texto da consola propriamente dita
+						//if (gbMainConsole->AsChanged() == true)
 						consoleUIMain->ActualizaTextoConsola();
 
-					//mando desenhar a consola
-					//SOverlayDraw(gbMainConsole);
-					consolaGUI->Draw(viewport);
+						//mando desenhar a consola
+						//SOverlayDraw(gbMainConsole);
+						consolaGUI->Draw(viewport);
 
-					//reponho o opengl
-					HorseRadish::OpenGL::glDisable(GL_BLEND);
-				}
-
-				//se houver uma camera e a consola não estiver a consumir input
-				if ((camera != nullptr) && (consolaGUI->ConsoleConsumesInput() == false))
-				{
-					HorseRadish::Render::Tools::Camera::CameraAction cameraActions;
-
-					//tiro as coisas como estão agora
-					mWindow->RawInputSnapshot();
-
-					//por omissão
-					cameraActions = HorseRadish::Render::Tools::Camera::None;
-
-					//preciso de saber o que ando a fazer
-					if (mWindow->RawInputGetKeyStatus(Window::VirtualKeys::Up) || mWindow->RawInputGetKeyStatus('W'))
-						cameraActions = (HorseRadish::Render::Tools::Camera::CameraAction)(cameraActions | HorseRadish::Render::Tools::Camera::Forward);
-					if (mWindow->RawInputGetKeyStatus(Window::VirtualKeys::Down) || mWindow->RawInputGetKeyStatus('S'))
-						cameraActions = (HorseRadish::Render::Tools::Camera::CameraAction)(cameraActions | HorseRadish::Render::Tools::Camera::Backward);
-					if (mWindow->RawInputGetKeyStatus(Window::VirtualKeys::Left) || mWindow->RawInputGetKeyStatus('A'))
-						cameraActions = (HorseRadish::Render::Tools::Camera::CameraAction)(cameraActions | HorseRadish::Render::Tools::Camera::StrifeLeft);
-					if (mWindow->RawInputGetKeyStatus(Window::VirtualKeys::Right) || mWindow->RawInputGetKeyStatus('D'))
-						cameraActions = (HorseRadish::Render::Tools::Camera::CameraAction)(cameraActions | HorseRadish::Render::Tools::Camera::StrifeRight);
-					if (mWindow->RawInputGetKeyStatus(Window::VirtualKeys::Space))
-						cameraActions = (HorseRadish::Render::Tools::Camera::CameraAction)(cameraActions | HorseRadish::Render::Tools::Camera::Up);
-					if (mWindow->RawInputGetKeyStatus(Window::VirtualKeys::Control))
-						cameraActions = (HorseRadish::Render::Tools::Camera::CameraAction)(cameraActions | HorseRadish::Render::Tools::Camera::Down);
-					if (mWindow->RawInputGetKeyStatus(Window::VirtualKeys::Shift))
-						cameraActions = (HorseRadish::Render::Tools::Camera::CameraAction)(cameraActions | HorseRadish::Render::Tools::Camera::Run);
-
-					//posso actualizar a camera
-					auto mousePosition = mWindow->RawInputGetMouseStatus();
-					camera->CommitInput(cameraActions, mousePosition.x, mousePosition.y, true, renderer2D->auxTools.curTimeS - renderer2D->auxTools.lastTimeS);
-				}
-
-				mWindow->ProcessMessages([&](const Window::Message &msg)
-				{
-					if (msg.isType(Window::Message::MessageType::CharacterKey))
-						mRuntime->callVoidMethod("events.onKeyPress", msg.getParam());
-
-					stage->processMessage(msg);
-
-					consolaGUI->ConsoleProcessMSG(msg);
-				}, true);
-
-				//mais uma frame
-				glContext->counterIncrease(HorseRadish::OpenGL::Objects::Context::CounterType::Frames);
-
-				//se já passou um segundo
-				if (timerSecond.GetTimeMS() > 1000.0)
-				{
-					//para ajudar nos cálculos
-					double tempoAux = 1.0 / timerSecond.GetTimeS(true);
-
-					//ajusto o valor das variáveis
-					this->VarSet("sys.infoFPS", HorseRadish::Math::ftoi(((double)glContext->counterGetValue(HorseRadish::OpenGL::Objects::Context::CounterType::Frames)) * tempoAux));
-					this->VarSet("renderer.infoMTRIS", ((double)glContext->counterGetValue(HorseRadish::OpenGL::Objects::Context::CounterType::Triangles)) * tempoAux);
-					this->VarSet("renderer.infoMVERTS", ((double)glContext->counterGetValue(HorseRadish::OpenGL::Objects::Context::CounterType::Vertices)) * tempoAux);
-
-					//recomeço as contagens
-					glContext->counterReset(HorseRadish::OpenGL::Objects::Context::CounterType::Frames);
-					glContext->counterReset(HorseRadish::OpenGL::Objects::Context::CounterType::Triangles);
-					glContext->counterReset(HorseRadish::OpenGL::Objects::Context::CounterType::Vertices);
-				}
-
-				//mando o renderer preparar a próxima frame
-				renderData->PrepareNextFrame(*camera, *viewport);
-				stage->processStep();
-
-				//leio o tempo que estive à espera de processar as coisas do motor
-				timeSpentProcessing = timerFrame.GetTimeMS() - timeSpentDrawing;
-
-				//mostro o que desenhei, isto tá no fim pra ajudar no paralelismo entre CPU e GPU
-				glContext->SwapBuffers();
-
-				//leio o tempo que estive à espera de acabar de fazer o swap
-				timeSpentIdle = timerFrame.GetTimeMS() - timeSpentProcessing;
-
-				//se tiver coisas para ler do GPU, leio
-				//if (renderData->stats.gpuCounter != nullptr)
-				//{
-				//	float slotTotalInv;
-
-				//	//preciso de calcular o máximo dos tempos para poder fazer as percentagens correctas
-				//	slotTotalInv = 1.0f / (timeSpentDrawing + timeSpentProcessing + timeSpentIdle) * 100.0f;
-
-				//	//os contadores a usar
-				//	renderData->stats.gpuCounter->sampleCounter("timeSlot_draw3D", timeSpentDrawing * slotTotalInv);
-				//	renderData->stats.gpuCounter->sampleCounter("timeSlot_process", timeSpentProcessing * slotTotalInv);
-				//	renderData->stats.gpuCounter->sampleCounter("timeSlot_idle", timeSpentIdle * slotTotalInv);
-				//	renderData->stats.gpuCounter->sampleCounter("render_numTris", renderData->stats.numTris);
-				//	renderData->stats.gpuCounter->sampleCounter("render_glDrawElements", renderData->stats.numGlDrawElements);
-
-				//	//posso avançar com o sample
-				//	renderData->stats.gpuCounter->sampleMoveNext();
-				//}
-
-				//vejo o estado da musica e quando para, coloco outra
-				//if (SAudio::SAudioMusicStatus()==SAUDIO_STATUS_STOPPED)
-				//	{
-				//	SAudio::SAudioMusicLoad("~/test2.ogg");
-				//	SAudio::SAudioMusicAction(SAUDIO_ACTION_PLAY);
-				//	}
-
-				//only limit FPS if not developing
-				if (this->VarGet<bool>("sys.developer") == 0)
-				{
-					auto frameTotalTimeMS = timerFrame.GetTimeMS();
-					if (frameTotalTimeMS < 16.5) //cap to 60fps
-					{
-						std::this_thread::sleep_for(std::chrono::milliseconds(HorseRadish::Math::ftoi(16 - frameTotalTimeMS)));
-						while (timerFrame.GetTimeMS() < 16.5);
+						//reponho o opengl
+						HorseRadish::OpenGL::glDisable(GL_BLEND);
 					}
-				}
 
-				//agora sim, faço restart do timer
-				timerFrame.ReStart();
+					//se houver uma camera e a consola não estiver a consumir input
+					if ((camera != nullptr) && (consolaGUI->ConsoleConsumesInput() == false))
+					{
+						HorseRadish::Render::Tools::Camera::CameraAction cameraActions;
+
+						//tiro as coisas como estão agora
+						mWindow->RawInputSnapshot();
+
+						//por omissão
+						cameraActions = HorseRadish::Render::Tools::Camera::None;
+
+						//preciso de saber o que ando a fazer
+						if (mWindow->RawInputGetKeyStatus(Window::VirtualKeys::Up) || mWindow->RawInputGetKeyStatus('W'))
+							cameraActions = (HorseRadish::Render::Tools::Camera::CameraAction)(cameraActions | HorseRadish::Render::Tools::Camera::Forward);
+						if (mWindow->RawInputGetKeyStatus(Window::VirtualKeys::Down) || mWindow->RawInputGetKeyStatus('S'))
+							cameraActions = (HorseRadish::Render::Tools::Camera::CameraAction)(cameraActions | HorseRadish::Render::Tools::Camera::Backward);
+						if (mWindow->RawInputGetKeyStatus(Window::VirtualKeys::Left) || mWindow->RawInputGetKeyStatus('A'))
+							cameraActions = (HorseRadish::Render::Tools::Camera::CameraAction)(cameraActions | HorseRadish::Render::Tools::Camera::StrifeLeft);
+						if (mWindow->RawInputGetKeyStatus(Window::VirtualKeys::Right) || mWindow->RawInputGetKeyStatus('D'))
+							cameraActions = (HorseRadish::Render::Tools::Camera::CameraAction)(cameraActions | HorseRadish::Render::Tools::Camera::StrifeRight);
+						if (mWindow->RawInputGetKeyStatus(Window::VirtualKeys::Space))
+							cameraActions = (HorseRadish::Render::Tools::Camera::CameraAction)(cameraActions | HorseRadish::Render::Tools::Camera::Up);
+						if (mWindow->RawInputGetKeyStatus(Window::VirtualKeys::Control))
+							cameraActions = (HorseRadish::Render::Tools::Camera::CameraAction)(cameraActions | HorseRadish::Render::Tools::Camera::Down);
+						if (mWindow->RawInputGetKeyStatus(Window::VirtualKeys::Shift))
+							cameraActions = (HorseRadish::Render::Tools::Camera::CameraAction)(cameraActions | HorseRadish::Render::Tools::Camera::Run);
+
+						//posso actualizar a camera
+						auto mousePosition = mWindow->RawInputGetMouseStatus();
+						camera->CommitInput(cameraActions, mousePosition.x, mousePosition.y, true, renderer2D->auxTools.curTimeS - renderer2D->auxTools.lastTimeS);
+					}
+
+					mWindow->ProcessMessages([&](const Window::Message &msg)
+					{
+						if (msg.isType(Window::Message::MessageType::CharacterKey))
+							mRuntime->callVoidMethod("events.onKeyPress", msg.getParam());
+
+						stage->processMessage(msg);
+
+						consolaGUI->ConsoleProcessMSG(msg);
+					}, true);
+
+					//se já passou um segundo
+					if (timerSecond.GetTimeMS() > 1000.0)
+					{
+						//para ajudar nos cálculos
+						double tempoAux = 1.0 / timerSecond.GetTimeS(true);
+
+						//ajusto o valor das variáveis
+						//this->VarSet("sys.infoFPS", HorseRadish::Math::ftoi(((double)glContext->counterGetValue(HorseRadish::OpenGL::Objects::Context::CounterType::Frames)) * tempoAux));
+						//this->VarSet("renderer.infoMTRIS", ((double)glContext->counterGetValue(HorseRadish::OpenGL::Objects::Context::CounterType::Triangles)) * tempoAux);
+						//this->VarSet("renderer.infoMVERTS", ((double)glContext->counterGetValue(HorseRadish::OpenGL::Objects::Context::CounterType::Vertices)) * tempoAux);
+
+						VarSet("renderer.stats.timeElapsed", static_cast<int64_t>(renderGlQueryGroup.getResultI64<0>() / 1000));
+						VarSet("renderer.stats.samples", static_cast<int64_t>(renderGlQueryGroup.getResultI64<1>()));
+						VarSet("renderer.stats.vertices", static_cast<int64_t>(renderGlQueryGroup.getResultI64<2>()));
+						VarSet("renderer.stats.primitives", static_cast<int64_t>(renderGlQueryGroup.getResultI64<3>()));
+						VarSet("renderer.stats.vertexShader", static_cast<int64_t>(renderGlQueryGroup.getResultI64<4>()));
+						VarSet("renderer.stats.fragmentShader", static_cast<int64_t>(renderGlQueryGroup.getResultI64<5>()));
+						VarSet("renderer.stats.clipInputPrimitives", static_cast<int64_t>(renderGlQueryGroup.getResultI64<6>()));
+						VarSet("renderer.stats.clipOutputPrimitives", static_cast<int64_t>(renderGlQueryGroup.getResultI64<7>()));
+					}
+
+					//mando o renderer preparar a próxima frame
+					renderData->PrepareNextFrame(*camera, *viewport);
+					stage->processStep();
+
+					//leio o tempo que estive à espera de processar as coisas do motor
+					timeSpentProcessing = timerFrame.GetTimeMS() - timeSpentDrawing;
+
+					//mostro o que desenhei, isto tá no fim pra ajudar no paralelismo entre CPU e GPU
+					glContext->SwapBuffers();
+
+					//leio o tempo que estive à espera de acabar de fazer o swap
+					timeSpentIdle = timerFrame.GetTimeMS() - timeSpentProcessing;
+
+					//se tiver coisas para ler do GPU, leio
+					//if (renderData->stats.gpuCounter != nullptr)
+					//{
+					//	float slotTotalInv;
+
+					//	//preciso de calcular o máximo dos tempos para poder fazer as percentagens correctas
+					//	slotTotalInv = 1.0f / (timeSpentDrawing + timeSpentProcessing + timeSpentIdle) * 100.0f;
+
+					//	//os contadores a usar
+					//	renderData->stats.gpuCounter->sampleCounter("timeSlot_draw3D", timeSpentDrawing * slotTotalInv);
+					//	renderData->stats.gpuCounter->sampleCounter("timeSlot_process", timeSpentProcessing * slotTotalInv);
+					//	renderData->stats.gpuCounter->sampleCounter("timeSlot_idle", timeSpentIdle * slotTotalInv);
+					//	renderData->stats.gpuCounter->sampleCounter("render_numTris", renderData->stats.numTris);
+					//	renderData->stats.gpuCounter->sampleCounter("render_glDrawElements", renderData->stats.numGlDrawElements);
+
+					//	//posso avançar com o sample
+					//	renderData->stats.gpuCounter->sampleMoveNext();
+					//}
+
+					//vejo o estado da musica e quando para, coloco outra
+					//if (SAudio::SAudioMusicStatus()==SAUDIO_STATUS_STOPPED)
+					//	{
+					//	SAudio::SAudioMusicLoad("~/test2.ogg");
+					//	SAudio::SAudioMusicAction(SAUDIO_ACTION_PLAY);
+					//	}
+
+					//only limit FPS if not developing
+					if (this->VarGet<bool>("sys.developer") == 0)
+					{
+						auto frameTotalTimeMS = timerFrame.GetTimeMS();
+						if (frameTotalTimeMS < 16.5) //cap to 60fps
+						{
+							std::this_thread::sleep_for(std::chrono::milliseconds(HorseRadish::Math::ftoi(16 - frameTotalTimeMS)));
+							while (timerFrame.GetTimeMS() < 16.5);
+						}
+					}
+
+					//agora sim, faço restart do timer
+					timerFrame.ReStart();
+				}
 			}
 
 			stage.reset();

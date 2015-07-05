@@ -8,6 +8,7 @@
 
 #include "common\Math.hpp"
 
+#include <array>
 #include <vector>
 #include <cassert>
 
@@ -781,8 +782,17 @@ public:
 class Buffer : public ObjectGL
 {
 public:
-	enum class Type { ArrayBuffer, ElementArrayBuffer, PixelPackBuffer, PixelUnpackBuffer, TextureBuffer, UniformBuffer };
+	enum class Type { ArrayBuffer, ElementArrayBuffer, PixelPackBuffer, PixelUnpackBuffer, TextureBuffer, UniformBuffer, DrawIndirect };
 	enum class UsageType { ServerStatic, FrequentOnlyRead, FrequentOnlyWrite };
+
+	typedef struct {
+		GLuint count;
+		GLuint instanceCount;
+		GLuint firstIndex;
+		GLuint baseVertex;
+		GLuint baseInstance;
+	} DrawElementsIndirectCommand;
+	static_assert(sizeof(DrawElementsIndirectCommand) == 20, "DrawElementsIndirectCommand must be tightly packed: sizeof() == 20");
 
 private:
 	GLenum mType;
@@ -845,6 +855,9 @@ public:
 			break;
 		case Type::UniformBuffer:
 			mType = GL_UNIFORM_BUFFER;
+			break;
+		case Type::DrawIndirect:
+			mType = GL_DRAW_INDIRECT_BUFFER;
 			break;
 		default:
 			return false;
@@ -946,51 +959,54 @@ public:
 class Query : public ObjectGL
 {
 public:
-	enum class Type { SamplesPassed, AnySamplePassed, AnySamplePassedConservative, TimeElapsed };
+	enum class Type {
+		SamplesPassed, AnySamplePassed, AnySamplePassedConservative, TimeElapsed,
+		VerticesSubmitted, PrimitivesSubmitted, VertexShaderInvocations, FragmentShaderInvocations, ClippingInputPrimitives, ClippingOutputPrimitives
+	};
 
-	class ScopedQuery
+	template<int N>
+	class Group
 	{
-		bool mRunning;
-		const Query& mQuery;
+		static_assert(N > 0, "A query group must have at least one query");
+
+		Query mQueries[N];
 
 	public:
-		ScopedQuery(const Query& query)
-			: mQuery(query), mRunning(true)
+		Group(const std::array<Type, N>& types)
 		{
-			mQuery.queryBegin();
+			for (int i = 0; i < N; i++)
+				mQueries[i].init(types[i]);
 		}
 
-		~ScopedQuery()
-		{
-			if (mRunning)
-				mQuery.queryEnd();
+		Group(const Group&) = delete;
+		Group& operator=(const Group&) = delete;
 
-			mRunning = false;
+		void queriesBegin() const
+		{
+			for (int i = 0; i < N; i++)
+				mQueries[i].queryBegin();
 		}
 
-		ScopedQuery(const ScopedQuery&) = delete;
-		ScopedQuery& operator=(const ScopedQuery&) = delete;
-
-		GLuint getResult(bool wait = true)
+		void queriesEnd() const
 		{
-			if (!mRunning)
-				return 0;
-
-			mRunning = false;
-
-			mQuery.queryEnd();
-			return mQuery.getResult(wait);
+			for (int i = 0; i < N; i++)
+				mQueries[i].queryEnd();
 		}
 
-		GLuint64 getResultI64(bool wait = true)
+		template<int Index>
+		GLuint getResult(bool wait = true) const
 		{
-			if (!mRunning)
-				return 0;
+			static_assert((Index >= 0) && (Index < N), "Query index must be positive and less than N");
 
-			mRunning = false;
+			return mQueries[Index].getResult(wait);
+		}
 
-			mQuery.queryEnd();
-			return mQuery.getResultI64(wait);
+		template<int Index>
+		GLuint64 getResultI64(bool wait = true) const
+		{
+			static_assert((Index >= 0) && (Index < N), "Query index must be positive and less than N");
+
+			return mQueries[Index].getResultI64(wait);
 		}
 	};
 
@@ -1046,6 +1062,25 @@ public:
 		case Type::TimeElapsed:
 			glBeginQuery(GL_TIME_ELAPSED, mId);
 			break;
+
+		case Type::VerticesSubmitted:
+			glBeginQuery(GL_VERTICES_SUBMITTED_ARB, mId);
+			break;
+		case Type::PrimitivesSubmitted:
+			glBeginQuery(GL_PRIMITIVES_SUBMITTED_ARB, mId);
+			break;
+		case Type::VertexShaderInvocations:
+			glBeginQuery(GL_VERTEX_SHADER_INVOCATIONS_ARB, mId);
+			break;
+		case Type::FragmentShaderInvocations:
+			glBeginQuery(GL_FRAGMENT_SHADER_INVOCATIONS_ARB, mId);
+			break;
+		case Type::ClippingInputPrimitives:
+			glBeginQuery(GL_CLIPPING_INPUT_PRIMITIVES_ARB, mId);
+			break;
+		case Type::ClippingOutputPrimitives:
+			glBeginQuery(GL_CLIPPING_OUTPUT_PRIMITIVES_ARB, mId);
+			break;
 		}
 	}
 
@@ -1067,6 +1102,25 @@ public:
 			break;
 		case Type::TimeElapsed:
 			glEndQuery(GL_TIME_ELAPSED);
+			break;
+
+		case Type::VerticesSubmitted:
+			glEndQuery(GL_VERTICES_SUBMITTED_ARB);
+			break;
+		case Type::PrimitivesSubmitted:
+			glEndQuery(GL_PRIMITIVES_SUBMITTED_ARB);
+			break;
+		case Type::VertexShaderInvocations:
+			glEndQuery(GL_VERTEX_SHADER_INVOCATIONS_ARB);
+			break;
+		case Type::FragmentShaderInvocations:
+			glEndQuery(GL_FRAGMENT_SHADER_INVOCATIONS_ARB);
+			break;
+		case Type::ClippingInputPrimitives:
+			glEndQuery(GL_CLIPPING_INPUT_PRIMITIVES_ARB);
+			break;
+		case Type::ClippingOutputPrimitives:
+			glEndQuery(GL_CLIPPING_OUTPUT_PRIMITIVES_ARB);
 			break;
 		}
 	}

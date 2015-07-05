@@ -336,16 +336,16 @@ namespace HorseRadish { namespace Engine {
 	}
 
 	template<>
-	int Engine::VarGet<int>(const char* const name) const
+	int32_t Engine::VarGet<int32_t>(const char* const name) const
 	{
 		auto var = mVars.getData(name);
 		assert(var && var->IsOfType(IVariable::VariableType::Integer));
 
-		return static_cast<int>(std::static_pointer_cast<VariableInt>(var)->GetValue());
+		return static_cast<int32_t>(std::static_pointer_cast<VariableInt>(var)->GetValue());
 	}
 
 	template<>
-	HorseRadish::hInt64 Engine::VarGet<HorseRadish::hInt64>(const char* const name) const
+	int64_t Engine::VarGet<int64_t>(const char* const name) const
 	{
 		auto var = mVars.getData(name);
 		assert(var && var->IsOfType(IVariable::VariableType::Integer));
@@ -390,7 +390,7 @@ namespace HorseRadish { namespace Engine {
 	}
 
 	template<>
-	void Engine::VarSet(const char* const name, const int& value)
+	void Engine::VarSet(const char* const name, const int32_t& value)
 	{
 		auto var = mVars.getData(name);
 		assert(var && var->IsOfType(IVariable::VariableType::Integer));
@@ -399,7 +399,7 @@ namespace HorseRadish { namespace Engine {
 	}
 
 	template<>
-	void Engine::VarSet(const char* const name, const HorseRadish::hInt64& value)
+	void Engine::VarSet(const char* const name, const int64_t& value)
 	{
 		auto var = mVars.getData(name);
 		assert(var && var->IsOfType(IVariable::VariableType::Integer));

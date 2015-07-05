@@ -90,22 +90,22 @@ namespace HorseRadish
 	{
 		FileSystem::MountData::MountData(const char* const mountPoint)
 		{
-			this->mountPoint.Set(mountPoint);
+			mMountPoint.Set(mountPoint);
 		}
 		FileSystem::MountData::~MountData()
 		{
-			this->mountPoint.Clear();
+			mMountPoint.Clear();
 		}
 
 		FileSystem::MountDataPath::MountDataPath(const char* const baseFolder, const char* const mountPoint)
 			: MountData(mountPoint)
 		{
-			this->baseFolder.Set(baseFolder);
+			mBaseFolder.Set(baseFolder);
 		}
 
 		FileSystem::MountDataPath::~MountDataPath()
 		{
-			this->baseFolder.Clear();
+			mBaseFolder.Clear();
 		}
 
 		FileSystem::MountType FileSystem::MountDataPath::GetMountType() const
@@ -119,9 +119,7 @@ namespace HorseRadish
 
 		std::unique_ptr<Streams::Stream> FileSystem::MountDataPath::FileRead(const char* const filePath)
 		{
-			HorseRadish::IO::Path pathFinal;
-
-			pathFinal = this->baseFolder;
+			auto pathFinal = mBaseFolder;
 			pathFinal += filePath;
 
 			auto fileStream = std::unique_ptr<Streams::FileStream>(new Streams::FileStream(pathFinal.str(), true, false));
@@ -134,91 +132,63 @@ namespace HorseRadish
 
 		bool FileSystem::MountDataPath::FileExists(const char* const filePath)
 		{
-			HorseRadish::IO::Path pathFinal;
-
-			pathFinal = this->baseFolder;
+			auto pathFinal = mBaseFolder;
 			pathFinal += filePath;
 
 			return FileSystem::FileExists(pathFinal.str().c_str());
 		}
 
 		FileSystem::MountDataZip::MountDataZip(const char* const zipPath, const char* const mountPoint)
-			: MountData(mountPoint)
-			, zipFile(nullptr), numFolders(0), numFiles(0)
+			: MountData(mountPoint), mZipFile(nullptr)
 		{
 			zlib_filefunc_def zlibAPI;
 			char zipFileCurFileName[1024];
 
-			this->zipPath.Set(zipPath);
+			mZipPath.Set(zipPath);
 
 			overloadZLibIO(&zlibAPI);
 
-			this->zipFile = unzOpen2(this->zipPath.str().c_str(), &zlibAPI);
-			if (this->zipFile == nullptr)
+			mZipFile = unzOpen2(mZipPath.str().c_str(), &zlibAPI);
+			if (mZipFile == nullptr)
 				return;
 
+			unsigned int numEntries = 0;
 			{
 				unz_global_info zipInfo;
 
-				unzGetGlobalInfo(this->zipFile, &zipInfo);
-				this->listaEntradas.resize(zipInfo.number_entry);
+				unzGetGlobalInfo(mZipFile, &zipInfo);
+				numEntries = zipInfo.number_entry;
 			}
 
-			unzGoToFirstFile(this->zipFile);
+			mFileEntries.rehash(numEntries);
 
-			for (auto &curEntry : this->listaEntradas)
+			unzGoToFirstFile(mZipFile);
+			for (unsigned int entryIndex = 0; entryIndex < numEntries; entryIndex++)
 			{
-				curEntry.fileSize = 0;
-				memset(&curEntry.filePos, 0, sizeof(curEntry.filePos));
-				memset(&curEntry.fileNameMD5, 0, sizeof(curEntry.fileNameMD5));
-
 				unz_file_info zipFileCurFileInfo;
-				unzGetCurrentFileInfo(this->zipFile, &zipFileCurFileInfo, zipFileCurFileName, sizeof(zipFileCurFileName), nullptr, 0, nullptr, 0);
+				unzGetCurrentFileInfo(mZipFile, &zipFileCurFileInfo, zipFileCurFileName, sizeof(zipFileCurFileName), nullptr, 0, nullptr, 0);
 
-				if (zipFileCurFileInfo.uncompressed_size == 0)
+				if (zipFileCurFileInfo.uncompressed_size > 0) //ignore folders
 				{
-					this->numFolders++;
-				}
-				else
-				{
-					this->numFiles++;
+					ZipEntry zipEntry;
+					zipEntry.fileSize = zipFileCurFileInfo.uncompressed_size;
+					unzGetFilePos(mZipFile, &zipEntry.filePos);
 
-					curEntry.fileSize = zipFileCurFileInfo.uncompressed_size;
-					unzGetFilePos(this->zipFile, &curEntry.filePos);
-
-					HorseRadish::Hashing::CalculateMD5(zipFileCurFileName, zipFileCurFileInfo.size_filename, &curEntry.fileNameMD5);
+					mFileEntries[std::string(zipFileCurFileName, zipFileCurFileInfo.size_filename)] = zipEntry;
 				}
 
-				unzGoToNextFile(this->zipFile);
+				unzGoToNextFile(mZipFile);
 			}
-
-			std::sort(this->listaEntradas.begin(), this->listaEntradas.end(), [](const ZipEntry &a, const ZipEntry &b) { return (a.fileNameMD5 < b.fileNameMD5); });
-
-			//para todos os ficheiros que tenho
-			/*for (int i=0; i < (this->numFiles - 1); i++)
-			{
-			if (this->listaEntradas[i].fileNameMD5.i64[0] != this->listaEntradas[i+1].fileNameMD5.i64[0])
-			continue;
-			if (this->listaEntradas[i].fileNameMD5.i64[1] != this->listaEntradas[i+1].fileNameMD5.i64[1])
-			continue;
-
-			this->numEntradas = 0;
-			this->numFiles = 0;
-			this->numFolders = 0;
-			return;
-			}*/
 		}
 
 		FileSystem::MountDataZip::~MountDataZip()
 		{
-			this->zipPath.Clear();
-			this->listaEntradas.clear();
-			this->numFolders = 0;
-			this->numFiles = 0;
+			mFileEntries.clear();
+			mZipPath.Clear();
 
-			if (this->zipFile != nullptr)
-				unzClose(this->zipFile);
-			this->zipFile = nullptr;
+			if (mZipFile != nullptr)
+				unzClose(mZipFile);
+			mZipFile = nullptr;
 		}
 
 		FileSystem::MountType FileSystem::MountDataZip::GetMountType() const
@@ -228,7 +198,7 @@ namespace HorseRadish
 
 		int FileSystem::MountDataZip::GetNumberFiles() const
 		{
-			return this->numFiles;
+			return this->mFileEntries.size();
 		}
 
 		void FileSystem::MountDataZip::FilesEnumerate()
@@ -240,28 +210,23 @@ namespace HorseRadish
 			if ((filePath == nullptr) || (*filePath == '\0'))
 				return std::unique_ptr<Streams::Stream>();
 
-			ZipEntry fileProxy;
-			memset(&fileProxy, 0, sizeof(ZipEntry));
-			HorseRadish::Hashing::CalculateMD5(filePath, strlen((const char*)filePath), &fileProxy.fileNameMD5);
-
-			auto fileZipIndex = std::lower_bound(this->listaEntradas.begin(), this->listaEntradas.end(), fileProxy, [](const ZipEntry &a, const ZipEntry &b) { return (a.fileNameMD5 < b.fileNameMD5); });
-
-			if (fileZipIndex == this->listaEntradas.end())
+			auto itFile = mFileEntries.find(filePath);
+			if (itFile == mFileEntries.end())
 				return nullptr;
 
-			auto fileData = malloc(fileZipIndex->fileSize);
+			auto fileData = malloc(itFile->second.fileSize);
 			if (fileData == nullptr)
 				return nullptr;
 
-			unzGoToFilePos(this->zipFile, &fileZipIndex->filePos);
+			unzGoToFilePos(mZipFile, &itFile->second.filePos);
 
-			unzOpenCurrentFile(this->zipFile);
+			unzOpenCurrentFile(mZipFile);
 
-			unzReadCurrentFile(this->zipFile, fileData, fileZipIndex->fileSize);
+			unzReadCurrentFile(mZipFile, fileData, itFile->second.fileSize);
 
-			unzCloseCurrentFile(this->zipFile);
+			unzCloseCurrentFile(mZipFile);
 
-			auto memStream = std::unique_ptr<Streams::Stream>(new Streams::MemoryStream(fileData, fileZipIndex->fileSize, false, Streams::MemoryStream::ManagementType::None));
+			auto memStream = std::unique_ptr<Streams::Stream>(new Streams::MemoryStream(fileData, itFile->second.fileSize, false, Streams::MemoryStream::ManagementType::None));
 
 			return std::move(memStream);
 		}
@@ -271,12 +236,7 @@ namespace HorseRadish
 			if ((filePath == nullptr) || (*filePath == '\0'))
 				return false;
 
-			ZipEntry fileProxy;
-			memset(&fileProxy, 0, sizeof(ZipEntry));
-			HorseRadish::Hashing::CalculateMD5(filePath, strlen((const char*)filePath), &fileProxy.fileNameMD5);
-
-			auto fileZipIndex = std::lower_bound(this->listaEntradas.begin(), this->listaEntradas.end(), fileProxy, [](const ZipEntry &a, const ZipEntry &b) { return (a.fileNameMD5 < b.fileNameMD5); });
-			return (fileZipIndex != this->listaEntradas.end());
+			return (mFileEntries.find(filePath) != mFileEntries.end());
 		}
 
 		const int FileSystem::FolderNameLength = 128;
@@ -284,21 +244,21 @@ namespace HorseRadish
 		const int FileSystem::PathLength = 16383;
 
 		FileSystem::FileSystem(unsigned int maxNumMounts)
-			: maxNumMounts(0)
+			: mMaxNumMounts(0)
 		{
-			this->maxNumMounts = Math::iClamp(maxNumMounts, 1, 10);
+			mMaxNumMounts = Math::iClamp(maxNumMounts, 1, 10);
 
-			this->listMounts.reserve(this->maxNumMounts);
+			mListMounts.reserve(mMaxNumMounts);
 		}
 
 		FileSystem::~FileSystem()
 		{
-			for (auto& change : this->listWatchChange)
+			for (auto& change : mListWatchChange)
 				FindCloseChangeNotification(change.changeHandle);
-			this->listWatchChange.clear();
+			mListWatchChange.clear();
 
-			this->listMounts.clear();
-			this->maxNumMounts = 0;
+			mListMounts.clear();
+			mMaxNumMounts = 0;
 		}
 
 		void FileSystem::FindFiles(const std::string& baseFolderAndFilter, const bool returnFilesFullPath, std::function<void(const HorseRadish::IO::Path &filePath, const HorseRadish::hUInt64 &fileSize)> actionFileFound)
@@ -372,22 +332,22 @@ namespace HorseRadish
 
 		bool FileSystem::MountPath(const HorseRadish::IO::Path &baseFolder, const char* const mountPoint)
 		{
-			if (this->listMounts.size() >= this->maxNumMounts)
+			if (mListMounts.size() >= mMaxNumMounts)
 				return false;
 
-			this->listMounts.push_back(std::unique_ptr<MountDataPath>(new MountDataPath(baseFolder.str().c_str(), mountPoint)));
+			mListMounts.push_back(std::unique_ptr<MountDataPath>(new MountDataPath(baseFolder.str().c_str(), mountPoint)));
 			return true;
 		}
 
 		bool FileSystem::MountZip(const HorseRadish::IO::Path &zipPath, const char* const mountPoint, int * const numFilesZip)
 		{
-			if (this->listMounts.size() >= this->maxNumMounts)
+			if (mListMounts.size() >= mMaxNumMounts)
 				return false;
 
-			this->listMounts.push_back(std::unique_ptr<MountDataZip>(new MountDataZip(zipPath.str().c_str(), mountPoint)));
+			mListMounts.push_back(std::unique_ptr<MountDataZip>(new MountDataZip(zipPath.str().c_str(), mountPoint)));
 
 			if (numFilesZip != nullptr)
-				*numFilesZip = static_cast<MountDataZip*>(this->listMounts[this->listMounts.size() - 1].get())->GetNumberFiles();
+				*numFilesZip = static_cast<MountDataZip*>(mListMounts[mListMounts.size() - 1].get())->GetNumberFiles();
 
 			return true;
 		}
@@ -397,9 +357,9 @@ namespace HorseRadish
 			if ((filePath == nullptr) || (*filePath == '\0'))
 				return std::unique_ptr<Streams::Stream>();
 
-			for (auto& curMount : this->listMounts)
+			for (auto& curMount : mListMounts)
 			{
-				if ((curMount->GetMountType() == FileSystem::MountTypePath) && (curMount->FileExists(filePath) == false))
+				if (!curMount->FileExists(filePath))
 					continue;
 
 				return curMount->FileRead(filePath);
@@ -413,12 +373,12 @@ namespace HorseRadish
 			if ((filePath == nullptr) || (*filePath == '\0'))
 				return std::unique_ptr<Streams::Stream>();
 
-			for (auto& curMount : this->listMounts)
+			for (auto& curMount : mListMounts)
 			{
 				if (curMount->GetMountType() != mountType)
 					continue;
 
-				if ((curMount->GetMountType() == FileSystem::MountTypePath) && (curMount->FileExists(filePath) == false))
+				if (!curMount->FileExists(filePath))
 					continue;
 
 				return curMount->FileRead(filePath);
@@ -463,26 +423,26 @@ namespace HorseRadish
 					return 0;
 			}
 
-			auto changeID = this->listWatchChange.size() + 13;
-			this->listWatchChange.push_back(WatchChangeData(changeID, handleChange));
+			auto changeID = mListWatchChange.size() + 13;
+			mListWatchChange.push_back(WatchChangeData(changeID, handleChange));
 
 			return changeID;
 		}
 
 		void FileSystem::WatchChangeDelete(const int watchChangeID)
 		{
-			auto changeIndex = std::find_if(this->listWatchChange.begin(), this->listWatchChange.end(), [&watchChangeID](const WatchChangeData &data){ return data.changeID == watchChangeID; });
-			if (changeIndex == this->listWatchChange.end())
+			auto changeIndex = std::find_if(mListWatchChange.begin(), mListWatchChange.end(), [&watchChangeID](const WatchChangeData &data){ return data.changeID == watchChangeID; });
+			if (changeIndex == mListWatchChange.end())
 				return;
 
 			FindCloseChangeNotification(changeIndex->changeHandle);
-			this->listWatchChange.erase(changeIndex);
+			mListWatchChange.erase(changeIndex);
 		}
 
 		bool FileSystem::WatchChanged(const int watchChangeID)
 		{
-			auto changeIndex = std::find_if(this->listWatchChange.begin(), this->listWatchChange.end(), [&watchChangeID](const WatchChangeData &data){ return data.changeID == watchChangeID; });
-			if (changeIndex == this->listWatchChange.end())
+			auto changeIndex = std::find_if(mListWatchChange.begin(), mListWatchChange.end(), [&watchChangeID](const WatchChangeData &data){ return data.changeID == watchChangeID; });
+			if (changeIndex == mListWatchChange.end())
 				return false;
 
 			auto didChange = (WaitForSingleObject(changeIndex->changeHandle, 0) == WAIT_OBJECT_0);
