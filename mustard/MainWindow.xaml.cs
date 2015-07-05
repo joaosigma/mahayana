@@ -13,7 +13,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 
-namespace bloody_mary
+namespace mustard
 {
     /// <summary>
     /// Interaction logic for MainWindow.xaml
