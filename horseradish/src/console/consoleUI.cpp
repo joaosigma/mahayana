@@ -37,13 +37,13 @@ namespace HorseRadish
 			{
 				HorseRadish::OpenGL::glUseProgram(0);
 				HorseRadish::OpenGL::glBindProgramPipeline(renderData->shaders.drawNoTex.progFragment.getId());
-				HorseRadish::OpenGL::glProgramUniformMatrix4fv(renderData->shaders.drawNoTex.progVertex.getId(), renderData->shaders.drawNoTex.progVertex.getUniformLocation("transformationMatrix"), 1, false, transformMatrix);
+				HorseRadish::OpenGL::glProgramUniformMatrix4fv(renderData->shaders.drawNoTex.progVertex.getId(), renderData->shaders.drawNoTex.progVertex.getUniformLocation("transformationMatrix"), 1, false, transformMatrix.data());
 
 				auto& glImmediateMode = renderData->glImmediateMode;
 				auto& guiFont = renderData->gui.font;
 
 				glImmediateMode->beginDraw(HorseRadish::OpenGL::Tools::ImmediateMode::GeometryType::Quads);
-					glImmediateMode->setColor(0, 0, 0, HorseRadish::Color::ConvertColor(consoleAlpha));
+					glImmediateMode->setColor(0, 0, 0, HorseRadish::Color::convertColor(consoleAlpha));
 					glImmediateMode->addQuad(0.0f, 0.0f, this->consoleRect.width, this->consoleRect.height);
 				glImmediateMode->endDraw();
 
@@ -63,7 +63,7 @@ namespace HorseRadish
 
 				HorseRadish::OpenGL::glUseProgram(0);
 				HorseRadish::OpenGL::glBindProgramPipeline(renderData->shaders.drawNoTex.progFragment.getId());
-				HorseRadish::OpenGL::glProgramUniformMatrix4fv(renderData->shaders.drawNoTex.progVertex.getId(), renderData->shaders.drawNoTex.progVertex.getUniformLocation("transformationMatrix"), 1, false, transformMatrix);
+				HorseRadish::OpenGL::glProgramUniformMatrix4fv(renderData->shaders.drawNoTex.progVertex.getId(), renderData->shaders.drawNoTex.progVertex.getUniformLocation("transformationMatrix"), 1, false, transformMatrix.data());
 			}
 
 			void ConsoleGUI::drawConsole(HorseRadish::Render::Renderer2D * const renderData, const HorseRadish::OpenGL::Tools::Viewport * const hrViewport)

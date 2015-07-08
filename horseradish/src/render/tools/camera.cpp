@@ -2,14 +2,14 @@
 
 #include "common\Quaternion.hpp"
 
-#define CAMERA_MAX_POINTS			20
+#define CAMERA_MAX_POINTS 20
 
-typedef void (*EVAL_FUNC)(const HorseRadish::Vector * const points, const float t, HorseRadish::Vector * const output);
+typedef void(*EVAL_FUNC)(const HorseRadish::Vector3f * const points, const float t, HorseRadish::Vector3f * const output);
 
 static
-void evalCatmullRom(const HorseRadish::Vector * const points, const float t, HorseRadish::Vector * const output)
+void evalCatmullRom(const HorseRadish::Vector3f * const points, const float t, HorseRadish::Vector3f * const output)
 {
-	HorseRadish::Vector a, b, c, d;
+	HorseRadish::Vector3f a, b, c, d;
 
 	float newT = HorseRadish::Math::fClamp(t, 0.0f, 1.0f);
 
@@ -17,12 +17,12 @@ void evalCatmullRom(const HorseRadish::Vector * const points, const float t, Hor
 	float tSqrSqr = newT*tSqr;
 	newT *= 0.5f;
 
-	output->Set(0.0f);
+	output->set(0.0f);
 
-	a.Set(points + 0);
-	b.Set(points + 1);
-	c.Set(points + 2);
-	d.Set(points + 3);
+	a.set(points[0]);
+	b.set(points[1]);
+	c.set(points[2]);
+	d.set(points[3]);
 	a *= -tSqrSqr;
 	b *= tSqrSqr*3.0f;
 	c *= tSqrSqr*(-3.0f);
@@ -33,10 +33,10 @@ void evalCatmullRom(const HorseRadish::Vector * const points, const float t, Hor
 	(*output) += c;
 	(*output) += d;
 
-	a.Set(points + 0);
-	b.Set(points + 1);
-	c.Set(points + 2);
-	d.Set(points + 3);
+	a.set(points[0]);
+	b.set(points[1]);
+	c.set(points[2]);
+	d.set(points[3]);
 	a *= tSqr * 2;
 	b *= tSqr*(-5.0f);
 	c *= tSqr*4.0f;
@@ -47,8 +47,8 @@ void evalCatmullRom(const HorseRadish::Vector * const points, const float t, Hor
 	(*output) += c;
 	(*output) += d;
 
-	a.Set(points + 0);
-	b.Set(points + 2);
+	a.set(points[0]);
+	b.set(points[2]);
 	a *= -newT;
 	b *= newT;
 
@@ -59,24 +59,24 @@ void evalCatmullRom(const HorseRadish::Vector * const points, const float t, Hor
 }
 
 static
-void evalHermite(const HorseRadish::Vector * const points, const float t, HorseRadish::Vector * const output)
+void evalHermite(const HorseRadish::Vector3f * const points, const float t, HorseRadish::Vector3f * const output)
 {
-	HorseRadish::Vector aux, d1, d2;
+	HorseRadish::Vector3f aux, d1, d2;
 
 	float newT = HorseRadish::Math::fClamp(t, 0.0f, 1.0f);
 
 	float tSqr = newT*newT;
 	float tCube = newT*tSqr;
 
-	d1.Set(points + 1);
-	d1 -= *(points + 0);
-	d2.Set(points + 3);
-	d2 -= *(points + 2);
+	d1.set(points[1]);
+	d1 -= points[0];
+	d2.set(points[3]);
+	d2 -= points[2];
 
-	(*output).Set(points + 1);
+	(*output).set(points[1]);
 	(*output) *= 2.0f*tCube - 3.0f*tSqr + 1.0f;
 
-	aux.Set(points + 2);
+	aux.set(points[2]);
 	aux *= -2.0f*tCube + 3.0f*tSqr;
 	(*output) += aux;
 
@@ -87,7 +87,7 @@ void evalHermite(const HorseRadish::Vector * const points, const float t, HorseR
 }
 
 static
-void evalPointList(const HorseRadish::Vector * const pList, const int pNum, const float nrmTime, EVAL_FUNC funcEval, HorseRadish::Vector * const pWrite)
+void evalPointList(const HorseRadish::Vector3f * const pList, const int pNum, const float nrmTime, EVAL_FUNC funcEval, HorseRadish::Vector3f * const pWrite)
 {
 	if (pList == nullptr || pNum < 4 || funcEval == nullptr || pWrite == nullptr)
 		return;
@@ -109,7 +109,7 @@ namespace HorseRadish { namespace Render { namespace Tools {
 void Camera::commitFirstPerson(const CameraAction &actionBitfield, const float &mouseDeltaX, const float &mouseDeltaY, const bool updatePosition, const float timeDeltaS)
 {
 	HorseRadish::Quaternion quat;
-	HorseRadish::Vector viewDir, eixo;
+	HorseRadish::Vector3f viewDir, eixo;
 
 	rato[0][0] = rato[1][0];
 	rato[0][1] = rato[1][1];
@@ -121,21 +121,21 @@ void Camera::commitFirstPerson(const CameraAction &actionBitfield, const float &
 	float angX = (rato[0][0] + rato[1][0] + rato[2][0] + rato[2][0])*0.25f;
 	float angY = (rato[0][1] + rato[1][1] + rato[2][1] + rato[2][1])*0.25f;
 
-	eixo.StoreCrossProduct(camDir, camUp);
-	eixo.Normalize();
+	eixo.storeCrossProduct(camDir, camUp);
+	eixo.normalize();
 
-	quat.SetAxisAngle(eixo, angY);
-	quat.RotateVector(camDir, viewDir);
-	viewDir.Normalize();
-	quat.SetAxisAngle(0.0f, 1.0f, 0.0f, -angX);
-	quat.RotateVector(viewDir);
+	quat.setAxisAngle(eixo, angY);
+	quat.rotateVector3(camDir, viewDir);
+	viewDir.normalize();
+	quat.setAxisAngle(0.0f, 1.0f, 0.0f, -angX);
+	quat.rotateVector3(viewDir);
 
 	camDir = viewDir;
-	camDir.Normalize();
+	camDir.normalize();
 
 	if (updatePosition)
 	{
-		HorseRadish::Vector strideDir;
+		HorseRadish::Vector3f strideDir;
 
 		float moveAmount = ((actionBitfield & Run) == Run) ? 2.0f : 1.0f;
 
@@ -150,26 +150,26 @@ void Camera::commitFirstPerson(const CameraAction &actionBitfield, const float &
 		if ((actionBitfield & StrifeRight) == StrifeRight)
 			camPos += strideDir*(keyS*timeDeltaS*moveAmount);
 		if ((actionBitfield & Up) == Up)
-			camPos.y += keyS*timeDeltaS*moveAmount;
+			camPos[1] += keyS*timeDeltaS*moveAmount;
 		if ((actionBitfield & Down) == Down)
-			camPos.y -= keyS*timeDeltaS*moveAmount;
+			camPos[1] -= keyS*timeDeltaS*moveAmount;
 	}
 
-	modelView.SetGLModelView(camPos, GetTarget(), camUp);
+	modelView.setGLModelView(camPos, GetTarget(), camUp);
 }
 
 void Camera::commitOnSphere(const CameraAction &actionBitfield, const float &mouseDeltaX, const float &mouseDeltaY, const float timeDeltaS)
 {
 	HorseRadish::Quaternion quat;
-	HorseRadish::Vector newDir, posChange, curTarget;
+	HorseRadish::Vector3f newDir, posChange, curTarget;
 
 	sumRato[0] += mouseDeltaX * ratoS;
 	sumRato[1] += mouseDeltaY * ratoS * (-1.0f);
 
-	newDir.Set(0.0f, 0.0f, -1.0f);
-	quat.SetFromEuler(sumRato[1], -sumRato[0], 0.0f);
-	quat.RotateVector(newDir);
-	newDir.Normalize();
+	newDir.set(0.0f, 0.0f, -1.0f);
+	quat.setFromEuler(sumRato[1], -sumRato[0], 0.0f);
+	quat.rotateVector3(newDir);
+	newDir.normalize();
 
 	GetTarget(curTarget);
 	camDir = newDir;
@@ -184,14 +184,14 @@ void Camera::commitOnSphere(const CameraAction &actionBitfield, const float &mou
 	absFocus = HorseRadish::Math::fClamp(absFocus, onSphereMinDist, onSphereMaxDist);
 	camPos = curTarget - (newDir * absFocus);
 
-	modelView.SetGLModelView(camPos, GetTarget(), camUp);
+	modelView.setGLModelView(camPos, GetTarget(), camUp);
 }
 
 Camera::Camera()
 {
-	camPos.Set(0.0f, 0.0f, 1.0f);
-	camDir.Set(0.0f, 0.0f, 0.0f);
-	camUp.Set(0.0f, 1.0f, 0.0f);
+	camPos.set(0.0f, 0.0f, 1.0f);
+	camDir.set(0.0f, 0.0f, 0.0f);
+	camUp.set(0.0f, 1.0f, 0.0f);
 	absFocus = 1.0f;
 
 	rato[0][0] = rato[0][1] = 0.0f;
@@ -199,7 +199,7 @@ Camera::Camera()
 	rato[2][0] = rato[2][1] = 0.0f;
 	sumRato[0] = sumRato[1] = 0.0f;
 
-	modelView.SetIdentidade();
+	modelView.setIdentity();
 
 	ratoS = keyS = 1.0f;
 
@@ -208,8 +208,8 @@ Camera::Camera()
 	onSphereMinDist = 1.0f;
 
 	numPos = numTarget = 0;
-	pointsPos = new HorseRadish::Vector[CAMERA_MAX_POINTS];
-	pointsTarget = new HorseRadish::Vector[CAMERA_MAX_POINTS];
+	pointsPos = new HorseRadish::Vector3f[CAMERA_MAX_POINTS];
+	pointsTarget = new HorseRadish::Vector3f[CAMERA_MAX_POINTS];
 	if (pointsPos == nullptr || pointsTarget == nullptr)
 	{
 		if (pointsPos)
@@ -222,11 +222,11 @@ Camera::Camera()
 
 Camera::~Camera()
 {
-	modelView.SetIdentidade();
+	modelView.setIdentity();
 
-	camPos.Set(0.0f, 0.0f, 1.0f);
-	camDir.Set(0.0f, 0.0f, -1.0f);
-	camUp.Set(0.0f, 1.0f, 0.0f);
+	camPos.set(0.0f, 0.0f, 1.0f);
+	camDir.set(0.0f, 0.0f, -1.0f);
+	camUp.set(0.0f, 1.0f, 0.0f);
 	absFocus = 1.0f;
 
 	numPos = numTarget = 0;
@@ -256,17 +256,17 @@ void Camera::CommitCatmullRom(const CameraComponent &component, const float &nor
 	{
 		evalPointList(pointsPos, numPos, normalizedTime, evalCatmullRom, &camPos);
 
-		modelView.SetGLModelView(camPos, GetTarget(), camUp);
+		modelView.setGLModelView(camPos, GetTarget(), camUp);
 	}
 
 	if ((component == Target) && (numTarget >= 4))
 	{
-		HorseRadish::Vector camTarget;
+		HorseRadish::Vector3f camTarget;
 
 		evalPointList(pointsTarget, numTarget, normalizedTime, evalCatmullRom, &camTarget);
 
 		SetTarget(camTarget);
-		modelView.SetGLModelView(camPos, GetTarget(), camUp);
+		modelView.setGLModelView(camPos, GetTarget(), camUp);
 	}
 }
 
@@ -276,17 +276,17 @@ void Camera::CommitHermite(const CameraComponent &component, const float &normal
 	{
 		evalPointList(pointsPos, numPos, normalizedTime, evalHermite, &camPos);
 
-		modelView.SetGLModelView(camPos, GetTarget(), camUp);
+		modelView.setGLModelView(camPos, GetTarget(), camUp);
 	}
 
 	if ((component == Target) && (numTarget >= 4))
 	{
-		HorseRadish::Vector camTarget;
+		HorseRadish::Vector3f camTarget;
 
 		evalPointList(pointsTarget, numTarget, normalizedTime, evalHermite, &camTarget);
 
 		SetTarget(camTarget);
-		modelView.SetGLModelView(camPos, GetTarget(), camUp);
+		modelView.setGLModelView(camPos, GetTarget(), camUp);
 	}
 }
 
@@ -302,28 +302,28 @@ void Camera::PathAdd(const CameraComponent &component, const float x, const floa
 {
 	if ((component == Position) && (pointsPos != nullptr) && (numPos < CAMERA_MAX_POINTS))
 	{
-		pointsPos[numPos].Set(x, y, z);
+		pointsPos[numPos].set(x, y, z);
 		numPos++;
 	}
 
 	if ((component == Target) && (pointsTarget != nullptr) && (numTarget < CAMERA_MAX_POINTS))
 	{
-		pointsTarget[numTarget].Set(x, y, z);
+		pointsTarget[numTarget].set(x, y, z);
 		numTarget++;
 	}
 }
 
-void Camera::PathAdd(const CameraComponent &component, const HorseRadish::Vector &vec)
+void Camera::PathAdd(const CameraComponent &component, const HorseRadish::Vector3f &vec)
 {
 	if ((component == Position) && (pointsPos != nullptr) && (numPos < CAMERA_MAX_POINTS))
 	{
-		pointsPos[numPos].Set(vec);
+		pointsPos[numPos].set(vec);
 		numPos++;
 	}
 
 	if ((component == Target) && (pointsTarget != nullptr) && (numTarget < CAMERA_MAX_POINTS))
 	{
-		pointsTarget[numTarget].Set(vec);
+		pointsTarget[numTarget].set(vec);
 		numTarget++;
 	}
 }
@@ -354,46 +354,46 @@ void Camera::SetSensitivity(const CameraInput &input, const float s)
 		ratoS = s;
 }
 
-void Camera::SetPos(const HorseRadish::Vector &pos)
+void Camera::SetPos(const HorseRadish::Vector3f &pos)
 {
-	camPos.Set(pos);
-	modelView.SetGLModelView(camPos, GetTarget(), camUp);
+	camPos.set(pos);
+	modelView.setGLModelView(camPos, GetTarget(), camUp);
 }
 
 void Camera::SetPos(const float x, const float y, const float z)
 {
-	camPos.Set(x, y, z);
-	modelView.SetGLModelView(camPos, GetTarget(), camUp);
+	camPos.set(x, y, z);
+	modelView.setGLModelView(camPos, GetTarget(), camUp);
 }
 
-void Camera::SetTarget(const HorseRadish::Vector &target)
+void Camera::SetTarget(const HorseRadish::Vector3f &target)
 {
-	camDir.StoreVector(target, camPos);
-	camDir.Normalize();
-	absFocus = target.GetDistance(camPos);
-	modelView.SetGLModelView(camPos, GetTarget(), camUp);
+	camDir = target - camPos;
+	camDir.normalize();
+	absFocus = target.getDistance(camPos);
+	modelView.setGLModelView(camPos, GetTarget(), camUp);
 }
 
 void Camera::SetTarget(const float x, const float y, const float z)
 {
-	camDir.StoreVector(HorseRadish::Vector(x, y, z), camPos);
-	camDir.Normalize();
-	absFocus = camPos.GetDistance(x, y, z);
-	modelView.SetGLModelView(camPos, GetTarget(), camUp);
+	camDir = HorseRadish::Vector3f(x, y, z) - camPos;
+	camDir.normalize();
+	absFocus = camPos.getDistance(x, y, z);
+	modelView.setGLModelView(camPos, GetTarget(), camUp);
 }
 
-void Camera::SetDir(const HorseRadish::Vector &direction)
+void Camera::SetDir(const HorseRadish::Vector3f &direction)
 {
-	camDir.Set(direction);
-	camDir.Normalize();
-	modelView.SetGLModelView(camPos, GetTarget(), camUp);
+	camDir.set(direction);
+	camDir.normalize();
+	modelView.setGLModelView(camPos, GetTarget(), camUp);
 }
 
 void Camera::SetDir(const float x, const float y, const float z)
 {
-	camDir.Set(x, y, z);
-	camDir.Normalize();
-	modelView.SetGLModelView(camPos, GetTarget(), camUp);
+	camDir.set(x, y, z);
+	camDir.normalize();
+	modelView.setGLModelView(camPos, GetTarget(), camUp);
 }
 
 void Camera::SetAbsoluteFocus(const float focus)
@@ -425,26 +425,26 @@ void Camera::SetOnSphereDists(const float minDist, const float maxDist)
 	}
 }
 
-void Camera::GetPos(HorseRadish::Vector &pos) const
+void Camera::GetPos(HorseRadish::Vector3f &pos) const
 {
-	pos.Set(camPos);
+	pos.set(camPos);
 }
 
-HorseRadish::Vector Camera::GetPos() const
+HorseRadish::Vector3f Camera::GetPos() const
 {
-	return HorseRadish::Vector(camPos);
+	return HorseRadish::Vector3f(camPos);
 }
 
-void Camera::GetTarget(HorseRadish::Vector &target) const
+void Camera::GetTarget(HorseRadish::Vector3f &target) const
 {
 	target = camDir;
 	target *= absFocus;
 	target += camPos;
 }
 
-HorseRadish::Vector Camera::GetTarget() const
+HorseRadish::Vector3f Camera::GetTarget() const
 {
-	HorseRadish::Vector target;
+	HorseRadish::Vector3f target;
 
 	target = camDir;
 	target *= absFocus;
@@ -458,31 +458,31 @@ void Camera::GetRay(HorseRadish::Ray &ray) const
 	ray.SetDirection(camDir);
 }
 
-void Camera::GetViewDir(HorseRadish::Vector &dir) const
+void Camera::GetViewDir(HorseRadish::Vector3f &dir) const
 {
-	dir.Set(camDir);
+	dir.set(camDir);
 }
 
-HorseRadish::Vector Camera::GetViewDir() const
+HorseRadish::Vector3f Camera::GetViewDir() const
 {
-	return HorseRadish::Vector(camDir);
+	return HorseRadish::Vector3f(camDir);
 }
 
 
-void Camera::GetStrideDir(HorseRadish::Vector &dir) const
+void Camera::GetStrideDir(HorseRadish::Vector3f &dir) const
 {
-	HorseRadish::Vector auxVec;
+	HorseRadish::Vector3f auxVec;
 
 	auxVec = camDir;
-	auxVec.y += 1.0f;
+	auxVec[1] += 1.0f;
 
-	dir.StoreCrossProduct(camDir, auxVec);
-	dir.Normalize();
+	dir.storeCrossProduct(camDir, auxVec);
+	dir.normalize();
 }
 
-HorseRadish::Vector Camera::GetStrideDir() const
+HorseRadish::Vector3f Camera::GetStrideDir() const
 {
-	HorseRadish::Vector strideDir;
+	HorseRadish::Vector3f strideDir;
 
 	GetStrideDir(strideDir);
 	return strideDir;
@@ -504,12 +504,12 @@ float Camera::GetSensitivity(const CameraInput &input) const
 
 const float* Camera::GetModelView() const
 {
-	return modelView;
+	return modelView.data();
 }
 
 void Camera::GetModelView(float * const mat) const
 {
-	modelView.Write(mat);
+	modelView.write(mat);
 }
 
 Camera::CameraType Camera::GetTargetMode() const

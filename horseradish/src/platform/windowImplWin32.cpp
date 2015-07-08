@@ -191,8 +191,8 @@ void WindowImpl::processRawInput(const RAWINPUT &inputData)
 
 	if (inputData.header.dwType == RIM_TYPEMOUSE)
 	{
-		mRawInput.mouseAccum.x += inputData.data.mouse.lLastX;
-		mRawInput.mouseAccum.y += inputData.data.mouse.lLastY;
+		mRawInput.mouseAccum[0] += inputData.data.mouse.lLastX;
+		mRawInput.mouseAccum[1] += inputData.data.mouse.lLastY;
 	}
 
 	if (inputData.header.dwType == RIM_TYPEKEYBOARD)
@@ -218,7 +218,7 @@ WindowImpl::WindowImpl(HorseRadish::Engine::Logger &logger)
 {
 	mEvents.queueSize = 0;
 
-	mRawInput.mouseAccum = mRawInput.mouseSnapshot = HorseRadish::Vector(0.0f);
+	mRawInput.mouseAccum = mRawInput.mouseSnapshot = HorseRadish::Vector3f(0.0f);
 	mRawInput.keysSnapshot.fill(false);
 	mRawInput.keysRealtime.fill(false);
 
@@ -393,7 +393,7 @@ void WindowImpl::RawInputSnapshot()
 	std::lock_guard<std::mutex> lock(mRawInput.lock);
 
 	mRawInput.mouseSnapshot = mRawInput.mouseAccum;
-	mRawInput.mouseAccum.Set(0.0f);
+	mRawInput.mouseAccum.set(0.0f);
 
 	mRawInput.keysSnapshot = mRawInput.keysRealtime;
 }
@@ -412,7 +412,7 @@ bool WindowImpl::RawInputGetKeyStatus(const Window::VirtualKeys &vcode)
 	return WindowImpl::RawInputGetKeyStatus(static_cast<unsigned int>(vcode));
 }
 
-HorseRadish::Vector WindowImpl::RawInputGetMouseStatus()
+HorseRadish::Vector3f WindowImpl::RawInputGetMouseStatus()
 {
 	std::lock_guard<std::mutex> lock(mRawInput.lock);
 

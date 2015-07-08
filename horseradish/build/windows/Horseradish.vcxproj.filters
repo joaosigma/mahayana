@@ -639,9 +639,6 @@
     <ClInclude Include="..\..\src\common\Types.hpp">
       <Filter>common</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\common\Vector.hpp">
-      <Filter>common</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\console\consoleUI.hpp">
       <Filter>console</Filter>
     </ClInclude>
@@ -1265,6 +1262,9 @@
       <Filter>libs\tinyobjloader</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\common\mesh.hpp">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\common\vector.hpp">
       <Filter>common</Filter>
     </ClInclude>
   </ItemGroup>

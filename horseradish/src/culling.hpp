@@ -12,7 +12,7 @@ class SCULLING
 public:
 	static const int MaxAreaObjects = 3;
 	typedef std::function<void(const bool areaOfCamera, const HorseRadish::BBox &bbox)> SCULLING_DEBUG_CALLBACK_AREA;
-	typedef std::function<void(const HorseRadish::Vector &p1, const HorseRadish::Vector &p2, const HorseRadish::Vector &p3, const HorseRadish::Vector &p4)> SCULLING_DEBUG_CALLBACK_PORTAL;
+	typedef std::function<void(const HorseRadish::Vector3f &p1, const HorseRadish::Vector3f &p2, const HorseRadish::Vector3f &p3, const HorseRadish::Vector3f &p4)> SCULLING_DEBUG_CALLBACK_PORTAL;
 
 private:
 	struct AREA;
@@ -25,7 +25,7 @@ private:
 		HorseRadish::BBox bbox;
 	};
 	struct PORTAL{
-		HorseRadish::Vector pontos[4];
+		HorseRadish::Vector3f pontos[4];
 		AREA *neg, *pos;
 	};
 	struct BNODE{
@@ -41,7 +41,7 @@ private:
 	mutable int currentDepth;
 
 	bool addPortal2Area(AREA * const area, PORTAL * const portal);
-	int recurseGetArea(const BNODE * const tree, const HorseRadish::Vector &ponto) const;
+	int recurseGetArea(const BNODE * const tree, const HorseRadish::Vector3f &ponto) const;
 	void getDataFromArea(const AREA * const area, void *** const output, unsigned int * const outputCount, const int outputTypeCount) const;
 
 	void recurseAreaPortal(const AREA * const area, const PORTAL * const portalEnter, const HorseRadish::OpenGL::Tools::Frustum * const frustum, void *** const output, unsigned int * const outputCount, const int &outputTypeCount) const;
@@ -53,7 +53,7 @@ public:
 
 	bool createBSPNodes(const int numNodes);
 	bool createAreas(const int numAreas);
-	bool createPortal(const unsigned int positiveArea, const unsigned int negativeArea, const HorseRadish::Vector &p1, const HorseRadish::Vector &p2, const HorseRadish::Vector &p3, const HorseRadish::Vector &p4);
+	bool createPortal(const unsigned int positiveArea, const unsigned int negativeArea, const HorseRadish::Vector3f &p1, const HorseRadish::Vector3f &p2, const HorseRadish::Vector3f &p3, const HorseRadish::Vector3f &p4);
 	void setPortals2Areas();
 	void setBSPNodeData(const unsigned int nodeIndex, const HorseRadish::Plane &plane, const int positiveChildData, const int negativeChildData);
 
@@ -71,6 +71,6 @@ public:
 	int getNumPortals() const { return numPortals; }
 	int getNumAreas() const { return numAreas; }
 	int getNumBSPNodes() const	{ return numBSPNodes; }
-	int getArea(const HorseRadish::Vector &point, const bool BSPTree) const;
-	int getAreaClosest(const HorseRadish::Vector &point) const;
+	int getArea(const HorseRadish::Vector3f &point, const bool BSPTree) const;
+	int getAreaClosest(const HorseRadish::Vector3f &point) const;
 };

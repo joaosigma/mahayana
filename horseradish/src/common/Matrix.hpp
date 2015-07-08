@@ -7,7 +7,6 @@
 
 namespace HorseRadish
 {
-	HALIGN_16BYTES
 	class Matrix
 	{
 		float m[16];
@@ -16,7 +15,7 @@ namespace HorseRadish
 
 		static void asmMat4x4Vec3(float *vecWrite, const float *vecRead, const float wCompMul, const unsigned int stride, const float *mat, const unsigned int numVec);
 		static void asmMat4x4Vec4(float *vecWrite, const float *vecRead, const unsigned int stride, const float *mat, const unsigned int numVec);
-		static void asmMult(float * const result, const float * const mat1, const float * const mat2);
+		static void fastMat4x4Mult(float * const result, const float * const mat1, const float * const mat2);
 
 	public:
 		Matrix();
@@ -32,121 +31,112 @@ namespace HorseRadish
 		void operator-=(const Matrix &s);
 		void operator-=(const float *s);
 
-		float& operator[](const int &i){ return m[i % 16]; }
-		operator const float *() const { return m; }
+		float& operator[](const size_t index)
+		{
+			return m[index % 16];
+		}
 
-		void TransformVector(float *vec) const;
-		void TransformVector(Vector &vec) const;
-		void TransformVector(const Vector &vec, Vector &result) const;
-		void TransformVector(Vector * const vec, const int numVec) const;
+		const float& operator[](const size_t index) const
+		{
+			return m[index % 16];
+		}
 
-		void TransformVector(Vector4 &vec) const;
-		void TransformVector(const Vector4 &vec, Vector4 &result) const;
-		void TransformVector(Vector4 * const vec, const int numVec) const;
+		float* data()
+		{
+			return m;
+		}
 
-		void TransformVector3D(float *vec) const;
-		void TransformVector3D(Vector &vec) const;
-		void TransformVector3D(const Vector &vec, Vector &result) const;
-		void TransformVector3D(Vector * const vec, const int numVec) const;
+		const float* data() const
+		{
+			return m;
+		}
 
-		void TransformBBox(BBox &bbox) const;
-		void TransformBBox(const BBox &bbox, BBox &bboxDest) const;
+		void transform(float *vec) const;
+		void transform(Vector3f &vec) const;
+		void transform(const Vector3f &vec, Vector3f &result) const;
+		void transform(Vector3f * const vec, const int numVec) const;
 
-		void GetCol1(Vector4 &result) const;
-		void GetCol2(Vector4 &result) const;
-		void GetCol3(Vector4 &result) const;
-		void GetCol4(Vector4 &result) const;
-		void GetRow1(Vector4 &result) const;
-		void GetRow2(Vector4 &result) const;
-		void GetRow3(Vector4 &result) const;
-		void GetRow4(Vector4 &result) const;
+		void transform(Vector4f &vec) const;
+		void transform(const Vector4f &vec, Vector4f &result) const;
+		void transform(Vector4f * const vec, const int numVec) const;
 
-		void GetCol1(Vector &result) const;
-		void GetCol2(Vector &result) const;
-		void GetCol3(Vector &result) const;
-		void GetCol4(Vector &result) const;
-		void GetRow1(Vector &result) const;
-		void GetRow2(Vector &result) const;
-		void GetRow3(Vector &result) const;
-		void GetRow4(Vector &result) const;
+		void rotateScale(float *vec) const;
+		void rotateScale(Vector3f &vec) const;
+		void rotateScale(const Vector3f &vec, Vector3f &result) const;
+		void rotateScale(Vector3f * const vec, const int numVec) const;
 
-		const float* GetRow1() const { return m + 0; }
-		const float* GetRow2() const { return m + 4; }
-		const float* GetRow3() const { return m + 8; }
-		const float* GetRow4() const { return m + 12; }
+		void transform(BBox &bbox) const;
+		void transform(const BBox &bbox, BBox &bboxDest) const;
 
-		float* GetPointer() { return m; }
-		void GetRotate(Vector &vec, float &angulo) const;
-		void GetEulerAngles(float &rfYAngle, float &rfPAngle, float &rfRAngle) const;
-		void GetFrom3x3(Matrix3 &mat3) const;
-		void GetFrom3x3(float* const src) const;
-		void GetFrom2x2(float* const src) const;
+		Vector4f getColumn(unsigned int columnIndex) const;
+		Vector4f getRow(unsigned int rowIndex) const;
 
-		void Write(float * const s) const;
+		void getRotation(Vector3f &vec, float &angle) const;
+		void getEulerAngles(float &rfYAngle, float &rfPAngle, float &rfRAngle) const;
+		void getMat3x3(Matrix3 &mat3) const;
+		void getMat3x3(float* const src) const;
+		void getMat2x2(float* const src) const;
 
-		void Transpose(Matrix &dest) const;
-		void Transpose(void);
-		void Inverse(Matrix &dest) const;
-		void Inverse(void);
-		void InverseTranspose(Matrix &dest) const;
-		void InverseTranspose(void);
-		void InverseHomogenous(Matrix &dest) const;
-		void InverseHomogenous(void);
+		void write(float* const s) const;
 
-		void MultTranslate(const float &x, const float &y, const float &z);
-		void MultTranslate(const float * const vec);
-		void MultScale(const float &x, const float &y, const float &z);
-		void MultScale(const float * const vec);
-		void MultRotateX(const float &angulo);
-		void MultRotateY(const float &angulo);
-		void MultRotateZ(const float &angulo);
-		void Mult(const Matrix &s);
-		void Mult(const float *s);
-		void MultInverseOrder(const Matrix &s);
-		void MultInverseOrder(const float *s);
+		void transpose(Matrix &dest) const;
+		void transpose(void);
+		void inverse(Matrix &dest) const;
+		void inverse(void);
+		void inverseTranspose(Matrix &dest) const;
+		void inverseTranspose(void);
+		void inverseHomogenous(Matrix &dest) const;
+		void inverseHomogenous(void);
 
-		void Set(const float x);
-		void Set(const float *src);
-		void Set(const Matrix &mat);
-		void SetZero(void);
-		void SetIdentidade(void);
-		void SetFrom3x3(const Matrix3 &mat3);
-		void SetFrom3x3(const float *src);
-		void SetFrom2x2(const float *src);
-		void SetTranspose(const float *src);
-		void SetTranspose(const Matrix &mat);
-		void SetTranslate(const float &x, const float &y, const float &z);
-		void SetTranslate(const float * const vec);
-		void SetTranslate(const Vector &vec);
-		void SetScale(const float &x, const float &y, const float &z);
-		void SetScale(const Vector &vec);
-		void SetReflect(const Plane &plane);
-		void SetReflect(const float &a, const float &b, const float &c, const float &d);
-		void SetRotateX(const float &angulo);
-		void SetRotateY(const float &angulo);
-		void SetRotateZ(const float &angulo);
-		void SetRotate(const float &angulo, const Vector &vec);
-		void SetRotate(const float &anguloX, const float &anguloY, const float &anguloZ);
-		void SetRotate(const float &angulo, const float &x, const float &y, const float &z);
-		void SetSaturation(const float sat);
-		void SetRotationFromTo(const float * const from, const float * const to);
-		void SetRotationFromTo(const Vector &from, const Vector &to);
+		Matrix& mulTranslation(const float &x, const float &y, const float &z);
+		Matrix& mulTranslation(const float * const vec);
+		Matrix& mulScale(const float &x, const float &y, const float &z);
+		Matrix& mulScale(const float * const vec);
+		Matrix& mulRotationX(const float &angle);
+		Matrix& mulRotationY(const float &angle);
+		Matrix& mulRotationZ(const float &angle);
+		Matrix& mul(const Matrix &s);
+		Matrix& mul(const float *s);
+		Matrix& mulReverseOrder(const Matrix &s);
+		Matrix& mulReverseOrder(const float *s);
 
-		void SetGLModelView(const Vector &pos, const Vector &target, const Vector &up);
-		void SetGLModelView(const Vector &pos, const Vector &target);
-		void SetGLModelView(const float *pos, const float *target, const float *up);
-		void SetGLModelView(const float *pos, const float *target);
-		void SetGLModelView(const Vector &pos, const float angX, const float angY, const Vector &up);
-		void SetGLModelView(const float *pos, const float angX, const float angY, const float *up);
-		void SetGLModelView(const int cubemapFace, const Vector &centerCube);
-		void SetGLProjection3D(const float fovy, const float aspect, const float zNear, const float zFar);
-		void SetGLProjection3D(const float fovy, const float aspect, const float zNear);
-		void SetGLProjection2D(const float width, const float height);
-		void SetGLProjectionOrtho(const float left, const float right, const float bottom, const float top, const float zNear, const float zFar);
-		void SetGLProjectionOrtho(const BBox &bbox);
+		void set(const float x);
+		void set(const float *src);
+		void set(const Matrix &mat);
+		void setZero(void);
+		void setIdentity(void);
+		void setFrom3x3(const Matrix3 &mat3);
+		void setFrom3x3(const float *src);
+		void setFrom2x2(const float *src);
+		void setTranspose(const float *src);
+		void setTranspose(const Matrix &mat);
+		void setTranslation(const float &x, const float &y, const float &z);
+		void setTranslation(const float * const vec);
+		void setTranslation(const Vector3f &vec);
+		void setScale(const float scale);
+		void setScale(const float &x, const float &y, const float &z);
+		void setScale(const Vector3f &vec);
+		void setReflect(const Plane &plane);
+		void setReflect(const float &a, const float &b, const float &c, const float &d);
+		void setRotationX(const float &angle);
+		void setRotationY(const float &angle);
+		void setRotationZ(const float &angle);
+		void setRotation(const float &angle, const Vector3f &vec);
+		void setRotation(const float &angleX, const float &angleY, const float &angleZ);
+		void setSaturation(const float sat);
+		void setRotationFromTo(const Vector3f &from, const Vector3f &to);
+
+		void setGLModelView(const Vector3f &pos, const Vector3f &target, const Vector3f &up);
+		void setGLModelView(const Vector3f &pos, const Vector3f &target);
+		void setGLModelView(const Vector3f &pos, const float angX, const float angY, const Vector3f &up);
+		void setGLModelView(const int cubemapFace, const Vector3f &centerCube);
+		void setGLProjection3D(const float fovy, const float aspect, const float zNear, const float zFar);
+		void setGLProjection3D(const float fovy, const float aspect, const float zNear);
+		void setGLProjection2D(const float width, const float height);
+		void setGLProjectionOrtho(const float left, const float right, const float bottom, const float top, const float zNear, const float zFar);
+		void setGLProjectionOrtho(const BBox &bbox);
 	};
 
-	HALIGN_16BYTES
 	class Matrix3
 	{
 		float m[9];
@@ -167,52 +157,59 @@ namespace HorseRadish
 		void operator-=(const Matrix3 &s);
 		void operator-=(const float *s);
 
-		float& operator[](const int &i){ return m[i % 9]; }
-		operator const float *() const { return m; }
+		float& operator[](const size_t index)
+		{
+			return m[index % 9];
+		}
 
-		void MulVector(float *vec) const;
-		void MulVector(Vector &vec) const;
-		void MulVector(const Vector &vec, Vector &result) const;
-		void MulVector(Vector * const vec, const int numVec) const;
+		const float& operator[](const size_t index) const
+		{
+			return m[index % 9];
+		}
 
-		void GetCol1(Vector &result) const;
-		void GetCol2(Vector &result) const;
-		void GetCol3(Vector &result) const;
-		void GetRow1(Vector &result) const;
-		void GetRow2(Vector &result) const;
-		void GetRow3(Vector &result) const;
+		float* data()
+		{
+			return m;
+		}
 
-		const float* GetRow1() const { return m + 0; }
-		const float* GetRow2() const { return m + 3; }
-		const float* GetRow3() const { return m + 6; }
+		const float* data() const
+		{
+			return m;
+		}
 
-		float* GetPointer() { return m; }
-		void GetRotate(Vector &vec, float &angulo) const;
-		void GetEulerAngles(float &rfYAngle, float &rfPAngle, float &rfRAngle) const;
+		void transform(float *vec) const;
+		void transform(Vector3f &vec) const;
+		void transform(const Vector3f &vec, Vector3f &result) const;
+		void transform(Vector3f * const vec, const int numVec) const;
 
-		void Write(float * const s) const;
+		Vector3f getColumn(unsigned int columnIndex) const;
+		Vector3f getRow(unsigned int rowIndex) const;
 
-		void Transpose(Matrix3 &dest) const;
-		void Transpose(void);
+		void getRotation(Vector3f &vec, float &angulo) const;
+		void getEulerAngles(float &rfYAngle, float &rfPAngle, float &rfRAngle) const;
 
-		void MulRotateX(const float &angulo);
-		void MulRotateY(const float &angulo);
-		void MulRotateZ(const float &angulo);
+		void write(float * const s) const;
 
-		void Set(const float x);
-		void Set(const float *src);
-		void Set(const Matrix &mat);
-		void Set(const Matrix3 &mat);
-		void SetZero(void);
-		void SetIdentidade(void);
-		void SetRotateX(const float &angulo);
-		void SetRotateY(const float &angulo);
-		void SetRotateZ(const float &angulo);
-		void SetRotate(const float &angulo, const Vector &vec);
-		void SetRotate(const float &anguloX, const float &anguloY, const float &anguloZ);
-		void SetRotate(const float &angulo, const float &x, const float &y, const float &z);
-		void SetRotationFromTo(const float * const from, const float * const to);
-		void SetRotationFromTo(const Vector &from, const Vector &to);
+		void transpose(Matrix3 &dest) const;
+		void transpose(void);
+
+		void mulRotationX(const float &angle);
+		void mulRotationY(const float &angle);
+		void mulRotationZ(const float &angle);
+
+		void set(const float x);
+		void set(const float *src);
+		void set(const Matrix &mat);
+		void set(const Matrix3 &mat);
+		void setZero(void);
+		void setIdentity(void);
+		void setRotationX(const float &angle);
+		void setRotationY(const float &angle);
+		void setRotationZ(const float &angle);
+		void setRotation(const float &angle, const Vector3f &vec);
+		void setRotation(const float &angleX, const float &angleY, const float &angleZ);
+		void setRotation(const float &angle, const float &x, const float &y, const float &z);
+		void setRotationFromTo(const Vector3f &from, const Vector3f &to);
 	};
 
 } //HorseRadish

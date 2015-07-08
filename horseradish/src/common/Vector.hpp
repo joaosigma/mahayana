@@ -1,780 +1,1135 @@
 #pragma once
 
-#include "Types.hpp"
 #include "Math.hpp"
 
-#include <cassert>
+#include <cstring>
 #include <xmmintrin.h>
+#include <smmintrin.h>
+#include <type_traits>
 
 namespace HorseRadish
 {
-	HALIGN_16BYTES
+	template<typename TDataType, unsigned int NComponents>
 	class Vector
 	{
-	public:
-		float x, y, z, w;
+		TDataType mData[NComponents];
 
+		static_assert(NComponents >= 1, "Number of components must be equal or greater than 1");
+		static_assert(std::is_arithmetic<TDataType>::value, "Data type must be arithmetic (e.g.: float, unsigned char, etc.)");
+
+	public:
 		//static methods
 
-		static float CalcMagnitude(const Vector &vec)
+		static TDataType calcDot(const Vector<TDataType, NComponents> &vec1, const Vector<TDataType, NComponents> &vec2)
 		{
-			return sqrt(vec.x*vec.x + vec.y*vec.y + vec.z*vec.z);
-		}
+			TDataType sum = 0;
+			for (int i = 0; i < NComponents; i++)
+				sum += (vec1.mData[i] * vec2.mData[i]);
 
-		static float CalcDistance(const Vector &vec1, const Vector &vec2)
-		{
-			float d1 = vec1.x - vec2.x;
-			float d2 = vec1.y - vec2.y;
-			float d3 = vec1.z - vec2.z;
-			return sqrt(d1*d1 + d2*d2 + d3*d3);
-		}
-
-		static float CalcDot(const Vector &vec1, const Vector &vec2)
-		{
-			return (vec1.x*vec2.x + vec1.y*vec2.y + vec1.z*vec2.z);
+			return sum;
 		}
 
 		//instance methods
 
-		inline Vector()
+		Vector()
 		{
-			_mm_storeu_ps(&x, _mm_setzero_ps());
+			for (int i = 0; i < NComponents; i++)
+				mData[i] = TDataType();
 		}
 
-		inline Vector(const Vector &v)
+		Vector(const Vector& v)
 		{
-			_mm_storeu_ps(&x, _mm_loadu_ps(&v.x));
+			for (int i = 0; i < NComponents; i++)
+				mData[i] = v[i];
 		}
 
-		explicit inline Vector(const float scalar)
+		explicit Vector(const TDataType& scalar)
 		{
-			_mm_storeu_ps(&x, _mm_load_ps1(&scalar));
+			for (int i = 0; i < NComponents; i++)
+				mData[i] = scalar;
 		}
 
-		explicit inline Vector(const float &vx, const float &vy, const float &vz)
+		explicit Vector(const TDataType* const values)
 		{
-			x = vx; y = vy; z = vz; w = 0.0f;
+			for (int i = 0; i < NComponents; i++)
+				mData[i] = values[i];
 		}
 
-		explicit inline Vector(const float * const v)
+		TDataType* data()
 		{
-			x = v[0]; y = v[1]; z = v[2]; w = 0.0f;
+			return mData;
 		}
 
-		explicit inline Vector(const __m128 vecDat)
+		const TDataType* data() const
 		{
-			_mm_storeu_ps(&x, vecDat);
+			return mData;
 		}
 
-		inline ~Vector()
+		TDataType& operator[] (const size_t index)
 		{
-			return;
+			return mData[index % NComponents];
 		}
 
-		inline operator float *(void)
+		const TDataType& operator[] (const size_t index) const
 		{
-			return &x;
-		}
-		inline operator const float *(void) const
-		{
-			return &x;
+			return mData[index % NComponents];
 		}
 
-		inline Vector& operator=(const Vector& v)
+		Vector& operator=(const Vector& v)
 		{
-			_mm_storeu_ps(&x, _mm_loadu_ps(&v.x));
+			for (int i = 0; i < NComponents; i++)
+				mData[i] = v[i];
 			return *this;
 		}
 
-		inline Vector& operator=(const float *v)
+		Vector& operator=(const TDataType* values)
 		{
-			x = v[0]; y = v[1]; z = v[2];
+			for (int i = 0; i < NComponents; i++)
+				mData[i] = values[i];
 			return *this;
 		}
 
-		inline Vector& operator=(const float n)
+		Vector& operator=(const TDataType& scalar)
 		{
-			_mm_storeu_ps(&x, _mm_load_ps1(&n));
+			for (int i = 0; i < NComponents; i++)
+				mData[i] = scalar;
 			return *this;
 		}
 
-		inline void operator+=(const Vector& v)
+		void operator+=(const Vector& v)
 		{
-			_mm_storeu_ps(&x, _mm_add_ps(_mm_loadu_ps(&x), _mm_loadu_ps(&v.x)));
+			for (int i = 0; i < NComponents; i++)
+				mData[i] += v[i];
 		}
 
-		inline void operator-=(const Vector& v)
+		void operator-=(const Vector& v)
 		{
-			_mm_storeu_ps(&x, _mm_sub_ps(_mm_loadu_ps(&x), _mm_loadu_ps(&v.x)));
+			for (int i = 0; i < NComponents; i++)
+				mData[i] -= v[i];
 		}
 
-		inline void operator*=(const Vector& v)
+		void operator*=(const Vector& v)
 		{
-			_mm_storeu_ps(&x, _mm_mul_ps(_mm_loadu_ps(&x), _mm_loadu_ps(&v.x)));
+			for (int i = 0; i < NComponents; i++)
+				mData[i] *= v[i];
 		}
 
-		inline void operator/=(const Vector& v)
+		void operator/=(const Vector& v)
 		{
-			_mm_storeu_ps(&x, _mm_div_ps(_mm_loadu_ps(&x), _mm_loadu_ps(&v.x)));
+			for (int i = 0; i < NComponents; i++)
+				mData[i] /= v[i];
 		}
 
-		inline void operator+=(const float * const p)
+		void operator+=(const TDataType* const values)
 		{
-			x += p[0]; y += p[1]; z += p[2];
+			for (int i = 0; i < NComponents; i++)
+				mData[i] += values[i];
 		}
 
-		inline void operator-=(const float * const p)
+		void operator-=(const TDataType* const values)
 		{
-			x -= p[0]; y -= p[1]; z -= p[2];
+			for (int i = 0; i < NComponents; i++)
+				mData[i] -= values[i];
 		}
 
-		inline void operator*=(const float * const p)
+		void operator*=(const TDataType* const values)
 		{
-			x *= p[0]; y *= p[1]; z *= p[2];
+			for (int i = 0; i < NComponents; i++)
+				mData[i] *= values[i];
 		}
 
-		inline void operator/=(const float * const p)
+		void operator/=(const TDataType* const values)
 		{
-			x /= p[0]; y /= p[1]; z /= p[2];
+			for (int i = 0; i < NComponents; i++)
+				mData[i] /= values[i];
 		}
 
-		inline void operator+=(const float &n)
+		void operator+=(const TDataType& scalar)
 		{
-			_mm_storeu_ps(&x, _mm_add_ps(_mm_loadu_ps(&x), _mm_load_ps1(&n)));
+			for (int i = 0; i < NComponents; i++)
+				mData[i] += scalar;
 		}
 
-		inline void operator-=(const float &n)
+		void operator-=(const TDataType& scalar)
 		{
-			_mm_storeu_ps(&x, _mm_sub_ps(_mm_loadu_ps(&x), _mm_load_ps1(&n)));
+			for (int i = 0; i < NComponents; i++)
+				mData[i] -= scalar;
 		}
 
-		inline void operator*=(const float &n)
+		void operator*=(const TDataType& scalar)
 		{
-			_mm_storeu_ps(&x, _mm_mul_ps(_mm_loadu_ps(&x), _mm_load_ps1(&n)));
+			for (int i = 0; i < NComponents; i++)
+				mData[i] *= scalar;
 		}
 
-		inline void operator/=(const float &n)
+		void operator/=(const TDataType& scalar)
 		{
-			_mm_storeu_ps(&x, _mm_div_ps(_mm_loadu_ps(&x), _mm_load_ps1(&n)));
+			for (int i = 0; i < NComponents; i++)
+				mData[i] /= scalar;
 		}
 
-		inline float operator[](int index) const
+		Vector operator+(const Vector& vec) const
 		{
-			assert((index >= 0) && (index < 3));
-			return (&x)[index];
+			Vector result;
+			for (int i = 0; i < NComponents; i++)
+				result[i] = mData[i] + vec[i];
+
+			return result;
 		}
 
-		inline float& operator[](int index)
+		Vector operator-(const Vector& vec) const
 		{
-			assert((index >= 0) && (index < 3));
-			return (&x)[index];
+			Vector result;
+			for (int i = 0; i < NComponents; i++)
+				result[i] = mData[i] - vec[i];
+
+			return result;
 		}
 
-		inline Vector operator-() const
+		Vector operator*(const Vector& vec) const
 		{
-			return Vector(_mm_mul_ps(_mm_loadu_ps(&x), _mm_set_ps1(-1.0f)));
+			Vector result;
+			for (int i = 0; i < NComponents; i++)
+				result[i] = mData[i] * vec[i];
+
+			return result;
 		}
 
-		inline Vector operator+(const Vector &vec) const
+		Vector operator/(const Vector& vec) const
 		{
-			return Vector(_mm_add_ps(_mm_loadu_ps(&x), _mm_loadu_ps(&vec.x)));
+			Vector result;
+			for (int i = 0; i < NComponents; i++)
+				result[i] = mData[i] / vec[i];
+
+			return result;
 		}
 
-		inline Vector operator-(const Vector &vec) const
+		Vector operator+(const TDataType* const values) const
 		{
-			return Vector(_mm_sub_ps(_mm_loadu_ps(&x), _mm_loadu_ps(&vec.x)));
+			Vector result;
+			for (int i = 0; i < NComponents; i++)
+				result[i] = mData[i] + values[i];
+
+			return result;
 		}
 
-		inline Vector operator*(const Vector &vec) const
+		Vector operator-(const TDataType* const values) const
 		{
-			return Vector(_mm_mul_ps(_mm_loadu_ps(&x), _mm_loadu_ps(&vec.x)));
+			Vector result;
+			for (int i = 0; i < NComponents; i++)
+				result[i] = mData[i] - values[i];
+
+			return result;
 		}
 
-		inline Vector operator/(const Vector &vec) const
+		Vector operator*(const TDataType* const values) const
 		{
-			return Vector(_mm_div_ps(_mm_loadu_ps(&x), _mm_loadu_ps(&vec.x)));
+			Vector result;
+			for (int i = 0; i < NComponents; i++)
+				result[i] = mData[i] * values[i];
+
+			return result;
 		}
 
-		inline Vector operator+(const float * const vec) const
+		Vector operator/(const TDataType* const values) const
 		{
-			return Vector(x + vec[0], y + vec[1], z + vec[2]);
+			Vector result;
+			for (int i = 0; i < NComponents; i++)
+				result[i] = mData[i] / values[i];
+
+			return result;
 		}
 
-		inline Vector operator-(const float * const vec) const
+		Vector operator+(const TDataType& scalar) const
 		{
-			return Vector(x - vec[0], y - vec[1], z - vec[2]);
+			Vector result;
+			for (int i = 0; i < NComponents; i++)
+				result[i] = mData[i] + scalar;
+
+			return result;
 		}
 
-		inline Vector operator*(const float * const vec) const
+		Vector operator-(const TDataType& scalar) const
 		{
-			return Vector(x*vec[0], y*vec[1], z*vec[2]);
+			Vector result;
+			for (int i = 0; i < NComponents; i++)
+				result[i] = mData[i] - scalar;
+
+			return result;
 		}
 
-		inline Vector operator/(const float * const vec) const
+		Vector operator*(const TDataType& scalar) const
 		{
-			return Vector(x / vec[0], y / vec[1], z / vec[2]);
+			Vector result;
+			for (int i = 0; i < NComponents; i++)
+				result[i] = mData[i] * scalar;
+
+			return result;
 		}
 
-		inline Vector operator+(const float &n) const
+		Vector operator/(const TDataType& scalar) const
 		{
-			return Vector(_mm_add_ps(_mm_loadu_ps(&x), _mm_load_ps1(&n)));
+			Vector result;
+			for (int i = 0; i < NComponents; i++)
+				result[i] = mData[i] / scalar;
+
+			return result;
 		}
 
-		inline Vector operator-(const float &n) const
+		bool operator==(const Vector &vec) const
 		{
-			return Vector(_mm_sub_ps(_mm_loadu_ps(&x), _mm_load_ps1(&n)));
-		}
-
-		inline Vector operator*(const float &n) const
-		{
-			return Vector(_mm_mul_ps(_mm_loadu_ps(&x), _mm_load_ps1(&n)));
-		}
-
-		inline Vector operator/(const float &n) const
-		{
-			return Vector(_mm_div_ps(_mm_loadu_ps(&x), _mm_load_ps1(&n)));
-		}
-
-		inline bool operator==(const Vector &vec) const
-		{
-			if (Math::isZero(x - vec.x) && Math::isZero(y - vec.y) && Math::isZero(z - vec.z))
-				return true;
-			return false;
-		}
-
-		inline bool operator==(const float * const vec) const
-		{
-			if (Math::isZero(x - vec[0]) && Math::isZero(y - vec[1]) && Math::isZero(z - vec[2]))
-				return true;
-			return false;
-		}
-
-		inline void Set(const Vector &vec)
-		{
-			_mm_storeu_ps(&x, _mm_loadu_ps(&vec.x));
-		}
-
-		inline void Set(const Vector * const vec)
-		{
-			_mm_storeu_ps(&x, _mm_loadu_ps(&vec->x));
-		}
-
-		inline void Set(const float * const p)
-		{
-			x = p[0]; y = p[1]; z = p[2];
-		}
-
-		inline void Set(const float &vx, const float &vy, const float &vz)
-		{
-			x = vx; y = vy; z = vz;
-		}
-
-		inline void Set(const float &val)
-		{
-			_mm_storeu_ps(&x, _mm_load_ps1(&val));
-		}
-
-		inline void Write(float * const dest) const
-		{
-			dest[0] = x; dest[1] = y; dest[2] = z;
-		}
-
-		inline void WriteNeg(float * const dest) const
-		{
-			dest[0] = -x; dest[1] = -y; dest[2] = -z;
-		}
-
-		inline void WriteAdd(float * const dest) const
-		{
-			dest[0] += x; dest[1] += y; dest[2] += z;
-		}
-
-		inline float GetDot() const
-		{
-			return (x*x + y*y + z*z);
-		}
-
-		inline float GetDot(const Vector &vec) const
-		{
-			return (x*vec.x + y*vec.y + z*vec.z);
-		}
-
-		inline float GetDot(const float * const p) const
-		{
-			return (x*p[0] + y*p[1] + z*p[2]);
-		}
-
-		inline float GetDot(const float x, const float y, const float z) const
-		{
-			return (this->x*x + this->y*y + this->z*z);
-		}
-
-		inline float GetMagnitude() const
-		{
-			float final;
-			__m128 tmp;
-
-			tmp = _mm_loadu_ps(&x);
-			tmp = _mm_mul_ps(tmp, tmp);
-			tmp = _mm_add_ss(tmp, _mm_shuffle_ps(tmp, tmp, _MM_SHUFFLE(3, 2, 1, 1)));
-			tmp = _mm_add_ss(tmp, _mm_movehl_ps(tmp, tmp));
-			_mm_store_ss(&final, _mm_sqrt_ss(tmp));
-			return final;
-		}
-
-		inline float GetMagnitudeInv() const
-		{
-			float final;
-			__m128 tmp;
-
-			tmp = _mm_loadu_ps(&x);
-			tmp = _mm_mul_ps(tmp, tmp);
-			tmp = _mm_add_ss(tmp, _mm_shuffle_ps(tmp, tmp, _MM_SHUFFLE(3, 2, 1, 1)));
-			tmp = _mm_add_ss(tmp, _mm_movehl_ps(tmp, tmp));
-			_mm_store_ss(&final, _mm_rsqrt_ss(tmp));
-			return final;
-		}
-
-		inline float GetMagnitudeSquared() const
-		{
-			float final;
-			__m128 tmp;
-
-			tmp = _mm_loadu_ps(&x);
-			tmp = _mm_mul_ps(tmp, tmp);
-			tmp = _mm_add_ss(tmp, _mm_shuffle_ps(tmp, tmp, _MM_SHUFFLE(3, 2, 1, 1)));
-			_mm_store_ss(&final, _mm_add_ss(tmp, _mm_movehl_ps(tmp, tmp)));
-			return final;
-		}
-
-		inline float GetDistance(const Vector &vec) const
-		{
-			float final;
-			__m128 tmp;
-
-			tmp = _mm_sub_ps(_mm_loadu_ps(&vec.x), _mm_loadu_ps(&x));
-			tmp = _mm_mul_ps(tmp, tmp);
-			tmp = _mm_add_ss(tmp, _mm_shuffle_ps(tmp, tmp, _MM_SHUFFLE(3, 2, 1, 1)));
-			tmp = _mm_add_ss(tmp, _mm_movehl_ps(tmp, tmp));
-			_mm_store_ss(&final, _mm_sqrt_ss(tmp));
-			return final;
-		}
-
-		inline float GetDistance(const float &x, const float &y, const float &z) const
-		{
-			float d1 = x - this->x;
-			float d2 = y - this->y;
-			float d3 = z - this->z;
-			return sqrt(d1*d1 + d2*d2 + d3*d3);
-		}
-
-		inline float GetDistance(const float * const p) const
-		{
-			float d1 = p[0] - x;
-			float d2 = p[1] - y;
-			float d3 = p[2] - z;
-			return sqrt(d1*d1 + d2*d2 + d3*d3);
-		}
-
-		inline bool Compare(const Vector &vec, const float &precision) const
-		{
-			if ((Math::fAbs(x - vec.x) < precision) && (Math::fAbs(y - vec.y) < precision) && (Math::fAbs(z - vec.z) < precision))
-				return true;
-			return false;
-		}
-
-		inline void Normalize()
-		{
-			__m128 aux, tmp;
-
-			aux = _mm_loadu_ps(&x);
-			tmp = _mm_mul_ps(aux, aux);
-			tmp = _mm_add_ss(tmp, _mm_shuffle_ps(tmp, tmp, _MM_SHUFFLE(3, 2, 1, 1)));
-			tmp = _mm_add_ss(tmp, _mm_movehl_ps(tmp, tmp));
-			tmp = _mm_rsqrt_ss(tmp);
-			_mm_storeu_ps(&x, _mm_mul_ps(aux, _mm_shuffle_ps(tmp, tmp, 0)));
-		}
-
-		inline void Clamp(const float &min, const float &max)
-		{
-			__m128 tmp;
-
-			tmp = _mm_loadu_ps(&x);
-			tmp = _mm_max_ps(tmp, _mm_load_ps1(&min));
-			tmp = _mm_min_ps(tmp, _mm_load_ps1(&max));
-			_mm_storeu_ps(&x, tmp);
-		}
-
-		inline void StoreNormal(const Vector &v1, const Vector &v2, const Vector &v3)
-		{
-			__m128 vec1, vec2, tmp1, tmp2;
-
-			vec2 = _mm_loadu_ps(&v1.x);
-			vec1 = _mm_sub_ps(_mm_loadu_ps(&v2.x), vec2);
-			vec2 = _mm_sub_ps(_mm_loadu_ps(&v3.x), vec2);
-
-			tmp1 = _mm_mul_ps(_mm_shuffle_ps(vec1, vec1, _MM_SHUFFLE(3, 0, 2, 1)), _mm_shuffle_ps(vec2, vec2, _MM_SHUFFLE(3, 1, 0, 2)));
-			tmp2 = _mm_mul_ps(_mm_shuffle_ps(vec1, vec1, _MM_SHUFFLE(3, 1, 0, 2)), _mm_shuffle_ps(vec2, vec2, _MM_SHUFFLE(3, 0, 2, 1)));
-			tmp1 = _mm_sub_ps(tmp1, tmp2);
-
-			tmp2 = _mm_mul_ps(tmp1, tmp1);
-			tmp2 = _mm_add_ss(tmp2, _mm_shuffle_ps(tmp2, tmp2, _MM_SHUFFLE(3, 2, 1, 1)));
-			tmp2 = _mm_add_ss(tmp2, _mm_movehl_ps(tmp2, tmp2));
-			tmp2 = _mm_rsqrt_ss(tmp2);
-			_mm_storeu_ps(&x, _mm_mul_ps(tmp1, _mm_shuffle_ps(tmp2, tmp2, 0)));
-		}
-
-		inline void StoreNormal(const float * const v1, const float * const v2, const float * const v3)
-		{
-			float aux1[3], aux2[3], tamanho;
-
-			aux1[0] = v2[0] - v1[0];
-			aux1[1] = v2[1] - v1[1];
-			aux1[2] = v2[2] - v1[2];
-
-			aux2[0] = v3[0] - v1[0];
-			aux2[1] = v3[1] - v1[1];
-			aux2[2] = v3[2] - v1[2];
-
-			x = (aux1[1] * aux2[2]) - (aux1[2] * aux2[1]);
-			y = (aux1[2] * aux2[0]) - (aux1[0] * aux2[2]);
-			z = (aux1[0] * aux2[1]) - (aux1[1] * aux2[0]);
-
-			tamanho = 1.0f / sqrt(x*x + y*y + z*z);
-			x *= tamanho;
-			y *= tamanho;
-			z *= tamanho;
-		}
-
-		inline void StoreVector(const Vector &p1, const Vector &p2)
-		{
-			x = p1.x - p2.x;
-			y = p1.y - p2.y;
-			z = p1.z - p2.z;
-		}
-
-		inline Vector CrossProduct(const Vector &vec) const
-		{
-			return Vector((this->y * vec.z) - (this->z * vec.y), (this->z * vec.x) - (this->x * vec.z), (this->x * vec.y) - (this->y * vec.x));
-		}
-
-		inline void StoreCrossProduct(const Vector &p, const Vector &q)
-		{
-			x = (p.y * q.z) - (p.z * q.y);
-			y = (p.z * q.x) - (p.x * q.z);
-			z = (p.x * q.y) - (p.y * q.x);
-		}
-
-		inline void StoreCrossProduct(const float * const p, const float * const q)
-		{
-			x = p[1] * q[2] - p[2] * q[1];
-			y = p[2] * q[0] - p[0] * q[2];
-			z = p[0] * q[1] - p[1] * q[0];
-		}
-
-		inline void StoreInterpolate(const Vector &from, const Vector &to, const float &t)
-		{
-			__m128 tmp;
-
-			tmp = _mm_mul_ps(_mm_loadu_ps(&from.x), _mm_set_ps1(1.0f - t));
-			tmp = _mm_add_ps(tmp, _mm_mul_ps(_mm_loadu_ps(&to.x), _mm_load_ps1(&t)));
-			_mm_storeu_ps(&x, tmp);
-		}
-
-		inline void StoreInterpolate(const float * const from, const float * const to, const float &t)
-		{
-			x = from[0] * (1.0f - t) + to[0] * t;
-			y = from[1] * (1.0f - t) + to[1] * t;
-			z = from[2] * (1.0f - t) + to[2] * t;
-		}
-
-		inline void StoreInterpolate(const Vector &to, const float &t)
-		{
-			__m128 tmp;
-
-			tmp = _mm_mul_ps(_mm_loadu_ps(&x), _mm_set_ps1(1.0f - t));
-			tmp = _mm_add_ps(tmp, _mm_mul_ps(_mm_loadu_ps(&to.x), _mm_load_ps1(&t)));
-			_mm_storeu_ps(&x, tmp);
-		}
-
-		inline void StoreInterpolateNormals(const Vector &n1, const Vector &n2, const float &t)
-		{
-			float a, sinA;
-
-			a = acos(n1.GetDot(n2));
-			sinA = 1.0f / sinf(a);
-
-			x = (sin((1.0f - t)*a)*n1.x + sin(t*a)*n2.x) * sinA;
-			y = (sin((1.0f - t)*a)*n1.y + sin(t*a)*n2.y) * sinA;
-			z = (sin((1.0f - t)*a)*n1.z + sin(t*a)*n2.z) * sinA;
-		}
-
-		inline void StoreClosestInSegment(const Vector &point, const Vector &p1, const Vector &p2)
-		{
-			float t;
-			Vector lineDir;
-
-			lineDir.x = p2.x - p1.x;
-			lineDir.y = p2.y - p1.y;
-			lineDir.z = p2.z - p1.z;
-
-			t = lineDir.GetDot();
-			if (Math::isZero(t))
+			for (int i = 0; i < NComponents; i++)
 			{
-				x = p1.x;
-				y = p1.y;
-				z = p1.z;
-				return;
+				if (mData[i] != vec.mData[i])
+					return false;
 			}
 
-			t = ((point.x - p1.x)*lineDir.x + (point.y - p1.y)*lineDir.y + (point.z - p1.z)*lineDir.z) / t;
+			return true;
+		}
 
-			t = Math::fClamp(t, 0.0f, 1.0f);
-			x = p1.x + (t * lineDir.x);
-			y = p1.y + (t * lineDir.y);
-			z = p1.z + (t * lineDir.z);
+		bool operator==(const TDataType* const values) const
+		{
+			for (int i = 0; i < NComponents; i++)
+			{
+				if (mData[i] != values[i])
+					return false;
+			}
+
+			return true;
+		}
+
+		Vector& set(const Vector &vec)
+		{
+			for (int i = 0; i < NComponents; i++)
+				mData[i] = vec[i];
+
+			return *this;
+		}
+
+		Vector& set(const TDataType* const values)
+		{
+			for (int i = 0; i < NComponents; i++)
+				mData[i] = values[i];
+
+			return *this;
+		}
+
+		Vector& set(const TDataType& scalar)
+		{
+			for (int i = 0; i < NComponents; i++)
+				mData[i] = scalar;
+
+			return *this;
+		}
+
+		Vector& clamp(const TDataType& min, const TDataType& max)
+		{
+			for (int i = 0; i < NComponents; i++)
+			{
+				mData[i] = (mData[i] < min) ? min : ((mData[i] > max) ? max : mData[i]);
+			}
+
+			return *this;
+		}
+
+		void write(TDataType* const dest) const
+		{
+			for (int i = 0; i < NComponents; i++)
+				dest[i] = mData[i];
+		}
+
+		TDataType getDot() const
+		{
+			return Vector::calcDot(*this, *this);
+		}
+
+		TDataType getDot(const Vector &vec) const
+		{
+			return Vector::calcDot(*this, vec);
 		}
 	};
 
-	HALIGN_16BYTES
-	struct Vector4{
-		float x, y, z, w;
+	typedef Vector<float, 3> Vector3f;
+	typedef Vector<float, 4> Vector4f;
 
+	template<>
+	class Vector<float, 3>
+	{
+		float mData[4];
+
+	public:
 		//static methods
 
-		static float CalcMagnitude(const Vector4 &vec)
+		static float calcMagnitude(const Vector &vec)
 		{
-			return sqrt(vec.x*vec.x + vec.y*vec.y + vec.z*vec.z + vec.w*vec.w);
+			float final;
+
+			__m128 vecTmp = _mm_loadu_ps(vec.mData);
+			_mm_store_ss(&final, _mm_sqrt_ss(_mm_dp_ps(vecTmp, vecTmp, 0x70 | 0xF)));
+			return final;
 		}
 
-		static float CalcDistance(const Vector4 &vec1, const Vector4 &vec2)
+		static float calcMagnitudeInverse(const Vector &vec)
 		{
-			float d1 = vec1.x - vec2.x;
-			float d2 = vec1.y - vec2.y;
-			float d3 = vec1.z - vec2.z;
-			float d4 = vec1.w - vec2.w;
-			return sqrt(d1*d1 + d2*d2 + d3*d3 + d4*d4);
+			float final;
+
+			__m128 vecTmp = _mm_loadu_ps(vec.mData);
+			_mm_store_ss(&final, _mm_rsqrt_ss(_mm_dp_ps(vecTmp, vecTmp, 0x70 | 0xF)));
+			return final;
 		}
 
-		static float CalcDot(const Vector4 &vec1, const Vector4 &vec2)
+		static float calcDistance(const Vector &vec1, const Vector &vec2)
 		{
-			return (vec1.x*vec2.x + vec1.y*vec2.y + vec1.z*vec2.z + vec1.w*vec2.w);
+			float final;
+
+			__m128 vecTmp = _mm_sub_ps(_mm_loadu_ps(vec1.mData), _mm_loadu_ps(vec2.mData));
+			_mm_store_ss(&final, _mm_sqrt_ss(_mm_dp_ps(vecTmp, vecTmp, 0x70 | 0xF)));
+			return final;
 		}
 
-		static float CalcDot(const Vector &vec1, const Vector4 &vec2)
+		static float calcDot(const Vector &vec1, const Vector &vec2)
 		{
-			return (vec1.x*vec2.x + vec1.y*vec2.y + vec1.z*vec2.z + vec2.w);
+			float final;
+
+			_mm_store_ss(&final, _mm_dp_ps(_mm_loadu_ps(vec1.mData), _mm_loadu_ps(vec2.mData), 0x70 | 0xF));
+			return final;
 		}
 
 		//instance methods
 
-		inline Vector4()
+		Vector()
 		{
-			_mm_storeu_ps(&x, _mm_setzero_ps());
+			_mm_storeu_ps(mData, _mm_setzero_ps());
 		}
 
-		inline Vector4(const Vector &s)
+		Vector(const Vector &v)
 		{
-			_mm_storeu_ps(&x, _mm_loadu_ps(&s.x)); w = 1.0f;
+			_mm_storeu_ps(mData, _mm_loadu_ps(v.mData));
 		}
 
-		inline Vector4(const Vector &s, const float vw)
+		explicit Vector(const float scalar)
 		{
-			_mm_storeu_ps(&x, _mm_loadu_ps(&s.x)); w = vw;
+			_mm_storeu_ps(mData, _mm_load_ps1(&scalar));
 		}
 
-		inline Vector4(const Vector4 &s)
+		explicit Vector(const float &vx, const float &vy, const float &vz)
 		{
-			_mm_storeu_ps(&x, _mm_loadu_ps(&s.x));
+			mData[0] = vx;
+			mData[1] = vy;
+			mData[2] = vz;
+			mData[3] = 0.0f;
 		}
 
-		explicit inline Vector4(const float scalar)
+		explicit Vector(const float* const v)
 		{
-			_mm_storeu_ps(&x, _mm_load_ps1(&scalar));
+			std::memcpy(mData, v, sizeof(float) * 3);
+			mData[3] = 0.0f;
 		}
 
-		explicit inline Vector4(const float vx, const float vy, const float vz, const float vw)
+		explicit Vector(const __m128 vecDat)
 		{
-			x = vx; y = vy; z = vz; w = vw;
+			_mm_storeu_ps(mData, vecDat);
 		}
 
-		explicit inline Vector4(const float * const v)
+		float* data()
 		{
-			_mm_storeu_ps(&x, _mm_loadu_ps(v));
+			return mData;
 		}
 
-		inline ~Vector4()
+		const float* data() const
 		{
-			return;
+			return mData;
 		}
 
-		inline operator float *(void)
+		float& operator[] (const size_t index)
 		{
-			return &x;
+			return mData[index % 3];
 		}
 
-		inline operator const float *(void) const
+		const float& operator[] (const size_t index) const
 		{
-			return &x;
+			return mData[index % 3];
 		}
 
-		inline Vector4& operator=(const Vector4 &v)
+		Vector& operator=(const Vector& v)
 		{
-			_mm_storeu_ps(&x, _mm_loadu_ps(&v.x));
+			_mm_storeu_ps(mData, _mm_loadu_ps(v.mData));
 			return *this;
 		}
 
-		inline Vector4& operator=(const float *n)
+		Vector& operator=(const float *v)
 		{
-			x = n[0]; y = n[1]; z = n[2]; w = n[3];
+			std::memcpy(mData, v, sizeof(float) * 3);
 			return *this;
 		}
 
-		inline Vector4& operator=(const float n)
+		Vector& operator=(const float n)
 		{
-			_mm_storeu_ps(&x, _mm_load_ps1(&n));
+			_mm_storeu_ps(mData, _mm_load_ps1(&n));
 			return *this;
 		}
 
-		inline void operator+=(const Vector4& v)
+		void operator+=(const Vector& v)
 		{
-			_mm_storeu_ps(&x, _mm_add_ps(_mm_loadu_ps(&x), _mm_loadu_ps(&v.x)));
+			_mm_storeu_ps(mData, _mm_add_ps(_mm_loadu_ps(mData), _mm_loadu_ps(v.mData)));
 		}
 
-		inline void operator-=(const Vector4& v)
+		void operator-=(const Vector& v)
 		{
-			_mm_storeu_ps(&x, _mm_sub_ps(_mm_loadu_ps(&x), _mm_loadu_ps(&v.x)));
+			_mm_storeu_ps(mData, _mm_sub_ps(_mm_loadu_ps(mData), _mm_loadu_ps(v.mData)));
 		}
 
-		inline void operator*=(const Vector4& v)
+		void operator*=(const Vector& v)
 		{
-			_mm_storeu_ps(&x, _mm_mul_ps(_mm_loadu_ps(&x), _mm_loadu_ps(&v.x)));
+			_mm_storeu_ps(mData, _mm_mul_ps(_mm_loadu_ps(mData), _mm_loadu_ps(v.mData)));
 		}
 
-		inline void operator/=(const Vector4& v)
+		void operator/=(const Vector& v)
 		{
-			_mm_storeu_ps(&x, _mm_div_ps(_mm_loadu_ps(&x), _mm_loadu_ps(&v.x)));
+			_mm_storeu_ps(mData, _mm_div_ps(_mm_loadu_ps(mData), _mm_loadu_ps(v.mData)));
 		}
 
-		inline void operator+=(const float &n)
+		void operator+=(const float * const p)
 		{
-			_mm_storeu_ps(&x, _mm_add_ps(_mm_loadu_ps(&x), _mm_load_ps1(&n)));
+			mData[0] += p[0];
+			mData[1] += p[1];
+			mData[2] += p[2];
 		}
 
-		inline void operator-=(const float &n)
+		void operator-=(const float * const p)
 		{
-			_mm_storeu_ps(&x, _mm_sub_ps(_mm_loadu_ps(&x), _mm_load_ps1(&n)));
+			mData[0] -= p[0];
+			mData[1] -= p[1];
+			mData[2] -= p[2];
 		}
 
-		inline void operator*=(const float &n)
+		void operator*=(const float * const p)
 		{
-			_mm_storeu_ps(&x, _mm_mul_ps(_mm_loadu_ps(&x), _mm_load_ps1(&n)));
+			mData[0] *= p[0];
+			mData[1] *= p[1];
+			mData[2] *= p[2];
 		}
 
-		inline void operator/=(const float &n)
+		void operator/=(const float * const p)
 		{
-			_mm_storeu_ps(&x, _mm_div_ps(_mm_loadu_ps(&x), _mm_load_ps1(&n)));
+			mData[0] /= p[0];
+			mData[1] /= p[1];
+			mData[2] /= p[2];
 		}
 
-		inline float operator[](int index) const
+		void operator+=(const float &n)
 		{
-			assert((index >= 0) && (index < 4));
-			return (&x)[index];
+			_mm_storeu_ps(mData, _mm_add_ps(_mm_loadu_ps(mData), _mm_load_ps1(&n)));
 		}
 
-		inline float& operator[](int index)
+		void operator-=(const float &n)
 		{
-			assert((index >= 0) && (index < 4));
-			return (&x)[index];
+			_mm_storeu_ps(mData, _mm_sub_ps(_mm_loadu_ps(mData), _mm_load_ps1(&n)));
 		}
 
-		inline Vector operator-() const
+		void operator*=(const float &n)
 		{
-			return Vector(_mm_mul_ps(_mm_loadu_ps(&x), _mm_set_ps1(-1.0f)));
+			_mm_storeu_ps(mData, _mm_mul_ps(_mm_loadu_ps(mData), _mm_load_ps1(&n)));
 		}
 
-		Vector4& Set(const Vector4 &vec)
+		void operator/=(const float &n)
 		{
-			_mm_storeu_ps(&x, _mm_loadu_ps(&vec.x));
+			_mm_storeu_ps(mData, _mm_div_ps(_mm_loadu_ps(mData), _mm_load_ps1(&n)));
+		}
+
+		Vector operator-() const
+		{
+			return Vector(_mm_mul_ps(_mm_loadu_ps(mData), _mm_set_ps1(-1.0f)));
+		}
+
+		Vector operator+(const Vector &vec) const
+		{
+			return Vector(_mm_add_ps(_mm_loadu_ps(mData), _mm_loadu_ps(vec.mData)));
+		}
+
+		Vector operator-(const Vector &vec) const
+		{
+			return Vector(_mm_sub_ps(_mm_loadu_ps(mData), _mm_loadu_ps(vec.mData)));
+		}
+
+		Vector operator*(const Vector &vec) const
+		{
+			return Vector(_mm_mul_ps(_mm_loadu_ps(mData), _mm_loadu_ps(vec.mData)));
+		}
+
+		Vector operator/(const Vector &vec) const
+		{
+			return Vector(_mm_div_ps(_mm_loadu_ps(mData), _mm_loadu_ps(vec.mData)));
+		}
+
+		Vector operator+(const float * const vec) const
+		{
+			return Vector(mData[0] + vec[0], mData[1] + vec[1], mData[2] + vec[2]);
+		}
+
+		Vector operator-(const float * const vec) const
+		{
+			return Vector(mData[0] - vec[0], mData[1] - vec[1], mData[2] - vec[2]);
+		}
+
+		Vector operator*(const float * const vec) const
+		{
+			return Vector(mData[0] * vec[0], mData[1] * vec[1], mData[2] * vec[2]);
+		}
+
+		Vector operator/(const float * const vec) const
+		{
+			return Vector(mData[0] / vec[0], mData[1] / vec[1], mData[2] / vec[2]);
+		}
+
+		Vector operator+(const float &n) const
+		{
+			return Vector(_mm_add_ps(_mm_loadu_ps(mData), _mm_load_ps1(&n)));
+		}
+
+		Vector operator-(const float &n) const
+		{
+			return Vector(_mm_sub_ps(_mm_loadu_ps(mData), _mm_load_ps1(&n)));
+		}
+
+		Vector operator*(const float &n) const
+		{
+			return Vector(_mm_mul_ps(_mm_loadu_ps(mData), _mm_load_ps1(&n)));
+		}
+
+		Vector operator/(const float &n) const
+		{
+			return Vector(_mm_div_ps(_mm_loadu_ps(mData), _mm_load_ps1(&n)));
+		}
+
+		bool operator==(const Vector &vec) const
+		{
+			if (Math::isZero(mData[0] - vec.mData[0]) && Math::isZero(mData[1] - vec.mData[1]) && Math::isZero(mData[2] - vec.mData[2]))
+				return true;
+			return false;
+		}
+
+		bool operator==(const float * const vec) const
+		{
+			if (Math::isZero(mData[0] - vec[0]) && Math::isZero(mData[1] - vec[1]) && Math::isZero(mData[2] - vec[2]))
+				return true;
+			return false;
+		}
+
+		Vector& set(const Vector &vec)
+		{
+			_mm_storeu_ps(mData, _mm_loadu_ps(vec.mData));
 			return *this;
 		}
 
-		Vector4& Set(const Vector& vec, const float &w)
+		Vector& set(const float* const p)
 		{
-			_mm_storeu_ps(&x, _mm_loadu_ps(&vec.x));
-			this->w = w;
+			std::memcpy(mData, p, sizeof(float) * 3);
 			return *this;
 		}
 
-		Vector4& Set(const float *s)
+		Vector& set(const float &vx, const float &vy, const float &vz)
 		{
-			_mm_storeu_ps(&x, _mm_loadu_ps(s));
+			mData[0] = vx;
+			mData[1] = vy;
+			mData[2] = vz;
 			return *this;
 		}
 
-		Vector4& Set(const float &x, const float &y, const float &z, const float &w)
+		Vector& set(const float &val)
 		{
-			this->x = x;
-			this->y = y;
-			this->z = z;
-			this->w = w;
+			_mm_storeu_ps(mData, _mm_load_ps1(&val));
 			return *this;
 		}
 
-		float GetMagnitude() const
+		void write(float * const dest) const
 		{
-			return Vector4::CalcMagnitude(*this);
+			std::memcpy(dest, mData, sizeof(float) * 3);
 		}
 
-		void Normalize()
+		float getDot() const
 		{
-			float tamanho = 1.0f / sqrt(x*x + y*y + z*z + w*w);
-			x *= tamanho;
-			y *= tamanho;
-			z *= tamanho;
-			w *= tamanho;
+			return Vector::calcDot(*this, *this);
 		}
 
-		float GetDistance(const Vector4 &vec) const
+		float getDot(const Vector &vec) const
 		{
-			return Vector4::CalcDistance(*this, vec);
+			return Vector::calcDot(*this, vec);
 		}
 
-		float GetDot(const Vector4 &vec) const
+		float getDot(const float* const p) const
 		{
-			return Vector4::CalcDot(*this, vec);
+			return ((mData[0] * p[0]) + (mData[1] * p[1]) + (mData[2] * p[2]));
 		}
 
-		float GetDot(const Vector &vec) const
+		float getDot(const float x, const float y, const float z) const
 		{
-			return Vector4::CalcDot(vec, *this);
+			return ((mData[0] * x) + (mData[1] * y) + (mData[2] * z));
 		}
 
-		inline void StoreInterpolate(const Vector4 &from, const Vector4 &to, const float &t)
+		float getMagnitude() const
+		{
+			return Vector::calcMagnitude(*this);
+		}
+
+		float getMagnitudeInv() const
+		{
+			return Vector::calcMagnitudeInverse(*this);
+		}
+
+		float getDistance(const Vector &vec) const
+		{
+			return Vector::calcDistance(*this, vec);
+		}
+
+		float getDistance(const float &x, const float &y, const float &z) const
+		{
+			return Vector::calcDistance(*this, Vector(x, y, z));
+		}
+
+		float getDistance(const float * const p) const
+		{
+			return Vector::calcDistance(*this, Vector(p));
+		}
+
+		bool isEqual(const Vector &vec, const float &precision) const
+		{
+			if ((Math::fAbs(mData[0] - vec.mData[0]) < precision) && (Math::fAbs(mData[1] - vec.mData[1]) < precision) && (Math::fAbs(mData[2] - vec.mData[2]) < precision))
+				return true;
+			return false;
+		}
+
+		Vector& normalize()
+		{
+			__m128 vecTmp = _mm_loadu_ps(mData);
+			__m128 vecMag = _mm_rsqrt_ps(_mm_dp_ps(vecTmp, vecTmp, 0x70 | 0xF));
+			_mm_storeu_ps(mData, _mm_mul_ps(vecTmp, vecMag));
+
+			return *this;
+		}
+
+		Vector& clamp(const float &min, const float &max)
+		{
+			__m128 tmp = _mm_loadu_ps(mData);
+			tmp = _mm_max_ps(tmp, _mm_load_ps1(&min));
+			tmp = _mm_min_ps(tmp, _mm_load_ps1(&max));
+			_mm_storeu_ps(mData, tmp);
+
+			return *this;
+		}
+
+		Vector& abs()
+		{
+			__m128 mask = _mm_castsi128_ps(_mm_set1_epi32(0x7FFFFFFF));
+			_mm_storeu_ps(mData, _mm_and_ps(_mm_loadu_ps(mData), mask));
+
+			return *this;
+		}
+
+		Vector& neg()
+		{
+			__m128 mask = _mm_castsi128_ps(_mm_set1_epi32(0x80000000));
+			_mm_storeu_ps(mData, _mm_xor_ps(_mm_loadu_ps(mData), mask));
+
+			return *this;
+		}
+
+		void storeNormal(const Vector &v1, const Vector &v2, const Vector &v3)
+		{
+			__m128 vec1, vec2, tmp1, tmp2;
+
+			tmp1 = _mm_loadu_ps(v1.mData);
+			vec1 = _mm_sub_ps(_mm_loadu_ps(v2.mData), tmp1);
+			vec2 = _mm_sub_ps(_mm_loadu_ps(v3.mData), tmp1);
+
+			tmp1 = _mm_mul_ps(_mm_shuffle_ps(vec1, vec1, _MM_SHUFFLE(3, 0, 2, 1)), _mm_shuffle_ps(vec2, vec2, _MM_SHUFFLE(3, 1, 0, 2)));
+			tmp2 = _mm_mul_ps(_mm_shuffle_ps(vec1, vec1, _MM_SHUFFLE(3, 1, 0, 2)), _mm_shuffle_ps(vec2, vec2, _MM_SHUFFLE(3, 0, 2, 1)));
+			vec1 = _mm_sub_ps(tmp1, tmp2);
+
+			vec2 = _mm_rsqrt_ps(_mm_dp_ps(vec1, vec1, 0x70 | 0xF));
+			_mm_storeu_ps(mData, _mm_mul_ps(vec1, vec2));
+		}
+
+		void storeNormal(const float * const v1, const float * const v2, const float * const v3)
+		{
+			storeNormal(Vector(v1), Vector(v2), Vector(v3));
+		}
+
+		Vector crossProduct(const Vector &vec) const
+		{
+			Vector result;
+
+			__m128 vec1 = _mm_loadu_ps(mData);
+			__m128 vec2 = _mm_loadu_ps(vec.mData);
+
+			__m128 xa = _mm_mul_ps(_mm_shuffle_ps(vec1, vec1, _MM_SHUFFLE(3, 0, 2, 1)), _mm_shuffle_ps(vec2, vec2, _MM_SHUFFLE(3, 1, 0, 2)));
+			__m128 xb = _mm_mul_ps(_mm_shuffle_ps(vec1, vec1, _MM_SHUFFLE(3, 1, 0, 2)), _mm_shuffle_ps(vec2, vec2, _MM_SHUFFLE(3, 0, 2, 1)));
+
+			_mm_storeu_ps(result.mData, _mm_sub_ps(xa, xb));
+			return result;
+		}
+
+		void storeCrossProduct(const Vector &p, const Vector &q)
+		{
+			__m128 vec1 = _mm_loadu_ps(p.mData);
+			__m128 vec2 = _mm_loadu_ps(q.mData);
+
+			__m128 xa = _mm_mul_ps(_mm_shuffle_ps(vec1, vec1, _MM_SHUFFLE(3, 0, 2, 1)), _mm_shuffle_ps(vec2, vec2, _MM_SHUFFLE(3, 1, 0, 2)));
+			__m128 xb = _mm_mul_ps(_mm_shuffle_ps(vec1, vec1, _MM_SHUFFLE(3, 1, 0, 2)), _mm_shuffle_ps(vec2, vec2, _MM_SHUFFLE(3, 0, 2, 1)));
+
+			_mm_storeu_ps(mData, _mm_sub_ps(xa, xb));
+		}
+
+		void storeCrossProduct(const float * const p, const float * const q)
+		{
+			storeCrossProduct(Vector(p), Vector(q));
+		}
+
+		void storeInterpolate(const Vector &from, const Vector &to, const float &t)
 		{
 			__m128 tmp;
 
-			tmp = _mm_mul_ps(_mm_loadu_ps(&from.x), _mm_set_ps1(1.0f - t));
-			tmp = _mm_add_ps(tmp, _mm_mul_ps(_mm_loadu_ps(&to.x), _mm_load_ps1(&t)));
-			_mm_storeu_ps(&x, tmp);
+			tmp = _mm_mul_ps(_mm_loadu_ps(from.mData), _mm_set_ps1(1.0f - t));
+			tmp = _mm_add_ps(tmp, _mm_mul_ps(_mm_loadu_ps(to.mData), _mm_load_ps1(&t)));
+			_mm_storeu_ps(mData, tmp);
 		}
 
-		inline void StoreInterpolate(const float * const from, const float * const to, const float &t)
+		void storeInterpolate(const float* const from, const float* const to, const float &t)
+		{
+			storeInterpolate(Vector(from), Vector(to), t);
+		}
+
+		void storeInterpolate(const Vector &to, const float &t)
+		{
+			__m128 tmp;
+
+			tmp = _mm_mul_ps(_mm_loadu_ps(mData), _mm_set_ps1(1.0f - t));
+			tmp = _mm_add_ps(tmp, _mm_mul_ps(_mm_loadu_ps(to.mData), _mm_load_ps1(&t)));
+			_mm_storeu_ps(mData, tmp);
+		}
+
+		void storeInterpolateNormals(const Vector &n1, const Vector &n2, const float &t)
+		{
+			float a = acos(n1.getDot(n2));
+			float sinA = 1.0f / sinf(a);
+
+			mData[0] = (sin((1.0f - t)*a)*n1.mData[0] + sin(t*a)*n2.mData[0]) * sinA;
+			mData[1] = (sin((1.0f - t)*a)*n1.mData[1] + sin(t*a)*n2.mData[1]) * sinA;
+			mData[2] = (sin((1.0f - t)*a)*n1.mData[2] + sin(t*a)*n2.mData[2]) * sinA;
+		}
+
+		void storeClosestInSegment(const Vector &point, const Vector &p1, const Vector &p2)
+		{
+			Vector lineDir = p2 - p1;
+
+			float t = lineDir.getDot();
+			if (Math::isZero(t))
+			{
+				mData[0] = p1.mData[0];
+				mData[1] = p1.mData[1];
+				mData[2] = p1.mData[2];
+				return;
+			}
+
+			t = ((point.mData[0] - p1.mData[0])*lineDir.mData[0] + (point.mData[1] - p1.mData[1])*lineDir.mData[1] + (point.mData[2] - p1.mData[2])*lineDir.mData[2]) / t;
+			t = Math::fClamp(t, 0.0f, 1.0f);
+
+			mData[0] = p1.mData[0] + (t * lineDir.mData[0]);
+			mData[1] = p1.mData[1] + (t * lineDir.mData[1]);
+			mData[2] = p1.mData[2] + (t * lineDir.mData[2]);
+		}
+	};
+
+	template<>
+	class Vector<float, 4>
+	{
+		float mData[4];
+
+	public:
+
+		//static methods
+
+		static float calcMagnitude(const Vector &vec)
+		{
+			float final;
+
+			__m128 vecTmp = _mm_loadu_ps(vec.mData);
+			_mm_store_ss(&final, _mm_sqrt_ss(_mm_dp_ps(vecTmp, vecTmp, 0xF0 | 0xF)));
+			return final;
+		}
+
+		static float calcMagnitudeInverse(const Vector &vec)
+		{
+			float final;
+
+			__m128 vecTmp = _mm_loadu_ps(vec.mData);
+			_mm_store_ss(&final, _mm_rsqrt_ss(_mm_dp_ps(vecTmp, vecTmp, 0xF0 | 0xF)));
+			return final;
+		}
+
+		static float calcDistance(const Vector &vec1, const Vector &vec2)
+		{
+			float final;
+
+			__m128 vecTmp = _mm_sub_ps(_mm_loadu_ps(vec1.mData), _mm_loadu_ps(vec2.mData));
+			_mm_store_ss(&final, _mm_sqrt_ss(_mm_dp_ps(vecTmp, vecTmp, 0xF0 | 0xF)));
+			return final;
+		}
+
+		static float calcDot(const Vector &vec1, const Vector &vec2)
+		{
+			float final;
+
+			_mm_store_ss(&final, _mm_dp_ps(_mm_loadu_ps(vec1.mData), _mm_loadu_ps(vec2.mData), 0xF0 | 0xF));
+			return final;
+		}
+
+		static float calcDot(const Vector3f &vec1, const Vector &vec2)
+		{
+			float final;
+
+			_mm_store_ss(&final, _mm_dp_ps(_mm_setr_ps(vec1.data()[0], vec1.data()[1], vec1.data()[2], 1.0f), _mm_loadu_ps(vec2.mData), 0xF0 | 0xF));
+			return final;
+		}
+
+		//instance methods
+
+		Vector()
+		{
+			_mm_storeu_ps(mData, _mm_setzero_ps());
+		}
+
+		Vector(const Vector3f &s)
+		{
+			_mm_storeu_ps(mData, _mm_loadu_ps(s.data()));
+			mData[3] = 1.0f;
+		}
+
+		Vector(const Vector3f &s, const float vw)
+		{
+			_mm_storeu_ps(mData, _mm_loadu_ps(s.data()));
+			mData[3] = vw;
+		}
+
+		Vector(const Vector &s)
+		{
+			_mm_storeu_ps(mData, _mm_loadu_ps(s.mData));
+		}
+
+		explicit Vector(const float scalar)
+		{
+			_mm_storeu_ps(mData, _mm_load_ps1(&scalar));
+		}
+
+		explicit Vector(const float vx, const float vy, const float vz, const float vw)
+		{
+			mData[0] = vx;
+			mData[1] = vy;
+			mData[2] = vz;
+			mData[3] = vw;
+		}
+
+		explicit Vector(const float * const v)
+		{
+			_mm_storeu_ps(mData, _mm_loadu_ps(v));
+		}
+
+		explicit Vector(const __m128 vecDat)
+		{
+			_mm_storeu_ps(mData, vecDat);
+		}
+
+		float* data()
+		{
+			return mData;
+		}
+
+		const float* data() const
+		{
+			return mData;
+		}
+
+		float& operator[] (const size_t index)
+		{
+			return mData[index % 4];
+		}
+
+		const float& operator[] (const size_t index) const
+		{
+			return mData[index % 4];
+		}
+
+		Vector& operator=(const Vector &v)
+		{
+			_mm_storeu_ps(mData, _mm_loadu_ps(v.mData));
+			return *this;
+		}
+
+		Vector& operator=(const float* const values)
+		{
+			_mm_storeu_ps(mData, _mm_loadu_ps(values));
+			return *this;
+		}
+
+		Vector& operator=(const float n)
+		{
+			_mm_storeu_ps(mData, _mm_load_ps1(&n));
+			return *this;
+		}
+
+		void operator+=(const Vector& v)
+		{
+			_mm_storeu_ps(mData, _mm_add_ps(_mm_loadu_ps(mData), _mm_loadu_ps(v.mData)));
+		}
+
+		void operator-=(const Vector& v)
+		{
+			_mm_storeu_ps(mData, _mm_sub_ps(_mm_loadu_ps(mData), _mm_loadu_ps(v.mData)));
+		}
+
+		void operator*=(const Vector& v)
+		{
+			_mm_storeu_ps(mData, _mm_mul_ps(_mm_loadu_ps(mData), _mm_loadu_ps(v.mData)));
+		}
+
+		void operator/=(const Vector& v)
+		{
+			_mm_storeu_ps(mData, _mm_div_ps(_mm_loadu_ps(mData), _mm_loadu_ps(v.mData)));
+		}
+
+		void operator+=(const float &n)
+		{
+			_mm_storeu_ps(mData, _mm_add_ps(_mm_loadu_ps(mData), _mm_load_ps1(&n)));
+		}
+
+		void operator-=(const float &n)
+		{
+			_mm_storeu_ps(mData, _mm_sub_ps(_mm_loadu_ps(mData), _mm_load_ps1(&n)));
+		}
+
+		void operator*=(const float &n)
+		{
+			_mm_storeu_ps(mData, _mm_mul_ps(_mm_loadu_ps(mData), _mm_load_ps1(&n)));
+		}
+
+		void operator/=(const float &n)
+		{
+			_mm_storeu_ps(mData, _mm_div_ps(_mm_loadu_ps(mData), _mm_load_ps1(&n)));
+		}
+
+		Vector operator-() const
+		{
+			return Vector(_mm_mul_ps(_mm_loadu_ps(mData), _mm_set_ps1(-1.0f)));
+		}
+
+		Vector& set(const Vector &vec)
+		{
+			_mm_storeu_ps(mData, _mm_loadu_ps(vec.mData));
+			return *this;
+		}
+
+		Vector& set(const Vector3f& vec, const float &w)
+		{
+			_mm_storeu_ps(mData, _mm_loadu_ps(vec.data()));
+			mData[3] = w;
+			return *this;
+		}
+
+		Vector& set(const float *s)
+		{
+			_mm_storeu_ps(mData, _mm_loadu_ps(s));
+			return *this;
+		}
+
+		Vector& set(const float &x, const float &y, const float &z, const float &w)
+		{
+			mData[0] = x;
+			mData[1] = y;
+			mData[2] = z;
+			mData[3] = w;
+			return *this;
+		}
+
+		float getMagnitude() const
+		{
+			return Vector::calcMagnitude(*this);
+		}
+
+		Vector& normalize()
+		{
+			__m128 vecTmp = _mm_loadu_ps(mData);
+			__m128 vecMag = _mm_rsqrt_ps(_mm_dp_ps(vecTmp, vecTmp, 0xF0 | 0xF));
+			_mm_storeu_ps(mData, _mm_mul_ps(vecTmp, vecMag));
+
+			return *this;
+		}
+
+		Vector& clamp(const float &min, const float &max)
+		{
+			__m128 tmp = _mm_loadu_ps(mData);
+			tmp = _mm_max_ps(tmp, _mm_load_ps1(&min));
+			tmp = _mm_min_ps(tmp, _mm_load_ps1(&max));
+			_mm_storeu_ps(mData, tmp);
+
+			return *this;
+		}
+
+		Vector& abs()
+		{
+			__m128 mask = _mm_castsi128_ps(_mm_set1_epi32(0x7FFFFFFF));
+			_mm_storeu_ps(mData, _mm_and_ps(_mm_loadu_ps(mData), mask));
+
+			return *this;
+		}
+
+		Vector& neg()
+		{
+			__m128 mask = _mm_castsi128_ps(_mm_set1_epi32(0x80000000));
+			_mm_storeu_ps(mData, _mm_xor_ps(_mm_loadu_ps(mData), mask));
+
+			return *this;
+		}
+
+		float getDistance(const Vector &vec) const
+		{
+			return Vector::calcDistance(*this, vec);
+		}
+
+		float getDot(const Vector &vec) const
+		{
+			return Vector::calcDot(*this, vec);
+		}
+
+		float getDot(const Vector3f &vec) const
+		{
+			return Vector::calcDot(vec, *this);
+		}
+
+		void storeInterpolate(const Vector& from, const Vector& to, const float t)
+		{
+			__m128 tmp;
+
+			tmp = _mm_mul_ps(_mm_loadu_ps(from.mData), _mm_set_ps1(1.0f - t));
+			tmp = _mm_add_ps(tmp, _mm_mul_ps(_mm_loadu_ps(to.mData), _mm_load_ps1(&t)));
+			_mm_storeu_ps(mData, tmp);
+		}
+
+		void storeInterpolate(const float* const from, const float* const to, const float &t)
 		{
 			__m128 tmp;
 
 			tmp = _mm_mul_ps(_mm_loadu_ps(from), _mm_set_ps1(1.0f - t));
 			tmp = _mm_add_ps(tmp, _mm_mul_ps(_mm_loadu_ps(to), _mm_load_ps1(&t)));
-			_mm_storeu_ps(&x, tmp);
+			_mm_storeu_ps(mData, tmp);
 		}
 
-		inline void StoreInterpolate(const Vector4 &to, const float &t)
+		void storeInterpolate(const Vector &to, const float t)
 		{
 			__m128 tmp;
 
-			tmp = _mm_mul_ps(_mm_loadu_ps(&x), _mm_set_ps1(1.0f - t));
-			tmp = _mm_add_ps(tmp, _mm_mul_ps(_mm_loadu_ps(&to.x), _mm_load_ps1(&t)));
-			_mm_storeu_ps(&x, tmp);
+			tmp = _mm_mul_ps(_mm_loadu_ps(mData), _mm_set_ps1(1.0f - t));
+			tmp = _mm_add_ps(tmp, _mm_mul_ps(_mm_loadu_ps(to.mData), _mm_load_ps1(&t)));
+			_mm_storeu_ps(mData, tmp);
 		}
 	};
 

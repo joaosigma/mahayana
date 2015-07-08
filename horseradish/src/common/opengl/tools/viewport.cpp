@@ -19,7 +19,7 @@ void Viewport::calcMatrices()
 	double xmax = ymax * aspect;
 
 	//3D
-	mMatrices.mp3D.SetZero();
+	mMatrices.mp3D.setZero();
 	mMatrices.mp3D[0] = static_cast<float>((2.0 * n) / (xmax - xmin));
 	mMatrices.mp3D[5] = static_cast<float>((2.0 * n) / (ymax - ymin));
 	mMatrices.mp3D[8] = static_cast<float>((xmax + xmin) / (xmax - xmin));
@@ -29,7 +29,7 @@ void Viewport::calcMatrices()
 	mMatrices.mp3D[14] = -static_cast<float>((2.0 * f *n) / (f - n));
 
 	//3D infinite
-	mMatrices.mp3DInfinite.SetZero();
+	mMatrices.mp3DInfinite.setZero();
 	mMatrices.mp3DInfinite[0] = static_cast<float>((2.0 * n) / (xmax - xmin));
 	mMatrices.mp3DInfinite[5] = static_cast<float>((2.0 * n) / (ymax - ymin));
 	mMatrices.mp3DInfinite[8] = static_cast<float>((xmax + xmin) / (xmax - xmin));
@@ -39,7 +39,7 @@ void Viewport::calcMatrices()
 	mMatrices.mp3DInfinite[14] = -static_cast<float>(2.0 * n);
 
 	//2D
-	mMatrices.mp2D.SetIdentidade();
+	mMatrices.mp2D.setIdentity();
 	mMatrices.mp2D[0] = 2.0f / static_cast<float>(mWidth);
 	mMatrices.mp2D[5] = 2.0f / static_cast<float>(mHeight);
 	mMatrices.mp2D[10] = -1.0f;
@@ -83,14 +83,14 @@ void Viewport::getPointOnZNear(float * const center) const
 	center[2] = mZNear;
 }
 
-void Viewport::getPointOnZNear(HorseRadish::Vector& center) const
+void Viewport::getPointOnZNear(HorseRadish::Vector3f& center) const
 {
-	center.y = mZNear * tan(mFov * 0.5f);
-	center.x = (center.y) * static_cast<float>(mWidth) / static_cast<float>(mHeight);
-	center.z = mZNear;
+	center[0] = mZNear * tan(mFov * 0.5f);
+	center[1] = (center[1]) * static_cast<float>(mWidth) / static_cast<float>(mHeight);
+	center[2] = mZNear;
 }
 
-void Viewport::projectPoint(ProjectionType projType, const HorseRadish::Matrix& modelView, HorseRadish::Vector * const listPoints, const int numPoints) const
+void Viewport::projectPoint(ProjectionType projType, const HorseRadish::Matrix& modelView, HorseRadish::Vector3f * const listPoints, const int numPoints) const
 {
 	if (listPoints == nullptr || numPoints <= 0)
 		return;
@@ -119,16 +119,16 @@ void Viewport::projectPoint(ProjectionType projType, const HorseRadish::Matrix& 
 
 	for (int i = 0; i < numPoints; i++)
 	{
-		HorseRadish::Vector4 result(listPoints[i], 1.0f);
-		transMat.TransformVector(result);
+		HorseRadish::Vector4f result(listPoints[i], 1.0f);
+		transMat.transform(result);
 
-		float rhw = 1.0f / result.w;
+		float rhw = 1.0f / result[3];
 
-		float projX = (1.0f + result.x * rhw) * winX * 0.5f;
-		float projY = winY - ((1.0f - result.y * rhw) * winY * 0.5f);
-		float projZ = (result.z * rhw) * (depthRange[1] - depthRange[0]) + depthRange[0];
+		float projX = (1.0f + result[0] * rhw) * winX * 0.5f;
+		float projY = winY - ((1.0f - result[1] * rhw) * winY * 0.5f);
+		float projZ = (result[2] * rhw) * (depthRange[1] - depthRange[0]) + depthRange[0];
 
-		listPoints[i].Set(projX, projY, projZ);
+		listPoints[i].set(projX, projY, projZ);
 	}
 }
 

@@ -3,6 +3,7 @@
 #include "Math.hpp"
 
 #include <cstring>
+#include <immintrin.h>
 #include <xmmintrin.h>
 
 namespace HorseRadish
@@ -191,43 +192,35 @@ namespace HorseRadish
 			vecWrite = (float*)(((unsigned char*)vecWrite) + stride);
 		}
 	}
-
-	void Matrix::asmMult(float * const result, const float * const mat1, const float * const mat2)
+	
+	void Matrix::fastMat4x4Mult(float * const result, const float * const mat1, const float * const mat2)
 	{
-		__m128 row1, row2, row3, row4, curRow, curRowFinal;
+		_mm256_zeroupper();
 
-		row1 = _mm_loadu_ps(mat1 + 0);
-		row2 = _mm_loadu_ps(mat1 + 4);
-		row3 = _mm_loadu_ps(mat1 + 8);
-		row4 = _mm_loadu_ps(mat1 + 12);
+		__m256 a0, a1;
+		a0 = _mm256_loadu_ps(mat2 + 0);
+		a1 = _mm256_loadu_ps(mat2 + 8);
 
-		curRow = _mm_loadu_ps(mat2 + 0);
-		curRowFinal = _mm_mul_ps(_mm_shuffle_ps(curRow, curRow, 0x00), row1);
-		curRowFinal = _mm_add_ps(curRowFinal, _mm_mul_ps(_mm_shuffle_ps(curRow, curRow, 0x55), row2));
-		curRowFinal = _mm_add_ps(curRowFinal, _mm_mul_ps(_mm_shuffle_ps(curRow, curRow, 0xAA), row3));
-		curRowFinal = _mm_add_ps(curRowFinal, _mm_mul_ps(_mm_shuffle_ps(curRow, curRow, 0xFF), row4));
-		_mm_storeu_ps(result + 0, curRowFinal);
+		__m128 b0, b1, b2, b3;
+		b0 = _mm_loadu_ps(mat1 + 0);
+		b1 = _mm_loadu_ps(mat1 + 4);
+		b2 = _mm_loadu_ps(mat1 + 8);
+		b3 = _mm_loadu_ps(mat1 + 12);
 
-		curRow = _mm_loadu_ps(mat2 + 4);
-		curRowFinal = _mm_mul_ps(_mm_shuffle_ps(curRow, curRow, 0x00), row1);
-		curRowFinal = _mm_add_ps(curRowFinal, _mm_mul_ps(_mm_shuffle_ps(curRow, curRow, 0x55), row2));
-		curRowFinal = _mm_add_ps(curRowFinal, _mm_mul_ps(_mm_shuffle_ps(curRow, curRow, 0xAA), row3));
-		curRowFinal = _mm_add_ps(curRowFinal, _mm_mul_ps(_mm_shuffle_ps(curRow, curRow, 0xFF), row4));
-		_mm_storeu_ps(result + 4, curRowFinal);
+		__m256 out0;
+		out0 = _mm256_mul_ps(_mm256_shuffle_ps(a0, a0, 0x00), _mm256_broadcast_ps(&b0));
+		out0 = _mm256_add_ps(out0, _mm256_mul_ps(_mm256_shuffle_ps(a0, a0, 0x55), _mm256_broadcast_ps(&b1)));
+		out0 = _mm256_add_ps(out0, _mm256_mul_ps(_mm256_shuffle_ps(a0, a0, 0xaa), _mm256_broadcast_ps(&b2)));
+		out0 = _mm256_add_ps(out0, _mm256_mul_ps(_mm256_shuffle_ps(a0, a0, 0xff), _mm256_broadcast_ps(&b3)));
 
-		curRow = _mm_loadu_ps(mat2 + 8);
-		curRowFinal = _mm_mul_ps(_mm_shuffle_ps(curRow, curRow, 0x00), row1);
-		curRowFinal = _mm_add_ps(curRowFinal, _mm_mul_ps(_mm_shuffle_ps(curRow, curRow, 0x55), row2));
-		curRowFinal = _mm_add_ps(curRowFinal, _mm_mul_ps(_mm_shuffle_ps(curRow, curRow, 0xAA), row3));
-		curRowFinal = _mm_add_ps(curRowFinal, _mm_mul_ps(_mm_shuffle_ps(curRow, curRow, 0xFF), row4));
-		_mm_storeu_ps(result + 8, curRowFinal);
+		__m256 out1;
+		out1 = _mm256_mul_ps(_mm256_shuffle_ps(a1, a1, 0x00), _mm256_broadcast_ps(&b0));
+		out1 = _mm256_add_ps(out1, _mm256_mul_ps(_mm256_shuffle_ps(a1, a1, 0x55), _mm256_broadcast_ps(&b1)));
+		out1 = _mm256_add_ps(out1, _mm256_mul_ps(_mm256_shuffle_ps(a1, a1, 0xaa), _mm256_broadcast_ps(&b2)));
+		out1 = _mm256_add_ps(out1, _mm256_mul_ps(_mm256_shuffle_ps(a1, a1, 0xff), _mm256_broadcast_ps(&b3)));
 
-		curRow = _mm_loadu_ps(mat2 + 12);
-		curRowFinal = _mm_mul_ps(_mm_shuffle_ps(curRow, curRow, 0x00), row1);
-		curRowFinal = _mm_add_ps(curRowFinal, _mm_mul_ps(_mm_shuffle_ps(curRow, curRow, 0x55), row2));
-		curRowFinal = _mm_add_ps(curRowFinal, _mm_mul_ps(_mm_shuffle_ps(curRow, curRow, 0xAA), row3));
-		curRowFinal = _mm_add_ps(curRowFinal, _mm_mul_ps(_mm_shuffle_ps(curRow, curRow, 0xFF), row4));
-		_mm_storeu_ps(result + 12, curRowFinal);
+		_mm256_storeu_ps(result + 0, out0);
+		_mm256_storeu_ps(result + 8, out1);
 	}
 
 	Matrix::Matrix()
@@ -256,7 +249,7 @@ namespace HorseRadish
 
 	void Matrix::operator*=(const Matrix &s)
 	{
-		Matrix::asmMult(this->m, this->m, s.m);
+		Matrix::fastMat4x4Mult(this->m, this->m, s.m);
 	}
 
 	void Matrix::operator*=(const Matrix3 &s)
@@ -285,7 +278,7 @@ namespace HorseRadish
 
 	void Matrix::operator*=(const float *s)
 	{
-		Matrix::asmMult(this->m, this->m, s);
+		Matrix::fastMat4x4Mult(this->m, this->m, s);
 	}
 
 	void Matrix::operator+=(const Matrix &s)
@@ -320,7 +313,7 @@ namespace HorseRadish
 		_mm_storeu_ps(m + 12, _mm_sub_ps(_mm_loadu_ps(m + 12), _mm_loadu_ps(s + 12)));
 	}
 
-	void Matrix::TransformVector(float *vec) const
+	void Matrix::transform(float *vec) const
 	{
 		float vecX, vecY, vecZ;
 
@@ -333,239 +326,128 @@ namespace HorseRadish
 		vec[2] = vecX*m[2] + vecY*m[6] + vecZ*m[10] + m[14];
 	}
 
-	void Matrix::TransformVector(Vector& vec) const
+	void Matrix::transform(Vector3f& vec) const
 	{
 		__m128 row1, row2, row3;
 
-		row1 = _mm_mul_ps(_mm_load_ps1(&vec.x), _mm_loadu_ps(m));
-		row2 = _mm_mul_ps(_mm_load_ps1(&vec.y), _mm_loadu_ps(m + 4));
-		row3 = _mm_mul_ps(_mm_load_ps1(&vec.z), _mm_loadu_ps(m + 8));
-		_mm_storeu_ps(&vec.x, _mm_add_ps(_mm_add_ps(row1, row2), _mm_add_ps(row3, _mm_loadu_ps(m + 12))));
+		row1 = _mm_mul_ps(_mm_load_ps1(&vec[0]), _mm_loadu_ps(m));
+		row2 = _mm_mul_ps(_mm_load_ps1(&vec[1]), _mm_loadu_ps(m + 4));
+		row3 = _mm_mul_ps(_mm_load_ps1(&vec[2]), _mm_loadu_ps(m + 8));
+		_mm_storeu_ps(vec.data(), _mm_add_ps(_mm_add_ps(row1, row2), _mm_add_ps(row3, _mm_loadu_ps(m + 12))));
 	}
 
-	void Matrix::TransformVector(const Vector& vec, Vector &result) const
+	void Matrix::transform(const Vector3f& vec, Vector3f& result) const
 	{
 		__m128 row1, row2, row3;
 
-		row1 = _mm_mul_ps(_mm_load_ps1(&vec.x), _mm_loadu_ps(m));
-		row2 = _mm_mul_ps(_mm_load_ps1(&vec.y), _mm_loadu_ps(m + 4));
-		row3 = _mm_mul_ps(_mm_load_ps1(&vec.z), _mm_loadu_ps(m + 8));
-		_mm_storeu_ps(&result.x, _mm_add_ps(_mm_add_ps(row1, row2), _mm_add_ps(row3, _mm_loadu_ps(m + 12))));
+		row1 = _mm_mul_ps(_mm_load_ps1(&vec[0]), _mm_loadu_ps(m));
+		row2 = _mm_mul_ps(_mm_load_ps1(&vec[1]), _mm_loadu_ps(m + 4));
+		row3 = _mm_mul_ps(_mm_load_ps1(&vec[2]), _mm_loadu_ps(m + 8));
+		_mm_storeu_ps(result.data(), _mm_add_ps(_mm_add_ps(row1, row2), _mm_add_ps(row3, _mm_loadu_ps(m + 12))));
 	}
 
-	void Matrix::TransformVector(Vector * const vec, const int numVec) const
+	void Matrix::transform(Vector3f* const vec, const int numVec) const
 	{
-		Matrix::asmMat4x4Vec3((float*)vec, (float*)vec, 1.0f, sizeof(Vector), m, numVec);
+		Matrix::asmMat4x4Vec3((float*)vec, (float*)vec, 1.0f, sizeof(Vector3f), m, numVec);
 	}
 
-	void Matrix::TransformVector(Vector4& vec) const
-	{
-		__m128 row1, row2, row3, row4;
-
-		row1 = _mm_mul_ps(_mm_load_ps1(&vec.x), _mm_loadu_ps(m));
-		row2 = _mm_mul_ps(_mm_load_ps1(&vec.y), _mm_loadu_ps(m + 4));
-		row3 = _mm_mul_ps(_mm_load_ps1(&vec.z), _mm_loadu_ps(m + 8));
-		row4 = _mm_mul_ps(_mm_load_ps1(&vec.w), _mm_loadu_ps(m + 12));
-		_mm_storeu_ps(&vec.x, _mm_add_ps(_mm_add_ps(row1, row2), _mm_add_ps(row3, row4)));
-	}
-
-	void Matrix::TransformVector(const Vector4& vec, Vector4 &result) const
+	void Matrix::transform(Vector4f& vec) const
 	{
 		__m128 row1, row2, row3, row4;
 
-		row1 = _mm_mul_ps(_mm_load_ps1(&vec.x), _mm_loadu_ps(m));
-		row2 = _mm_mul_ps(_mm_load_ps1(&vec.y), _mm_loadu_ps(m + 4));
-		row3 = _mm_mul_ps(_mm_load_ps1(&vec.z), _mm_loadu_ps(m + 8));
-		row4 = _mm_mul_ps(_mm_load_ps1(&vec.w), _mm_loadu_ps(m + 12));
-		_mm_storeu_ps(&result.x, _mm_add_ps(_mm_add_ps(row1, row2), _mm_add_ps(row3, row4)));
+		row1 = _mm_mul_ps(_mm_load_ps1(&vec[0]), _mm_loadu_ps(m));
+		row2 = _mm_mul_ps(_mm_load_ps1(&vec[1]), _mm_loadu_ps(m + 4));
+		row3 = _mm_mul_ps(_mm_load_ps1(&vec[2]), _mm_loadu_ps(m + 8));
+		row4 = _mm_mul_ps(_mm_load_ps1(&vec[3]), _mm_loadu_ps(m + 12));
+		_mm_storeu_ps(vec.data(), _mm_add_ps(_mm_add_ps(row1, row2), _mm_add_ps(row3, row4)));
 	}
 
-	void Matrix::TransformVector(Vector4 * const vec, const int numVec) const
+	void Matrix::transform(const Vector4f& vec, Vector4f& result) const
 	{
-		Matrix::asmMat4x4Vec4((float*)vec, (float*)vec, sizeof(Vector4), m, numVec);
+		__m128 row1, row2, row3, row4;
+
+		row1 = _mm_mul_ps(_mm_load_ps1(&vec[0]), _mm_loadu_ps(m));
+		row2 = _mm_mul_ps(_mm_load_ps1(&vec[1]), _mm_loadu_ps(m + 4));
+		row3 = _mm_mul_ps(_mm_load_ps1(&vec[2]), _mm_loadu_ps(m + 8));
+		row4 = _mm_mul_ps(_mm_load_ps1(&vec[3]), _mm_loadu_ps(m + 12));
+		_mm_storeu_ps(result.data(), _mm_add_ps(_mm_add_ps(row1, row2), _mm_add_ps(row3, row4)));
 	}
 
-	void Matrix::TransformVector3D(float *vec) const
+	void Matrix::transform(Vector4f* const vec, const int numVec) const
 	{
-		float vecX, vecY, vecZ;
+		Matrix::asmMat4x4Vec4((float*)vec, (float*)vec, sizeof(Vector4f), m, numVec);
+	}
 
-		vecX = vec[0];
-		vecY = vec[1];
-		vecZ = vec[2];
+	void Matrix::rotateScale(float *vec) const
+	{
+		float vecX = vec[0];
+		float vecY = vec[1];
+		float vecZ = vec[2];
 
 		vec[0] = vecX*m[0] + vecY*m[4] + vecZ*m[8];
 		vec[1] = vecX*m[1] + vecY*m[5] + vecZ*m[9];
 		vec[2] = vecX*m[2] + vecY*m[6] + vecZ*m[10];
 	}
 
-	void Matrix::TransformVector3D(Vector &vec) const
+	void Matrix::rotateScale(Vector3f& vec) const
 	{
 		__m128 row1, row2, row3;
 
-		row1 = _mm_mul_ps(_mm_load_ps1(&vec.x), _mm_loadu_ps(m));
-		row2 = _mm_mul_ps(_mm_load_ps1(&vec.y), _mm_loadu_ps(m + 4));
-		row3 = _mm_mul_ps(_mm_load_ps1(&vec.z), _mm_loadu_ps(m + 8));
-		_mm_storeu_ps(&vec.x, _mm_add_ps(_mm_add_ps(row1, row2), row3));
+		row1 = _mm_mul_ps(_mm_load_ps1(&vec[0]), _mm_loadu_ps(m + 0));
+		row2 = _mm_mul_ps(_mm_load_ps1(&vec[1]), _mm_loadu_ps(m + 4));
+		row3 = _mm_mul_ps(_mm_load_ps1(&vec[2]), _mm_loadu_ps(m + 8));
+		_mm_storeu_ps(vec.data(), _mm_add_ps(_mm_add_ps(row1, row2), row3));
 	}
 
-	void Matrix::TransformVector3D(const Vector &vec, Vector &result) const
+	void Matrix::rotateScale(const Vector3f& vec, Vector3f& result) const
 	{
 		__m128 row1, row2, row3;
 
-		row1 = _mm_mul_ps(_mm_load_ps1(&vec.x), _mm_loadu_ps(m));
-		row2 = _mm_mul_ps(_mm_load_ps1(&vec.y), _mm_loadu_ps(m + 4));
-		row3 = _mm_mul_ps(_mm_load_ps1(&vec.z), _mm_loadu_ps(m + 8));
-		_mm_storeu_ps(&result.x, _mm_add_ps(_mm_add_ps(row1, row2), row3));
+		row1 = _mm_mul_ps(_mm_load_ps1(&vec[0]), _mm_loadu_ps(m + 0));
+		row2 = _mm_mul_ps(_mm_load_ps1(&vec[1]), _mm_loadu_ps(m + 4));
+		row3 = _mm_mul_ps(_mm_load_ps1(&vec[2]), _mm_loadu_ps(m + 8));
+		_mm_storeu_ps(result.data(), _mm_add_ps(_mm_add_ps(row1, row2), row3));
 	}
 
-	void Matrix::TransformVector3D(Vector * const vec, const int numVec) const
+	void Matrix::rotateScale(Vector3f* const vec, const int numVec) const
 	{
-		Matrix::asmMat4x4Vec3((float*)vec, (float*)vec, 0.0f, sizeof(Vector), m, numVec);
+		Matrix::asmMat4x4Vec3((float*)vec, (float*)vec, 0.0f, sizeof(Vector3f), m, numVec);
 	}
 
-	void Matrix::TransformBBox(BBox &bbox) const
+	void Matrix::transform(BBox &bbox) const
 	{
-		Vector pts[8];
+		Vector3f pts[8];
 
 		bbox.GetCorners(pts);
-		this->TransformVector(pts, 8);
+		transform(pts, 8);
 
 		bbox.Reset();
 		bbox.Merge(pts, 8);
 	}
 
-	void Matrix::TransformBBox(const BBox &bbox, BBox &bboxDest) const
+	void Matrix::transform(const BBox &bbox, BBox &bboxDest) const
 	{
-		Vector pts[8];
+		Vector3f pts[8];
 
 		bbox.GetCorners(pts);
-		this->TransformVector(pts, 8);
+		transform(pts, 8);
 
 		bboxDest.Reset();
 		bboxDest.Merge(pts, 8);
 	}
 
-	void Matrix::GetCol1(Vector4 &result) const
+	Vector4f Matrix::getColumn(unsigned int columnIndex) const
 	{
-		result.x = m[0];
-		result.y = m[4];
-		result.z = m[8];
-		result.w = m[12];
+		columnIndex = columnIndex % 4;
+		return Vector4f(m[columnIndex], m[columnIndex + 4], m[columnIndex + 8], m[columnIndex + 12]);
 	}
 
-	void Matrix::GetCol2(Vector4 &result) const
+	Vector4f Matrix::getRow(unsigned int rowIndex) const
 	{
-		result.x = m[1];
-		result.y = m[5];
-		result.z = m[9];
-		result.w = m[13];
+		return Vector4f(m + ((rowIndex % 4) * 4));
 	}
 
-	void Matrix::GetCol3(Vector4 &result) const
-	{
-		result.x = m[2];
-		result.y = m[6];
-		result.z = m[10];
-		result.w = m[14];
-	}
-
-	void Matrix::GetCol4(Vector4 &result) const
-	{
-		result.x = m[3];
-		result.y = m[7];
-		result.z = m[11];
-		result.w = m[15];
-	}
-
-	void Matrix::GetRow1(Vector4 &result) const
-	{
-		result.x = m[0];
-		result.y = m[1];
-		result.z = m[2];
-		result.w = m[3];
-	}
-
-	void Matrix::GetRow2(Vector4 &result) const
-	{
-		result.x = m[4];
-		result.y = m[5];
-		result.z = m[6];
-		result.w = m[7];
-	}
-
-	void Matrix::GetRow3(Vector4 &result) const
-	{
-		result.x = m[8];
-		result.y = m[9];
-		result.z = m[10];
-		result.w = m[11];
-	}
-
-	void Matrix::GetRow4(Vector4 &result) const
-	{
-		result.x = m[12];
-		result.y = m[13];
-		result.z = m[14];
-		result.w = m[15];
-	}
-
-	void Matrix::GetCol1(Vector &result) const
-	{
-		result.x = m[0];
-		result.y = m[4];
-		result.z = m[8];
-	}
-
-	void Matrix::GetCol2(Vector &result) const
-	{
-		result.x = m[1];
-		result.y = m[5];
-		result.z = m[9];
-	}
-
-	void Matrix::GetCol3(Vector &result) const
-	{
-		result.x = m[2];
-		result.y = m[6];
-		result.z = m[10];
-	}
-
-	void Matrix::GetCol4(Vector &result) const
-	{
-		result.x = m[3];
-		result.y = m[7];
-		result.z = m[11];
-	}
-
-	void Matrix::GetRow1(Vector &result) const
-	{
-		result.x = m[0];
-		result.y = m[1];
-		result.z = m[2];
-	}
-
-	void Matrix::GetRow2(Vector &result) const
-	{
-		result.x = m[4];
-		result.y = m[5];
-		result.z = m[6];
-	}
-
-	void Matrix::GetRow3(Vector &result) const
-	{
-		result.x = m[8];
-		result.y = m[9];
-		result.z = m[10];
-	}
-
-	void Matrix::GetRow4(Vector &result) const
-	{
-		result.x = m[12];
-		result.y = m[13];
-		result.z = m[14];
-	}
-
-	void Matrix::GetRotate(Vector &vec, float &angulo) const
+	void Matrix::getRotation(Vector3f &vec, float &angle) const
 	{
 		float s, tr, quat[4];
 		int op;
@@ -636,22 +518,22 @@ namespace HorseRadish
 		tr = quat[0] * quat[0] + quat[1] * quat[1] + quat[2] * quat[2];
 		if (tr == 0.0f)
 		{
-			vec.x = 0.0f;
-			vec.y = 0.0f;
-			vec.z = 1.0f;
-			angulo = 0.0f;
+			vec[0] = 0.0f;
+			vec[1] = 0.0f;
+			vec[2] = 1.0f;
+			angle = 0.0f;
 			return;
 		}
 
 		tr = 1.0f / tr;
-		vec.x = quat[0] * tr;
-		vec.y = quat[1] * tr;
-		vec.z = quat[2] * tr;
-		vec.Normalize();
-		angulo = ((float)acos(quat[3]))*114.5915590261646417f; // 180/pi=57.295779513082320876f * 2.0f
+		vec[0] = quat[0] * tr;
+		vec[1] = quat[1] * tr;
+		vec[2] = quat[2] * tr;
+		vec.normalize();
+		angle = ((float)acos(quat[3]))*114.5915590261646417f; // 180/pi=57.295779513082320876f * 2.0f
 	}
 
-	void Matrix::GetEulerAngles(float &rfYAngle, float &rfPAngle, float &rfRAngle) const
+	void Matrix::getEulerAngles(float &rfYAngle, float &rfPAngle, float &rfRAngle) const
 	{
 		if (-1.0f < -m[8])
 		{
@@ -688,7 +570,7 @@ namespace HorseRadish
 		}
 	}
 
-	void Matrix::GetFrom3x3(Matrix3 &mat3) const
+	void Matrix::getMat3x3(Matrix3 &mat3) const
 	{
 		mat3.m[0] = m[0];
 		mat3.m[1] = m[1];
@@ -701,7 +583,7 @@ namespace HorseRadish
 		mat3.m[8] = m[10];
 	}
 
-	void Matrix::GetFrom3x3(float * const src) const
+	void Matrix::getMat3x3(float * const src) const
 	{
 		src[0] = m[0];
 		src[1] = m[1];
@@ -714,7 +596,7 @@ namespace HorseRadish
 		src[8] = m[10];
 	}
 
-	void Matrix::GetFrom2x2(float * const src) const
+	void Matrix::getMat2x2(float * const src) const
 	{
 		src[0] = m[0];
 		src[1] = m[1];
@@ -722,12 +604,12 @@ namespace HorseRadish
 		src[3] = m[5];
 	}
 
-	void Matrix::Write(float * const s) const
+	void Matrix::write(float* const s) const
 	{
 		std::memcpy(s, m, sizeof(float) * 16);
 	}
 
-	void Matrix::Transpose(Matrix &dest) const
+	void Matrix::transpose(Matrix &dest) const
 	{
 		__m128 row1, row2, row3, row4;
 
@@ -742,7 +624,7 @@ namespace HorseRadish
 		_mm_storeu_ps(dest.m + 12, row4);
 	}
 
-	void Matrix::Transpose()
+	void Matrix::transpose()
 	{
 		__m128 row1, row2, row3, row4;
 
@@ -757,7 +639,7 @@ namespace HorseRadish
 		_mm_storeu_ps(m + 12, row4);
 	}
 
-	void Matrix::Inverse(Matrix &dest) const
+	void Matrix::inverse(Matrix &dest) const
 	{
 		float tmp[12], det;
 
@@ -810,7 +692,7 @@ namespace HorseRadish
 		dest.m[12] *= det;	dest.m[13] *= det;	dest.m[14] *= det;	dest.m[15] *= det;
 	}
 
-	void Matrix::Inverse()
+	void Matrix::inverse()
 	{
 		float tmp[12], result[16], det;
 
@@ -866,7 +748,7 @@ namespace HorseRadish
 		std::memcpy(m, result, sizeof(float) * 16);
 	}
 
-	void Matrix::InverseTranspose(Matrix &dest) const
+	void Matrix::inverseTranspose(Matrix &dest) const
 	{
 		float tmp[12], det;
 
@@ -919,7 +801,7 @@ namespace HorseRadish
 		dest.m[12] *= det;	dest.m[13] *= det;	dest.m[14] *= det;	dest.m[15] *= det;
 	}
 
-	void Matrix::InverseTranspose()
+	void Matrix::inverseTranspose()
 	{
 		float tmp[12], result[16], det;
 
@@ -975,7 +857,7 @@ namespace HorseRadish
 		std::memcpy(m, result, sizeof(float) * 16);
 	}
 
-	void Matrix::InverseHomogenous(Matrix &dest) const
+	void Matrix::inverseHomogenous(Matrix &dest) const
 	{
 		float aux1, aux2;
 
@@ -992,7 +874,7 @@ namespace HorseRadish
 		dest.m[12] = aux1;
 	}
 
-	void Matrix::InverseHomogenous()
+	void Matrix::inverseHomogenous()
 	{
 		float aux1, aux2;
 
@@ -1007,7 +889,7 @@ namespace HorseRadish
 		m[12] = aux1;
 	}
 
-	void Matrix::MultTranslate(const float &x, const float &y, const float &z)
+	Matrix& Matrix::mulTranslation(const float &x, const float &y, const float &z)
 	{
 		__m128 row1, row2, row3;
 
@@ -1015,9 +897,11 @@ namespace HorseRadish
 		row2 = _mm_mul_ps(_mm_load_ps1(&y), _mm_loadu_ps(m + 4));
 		row3 = _mm_mul_ps(_mm_load_ps1(&z), _mm_loadu_ps(m + 8));
 		_mm_storeu_ps(m + 12, _mm_add_ps(_mm_add_ps(row1, row2), _mm_add_ps(row3, _mm_loadu_ps(m + 12))));
+
+		return *this;
 	}
 
-	void Matrix::MultTranslate(const float * const vec)
+	Matrix& Matrix::mulTranslation(const float * const vec)
 	{
 		__m128 row1, row2, row3;
 
@@ -1025,27 +909,33 @@ namespace HorseRadish
 		row2 = _mm_mul_ps(_mm_load_ps1(vec + 1), _mm_loadu_ps(m + 4));
 		row3 = _mm_mul_ps(_mm_load_ps1(vec + 2), _mm_loadu_ps(m + 8));
 		_mm_storeu_ps(m + 12, _mm_add_ps(_mm_add_ps(row1, row2), _mm_add_ps(row3, _mm_loadu_ps(m + 12))));
+
+		return *this;
 	}
 
-	void Matrix::MultScale(const float &x, const float &y, const float &z)
+	Matrix& Matrix::mulScale(const float &x, const float &y, const float &z)
 	{
 		_mm_storeu_ps(m + 0, _mm_mul_ps(_mm_load_ps1(&x), _mm_loadu_ps(m + 0)));
 		_mm_storeu_ps(m + 4, _mm_mul_ps(_mm_load_ps1(&y), _mm_loadu_ps(m + 4)));
 		_mm_storeu_ps(m + 8, _mm_mul_ps(_mm_load_ps1(&z), _mm_loadu_ps(m + 8)));
+
+		return *this;
 	}
 
-	void Matrix::MultScale(const float * const vec)
+	Matrix& Matrix::mulScale(const float * const vec)
 	{
 		_mm_storeu_ps(m + 0, _mm_mul_ps(_mm_load_ps1(vec + 0), _mm_loadu_ps(m + 0)));
 		_mm_storeu_ps(m + 4, _mm_mul_ps(_mm_load_ps1(vec + 1), _mm_loadu_ps(m + 4)));
 		_mm_storeu_ps(m + 8, _mm_mul_ps(_mm_load_ps1(vec + 2), _mm_loadu_ps(m + 8)));
+
+		return *this;
 	}
 
-	void Matrix::MultRotateX(const float &angulo)
+	Matrix& Matrix::mulRotationX(const float &angle)
 	{
 		float c, s, p1, p2, p3, p4;
 
-		Math::sinCosG(angulo, s, c);
+		Math::sinCosG(angle, s, c);
 
 		p1 = m[4];
 		p2 = m[5];
@@ -1061,13 +951,15 @@ namespace HorseRadish
 		m[9] = -s * p2 + c * m[9];
 		m[10] = -s * p3 + c * m[10];
 		m[11] = -s * p4 + c * m[11];
+
+		return *this;
 	}
 
-	void Matrix::MultRotateY(const float &angulo)
+	Matrix& Matrix::mulRotationY(const float &angle)
 	{
 		float c, s, p1, p2, p3, p4;
 
-		Math::sinCosG(angulo, s, c);
+		Math::sinCosG(angle, s, c);
 
 		p1 = m[0];
 		p2 = m[1];
@@ -1083,13 +975,15 @@ namespace HorseRadish
 		m[9] = s * p2 + c * m[9];
 		m[10] = s * p3 + c * m[10];
 		m[11] = s * p4 + c * m[11];
+
+		return *this;
 	}
 
-	void Matrix::MultRotateZ(const float &angulo)
+	Matrix& Matrix::mulRotationZ(const float &angle)
 	{
 		float c, s, p1, p2, p3, p4;
 
-		Math::sinCosG(angulo, s, c);
+		Math::sinCosG(angle, s, c);
 
 		p1 = m[0];
 		p2 = m[1];
@@ -1105,29 +999,35 @@ namespace HorseRadish
 		m[5] = -s * p2 + c * m[5];
 		m[6] = -s * p3 + c * m[6];
 		m[7] = -s * p4 + c * m[7];
+
+		return *this;
 	}
 
-	void Matrix::Mult(const Matrix &s)
+	Matrix& Matrix::mul(const Matrix &s)
 	{
-		Matrix::asmMult(this->m, this->m, s.m);
+		Matrix::fastMat4x4Mult(this->m, this->m, s.m);
+		return *this;
 	}
 
-	void Matrix::Mult(const float *s)
+	Matrix& Matrix::mul(const float *s)
 	{
-		Matrix::asmMult(this->m, this->m, s);
+		Matrix::fastMat4x4Mult(this->m, this->m, s);
+		return *this;
 	}
 
-	void Matrix::MultInverseOrder(const Matrix &s)
+	Matrix& Matrix::mulReverseOrder(const Matrix &s)
 	{
-		Matrix::asmMult(this->m, s.m, this->m);
+		Matrix::fastMat4x4Mult(this->m, s.m, this->m);
+		return *this;
 	}
 
-	void Matrix::MultInverseOrder(const float *s)
+	Matrix& Matrix::mulReverseOrder(const float *s)
 	{
-		Matrix::asmMult(this->m, s, this->m);
+		Matrix::fastMat4x4Mult(this->m, s, this->m);
+		return *this;
 	}
 
-	void Matrix::Set(const float x)
+	void Matrix::set(const float x)
 	{
 		__m128 scalar;
 
@@ -1138,28 +1038,28 @@ namespace HorseRadish
 		_mm_storeu_ps(m + 12, scalar);
 	}
 
-	void Matrix::Set(const float *src)
+	void Matrix::set(const float *src)
 	{
 		std::memcpy(m, src, sizeof(float) * 16);
 	}
 
-	void Matrix::Set(const Matrix &mat)
+	void Matrix::set(const Matrix &mat)
 	{
 		std::memcpy(m, mat.m, sizeof(float) * 16);
 	}
 
-	void Matrix::SetZero(void)
+	void Matrix::setZero(void)
 	{
 		std::memset(m, 0, sizeof(float) * 16);
 	}
 
-	void Matrix::SetIdentidade(void)
+	void Matrix::setIdentity(void)
 	{
 		std::memset(m, 0, sizeof(float) * 16);
 		m[0] = m[5] = m[10] = m[15] = 1.0f;
 	}
 
-	void Matrix::SetFrom3x3(const Matrix3 &mat3)
+	void Matrix::setFrom3x3(const Matrix3 &mat3)
 	{
 		m[0] = mat3.m[0];
 		m[1] = mat3.m[1];
@@ -1175,7 +1075,7 @@ namespace HorseRadish
 		m[15] = 1.0f;
 	}
 
-	void Matrix::SetFrom3x3(const float *src)
+	void Matrix::setFrom3x3(const float *src)
 	{
 		m[0] = src[0];
 		m[1] = src[1];
@@ -1191,7 +1091,7 @@ namespace HorseRadish
 		m[15] = 1.0f;
 	}
 
-	void Matrix::SetFrom2x2(const float *src)
+	void Matrix::setFrom2x2(const float *src)
 	{
 		m[0] = src[0];
 		m[1] = src[1];
@@ -1202,7 +1102,7 @@ namespace HorseRadish
 		m[10] = m[15] = 1.0f;
 	}
 
-	void Matrix::SetTranspose(const float *src)
+	void Matrix::setTranspose(const float *src)
 	{
 		__m128 row1, row2, row3, row4;
 
@@ -1217,7 +1117,7 @@ namespace HorseRadish
 		_mm_storeu_ps(m + 12, row4);
 	}
 
-	void Matrix::SetTranspose(const Matrix &mat)
+	void Matrix::setTranspose(const Matrix &mat)
 	{
 		__m128 row1, row2, row3, row4;
 
@@ -1232,7 +1132,7 @@ namespace HorseRadish
 		_mm_storeu_ps(m + 12, row4);
 	}
 
-	void Matrix::SetTranslate(const float &x, const float &y, const float &z)
+	void Matrix::setTranslation(const float &x, const float &y, const float &z)
 	{
 		m[0] = m[5] = m[10] = m[15] = 1.0f;
 		m[1] = m[2] = m[3] = m[4] = m[6] = m[7] = m[8] = m[9] = m[11] = 0.0f;
@@ -1241,8 +1141,7 @@ namespace HorseRadish
 		m[14] = z;
 	}
 
-
-	void Matrix::SetTranslate(const float * const vec)
+	void Matrix::setTranslation(const float * const vec)
 	{
 		m[0] = m[5] = m[10] = m[15] = 1.0f;
 		m[1] = m[2] = m[3] = m[4] = m[6] = m[7] = m[8] = m[9] = m[11] = 0.0f;
@@ -1251,17 +1150,23 @@ namespace HorseRadish
 		m[14] = vec[2];
 	}
 
-	void Matrix::SetTranslate(const Vector &vec)
+	void Matrix::setTranslation(const Vector3f& vec)
 	{
 		m[0] = m[5] = m[10] = m[15] = 1.0f;
 		m[1] = m[2] = m[3] = m[4] = m[6] = m[7] = m[8] = m[9] = m[11] = 0.0f;
-		m[12] = vec.x;
-		m[13] = vec.y;
-		m[14] = vec.z;
+		m[12] = vec[0];
+		m[13] = vec[1];
+		m[14] = vec[2];
 	}
 
+	void Matrix::setScale(const float scale)
+	{
+		memset(m, 0, sizeof(float) * 16);
+		m[0] = m[5] = m[10] = scale;
+		m[15] = 1.0f;
+	}
 
-	void Matrix::SetScale(const float &x, const float &y, const float &z)
+	void Matrix::setScale(const float &x, const float &y, const float &z)
 	{
 		memset(m, 0, sizeof(float) * 16);
 		m[0] = x;
@@ -1270,46 +1175,46 @@ namespace HorseRadish
 		m[15] = 1.0f;
 	}
 
-	void Matrix::SetScale(const Vector &vec)
+	void Matrix::setScale(const Vector3f& vec)
 	{
 		memset(m, 0, sizeof(float) * 16);
-		m[0] = vec.x;
-		m[5] = vec.y;
-		m[10] = vec.z;
+		m[0] = vec[0];
+		m[5] = vec[1];
+		m[10] = vec[2];
 		m[15] = 1.0f;
 	}
 
-	void Matrix::SetReflect(const Plane &plane)
+	void Matrix::setReflect(const Plane &plane)
 	{
-		Vector pNormal;
+		Vector3f pNormal;
 		float d;
 
 		plane.GetNormal(pNormal);
 		d = plane.GetD();
-		pNormal.Normalize();
+		pNormal.normalize();
 
-		m[0] = -2.0f * pNormal.x * pNormal.x + 1.0f;
-		m[1] = -2.0f * pNormal.y * pNormal.x;
-		m[2] = -2.0f * pNormal.z * pNormal.x;
+		m[0] = -2.0f * pNormal[0] * pNormal[0] + 1.0f;
+		m[1] = -2.0f * pNormal[1] * pNormal[0];
+		m[2] = -2.0f * pNormal[2] * pNormal[0];
 		m[3] = 0.0f;
 
-		m[4] = -2.0f * pNormal.x * pNormal.y;
-		m[5] = -2.0f * pNormal.y * pNormal.y + 1.0f;
-		m[6] = -2.0f * pNormal.z * pNormal.y;
+		m[4] = -2.0f * pNormal[0] * pNormal[1];
+		m[5] = -2.0f * pNormal[1] * pNormal[1] + 1.0f;
+		m[6] = -2.0f * pNormal[2] * pNormal[1];
 		m[7] = 0.0f;
 
-		m[8] = -2.0f * pNormal.x * pNormal.z;
-		m[9] = -2.0f * pNormal.y * pNormal.z;
-		m[10] = -2.0f * pNormal.z * pNormal.z + 1.0f;
+		m[8] = -2.0f * pNormal[0] * pNormal[2];
+		m[9] = -2.0f * pNormal[1] * pNormal[2];
+		m[10] = -2.0f * pNormal[2] * pNormal[2] + 1.0f;
 		m[11] = 0.0f;
 
-		m[12] = -2.0f * pNormal.x * d;
-		m[13] = -2.0f * pNormal.y * d;
-		m[14] = -2.0f * pNormal.z * d;
+		m[12] = -2.0f * pNormal[0] * d;
+		m[13] = -2.0f * pNormal[1] * d;
+		m[14] = -2.0f * pNormal[2] * d;
 		m[15] = 1.0f;
 	}
 
-	void Matrix::SetReflect(const float &a, const float &b, const float &c, const float &d)
+	void Matrix::setReflect(const float &a, const float &b, const float &c, const float &d)
 	{
 		m[0] = -2.0f * a * a + 1.0f;
 		m[1] = -2.0f * b * a;
@@ -1332,11 +1237,11 @@ namespace HorseRadish
 		m[15] = 1.0f;
 	}
 
-	void Matrix::SetRotateX(const float &angulo)
+	void Matrix::setRotationX(const float &angle)
 	{
 		float c, s;
 
-		Math::sinCosG(angulo, s, c);
+		Math::sinCosG(angle, s, c);
 
 		m[9] = -s;
 		m[10] = c;
@@ -1347,11 +1252,11 @@ namespace HorseRadish
 		m[0] = m[15] = 1.0f;
 	}
 
-	void Matrix::SetRotateY(const float &angulo)
+	void Matrix::setRotationY(const float &angle)
 	{
 		float c, s;
 
-		Math::sinCosG(angulo, s, c);
+		Math::sinCosG(angle, s, c);
 
 		m[0] = c;
 		m[2] = -s;
@@ -1362,11 +1267,11 @@ namespace HorseRadish
 		m[5] = m[15] = 1.0f;
 	}
 
-	void Matrix::SetRotateZ(const float &angulo)
+	void Matrix::setRotationZ(const float &angle)
 	{
 		float c, s;
 
-		Math::sinCosG(angulo, s, c);
+		Math::sinCosG(angle, s, c);
 
 		m[0] = c;
 		m[1] = s;
@@ -1377,26 +1282,26 @@ namespace HorseRadish
 		m[10] = m[15] = 1.0f;
 	}
 
-	void Matrix::SetRotate(const float &angulo, const Vector &vec)
+	void Matrix::setRotation(const float &angle, const Vector3f& vec)
 	{
-		Vector aux;
+		Vector3f aux;
 		float c, s, t, txx, tyy, tzz, txy, txz, tyz, sx, sy, sz;
 
 		aux = vec;
-		aux.Normalize();
+		aux.normalize();
 
-		Math::sinCosG(angulo, s, c);
+		Math::sinCosG(angle, s, c);
 
 		t = 1.0f - c;
-		txx = aux.x * aux.x * t;
-		tyy = aux.y * aux.y * t;
-		tzz = aux.z * aux.z * t;
-		txy = aux.x * aux.y * t;
-		txz = aux.x * aux.z * t;
-		tyz = aux.y * aux.z * t;
-		sx = s * aux.x;
-		sy = s * aux.y;
-		sz = s * aux.z;
+		txx = aux[0] * aux[0] * t;
+		tyy = aux[1] * aux[1] * t;
+		tzz = aux[2] * aux[2] * t;
+		txy = aux[0] * aux[1] * t;
+		txz = aux[0] * aux[2] * t;
+		tyz = aux[1] * aux[2] * t;
+		sx = s * aux[0];
+		sy = s * aux[1];
+		sz = s * aux[2];
 
 		m[0] = txx + c;
 		m[1] = txy + sz;
@@ -1414,13 +1319,13 @@ namespace HorseRadish
 		m[15] = 1.0f;
 	}
 
-	void Matrix::SetRotate(const float &anguloX, const float &anguloY, const float &anguloZ)
+	void Matrix::setRotation(const float &angleX, const float &angleY, const float &angleZ)
 	{
 		float cx, cy, cz, sx, sy, sz;
 
-		Math::sinCosG(anguloX, sx, cx);
-		Math::sinCosG(anguloY, sy, cy);
-		Math::sinCosG(anguloZ, sz, cz);
+		Math::sinCosG(angleX, sx, cx);
+		Math::sinCosG(angleY, sy, cy);
+		Math::sinCosG(angleZ, sz, cz);
 
 		m[0] = cy * cz;
 		m[1] = -cy * sz;
@@ -1438,49 +1343,7 @@ namespace HorseRadish
 		m[3] = m[7] = m[11] = m[12] = m[13] = m[14] = 0.0f;
 	}
 
-	void Matrix::SetRotate(const float &angulo, const float &x, const float &y, const float &z)
-	{
-		float X, Y, Z, tamanho;
-		float c, s, t, txx, tyy, tzz, txy, txz, tyz, sx, sy, sz;
-
-		X = x;
-		Y = y;
-		Z = z;
-		tamanho = Math::sqrtInv(X*X + Y*Y + Z*Z);
-		X *= tamanho;
-		Y *= tamanho;
-		Z *= tamanho;
-
-		Math::sinCosG(angulo, s, c);
-
-		t = 1.0f - c;
-		txx = X * X * t;
-		tyy = Y * Y * t;
-		tzz = Z * Z * t;
-		txy = X * Y * t;
-		txz = X * Z * t;
-		tyz = Y * Z * t;
-		sx = s * X;
-		sy = s * Y;
-		sz = s * Z;
-
-		m[0] = txx + c;
-		m[1] = txy + sz;
-		m[2] = txz - sy;
-
-		m[4] = txy - sz;
-		m[5] = tyy + c;
-		m[6] = tyz + sx;
-
-		m[8] = txz + sy;
-		m[9] = tyz - sx;
-		m[10] = tzz + c;
-
-		m[3] = m[7] = m[11] = m[12] = m[13] = m[14] = 0.0f;
-		m[15] = 1.0f;
-	}
-
-	void Matrix::SetSaturation(const float sat)
+	void Matrix::setSaturation(const float sat)
 	{
 		float minusS, posS;
 
@@ -1498,13 +1361,13 @@ namespace HorseRadish
 		m[15] = 1.0f;
 	}
 
-	void Matrix::SetRotationFromTo(const float * const from, const float * const to)
+	void Matrix::setRotationFromTo(const Vector3f& from, const Vector3f& to)
 	{
-		Vector v;
+		Vector3f v;
 		float e, h, f;
 
-		v.StoreCrossProduct(from, to);
-		f = e = (from[0] * to[0] + from[1] * to[1] + from[2] * to[2]);
+		v.storeCrossProduct(from, to);
+		f = e = from.getDot(to);
 		if (e < 0.0f)
 			f = -e;
 
@@ -1592,283 +1455,103 @@ namespace HorseRadish
 		m[15] = 1.0f;
 	}
 
-	void Matrix::SetRotationFromTo(const Vector &from, const Vector &to)
+	void Matrix::setGLModelView(const Vector3f& pos, const Vector3f& target, const Vector3f& up)
 	{
-		Vector v;
-		float e, h, f;
+		Vector3f x, y, z;
 
-		v.StoreCrossProduct(from, to);
-		f = e = from.GetDot(to);
-		if (e < 0.0f)
-			f = -e;
-
-		if (f > (1.0f - 0.000000001))
-		{
-			float u[3], v[3], x[3], c1, c2, c3;
-			int i, j;
-
-			x[0] = (from.x > 0.0) ? from.x : -from.x;
-			x[1] = (from.y > 0.0) ? from.y : -from.y;
-			x[2] = (from.z > 0.0) ? from.z : -from.z;
-
-			if (x[0] < x[1])
-			{
-				if (x[0] < x[2])
-				{
-					x[0] = 1.0f;
-					x[1] = x[2] = 0.0f;
-				}
-				else
-				{
-					x[2] = 1.0f;
-					x[0] = x[1] = 0.0f;
-				}
-			}
-			else
-			{
-				if (x[1] < x[2])
-				{
-					x[1] = 1.0f;
-					x[0] = x[2] = 0.0f;
-				}
-				else
-				{
-					x[2] = 1.0f;
-					x[0] = x[1] = 0.0f;
-				}
-			}
-
-			u[0] = x[0] - from.x;
-			u[1] = x[1] - from.y;
-			u[2] = x[2] - from.z;
-			v[0] = x[0] - to.x;
-			v[1] = x[1] - to.y;
-			v[2] = x[2] - to.z;
-
-
-			c1 = 2.0f / (u[0] * u[0] + u[1] * u[1] + u[2] * u[2]);
-			c2 = 2.0f / (v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
-			c3 = c1 * c2  * (u[0] * v[0] + u[1] * v[1] + u[2] * v[2]);
-
-			for (i = 0; i < 3; i++)
-			{
-				for (j = 0; j < 3; j++)
-					m[j * 4 + i] = -c1 * u[i] * u[j] - c2 * v[i] * v[j] + c3 * v[i] * u[j];
-				m[i * 4 + i] += 1.0f;
-			}
-			m[3] = m[7] = m[11] = m[12] = m[13] = m[14] = 0.0f;
-			m[15] = 1.0f;
-			return;
-		}
-
-		float hvx, hvz, hvxy, hvxz, hvyz;
-
-		h = 1.0f / (1.0f + e);
-		hvx = h * v[0];
-		hvz = h * v[2];
-		hvxy = hvx * v[1];
-		hvxz = hvx * v[2];
-		hvyz = hvz * v[1];
-
-		m[0] = e + hvx * v[0];
-		m[4] = hvxy - v[2];
-		m[8] = hvxz + v[1];
-
-		m[1] = hvxy + v[2];
-		m[5] = e + h * v[1] * v[1];
-		m[9] = hvyz - v[0];
-
-		m[2] = hvxz - v[1];
-		m[6] = hvyz + v[0];
-		m[10] = e + hvz * v[2];
-
-		m[3] = m[7] = m[11] = m[12] = m[13] = m[14] = 0.0f;
-		m[15] = 1.0f;
-	}
-
-	void Matrix::SetGLModelView(const Vector &pos, const Vector &target, const Vector &up)
-	{
-		Vector x, y, z;
-
-		z.Set(pos);
+		z.set(pos);
 		z -= target;
-		z.Normalize();
+		z.normalize();
 
-		x.StoreCrossProduct(up, z);
-		y.StoreCrossProduct(z, x);
+		x.storeCrossProduct(up, z);
+		y.storeCrossProduct(z, x);
 
-		x.Normalize();
-		y.Normalize();
+		x.normalize();
+		y.normalize();
 
-		m[0] = x.x;
-		m[1] = y.x;
-		m[2] = z.x;
-		m[4] = x.y;
-		m[5] = y.y;
-		m[6] = z.y;
-		m[8] = x.z;
-		m[9] = y.z;
-		m[10] = z.z;
+		m[0] = x[0];
+		m[1] = y[0];
+		m[2] = z[0];
+		m[4] = x[1];
+		m[5] = y[1];
+		m[6] = z[1];
+		m[8] = x[2];
+		m[9] = y[2];
+		m[10] = z[2];
 
 		x *= -1.0f;
 		y *= -1.0f;
 		z *= -1.0f;
 
-		m[12] = x.x*pos.x + x.y*pos.y + x.z*pos.z;
-		m[13] = y.x*pos.x + y.y*pos.y + y.z*pos.z;
-		m[14] = z.x*pos.x + z.y*pos.y + z.z*pos.z;
+		m[12] = x[0] * pos[0] + x[1] * pos[1] + x[2] * pos[2];
+		m[13] = y[0] * pos[0] + y[1] * pos[1] + y[2] * pos[2];
+		m[14] = z[0] * pos[0] + z[1] * pos[1] + z[2] * pos[2];
 
 		m[3] = m[7] = m[11] = 0.0f;
 		m[15] = 1.0f;
 	}
 
-	void Matrix::SetGLModelView(const Vector &pos, const Vector &target)
+	void Matrix::setGLModelView(const Vector3f& pos, const Vector3f& target)
 	{
-		Vector up(0.0f, 1.0f, 0.0f);
-		SetGLModelView(pos, target, up);
+		Vector3f up(0.0f, 1.0f, 0.0f);
+		setGLModelView(pos, target, up);
 	}
 
-	void Matrix::SetGLModelView(const float *pos, const float *target, const float *up)
+	void Matrix::setGLModelView(const Vector3f& pos, const float angX, const float angY, const Vector3f& up)
 	{
-		Vector x, y, z, aux;
-
-		z.Set(pos);
-		z -= target;
-		z.Normalize();
-
-		x.StoreCrossProduct(up, (const float*)z);
-		y.StoreCrossProduct(z, x);
-
-		x.Normalize();
-		y.Normalize();
-
-		m[0] = x.x;
-		m[1] = y.x;
-		m[2] = z.x;
-		m[4] = x.y;
-		m[5] = y.y;
-		m[6] = z.y;
-		m[8] = x.z;
-		m[9] = y.z;
-		m[10] = z.z;
-
-		x *= -1.0f;
-		y *= -1.0f;
-		z *= -1.0f;
-
-		m[12] = x.x*pos[0] + x.y*pos[1] + x.z*pos[2];
-		m[13] = y.x*pos[0] + y.y*pos[1] + y.z*pos[2];
-		m[14] = z.x*pos[0] + z.y*pos[1] + z.z*pos[2];
-
-		m[3] = m[7] = m[11] = 0.0f;
-		m[15] = 1.0f;
-	}
-
-	void Matrix::SetGLModelView(const float *pos, const float *target)
-	{
-		float up[] = { 0.0f, 1.0f, 0.0f };
-		SetGLModelView(pos, target, up);
-	}
-
-	void Matrix::SetGLModelView(const Vector &pos, const float angX, const float angY, const Vector &up)
-	{
-		Vector target, x, y, z;
+		Vector3f target, x, y, z;
 		float sx, sy, cx, cy;
 
 		Math::sinCosG(angX, sx, cx);
 		Math::sinCosG(angY, sy, cy);
 
-		target.x = pos.x + sx*cy;
-		target.y = pos.y + sy;
-		target.z = pos.z - (cx*cy);
+		target[0] = pos[0] + sx*cy;
+		target[1] = pos[1] + sy;
+		target[2] = pos[2] - (cx*cy);
 
-		z.Set(pos);
+		z.set(pos);
 		z -= target;
-		z.Normalize();
+		z.normalize();
 
-		x.StoreCrossProduct(up, z);
-		y.StoreCrossProduct(z, x);
+		x.storeCrossProduct(up, z);
+		y.storeCrossProduct(z, x);
 
-		x.Normalize();
-		y.Normalize();
+		x.normalize();
+		y.normalize();
 
-		m[0] = x.x;
-		m[1] = y.x;
-		m[2] = z.x;
-		m[4] = x.y;
-		m[5] = y.y;
-		m[6] = z.y;
-		m[8] = x.z;
-		m[9] = y.z;
-		m[10] = z.z;
+		m[0] = x[0];
+		m[1] = y[0];
+		m[2] = z[0];
+		m[4] = x[1];
+		m[5] = y[1];
+		m[6] = z[1];
+		m[8] = x[2];
+		m[9] = y[2];
+		m[10] = z[2];
 
 		x *= -1.0f;
 		y *= -1.0f;
 		z *= -1.0f;
 
-		m[12] = x.x*pos.x + x.y*pos.y + x.z*pos.z;
-		m[13] = y.x*pos.x + y.y*pos.y + y.z*pos.z;
-		m[14] = z.x*pos.x + z.y*pos.y + z.z*pos.z;
+		m[12] = x[0] * pos[0] + x[1] * pos[1] + x[2] * pos[2];
+		m[13] = y[0] * pos[0] + y[1] * pos[1] + y[2] * pos[2];
+		m[14] = z[0] * pos[0] + z[1] * pos[1] + z[2] * pos[2];
 
 		m[3] = m[7] = m[11] = 0.0f;
 		m[15] = 1.0f;
 	}
 
-	void Matrix::SetGLModelView(const float *pos, const float angX, const float angY, const float *up)
+	void Matrix::setGLModelView(const int cubemapFace, const Vector3f& centerCube)
 	{
-		Vector target, x, y, z;
-		float sx, sy, cx, cy;
-
-		Math::sinCosG(angX, sx, cx);
-		Math::sinCosG(angY, sy, cy);
-
-		target.x = pos[0] + sx*cy;
-		target.y = pos[1] + sy;
-		target.z = pos[2] - (cx*cy);
-
-		z.Set(pos);
-		z -= target;
-		z.Normalize();
-
-		x.StoreCrossProduct(up, (const float*)z);
-		y.StoreCrossProduct(z, x);
-
-		x.Normalize();
-		y.Normalize();
-
-		m[0] = x.x;
-		m[1] = y.x;
-		m[2] = z.x;
-		m[4] = x.y;
-		m[5] = y.y;
-		m[6] = z.y;
-		m[8] = x.z;
-		m[9] = y.z;
-		m[10] = z.z;
-
-		x *= -1.0f;
-		y *= -1.0f;
-		z *= -1.0f;
-
-		m[12] = x.x*pos[0] + x.y*pos[1] + x.z*pos[2];
-		m[13] = y.x*pos[0] + y.y*pos[1] + y.z*pos[2];
-		m[14] = z.x*pos[0] + z.y*pos[1] + z.z*pos[2];
-
-		m[3] = m[7] = m[11] = 0.0f;
-		m[15] = 1.0f;
-	}
-
-	void Matrix::SetGLModelView(const int cubemapFace, const Vector &centerCube)
-	{
-		memset(m, 0, sizeof(float) * 16);
+		std::memset(m, 0, sizeof(float) * 16);
 
 		//positive X
 		if (cubemapFace == 0)
 		{
 			m[2] = m[5] = m[8] = -1.0f;
-			m[12] = centerCube.z;
-			m[13] = centerCube.y;
-			m[14] = centerCube.x;
+			m[12] = centerCube[2];
+			m[13] = centerCube[1];
+			m[14] = centerCube[0];
 			m[15] = 1.0f;
 			return;
 		}
@@ -1878,9 +1561,9 @@ namespace HorseRadish
 		{
 			m[2] = m[8] = 1.0f;
 			m[5] = -1.0f;
-			m[12] = -centerCube.z;
-			m[13] = centerCube.y;
-			m[14] = -centerCube.x;
+			m[12] = -centerCube[2];
+			m[13] = centerCube[1];
+			m[14] = -centerCube[0];
 			m[15] = 1.0f;
 			return;
 		}
@@ -1890,9 +1573,9 @@ namespace HorseRadish
 		{
 			m[0] = m[9] = 1.0f;
 			m[6] = -1.0f;
-			m[12] = -centerCube.x;
-			m[13] = -centerCube.z;
-			m[14] = centerCube.y;
+			m[12] = -centerCube[0];
+			m[13] = -centerCube[2];
+			m[14] = centerCube[1];
 			m[15] = 1.0f;
 			return;
 		}
@@ -1902,9 +1585,9 @@ namespace HorseRadish
 		{
 			m[0] = m[6] = 1.0f;
 			m[9] = -1.0f;
-			m[12] = -centerCube.x;
-			m[13] = centerCube.z;
-			m[14] = -centerCube.y;
+			m[12] = -centerCube[0];
+			m[13] = centerCube[2];
+			m[14] = -centerCube[1];
 			m[15] = 1.0f;
 			return;
 		}
@@ -1914,9 +1597,9 @@ namespace HorseRadish
 		{
 			m[5] = m[10] = -1.0f;
 			m[0] = 1.0f;
-			m[12] = -centerCube.x;
-			m[13] = centerCube.y;
-			m[14] = centerCube.z;
+			m[12] = -centerCube[0];
+			m[13] = centerCube[1];
+			m[14] = centerCube[2];
 			m[15] = 1.0f;
 			return;
 		}
@@ -1926,9 +1609,9 @@ namespace HorseRadish
 		{
 			m[0] = m[5] = -1.0f;
 			m[10] = 1.0f;
-			m[12] = centerCube.x;
-			m[13] = centerCube.y;
-			m[14] = -centerCube.z;
+			m[12] = centerCube[0];
+			m[13] = centerCube[1];
+			m[14] = -centerCube[2];
 			m[15] = 1.0f;
 			return;
 		}
@@ -1936,7 +1619,7 @@ namespace HorseRadish
 		m[0] = m[5] = m[10] = m[15] = 1.0f;
 	}
 
-	void Matrix::SetGLProjection3D(const float fovy, const float aspect, const float zNear, const float zFar)
+	void Matrix::setGLProjection3D(const float fovy, const float aspect, const float zNear, const float zFar)
 	{
 		double ymin, ymax, xmin, xmax, n, f;
 
@@ -1947,7 +1630,7 @@ namespace HorseRadish
 		xmin = ymin * ((double)aspect);
 		xmax = ymax * ((double)aspect);
 
-		memset(m, 0, sizeof(float) * 16);
+		std::memset(m, 0, sizeof(float) * 16);
 		m[0] = (float)((2.0*n) / (xmax - xmin));
 		m[5] = (float)((2.0*n) / (ymax - ymin));
 		m[8] = (float)((xmax + xmin) / (xmax - xmin));
@@ -1957,7 +1640,7 @@ namespace HorseRadish
 		m[14] = -(float)((2.0*f*n) / (f - n));
 	}
 
-	void Matrix::SetGLProjection3D(const float fovy, const float aspect, const float zNear)
+	void Matrix::setGLProjection3D(const float fovy, const float aspect, const float zNear)
 	{
 		double ymin, ymax, xmin, xmax, n;
 
@@ -1967,7 +1650,7 @@ namespace HorseRadish
 		xmin = ymin * ((double)aspect);
 		xmax = ymax * ((double)aspect);
 
-		memset(m, 0, sizeof(float) * 16);
+		std::memset(m, 0, sizeof(float) * 16);
 		m[0] = (float)((2.0*n) / (xmax - xmin));
 		m[5] = (float)((2.0*n) / (ymax - ymin));
 		m[8] = (float)((xmax + xmin) / (xmax - xmin));
@@ -1976,18 +1659,20 @@ namespace HorseRadish
 		m[14] = -(float)(2.0*n);
 	}
 
-	void Matrix::SetGLProjection2D(const float width, const float height)
+	void Matrix::setGLProjection2D(const float width, const float height)
 	{
-		memset(m, 0, sizeof(float) * 16);
+		std::memset(m, 0, sizeof(float) * 16);
+
 		m[0] = 2.0f / width;
 		m[5] = 2.0f / height;
 		m[10] = m[12] = m[13] = -1.0f;
 		m[15] = 1.0f;
 	}
 
-	void Matrix::SetGLProjectionOrtho(const float left, const float right, const float bottom, const float top, const float zNear, const float zFar)
+	void Matrix::setGLProjectionOrtho(const float left, const float right, const float bottom, const float top, const float zNear, const float zFar)
 	{
-		memset(m, 0, sizeof(float) * 16);
+		std::memset(m, 0, sizeof(float) * 16);
+
 		m[0] = 2.0f / (right - left);
 		m[5] = 2.0f / (top - bottom);
 		m[10] = -2.0f / (zFar - zNear);
@@ -1998,17 +1683,17 @@ namespace HorseRadish
 		m[14] = -(zFar + zNear) / (zFar - zNear);
 	}
 
-	void Matrix::SetGLProjectionOrtho(const BBox &bbox)
+	void Matrix::setGLProjectionOrtho(const BBox &bbox)
 	{
-		Vector bmin, bmax;
+		Vector3f bmin, bmax;
 		float xDist, yDist, zDist;
 
 		bbox.GetMinMax(bmin, bmax);
-		xDist = (bmax.x - bmin.x)*0.5f;
-		yDist = (bmax.y - bmin.y)*0.5f;
-		zDist = bmax.z - bmin.z;
+		xDist = (bmax[0] - bmin[0])*0.5f;
+		yDist = (bmax[1] - bmin[1])*0.5f;
+		zDist = bmax[2] - bmin[2];
 
-		memset(m, 0, sizeof(float) * 16);
+		std::memset(m, 0, sizeof(float) * 16);
 		m[0] = 2.0f / (xDist + xDist);
 		m[5] = 2.0f / (yDist + yDist);
 		m[10] = -2.0f / (zDist);
@@ -2159,99 +1844,65 @@ namespace HorseRadish
 		m[8] -= s[8];
 	}
 
-	void Matrix3::MulVector(float *vec) const
+	void Matrix3::transform(float *vec) const
 	{
-		float vecX, vecY, vecZ;
-
-		vecX = vec[0];
-		vecY = vec[1];
-		vecZ = vec[2];
+		float vecX = vec[0];
+		float vecY = vec[1];
+		float vecZ = vec[2];
 
 		vec[0] = vecX*m[0] + vecY*m[3] + vecZ*m[6];
 		vec[1] = vecX*m[1] + vecY*m[4] + vecZ*m[7];
 		vec[2] = vecX*m[2] + vecY*m[5] + vecZ*m[8];
 	}
 
-	void Matrix3::MulVector(Vector& vec) const
+	void Matrix3::transform(Vector3f& vec) const
 	{
 		float result[3];
 
-		result[0] = vec.x*m[0] + vec.y*m[3] + vec.z*m[6];
-		result[1] = vec.x*m[1] + vec.y*m[4] + vec.z*m[7];
-		result[2] = vec.x*m[2] + vec.y*m[5] + vec.z*m[8];
+		result[0] = vec[0]*m[0] + vec[1]*m[3] + vec[2]*m[6];
+		result[1] = vec[0]*m[1] + vec[1]*m[4] + vec[2]*m[7];
+		result[2] = vec[0]*m[2] + vec[1]*m[5] + vec[2]*m[8];
 
-		vec.x = result[0];
-		vec.y = result[1];
-		vec.z = result[2];
+		vec[0] = result[0];
+		vec[1] = result[1];
+		vec[2] = result[2];
 	}
 
-	void Matrix3::MulVector(const Vector& vec, Vector &result) const
+	void Matrix3::transform(const Vector3f& vec, Vector3f& result) const
 	{
-		result.x = vec.x*m[0] + vec.y*m[3] + vec.z*m[6];
-		result.y = vec.x*m[1] + vec.y*m[4] + vec.z*m[7];
-		result.z = vec.x*m[2] + vec.y*m[5] + vec.z*m[8];
+		result[0] = vec[0]*m[0] + vec[1]*m[3] + vec[2]*m[6];
+		result[1] = vec[0]*m[1] + vec[1]*m[4] + vec[2]*m[7];
+		result[2] = vec[0]*m[2] + vec[1]*m[5] + vec[2]*m[8];
 	}
 
-	void Matrix3::MulVector(Vector * const vec, const int numVec) const
+	void Matrix3::transform(Vector3f* const vec, const int numVec) const
 	{
 		float result[3];
 
 		for (int i = 0; i < numVec; i++)
 		{
-			result[0] = vec[i].x*m[0] + vec[i].y*m[3] + vec[i].z*m[6];
-			result[1] = vec[i].x*m[1] + vec[i].y*m[4] + vec[i].z*m[7];
-			result[2] = vec[i].x*m[2] + vec[i].y*m[5] + vec[i].z*m[8];
+			result[0] = vec[i][0]*m[0] + vec[i][1]*m[3] + vec[i][2]*m[6];
+			result[1] = vec[i][0]*m[1] + vec[i][1]*m[4] + vec[i][2]*m[7];
+			result[2] = vec[i][0]*m[2] + vec[i][1]*m[5] + vec[i][2]*m[8];
 
-			vec[i].x = result[0];
-			vec[i].y = result[1];
-			vec[i].z = result[2];
+			vec[i][0] = result[0];
+			vec[i][1] = result[1];
+			vec[i][2] = result[2];
 		}
 	}
 
-	void Matrix3::GetCol1(Vector &result) const
+	Vector3f Matrix3::getColumn(unsigned int columnIndex) const
 	{
-		result.x = m[0];
-		result.y = m[3];
-		result.z = m[6];
+		columnIndex = columnIndex % 3;
+		return Vector3f(m[columnIndex], m[columnIndex + 3], m[columnIndex + 6]);
 	}
 
-	void Matrix3::GetCol2(Vector &result) const
+	Vector3f Matrix3::getRow(unsigned int rowIndex) const
 	{
-		result.x = m[1];
-		result.y = m[4];
-		result.z = m[7];
+		return Vector3f(m + ((rowIndex % 3) * 3));
 	}
 
-	void Matrix3::GetCol3(Vector &result) const
-	{
-		result.x = m[2];
-		result.y = m[5];
-		result.z = m[8];
-	}
-
-	void Matrix3::GetRow1(Vector &result) const
-	{
-		result.x = m[0];
-		result.y = m[1];
-		result.z = m[2];
-	}
-
-	void Matrix3::GetRow2(Vector &result) const
-	{
-		result.x = m[3];
-		result.y = m[4];
-		result.z = m[5];
-	}
-
-	void Matrix3::GetRow3(Vector &result) const
-	{
-		result.x = m[6];
-		result.y = m[7];
-		result.z = m[8];
-	}
-
-
-	void Matrix3::GetRotate(Vector &vec, float &angulo) const
+	void Matrix3::getRotation(Vector3f& vec, float &angulo) const
 	{
 		float s, tr, quat[4];
 		int op;
@@ -2322,22 +1973,22 @@ namespace HorseRadish
 		tr = quat[0] * quat[0] + quat[1] * quat[1] + quat[2] * quat[2];
 		if (tr == 0.0f)
 		{
-			vec.x = 0.0f;
-			vec.y = 0.0f;
-			vec.z = 1.0f;
+			vec[0] = 0.0f;
+			vec[1] = 0.0f;
+			vec[2] = 1.0f;
 			angulo = 0.0f;
 			return;
 		}
 
 		tr = 1.0f / tr;
-		vec.x = quat[0] * tr;
-		vec.y = quat[1] * tr;
-		vec.z = quat[2] * tr;
-		vec.Normalize();
+		vec[0] = quat[0] * tr;
+		vec[1] = quat[1] * tr;
+		vec[2] = quat[2] * tr;
+		vec.normalize();
 		angulo = ((float)acos(quat[3]))*114.5915590261646417f; // 180/pi=57.295779513082320876f * 2.0f
 	}
 
-	void Matrix3::GetEulerAngles(float &rfYAngle, float &rfPAngle, float &rfRAngle) const
+	void Matrix3::getEulerAngles(float &rfYAngle, float &rfPAngle, float &rfRAngle) const
 	{
 		if (-1.0f < -m[6])
 		{
@@ -2374,12 +2025,12 @@ namespace HorseRadish
 		}
 	}
 
-	void Matrix3::Write(float * const s) const
+	void Matrix3::write(float * const s) const
 	{
 		std::memcpy(s, m, sizeof(float) * 9);
 	}
 
-	void Matrix3::Transpose(Matrix3 &dest) const
+	void Matrix3::transpose(Matrix3 &dest) const
 	{
 		dest.m[1] = m[3];
 		dest.m[2] = m[6];
@@ -2393,7 +2044,7 @@ namespace HorseRadish
 		dest.m[8] = m[8];
 	}
 
-	void Matrix3::Transpose()
+	void Matrix3::transpose()
 	{
 		float tmp;
 
@@ -2410,11 +2061,11 @@ namespace HorseRadish
 		m[7] = tmp;
 	}
 
-	void Matrix3::MulRotateX(const float &angulo)
+	void Matrix3::mulRotationX(const float &angle)
 	{
 		float c, s, p1, p2, p3;
 
-		Math::sinCosG(angulo, s, c);
+		Math::sinCosG(angle, s, c);
 
 		p1 = m[3];
 		p2 = m[4];
@@ -2429,11 +2080,11 @@ namespace HorseRadish
 		m[8] = (-s * p3) + (c * m[8]);
 	}
 
-	void Matrix3::MulRotateY(const float &angulo)
+	void Matrix3::mulRotationY(const float &angle)
 	{
 		float c, s, p1, p2, p3;
 
-		Math::sinCosG(angulo, s, c);
+		Math::sinCosG(angle, s, c);
 
 		p1 = m[0];
 		p2 = m[1];
@@ -2448,11 +2099,11 @@ namespace HorseRadish
 		m[8] = (s * p3) + (c * m[8]);
 	}
 
-	void Matrix3::MulRotateZ(const float &angulo)
+	void Matrix3::mulRotationZ(const float &angle)
 	{
 		float c, s, p1, p2, p3;
 
-		Math::sinCosG(angulo, s, c);
+		Math::sinCosG(angle, s, c);
 
 		p1 = m[0];
 		p2 = m[1];
@@ -2467,46 +2118,46 @@ namespace HorseRadish
 		m[5] = (-s * p3) + (c * m[5]);
 	}
 
-	void Matrix3::Set(const float x)
+	void Matrix3::set(const float x)
 	{
 		m[0] = m[1] = m[2] = x;
 		m[3] = m[4] = m[5] = x;
 		m[6] = m[7] = m[8] = x;
 	}
 
-	void Matrix3::Set(const float *src)
+	void Matrix3::set(const float *src)
 	{
 		std::memcpy(m, src, sizeof(float) * 9);
 	}
 
-	void Matrix3::Set(const Matrix &mat)
+	void Matrix3::set(const Matrix &mat)
 	{
 		m[0] = mat.m[0];		m[1] = mat.m[1];		m[2] = mat.m[2];
 		m[3] = mat.m[4];		m[4] = mat.m[5];		m[5] = mat.m[6];
 		m[6] = mat.m[8];		m[7] = mat.m[9];		m[8] = mat.m[10];
 	}
 
-	void Matrix3::Set(const Matrix3 &mat)
+	void Matrix3::set(const Matrix3 &mat)
 	{
 		std::memcpy(m, mat.m, sizeof(float) * 9);
 	}
 
-	void Matrix3::SetZero(void)
+	void Matrix3::setZero(void)
 	{
 		std::memset(m, 0, sizeof(float) * 9);
 	}
 
-	void Matrix3::SetIdentidade(void)
+	void Matrix3::setIdentity(void)
 	{
 		std::memset(m, 0, sizeof(float) * 9);
 		m[0] = m[4] = m[8] = 1.0f;
 	}
 
-	void Matrix3::SetRotateX(const float &angulo)
+	void Matrix3::setRotationX(const float &angle)
 	{
 		float c, s;
 
-		Math::sinCosG(angulo, s, c);
+		Math::sinCosG(angle, s, c);
 
 		m[7] = -s;
 		m[8] = c;
@@ -2517,11 +2168,11 @@ namespace HorseRadish
 		m[0] = 1.0f;
 	}
 
-	void Matrix3::SetRotateY(const float &angulo)
+	void Matrix3::setRotationY(const float &angle)
 	{
 		float c, s;
 
-		Math::sinCosG(angulo, s, c);
+		Math::sinCosG(angle, s, c);
 
 		m[0] = c;
 		m[2] = -s;
@@ -2532,11 +2183,11 @@ namespace HorseRadish
 		m[4] = 1.0f;
 	}
 
-	void Matrix3::SetRotateZ(const float &angulo)
+	void Matrix3::setRotationZ(const float &angle)
 	{
 		float c, s;
 
-		Math::sinCosG(angulo, s, c);
+		Math::sinCosG(angle, s, c);
 
 		m[0] = c;
 		m[1] = s;
@@ -2547,47 +2198,45 @@ namespace HorseRadish
 		m[8] = 1.0f;
 	}
 
-	void Matrix3::SetRotate(const float &angulo, const Vector &vec)
+	void Matrix3::setRotation(const float &angle, const Vector3f& vec)
 	{
-		Vector aux;
-		float c, s, t, txx, tyy, tzz, txy, txz, tyz, sx, sy, sz;
+		Vector3f aux;
+		float c, s, t, txx, tyy, tzz, txy, txz, tyz;
 
 		aux = vec;
-		aux.Normalize();
+		aux.normalize();
 
-		Math::sinCosG(angulo, s, c);
+		Math::sinCosG(angle, s, c);
 
 		t = 1.0f - c;
-		txx = aux.x * aux.x * t;
-		tyy = aux.y * aux.y * t;
-		tzz = aux.z * aux.z * t;
-		txy = aux.x * aux.y * t;
-		txz = aux.x * aux.z * t;
-		tyz = aux.y * aux.z * t;
-		sx = s * aux.x;
-		sy = s * aux.y;
-		sz = s * aux.z;
+		txx = aux[0] * aux[0] * t;
+		tyy = aux[1] * aux[1] * t;
+		tzz = aux[2] * aux[2] * t;
+		txy = aux[0] * aux[1] * t;
+		txz = aux[0] * aux[2] * t;
+		tyz = aux[1] * aux[2] * t;
+		aux *= s;
 
 		m[0] = txx + c;
-		m[1] = txy + sz;
-		m[2] = txz - sy;
+		m[1] = txy + aux[2];
+		m[2] = txz - aux[1];
 
-		m[3] = txy - sz;
+		m[3] = txy - aux[2];
 		m[4] = tyy + c;
-		m[5] = tyz + sx;
+		m[5] = tyz + aux[0];
 
-		m[6] = txz + sy;
-		m[7] = tyz - sx;
+		m[6] = txz + aux[1];
+		m[7] = tyz - aux[0];
 		m[8] = tzz + c;
 	}
 
-	void Matrix3::SetRotate(const float &anguloX, const float &anguloY, const float &anguloZ)
+	void Matrix3::setRotation(const float &angleX, const float &angleY, const float &angleZ)
 	{
 		float cx, cy, cz, sx, sy, sz;
 
-		Math::sinCosG(anguloX, sx, cx);
-		Math::sinCosG(anguloY, sy, cy);
-		Math::sinCosG(anguloZ, sz, cz);
+		Math::sinCosG(angleX, sx, cx);
+		Math::sinCosG(angleY, sy, cy);
+		Math::sinCosG(angleZ, sz, cz);
 
 		m[0] = cy * cz;
 		m[1] = -cy * sz;
@@ -2602,52 +2251,18 @@ namespace HorseRadish
 		m[8] = cx * cy;
 	}
 
-	void Matrix3::SetRotate(const float &angulo, const float &x, const float &y, const float &z)
+	void Matrix3::setRotation(const float &angle, const float &x, const float &y, const float &z)
 	{
-		float X, Y, Z, tamanho;
-		float c, s, t, txx, tyy, tzz, txy, txz, tyz, sx, sy, sz;
-
-		X = x;
-		Y = y;
-		Z = z;
-		tamanho = Math::sqrtInv(X*X + Y*Y + Z*Z);
-		X *= tamanho;
-		Y *= tamanho;
-		Z *= tamanho;
-
-		Math::sinCosG(angulo, s, c);
-
-		t = 1.0f - c;
-		txx = X * X * t;
-		tyy = Y * Y * t;
-		tzz = Z * Z * t;
-		txy = X * Y * t;
-		txz = X * Z * t;
-		tyz = Y * Z * t;
-		sx = s * X;
-		sy = s * Y;
-		sz = s * Z;
-
-		m[0] = txx + c;
-		m[1] = txy + sz;
-		m[2] = txz - sy;
-
-		m[3] = txy - sz;
-		m[4] = tyy + c;
-		m[5] = tyz + sx;
-
-		m[6] = txz + sy;
-		m[7] = tyz - sx;
-		m[8] = tzz + c;
+		setRotation(angle, Vector3f(x, y, z));
 	}
 
-	void Matrix3::SetRotationFromTo(const float * const from, const float * const to)
+	void Matrix3::setRotationFromTo(const Vector3f& from, const Vector3f& to)
 	{
-		Vector v;
+		Vector3f v;
 		float e, h, f;
 
-		v.StoreCrossProduct(from, to);
-		f = e = (from[0] * to[0] + from[1] * to[1] + from[2] * to[2]);
+		v.storeCrossProduct(from, to);
+		f = e = from.getDot(to);
 		if (e < 0.0f)
 			f = -e;
 
@@ -2693,95 +2308,6 @@ namespace HorseRadish
 			v[0] = x[0] - to[0];
 			v[1] = x[1] - to[1];
 			v[2] = x[2] - to[2];
-
-
-			c1 = 2.0f / (u[0] * u[0] + u[1] * u[1] + u[2] * u[2]);
-			c2 = 2.0f / (v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
-			c3 = c1 * c2  * (u[0] * v[0] + u[1] * v[1] + u[2] * v[2]);
-
-			for (i = 0; i < 3; i++)
-			{
-				for (j = 0; j < 3; j++)
-					m[j * 3 + i] = -c1 * u[i] * u[j] - c2 * v[i] * v[j] + c3 * v[i] * u[j];
-				m[i * 3 + i] += 1.0f;
-			}
-			return;
-		}
-
-		float hvx, hvz, hvxy, hvxz, hvyz;
-
-		h = 1.0f / (1.0f + e);
-		hvx = h * v[0];
-		hvz = h * v[2];
-		hvxy = hvx * v[1];
-		hvxz = hvx * v[2];
-		hvyz = hvz * v[1];
-
-		m[0] = e + hvx * v[0];
-		m[3] = hvxy - v[2];
-		m[6] = hvxz + v[1];
-
-		m[1] = hvxy + v[2];
-		m[4] = e + h * v[1] * v[1];
-		m[7] = hvyz - v[0];
-
-		m[2] = hvxz - v[1];
-		m[5] = hvyz + v[0];
-		m[8] = e + hvz * v[2];
-	}
-
-	void Matrix3::SetRotationFromTo(const Vector &from, const Vector &to)
-	{
-		Vector v;
-		float e, h, f;
-
-		v.StoreCrossProduct(from, to);
-		f = e = from.GetDot(to);
-		if (e < 0.0f)
-			f = -e;
-
-		if (f > (1.0f - 0.000000001))
-		{
-			float u[3], v[3], x[3], c1, c2, c3;
-			int i, j;
-
-			x[0] = (from.x > 0.0) ? from.x : -from.x;
-			x[1] = (from.y > 0.0) ? from.y : -from.y;
-			x[2] = (from.z > 0.0) ? from.z : -from.z;
-
-			if (x[0] < x[1])
-			{
-				if (x[0] < x[2])
-				{
-					x[0] = 1.0f;
-					x[1] = x[2] = 0.0f;
-				}
-				else
-				{
-					x[2] = 1.0f;
-					x[0] = x[1] = 0.0f;
-				}
-			}
-			else
-			{
-				if (x[1] < x[2])
-				{
-					x[1] = 1.0f;
-					x[0] = x[2] = 0.0f;
-				}
-				else
-				{
-					x[2] = 1.0f;
-					x[0] = x[1] = 0.0f;
-				}
-			}
-
-			u[0] = x[0] - from.x;
-			u[1] = x[1] - from.y;
-			u[2] = x[2] - from.z;
-			v[0] = x[0] - to.x;
-			v[1] = x[1] - to.y;
-			v[2] = x[2] - to.z;
 
 
 			c1 = 2.0f / (u[0] * u[0] + u[1] * u[1] + u[2] * u[2]);

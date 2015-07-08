@@ -15,7 +15,7 @@ namespace HorseRadish
 			HorseRadish::Matrix matrixModelView;
 
 			HorseRadish::Matrix matrixTransformacao = hrViewport.getProjection(HorseRadish::OpenGL::Tools::Viewport::ProjectionType::Proj3D);
-			matrixModelView.Set(hrCamera.GetModelView());
+			matrixModelView.set(hrCamera.GetModelView());
 			matrixTransformacao *= matrixModelView;
 
 			vbos.vaoMesh.bind();
@@ -38,8 +38,8 @@ namespace HorseRadish
 			HorseRadish::OpenGL::glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 			HorseRadish::OpenGL::glUseProgram(0);
-			HorseRadish::OpenGL::glProgramUniformMatrix4fv(this->shaders.deferred.vertex.getId(), this->shaders.deferred.vertex.getUniformLocation("matView"), 1, false, matrixModelView);
-			HorseRadish::OpenGL::glProgramUniformMatrix4fv(this->shaders.deferred.vertex.getId(), this->shaders.deferred.vertex.getUniformLocation("matTrans"), 1, false, matrixTransformacao);
+			HorseRadish::OpenGL::glProgramUniformMatrix4fv(this->shaders.deferred.vertex.getId(), this->shaders.deferred.vertex.getUniformLocation("matView"), 1, false, matrixModelView.data());
+			HorseRadish::OpenGL::glProgramUniformMatrix4fv(this->shaders.deferred.vertex.getId(), this->shaders.deferred.vertex.getUniformLocation("matTrans"), 1, false, matrixTransformacao.data());
 			HorseRadish::OpenGL::glProgramUniform1f(this->shaders.deferred.fragment.getId(), this->shaders.deferred.fragment.getUniformLocation("farClipPlane"), hrViewport.getZFar());
 			HorseRadish::OpenGL::glBindProgramPipeline(this->shaders.deferred.pipeline.getId());
 
@@ -81,7 +81,7 @@ namespace HorseRadish
 			HorseRadish::OpenGL::glDepthMask(GL_FALSE);
 
 			HorseRadish::OpenGL::glUseProgram(0);
-			HorseRadish::OpenGL::glProgramUniformMatrix4fv(this->shaders.postprocess.vertex.getId(), this->shaders.postprocess.vertex.getUniformLocation("projectionMatrix"), 1, false, hrViewport.getProjection(HorseRadish::OpenGL::Tools::Viewport::ProjectionType::Proj2D));
+			HorseRadish::OpenGL::glProgramUniformMatrix4fv(this->shaders.postprocess.vertex.getId(), this->shaders.postprocess.vertex.getUniformLocation("projectionMatrix"), 1, false, hrViewport.getProjection(HorseRadish::OpenGL::Tools::Viewport::ProjectionType::Proj2D).data());
 			HorseRadish::OpenGL::glBindProgramPipeline(this->shaders.postprocess.pipeline.getId());
 
 			fbos.samplerTexs.bind(4);

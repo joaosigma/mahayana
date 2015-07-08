@@ -309,7 +309,7 @@ namespace HorseRadish
 				
 				//HorseRadish::Streams::FileStream readStream("c:/Users/Sigma/Desktop/doom3.json", true, false);
 				//HorseRadish::Streams::FileStream readStream("c:/Users/Sigma/Desktop/test_scene.json", true, false);
-				HorseRadish::Streams::FileStream readStream("c:/Users/Sigma/Desktop/volund2.json", true, false);
+				HorseRadish::Streams::FileStream readStream("c:/Users/Sigma/Desktop/volund.json", true, false);
 
 				renderData->Cleanup();
 				if (!renderData->ImportJSON(HorseRadish::Streams::StreamReader(readStream)))
@@ -443,7 +443,7 @@ namespace HorseRadish
 
 						//posso actualizar a camera
 						auto mousePosition = mWindow->RawInputGetMouseStatus();
-						camera->CommitInput(cameraActions, mousePosition.x, mousePosition.y, true, renderer2D->auxTools.curTimeS - renderer2D->auxTools.lastTimeS);
+						camera->CommitInput(cameraActions, mousePosition[0], mousePosition[1], true, renderer2D->auxTools.curTimeS - renderer2D->auxTools.lastTimeS);
 					}
 
 					mWindow->ProcessMessages([&](const Window::Message &msg)

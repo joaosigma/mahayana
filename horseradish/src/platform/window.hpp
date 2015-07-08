@@ -93,7 +93,7 @@ public:
 	void RawInputSnapshot();
 	bool RawInputGetKeyStatus(const unsigned int &vcode);
 	bool RawInputGetKeyStatus(const Window::VirtualKeys &vcode);
-	HorseRadish::Vector RawInputGetMouseStatus();
+	HorseRadish::Vector3f RawInputGetMouseStatus();
 	
 	int MessageLoop(std::function<void()> closingCb);
 	void ProcessMessages(std::function<void(const Message&)> cb, const bool resetQueue);

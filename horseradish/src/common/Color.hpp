@@ -10,7 +10,6 @@
 
 namespace HorseRadish
 {
-	HALIGN_16BYTES
 	class Color
 	{
 		static const unsigned char SRGB2Linear[256];
@@ -166,7 +165,7 @@ namespace HorseRadish
 		};
 
 	public:
-		static unsigned char ConvertColor(const float &val)
+		static unsigned char convertColor(const float val)
 		{
 			__m128i valConvert;
 			unsigned char valFinal;
@@ -179,12 +178,12 @@ namespace HorseRadish
 			return valFinal;
 		}
 
-		static float ConvertColor(const unsigned char val)
+		static float convertColor(const unsigned char val)
 		{
 			return (((float)val)*Math::SIMD::fUByteMaxInv.m128_f32[0]);
 		}
 
-		static void ConvertColor(unsigned char *valB, const float * const valF, const bool processAlphaChannel)
+		static void convertColor(unsigned char *valB, const float * const valF, const bool processAlphaChannel)
 		{
 			__m128i valConvert;
 
@@ -205,7 +204,7 @@ namespace HorseRadish
 			_mm_maskmoveu_si128(valConvert, _mm_set_epi32(0x0, 0x0, 0x0, 0x80808080), (char*)valB);
 		}
 
-		static void ConvertColor(float * const valF, const unsigned char *valB, const bool processAlphaChannel)
+		static void convertColor(float * const valF, const unsigned char *valB, const bool processAlphaChannel)
 		{
 			__m128i valConvert;
 			__m128 valFinal;
@@ -232,7 +231,7 @@ namespace HorseRadish
 			_mm_storeu_ps(valF, valFinal);
 		}
 
-		static Color ParseColorFromHTML(const char *hexColor, const bool gammaCorrect = true)
+		static Color parseColorFromHTML(const char *hexColor, const bool gammaCorrect = true)
 		{
 			if (*hexColor == '#')
 				hexColor++;
@@ -240,9 +239,9 @@ namespace HorseRadish
 			Color color;
 			if (gammaCorrect)
 			{
-				color.r = Color::GammaCorrect(Encoders::DecodeHexByte(hexColor + 0));
-				color.g = Color::GammaCorrect(Encoders::DecodeHexByte(hexColor + 2));
-				color.b = Color::GammaCorrect(Encoders::DecodeHexByte(hexColor + 4));
+				color.r = Color::gammaCorrect(Encoders::DecodeHexByte(hexColor + 0));
+				color.g = Color::gammaCorrect(Encoders::DecodeHexByte(hexColor + 2));
+				color.b = Color::gammaCorrect(Encoders::DecodeHexByte(hexColor + 4));
 				color.a = 255.0f;
 			}
 			else
@@ -258,7 +257,7 @@ namespace HorseRadish
 			return color;
 		}
 
-		static unsigned char GammaCorrect(const unsigned char value)
+		static unsigned char gammaCorrect(const unsigned char value)
 		{
 			return SRGB2Linear[value];
 		}
@@ -276,14 +275,15 @@ namespace HorseRadish
 			_mm_storeu_ps(&r, _mm_loadu_ps(&c.r));
 		}
 
-		explicit Color(const Vector &v)
+		explicit Color(const Vector3f &v)
 		{
-			_mm_storeu_ps(&r, _mm_loadu_ps(&v.x)); a = 1.0f;
+			_mm_storeu_ps(&r, _mm_loadu_ps(v.data()));
+			a = 1.0f;
 		}
 
-		explicit Color(const Vector4 &v)
+		explicit Color(const Vector4f &v)
 		{
-			_mm_storeu_ps(&r, _mm_loadu_ps(&v.x));
+			_mm_storeu_ps(&r, _mm_loadu_ps(v.data()));
 		}
 
 		explicit Color(const float scalar)
@@ -301,72 +301,68 @@ namespace HorseRadish
 			_mm_storeu_ps(&r, _mm_loadu_ps(c));
 		}
 
-		inline ~Color()
-		{
-			return;
-		}
-
-		inline operator float *(void)
-		{
-			return &r;
-		}
-		inline operator const float *(void) const
+		float* data()
 		{
 			return &r;
 		}
 
-		inline void operator+=(const Color& c)
+		const float* data() const
+		{
+			return &r;
+		}
+
+		void operator+=(const Color& c)
 		{
 			_mm_storeu_ps(&r, _mm_add_ps(_mm_loadu_ps(&r), _mm_loadu_ps(&c.r)));
 		}
 
-		inline void operator-=(const Color& c)
+		void operator-=(const Color& c)
 		{
 			_mm_storeu_ps(&r, _mm_sub_ps(_mm_loadu_ps(&r), _mm_loadu_ps(&c.r)));
 		}
 
-		inline void operator*=(const Color& c)
+		void operator*=(const Color& c)
 		{
 			_mm_storeu_ps(&r, _mm_mul_ps(_mm_loadu_ps(&r), _mm_loadu_ps(&c.r)));
 		}
 
-		inline void operator/=(const Color& c)
+		void operator/=(const Color& c)
 		{
 			_mm_storeu_ps(&r, _mm_div_ps(_mm_loadu_ps(&r), _mm_loadu_ps(&c.r)));
 		}
 
-		inline void operator+=(const float &n)
+		void operator+=(const float &n)
 		{
 			_mm_storeu_ps(&r, _mm_add_ps(_mm_loadu_ps(&r), _mm_load_ps1(&n)));
 		}
 
-		inline void operator-=(const float &n)
+		void operator-=(const float &n)
 		{
 			_mm_storeu_ps(&r, _mm_sub_ps(_mm_loadu_ps(&r), _mm_load_ps1(&n)));
 		}
 
-		inline void operator*=(const float &n)
+		void operator*=(const float &n)
 		{
 			_mm_storeu_ps(&r, _mm_mul_ps(_mm_loadu_ps(&r), _mm_load_ps1(&n)));
 		}
 
-		inline void operator/=(const float &n)
+		void operator/=(const float &n)
 		{
 			_mm_storeu_ps(&r, _mm_div_ps(_mm_loadu_ps(&r), _mm_load_ps1(&n)));
 		}
 
-		void Set(const Color &color)
+		void set(const Color &color)
 		{
 			_mm_storeu_ps(&r, _mm_loadu_ps(&color.r));
 		}
 
-		void Set(const Color& color, const float &a)
+		void set(const Color& color, const float &a)
 		{
 			_mm_storeu_ps(&r, _mm_loadu_ps(&color.r));
 			this->a = a;
 		}
 
-		void Set(const float *color)
+		void set(const float *color)
 		{
 			_mm_storeu_ps(&r, _mm_loadu_ps(color));
 		}
@@ -379,18 +375,18 @@ namespace HorseRadish
 			this->a = a;
 		}
 
-		void Set(const float &crgba)
+		void set(const float &crgba)
 		{
 			_mm_storeu_ps(&r, _mm_load_ps1(&crgba));
 		}
 
-		void Set(const float &crgb, const float &ca)
+		void set(const float &crgb, const float &ca)
 		{
 			this->r = this->g = this->b = crgb;
 			this->a = ca;
 		}
 
-		void Set(const float &cr, const float &cg, const float &cb, const float &ca)
+		void set(const float &cr, const float &cg, const float &cb, const float &ca)
 		{
 			this->r = cr;
 			this->g = cg;
@@ -398,12 +394,12 @@ namespace HorseRadish
 			this->a = ca;
 		}
 
-		void Set(const unsigned char *color)
+		void set(const unsigned char *color)
 		{
-			Color::ConvertColor(&r, color, true);
+			Color::convertColor(&r, color, true);
 		}
 
-		void Set(const unsigned char *color, const unsigned char &ca)
+		void set(const unsigned char *color, const unsigned char &ca)
 		{
 			this->r = (float)color[0];
 			this->g = (float)color[1];
@@ -412,7 +408,7 @@ namespace HorseRadish
 			_mm_storeu_ps(&r, _mm_mul_ps(_mm_loadu_ps(&r), Math::SIMD::fUByteMaxInv));
 		}
 
-		void Set(const unsigned char &cr, const unsigned char &cg, const unsigned char &cb, const unsigned char &ca)
+		void set(const unsigned char &cr, const unsigned char &cg, const unsigned char &cb, const unsigned char &ca)
 		{
 			this->r = (float)cr;
 			this->g = (float)cg;
@@ -421,7 +417,7 @@ namespace HorseRadish
 			_mm_storeu_ps(&r, _mm_mul_ps(_mm_loadu_ps(&r), Math::SIMD::fUByteMaxInv));
 		}
 
-		void Set(const unsigned char &cr, const unsigned char &cg, const unsigned char &cb)
+		void set(const unsigned char &cr, const unsigned char &cg, const unsigned char &cb)
 		{
 			this->r = (float)cr;
 			this->g = (float)cg;
@@ -430,12 +426,12 @@ namespace HorseRadish
 			_mm_storeu_ps(&r, _mm_mul_ps(_mm_loadu_ps(&r), Math::SIMD::fUByteMaxInv));
 		}
 
-		void SetWeight(const Color& c, const float &weight)
+		void setWeight(const Color& c, const float &weight)
 		{
 			_mm_storeu_ps(&r, _mm_mul_ps(_mm_loadu_ps(&c.r), _mm_load_ps1(&weight)));
 		}
 
-		void SetWeight(const Color& c1, const float &weight1, const Color& c2, const float &weight2, const Color& c3, const float &weight3, const Color& c4, const float &weight4)
+		void setWeight(const Color& c1, const float &weight1, const Color& c2, const float &weight2, const Color& c3, const float &weight3, const Color& c4, const float &weight4)
 		{
 			__m128 temp;
 
@@ -445,12 +441,12 @@ namespace HorseRadish
 			_mm_storeu_ps(&r, _mm_add_ps(temp, _mm_mul_ps(_mm_loadu_ps(&c4.r), _mm_load_ps1(&weight4))));
 		}
 
-		void SetYUV(const float * const yuv)
+		void setYUV(const float * const yuv)
 		{
-			this->SetYUV(yuv[0], yuv[1], yuv[2]);
+			setYUV(yuv[0], yuv[1], yuv[2]);
 		}
 
-		void SetYUV(const float &y, const float &u, const float &v)
+		void setYUV(const float &y, const float &u, const float &v)
 		{
 			this->r = y + (v * 1.140f);
 			this->g = y - ((u * 0.395f) + (v * 0.581f));
@@ -458,12 +454,12 @@ namespace HorseRadish
 			this->a = 1.0f;
 		}
 
-		void SetYUV(const unsigned char * const yuv)
+		void setYUV(const unsigned char * const yuv)
 		{
-			this->SetYUV(yuv[0], yuv[1], yuv[2]);
+			setYUV(yuv[0], yuv[1], yuv[2]);
 		}
 
-		void SetYUV(const unsigned char &y, const unsigned char &u, const unsigned char &v)
+		void setYUV(const unsigned char &y, const unsigned char &u, const unsigned char &v)
 		{
 			HALIGN_16BYTES float pixelAux[4];
 
@@ -473,15 +469,15 @@ namespace HorseRadish
 			pixelAux[3] = 0.0;
 			_mm_storeu_ps(pixelAux, _mm_mul_ps(_mm_load_ps(pixelAux), Math::SIMD::fUByteMaxInv));
 
-			this->SetYUV(pixelAux[0], pixelAux[1], pixelAux[2]);
+			setYUV(pixelAux[0], pixelAux[1], pixelAux[2]);
 		}
 
-		void SetYCbCr(const float * const ycbcr, bool fullRange)
+		void setYCbCr(const float * const ycbcr, bool fullRange)
 		{
-			this->SetYCbCr(ycbcr[0], ycbcr[1], ycbcr[2], fullRange);
+			setYCbCr(ycbcr[0], ycbcr[1], ycbcr[2], fullRange);
 		}
 
-		void SetYCbCr(const float &y, const float &cb, const float &cr, bool fullRange)
+		void setYCbCr(const float &y, const float &cb, const float &cr, bool fullRange)
 		{
 			float auxCb = cb - 0.5f;
 			float auxCr = cr - 0.5f;
@@ -505,12 +501,12 @@ namespace HorseRadish
 			this->a = 1.0f;
 		}
 
-		void SetYCbCr(const unsigned char * const ycbcr, bool fullRange)
+		void setYCbCr(const unsigned char * const ycbcr, bool fullRange)
 		{
-			this->SetYCbCr(ycbcr[0], ycbcr[1], ycbcr[2], fullRange);
+			setYCbCr(ycbcr[0], ycbcr[1], ycbcr[2], fullRange);
 		}
 
-		void SetYCbCr(const unsigned char &y, const unsigned char &cb, const unsigned char &cr, bool fullRange)
+		void setYCbCr(const unsigned char &y, const unsigned char &cb, const unsigned char &cr, bool fullRange)
 		{
 			HALIGN_16BYTES float pixelAux[4];
 
@@ -520,15 +516,15 @@ namespace HorseRadish
 			pixelAux[3] = 1.0;
 			_mm_storeu_ps(pixelAux, _mm_mul_ps(_mm_load_ps(pixelAux), Math::SIMD::fUByteMaxInv));
 
-			this->SetYCbCr(pixelAux[0], pixelAux[1], pixelAux[2], fullRange);
+			setYCbCr(pixelAux[0], pixelAux[1], pixelAux[2], fullRange);
 		}
 
-		void SetYPbPr(const float * const ypbpr, bool coefficientsSDTV)
+		void setYPbPr(const float * const ypbpr, bool coefficientsSDTV)
 		{
-			this->SetYPbPr(ypbpr[0], ypbpr[1], ypbpr[2], coefficientsSDTV);
+			setYPbPr(ypbpr[0], ypbpr[1], ypbpr[2], coefficientsSDTV);
 		}
 
-		void SetYPbPr(const float &y, const float &pb, const float &pr, bool coefficientsSDTV)
+		void setYPbPr(const float &y, const float &pb, const float &pr, bool coefficientsSDTV)
 		{
 			if (coefficientsSDTV == true)
 			{
@@ -546,12 +542,12 @@ namespace HorseRadish
 			this->a = 1.0f;
 		}
 
-		void SetYPbPr(const unsigned char * const ypbpr, bool coefficientsSDTV)
+		void setYPbPr(const unsigned char * const ypbpr, bool coefficientsSDTV)
 		{
-			this->SetYPbPr(ypbpr[0], ypbpr[1], ypbpr[2], coefficientsSDTV);
+			setYPbPr(ypbpr[0], ypbpr[1], ypbpr[2], coefficientsSDTV);
 		}
 
-		void SetYPbPr(const unsigned char &y, const unsigned char &pb, const unsigned char &pr, bool coefficientsSDTV)
+		void setYPbPr(const unsigned char &y, const unsigned char &pb, const unsigned char &pr, bool coefficientsSDTV)
 		{
 			HALIGN_16BYTES float pixelAux[4];
 
@@ -561,15 +557,15 @@ namespace HorseRadish
 			pixelAux[3] = 1.0;
 			_mm_storeu_ps(pixelAux, _mm_mul_ps(_mm_load_ps(pixelAux), Math::SIMD::fUByteMaxInv));
 
-			this->SetYPbPr(pixelAux[0], pixelAux[1], pixelAux[2], coefficientsSDTV);
+			setYPbPr(pixelAux[0], pixelAux[1], pixelAux[2], coefficientsSDTV);
 		}
 
-		void SetCMYK(const float * const cmyk)
+		void setCMYK(const float * const cmyk)
 		{
-			this->SetCMYK(cmyk[0], cmyk[1], cmyk[2], cmyk[3]);
+			setCMYK(cmyk[0], cmyk[1], cmyk[2], cmyk[3]);
 		}
 
-		void SetCMYK(const float &c, const float &m, const float &y, const float &k)
+		void setCMYK(const float &c, const float &m, const float &y, const float &k)
 		{
 			this->r = 1.0f - (c * (1.0f - k)) + k;
 			this->g = 1.0f - (m * (1.0f - k)) + k;
@@ -577,12 +573,12 @@ namespace HorseRadish
 			this->a = 1.0f;
 		}
 
-		void SetCMYK(const unsigned char * const cmyk)
+		void setCMYK(const unsigned char * const cmyk)
 		{
-			this->SetCMYK(cmyk[0], cmyk[1], cmyk[2], cmyk[3]);
+			setCMYK(cmyk[0], cmyk[1], cmyk[2], cmyk[3]);
 		}
 
-		void SetCMYK(const unsigned char &c, const unsigned char &m, const unsigned char &y, const unsigned char &k)
+		void setCMYK(const unsigned char &c, const unsigned char &m, const unsigned char &y, const unsigned char &k)
 		{
 			HALIGN_16BYTES float pixelAux[4];
 
@@ -592,45 +588,45 @@ namespace HorseRadish
 			pixelAux[3] = k;
 			_mm_storeu_ps(pixelAux, _mm_mul_ps(_mm_load_ps(pixelAux), Math::SIMD::fUByteMaxInv));
 
-			this->SetCMYK(pixelAux[0], pixelAux[1], pixelAux[2], pixelAux[3]);
+			setCMYK(pixelAux[0], pixelAux[1], pixelAux[2], pixelAux[3]);
 		}
 
-		inline void Write(float * const dest) const
+		void write(float * const dest) const
 		{
 			dest[0] = r; dest[1] = g; dest[2] = b; dest[3] = a;
 		}
 
-		inline void Write(unsigned char * const dest) const
+		void write(unsigned char * const dest) const
 		{
-			Color::ConvertColor(dest, &r, true);
+			Color::convertColor(dest, &r, true);
 		}
 
-		inline void WriteRGB(float * const dest) const
+		void writeRGB(float * const dest) const
 		{
 			dest[0] = r; dest[1] = g; dest[2] = b;
 		}
 
-		inline void WriteRGB(unsigned char * const dest) const
+		void writeRGB(unsigned char * const dest) const
 		{
-			Color::ConvertColor(dest, &r, false);
+			Color::convertColor(dest, &r, false);
 		}
 
-		inline void WriteYUV(float * const dest) const
+		void writeYUV(float * const dest) const
 		{
 			dest[0] = (this->r * 0.299f) + (this->g * 0.587f) + (this->b * 0.114f);
 			dest[1] = -(this->r * 0.147f) - (this->g * 0.289f) + (this->b * 0.436f);
 			dest[2] = (this->r * 0.615f) - (this->g * 0.515f) - (this->b * 0.100f);
 		}
 
-		inline void WriteYUV(unsigned char * const dest) const
+		void writeYUV(unsigned char * const dest) const
 		{
 			float bufferAux[3];
 
-			this->WriteYUV(bufferAux);
-			Color::ConvertColor(dest, bufferAux, false);
+			writeYUV(bufferAux);
+			Color::convertColor(dest, bufferAux, false);
 		}
 
-		inline void WriteYCbCr(float * const dest, bool fullRange) const
+		void writeYCbCr(float * const dest, bool fullRange) const
 		{
 			if (fullRange == true)
 			{
@@ -646,15 +642,15 @@ namespace HorseRadish
 			}
 		}
 
-		inline void WriteYCbCr(unsigned char * const dest, bool fullRange) const
+		void writeYCbCr(unsigned char * const dest, bool fullRange) const
 		{
 			float bufferAux[3];
 
-			this->WriteYCbCr(bufferAux, fullRange);
-			Color::ConvertColor(dest, bufferAux, false);
+			writeYCbCr(bufferAux, fullRange);
+			Color::convertColor(dest, bufferAux, false);
 		}
 
-		inline void WriteYPbPr(float * const dest, bool coefficientsSDTV) const
+		void writeYPbPr(float * const dest, bool coefficientsSDTV) const
 		{
 			if (coefficientsSDTV == true)
 			{
@@ -669,15 +665,15 @@ namespace HorseRadish
 				dest[2] = (this->r * 0.500f) - (this->g * 0.454f) - (this->b * 0.046f);
 			}
 		}
-		inline void WriteYPbPr(unsigned char * const dest, bool coefficientsSDTV) const
+		void writeYPbPr(unsigned char * const dest, bool coefficientsSDTV) const
 		{
 			float bufferAux[3];
 
-			this->WriteYPbPr(bufferAux, coefficientsSDTV);
-			Color::ConvertColor(dest, bufferAux, false);
+			writeYPbPr(bufferAux, coefficientsSDTV);
+			Color::convertColor(dest, bufferAux, false);
 		}
 
-		inline void WriteCMYK(float * const dest) const
+		void writeCMYK(float * const dest) const
 		{
 			if ((Math::isZero(this->r, 0.000001f) == true) && (Math::isZero(this->g, 0.000001f) == true) && (Math::isZero(this->b, 0.000001f) == true))
 			{
@@ -695,22 +691,23 @@ namespace HorseRadish
 			dest[3] = 1.0f - w;
 		}
 
-		inline void WriteCMYK(unsigned char * const dest) const
+		void writeCMYK(unsigned char * const dest) const
 		{
 			float bufferAux[4];
 
-			this->WriteCMYK(bufferAux);
-			Color::ConvertColor(dest, bufferAux, true);
+			writeCMYK(bufferAux);
+			Color::convertColor(dest, bufferAux, true);
 		}
 
-		inline void AddColorWeighted(const Color &color, const float &weight)
+		void addColorWeighted(const Color &color, const float &weight)
 		{
 			__m128 temp;
 
 			temp = _mm_mul_ps(_mm_loadu_ps(&color.r), _mm_load_ps1(&weight));
 			_mm_storeu_ps(&r, _mm_add_ps(_mm_loadu_ps(&r), temp));
 		}
-		inline void ToGrayscale()
+
+		void toGrayscale()
 		{
 			float newLum = r * 0.3019607843f;
 			newLum += g * 0.5921568627f;
@@ -721,7 +718,7 @@ namespace HorseRadish
 			this->b = newLum;
 		}
 
-		inline void ToGrayscale(const float &rWeight, const float &gWeight, const float &bWeight)
+		void toGrayscale(const float &rWeight, const float &gWeight, const float &bWeight)
 		{
 			float newLum = r * rWeight;
 			newLum += g * gWeight;
@@ -732,35 +729,35 @@ namespace HorseRadish
 			this->b = newLum;
 		}
 
-		inline void NegativeRGB()
+		void negativeRGB()
 		{
 			float alphaAux = this->a;
 			_mm_storeu_ps(&r, _mm_sub_ps(Math::SIMD::fOne, _mm_loadu_ps(&r)));
 			this->a = alphaAux;
 		}
 
-		inline void NegativeRGB(const float &value)
+		void negativeRGB(const float &value)
 		{
 			float alphaAux = this->a;
 			_mm_storeu_ps(&r, _mm_sub_ps(_mm_set_ps1(value), _mm_loadu_ps(&r)));
 			this->a = alphaAux;
 		}
 
-		inline void SwapRB()
+		void swapRB()
 		{
 			float temp = this->r;
 			this->r = this->b;
 			this->b = temp;
 		}
 
-		inline void WeightRGB(const float weight)
+		void weightRGB(const float weight)
 		{
 			this->r *= weight;
 			this->g *= weight;
 			this->b *= weight;
 		}
 
-		inline void MAD(const float opMul, const float opAdd)
+		void mad(const float opMul, const float opAdd)
 		{
 			__m128 pixelVal, valMul, valAdd;
 
@@ -772,17 +769,17 @@ namespace HorseRadish
 			_mm_storeu_ps(&r, _mm_add_ps(pixelVal, valAdd));
 		}
 
-		inline void Clamp()
+		void clamp()
 		{
 			_mm_storeu_ps(&r, _mm_min_ps(_mm_max_ps(_mm_loadu_ps(&r), _mm_setzero_ps()), Math::SIMD::fOne));
 		}
 
-		inline void Clamp(const float &min, const float &max)
+		void clamp(const float &min, const float &max)
 		{
 			_mm_storeu_ps(&r, _mm_min_ps(_mm_max_ps(_mm_loadu_ps(&r), _mm_load_ps1(&min)), _mm_load_ps1(&max)));
 		}
 
-		inline void CalcInterpolate(const Color &from, const Color &to, const float &t)
+		void calcInterpolate(const Color &from, const Color &to, const float &t)
 		{
 			__m128 tmp;
 
@@ -791,7 +788,7 @@ namespace HorseRadish
 			_mm_storeu_ps(&r, tmp);
 		}
 
-		inline void CalcInterpolate(const float * const from, const float * const to, const float &t)
+		void calcInterpolate(const float * const from, const float * const to, const float &t)
 		{
 			__m128 tmp;
 
@@ -800,7 +797,7 @@ namespace HorseRadish
 			_mm_storeu_ps(&r, tmp);
 		}
 
-		inline void CalcInterpolate(const Color &to, const float &t)
+		void calcInterpolate(const Color &to, const float &t)
 		{
 			__m128 tmp;
 

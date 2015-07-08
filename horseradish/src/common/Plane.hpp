@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Vector.hpp"
+#include "vector.hpp"
 
 namespace HorseRadish
 {
@@ -28,7 +28,7 @@ namespace HorseRadish
 
 		explicit Plane(const Plane &plane);
 		explicit Plane(const float nx, const float ny, const float nz, const float nd);
-		explicit Plane(const Vector &nN, const float nd);
+		explicit Plane(const Vector3f &nN, const float nd);
 
 		Plane& operator=(const Plane& plane)
 		{
@@ -40,9 +40,11 @@ namespace HorseRadish
 			a = nx; b = ny; c = nz; d = nd;
 		}
 
-		void SetNormal(const Vector &newNormal)
+		void SetNormal(const Vector3f &newNormal)
 		{
-			a = newNormal.x; b = newNormal.y; c = newNormal.z;
+			a = newNormal[0];
+			b = newNormal[1];
+			c = newNormal[2];
 		}
 
 		void SetNormal(const float nx, const float ny, const float nz)
@@ -55,7 +57,7 @@ namespace HorseRadish
 			d = nd;
 		}
 
-		void SetFromPoints(const Vector &p0, const Vector &p1, const Vector &p2);
+		void SetFromPoints(const Vector3f &p0, const Vector3f &p1, const Vector3f &p2);
 		void SetFromPoints(const float *p0, const float *p1, const float *p2);
 
 		void Lerp(const Plane &p2, const float factor, Plane &result);
@@ -73,19 +75,19 @@ namespace HorseRadish
 			d *= -1.0f;
 		}
 
-		void CalcD(const Vector &pointOnPlane)
+		void CalcD(const Vector3f &pointOnPlane)
 		{
-			d = -pointOnPlane.GetDot(a, b, c);
+			d = -pointOnPlane.getDot(a, b, c);
 		}
 
-		float GetDistance(const Vector &point) const
+		float GetDistance(const Vector3f &point) const
 		{
-			return (point.GetDot(a, b, c) + d);
+			return (point.getDot(a, b, c) + d);
 		}
 
-		void GetNormal(Vector &normal) const
+		void GetNormal(Vector3f &normal) const
 		{
-			normal.Set(a, b, c);
+			normal.set(a, b, c);
 		}
 
 		float GetD() const
@@ -93,9 +95,9 @@ namespace HorseRadish
 			return d;
 		}
 
-		void GetComponents(Vector4 &coords) const
+		void GetComponents(Vector4f &coords) const
 		{
-			coords.Set(a, b, c, d);
+			coords.set(a, b, c, d);
 		}
 
 		int GetVertLocation() const
@@ -103,24 +105,28 @@ namespace HorseRadish
 			return (((a < 0.f) ? 1 : 0) | ((b < 0.f) ? 2 : 0) | ((c < 0.f) ? 4 : 0));
 		}
 
-		float GetDotCoord(const Vector &point) const
+		float GetDotCoord(const Vector3f &point) const
 		{
-			return (point.GetDot(a, b, c) + d);
+			return (point.getDot(a, b, c) + d);
 		}
 
-		float GetDotNormal(const Vector &point) const
+		float GetDotNormal(const Vector3f &point) const
 		{
-			return (point.GetDot(a, b, c));
+			return (point.getDot(a, b, c));
 		}
 
-		bool TestIntersectRay(const Vector &origin, const Vector &dir, Vector *resultado) const;
-		bool TestIntersectLine(const Vector &p1, const Vector &p2, Vector *resultado) const;
-		bool TestIntersectLineSegment(const Vector &p1, const Vector &p2, Vector *resultado) const;
-		bool TestIntersectPlanes(const Plane &p2, const Plane &p3, Vector *resultado) const;
-		bool TestIntersectSweptSphere(const float &sphereRadius, const Vector &spherePrevPos, const Vector &sphereCurPos, Vector * const hitPoint, float * const hitTime) const;
+		bool TestIntersectRay(const Vector3f &origin, const Vector3f &dir) const;
+		bool TestIntersectRay(const Vector3f &origin, const Vector3f &dir, Vector3f& result) const;
+		bool TestIntersectLine(const Vector3f &p1, const Vector3f &p2) const;
+		bool TestIntersectLine(const Vector3f &p1, const Vector3f &p2, Vector3f& result) const;
+		bool TestIntersectLineSegment(const Vector3f &p1, const Vector3f &p2) const;
+		bool TestIntersectLineSegment(const Vector3f &p1, const Vector3f &p2, Vector3f& result) const;
+		bool TestIntersectPlanes(const Plane &p2, const Plane &p3) const;
+		bool TestIntersectPlanes(const Plane &p2, const Plane &p3, Vector3f& result) const;
+		bool TestIntersectSweptSphere(const float &sphereRadius, const Vector3f &spherePrevPos, const Vector3f &sphereCurPos, Vector3f * const hitPoint, float * const hitTime) const;
 
-		Position ClassifyPoint(const Vector &point) const;
-		Position ClassifyTri(const Vector &p1, const Vector &p2, const Vector &p3) const;
+		Position ClassifyPoint(const Vector3f &point) const;
+		Position ClassifyTri(const Vector3f &p1, const Vector3f &p2, const Vector3f &p3) const;
 	};
 
 } //HorseRadish

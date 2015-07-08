@@ -15,10 +15,10 @@ public:
 	enum CameraAction { None = 0, Forward = (1 << 0), Backward = (1 << 1), StrifeLeft = (1 << 2), StrifeRight = (1 << 3), Up = (1 << 4), Down = (1 << 5), Run = (1 << 6) };
 
 private:
-	HorseRadish::Vector camPos, camDir, camUp;
+	HorseRadish::Vector3f camPos, camDir, camUp;
 	float rato[3][2], sumRato[2], ratoS, keyS, absFocus, onSphereMaxDist, onSphereMinDist;
 	HorseRadish::Matrix modelView;
-	HorseRadish::Vector *pointsPos, *pointsTarget;
+	HorseRadish::Vector3f *pointsPos, *pointsTarget;
 	int numPos, numTarget;
 	CameraType targetMode;
 
@@ -35,27 +35,27 @@ public:
 
 	void PathClear(const CameraComponent &componentsBitField);
 	void PathAdd(const CameraComponent &component, const float x, const float y, const float z);
-	void PathAdd(const CameraComponent &component, const HorseRadish::Vector &vec);
+	void PathAdd(const CameraComponent &component, const HorseRadish::Vector3f &vec);
 
 	bool SetCamType(const CameraType &type);
 	void SetSensitivity(const CameraInput &input, const float s);
-	void SetPos(const HorseRadish::Vector &pos);
+	void SetPos(const HorseRadish::Vector3f &pos);
 	void SetPos(const float x, const float y, const float z);
-	void SetTarget(const HorseRadish::Vector &target);
+	void SetTarget(const HorseRadish::Vector3f &target);
 	void SetTarget(const float x, const float y, const float z);
-	void SetDir(const HorseRadish::Vector &direction);
+	void SetDir(const HorseRadish::Vector3f &direction);
 	void SetDir(const float x, const float y, const float z);
 	void SetAbsoluteFocus(const float focus);
 	void SetOnSphereDists(const float minDist, const float maxDist);
 
-	void GetPos(HorseRadish::Vector &pos) const;
-	HorseRadish::Vector GetPos() const;
-	void GetTarget(HorseRadish::Vector &target) const;
-	HorseRadish::Vector GetTarget() const;
-	void GetViewDir(HorseRadish::Vector &dir) const;
-	HorseRadish::Vector GetViewDir() const;
-	void GetStrideDir(HorseRadish::Vector &dir) const;
-	HorseRadish::Vector GetStrideDir() const;
+	void GetPos(HorseRadish::Vector3f &pos) const;
+	HorseRadish::Vector3f GetPos() const;
+	void GetTarget(HorseRadish::Vector3f &target) const;
+	HorseRadish::Vector3f GetTarget() const;
+	void GetViewDir(HorseRadish::Vector3f &dir) const;
+	HorseRadish::Vector3f GetViewDir() const;
+	void GetStrideDir(HorseRadish::Vector3f &dir) const;
+	HorseRadish::Vector3f GetStrideDir() const;
 
 	float GetFocalDist() const;
 	float GetSensitivity(const CameraInput &input) const;

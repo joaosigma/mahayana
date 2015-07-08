@@ -1,31 +1,41 @@
 #pragma once
 
-#include "Types.hpp"
-#include "Vector.hpp"
+#include "vector.hpp"
 
 namespace HorseRadish
 {
-	HALIGN_16BYTES
-	class Quaternion{
-
-		float x, y, z, w;
+	class Quaternion
+	{
+		float mData[4];
 
 	public:
-
-		Quaternion() { x = y = z = 0.0f; w = 1.0f; }
-		~Quaternion() { return; }
+		Quaternion()
+		{
+			std::memset(mData, 0, sizeof(float) * 4);
+		}
 
 		explicit Quaternion(Quaternion const &quat)
 		{
-			x = quat.x; y = quat.y; z = quat.z; w = quat.w;
+			std::memcpy(mData, quat.mData, sizeof(float) * 4);
 		}
 
 		explicit Quaternion(const float qx, const float qy, const float qz, const float qw)
 		{
-			x = qx; y = qy; z = qz; w = qw;
+			mData[0] = qx;
+			mData[1] = qy;
+			mData[2] = qz;
+			mData[3] = qw;
 		}
 
-		inline operator const float *(void) const { return &x; }
+		float* data()
+		{
+			return mData;
+		}
+
+		const float* data() const
+		{
+			return mData;
+		}
 
 		void operator+=(const Quaternion &quat);
 		void operator-=(const Quaternion &quat);
@@ -33,46 +43,41 @@ namespace HorseRadish
 		void operator*=(const float &scalar);
 		void operator/=(const Quaternion &quat);
 
-		void SetAxisAngle(const float &vx, const float &vy, const float &vz, const float &angulo);
-		void SetAxisAngle(const Vector &vec, const float &angulo);
-		void SetFromMatrix3x3(const float * const matrix);
-		void SetFromMatrix4x4(const float * const matrix);
-		void SetFromEuler(const float &angX, const float &angY, const float &angZ);
-		void SetSLerp(const Quaternion &from, const Quaternion &to, const float &t);
-		void SetLerp(const Quaternion &from, const Quaternion &to, const float &t);
-		void Set(const float &nx, const float &ny, const float &nz, const float &nw);
-		void Set(const Vector &vec, const float &nw);
-		void Set(const Quaternion &quat);
-		void SetAngle(const float &nx, const float &ny, const float &nz, const float &angulo);
-		void SetAngle(const Vector &vec, const float &angulo);
-		void SetFromVectors(const Vector &v1, const Vector &v2);
-		void SetX(const float &nx) { x = nx; }
-		void SetY(const float &ny) { y = ny; }
-		void SetZ(const float &nz) { z = nz; }
+		void setAxisAngle(const float &vx, const float &vy, const float &vz, const float &angleDeg);
+		void setAxisAngle(const Vector3f &vec, const float &angleDeg);
+		void setFromMatrix3x3(const float * const matrix);
+		void setFromMatrix4x4(const float * const matrix);
+		void setFromEuler(const float &angX, const float &angY, const float &angZ);
+		void setSLerp(const Quaternion &from, const Quaternion &to, const float &t);
+		void setLerp(const Quaternion &from, const Quaternion &to, const float &t);
+		void set(const float &nx, const float &ny, const float &nz, const float &nw);
+		void set(const Vector3f &vec, const float &nw);
+		void set(const Quaternion &quat);
+		void setAngle(const float &nx, const float &ny, const float &nz, const float &angleDeg);
+		void setAngle(const Vector3f &vec, const float &angleDeg);
+		void setFromVectors(const Vector3f &v1, const Vector3f &v2);
+		void setIdentity();
 
-		void  ScaleAngle(const float &scale);
-		void  Invert();
-		void  Normalize();
-		void  SetIdentity();
-		void  MulEulerAngles(const float &angX, const float &angY, const float &angZ);
-		void  ExpandW();
-		void  ExpandWNormalize();
+		void scaleAngle(const float &scale);
+		void invert();
+		void normalize();
+		void mulEulerAngles(const float &angX, const float &angY, const float &angZ);
+		void expandW();
+		void expandWNormalize();
 
-		float GetDot(const Quaternion &quat) const;
-		void GetVector(float * const vec) const;
-		void GetVector(Vector &vec) const;
-		void GetMatrix3x3(float * const matrix) const;
-		void GetMatrix4x4(float * const matrix) const;
-		void GetAxisAngle(float * const vecX, float * const vecY, float * const vecZ, float * const ang) const;
-		void GetAxisAngle(Vector &vec, float * const ang) const;
-		void GetEulerAngles(float * const angX, float * const angY, float * const angZ) const;
+		float getDot(const Quaternion &quat) const;
+		void getVector(float * const vec) const;
+		void getVector(Vector3f &vec) const;
+		void getMatrix3x3(float* const matrix) const;
+		void getMatrix4x4(float* const matrix) const;
+		void getAxisAngle(float* const vecX, float* const vecY, float* const vecZ, float* const ang) const;
+		void getAxisAngle(Vector3f &vec, float * const ang) const;
+		void getEulerAngles(float * const angX, float * const angY, float * const angZ) const;
 
-		void  RotateVector(Vector &vec) const;
-		void  RotateVector(const Vector &vec, Vector &dest) const;
-		void  RotateVector(const float * const vec, float * const dest) const;
-		void  RotateVector(const float &vx, const float &vy, const float &vz, Vector &dest) const;
-		void  RotateVectorAdd(Vector &vec, const Vector &vecAdd) const;
-		void  RotateVectorAdd(Vector &dest, const Vector &vec, const Vector &vecAdd) const;
+		void rotateVector3(Vector3f &vec) const;
+		void rotateVector3(const Vector3f &vec, Vector3f &dest) const;
+		void rotateVector3(const float * const vec, float * const dest) const;
+		void rotateVector3(const float &vx, const float &vy, const float &vz, Vector3f &dest) const;
 	};
 
 } //HorseRadish

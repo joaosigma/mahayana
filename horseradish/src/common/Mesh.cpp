@@ -2,7 +2,7 @@
 
 #include "mesh.hpp"
 #include "Math.hpp"
-#include "Vector.hpp"
+#include "vector.hpp"
 
 #include "libs\forsyth\forsythtriangleorderoptimizer.h"
 
@@ -242,22 +242,22 @@ Mesh Mesh::genSphere(const float radius, const int slices, const int stacks)
 		{
 			float theta = static_cast<float>(j)* dtheta;
 
-			HorseRadish::Vector calc;
-			Math::sinCosR(theta, calc.x, calc.z);
-			calc.x *= -sinRho;
-			calc.z *= sinRho;
-			calc.y = cosRho;
+			HorseRadish::Vector3f calc;
+			Math::sinCosR(theta, calc[0], calc[2]);
+			calc[0] *= -sinRho;
+			calc[2] *= sinRho;
+			calc[1] = cosRho;
 
-			mesh.mData[index].pos[0] = calc.x;
-			mesh.mData[index].pos[1] = calc.y;
-			mesh.mData[index].pos[2] = calc.z;
+			mesh.mData[index].pos[0] = calc[0];
+			mesh.mData[index].pos[1] = calc[1];
+			mesh.mData[index].pos[2] = calc[2];
 
 			mesh.mData[index].uv[0] = s;
 			mesh.mData[index].uv[1] = t;
 
-			mesh.mData[index].normal[0] = Mesh::pack(calc.x * radius);
-			mesh.mData[index].normal[1] = Mesh::pack(calc.y * radius);
-			mesh.mData[index].normal[2] = Mesh::pack(calc.z * radius);
+			mesh.mData[index].normal[0] = Mesh::pack(calc[0] * radius);
+			mesh.mData[index].normal[1] = Mesh::pack(calc[1] * radius);
+			mesh.mData[index].normal[2] = Mesh::pack(calc[2] * radius);
 
 
 			index++;
@@ -429,9 +429,9 @@ BBox Mesh::getBoundingBox() const
 		}
 	}
 
-	Vector tmpVecs[2];
-	_mm_storeu_ps(tmpVecs[0], minPoint);
-	_mm_storeu_ps(tmpVecs[1], maxPoint);
+	Vector3f tmpVecs[2];
+	_mm_storeu_ps(tmpVecs[0].data(), minPoint);
+	_mm_storeu_ps(tmpVecs[1].data(), maxPoint);
 
 	return BBox(tmpVecs, 2);
 }
@@ -472,7 +472,7 @@ float Mesh::getIndicesCacheRatio(unsigned int cacheSize) const
 	return (static_cast<float>(numHits) / static_cast<float>(mNumIndices));
 }
 
-bool Mesh::getRayIntersect(const Vector& rayOrigin, const Vector& rayDir, float& hitDistance) const
+bool Mesh::getRayIntersect(const Vector3f& rayOrigin, const Vector3f& rayDir, float& hitDistance) const
 {
 	hitDistance = 0.0f;
 
@@ -481,20 +481,20 @@ bool Mesh::getRayIntersect(const Vector& rayOrigin, const Vector& rayDir, float&
 
 	for (unsigned int i = 0; i < mNumIndices; i += 3)
 	{
-		Vector p1(mData[i * 3 + 0].pos);
-		Vector p2(mData[i * 3 + 1].pos);
-		Vector p3(mData[i * 3 + 2].pos);
+		Vector3f p1(mData[i * 3 + 0].pos);
+		Vector3f p2(mData[i * 3 + 1].pos);
+		Vector3f p3(mData[i * 3 + 2].pos);
 
-		Vector normal;
-		normal.StoreNormal(p1, p2, p3);
-		normal.Normalize();
+		Vector3f normal;
+		normal.storeNormal(p1, p2, p3);
+		normal.normalize();
 
-		if (normal.GetDot(rayDir) > 0.0f) //normal isn't facing the ray (we're simulating culling faces)
+		if (normal.getDot(rayDir) > 0.0f) //normal isn't facing the ray (we're simulating culling faces)
 			continue;
 
-		Vector hitPoint;
+		Vector3f hitPoint;
 		{
-			HorseRadish::Vector edge1, edge2, tvec, pvec, qvec;
+			HorseRadish::Vector3f edge1, edge2, tvec, pvec, qvec;
 			float det, u, v;
 
 			//find vectors for two edges sharing vert0
@@ -502,24 +502,24 @@ bool Mesh::getRayIntersect(const Vector& rayOrigin, const Vector& rayDir, float&
 			edge2 = p3 - p1;
 
 			//begin calculating determinant - also used to calculate U parameter
-			pvec.StoreCrossProduct(rayDir, (const float*)edge2);
+			pvec.storeCrossProduct(rayDir, edge2);
 
 			//check if ray is in the same plane as the tri
-			det = edge1.GetDot(pvec);
+			det = edge1.getDot(pvec);
 			if (HorseRadish::Math::isZero(det))
 				continue;
 
 			//calculate distance from vert0 to ray origin
 			tvec = rayOrigin - p1;
-			qvec.StoreCrossProduct(tvec, edge1);
+			qvec.storeCrossProduct(tvec, edge1);
 
-			u = tvec.GetDot(pvec);
+			u = tvec.getDot(pvec);
 			if (det > 0.0f)
 			{
 				if (u<0.0 || u>det)
 					continue;
 
-				v = qvec.GetDot(rayDir);
+				v = qvec.getDot(rayDir);
 				if ((v<0.0) || ((u + v)>det))
 					continue;
 			}
@@ -528,7 +528,7 @@ bool Mesh::getRayIntersect(const Vector& rayOrigin, const Vector& rayDir, float&
 				if (u > 0.0 || u<det)
 					continue;
 
-				v = qvec.GetDot(rayDir);
+				v = qvec.getDot(rayDir);
 				if ((v>0.0) || ((u + v) < det))
 					continue;
 			}
@@ -541,7 +541,7 @@ bool Mesh::getRayIntersect(const Vector& rayOrigin, const Vector& rayDir, float&
 		}
 
 		hit = true;
-		minHistDist = HorseRadish::Math::fMin(minHistDist, hitPoint.GetDistance(rayOrigin));
+		minHistDist = HorseRadish::Math::fMin(minHistDist, hitPoint.getDistance(rayOrigin));
 	}
 
 	if (!hit)
@@ -569,38 +569,38 @@ void Mesh::scale(float scaleAmount)
 	}
 }
 
-void Mesh::translate(const Vector& translate)
+void Mesh::translate(const Vector3f& translate)
 {
 	auto vertexPtr = static_cast<VertexData*>(mData.get());
 	for (unsigned int i = 0; i < mNumVertices; i++, vertexPtr++)
 	{
-		vertexPtr->pos[0] += translate.x;
-		vertexPtr->pos[1] += translate.y;
-		vertexPtr->pos[2] += translate.z;
+		vertexPtr->pos[0] += translate[0];
+		vertexPtr->pos[1] += translate[1];
+		vertexPtr->pos[2] += translate[2];
 	}
 }
 
-void Mesh::centerMass(const Vector& center)
+void Mesh::centerMass(const Vector3f& center)
 {
 	auto bbox = getBoundingBox();
 
-	Vector minP, maxP;
+	Vector3f minP, maxP;
 	bbox.GetMin(minP);
 	bbox.GetMax(maxP);
-	auto distance = maxP - minP;
 
-	distance.x = HorseRadish::Math::fAbs(distance.x)*0.5f;
-	distance.y = HorseRadish::Math::fAbs(distance.y)*0.5f;
-	distance.z = HorseRadish::Math::fAbs(distance.z)*0.5f;
+	auto distance = maxP - minP;
+	distance[0] = HorseRadish::Math::fAbs(distance[0])*0.5f;
+	distance[1] = HorseRadish::Math::fAbs(distance[1])*0.5f;
+	distance[2] = HorseRadish::Math::fAbs(distance[2])*0.5f;
 
 	distance = center - (minP + distance);
 
 	auto vertexPtr = static_cast<VertexData*>(mData.get());
 	for (unsigned int i = 0; i < mNumVertices; i++, vertexPtr++)
 	{
-		vertexPtr->pos[0] += distance.x;
-		vertexPtr->pos[1] += distance.y;
-		vertexPtr->pos[2] += distance.z;
+		vertexPtr->pos[0] += distance[0];
+		vertexPtr->pos[1] += distance[1];
+		vertexPtr->pos[2] += distance[2];
 	}
 }
 
@@ -608,17 +608,17 @@ void Mesh::confine(float maxAxis)
 {
 	auto bbox = getBoundingBox();
 
-	Vector minP, maxP;
+	Vector3f minP, maxP;
 	bbox.GetMin(minP);
 	bbox.GetMax(maxP);
+
 	auto distance = maxP - minP;
+	distance[0] = HorseRadish::Math::fAbs(distance[0]);
+	distance[1] = HorseRadish::Math::fAbs(distance[1]);
+	distance[2] = HorseRadish::Math::fAbs(distance[2]);
 
-	distance.x = HorseRadish::Math::fAbs(distance.x);
-	distance.y = HorseRadish::Math::fAbs(distance.y);
-	distance.z = HorseRadish::Math::fAbs(distance.z);
-
-	auto distanceMax = HorseRadish::Math::fMax(distance.x, distance.y);
-	distanceMax = HorseRadish::Math::fMax(distanceMax, distance.z);
+	auto distanceMax = HorseRadish::Math::fMax(distance[0], distance[1]);
+	distanceMax = HorseRadish::Math::fMax(distanceMax, distance[2]);
 
 	auto scale = maxAxis / distanceMax;
 
@@ -631,21 +631,21 @@ void Mesh::confine(float maxAxis)
 	}
 }
 
-void Mesh::confine(const Vector& center, float maxAxis)
+void Mesh::confine(const Vector3f& center, float maxAxis)
 {
 	auto bbox = getBoundingBox();
 
-	Vector minP, maxP;
+	Vector3f minP, maxP;
 	bbox.GetMin(minP);
 	bbox.GetMax(maxP);
+
 	auto distance = maxP - minP;
+	distance[0] = HorseRadish::Math::fAbs(distance[0]);
+	distance[1] = HorseRadish::Math::fAbs(distance[1]);
+	distance[2] = HorseRadish::Math::fAbs(distance[2]);
 
-	distance.x = HorseRadish::Math::fAbs(distance.x);
-	distance.y = HorseRadish::Math::fAbs(distance.y);
-	distance.z = HorseRadish::Math::fAbs(distance.z);
-
-	auto distanceMax = HorseRadish::Math::fMax(distance.x, distance.y);
-	distanceMax = HorseRadish::Math::fMax(distanceMax, distance.z);
+	auto distanceMax = HorseRadish::Math::fMax(distance[0], distance[1]);
+	distanceMax = HorseRadish::Math::fMax(distanceMax, distance[2]);
 
 	auto scale = maxAxis / distanceMax;
 
@@ -655,9 +655,9 @@ void Mesh::confine(const Vector& center, float maxAxis)
 	auto vertexPtr = static_cast<VertexData*>(mData.get());
 	for (unsigned int i = 0; i < mNumVertices; i++, vertexPtr++)
 	{
-		vertexPtr->pos[0] = (vertexPtr->pos[0] + distance.x) * scale;
-		vertexPtr->pos[1] = (vertexPtr->pos[1] + distance.y) * scale;
-		vertexPtr->pos[2] = (vertexPtr->pos[2] + distance.z) * scale;
+		vertexPtr->pos[0] = (vertexPtr->pos[0] + distance[0]) * scale;
+		vertexPtr->pos[1] = (vertexPtr->pos[1] + distance[1]) * scale;
+		vertexPtr->pos[2] = (vertexPtr->pos[2] + distance[2]) * scale;
 	}
 }
 
@@ -677,15 +677,15 @@ void Mesh::optimizeIndices()
 
 void Mesh::genNormals()
 {
-	auto normals = std::unique_ptr<Vector[]>(new Vector[mNumVertices]);
+	auto normals = std::unique_ptr<Vector3f[]>(new Vector3f[mNumVertices]);
 
 	for (unsigned int i = 0; i < mNumVertices; i++)
-		normals[i].Set(0.0f);
+		normals[i].set(0.0f);
 
 	for (unsigned int i = 0; i < mNumIndices; i += 3)
 	{
-		Vector faceNormal;
-		faceNormal.StoreNormal(mData[i * 3 + 0].pos, mData[i * 3 + 1].pos, mData[i * 3 + 2].pos);
+		Vector3f faceNormal;
+		faceNormal.storeNormal(mData[i * 3 + 0].pos, mData[i * 3 + 1].pos, mData[i * 3 + 2].pos);
 
 		normals[i * 3 + 0] += faceNormal;
 		normals[i * 3 + 1] += faceNormal;
@@ -694,21 +694,21 @@ void Mesh::genNormals()
 
 	for (unsigned int i = 0; i < mNumVertices; i++)
 	{
-		normals[i].Normalize();
+		normals[i].normalize();
 
-		Mesh::pack(normals[i], mData[i].normal, 3);
+		Mesh::pack(normals[i].data(), mData[i].normal, 3);
 	}
 }
 
 void Mesh::genTangents4()
 {
-	auto tan1 = std::unique_ptr<Vector[]>(new Vector[mNumVertices]);
-	auto tan2 = std::unique_ptr<Vector[]>(new Vector[mNumVertices]);
+	auto tan1 = std::unique_ptr<Vector3f[]>(new Vector3f[mNumVertices]);
+	auto tan2 = std::unique_ptr<Vector3f[]>(new Vector3f[mNumVertices]);
 
 	for (unsigned int i = 0; i < mNumVertices; i++)
 	{
-		tan1[i].Set(0.0f);
-		tan2[i].Set(0.0f);
+		tan1[i].set(0.0f);
+		tan2[i].set(0.0f);
 	}
 
 	for (unsigned int i = 0; i < mNumIndices; i += 3)
@@ -734,8 +734,8 @@ void Mesh::genTangents4()
 		float t2 = v3.uv[1] - v1.uv[1];
 
 		float r = 1.0f / (s1 * t2 - s2 * t1);
-		Vector sdir((t2 * x1 - t1 * x2) * r, (t2 * y1 - t1 * y2) * r, (t2 * z1 - t1 * z2) * r);
-		Vector tdir((s1 * x2 - s2 * x1) * r, (s1 * y2 - s2 * y1) * r, (s1 * z2 - s2 * z1) * r);
+		Vector3f sdir((t2 * x1 - t1 * x2) * r, (t2 * y1 - t1 * y2) * r, (t2 * z1 - t1 * z2) * r);
+		Vector3f tdir((s1 * x2 - s2 * x1) * r, (s1 * y2 - s2 * y1) * r, (s1 * z2 - s2 * z1) * r);
 
 		tan1[i1] += sdir;
 		tan1[i2] += sdir;
@@ -748,18 +748,19 @@ void Mesh::genTangents4()
 
 	for (unsigned int i = 0; i < mNumVertices; i++)
 	{
-		Vector n(Mesh::unpack(mData[i].normal[0]), Mesh::unpack(mData[i].normal[1]), Mesh::unpack(mData[i].normal[2]));
-		const Vector& t1 = tan1[i];
-		const Vector& t2 = tan2[i];
+		Vector3f n(Mesh::unpack(mData[i].normal[0]), Mesh::unpack(mData[i].normal[1]), Mesh::unpack(mData[i].normal[2]));
+		const Vector3f& t1 = tan1[i];
+		const Vector3f& t2 = tan2[i];
 
 		//Gram-Schmidt orthogonalize
-		Vector tangent = t1 - n * n.GetDot(t1);
-		tangent.Normalize();
+		Vector3f tangent = t1 - n * n.getDot(t1);
+		tangent.normalize();
 
 		//handedness
-		tangent.w = (n.CrossProduct(t1).GetDot(t2) < 0.0f) ? -1.0f : 1.0f;
+		float w = (n.crossProduct(t1).getDot(t2) < 0.0f) ? -1.0f : 1.0f;
 
-		Mesh::pack(tangent, mData[i].tangent, 4);
+		Mesh::pack(tangent.data(), mData[i].tangent, 3);
+		mData[i].tangent[3] = Mesh::pack(w);
 	}
 }
 

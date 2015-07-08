@@ -32,7 +32,7 @@ private:
 
 	struct {
 		std::mutex lock;
-		HorseRadish::Vector mouseSnapshot, mouseAccum;
+		HorseRadish::Vector3f mouseSnapshot, mouseAccum;
 		std::array<bool, 128> keysSnapshot, keysRealtime;
 	} mRawInput;
 
@@ -64,7 +64,7 @@ public:
 	void RawInputSnapshot();
 	bool RawInputGetKeyStatus(const unsigned int &vcode);
 	bool RawInputGetKeyStatus(const Window::VirtualKeys &vcode);
-	HorseRadish::Vector RawInputGetMouseStatus();
+	HorseRadish::Vector3f RawInputGetMouseStatus();
 	
 	int MessageLoop(std::function<void()> closingCb);
 	void ProcessMessages(std::function<void(const Window::Message&)> cb, const bool resetQueue);

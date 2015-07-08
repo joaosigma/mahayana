@@ -325,7 +325,7 @@ void Font::internalWrite(const float &px, const float &py, const std::string& te
 	float posY = py + (mFontInfo.baseHeight * mState.scale);
 
 	unsigned char colorTemp[4];
-	mState.stateColor.Write(colorTemp);
+	mState.stateColor.write(colorTemp);
 
 	auto writeData = mState.charData.data() + (mState.numCharWritten * 4);
 
@@ -405,7 +405,7 @@ Font::Font(const int fontSize, const char * const fontFilePath, unsigned int glV
 	mState.scale = 1.0f;
 	mState.numCharWritten = 0;
 	mState.paintStarted = false;
-	mState.stateColor.Set(1.0f, 1.0f, 1.0f, 1.0f);
+	mState.stateColor.set(1.0f, 1.0f, 1.0f, 1.0f);
 	
 	if (fontSize <= 2 || fontFilePath == nullptr)
 		return;
@@ -513,7 +513,7 @@ float Font::writeChar(const float &px, const float &py, const unsigned int &unic
 	writeData[0].tv = writeData[1].tv = charData.rect.minUV[1];
 	writeData[2].tv = writeData[3].tv = charData.rect.maxUV[1];
 
-	mState.stateColor.Write(colorTemp);
+	mState.stateColor.write(colorTemp);
 	memcpy(writeData[0].rgba, colorTemp, sizeof(unsigned char) * 4);
 	memcpy(writeData[1].rgba, colorTemp, sizeof(unsigned char) * 4);
 	memcpy(writeData[2].rgba, colorTemp, sizeof(unsigned char) * 4);
@@ -525,22 +525,22 @@ float Font::writeChar(const float &px, const float &py, const unsigned int &unic
 
 void Font::setColor(const float &r, const float &g, const float &b, const float &a)
 {
-	mState.stateColor.Set(r, g, b, a);
+	mState.stateColor.set(r, g, b, a);
 }
 
 void Font::setColor(const float &r, const float &g, const float &b)
 {
-	mState.stateColor.Set(r, g, b, 1.0f);
+	mState.stateColor.set(r, g, b, 1.0f);
 }
 
 void Font::setColor(const float * const color)
 {
-	mState.stateColor.Set(color);
+	mState.stateColor.set(color);
 }
 
 void Font::setColor(const Color &color)
 {
-	mState.stateColor.Set(color);
+	mState.stateColor.set(color);
 }
 
 bool Font::getOperacional() const

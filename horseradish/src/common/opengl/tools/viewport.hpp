@@ -37,9 +37,9 @@ public:
 	unsigned int getHeight() const { return mHeight; }
 
 	void getPointOnZNear(float * const center) const;
-	void getPointOnZNear(HorseRadish::Vector& center) const;
+	void getPointOnZNear(HorseRadish::Vector3f& center) const;
 
-	void projectPoint(ProjectionType projType, const HorseRadish::Matrix& modelView, HorseRadish::Vector * const listPoints, const int numPoints) const;
+	void projectPoint(ProjectionType projType, const HorseRadish::Matrix& modelView, HorseRadish::Vector3f * const listPoints, const int numPoints) const;
 };
 
 } } }

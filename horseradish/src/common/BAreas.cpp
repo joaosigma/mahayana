@@ -2,7 +2,7 @@
 
 namespace HorseRadish
 {
-	BRect::BRect(const Vector * const points, const unsigned int numVec)
+	BRect::BRect(const Vector3f * const points, const unsigned int numVec)
 	{
 		minX = minY = Math::INFINITY;
 		maxX = maxY = -Math::INFINITY;
@@ -37,9 +37,9 @@ namespace HorseRadish
 		Merge(brect.minX, brect.minY);
 	}
 
-	void BRect::operator+=(const Vector& pt)
+	void BRect::operator+=(const Vector3f& pt)
 	{
-		Merge(pt.x, pt.y);
+		Merge(pt[0], pt[1]);
 	}
 
 	float BRect::GetArea(void) const
@@ -55,20 +55,20 @@ namespace HorseRadish
 	|			  |
 	0-------------1
 	*/
-	void BRect::GetCorners(Vector points[4]) const
+	void BRect::GetCorners(Vector3f points[4]) const
 	{
-		points[0].Set(minX, minY, 0.0f);
-		points[1].Set(maxX, minY, 0.0f);
-		points[2].Set(maxX, maxY, 0.0f);
-		points[3].Set(minX, maxY, 0.0f);
+		points[0].set(minX, minY, 0.0f);
+		points[1].set(maxX, minY, 0.0f);
+		points[2].set(maxX, maxY, 0.0f);
+		points[3].set(minX, maxY, 0.0f);
 	}
 
-	void BRect::Merge(const Vector &pt)
+	void BRect::Merge(const Vector3f &pt)
 	{
-		minX = Math::fMin(minX, pt.x);
-		minY = Math::fMin(minY, pt.y);
-		maxX = Math::fMax(maxX, pt.x);
-		maxY = Math::fMax(maxY, pt.y);
+		minX = Math::fMin(minX, pt[0]);
+		minY = Math::fMin(minY, pt[1]);
+		maxX = Math::fMax(maxX, pt[0]);
+		maxY = Math::fMax(maxY, pt[1]);
 	}
 
 	void BRect::Merge(const float * const pt)
@@ -79,14 +79,14 @@ namespace HorseRadish
 		maxY = Math::fMax(maxY, pt[1]);
 	}
 
-	void BRect::Merge(const Vector * const pts, const int numPts)
+	void BRect::Merge(const Vector3f * const pts, const int numPts)
 	{
 		for (int i = 0; i < numPts; i++)
 		{
-			minX = Math::fMin(minX, pts[i].x);
-			minY = Math::fMin(minY, pts[i].y);
-			maxX = Math::fMax(maxX, pts[i].x);
-			maxY = Math::fMax(maxY, pts[i].y);
+			minX = Math::fMin(minX, pts[i][0]);
+			minY = Math::fMin(minY, pts[i][1]);
+			maxX = Math::fMax(maxX, pts[i][0]);
+			maxY = Math::fMax(maxY, pts[i][1]);
 		}
 	}
 
@@ -98,12 +98,12 @@ namespace HorseRadish
 		maxY = Math::fMax(maxY, y);
 	}
 
-	void BRect::Translate(const Vector &translation)
+	void BRect::Translate(const Vector3f &translation)
 	{
-		minX += translation.x;
-		minY += translation.y;
-		maxX += translation.x;
-		maxY += translation.y;
+		minX += translation[0];
+		minY += translation[1];
+		maxX += translation[0];
+		maxY += translation[1];
 	}
 
 	void BRect::Expand(const float amount)
@@ -135,9 +135,9 @@ namespace HorseRadish
 		brectResult.Reset();
 	}
 
-	bool BRect::ContainsPoint(const Vector &point) const
+	bool BRect::ContainsPoint(const Vector3f &point) const
 	{
-		if (point.x<minX || point.y<minY || point.x>maxX || point.y>maxY)
+		if (point[0]<minX || point[1]<minY || point[0]>maxX || point[1]>maxY)
 			return false;
 		return true;
 	}

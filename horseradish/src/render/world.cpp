@@ -303,14 +303,14 @@ namespace HorseRadish
 		void World::PrepareNextFrame(const Tools::Camera& hrCamera, const HorseRadish::OpenGL::Tools::Viewport& hrViewport)
 		{
 			HorseRadish::OpenGL::Tools::Frustum camFrustum;
-			HorseRadish::Vector camPos;
+			HorseRadish::Vector3f camPos;
 
 			camPos = hrCamera.GetPos();
 
 			camFrustum.setCamPosition(camPos);
 			camFrustum.setZNear(hrViewport.getZNear());
 			camFrustum.setZFar(hrViewport.getZFar());
-			camFrustum.calculateFrustum(hrViewport.getProjection(HorseRadish::OpenGL::Tools::Viewport::ProjectionType::Proj3D), hrCamera.GetModelView());
+			camFrustum.calculateFrustum(hrViewport.getProjection(HorseRadish::OpenGL::Tools::Viewport::ProjectionType::Proj3D).data(), hrCamera.GetModelView());
 
 			mRenderData.objects.clear();
 			for (auto& curObject : mObjects)

@@ -4,6 +4,7 @@
 #include "imageFormats.hpp"
 #include "libs\stb\stb_image_resize.h"
 
+#include <cassert>
 #include <type_traits>
 
 namespace HorseRadish { namespace Imaging {
@@ -582,7 +583,7 @@ public:
 			auto walkerEnd = walkerPtr + (getArea() * TDataFormat::size());
 
 			for (; walkerPtr < walkerEnd; walkerPtr++)
-				*walkerPtr = Color::GammaCorrect(*walkerPtr);
+				*walkerPtr = Color::gammaCorrect(*walkerPtr);
 		}
 		else
 		{
@@ -593,9 +594,9 @@ public:
 			for (unsigned int curPos = 0; curPos < imgArea; curPos++)
 			{
 				TDataFormat::readRGB<unsigned char>(walkerPtr, tmpPixel, 0);
-				tmpPixel[0] = Color::GammaCorrect(tmpPixel[0]);
-				tmpPixel[1] = Color::GammaCorrect(tmpPixel[1]);
-				tmpPixel[2] = Color::GammaCorrect(tmpPixel[2]);
+				tmpPixel[0] = Color::gammaCorrect(tmpPixel[0]);
+				tmpPixel[1] = Color::gammaCorrect(tmpPixel[1]);
+				tmpPixel[2] = Color::gammaCorrect(tmpPixel[2]);
 				TDataFormat::writeRGB<unsigned char>(walkerPtr, tmpPixel);
 
 				walkerPtr += TDataFormat::size();

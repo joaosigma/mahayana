@@ -56,7 +56,7 @@ bool Window::RawInputGetKeyStatus(const Window::VirtualKeys &vcode)
 	return mImpl->RawInputGetKeyStatus(vcode);
 }
 
-HorseRadish::Vector Window::RawInputGetMouseStatus()
+HorseRadish::Vector3f Window::RawInputGetMouseStatus()
 {
 	return mImpl->RawInputGetMouseStatus();
 }

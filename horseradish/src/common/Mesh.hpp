@@ -89,14 +89,14 @@ public:
 
 	BBox getBoundingBox() const;
 	float getIndicesCacheRatio(unsigned int cacheSize) const;
-	bool getRayIntersect(const Vector& rayOrigin, const Vector& rayDir, float& hitDistance) const;
+	bool getRayIntersect(const Vector3f& rayOrigin, const Vector3f& rayDir, float& hitDistance) const;
 
 	void flipUV();
 	void scale(float scaleAmount);
-	void translate(const Vector& translate);
-	void centerMass(const Vector& center);
+	void translate(const Vector3f& translate);
+	void centerMass(const Vector3f& center);
 	void confine(float maxAxis);
-	void confine(const Vector& center, float maxAxis);
+	void confine(const Vector3f& center, float maxAxis);
 	void invertTriWinding();
 	void optimizeIndices();
 

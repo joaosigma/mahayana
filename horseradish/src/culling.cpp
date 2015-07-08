@@ -17,7 +17,7 @@ bool SCULLING::addPortal2Area(AREA * const area, PORTAL * const portal)
 	return true;
 }
 
-int SCULLING::recurseGetArea(const BNODE * const tree, const HorseRadish::Vector &ponto) const
+int SCULLING::recurseGetArea(const BNODE * const tree, const HorseRadish::Vector3f &ponto) const
 {
 	if (tree->plano.ClassifyPoint(ponto) == HorseRadish::Plane::Position::BEHIND)
 	{
@@ -172,7 +172,7 @@ bool SCULLING::createAreas(const int numberAreas)
 	return true;
 }
 
-bool SCULLING::createPortal(const unsigned int positiveArea, const unsigned int negativeArea, const HorseRadish::Vector &p1, const HorseRadish::Vector &p2, const HorseRadish::Vector &p3, const HorseRadish::Vector &p4)
+bool SCULLING::createPortal(const unsigned int positiveArea, const unsigned int negativeArea, const HorseRadish::Vector3f &p1, const HorseRadish::Vector3f &p2, const HorseRadish::Vector3f &p3, const HorseRadish::Vector3f &p4)
 {
 	if (positiveArea < 0 || negativeArea < 0 || positiveArea >= this->areas.size() || negativeArea >= this->areas.size())
 		return false;
@@ -333,7 +333,7 @@ void SCULLING::transverseDebug(const HorseRadish::OpenGL::Tools::Frustum * const
 	recurseAreaPortalDebug(&areas[startArea], nullptr, frustum, cbArea, cbPortal);
 }
 
-int SCULLING::getArea(const HorseRadish::Vector &point, const bool useBSPTree) const
+int SCULLING::getArea(const HorseRadish::Vector3f &point, const bool useBSPTree) const
 {
 	if (useBSPTree == true)
 		return recurseGetArea(this->bsp.data(), point);
@@ -348,9 +348,9 @@ int SCULLING::getArea(const HorseRadish::Vector &point, const bool useBSPTree) c
 	return -1;
 }
 
-int SCULLING::getAreaClosest(const HorseRadish::Vector &point) const
+int SCULLING::getAreaClosest(const HorseRadish::Vector3f &point) const
 {
-	HorseRadish::Vector pontoBBox;
+	HorseRadish::Vector3f pontoBBox;
 	float closestDist;
 	int closestArea;
 
@@ -360,9 +360,9 @@ int SCULLING::getAreaClosest(const HorseRadish::Vector &point) const
 	for (int i = 0; i < this->areas.size(); i++, areaWalker++)
 	{
 		areaWalker->bbox.GetCenter(pontoBBox);
-		if (pontoBBox.GetDistance(point) < closestDist)
+		if (pontoBBox.getDistance(point) < closestDist)
 		{
-			closestDist = pontoBBox.GetDistance(point);
+			closestDist = pontoBBox.getDistance(point);
 			closestArea = i;
 		}
 	}

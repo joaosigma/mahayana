@@ -202,7 +202,7 @@ void ImmediateMode::setColor(const unsigned char &r, const unsigned char &g, con
 
 void ImmediateMode::setColorF(const float &rgb)
 {
-	mState.color[0] = Color::ConvertColor(rgb);
+	mState.color[0] = Color::convertColor(rgb);
 	mState.color[1] = mState.color[0];
 	mState.color[2] = mState.color[0];
 	mState.color[3] = 255;
@@ -210,26 +210,26 @@ void ImmediateMode::setColorF(const float &rgb)
 
 void ImmediateMode::setColorF(const float &rgb, const float &a)
 {
-	mState.color[0] = Color::ConvertColor(rgb);
+	mState.color[0] = Color::convertColor(rgb);
 	mState.color[1] = mState.color[0];
 	mState.color[2] = mState.color[0];
-	mState.color[3] = Color::ConvertColor(a);
+	mState.color[3] = Color::convertColor(a);
 }
 
 void ImmediateMode::setColorF(const float &r, const float &g, const float &b)
 {
-	mState.color[0] = Color::ConvertColor(r);
-	mState.color[1] = Color::ConvertColor(g);
-	mState.color[2] = Color::ConvertColor(b);
+	mState.color[0] = Color::convertColor(r);
+	mState.color[1] = Color::convertColor(g);
+	mState.color[2] = Color::convertColor(b);
 	mState.color[3] = 255;
 }
 
 void ImmediateMode::setColorF(const float &r, const float &g, const float &b, const float &a)
 {
-	mState.color[0] = Color::ConvertColor(r);
-	mState.color[1] = Color::ConvertColor(g);
-	mState.color[2] = Color::ConvertColor(b);
-	mState.color[3] = Color::ConvertColor(a);
+	mState.color[0] = Color::convertColor(r);
+	mState.color[1] = Color::convertColor(g);
+	mState.color[2] = Color::convertColor(b);
+	mState.color[3] = Color::convertColor(a);
 }
 
 void ImmediateMode::setColorRGB(const unsigned char * const values)
@@ -242,9 +242,9 @@ void ImmediateMode::setColorRGB(const unsigned char * const values)
 
 void ImmediateMode::setColorRGB(const float * const values)
 {
-	mState.color[0] = HorseRadish::Color::ConvertColor(values[0]);
-	mState.color[1] = HorseRadish::Color::ConvertColor(values[1]);
-	mState.color[2] = HorseRadish::Color::ConvertColor(values[2]);
+	mState.color[0] = HorseRadish::Color::convertColor(values[0]);
+	mState.color[1] = HorseRadish::Color::convertColor(values[1]);
+	mState.color[2] = HorseRadish::Color::convertColor(values[2]);
 	mState.color[3] = 255;
 }
 

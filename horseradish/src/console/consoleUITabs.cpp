@@ -310,7 +310,7 @@ namespace HorseRadish
 
 				HorseRadish::OpenGL::glUseProgram(0);
 				HorseRadish::OpenGL::glBindProgramPipeline(render2D->shaders.drawNoTex.progFragment.getId());
-				HorseRadish::OpenGL::glProgramUniformMatrix4fv(render2D->shaders.drawNoTex.progVertex.getId(), render2D->shaders.drawNoTex.progVertex.getUniformLocation("transformationMatrix"), 1, false, transformMatrix);
+				HorseRadish::OpenGL::glProgramUniformMatrix4fv(render2D->shaders.drawNoTex.progVertex.getId(), render2D->shaders.drawNoTex.progVertex.getUniformLocation("transformationMatrix"), 1, false, transformMatrix.data());
 
 				auto& glImmediateMode = render2D->glImmediateMode;
 				auto& guiFont = render2D->gui.font;
@@ -332,7 +332,7 @@ namespace HorseRadish
 				HorseRadish::OpenGL::glLineWidth(1.0f);
 				HorseRadish::OpenGL::glDisable(GL_LINE_SMOOTH);
 
-				guiFont->paintBegin(transformMatrix);
+				guiFont->paintBegin(transformMatrix.data());
 				guiFont->setColor(1.0f, 1.0f, 1.0f);
 
 				userTextY = this->tabContentAreaPos.y + 5.0f;
@@ -399,7 +399,7 @@ namespace HorseRadish
 									continue;
 
 								if (value[0] == '#')
-									guiFont->setColor(Color::ParseColorFromHTML(value.c_str()));
+									guiFont->setColor(Color::parseColorFromHTML(value.c_str()));
 								else if (value == "red")
 									guiFont->setColor(1.0f, 0.0f, 0.0f, 1.0f);
 								else if (value == "green")

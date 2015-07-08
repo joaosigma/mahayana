@@ -6,17 +6,17 @@ namespace HorseRadish
 {
 	Ray::Ray()
 	{
-		origin.Set(0.0f);
+		origin.set(0.0f);
 		direction[0] = direction[1] = direction[2] = 0.0f;
 		length = 0.0f;
 	}
 
-	Ray::Ray(const Vector &nOrigin, const Vector &nDirection)
+	Ray::Ray(const Vector3f &nOrigin, const Vector3f &nDirection)
 	{
 		origin = nOrigin;
-		direction[0] = nDirection.x;
-		direction[1] = nDirection.y;
-		direction[2] = nDirection.z;
+		direction[0] = nDirection[0];
+		direction[1] = nDirection[1];
+		direction[2] = nDirection[2];
 		length = Math::normalizeRet(direction);
 	}
 
@@ -31,12 +31,12 @@ namespace HorseRadish
 
 	void Ray::SetOrigin(const float &x, const float &y, const float &z)
 	{
-		origin.x = x;
-		origin.y = y;
-		origin.z = z;
+		origin[0] = x;
+		origin[1] = y;
+		origin[2] = z;
 	}
 
-	void Ray::SetOrigin(const Vector &nOrigin)
+	void Ray::SetOrigin(const Vector3f &nOrigin)
 	{
 		origin = nOrigin;
 	}
@@ -48,11 +48,11 @@ namespace HorseRadish
 		direction[2] = z;
 	}
 
-	void Ray::SetDirection(const Vector &nDirection)
+	void Ray::SetDirection(const Vector3f &nDirection)
 	{
-		direction[0] = nDirection.x;
-		direction[1] = nDirection.y;
-		direction[2] = nDirection.z;
+		direction[0] = nDirection[0];
+		direction[1] = nDirection[1];
+		direction[2] = nDirection[2];
 	}
 
 	void Ray::SetLength(const float &nLength)
@@ -68,31 +68,24 @@ namespace HorseRadish
 		length = Math::normalizeRet(direction);
 	}
 
-	void Ray::SetSizedDirection(const Vector &nSizedDirection)
+	void Ray::SetSizedDirection(const Vector3f &nSizedDirection)
 	{
-		direction[0] = nSizedDirection.x;
-		direction[1] = nSizedDirection.y;
-		direction[2] = nSizedDirection.z;
+		direction[0] = nSizedDirection[0];
+		direction[1] = nSizedDirection[1];
+		direction[2] = nSizedDirection[2];
 		length = Math::normalizeRet(direction);
 	}
 
-	void Ray::GetPointOn(const float &t, Vector &write) const
+	void Ray::GetPointOn(const float &t, Vector3f &write) const
 	{
-		write.x = origin.x + (direction[0] * t);
-		write.y = origin.y + (direction[1] * t);
-		write.z = origin.z + (direction[2] * t);
+		write[0] = origin[0] + (direction[0] * t);
+		write[1] = origin[1] + (direction[1] * t);
+		write[2] = origin[2] + (direction[2] * t);
 	}
 
-	void Ray::GetPointOn(const float &t, Vector * const write) const
+	Vector3f Ray::GetPointOn(const float &t) const
 	{
-		write->x = origin.x + (direction[0] * t);
-		write->y = origin.y + (direction[1] * t);
-		write->z = origin.z + (direction[2] * t);
-	}
-
-	Vector Ray::GetPointOn(const float &t) const
-	{
-		return Vector(origin.x + (direction[0] * t), origin.y + (direction[1] * t), origin.z + (direction[2] * t));
+		return Vector3f(origin[0] + (direction[0] * t), origin[1] + (direction[1] * t), origin[2] + (direction[2] * t));
 	}
 
 	void Ray::Normalize()
