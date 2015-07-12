@@ -3,7 +3,6 @@
 #include "common\Stream.hpp"
 #include "common\stringUtils.hpp"
 
-#include <libs\cppformat\format.h>
 #include <libs\squirrel\sqstdblob.h>
 #include <libs\squirrel\sqstdmath.h>
 #include <libs\squirrel\sqstdstring.h>
@@ -439,11 +438,11 @@ namespace HorseRadish
 				const SQChar *func_name = (stack_info.funcname) ? stack_info.funcname : _SC("unknown_function");
 				const SQChar *source_file = (stack_info.source) ? stack_info.source : _SC("unknown_source_file");
 				
-				runtime->mLogger.error(fmt::format("[{0}]: function [{1}()] {2}s line [{3}]",
-													stack_depth,
-													HorseRadish::StringUtils::conv2UTF8(func_name),
-													HorseRadish::StringUtils::conv2UTF8(source_file),
-													stack_info.line));
+				runtime->mLogger.error("[{0}]: function [{1}()] {2}s line [{3}]",
+											stack_depth,
+											HorseRadish::StringUtils::conv2UTF8(func_name),
+											HorseRadish::StringUtils::conv2UTF8(source_file),
+											stack_info.line);
 
 				stack_depth++;
 			}
@@ -469,11 +468,11 @@ namespace HorseRadish
 		void Runtime::squirrelCompileError(HSQUIRRELVM vm, const SQChar* description, const SQChar* file, SQInteger line, SQInteger column)
 		{
 			auto runtime = reinterpret_cast<Runtime*>(sq_getforeignptr(vm));
-			runtime->mLogger.error(fmt::format("vm: '{0}' (Ln:{1} Col:{2}) : {3}.",
-												HorseRadish::StringUtils::conv2UTF8(file),
-												line,
-												column,
-												HorseRadish::StringUtils::conv2UTF8(description)));
+			runtime->mLogger.error("vm: '{0}' (Ln:{1} Col:{2}) : {3}.",
+										HorseRadish::StringUtils::conv2UTF8(file),
+										line,
+										column,
+										HorseRadish::StringUtils::conv2UTF8(description));
 		}
 
 		void Runtime::squirrelErrorFunction(HSQUIRRELVM vm, const SQChar *format, ...)

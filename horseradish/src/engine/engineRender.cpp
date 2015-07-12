@@ -68,19 +68,19 @@ namespace HorseRadish
 		ctx.info("   GLSL version: " + infoValueString);
 
 		glContext.getInfo(HorseRadish::OpenGL::Objects::Context::InformationType::MaxDrawBuffers, infoValueInt);
-		ctx.info(fmt::format("   Maximum number of draw buffers: {0}", infoValueInt));
+		ctx.info("   Maximum number of draw buffers: {0}", infoValueInt);
 
 		glContext.getInfo(HorseRadish::OpenGL::Objects::Context::InformationType::MaxColorAttachments, infoValueInt);
-		ctx.info(fmt::format("   Maximum number of color attachments in FBOs: {0}", infoValueInt));
+		ctx.info("   Maximum number of color attachments in FBOs: {0}", infoValueInt);
 
 		glContext.getInfo(HorseRadish::OpenGL::Objects::Context::InformationType::MaxTextureSize, infoValueInt);
-		ctx.info(fmt::format("   Maximum 1D/2D texture size: {0}x{0}", infoValueInt));
+		ctx.info("   Maximum 1D/2D texture size: {0}x{0}", infoValueInt);
 		glContext.getInfo(HorseRadish::OpenGL::Objects::Context::InformationType::MaxTexture3DSize, infoValueInt);
-		ctx.info(fmt::format("   Maximum 3D texture size: {0}x{0}x{0}", infoValueInt));
+		ctx.info("   Maximum 3D texture size: {0}x{0}x{0}", infoValueInt);
 		glContext.getInfo(HorseRadish::OpenGL::Objects::Context::InformationType::MaxTextureCubemapSize, infoValueInt);
-		ctx.info(fmt::format("   Maximum cubemap texture size: {0}x{0}", infoValueInt));
+		ctx.info("   Maximum cubemap texture size: {0}x{0}", infoValueInt);
 		glContext.getInfo(HorseRadish::OpenGL::Objects::Context::InformationType::MaxTextureRectSize, infoValueInt);
-		ctx.info(fmt::format("   Maximum rectangle texture size: {0}x{0}", infoValueInt));
+		ctx.info("   Maximum rectangle texture size: {0}x{0}", infoValueInt);
 	}
 
 	static
@@ -166,8 +166,8 @@ namespace HorseRadish
 		}
 
 		//faço log do que preciso
-		logger->AddLog(entryType, HorseRadish::Engine::Logger::ModuleType::Graphics, fmt::format("OpenGL [{0} - {1} - {2}]:", glSource, glType, glSeverity));
-		logger->AddLog(entryType, HorseRadish::Engine::Logger::ModuleType::Graphics, fmt::format("     {0}", message));
+		logger->log(entryType, HorseRadish::Engine::Logger::ModuleType::Graphics, "OpenGL [{0} - {1} - {2}]:", glSource, glType, glSeverity);
+		logger->log(entryType, HorseRadish::Engine::Logger::ModuleType::Graphics, "     {0}", message);
 	}
 
 	namespace Engine

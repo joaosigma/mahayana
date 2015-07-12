@@ -593,7 +593,7 @@ namespace HorseRadish
 			{
 				int curLine = 0;
 
-				mLogger->IterateLast([&](const Engine::Logger::EntryType entryType, const Engine::Logger::ModuleType moduleType, const bool isFormatted, const char * const log) -> bool
+				mLogger->iterateBuffer([&](const Engine::Logger::EntryType entryType, const Engine::Logger::ModuleType moduleType, const bool isFormatted, const std::string& msg) -> bool
 				{
 					if (curLine >= this->numMaxLinhasTexto)
 						return false;
@@ -603,7 +603,7 @@ namespace HorseRadish
 					
 					curLinha->active = true;
 					curLinha->type = entryType;
-					curLinha->texto = log;
+					curLinha->texto = msg;
 					curLinha->formatted = isFormatted;
 					return true;
 

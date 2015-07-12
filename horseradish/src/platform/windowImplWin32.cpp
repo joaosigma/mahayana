@@ -299,7 +299,7 @@ bool WindowImpl::WindowInit(const std::string& windowTitle, const unsigned int w
 
 		if ((checkBestDisplayFrequency(&dmScreenSettings) == false) || (ChangeDisplaySettings(&dmScreenSettings, CDS_FULLSCREEN | CDS_RESET) != DISP_CHANGE_SUCCESSFUL))
 		{
-			mLogger.AddWarning(HorseRadish::Engine::Logger::ModuleType::Graphics, "Unable to change to fullscreen");
+			mLogger.logWarning(HorseRadish::Engine::Logger::ModuleType::Graphics, "Unable to change to fullscreen");
 
 			dwExStyle = WS_EX_APPWINDOW;
 			dwStyle = WS_CAPTION | WS_VISIBLE;
@@ -354,7 +354,7 @@ bool WindowImpl::WindowInit(const std::string& windowTitle, const unsigned int w
 		rawInputDevice[1].hwndTarget = hWnd;
 
 		if (RegisterRawInputDevices(rawInputDevice, 2, sizeof(rawInputDevice[0])) != TRUE)
-			mLogger.AddError(HorseRadish::Engine::Logger::ModuleType::Graphics, "unable to register raw input devices");
+			mLogger.logError(HorseRadish::Engine::Logger::ModuleType::Graphics, "unable to register raw input devices");
 	}
 
 	SetCursor(nullptr);
@@ -433,7 +433,7 @@ int WindowImpl::MessageLoop(std::function<void()> closingCb)
 	{
 		if (returnCode == -1)
 		{
-			mLogger.AddError(HorseRadish::Engine::Logger::ModuleType::Graphics, "Error in window message loop");
+			mLogger.logError(HorseRadish::Engine::Logger::ModuleType::Graphics, "Error in window message loop");
 			continue;
 		}
 
@@ -449,7 +449,7 @@ int WindowImpl::MessageLoop(std::function<void()> closingCb)
 			if (this->hWnd != nullptr)
 			{
 				if (DestroyWindow(this->hWnd) == FALSE)
-					mLogger.AddError(HorseRadish::Engine::Logger::ModuleType::Graphics, "Unable to delete window handle");
+					mLogger.logError(HorseRadish::Engine::Logger::ModuleType::Graphics, "Unable to delete window handle");
 
 				this->hWnd = nullptr;
 			}
@@ -463,7 +463,7 @@ int WindowImpl::MessageLoop(std::function<void()> closingCb)
 
 	//cleanup
 	if (UnregisterClass(mClassName.c_str(), this->hModule) == FALSE)
-		mLogger.AddError(HorseRadish::Engine::Logger::ModuleType::Graphics, "Unable to unregister window class");
+		mLogger.logError(HorseRadish::Engine::Logger::ModuleType::Graphics, "Unable to unregister window class");
 
 	this->isInitialized = false;
 
@@ -713,10 +713,10 @@ OpenglContextImpl::~OpenglContextImpl()
 	if (this->hRC != nullptr)
 	{
 		if (this->wglMakeCurrent(this->hDC, nullptr) == FALSE)
-			this->window.mLogger.AddError(HorseRadish::Engine::Logger::ModuleType::Graphics, "Unable to release rendering context.");
+			this->window.mLogger.logError(HorseRadish::Engine::Logger::ModuleType::Graphics, "Unable to release rendering context.");
 
 		if (this->wglDeleteContext(this->hRC) == FALSE)
-			this->window.mLogger.AddError(HorseRadish::Engine::Logger::ModuleType::Graphics, "Unable to delete rendering context.");
+			this->window.mLogger.logError(HorseRadish::Engine::Logger::ModuleType::Graphics, "Unable to delete rendering context.");
 
 		this->hRC = nullptr;
 	}
@@ -724,7 +724,7 @@ OpenglContextImpl::~OpenglContextImpl()
 	if (this->hDC != nullptr)
 	{
 		if (ReleaseDC(this->window.hWnd, this->hDC) == 0)
-			this->window.mLogger.AddError(HorseRadish::Engine::Logger::ModuleType::Graphics, "Unable to release device context.");
+			this->window.mLogger.logError(HorseRadish::Engine::Logger::ModuleType::Graphics, "Unable to release device context.");
 
 		this->hDC = nullptr;
 	}

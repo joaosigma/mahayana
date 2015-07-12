@@ -4,386 +4,293 @@
 
 #include <ctime>
 
-namespace HorseRadish
+namespace HorseRadish { namespace Engine {
+
+bool Logger::checkEntryData(const char * const entryData, bool &hasFormattedText, unsigned int &dataSize)
 {
-	namespace Engine
+	dataSize = 0;
+	hasFormattedText = false;
+
+	bool insideSection = false;
+	const char *walker = entryData;
+	for (; *walker != '\0'; walker++)
 	{
-		const int Logger::DefaultCapacityKB = 1024;
+		if (insideSection && ((walker[0] == '$') || (walker[0] == '{')))
+			return false; //invalid chars inside section
 
-		bool Logger::checkEntryData(const char * const entryData, bool &hasFormattedText, unsigned int &dataSize)
+		if (insideSection && (walker[0] == '}'))
 		{
-			dataSize = 0;
-			hasFormattedText = false;
+			insideSection = false;
+			continue;
+		}
 
-			bool insideSection = false;
-			const char *walker = entryData;
-			for (; *walker != '\0'; walker++)
+		if ((walker[0] == '$') && (walker[1] == '{'))
+		{
+			if ((walker != entryData) && (walker[-1] == '$'))
+				continue;
+
+			walker++;
+			insideSection = true;
+			hasFormattedText |= true;
+		}
+	}
+
+	if (insideSection)
+		return false;
+
+	dataSize = (walker - entryData) + 1; //empty strings are logged
+	return true;
+}
+
+void Logger::processAsyncBuffer()
+{
+	if (mAsyncBuffer.empty())
+		return;
+
+	if (mMaxBufferSize > 0)
+	{
+		std::unique_lock<std::mutex> lock(mBufferLock);
+
+		size_t bufferIndex = 0;
+
+		if (mAsyncBuffer.size() >= mMaxBufferSize)
+		{
+			mBuffer.clear();
+			bufferIndex = mAsyncBuffer.size() - mMaxBufferSize;
+		}
+		else if ((mBuffer.size() + mAsyncBuffer.size()) >= mMaxBufferSize)
+		{
+			while ((mMaxBufferSize - mBuffer.size()) < mAsyncBuffer.size())
+				mBuffer.pop_back();
+		}
+
+		for (; bufferIndex < mAsyncBuffer.size(); bufferIndex++)
+			mBuffer.push_front(mAsyncBuffer[bufferIndex]);
+
+		assert(mBuffer.size() <= mMaxBufferSize);
+	}
+
+	for (const auto& entry : mAsyncBuffer)
+		writeToFile(entry);
+
+	mAsyncBuffer.clear();
+}
+
+void Logger::writeToFile(const EntryData& entry)
+{
+	if (!mOutFileStream)
+		return;
+
+	HorseRadish::Streams::StreamWriter streamWriter(*mOutFileStream);
+
+	switch (entry.moduleType)
+	{
+	case Logger::ModuleType::SysRuntime:
+		streamWriter.WriteString("sysRuntime\t", false);
+		break;
+	case Logger::ModuleType::FileSystem:
+		streamWriter.WriteString("fileSystem\t", false);
+		break;
+	case Logger::ModuleType::Graphics:
+		streamWriter.WriteString("graphics\t", false);
+		break;
+	case Logger::ModuleType::Audio:
+		streamWriter.WriteString("audio\t", false);
+		break;
+	case Logger::ModuleType::Network:
+		streamWriter.WriteString("network\t", false);
+		break;
+	case Logger::ModuleType::PlayRuntime:
+		streamWriter.WriteString("playRuntime\t", false);
+		break;
+	case Logger::ModuleType::Misc:
+	default:
+		streamWriter.WriteString("misc\t", false);
+		break;
+	}
+
+	switch (entry.entryType)
+	{
+	case Logger::EntryType::Error:
+		streamWriter.WriteString("error\t{", false);
+		break;
+	case Logger::EntryType::Info:
+		streamWriter.WriteString("info\t{", false);
+		break;
+	case Logger::EntryType::Warning:
+		streamWriter.WriteString("warning\t{", false);
+		break;
+	default:
+		streamWriter.WriteString("????\t{", false);
+		break;
+	}
+
+	{
+		char bufferTmp[256];
+
+		std::time_t tmT = std::chrono::system_clock::to_time_t(entry.timestamp);
+		std::tm* tmUTC = std::gmtime(&tmT);
+
+		strftime(bufferTmp, sizeof(bufferTmp), "%Y-%m-%d %H:%M:%S", tmUTC);
+
+		streamWriter.Write(bufferTmp, strlen(bufferTmp) - 1);
+		streamWriter.WriteString("}\t", false);
+	}
+
+	if (!entry.isMsgFormated)
+	{
+		streamWriter.WriteString(entry.msg.c_str(), false);
+	}
+	else
+	{
+		auto walker = reinterpret_cast<const char*>(entry.msg.c_str());
+		while ((walker[0] == '$') && (walker[1] == '{'))
+		{
+			for (; (*walker != '\0') && (*walker != '}'); walker++);
+			if (*walker == '\0')
+				break;
+			walker++;
+		}
+
+		auto walkerNext = walker;
+		for (; *walkerNext != '\0'; walkerNext++)
+		{
+			if ((walkerNext[0] == '$') && (walkerNext[1] == '{') && (walker[-1] != '$'))
 			{
-				if (insideSection && ((walker[0] == '$') || (walker[0] == '{')))
-					return false; //invalid chars inside section
-
-				if (insideSection && (walker[0] == '}'))
-				{
-					insideSection = false;
-					continue;
-				}
-
-				if ((walker[0] == '$') && (walker[1] == '{'))
-				{
-					if ((walker != entryData) && (walker[-1] == '$'))
-						continue;
-
-					walker++;
-					insideSection = true;
-					hasFormattedText |= true;
-				}
-			}
-
-			if (insideSection)
-				return false;
-
-			dataSize = (walker - entryData) + 1; //empty strings are logged
-			return true;
-		}
-
-		void Logger::writeToFile()
-		{
-			if (mWalkerFlush == mWalkerWrite)
-				return;
-
-			HorseRadish::Streams::StreamWriter streamWriter(*mOutFileStream);
-
-			while (mWalkerFlush != mWalkerWrite)
-			{
-				switch (static_cast<Logger::ModuleType>(mWalkerFlush->moduleType))
-				{
-				case Logger::ModuleType::SysRuntime:
-					streamWriter.WriteString("sysRuntime\t", false);
-					break;
-				case Logger::ModuleType::FileSystem:
-					streamWriter.WriteString("fileSystem\t", false);
-					break;
-				case Logger::ModuleType::Graphics:
-					streamWriter.WriteString("graphics\t", false);
-					break;
-				case Logger::ModuleType::Audio:
-					streamWriter.WriteString("audio\t", false);
-					break;
-				case Logger::ModuleType::Network:
-					streamWriter.WriteString("network\t", false);
-					break;
-				case Logger::ModuleType::PlayRuntime:
-					streamWriter.WriteString("playRuntime\t", false);
-					break;
-				case Logger::ModuleType::Misc:
-				default:
-					streamWriter.WriteString("misc\t", false);
-					break;
-				}
-
-				switch (static_cast<Logger::EntryType>(mWalkerFlush->entryType))
-				{
-				case Logger::EntryType::Error:
-					streamWriter.WriteString("error\t{", false);
-					break;
-				case Logger::EntryType::Info:
-					streamWriter.WriteString("info\t{", false);
-					break;
-				case Logger::EntryType::Warning:
-					streamWriter.WriteString("warning\t{", false);
-					break;
-				default:
-					streamWriter.WriteString("????\t{", false);
-					break;
-				}
-
-				{
-					char bufferTmp[256];
-
-					std::time_t tmT = std::chrono::system_clock::to_time_t(mWalkerFlush->timestamp);
-					std::tm* tmUTC = std::gmtime(&tmT);
-
-					strftime(bufferTmp, sizeof(bufferTmp), "%Y-%m-%d %H:%M:%S", tmUTC);
-
-					streamWriter.Write(bufferTmp, strlen(bufferTmp) - 1);
-					streamWriter.WriteString("}\t", false);
-				}
-
-				if (!mWalkerFlush->hasFormattedText)
-				{
-					streamWriter.Write(reinterpret_cast<unsigned char*>(mWalkerFlush)+sizeof(EntryHeader), mWalkerFlush->entryTotalSize - sizeof(EntryHeader) - 1);
-				}
-				else
-				{
-					auto walker = reinterpret_cast<const char*>(mWalkerFlush)+sizeof(EntryHeader);
-					while ((walker[0] == '$') && (walker[1] == '{'))
-					{
-						for (; (*walker != '\0') && (*walker != '}'); walker++);
-						if (*walker == '\0')
-							break;
-						walker++;
-					}
-
-					auto walkerNext = walker;
-					for (; *walkerNext != '\0'; walkerNext++)
-					{
-						if ((walkerNext[0] == '$') && (walkerNext[1] == '{') && (walker[-1] != '$'))
-						{
-							if ((walkerNext - walker) > 0)
-								streamWriter.Write(walker, walkerNext - walker);
-
-							for (; (*walkerNext != '\0') && (*walkerNext != '}'); walkerNext++);
-							if (*walkerNext == '}')
-								walkerNext++;
-
-							walker = walkerNext;
-							if (*walkerNext == '\0')
-								break;
-						}
-					}
-
-					if ((walkerNext - walker) > 0)
-						streamWriter.Write(walker, walkerNext - walker);
-				}
-
-				streamWriter.Write(HorseRadish::Platform::NewLine, HorseRadish::Platform::NewLineSize);
-
-				if (mWalkerFlush->proxEntry < mWalkerFlush)
-					this->mWalkerFlushBehind = true;
-				mWalkerFlush = mWalkerFlush->proxEntry;
-			}
-		}
-
-		void Logger::threadFlushFunc()
-		{
-			while (true)
-			{
-				if (mThreadFlushExit)
-					break;
-
-				std::unique_lock<std::mutex> lock(mSyncLock);
-
-				auto waitReson = mThreadFlushCondition.wait_for(lock, std::chrono::milliseconds(1500));
-				if (mThreadFlushExit)
-					break;
-
-				if (waitReson == std::cv_status::timeout)
-					this->writeToFile();
-			}
-		}
-
-		bool Logger::addEntry(const EntryType &entryType, const ModuleType moduleType, const char * const entryData)
-		{
-			bool hasFormattedText;
-			unsigned int entryDataSize;
-			if (!Logger::checkEntryData(entryData, hasFormattedText, entryDataSize))
-				return false;			
-
-			int entryTotalSize = sizeof(EntryHeader) + entryDataSize;
-			int entryTotalSizeNext = entryTotalSize + sizeof(EntryHeader); //the prevEntry of the next entry is always written, so we need 2 headers
-
-			if ((reinterpret_cast<unsigned char*>(mWalkerWrite)+entryTotalSizeNext) >= reinterpret_cast<unsigned char*>(mDataEnd))
-			{
-				if ((mOutFileStream != nullptr) && (mWalkerFlush == mDataMain))
-				{
-					writeToFile();
-					if (mWalkerFlush == mDataMain)
-						return false;
-				}
-
-				mWalkerWrite = reinterpret_cast<EntryHeader*>(mDataMain);
-				mWalkerFlushBehind = false;
-			}
-
-			if (!mWalkerFlushBehind && (mOutFileStream != nullptr) && ((reinterpret_cast<unsigned char*>(mWalkerWrite)+entryTotalSizeNext) >= reinterpret_cast<unsigned char*>(mWalkerFlush)))
-			{
-				writeToFile();
-				if ((reinterpret_cast<unsigned char*>(mWalkerWrite)+entryTotalSizeNext) >= reinterpret_cast<unsigned char*>(mWalkerFlush))
-					return false;
-			}
-
-			mWalkerWrite->hasFormattedText = hasFormattedText;
-			mWalkerWrite->entryTotalSize = entryTotalSize;
-			mWalkerWrite->entryType = entryType;
-			mWalkerWrite->moduleType = moduleType;
-			mWalkerWrite->timestamp = std::chrono::system_clock::now();
-
-			memcpy(reinterpret_cast<unsigned char*>(mWalkerWrite)+sizeof(EntryHeader), entryData, entryDataSize);
-
-			auto curEntry = mWalkerWrite;
-			mWalkerWrite = reinterpret_cast<EntryHeader*>(reinterpret_cast<unsigned char*>(mWalkerWrite)+entryTotalSize);
-			assert(mWalkerWrite < mDataEnd);
-
-			mWalkerWrite->entryTotalSize = 0;
-			mWalkerWrite->proxEntry = nullptr;
-			mWalkerWrite->prevEntry = curEntry;
-			curEntry->proxEntry = mWalkerWrite;
-
-			mTotalEntries++;
-
-			return true;
-		}
-
-		Logger::Logger(unsigned int logCapacityKB)
-			: mTotalEntries(0), mDataMain(nullptr), mDataEnd(nullptr)
-			, mThreadFlush(nullptr), mThreadFlushExit(false), mWalkerFlushBehind(true), mWalkerWrite(nullptr), mWalkerFlush(nullptr), mOutFileStream(nullptr)
-		{
-			if (logCapacityKB <= 0)
-				return;
-
-			int allocSize = ((logCapacityKB <= 0) ? Logger::DefaultCapacityKB : logCapacityKB) * 1024;
-
-			mDataMain = malloc(allocSize);
-			if (mDataMain == nullptr)
-				return;
-
-			this->mDataEnd = reinterpret_cast<unsigned char*>(mDataMain) + allocSize;
-			mWalkerWrite = reinterpret_cast<EntryHeader*>(mDataMain);
-
-			mWalkerWrite->entryTotalSize = 0;
-			mWalkerWrite->hasFormattedText = false;
-			mWalkerWrite->prevEntry = mWalkerWrite->proxEntry = nullptr;
-		}
-
-		Logger::Logger(unsigned int logCapacityKB, const HorseRadish::IO::Path &filePath, const bool threadedFlush)
-			: Logger(logCapacityKB)
-		{
-			if (logCapacityKB <= 0)
-				return;
-
-			mOutFileStream = new HorseRadish::Streams::FileStream(filePath.str(), false, true);
-			mWalkerFlush = mWalkerWrite;
-
-			if (threadedFlush)
-				mThreadFlush = new std::thread(&Logger::threadFlushFunc, this);
-		}
-
-		Logger::~Logger()
-		{
-			if (mThreadFlush)
-			{
-				mThreadFlushExit = true;
-				mThreadFlushCondition.notify_one();
-				mThreadFlush->join();
-
-				delete mThreadFlush;
-				mThreadFlush = nullptr;
-			}
-
-			if (mOutFileStream != nullptr)
-			{
-				this->writeToFile();
-				delete mOutFileStream;
-			}
-			mOutFileStream = nullptr;
-
-			if (mDataMain != nullptr)
-				free(mDataMain);
-
-			mDataMain = mDataEnd = nullptr;
-			mWalkerWrite = mWalkerFlush = nullptr;
-		}
-
-		void Logger::AddLog(const EntryType entryType, const ModuleType moduleType, const char * const entryData)
-		{
-			if ((mDataMain == nullptr) || (entryData == nullptr) || (entryData[0] == '\0'))
-				return;
-
-			std::lock_guard<std::mutex> lock(mSyncLock);
-
-			this->addEntry(entryType, moduleType, entryData);
-		}
-
-		void Logger::AddLog(const EntryType entryType, const ModuleType moduleType, const std::string &entryData)
-		{
-			this->AddLog(entryType, moduleType, entryData.c_str());
-		}
-
-		void Logger::AddInfo(const ModuleType moduleType, const char * const entryData)
-		{
-			if ((mDataMain == nullptr) || (entryData == nullptr) || (entryData[0] == '\0'))
-				return;
-
-			std::lock_guard<std::mutex> lock(mSyncLock);
-
-			this->addEntry(EntryType::Info, moduleType, entryData);
-		}
-
-		void Logger::AddInfo(const ModuleType moduleType, const std::string &entryData)
-		{
-			this->AddInfo(moduleType, entryData.c_str());
-		}
-
-		void Logger::AddWarning(const ModuleType moduleType, const char * const entryData)
-		{
-			if ((mDataMain == nullptr) || (entryData == nullptr) || (entryData[0] == '\0'))
-				return;
-
-			std::lock_guard<std::mutex> lock(mSyncLock);
-
-			this->addEntry(EntryType::Warning, moduleType, entryData);
-		}
-
-		void Logger::AddWarning(const ModuleType moduleType, const std::string &entryData)
-		{
-			this->AddWarning(moduleType, entryData.c_str());
-		}
-
-		void Logger::AddError(const ModuleType moduleType, const char * const entryData)
-		{
-			if ((mDataMain == nullptr) || (entryData == nullptr) || (entryData[0] == '\0'))
-				return;
-
-			std::lock_guard<std::mutex> lock(mSyncLock);
-
-			this->addEntry(EntryType::Error, moduleType, entryData);
-		}
-
-		void Logger::AddError(const ModuleType moduleType, const std::string &entryData)
-		{
-			this->AddError(moduleType, entryData.c_str());
-		}
-
-		void Logger::IterateLast(std::function<bool(const EntryType, const ModuleType, const bool, const char * const)> logEntryCb, unsigned int offset)
-		{
-			if ((mDataMain == nullptr) || !logEntryCb)
-				return;
-
-			std::lock_guard<std::mutex> lock(mSyncLock);
-
-			EntryHeader *walkerBegin = mWalkerWrite;
-			EntryHeader *walker = mWalkerWrite->prevEntry;
-
-			for (; walker != nullptr; walker = walker->prevEntry)
-			{
-				if ((walker > walkerBegin) && (walker->prevEntry >= (walkerBegin + 1)))
-					break;
-
-				if (offset > 0)
-				{
-					offset--;
-					continue;
-				}
-
-				if (!logEntryCb(walker->entryType, walker->moduleType, walker->hasFormattedText, reinterpret_cast<const char*>(walker)+sizeof(EntryHeader)))
+				if ((walkerNext - walker) > 0)
+					streamWriter.Write(walker, walkerNext - walker);
+
+				for (; (*walkerNext != '\0') && (*walkerNext != '}'); walkerNext++);
+				if (*walkerNext == '}')
+					walkerNext++;
+
+				walker = walkerNext;
+				if (*walkerNext == '\0')
 					break;
 			}
 		}
 
-		unsigned int Logger::GetTotalEntries() const
+		if ((walkerNext - walker) > 0)
+			streamWriter.Write(walker, walkerNext - walker);
+	}
+
+	streamWriter.Write(HorseRadish::Platform::NewLine, HorseRadish::Platform::NewLineSize);
+}
+
+void Logger::threadFlushFunc()
+{
+	while (!mThreadFlushExit)
+	{
+		std::unique_lock<std::mutex> lock(mASyncLock);
+
+		auto waitReson = mThreadFlushCondition.wait_for(lock, std::chrono::milliseconds(1500));
+		if (waitReson == std::cv_status::timeout)
 		{
-			return mTotalEntries;
+			processAsyncBuffer();
+
+			if (mOutFileStream)
+				mOutFileStream->Flush();
+		}
+	}
+}
+
+bool Logger::addEntry(const EntryType entryType, const ModuleType moduleType, const char * const entryData)
+{
+	if (entryData == nullptr)
+		return true;
+
+	bool hasFormattedText;
+	unsigned int entryDataSize;
+	if (!Logger::checkEntryData(entryData, hasFormattedText, entryDataSize))
+		return false;
+
+	EntryData entry(entryType, moduleType);
+	entry.msg = std::string(entryData, entryDataSize);
+	entry.isMsgFormated = hasFormattedText;
+	entry.timestamp = std::chrono::system_clock::now();
+
+	std::lock_guard<std::mutex> lock(mASyncLock);
+
+	if (mMaxAsyncBufferSize == 0)
+	{
+		if (mMaxBufferSize > 0)
+		{
+			std::unique_lock<std::mutex> lock(mBufferLock);
+
+			if (mBuffer.size() >= mMaxBufferSize)
+				mBuffer.pop_back();
+
+			mBuffer.push_front(entry);
+			assert(mBuffer.size() <= mMaxBufferSize);
 		}
 
-		void Logger::FlushToFile()
-		{
-			if ((mDataMain == nullptr) || (mOutFileStream == nullptr))
-				return;
+		writeToFile(entry);
+	}
+	else
+	{
+		if (mAsyncBuffer.size() >= mMaxAsyncBufferSize)
+			processAsyncBuffer();
 
-			std::lock_guard<std::mutex> lock(mSyncLock);
+		mAsyncBuffer.push_back(entry);
+	}
 
-			this->writeToFile();
-		}
+	return true;
+}
 
-	} //Engine
-} //HorseRadish
+Logger::Logger(unsigned int asyncMaxEntries)
+	: mMaxBufferSize(0), mMaxAsyncBufferSize(asyncMaxEntries)
+	, mThreadFlush(nullptr), mThreadFlushExit(false)
+{
+	if (mMaxAsyncBufferSize > 0)
+		mThreadFlush = new std::thread(&Logger::threadFlushFunc, this);
+}
+
+Logger::Logger(unsigned int asyncMaxEntries, unsigned int maxBufferedEntries)
+	: Logger(asyncMaxEntries)
+{
+	mMaxBufferSize = maxBufferedEntries;
+}
+
+Logger::Logger(unsigned int asyncMaxEntries, unsigned int maxBufferedEntries, const HorseRadish::IO::Path &filePath)
+	: Logger(asyncMaxEntries, maxBufferedEntries)
+{
+	mOutFileStream = std::shared_ptr<HorseRadish::Streams::FileStream>(new HorseRadish::Streams::FileStream(filePath.str(), false, true));
+}
+
+Logger::~Logger()
+{
+	if (mThreadFlush)
+	{
+		mThreadFlushExit = true;
+		mThreadFlushCondition.notify_one();
+		mThreadFlush->join();
+
+		delete mThreadFlush;
+		mThreadFlush = nullptr;
+	}
+
+	if (mOutFileStream)
+	{
+		for (const auto& entry : mAsyncBuffer)
+			writeToFile(entry);
+
+		mOutFileStream.reset();
+	}
+}
+
+void Logger::iterateBuffer(std::function<bool(const EntryType, const ModuleType, const bool, const std::string&)> logEntryCb, unsigned int offset)
+{
+	if ((mMaxBufferSize == 0) || !logEntryCb)
+		return;
+
+	std::lock_guard<std::mutex> lock(mBufferLock);
+
+	for (size_t i = offset; i < mBuffer.size(); i++)
+	{
+		const EntryData& entry = mBuffer[i];
+		if (!logEntryCb(entry.entryType, entry.moduleType, entry.isMsgFormated, entry.msg))
+			break;
+	}
+}
+
+} }

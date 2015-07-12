@@ -59,7 +59,7 @@ namespace HorseRadish { namespace Engine {
 			}
 		});
 
-		mLoggerRuntimeCtx->info(fmt::format("   loaded {0} archives with a total of {1} files", totalPacks, totalFich));
+		mLoggerRuntimeCtx->info("   loaded {0} archives with a total of {1} files", totalPacks, totalFich);
 	}
 
 	void Engine::runtimeFuncVarCreate(const std::string &funcName, Runtime::FunctionReturnContext &ctx)
@@ -235,33 +235,33 @@ namespace HorseRadish { namespace Engine {
 		mLoggerRuntimeCtx->info("${olive}->${default}System information:");
 
 		if (HorseRadish::Platform::CPUGetVendorID(auxInfo))
-			mLoggerRuntimeCtx->info(fmt::format("   CPU vendor ID: {0}", auxInfo));
+			mLoggerRuntimeCtx->info("   CPU vendor ID: {0}", auxInfo);
 		if (HorseRadish::Platform::CPUGetProcessorName(auxInfo))
-			mLoggerRuntimeCtx->info(fmt::format("   CPU processor name: {0}", auxInfo));
+			mLoggerRuntimeCtx->info("   CPU processor name: {0}", auxInfo);
 
 		
 		HorseRadish::Platform::GetSystemInfo(HorseRadish::Platform::SystemInfo::MemoryTotal, memTotal);
- 		mLoggerRuntimeCtx->info(fmt::format("   Total physical memory: {0}", HorseRadish::StringUtils::formatSize(memTotal)));
+ 		mLoggerRuntimeCtx->info("   Total physical memory: {0}", HorseRadish::StringUtils::formatSize(memTotal));
 
 		HorseRadish::Platform::GetSystemInfo(HorseRadish::Platform::SystemInfo::MemoryFree, memFree);
-		mLoggerRuntimeCtx->info(fmt::format("   Free physical memory: {0}", HorseRadish::StringUtils::formatSize(memFree)));
+		mLoggerRuntimeCtx->info("   Free physical memory: {0}", HorseRadish::StringUtils::formatSize(memFree));
 
 		HorseRadish::Platform::GetSystemInfo(HorseRadish::Platform::SystemInfo::DisplayWidth, displayWidth);
 		HorseRadish::Platform::GetSystemInfo(HorseRadish::Platform::SystemInfo::DisplayHeight, displayHeight);
 		HorseRadish::Platform::GetSystemInfo(HorseRadish::Platform::SystemInfo::DisplayColorBits, displayColorBits);
 		HorseRadish::Platform::GetSystemInfo(HorseRadish::Platform::SystemInfo::DisplayFrequency, displayFrequency);
-		mLoggerRuntimeCtx->info(fmt::format("   Desktop resolution: {0}x{1}x{2}@{3}", displayWidth, displayHeight, displayColorBits, displayFrequency));
+		mLoggerRuntimeCtx->info("   Desktop resolution: {0}x{1}x{2}@{3}", displayWidth, displayHeight, displayColorBits, displayFrequency);
 
 		HorseRadish::Platform::GetSystemInfo(HorseRadish::Platform::SystemInfo::OperatingSystemName, auxInfo);
-		mLoggerRuntimeCtx->info(fmt::format("   Operating system: {0}", auxInfo));
+		mLoggerRuntimeCtx->info("   Operating system: {0}", auxInfo);
 
 		mLoggerRuntimeCtx->info(HorseRadish::Platform::IsArch64() ? "   Build type: x86 64bit" : "   Build type: x86 32bit");
 
 		HorseRadish::Platform::GetSystemInfo(HorseRadish::Platform::SystemInfo::MachineName, auxInfo);
-		mLoggerRuntimeCtx->info(fmt::format("   Machine name: {0}", auxInfo));
+		mLoggerRuntimeCtx->info("   Machine name: {0}", auxInfo);
 
 		HorseRadish::Platform::GetSystemInfo(HorseRadish::Platform::SystemInfo::CurrentUsername, auxInfo);
-		mLoggerRuntimeCtx->info(fmt::format("   User name: {0}", auxInfo));
+		mLoggerRuntimeCtx->info("   User name: {0}", auxInfo);
 
 		//test UTF8
 		mLoggerRuntimeCtx->info("${olive}->${default}UTF8 text test:");
@@ -277,7 +277,7 @@ namespace HorseRadish { namespace Engine {
 		: mDevMode(devMode), mCurState(State::Created), mExitCode(0), mExitAction(ExitAction::Nothing)
 	{
 		//initiate logger
-		mLogger = std::make_shared<Logger>(512, HorseRadish::IO::Path("../logs/log.txt"), true);
+		mLogger = std::make_shared<Logger>(10, 500, HorseRadish::IO::Path("../logs/log.txt"));
 		mLoggerRenderCtx = std::make_shared<Logger::Context>(*mLogger, Logger::ModuleType::Graphics);
 		mLoggerRuntimeCtx = std::make_shared<Logger::Context>(*mLogger, Logger::ModuleType::SysRuntime);
 
