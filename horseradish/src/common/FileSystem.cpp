@@ -29,7 +29,7 @@ uLong ZCALLBACK zread(voidpf opaque, voidpf stream, void* buf, uLong size)
 {
 	auto fileStream = reinterpret_cast<HorseRadish::Streams::FileStream*>(stream);
 
-	return fileStream->Read(buf,size);
+	return fileStream->read(buf,size);
 }
 
 static
@@ -37,7 +37,7 @@ long ZCALLBACK ztell(voidpf opaque, voidpf stream)
 {
 	auto fileStream = reinterpret_cast<HorseRadish::Streams::FileStream*>(stream);
 
-	return fileStream->GetPosition();
+	return fileStream->position();
 }
 
 static
@@ -46,11 +46,11 @@ long ZCALLBACK zseek(voidpf opaque, voidpf stream, uLong offset, int origin)
 	auto fileStream = reinterpret_cast<HorseRadish::Streams::FileStream*>(stream);
 
 	if (origin == ZLIB_FILEFUNC_SEEK_CUR)
-		fileStream->Seek(offset, HorseRadish::Streams::Stream::Current);
+		fileStream->seek(HorseRadish::Streams::Stream::SeekOrigin::Current, offset);
 	else if (origin == ZLIB_FILEFUNC_SEEK_END)
-		fileStream->Seek(offset, HorseRadish::Streams::Stream::End);
+		fileStream->seek(HorseRadish::Streams::Stream::SeekOrigin::End, offset);
 	else if (origin == ZLIB_FILEFUNC_SEEK_SET)
-		fileStream->Seek(offset, HorseRadish::Streams::Stream::Begin);
+		fileStream->seek(HorseRadish::Streams::Stream::SeekOrigin::Begin, offset);
 	else
 		return 1;
 
@@ -62,7 +62,7 @@ int ZCALLBACK zclose(voidpf opaque, voidpf stream)
 {
 	auto fileStream = reinterpret_cast<HorseRadish::Streams::FileStream*>(stream);
 
-	fileStream->Close();
+	fileStream->close();
 	delete fileStream;
 
 	return 0;
@@ -124,7 +124,7 @@ namespace HorseRadish
 
 			auto fileStream = std::unique_ptr<Streams::FileStream>(new Streams::FileStream(pathFinal.str(), true, false));
 
-			if (fileStream->IsValid() == false)
+			if (fileStream->isValid() == false)
 				std::unique_ptr<Streams::FileStream>();
 
 			return std::move(fileStream);
@@ -214,20 +214,17 @@ namespace HorseRadish
 			if (itFile == mFileEntries.end())
 				return nullptr;
 
-			auto fileData = malloc(itFile->second.fileSize);
-			if (fileData == nullptr)
-				return nullptr;
+			std::shared_ptr<unsigned char> fileData(new unsigned char[itFile->second.fileSize], std::default_delete<unsigned char[]>());
 
 			unzGoToFilePos(mZipFile, &itFile->second.filePos);
 
 			unzOpenCurrentFile(mZipFile);
 
-			unzReadCurrentFile(mZipFile, fileData, itFile->second.fileSize);
+			unzReadCurrentFile(mZipFile, fileData.get(), itFile->second.fileSize);
 
 			unzCloseCurrentFile(mZipFile);
 
-			auto memStream = std::unique_ptr<Streams::Stream>(new Streams::MemoryStream(fileData, itFile->second.fileSize, false, Streams::MemoryStream::ManagementType::None));
-
+			auto memStream = std::unique_ptr<Streams::Stream>(new Streams::MemoryViewStream(fileData, itFile->second.fileSize));
 			return std::move(memStream);
 		}
 

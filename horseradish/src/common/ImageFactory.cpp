@@ -11,33 +11,33 @@ static
 int stbIORead(void *user, char *data, int size)
 {
 	auto streamReader = static_cast<HorseRadish::Streams::StreamReader*>(user);
-	return streamReader->Read(data, size);
+	return streamReader->read(data, size);
 }
 
 static
 void stbIOSkip(void *user, int n)
 {
 	auto streamReader = static_cast<HorseRadish::Streams::StreamReader*>(user);
-	streamReader->Seek(n);
+	streamReader->skip(n);
 }
 
 static
 int stbIOEof(void *user)
 {
 	auto streamReader = static_cast<HorseRadish::Streams::StreamReader*>(user);
-	return !streamReader->CanRead();
+	return !streamReader->canRead();
 }
 
 namespace HorseRadish { namespace Imaging {
 
 Image<unsigned char, ImageFormatRGB> Factory::readPNG(HorseRadish::Streams::StreamReader &streamReader)
 {
-	auto streamContent = streamReader.getStream().readEntireContent();
+	auto streamContent = streamReader.stream().readEntireContent();
 
 	unsigned int outW = 0, outH = 0;
 	unsigned char* outBuffer = nullptr;
 
-	if (lodepng_decode24(&outBuffer, &outW, &outH, static_cast<const unsigned char *>(streamContent->getData()), streamContent->GetLength()) != 0)
+	if (lodepng_decode24(&outBuffer, &outW, &outH, static_cast<const unsigned char *>(streamContent->getData()), streamContent->length()) != 0)
 		return Image<unsigned char, ImageFormatRGB>();
 
 	if (outBuffer != nullptr)
@@ -48,12 +48,12 @@ Image<unsigned char, ImageFormatRGB> Factory::readPNG(HorseRadish::Streams::Stre
 
 Image<unsigned char, ImageFormatRGBA> Factory::readPNGWithAlpha(HorseRadish::Streams::StreamReader &streamReader)
 {
-	auto streamContent = streamReader.getStream().readEntireContent();
+	auto streamContent = streamReader.stream().readEntireContent();
 
 	unsigned int outW = 0, outH = 0;
 	unsigned char* outBuffer = nullptr;
 
-	if (lodepng_decode32(&outBuffer, &outW, &outH, static_cast<const unsigned char *>(streamContent->getData()), streamContent->GetLength()) != 0)
+	if (lodepng_decode32(&outBuffer, &outW, &outH, static_cast<const unsigned char *>(streamContent->getData()), streamContent->length()) != 0)
 		return Image<unsigned char, ImageFormatRGBA>();
 
 	if (outBuffer != nullptr)
@@ -74,7 +74,7 @@ bool Factory::savePNG(HorseRadish::Streams::StreamWriter &streamWriter, const Im
 	if ((bufferOut == nullptr) || (bufferOutSize <= 0))
 		return false;
 
-	streamWriter.Write(bufferOut, bufferOutSize);
+	streamWriter.write(bufferOut, bufferOutSize);
 
 	free(bufferOut);
 
@@ -93,7 +93,7 @@ bool Factory::savePNG(HorseRadish::Streams::StreamWriter &streamWriter, const Im
 	if ((bufferOut == nullptr) || (bufferOutSize <= 0))
 		return false;
 
-	streamWriter.Write(bufferOut, bufferOutSize);
+	streamWriter.write(bufferOut, bufferOutSize);
 
 	free(bufferOut);
 
@@ -120,7 +120,7 @@ Image<unsigned char, ImageFormatRGBA> Factory::readTGA(HorseRadish::Streams::Str
 	};
 
 	Tgaheader header;
-	streamReader.Read(&header, sizeof(header));
+	streamReader.read(&header, sizeof(header));
 
 	if ((header.bpp != 8) && (header.bpp != 16) && (header.bpp != 24) && (header.bpp != 32))
 		return Image<unsigned char, ImageFormatRGBA>();
@@ -129,7 +129,7 @@ Image<unsigned char, ImageFormatRGBA> Factory::readTGA(HorseRadish::Streams::Str
 	{
 		Image<unsigned char, ImageFormatRGBA> newImage(header.width, header.height);
 
-		streamReader.Seek(header.descriptionlen + header.cmapentries * header.cmapbits / 8);
+		streamReader.skip(header.descriptionlen + header.cmapentries * header.cmapbits / 8);
 
 		if (header.bpp == 24)
 		{
@@ -137,13 +137,13 @@ Image<unsigned char, ImageFormatRGBA> Factory::readTGA(HorseRadish::Streams::Str
 
 			for (int curPixel = newImage.getArea() - 1; curPixel >= 0; curPixel--, imgWalker += 4)
 			{
-				streamReader.Read(imgWalker, 3);
+				streamReader.read(imgWalker, 3);
 				imgWalker[3] = 255;
 			}
 		}
 		else
 		{
-			streamReader.Read(newImage.data(), newImage.getArea() * 4);
+			streamReader.read(newImage.data(), newImage.getArea() * 4);
 		}
 
 		if (header.attrib & (1 << 5))
@@ -160,7 +160,7 @@ Image<unsigned char, ImageFormatRGBA> Factory::readTGA(HorseRadish::Streams::Str
 		if (palSize > 0)
 		{
 			palette.reset(new unsigned char[palSize]);
-			streamReader.Read(palette.get(), palSize);
+			streamReader.read(palette.get(), palSize);
 		}
 	}
 
@@ -176,13 +176,13 @@ Image<unsigned char, ImageFormatRGBA> Factory::readTGA(HorseRadish::Streams::Str
 		while (rawSize > 0)
 		{
 			unsigned int c = 0;
-			streamReader.Read(&c, 0);
+			streamReader.read(&c, 0);
 
 			unsigned int count = (c & 0x7f) + 1;
 			rawSize -= count*dataChannels;
 			if (c & 0x80)
 			{
-				streamReader.Read(v, dataChannels);
+				streamReader.read(v, dataChannels);
 
 				while (count > 0)
 				{
@@ -195,14 +195,14 @@ Image<unsigned char, ImageFormatRGBA> Factory::readTGA(HorseRadish::Streams::Str
 			{
 				count *= dataChannels;
 
-				streamReader.Read(rawWalker, count);
+				streamReader.read(rawWalker, count);
 				rawWalker += count;
 			}
 		}
 	}
 	else
 	{
-		streamReader.Read(rawData.get(), rawSize);
+		streamReader.read(rawData.get(), rawSize);
 	}
 
 	auto imgWalker = newImage.data();

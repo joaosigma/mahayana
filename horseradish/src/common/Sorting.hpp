@@ -15,8 +15,8 @@ namespace HorseRadish
 
 	public:
 
-		static void RadixSort(int *baseArray, int *tempArray, const unsigned int numElements);
-		static void RadixQueue(float *baseArray, float *tempArray, int *orderOut, int *orderTemp, const unsigned int numElements);
+		static void radixSort(int *baseArray, int *tempArray, const unsigned int numElements);
+		static void radixQueue(float *baseArray, float *tempArray, int *orderOut, int *orderTemp, const unsigned int numElements);
 	};
 
 } //HorseRadish

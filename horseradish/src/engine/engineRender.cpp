@@ -330,24 +330,25 @@ namespace HorseRadish
 			mRuntime->callVoidMethod("events.ready");
 
 			//antes de começar a desenhar, tenho de iniciar os contadores
-			timerSecond.ReStart();
-			timerFrame.ReStart();
-			timerTotal.ReStart();
+			timerSecond.reStart();
+			timerFrame.reStart();
+			timerTotal.reStart();
 
 			HorseRadish::OpenGL::glEnable(GL_FRAMEBUFFER_SRGB);
 
 			{
-				HorseRadish::OpenGL::Objects::Query::Group<8> renderGlQueryGroup(
-					{ HorseRadish::OpenGL::Objects::Query::Type::TimeElapsed, HorseRadish::OpenGL::Objects::Query::Type::SamplesPassed,
+				HorseRadish::OpenGL::Objects::Query::Group<8> renderGlQueryGroup = {
+					HorseRadish::OpenGL::Objects::Query::Type::TimeElapsed, HorseRadish::OpenGL::Objects::Query::Type::SamplesPassed,
 					HorseRadish::OpenGL::Objects::Query::Type::VerticesSubmitted, HorseRadish::OpenGL::Objects::Query::Type::PrimitivesSubmitted,
 					HorseRadish::OpenGL::Objects::Query::Type::VertexShaderInvocations, HorseRadish::OpenGL::Objects::Query::Type::FragmentShaderInvocations,
-					HorseRadish::OpenGL::Objects::Query::Type::ClippingInputPrimitives, HorseRadish::OpenGL::Objects::Query::Type::ClippingOutputPrimitives });
+					HorseRadish::OpenGL::Objects::Query::Type::ClippingInputPrimitives, HorseRadish::OpenGL::Objects::Query::Type::ClippingOutputPrimitives
+					};
 
 				while (mCurState == State::Running)
 				{
 					//a primeira coisa é acertar os tempos
 					renderer2D->auxTools.lastTimeS = renderer2D->auxTools.curTimeS;
-					renderer2D->auxTools.curTimeS = timerTotal.GetTimeS();
+					renderer2D->auxTools.curTimeS = timerTotal.getTimeS();
 
 					//caso nao desenhe nada
 					HorseRadish::OpenGL::glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
@@ -379,7 +380,7 @@ namespace HorseRadish
 					}
 
 					//leio o tempo que estive à espera para desenhar o 3D
-					timeSpentDrawing = timerFrame.GetTimeMS();
+					timeSpentDrawing = timerFrame.getTimeMS();
 
 					//se for para tirar algum screenshot
 					if (this->VarGet<int>("sys.screenshot") > 0)
@@ -457,10 +458,10 @@ namespace HorseRadish
 					}, true);
 
 					//se já passou um segundo
-					if (timerSecond.GetTimeMS() > 1000.0)
+					if (timerSecond.getTimeMS() > 1000.0)
 					{
 						//para ajudar nos cálculos
-						double tempoAux = 1.0 / timerSecond.GetTimeS(true);
+						double tempoAux = 1.0 / timerSecond.getTimeS(true);
 
 						//ajusto o valor das variáveis
 						//this->VarSet("sys.infoFPS", HorseRadish::Math::ftoi(((double)glContext->counterGetValue(HorseRadish::OpenGL::Objects::Context::CounterType::Frames)) * tempoAux));
@@ -482,13 +483,13 @@ namespace HorseRadish
 					stage->processStep();
 
 					//leio o tempo que estive à espera de processar as coisas do motor
-					timeSpentProcessing = timerFrame.GetTimeMS() - timeSpentDrawing;
+					timeSpentProcessing = timerFrame.getTimeMS() - timeSpentDrawing;
 
 					//mostro o que desenhei, isto tá no fim pra ajudar no paralelismo entre CPU e GPU
 					glContext->SwapBuffers();
 
 					//leio o tempo que estive à espera de acabar de fazer o swap
-					timeSpentIdle = timerFrame.GetTimeMS() - timeSpentProcessing;
+					timeSpentIdle = timerFrame.getTimeMS() - timeSpentProcessing;
 
 					//se tiver coisas para ler do GPU, leio
 					//if (renderData->stats.gpuCounter != nullptr)
@@ -519,16 +520,16 @@ namespace HorseRadish
 					//only limit FPS if not developing
 					if (this->VarGet<bool>("sys.developer") == 0)
 					{
-						auto frameTotalTimeMS = timerFrame.GetTimeMS();
+						auto frameTotalTimeMS = timerFrame.getTimeMS();
 						if (frameTotalTimeMS < 16.5) //cap to 60fps
 						{
 							std::this_thread::sleep_for(std::chrono::milliseconds(HorseRadish::Math::ftoi(16 - frameTotalTimeMS)));
-							while (timerFrame.GetTimeMS() < 16.5);
+							while (timerFrame.getTimeMS() < 16.5);
 						}
 					}
 
 					//agora sim, faço restart do timer
-					timerFrame.ReStart();
+					timerFrame.reStart();
 				}
 			}
 

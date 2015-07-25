@@ -70,7 +70,7 @@ namespace HorseRadish {	namespace Render {
 		if (!mVideoData.stream || mVideoData.streamEnded)
 			return false;
 
-		if (std::chrono::milliseconds(mVideoData.frameTimer.GetTimeIntMS()) >= mVideoData.waitDuration)
+		if (std::chrono::milliseconds(mVideoData.frameTimer.getTimeIntMS()) >= mVideoData.waitDuration)
 		{
 			bool frameIsAhead;
 			HorseRadish::hInt64 frameID;
@@ -94,7 +94,7 @@ namespace HorseRadish {	namespace Render {
 				mVideoData.frameLastID = frameID;
 			}
 
-			mVideoData.frameTimer.ReStart();
+			mVideoData.frameTimer.reStart();
 			mVideoData.waitDuration = std::chrono::milliseconds(HorseRadish::Math::ftoi(frameDurationS * 1000.0));
 		}
 

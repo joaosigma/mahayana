@@ -35,7 +35,7 @@ namespace HorseRadish
 
 		bool World::ImportJSON(HorseRadish::Streams::StreamReader &stream)
 		{
-			auto content = stream.getStream().readEntireContent();
+			auto content = stream.stream().readEntireContent();
 
 			rapidjson::Document d;
 			d.Parse(content->toStr().c_str());
@@ -232,7 +232,7 @@ namespace HorseRadish
 
 			writer.EndObject();
 
-			stream.Write(s.GetString(), s.GetSize());
+			stream.write(s.GetString(), s.GetSize());
 
 			return true;
 		}

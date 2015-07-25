@@ -86,42 +86,42 @@ void Logger::writeToFile(const EntryData& entry)
 	switch (entry.moduleType)
 	{
 	case Logger::ModuleType::SysRuntime:
-		streamWriter.WriteString("sysRuntime\t", false);
+		streamWriter.writeString("sysRuntime\t");
 		break;
 	case Logger::ModuleType::FileSystem:
-		streamWriter.WriteString("fileSystem\t", false);
+		streamWriter.writeString("fileSystem\t");
 		break;
 	case Logger::ModuleType::Graphics:
-		streamWriter.WriteString("graphics\t", false);
+		streamWriter.writeString("graphics\t");
 		break;
 	case Logger::ModuleType::Audio:
-		streamWriter.WriteString("audio\t", false);
+		streamWriter.writeString("audio\t");
 		break;
 	case Logger::ModuleType::Network:
-		streamWriter.WriteString("network\t", false);
+		streamWriter.writeString("network\t");
 		break;
 	case Logger::ModuleType::PlayRuntime:
-		streamWriter.WriteString("playRuntime\t", false);
+		streamWriter.writeString("playRuntime\t");
 		break;
 	case Logger::ModuleType::Misc:
 	default:
-		streamWriter.WriteString("misc\t", false);
+		streamWriter.writeString("misc\t");
 		break;
 	}
 
 	switch (entry.entryType)
 	{
 	case Logger::EntryType::Error:
-		streamWriter.WriteString("error\t{", false);
+		streamWriter.writeString("error\t{");
 		break;
 	case Logger::EntryType::Info:
-		streamWriter.WriteString("info\t{", false);
+		streamWriter.writeString("info\t{");
 		break;
 	case Logger::EntryType::Warning:
-		streamWriter.WriteString("warning\t{", false);
+		streamWriter.writeString("warning\t{");
 		break;
 	default:
-		streamWriter.WriteString("????\t{", false);
+		streamWriter.writeString("????\t{");
 		break;
 	}
 
@@ -133,13 +133,13 @@ void Logger::writeToFile(const EntryData& entry)
 
 		strftime(bufferTmp, sizeof(bufferTmp), "%Y-%m-%d %H:%M:%S", tmUTC);
 
-		streamWriter.Write(bufferTmp, strlen(bufferTmp) - 1);
-		streamWriter.WriteString("}\t", false);
+		streamWriter.write(bufferTmp, strlen(bufferTmp) - 1);
+		streamWriter.writeString("}\t");
 	}
 
 	if (!entry.isMsgFormated)
 	{
-		streamWriter.WriteString(entry.msg.c_str(), false);
+		streamWriter.writeString(entry.msg.c_str());
 	}
 	else
 	{
@@ -158,7 +158,7 @@ void Logger::writeToFile(const EntryData& entry)
 			if ((walkerNext[0] == '$') && (walkerNext[1] == '{') && (walker[-1] != '$'))
 			{
 				if ((walkerNext - walker) > 0)
-					streamWriter.Write(walker, walkerNext - walker);
+					streamWriter.write(walker, walkerNext - walker);
 
 				for (; (*walkerNext != '\0') && (*walkerNext != '}'); walkerNext++);
 				if (*walkerNext == '}')
@@ -171,10 +171,10 @@ void Logger::writeToFile(const EntryData& entry)
 		}
 
 		if ((walkerNext - walker) > 0)
-			streamWriter.Write(walker, walkerNext - walker);
+			streamWriter.write(walker, walkerNext - walker);
 	}
 
-	streamWriter.Write(HorseRadish::Platform::NewLine, HorseRadish::Platform::NewLineSize);
+	streamWriter.write(HorseRadish::Platform::NewLine, HorseRadish::Platform::NewLineSize);
 }
 
 void Logger::threadFlushFunc()
@@ -189,7 +189,7 @@ void Logger::threadFlushFunc()
 			processAsyncBuffer();
 
 			if (mOutFileStream)
-				mOutFileStream->Flush();
+				mOutFileStream->flush();
 		}
 	}
 }

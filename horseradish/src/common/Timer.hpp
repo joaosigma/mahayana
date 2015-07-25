@@ -8,27 +8,27 @@ namespace HorseRadish
 {
 	class Timer
 	{
-		std::chrono::high_resolution_clock::time_point timepoint;
+		std::chrono::high_resolution_clock::time_point mTimepoint;
 
 	public:
 		Timer();
 
-		void ReStart();
+		void reStart();
 
-		double GetTimeS(const bool restart = false);
-		double GetTimeMS(const bool restart = false);
-		hUInt64 GetTimeIntS(const bool restart = false);
-		hUInt64 GetTimeIntMS(const bool restart = false);
+		double getTimeS(const bool restart = false);
+		double getTimeMS(const bool restart = false);
+		hUInt64 getTimeIntS(const bool restart = false);
+		hUInt64 getTimeIntMS(const bool restart = false);
 
-		void SetS(const hUInt64 seconds);
-		void SetS(const double seconds);
-		void SetMS(const hUInt64 miliseconds);
-		void SetMS(const double miliseconds);
+		void setS(const hUInt64 seconds);
+		void setS(const double seconds);
+		void setMS(const hUInt64 miliseconds);
+		void setMS(const double miliseconds);
 
-		void AddS(const hInt64 seconds);
-		void AddS(const double seconds);
-		void AddMS(const hInt64 miliseconds);
-		void AddMS(const double miliseconds);
+		void addS(const hInt64 seconds);
+		void addS(const double seconds);
+		void addMS(const hInt64 miliseconds);
+		void addMS(const double miliseconds);
 	};
 
 } //HorseRadish

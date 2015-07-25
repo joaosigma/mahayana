@@ -4,100 +4,100 @@ namespace HorseRadish
 {
 	Timer::Timer()
 	{
-		this->ReStart();
+		reStart();
 	}
 
-	void Timer::ReStart()
+	void Timer::reStart()
 	{
-		this->timepoint = std::chrono::high_resolution_clock::now();
+		mTimepoint = std::chrono::high_resolution_clock::now();
 	}
 
-	double Timer::GetTimeS(const bool restart)
+	double Timer::getTimeS(const bool restart)
 	{
 		auto curTime = std::chrono::high_resolution_clock::now();
-		auto elapsed = std::chrono::duration<double, std::chrono::seconds::period>(curTime - this->timepoint).count();
+		auto elapsed = std::chrono::duration<double, std::chrono::seconds::period>(curTime - mTimepoint).count();
 
 		if (restart)
-			this->timepoint = curTime;
+			mTimepoint = curTime;
 
 		return elapsed;
 	}
 
-	double Timer::GetTimeMS(const bool restart)
+	double Timer::getTimeMS(const bool restart)
 	{
 		auto curTime = std::chrono::high_resolution_clock::now();
-		auto elapsed = std::chrono::duration<double, std::chrono::milliseconds::period>(curTime - this->timepoint).count();
+		auto elapsed = std::chrono::duration<double, std::chrono::milliseconds::period>(curTime - mTimepoint).count();
 
 		if (restart)
-			this->timepoint = curTime;
+			mTimepoint = curTime;
 
 		return elapsed;
 	}
 
-	hUInt64 Timer::GetTimeIntS(const bool restart)
+	hUInt64 Timer::getTimeIntS(const bool restart)
 	{
 		auto curTime = std::chrono::high_resolution_clock::now();
-		auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(curTime - this->timepoint).count();
+		auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(curTime - mTimepoint).count();
 
 		if (restart)
-			this->timepoint = curTime;
+			mTimepoint = curTime;
 
 		return static_cast<hUInt64>(elapsed);
 	}
 
-	hUInt64 Timer::GetTimeIntMS(const bool restart)
+	hUInt64 Timer::getTimeIntMS(const bool restart)
 	{
 		auto curTime = std::chrono::high_resolution_clock::now();
-		auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(curTime - this->timepoint).count();
+		auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(curTime - mTimepoint).count();
 
 		if (restart)
-			this->timepoint = curTime;
+			mTimepoint = curTime;
 
 		return static_cast<hUInt64>(elapsed);
 	}
 
-	void Timer::SetS(const hUInt64 seconds)
+	void Timer::setS(const hUInt64 seconds)
 	{
-		this->timepoint = std::chrono::high_resolution_clock::now();
-		this->timepoint -= std::chrono::seconds(seconds);
+		mTimepoint = std::chrono::high_resolution_clock::now();
+		mTimepoint -= std::chrono::seconds(seconds);
 	}
 
-	void Timer::SetS(const double seconds)
+	void Timer::setS(const double seconds)
 	{
-		this->timepoint = std::chrono::high_resolution_clock::now();
-		this->timepoint -= std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::duration<double, std::chrono::seconds::period>(seconds));
+		mTimepoint = std::chrono::high_resolution_clock::now();
+		mTimepoint -= std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::duration<double, std::chrono::seconds::period>(seconds));
 	}
 
-	void Timer::SetMS(const hUInt64 miliseconds)
+	void Timer::setMS(const hUInt64 miliseconds)
 	{
-		this->timepoint = std::chrono::high_resolution_clock::now();
-		this->timepoint -= std::chrono::milliseconds(miliseconds);
+		mTimepoint = std::chrono::high_resolution_clock::now();
+		mTimepoint -= std::chrono::milliseconds(miliseconds);
 	}
 
-	void Timer::SetMS(const double miliseconds)
+	void Timer::setMS(const double miliseconds)
 	{
-		this->timepoint = std::chrono::high_resolution_clock::now();
-		this->timepoint -= std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::duration<double, std::chrono::milliseconds::period>(miliseconds));
+		mTimepoint = std::chrono::high_resolution_clock::now();
+		mTimepoint -= std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::duration<double, std::chrono::milliseconds::period>(miliseconds));
 	}
 
-	void Timer::AddS(const hInt64 seconds)
+	void Timer::addS(const hInt64 seconds)
 	{
-		this->timepoint += std::chrono::seconds(seconds);
+		mTimepoint += std::chrono::seconds(seconds);
 	}
 
-	void Timer::AddS(const double seconds)
+	void Timer::addS(const double seconds)
 	{
-		this->timepoint += std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::duration<double, std::chrono::seconds::period>(seconds));
+		mTimepoint += std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::duration<double, std::chrono::seconds::period>(seconds));
 	}
 
-	void Timer::AddMS(const hInt64 miliseconds)
+	void Timer::addMS(const hInt64 miliseconds)
 	{
-		this->timepoint += std::chrono::milliseconds(miliseconds);
+		mTimepoint += std::chrono::milliseconds(miliseconds);
 	}
 
-	void Timer::AddMS(const double miliseconds)
+	void Timer::addMS(const double miliseconds)
 	{
-		this->timepoint += std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::duration<double, std::chrono::milliseconds::period>(miliseconds));
+		mTimepoint += std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::duration<double, std::chrono::milliseconds::period>(miliseconds));
 	}
 
 } //HorseRadish

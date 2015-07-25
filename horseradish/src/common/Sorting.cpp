@@ -2,7 +2,6 @@
 
 namespace HorseRadish
 {
-
 	void Sorting::radixByte0(const int &numero, const int * const HRESTRICT source, int * const HRESTRICT dest)
 	{
 		int count[256], index[256], i;
@@ -16,6 +15,7 @@ namespace HorseRadish
 		for (i = 0; i < numero; i++)
 			dest[index[((source[i]) >> (0)) & 0xff]++] = source[i];
 	}
+
 	void Sorting::radixByte1(const int &numero, const int * const HRESTRICT source, int * const HRESTRICT dest)
 	{
 		int count[256], index[256], i;
@@ -29,6 +29,7 @@ namespace HorseRadish
 		for (i = 0; i < numero; i++)
 			dest[index[((source[i]) >> (8)) & 0xff]++] = source[i];
 	}
+
 	void Sorting::radixByte2(const int &numero, const int * const HRESTRICT source, int * const HRESTRICT dest)
 	{
 		int count[256], index[256], i;
@@ -42,6 +43,7 @@ namespace HorseRadish
 		for (i = 0; i < numero; i++)
 			dest[index[((source[i]) >> (16)) & 0xff]++] = source[i];
 	}
+
 	void Sorting::radixByte3(const int &numero, const int * const HRESTRICT source, int * const HRESTRICT dest)
 	{
 		int count[256], index[256], i;
@@ -56,7 +58,7 @@ namespace HorseRadish
 			dest[index[((source[i]) >> (24)) & 0xff]++] = source[i];
 	}
 
-	void Sorting::RadixSort(int *baseArray, int *tempArray, const unsigned int numElements)
+	void Sorting::radixSort(int *baseArray, int *tempArray, const unsigned int numElements)
 	{
 		if (baseArray == nullptr || tempArray == nullptr || numElements <= 1)
 			return;
@@ -67,7 +69,7 @@ namespace HorseRadish
 		radixByte3(numElements, tempArray, baseArray);
 	}
 
-	void Sorting::RadixQueue(float *baseArray, float *tempArray, int *orderOut, int *orderTemp, const unsigned int numElements)
+	void Sorting::radixQueue(float *baseArray, float *tempArray, int *orderOut, int *orderTemp, const unsigned int numElements)
 	{
 		int *tmpi;
 		float *tmp;

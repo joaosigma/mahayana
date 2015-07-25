@@ -284,7 +284,7 @@ namespace HorseRadish
 				this->textoOffset = 0;
 				this->listaTexto = nullptr;
 
-				this->cursorTimer.ReStart();
+				this->cursorTimer.reStart();
 			}
 
 			ConsoleTabConsole::~ConsoleTabConsole()
@@ -427,7 +427,7 @@ namespace HorseRadish
 				if (userPrompt->getCursorState(true))
 				{
 					cursorVisivel = true;
-					cursorTimer.ReStart();
+					cursorTimer.reStart();
 				}
 
 				unicodeStr = userPrompt->getInput();
@@ -450,10 +450,10 @@ namespace HorseRadish
 
 				guiFont->paintEnd();
 
-				if (cursorTimer.GetTimeMS() > 750.0f)
+				if (cursorTimer.getTimeMS() > 750.0f)
 				{
 					cursorVisivel = !cursorVisivel;
-					cursorTimer.ReStart();
+					cursorTimer.reStart();
 				}
 			}
 

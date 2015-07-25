@@ -95,16 +95,16 @@ namespace HorseRadish { namespace Render {
 			mActive = isActive;
 			if (mActive)
 			{
-				mTimerDelta.ReStart();
-				mTimerTotal.ReStart();
+				mTimerDelta.reStart();
+				mTimerTotal.reStart();
 				mStepDelta = mStepTotal = 0.0;
 			}
 		}
 
 		void processStep()
 		{
-			mStepDelta = mTimerDelta.GetTimeMS(true);
-			mStepTotal = mTimerTotal.GetTimeMS();
+			mStepDelta = mTimerDelta.getTimeMS(true);
+			mStepTotal = mTimerTotal.getTimeMS();
 		}
 
 		void rtInvokeDraw()

@@ -7,6 +7,8 @@
 #include "Platform.hpp"
 
 #include <memory>
+#include <type_traits>
+
 #include <windows.h>
 
 namespace HorseRadish
@@ -14,54 +16,45 @@ namespace HorseRadish
 	namespace Streams
 	{
 		class MemoryStream;
+		class MemoryViewStream;
 		class FileStream;
 
 		class Stream
 		{
 		public:
-			enum SeekOrigin { Begin, Current, End };
+			enum class SeekOrigin { Begin, Current, End };
 
 			Stream()
 			{ }
 
 			virtual ~Stream();
 
-			virtual void Close() = 0;
-			virtual void Flush() = 0;
+			virtual void close() = 0;
+			virtual void flush() = 0;
 
-			virtual bool CanRead() const = 0;
-			virtual bool CanRead(unsigned int numBytes) const = 0;
-			virtual bool CanWrite() const = 0;
-			virtual bool CanWrite(unsigned int numBytes) const = 0;
-			virtual int GetLength() const = 0;
-			virtual int GetPosition() const = 0;
+			virtual bool canRead() const = 0;
+			virtual bool canRead(size_t numBytes) const = 0;
+			virtual bool canWrite() const = 0;
+			virtual bool canWrite(size_t numBytes) const = 0;
+			virtual size_t length() const = 0;
+			virtual size_t position() const = 0;
 
-			virtual int Read(void * const outBuffer, int numBytes) = 0;
-			virtual int ReadLine(void * const outBuffer, const int bufferSize) = 0;
-			virtual int ReadUntil(void * const outBuffer, const int bufferSize, const char goal) = 0;
-			virtual int Write(const void * const inBuffer, int numBytes) = 0;
-			virtual int Seek(const int offset, const SeekOrigin seekOrigin) = 0;
-
-			virtual std::unique_ptr<MemoryStream> readEntireContent() const = 0;
+			virtual size_t read(void* const outBuffer, size_t numBytes) = 0;
+			virtual size_t write(const void* const inBuffer, size_t numBytes) = 0;
+			virtual bool seek(SeekOrigin seekOrigin, int offset) = 0;
+			 
+			virtual std::unique_ptr<MemoryViewStream> readEntireContent() const = 0;
 		};
 
 		class MemoryStream : public Stream
 		{
-		public:
-			enum class ManagementType { None, ManagedStatic, ManagedGrow };
-
-		private:
-			const void *data;
-			const hUInt8 *dataBegin, *dataEnd, *dataWalker;
-			int dataSize;
-			bool closed, canWrite;
-			ManagementType managementType;
+			void* mData;
+			unsigned char *mDataBegin, *mDataEnd, *mDataWalker;
+			size_t mDataSize;
+			bool mIsClosed;
 
 		public:
-			MemoryStream();
-
-			MemoryStream(int initialSize, bool canWrite);
-			MemoryStream(const void * const bufferData, int bufferSize, bool canWrite, const ManagementType &managementType);
+			MemoryStream(size_t reserveSize = 1024);
 			~MemoryStream();
 
 			MemoryStream(const MemoryStream&) = delete;
@@ -69,34 +62,74 @@ namespace HorseRadish
 
 			MemoryStream(MemoryStream&& stream);
 
-			void Close();
-			void Flush();
+			void close();
+			void flush();
 
-			bool CanRead() const;
-			bool CanRead(unsigned int numBytes) const;
-			bool CanWrite() const;
-			bool CanWrite(unsigned int numBytes) const;
-			int GetLength() const;
-			int GetPosition() const;
+			bool canRead() const;
+			bool canRead(size_t numBytes) const;
+			bool canWrite() const;
+			bool canWrite(size_t numBytes) const;
+			size_t length() const;
+			size_t position() const;
 
-			int Read(void * const outBuffer, int numBytes);
-			int ReadLine(void * const outBuffer, const int bufferSize);
-			int ReadUntil(void * const outBuffer, const int bufferSize, const char goal);
-			int Write(const void * const inBuffer, int numBytes);
-			int Seek(const int offset, const SeekOrigin seekOrigin);
+			size_t read(void* const outBuffer, size_t numBytes);
+			size_t write(const void* const inBuffer, size_t numBytes);
+			bool seek(SeekOrigin seekOrigin, int offset);
 
-			std::unique_ptr<MemoryStream> readEntireContent() const;
+			std::unique_ptr<MemoryViewStream> readEntireContent() const;
 
-			const hUInt8* getData() const;
+			const void* getData() const;
+			std::string toStr() const;
+		};
+
+		class MemoryViewStream : public Stream
+		{
+			const void* mData;
+			const unsigned char *mDataBegin, *mDataEnd, *mDataWalker;
+			bool mIsClosed;
+			std::shared_ptr<unsigned char> mDataShared;
+
+		public:
+			MemoryViewStream();
+			MemoryViewStream(std::shared_ptr<unsigned char> data, size_t dataSize);
+			MemoryViewStream(std::shared_ptr<unsigned char>, size_t dataOffset, size_t dataSize);
+
+			MemoryViewStream(const MemoryViewStream&) = delete;
+			const MemoryViewStream& operator=(const MemoryViewStream&) = delete;
+
+			MemoryViewStream(MemoryViewStream&& stream);
+
+			void close();
+			void flush();
+
+			bool canRead() const;
+			bool canRead(size_t numBytes) const;
+			bool canWrite() const;
+			bool canWrite(size_t numBytes) const;
+			size_t length() const;
+			size_t position() const;
+
+			size_t read(void* const outBuffer, size_t numBytes);
+			size_t write(const void* const inBuffer, size_t numBytes);
+			bool seek(SeekOrigin seekOrigin, int offset);
+
+			std::unique_ptr<MemoryViewStream> readEntireContent() const;
+
+			const void* getData() const;
 			std::string toStr() const;
 		};
 
 		class FileStream : public Stream
 		{
-			HANDLE fileHandle;
-			bool toRead, toWrite, closed;
+			HANDLE mFileHandle;
+			bool mCanRead, mCanWrite, mClosed;
 
 			bool openFile(const std::string& filePath, bool toRead, bool toWrite);
+
+		public:
+			static std::unique_ptr<MemoryViewStream> readEntireFile(const std::string& filePath);
+			static std::string readEntireFileAsString(const std::string& filePath);
+			static bool streamDump(Stream& stream, const std::string& filePath);
 
 		public:
 			FileStream(FileStream&& stream);
@@ -106,355 +139,177 @@ namespace HorseRadish
 			FileStream(const FileStream&) = delete;
 			const FileStream& operator=(const FileStream&) = delete;
 
-			void Close();
-			void Flush();
+			void close();
+			void flush();
 
-			bool CanRead() const;
-			bool CanRead(unsigned int numBytes) const;
-			bool CanWrite() const;
-			bool CanWrite(unsigned int numBytes) const;
-			int GetLength() const;
-			int GetPosition() const;
+			bool canRead() const;
+			bool canRead(size_t numBytes) const;
+			bool canWrite() const;
+			bool canWrite(size_t numBytes) const;
+			size_t length() const;
+			size_t position() const;
 
-			bool IsValid() const;
+			bool isValid() const;
 
-			int Read(void * const outBuffer, int numBytes);
-			int ReadLine(void * const outBuffer, const int bufferSize);
-			int ReadUntil(void * const outBuffer, const int bufferSize, const char goal);
-			int Write(const void * const inBuffer, int numBytes);
-			int Seek(const int offset, const SeekOrigin seekOrigin);
+			size_t read(void* const outBuffer, size_t numBytes);
+			size_t write(const void* const inBuffer, size_t numBytes);
+			bool seek(SeekOrigin seekOrigin, int offset);
 
-			std::unique_ptr<MemoryStream> readEntireContent() const;
-
-			static std::unique_ptr<MemoryStream> ReadEntireFile(const std::string& filePath);
-			static std::string ReadEntireFileAsString(const std::string& filePath);
-			static bool StreamDump(Stream* stream, const std::string& filePath);
+			std::unique_ptr<MemoryViewStream> readEntireContent() const;
 		};
 
 		class StreamReader
 		{
-			Stream &stream;
+			Stream &mStream;
 		public:
 
 			StreamReader(Stream &stream)
-				: stream(stream)
+				: mStream(stream)
 			{ }
 
-			const Stream& getStream() const
+			const Stream& stream() const
 			{
-				return stream;
+				return mStream;
 			}
 
-			bool ReadInt8(hInt8 &outBuffer)
+			template<typename T>
+			bool read(T& destination)
 			{
-				if (stream.CanRead(sizeof(hInt8)) == false)
+				static_assert(std::is_integral<T>::value || std::is_floating_point<T>::value, "Data type must be integer or floating-point");
+
+				if (!mStream.canRead(sizeof(T)))
 					return false;
 
-				if (stream.Read(&outBuffer, sizeof(hInt8)) != sizeof(hInt8))
-					return false;
-
-				return true;
-			}
-
-			bool ReadInt16(hInt16 &outBuffer)
-			{
-				if (stream.CanRead(sizeof(hInt16)) == false)
-					return false;
-
-				if (stream.Read(&outBuffer, sizeof(hInt16)) != sizeof(hInt16))
+				if (mStream.read(&destination, sizeof(T)) != sizeof(T))
 					return false;
 
 				return true;
 			}
 
-			bool ReadInt32(hInt32 &outBuffer)
+			size_t read(void* const buffer, const size_t numBytes)
 			{
-				if (stream.CanRead(sizeof(hInt32)) == false)
-					return false;
-
-				if (stream.Read(&outBuffer, sizeof(hInt32)) != sizeof(hInt32))
-					return false;
-
-				return true;
+				return mStream.read(buffer, numBytes);
 			}
 
-			bool ReadInt64(hInt64 &outBuffer)
+			size_t position() const
 			{
-				if (stream.CanRead(sizeof(hInt64)) == false)
-					return false;
-
-				if (stream.Read(&outBuffer, sizeof(hInt64)) != sizeof(hInt64))
-					return false;
-
-				return true;
+				return mStream.position();
 			}
 
-			bool ReadDouble(double &outBuffer)
+			bool canRead() const
 			{
-				if (stream.CanRead(sizeof(double)) == false)
-					return false;
-
-				if (stream.Read(&outBuffer, sizeof(double)) != sizeof(double))
-					return false;
-
-				return true;
+				return mStream.canRead();
 			}
 
-			int ReadDoubles(double * const outBuffer, int numDoubles)
+			bool skip(const size_t offset)
 			{
-				if (stream.CanRead() == false)
-					return 0;
-
-				auto doublesRead = 0;
-				while ((stream.CanRead(sizeof(double)) == true) && (doublesRead < numDoubles))
-				{
-					if (stream.Read(outBuffer + doublesRead, sizeof(double)) != sizeof(double))
-						break;
-
-					doublesRead++;
-				}
-
-				return doublesRead;
+				return mStream.seek(Stream::SeekOrigin::Current, offset);
 			}
 
-			bool ReadFloat(float &outBuffer)
+			bool seek(Stream::SeekOrigin seekOrigin, const int offset)
 			{
-				if (stream.CanRead(sizeof(float)) == false)
-					return false;
-
-				if (stream.Read(&outBuffer, sizeof(float)) != sizeof(float))
-					return false;
-
-				return true;
-			}
-
-			int ReadFloats(float * const outBuffer, int numFloats)
-			{
-				if (stream.CanRead() == false)
-					return 0;
-
-				auto floatsRead = 0;
-				while ((stream.CanRead(sizeof(float)) == true) && (floatsRead < numFloats))
-				{
-					if (stream.Read(outBuffer + floatsRead, sizeof(float)) != sizeof(float))
-						break;
-
-					floatsRead++;
-				}
-
-				return floatsRead;
-			}
-
-			int Read(void * const outBuffer, int numBytes)
-			{
-				return (stream.Read(outBuffer, numBytes));
-			}
-
-			int ReadLine(void * const outBuffer, const int bufferSize)
-			{
-				return (stream.ReadLine(outBuffer, bufferSize));
-			}
-
-			int ReadUntil(void * const outBuffer, const int bufferSize, const char goal)
-			{
-				return (stream.ReadUntil(outBuffer, bufferSize, goal));
-			}
-
-			int GetPosition() const
-			{
-				return (stream.GetPosition());
-			}
-
-			bool CanRead() const
-			{
-				return (stream.CanRead());
-			}
-
-			int Seek(const int offset)
-			{
-				return (stream.Seek(offset, Stream::Current));
-			}
-
-			int Seek(const int offset, const Stream::SeekOrigin seekOrigin)
-			{
-				return (stream.Seek(offset, seekOrigin));
+				return mStream.seek(seekOrigin, offset);
 			}
 		};
 
 		class StreamWriter
 		{
-			Stream &stream;
+			Stream &mStream;
 		public:
 
 			StreamWriter(Stream &stream)
-				: stream(stream)
+				: mStream(stream)
 			{ }
 
-			const Stream& getStream() const
+			const Stream& stream() const
 			{
-				return stream;
+				return mStream;
 			}
 
-			bool WriteInt8(const hInt8 &inValue)
+			template<typename T>
+			bool write(const T& value)
 			{
-				if (stream.CanWrite() == false)
+				if (!mStream.canWrite())
+					return false;
+
+				return (mStream.write(&value, sizeof(T)) == sizeof(T));
+			}
+
+			size_t write(const void* const buffer, const size_t numBytes)
+			{
+				if (!mStream.canWrite())
 					return 0;
 
-				return (stream.Write(&inValue, sizeof(hInt8)) == sizeof(hInt8));
+				return mStream.write(buffer, numBytes);
 			}
 
-			bool WriteInt16(const hInt16 &inValue)
+			size_t writeString(const char* const str, bool includeTerminator = false)
 			{
-				if (stream.CanWrite() == false)
+				if (!mStream.canWrite() || (str == nullptr))
 					return 0;
 
-				return (stream.Write(&inValue, sizeof(hInt16)) == sizeof(hInt16));
+				auto strLen = strlen(str);
+				if (includeTerminator)
+					strLen++;
+
+				return mStream.write(str, strLen);
 			}
 
-			bool WriteInt32(const hInt32 &inValue)
+			size_t position() const
 			{
-				if (stream.CanWrite() == false)
-					return 0;
-
-				return (stream.Write(&inValue, sizeof(hInt32)) == sizeof(hInt32));
+				return mStream.position();
 			}
 
-			bool WriteInt64(const hInt64 &inValue)
+			bool skip(const size_t offset)
 			{
-				if (stream.CanWrite() == false)
-					return 0;
-
-				return (stream.Write(&inValue, sizeof(hInt64)) == sizeof(hInt64));
+				return mStream.seek(Stream::SeekOrigin::Current, offset);
 			}
 
-			bool WriteDouble(const double &inValue)
+			bool seek(Stream::SeekOrigin seekOrigin, const int offset)
 			{
-				if (stream.CanWrite() == false)
-					return 0;
-
-				return (stream.Write(&inValue, sizeof(double)) == sizeof(double));
-			}
-
-			int WriteDoubles(const double * const inBuffer, int numDoubles)
-			{
-				if (!stream.CanWrite() || (numDoubles <= 0))
-					return 0;
-
-				for (int i = 0; i < numDoubles; i++)
-				{
-					if (stream.Write(inBuffer + i, sizeof(double)) != sizeof(double))
-						return i;
-				}
-
-				return numDoubles;
-			}
-
-			bool WriteFloat(const float &inValue)
-			{
-				if (stream.CanWrite() == false)
-					return 0;
-
-				return (stream.Write(&inValue, sizeof(float)) == sizeof(float));
-			}
-
-			int WriteFloats(const float * const inBuffer, int numFloats)
-			{
-				if (!stream.CanWrite() || (numFloats <= 0))
-					return 0;
-
-				for (int i = 0; i < numFloats; i++)
-				{
-					if (stream.Write(inBuffer + i, sizeof(float)) != sizeof(float))
-						return i;
-				}
-
-				return numFloats;
-			}
-
-			int Write(const void * const inBuffer, int numBytes)
-			{
-				if (stream.CanWrite() == false)
-					return 0;
-
-				return stream.Write(inBuffer, numBytes);
-			}
-
-			int WriteString(const char * const stringData, bool includeTerminator)
-			{
-				if (stream.CanWrite() == false)
-					return 0;
-
-				auto bytesWritten = 0;
-
-				auto stringIntWalker = reinterpret_cast<const hInt32*>(stringData);
-				for (; Math::iHasZero(*stringIntWalker) == false; stringIntWalker++)
-					bytesWritten += stream.Write(stringIntWalker, sizeof(hInt32));
-
-				auto stringWalker = reinterpret_cast<const char *>(stringIntWalker);
-				for (; *stringWalker != '\0'; stringWalker++)
-					bytesWritten += stream.Write(stringWalker, 1);
-
-				if (includeTerminator == true)
-					bytesWritten += stream.Write(stringWalker, 1);
-
-				return bytesWritten;
-			}
-
-			int GetPosition() const
-			{
-				return (stream.GetPosition());
-			}
-
-			int Seek(const int offset)
-			{
-				return (stream.Seek(offset, Stream::Current));
-			}
-
-			int Seek(const int offset, const Stream::SeekOrigin seekOrigin)
-			{
-				return (stream.Seek(offset, seekOrigin));
+				return mStream.seek(seekOrigin, offset);
 			}
 		};
 
 		class TextWriter
 		{
-			Stream &stream;
+			Stream &mStream;
 
 		public:
 
 			TextWriter(Stream &stream)
-				: stream(stream)
+				: mStream(stream)
 			{ }
 
-			const Stream& getStream() const
+			const Stream& stream() const
 			{
-				return stream;
+				return mStream;
 			}
 
-			bool Write(const char * const string, bool writeLine = false)
+			bool write(const char* const string, bool writeLine = false)
 			{
 				if ((string == nullptr) || (string[0] == '\0'))
 					return 0;
 
-				return (this->Write(string, strlen(string), writeLine));
+				return write(string, strlen(string), writeLine);
 			}
 
-			bool Write(const char * const string, int bytesToWrite, bool writeLine = false)
+			bool write(const char* const string, size_t bytesToWrite, bool writeLine = false)
 			{
-				if (!stream.CanWrite() || (string == nullptr) || (bytesToWrite <= 0))
+				if (!mStream.canWrite() || (string == nullptr) || (bytesToWrite <= 0))
 					return 0;
 
-				auto sucesso = (stream.Write(string, bytesToWrite) == bytesToWrite);
+				auto success = (mStream.write(string, bytesToWrite) == bytesToWrite);
 
-				if (sucesso && writeLine)
-					sucesso &= (stream.Write(HorseRadish::Platform::NewLine, HorseRadish::Platform::NewLineSize) == HorseRadish::Platform::NewLineSize);
+				if (success && writeLine)
+					success &= (mStream.write(HorseRadish::Platform::NewLine, HorseRadish::Platform::NewLineSize) == HorseRadish::Platform::NewLineSize);
 
-				return sucesso;
+				return success;
 			}
 
-			void WriteLine()
+			void writeLine()
 			{
-				stream.Write(HorseRadish::Platform::NewLine, HorseRadish::Platform::NewLineSize);
+				mStream.write(HorseRadish::Platform::NewLine, HorseRadish::Platform::NewLineSize);
 			}
 		};
 

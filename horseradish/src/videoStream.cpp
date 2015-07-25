@@ -287,7 +287,7 @@ bool VideoStream::GoToBeginning()
 
 	processAVFrame();
 
-	this->timerInfo.timer.ReStart();
+	this->timerInfo.timer.reStart();
 	this->timerInfo.timestampS = 0.0;
 
 	return true;
@@ -325,10 +325,10 @@ bool VideoStream::GoToTime(const double seconds)
 	processAVFrame();
 
 	if (this->videoQueueActive > 0)
-		this->timerInfo.timer.SetS(this->videoQueue[0].frameStart);
+		this->timerInfo.timer.setS(this->videoQueue[0].frameStart);
 	else
-		this->timerInfo.timer.SetS(seconds);
-	this->timerInfo.timestampS = this->timerInfo.timer.GetTimeS();
+		this->timerInfo.timer.setS(seconds);
+	this->timerInfo.timestampS = this->timerInfo.timer.getTimeS();
 
 	return true;
 }
@@ -339,7 +339,7 @@ const void* VideoStream::GetFrame(bool &clockIsBehind, HorseRadish::hInt64 &fram
 	frameID = -1;
 	frameDurationS = 0.0;
 
-	this->timerInfo.timestampS = this->timerInfo.timer.GetTimeS();
+	this->timerInfo.timestampS = this->timerInfo.timer.getTimeS();
 
 	while (true)
 	{
@@ -363,7 +363,7 @@ const void* VideoStream::GetFrame(bool &clockIsBehind, HorseRadish::hInt64 &fram
 			auto frameAlvo = this->videoQueue + 0;
 
 			frameID = frameAlvo->framePTS;
-			frameDurationS = frameAlvo->frameEnd - this->timerInfo.timer.GetTimeS();
+			frameDurationS = frameAlvo->frameEnd - this->timerInfo.timer.getTimeS();
 
 			return frameAlvo->frameData;
 		}
@@ -395,7 +395,7 @@ double VideoStream::GetFrameDuration(const HorseRadish::hInt64 &frameID)
 	if (frameAlvo->framePTS != frameID)
 		return 0.0;
 
-	return (frameAlvo->frameEnd - this->timerInfo.timer.GetTimeS());
+	return (frameAlvo->frameEnd - this->timerInfo.timer.getTimeS());
 }
 
 bool VideoStream::IsValid() const
@@ -410,7 +410,7 @@ bool VideoStream::HasAudio() const
 
 double VideoStream::GetTimeStampDelta()
 {
-	return (this->timerInfo.timer.GetTimeS() - this->timerInfo.timestampS);
+	return (this->timerInfo.timer.getTimeS() - this->timerInfo.timestampS);
 }
 
 int VideoStream::GetVideoFrameDataSize() const

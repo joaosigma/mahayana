@@ -1,7 +1,5 @@
 #pragma once
 
-#include "Types.hpp"
-
 #include <functional>
 
 namespace HorseRadish
@@ -16,14 +14,13 @@ namespace HorseRadish
 
 		explicit ScopedAction(std::function<void()> funcCallback)
 			: funcCallback(funcCallback)
-		{
-		}
+		{ }
 
 		~ScopedAction()
 		{
-			if (funcCallback != nullptr)
+			if (funcCallback)
 				funcCallback();
 		}
 	};
 
-} //HorseRadish
+}

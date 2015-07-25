@@ -94,10 +94,10 @@ namespace HorseRadish
 				char_array_4[2] = ((char_array_3[1] & 0x0f) << 2) + ((char_array_3[2] & 0xc0) >> 6);
 				char_array_4[3] = char_array_3[2] & 0x3f;
 
-				streamOut.Write(Encoders::base64Chars + char_array_4[0], sizeof(char));
-				streamOut.Write(Encoders::base64Chars + char_array_4[1], sizeof(char));
-				streamOut.Write(Encoders::base64Chars + char_array_4[2], sizeof(char));
-				streamOut.Write(Encoders::base64Chars + char_array_4[3], sizeof(char));
+				streamOut.write(Encoders::base64Chars + char_array_4[0], sizeof(char));
+				streamOut.write(Encoders::base64Chars + char_array_4[1], sizeof(char));
+				streamOut.write(Encoders::base64Chars + char_array_4[2], sizeof(char));
+				streamOut.write(Encoders::base64Chars + char_array_4[3], sizeof(char));
 				i = 0;
 			}
 		}
@@ -113,11 +113,11 @@ namespace HorseRadish
 			char_array_4[3] = char_array_3[2] & 0x3f;
 
 			for (int j = 0; (j < i + 1); j++)
-				streamOut.Write(Encoders::base64Chars + char_array_4[j], sizeof(char));
+				streamOut.write(Encoders::base64Chars + char_array_4[j], sizeof(char));
 
 			char endChar = '=';
 			while ((i++ < 3))
-				streamOut.Write(&endChar, sizeof(char));
+				streamOut.write(&endChar, sizeof(char));
 		}
 	}
 
@@ -273,7 +273,7 @@ namespace HorseRadish
 				char_array_3[1] = ((char_array_4[1] & 0xf) << 4) + ((char_array_4[2] & 0x3c) >> 2);
 				char_array_3[2] = ((char_array_4[2] & 0x3) << 6) + char_array_4[3];
 
-				streamOut.Write(char_array_3, sizeof(unsigned char) * 3);
+				streamOut.write(char_array_3, sizeof(unsigned char) * 3);
 				bytesWritten += 3;
 
 				i = 0;
@@ -296,7 +296,7 @@ namespace HorseRadish
 
 			for (int j = 0; (j < i - 1); j++)
 			{
-				streamOut.Write(char_array_3 + j, sizeof(unsigned char));
+				streamOut.write(char_array_3 + j, sizeof(unsigned char));
 				bytesWritten++;
 			}
 		}
@@ -337,7 +337,7 @@ namespace HorseRadish
 		{
 			auto hexPair = bufferHex + ((*bufferWalker) * 2);
 
-			streamOut.Write(hexPair, sizeof(unsigned char) * 2);
+			streamOut.write(hexPair, sizeof(unsigned char) * 2);
 		}
 	}
 
@@ -368,7 +368,7 @@ namespace HorseRadish
 			int valHex = Encoders::hexDecodeLookup[*inWalker++] << 4;
 			valHex |= Encoders::hexDecodeLookup[*inWalker++];
 
-			streamOut.Write(&valHex, 1);
+			streamOut.write(&valHex, 1);
 			bytesWritten++;
 		}
 

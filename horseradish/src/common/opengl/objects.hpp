@@ -11,6 +11,7 @@
 #include <array>
 #include <vector>
 #include <cassert>
+#include <initializer_list>
 
 namespace HorseRadish { namespace OpenGL { namespace Objects {
 
@@ -972,10 +973,13 @@ public:
 		Query mQueries[N];
 
 	public:
-		Group(const std::array<Type, N>& types)
+		Group(std::initializer_list<Type> types)
 		{
-			for (int i = 0; i < N; i++)
-				mQueries[i].init(types[i]);
+			assert(types.size() == N);
+
+			int index = 0;
+			for (const auto& queryType : types)
+				mQueries[index++].init(queryType);
 		}
 
 		Group(const Group&) = delete;

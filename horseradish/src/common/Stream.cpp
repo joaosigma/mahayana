@@ -3,657 +3,613 @@
 #include "ScopedAction.hpp"
 #include "stringUtils.hpp"
 
-namespace HorseRadish
+#include <memory>
+
+namespace HorseRadish { namespace Streams {
+
+Stream::~Stream()
+{ }
+
+MemoryStream::MemoryStream(size_t reserveSize)
+	: mData(nullptr), mDataBegin(nullptr), mDataEnd(nullptr), mDataWalker(nullptr), mDataSize(0), mIsClosed(false)
 {
-	namespace Streams
+	mDataSize = (reserveSize < 1024) ? 1024 : reserveSize;
+	mData = realloc(mData, mDataSize);
+	
+	mDataBegin = mDataWalker = reinterpret_cast<unsigned char*>(mData);
+	mDataEnd = mDataBegin + mDataSize;
+}
+
+MemoryStream::~MemoryStream()
+{
+}
+
+MemoryStream::MemoryStream(MemoryStream&& stream)
+{
+	mData = std::move(stream.mData);
+	mDataBegin = std::move(stream.mDataBegin);
+	mDataEnd = std::move(stream.mDataEnd);
+	mDataWalker = std::move(stream.mDataWalker);
+	mDataSize = std::move(stream.mDataSize);
+	mIsClosed = std::move(stream.mIsClosed);
+}
+
+void MemoryStream::close()
+{
+	if (mData)
+		free(mData);
+
+	mDataSize = 0;
+	mIsClosed = true;
+	mData = mDataBegin = mDataEnd = mDataWalker = nullptr;
+}
+
+void MemoryStream::flush()
+{ }
+
+bool MemoryStream::canRead() const
+{
+	if (mIsClosed)
+		return false;
+
+	return (mDataWalker < mDataEnd);
+}
+
+bool MemoryStream::canRead(size_t numBytes) const
+{
+	if (!canRead())
+		return false;
+
+	return (numBytes <= (mDataEnd - mDataWalker));
+}
+
+bool MemoryStream::canWrite() const
+{
+	return !mIsClosed;
+}
+
+bool MemoryStream::canWrite(size_t numBytes) const
+{
+	return canWrite();
+}
+
+size_t MemoryStream::length() const
+{
+	return mDataSize;
+}
+
+size_t MemoryStream::position() const
+{
+	return (mDataWalker - mDataBegin);
+}
+
+size_t MemoryStream::read(void* const outBuffer, size_t numBytes)
+{
+	if (!canRead())
+		return 0;
+
+	if (numBytes > (mDataEnd - mDataWalker))
+		numBytes = (mDataEnd - mDataWalker);
+
+	if (numBytes <= 0)
+		return 0;
+
+	memcpy(outBuffer, mDataWalker, numBytes);
+	mDataWalker += numBytes;
+	return numBytes;
+}
+
+size_t MemoryStream::write(const void* const inBuffer, size_t numBytes)
+{
+	if (!canWrite())
+		return 0;
+
+	if ((mDataEnd - mDataWalker) > numBytes)
 	{
-		Stream::~Stream()
-		{ }
+		if (mDataSize <= 1024)
+			mDataSize = (mDataSize * 10) / 4;
+		else if (mDataSize <= (100 * 1024))
+			mDataSize = (mDataSize * 10) / 5;
+		else if (mDataSize <= (1024 * 1024))
+			mDataSize = (mDataSize * 10) / 8;
+		else if (mDataSize <= (1024 * 1024))
+			mDataSize = (mDataSize * 10) / 8;
+		else if (mDataSize <= (10 * 1024 * 1024))
+			mDataSize = mDataSize + (1024 * 1024);
 
-		MemoryStream::MemoryStream()
-			: data(nullptr), dataBegin(nullptr), dataEnd(nullptr), dataWalker(nullptr), dataSize(0), closed(false), canWrite(false), managementType(ManagementType::None)
-		{ }
-
-		MemoryStream::MemoryStream(int initialSize, bool canWrite)
-			: dataSize(initialSize)
-			, canWrite(canWrite)
-			, managementType(ManagementType::ManagedStatic)
+		auto oldPtr = mData;
+		mData = realloc(mData, mDataSize);
+		if (mData != oldPtr)
 		{
-			this->data = malloc(this->dataSize);
-
-			this->closed = false;
-
-			this->dataBegin = reinterpret_cast<const hUInt8*>(this->data);
-			this->dataEnd = this->dataBegin + this->dataSize;
-			this->dataWalker = this->dataBegin;
+			mDataBegin = reinterpret_cast<unsigned char*>(mData);
+			mDataWalker = mDataBegin + (mDataWalker - reinterpret_cast<unsigned char*>(oldPtr));
+			mDataEnd = mDataBegin + mDataSize;
 		}
-
-		MemoryStream::MemoryStream(const void * const bufferData, int bufferSize, bool canWrite, const MemoryStream::ManagementType &managementType)
-			: data(bufferData)
-			, dataSize(bufferSize)
-			, canWrite(canWrite)
-			, managementType(managementType)
-		{
-			if ((this->data == nullptr) || (this->dataSize < 0))
-				this->dataSize = 0;
-
-			this->closed = false;
-
-			this->dataBegin = reinterpret_cast<const hUInt8*>(this->data);
-			this->dataEnd = this->dataBegin + this->dataSize;
-			this->dataWalker = this->dataBegin;
-		}
-
-		MemoryStream::~MemoryStream()
-		{
-			if (this->closed == false)
-				this->Close();
-		}
-
-		MemoryStream::MemoryStream(MemoryStream&& stream)
-		{
-			this->data = stream.data;
-			this->dataBegin = stream.dataBegin;
-			this->dataEnd = stream.dataEnd;
-			this->dataWalker = stream.dataWalker;
-			this->dataSize = stream.dataSize;
-			this->closed = stream.closed;
-			this->canWrite = stream.canWrite;
-			this->managementType = stream.managementType;
-
-			stream.dataSize = 0;
-			stream.closed = true;
-			stream.canWrite = false;
-			stream.managementType = ManagementType::None;
-			stream.data = stream.dataBegin = stream.dataEnd = stream.dataWalker = nullptr;
-		}
-
-		void MemoryStream::Close()
-		{
-			this->closed = true;
-
-			if ((this->managementType != ManagementType::None) && (this->data != nullptr))
-				free((void*)this->data);
-
-			this->data = this->dataBegin = this->dataEnd = this->dataWalker = nullptr;
-			this->dataSize = 0;
-			this->canWrite = false;
-		}
-
-		void MemoryStream::Flush()
-		{ }
-
-		bool MemoryStream::CanRead() const
-		{
-			if (closed == true)
-				return false;
-
-			return (this->dataWalker < this->dataEnd);
-		}
-
-		bool MemoryStream::CanRead(unsigned int numBytes) const
-		{
-			if (this->CanRead() == false)
-				return false;
-
-			if (numBytes < 0)
-				return false;
-
-			return (numBytes <= (this->dataEnd - this->dataWalker));
-		}
-
-		bool MemoryStream::CanWrite() const
-		{
-			return this->canWrite;
-		}
-
-		bool MemoryStream::CanWrite(unsigned int numBytes) const
-		{
-			return this->canWrite;
-		}
-
-		int MemoryStream::GetLength() const
-		{
-			return dataSize;
-		}
-
-		int MemoryStream::GetPosition() const
-		{
-			return (this->dataWalker - this->dataBegin);
-		}
-
-		int MemoryStream::Read(void * const outBuffer, int numBytes)
-		{
-			if (numBytes > (this->dataEnd - this->dataWalker))
-				numBytes = (this->dataEnd - this->dataWalker);
-
-			if (numBytes <= 0)
-				return 0;
-
-			memcpy(outBuffer, this->dataWalker, numBytes);
-			this->dataWalker += numBytes;
-			return numBytes;
-		}
-
-		int MemoryStream::ReadLine(void * const outBuffer, const int bufferSize)
-		{
-			if ((outBuffer == nullptr) || (bufferSize <= 0))
-				return 0;
-
-			if (this->CanRead() == false)
-				return 0;
-
-			auto outBufferWalker = reinterpret_cast<char*>(outBuffer);
-
-			auto actualRead = 0;
-			do{
-				if (*this->dataWalker == '\n')
-				{
-					this->dataWalker++;
-					return actualRead;
-				}
-
-				if (*this->dataWalker == '\r')
-				{
-					this->dataWalker++;
-
-					if (this->dataWalker < this->dataEnd)
-					{
-						if (*this->dataWalker == '\n')
-							this->dataWalker++;
-					}
-
-					return actualRead;
-				}
-
-				*outBufferWalker = *this->dataWalker;
-
-				actualRead++;
-				this->dataWalker++;
-
-				if (actualRead >= bufferSize)
-					return -actualRead;
-
-				outBufferWalker++;
-			} while (this->dataWalker < this->dataEnd);
-
-			return -actualRead;
-		}
-
-		int MemoryStream::ReadUntil(void * const outBuffer, const int bufferSize, const char goal)
-		{
-			if ((outBuffer == nullptr) || (bufferSize <= 0))
-				return 0;
-
-			if (this->CanRead() == false)
-				return 0;
-
-			auto outBufferWalker = reinterpret_cast<char*>(outBuffer);
-
-			auto actualRead = 0;
-			do{
-				*outBufferWalker = *this->dataWalker;
-
-				actualRead++;
-				this->dataWalker++;
-
-				if (*outBufferWalker == goal)
-					return actualRead;
-
-				if (actualRead >= bufferSize)
-					return -actualRead;
-
-				outBufferWalker++;
-			} while (this->dataWalker < this->dataEnd);
-
-			return -actualRead;
-		}
-
-		int MemoryStream::Write(const void * const inBuffer, int numBytes)
-		{
-			if (this->canWrite == false)
-				return 0;
-
-			memcpy((void*)this->dataWalker, inBuffer, numBytes);
-			this->dataWalker += numBytes;
-			return numBytes;
-		}
-
-		int MemoryStream::Seek(const int offset, const SeekOrigin seekOrigin)
-		{
-			if (seekOrigin == Stream::Begin)
-				this->dataWalker = this->dataBegin + offset;
-			else if (seekOrigin == Stream::End)
-				this->dataWalker = this->dataEnd + offset;
-			else if (seekOrigin == Stream::Current)
-				this->dataWalker += offset;
-
-			if (this->dataWalker < this->dataBegin)
-				this->dataWalker = this->dataBegin;
-			if (this->dataWalker > this->dataEnd)
-				this->dataWalker = this->dataEnd;
-
-			return this->GetPosition();
-		}
-
-		std::unique_ptr<MemoryStream> MemoryStream::readEntireContent() const
-		{
-			return std::unique_ptr<MemoryStream>(new MemoryStream(this->data, this->dataSize, false, MemoryStream::ManagementType::None));
-		}
-
-		const hUInt8* MemoryStream::getData() const
-		{
-			return dataBegin;
-		}
-
-		std::string MemoryStream::toStr() const
-		{
-			std::string finalStr;
-			finalStr.resize(this->dataSize + 1);
-
-			memcpy(&finalStr[0], this->data, this->dataSize);
-			reinterpret_cast<char*>(&finalStr[0])[this->dataSize] = '\0';
-
-			return finalStr;
-		}
-
-		bool FileStream::openFile(const std::string& filePath, bool toRead, bool toWrite)
-		{
-			this->toRead = toRead;
-			this->toWrite = toWrite;
-
-			this->closed = false;
-			this->fileHandle = nullptr;
-
-			if ((toRead == false) && (toWrite == false))
-				return false;
-
-			auto filePathWChar = HorseRadish::StringUtils::conv2UTF16(filePath);
-
-			if ((toRead == true) && (toWrite == true))
-				this->fileHandle = CreateFile(filePathWChar.c_str(), GENERIC_READ | GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
-			else if (toRead == true)
-				this->fileHandle = CreateFile(filePathWChar.c_str(), GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
-			else if (toWrite == true)
-				this->fileHandle = CreateFile(filePathWChar.c_str(), GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
-
-			if (this->fileHandle == INVALID_HANDLE_VALUE)
-			{
-				this->fileHandle = nullptr;
-				return false;
-			}
-
-			return true;
-		}
-
-		FileStream::FileStream(FileStream&& stream)
-		{
-			this->fileHandle = stream.fileHandle;
-			this->toRead = stream.toRead;
-			this->toWrite = stream.toWrite;
-			this->closed = stream.closed;
-
-			stream.fileHandle = nullptr;
-			stream.toRead = stream.toWrite = false;
-			stream.closed = true;
-		}
-
-		FileStream::FileStream(const std::string& filePath, bool toRead, bool toWrite)
-		{
-			this->toRead = this->toWrite = false;
-			this->closed = false;
-			this->fileHandle = nullptr;
-
-			this->openFile(filePath, toRead, toWrite);
-		}
-
-		FileStream::~FileStream()
-		{
-			if (this->closed == false)
-				this->Close();
-		}
-
-		void FileStream::Close()
-		{
-			if (this->fileHandle != nullptr)
-				CloseHandle(this->fileHandle);
-
-			this->closed = true;
-
-			this->toRead = false;
-			this->toWrite = false;
-			this->fileHandle = nullptr;
-		}
-
-		void FileStream::Flush()
-		{
-			if (this->fileHandle != nullptr)
-				FlushFileBuffers(this->fileHandle);
-		}
-
-		bool FileStream::CanRead() const
-		{
-			if (closed == true)
-				return false;
-
-			if (this->toRead == false)
-				return false;
-
-			return (SetFilePointer(this->fileHandle, 0, nullptr, FILE_CURRENT) < GetFileSize(this->fileHandle, nullptr));
-		}
-
-		bool FileStream::CanRead(unsigned int numBytes) const
-		{
-			if (closed == true)
-				return false;
-
-			if (this->toRead == false)
-				return false;
-
-			return ((GetFileSize(this->fileHandle, nullptr) - SetFilePointer(this->fileHandle, 0, nullptr, FILE_CURRENT)) >= numBytes);
-		}
-
-		bool FileStream::CanWrite() const
-		{
-			if (closed == true)
-				return false;
-
-			return (this->toWrite);
-		}
-
-		bool FileStream::CanWrite(unsigned int numBytes) const
-		{
-			return (this->CanWrite());
-		}
-
-		int FileStream::GetLength() const
-		{
-			if (this->fileHandle == nullptr)
-				return 0;
-
-			return GetFileSize(this->fileHandle, nullptr);
-		}
-
-		int FileStream::GetPosition() const
-		{
-			if (this->fileHandle == nullptr)
-				return 0;
-
-			return SetFilePointer(this->fileHandle, 0, nullptr, FILE_CURRENT);
-		}
-
-		bool FileStream::IsValid() const
-		{
-			return (this->fileHandle != nullptr);
-		}
-
-		int FileStream::Read(void * const outBuffer, int numBytes)
-		{
-			DWORD bytesRead;
-
-			if ((outBuffer == nullptr) || (numBytes <= 0))
-				return 0;
-
-			if (this->fileHandle == nullptr)
-				return -1;
-
-			if (ReadFile(this->fileHandle, outBuffer, numBytes, &bytesRead, nullptr) == 0)
-				return -1;
-
-			return bytesRead;
-		}
-
-		int FileStream::ReadLine(void * const outBuffer, const int bufferSize)
-		{
-			DWORD bytesRead;
-			char dataRead;
-
-			if ((outBuffer == nullptr) || (bufferSize <= 0))
-				return 0;
-
-			if (this->CanRead() == false)
-				return 0;
-
-			auto outBufferWalker = reinterpret_cast<char*>(outBuffer);
-
-			auto actualRead = 0;
-			while (true)
-			{
-				if (ReadFile(this->fileHandle, &dataRead, 1, &bytesRead, nullptr) == 0)
-					break;
-
-				if (bytesRead != 1)
-					break;
-
-				if (dataRead == '\n')
-					return actualRead;
-
-				if (dataRead == '\r')
-				{
-					if (ReadFile(this->fileHandle, &dataRead, 1, &bytesRead, nullptr) == 0)
-						break;
-
-					if (bytesRead != 1)
-						break;
-
-					if (dataRead != '\n')
-						SetFilePointer(this->fileHandle, -1, nullptr, FILE_CURRENT);
-
-					return actualRead;
-				}
-
-				*outBufferWalker = dataRead;
-				actualRead++;
-
-				if (actualRead >= bufferSize)
-					return -actualRead;
-
-				outBufferWalker++;
-			}
-
-			return -actualRead;
-		}
-
-		int FileStream::ReadUntil(void * const outBuffer, const int bufferSize, const char goal)
-		{
-			DWORD bytesRead;
-
-			if ((outBuffer == nullptr) || (bufferSize <= 0))
-				return 0;
-
-			if (this->CanRead() == false)
-				return 0;
-
-			auto outBufferWalker = reinterpret_cast<char*>(outBuffer);
-
-			auto actualRead = 0;
-			while (true)
-			{
-				if (ReadFile(this->fileHandle, outBufferWalker, 1, &bytesRead, nullptr) == 0)
-					break;
-
-				if (bytesRead != 1)
-					break;
-
-				actualRead++;
-
-				if (*outBufferWalker == goal)
-					return actualRead;
-
-				if (actualRead >= bufferSize)
-					return -actualRead;
-
-				outBufferWalker++;
-			}
-
-			return -actualRead;
-		}
-
-		int FileStream::Write(const void * const inBuffer, int numBytes)
-		{
-			DWORD bytesWritten;
-
-			if ((inBuffer == nullptr) || (numBytes <= 0))
-				return 0;
-
-			if (this->fileHandle == nullptr)
-				return -1;
-
-			if (WriteFile(this->fileHandle, inBuffer, numBytes, &bytesWritten, nullptr) == 0)
-				return -1;
-
-			return bytesWritten;
-		}
-
-		int FileStream::Seek(const int offset, const SeekOrigin seekOrigin)
-		{
-			if (this->fileHandle == nullptr)
-				return -1;
-
-			if (seekOrigin == Stream::Begin)
-				return SetFilePointer(this->fileHandle, offset, nullptr, FILE_BEGIN);
-			if (seekOrigin == Stream::End)
-				return SetFilePointer(this->fileHandle, offset, nullptr, FILE_END);
-			if (seekOrigin == Stream::Current)
-				return SetFilePointer(this->fileHandle, offset, nullptr, FILE_CURRENT);
-
-			return -1;
-		}
-
-		std::unique_ptr<MemoryStream> FileStream::readEntireContent() const
-		{
-			if (this->fileHandle == nullptr)
-				return std::unique_ptr<MemoryStream>();
-
-			auto outBufferSize = GetFileSize(this->fileHandle, nullptr);
-
-			void* outBuffer = malloc(outBufferSize);
-			if (outBuffer == nullptr)
-				return std::unique_ptr<MemoryStream>();
-
-			auto curPos = SetFilePointer(this->fileHandle, 0, nullptr, FILE_CURRENT);
-			SetFilePointer(this->fileHandle, 0, nullptr, FILE_BEGIN);
-
-			DWORD bytesRead;
-			auto readSuccess = (ReadFile(this->fileHandle, outBuffer, outBufferSize, &bytesRead, nullptr) != 0);
-
-			SetFilePointer(this->fileHandle, curPos, nullptr, FILE_BEGIN);
-
-			if ((readSuccess == false) || (outBufferSize != bytesRead))
-			{
-				free(outBuffer);
-				return std::unique_ptr<MemoryStream>();
-			}
-
-			return std::unique_ptr<MemoryStream>(new MemoryStream(outBuffer, outBufferSize, false, MemoryStream::ManagementType::ManagedStatic));
-		}
-
-		std::unique_ptr<MemoryStream> FileStream::ReadEntireFile(const std::string& filePath)
-		{
-			HANDLE fileHandle;
-			DWORD bytesRead;
-
-			if (filePath.empty())
-				return std::unique_ptr<MemoryStream>();
-
-			{
-				auto filePathWChar = HorseRadish::StringUtils::conv2UTF16(filePath);
-
-				fileHandle = CreateFile(filePathWChar.c_str(), GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
-				if (fileHandle == INVALID_HANDLE_VALUE)
-					return std::unique_ptr<MemoryStream>();
-			}
-
-			ScopedAction scopedAction([&]()
-			{
-				CloseHandle(fileHandle);
-			});
-
-			auto outBufferSize = GetFileSize(fileHandle, nullptr);
-			auto outBuffer = malloc(outBufferSize);
-			if (outBuffer == nullptr)
-				return std::unique_ptr<MemoryStream>();
-
-			if ((ReadFile(fileHandle, outBuffer, outBufferSize, &bytesRead, nullptr) == 0) || (outBufferSize != bytesRead))
-			{
-				free(outBuffer);
-				return std::unique_ptr<MemoryStream>();
-			}
-
-			return std::unique_ptr<MemoryStream>(new MemoryStream(outBuffer, outBufferSize, false, MemoryStream::ManagementType::ManagedStatic));
-		}
-
-		std::string FileStream::ReadEntireFileAsString(const std::string& filePath)
-		{
-			HANDLE fileHandle;
-			DWORD bytesRead;
-
-			if (filePath.empty())
-				return std::string();
-
-			{
-				auto filePathWChar = HorseRadish::StringUtils::conv2UTF16(filePath);
-
-				fileHandle = CreateFile(filePathWChar.c_str(), GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
-				if (fileHandle == INVALID_HANDLE_VALUE)
-					return std::string();
-			}
-
-			ScopedAction scopedAction([&]()
-			{
-				CloseHandle(fileHandle);
-			});
-
-			auto outBufferSize = GetFileSize(fileHandle, nullptr);
-			
-			std::unique_ptr<char[]> tmpBuffer(new char[outBufferSize]);
-
-			if ((ReadFile(fileHandle, tmpBuffer.get(), outBufferSize, &bytesRead, nullptr) == 0) || (outBufferSize != bytesRead))
-				return std::string();
-			
-			return std::string(tmpBuffer.get(), outBufferSize);
-		}
-
-		bool FileStream::StreamDump(Stream* stream, const std::string& filePath)
-		{
-			HANDLE fileHandle;
-			DWORD bytesWritten;
-			unsigned char auxBuffer[1024];
-
-			if ((stream == nullptr) || (stream->CanRead() == false) || (filePath.empty()))
-				return false;
-
-			{
-				auto filePathWChar = HorseRadish::StringUtils::conv2UTF16(filePath);
-
-				fileHandle = CreateFile(filePathWChar.c_str(), GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
-				if (fileHandle == nullptr)
-					return false;
-			}
-
-			auto filePos = stream->GetPosition();
-			stream->Seek(0, Stream::Begin);
-
-			while (true)
-			{
-				auto bytesRead = stream->Read(auxBuffer, sizeof(auxBuffer));
-				if (bytesRead <= 0)
-					break;
-
-				WriteFile(fileHandle, auxBuffer, bytesRead, &bytesWritten, nullptr);
-				if (bytesWritten != bytesRead)
-					break;
-
-				if (bytesRead < sizeof(auxBuffer))
-					break;
-			}
-
-			CloseHandle(fileHandle);
-
-			stream->Seek(filePos, Stream::Begin);
-
-			return true;
-		}
-
-	} //Streams
-} //HorseRadish
+	}
+
+	memcpy(mDataWalker, inBuffer, numBytes);
+	mDataWalker += numBytes;
+	return numBytes;
+}
+
+bool MemoryStream::seek(SeekOrigin seekOrigin, int offset)
+{
+	switch (seekOrigin)
+	{
+	case SeekOrigin::Begin:
+		mDataWalker = mDataBegin + offset;
+	case SeekOrigin::End:
+		mDataWalker = mDataEnd + offset;
+	case SeekOrigin::Current:
+		mDataWalker += offset;
+	};
+	
+	if (mDataWalker < mDataBegin)
+		mDataWalker = mDataBegin;
+	if (mDataWalker > mDataEnd)
+		mDataWalker = mDataEnd;
+
+	return true;
+}
+
+std::unique_ptr<MemoryViewStream> MemoryStream::readEntireContent() const
+{
+	if (length() == 0)
+		return std::unique_ptr<MemoryViewStream>(new MemoryViewStream());
+
+	std::shared_ptr<unsigned char> buffer(new unsigned char[mDataSize], std::default_delete<unsigned char[]>());
+	return std::unique_ptr<MemoryViewStream>(new MemoryViewStream(buffer, mDataSize));
+}
+
+const void* MemoryStream::getData() const
+{
+	return mData;
+}
+
+std::string MemoryStream::toStr() const
+{
+	std::string finalStr;
+	finalStr.resize(length() + 1);
+
+	memcpy(&finalStr[0], mData, length());
+	reinterpret_cast<char*>(&finalStr[0])[length()] = '\0';
+
+	return finalStr;
+}
+
+MemoryViewStream::MemoryViewStream()
+	: mData(nullptr), mDataBegin(nullptr), mDataEnd(nullptr), mDataWalker(nullptr), mIsClosed(false)
+{ }
+
+MemoryViewStream::MemoryViewStream(std::shared_ptr<unsigned char> data, size_t dataSize)
+	: MemoryViewStream(data, 0, dataSize)
+{ }
+
+MemoryViewStream::MemoryViewStream(std::shared_ptr<unsigned char> data, size_t dataOffset, size_t dataSize)
+	: MemoryViewStream()
+{
+	mDataShared = data;
+	mData = data.get();
+	mDataBegin = reinterpret_cast<const unsigned char*>(mData) + dataOffset;
+	mDataEnd = mDataBegin + dataSize;
+}
+
+MemoryViewStream::MemoryViewStream(MemoryViewStream&& stream)
+{
+	mData = stream.mData;
+	mDataBegin = stream.mDataBegin;
+	mDataEnd = stream.mDataEnd;
+	mDataWalker = stream.mDataWalker;
+	mDataShared = stream.mDataShared;
+	mIsClosed = stream.mIsClosed;
+
+	stream.mData = nullptr;
+	stream.mDataBegin = stream.mDataEnd = stream.mDataWalker = nullptr;
+	stream.mDataShared.reset();
+	stream.mIsClosed = false;
+}
+
+void MemoryViewStream::close()
+{
+	mIsClosed = true;
+}
+
+void MemoryViewStream::flush()
+{ }
+
+bool MemoryViewStream::canRead() const
+{
+	return !mIsClosed;
+}
+
+bool MemoryViewStream::canRead(size_t numBytes) const
+{
+	if (!canRead())
+		return false;
+
+	return (numBytes <= (mDataEnd - mDataWalker));
+}
+
+bool MemoryViewStream::canWrite() const
+{
+	return false;
+}
+
+bool MemoryViewStream::canWrite(size_t numBytes) const
+{
+	return canWrite();
+}
+
+size_t MemoryViewStream::length() const
+{
+	return (mDataEnd - mDataBegin);
+}
+
+size_t MemoryViewStream::position() const
+{
+	return (mDataWalker - mDataBegin);
+}
+
+size_t MemoryViewStream::read(void* const outBuffer, size_t numBytes)
+{
+	if (numBytes > (mDataEnd - mDataWalker))
+		numBytes = (mDataEnd - mDataWalker);
+
+	if (numBytes <= 0)
+		return 0;
+
+	memcpy(outBuffer, mDataWalker, numBytes);
+	mDataWalker += numBytes;
+
+	return numBytes;
+}
+
+size_t MemoryViewStream::write(const void* const inBuffer, size_t numBytes)
+{
+	return 0;
+}
+
+bool MemoryViewStream::seek(SeekOrigin seekOrigin, int offset)
+{
+	switch (seekOrigin)
+	{
+	case SeekOrigin::Begin:
+		mDataWalker = mDataBegin + offset;
+		break;
+	case SeekOrigin::End:
+		mDataWalker = mDataEnd + offset;
+		break;
+	default:
+		mDataWalker += offset;
+	}
+	
+	if (mDataWalker < mDataBegin)
+		mDataWalker = mDataBegin;
+	if (mDataWalker > mDataEnd)
+		mDataWalker = mDataEnd;
+
+	return true;
+}
+
+std::unique_ptr<MemoryViewStream> MemoryViewStream::readEntireContent() const
+{
+	return std::unique_ptr<MemoryViewStream>(new MemoryViewStream(mDataShared, length()));
+}
+
+const void* MemoryViewStream::getData() const
+{
+	return mData;
+}
+
+std::string MemoryViewStream::toStr() const
+{
+	std::string finalStr;
+	finalStr.resize(length() + 1);
+
+	memcpy(&finalStr[0], mData, length());
+	reinterpret_cast<char*>(&finalStr[0])[length()] = '\0';
+
+	return finalStr;
+}
+
+bool FileStream::openFile(const std::string& filePath, bool toRead, bool toWrite)
+{
+	mCanRead = toRead;
+	mCanWrite = toWrite;
+
+	mClosed = false;
+	mFileHandle = nullptr;
+
+	if ((toRead == false) && (toWrite == false))
+		return false;
+
+	auto filePathWChar = HorseRadish::StringUtils::conv2UTF16(filePath);
+
+	if ((toRead == true) && (toWrite == true))
+		mFileHandle = CreateFile(filePathWChar.c_str(), GENERIC_READ | GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
+	else if (toRead == true)
+		mFileHandle = CreateFile(filePathWChar.c_str(), GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+	else if (toWrite == true)
+		mFileHandle = CreateFile(filePathWChar.c_str(), GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
+
+	if (mFileHandle == INVALID_HANDLE_VALUE)
+	{
+		mFileHandle = nullptr;
+		return false;
+	}
+
+	return true;
+}
+
+std::unique_ptr<MemoryViewStream> FileStream::readEntireFile(const std::string& filePath)
+{
+	if (filePath.empty())
+		return std::unique_ptr<MemoryViewStream>();
+
+	HANDLE fileHandle;
+	{
+		auto filePathWChar = HorseRadish::StringUtils::conv2UTF16(filePath);
+
+		fileHandle = CreateFile(filePathWChar.c_str(), GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+		if (fileHandle == INVALID_HANDLE_VALUE)
+			return std::unique_ptr<MemoryViewStream>();
+	}
+
+	ScopedAction scopedAction([&]()
+	{
+		CloseHandle(fileHandle);
+	});
+
+	auto outBufferSize = GetFileSize(fileHandle, nullptr);
+	if (outBufferSize <= 0)
+		return std::unique_ptr<MemoryViewStream>(new MemoryViewStream());
+
+	std::shared_ptr<unsigned char> outBuffer(new unsigned char[outBufferSize], std::default_delete<unsigned char[]>());
+
+	DWORD bytesRead;
+	if ((ReadFile(fileHandle, outBuffer.get(), outBufferSize, &bytesRead, nullptr) == 0) || (outBufferSize != bytesRead))
+		return std::unique_ptr<MemoryViewStream>();
+
+	return std::unique_ptr<MemoryViewStream>(new MemoryViewStream(outBuffer, outBufferSize));
+}
+
+std::string FileStream::readEntireFileAsString(const std::string& filePath)
+{
+	HANDLE fileHandle;
+	DWORD bytesRead;
+
+	if (filePath.empty())
+		return std::string();
+
+	{
+		auto filePathWChar = HorseRadish::StringUtils::conv2UTF16(filePath);
+
+		fileHandle = CreateFile(filePathWChar.c_str(), GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+		if (fileHandle == INVALID_HANDLE_VALUE)
+			return std::string();
+	}
+
+	ScopedAction scopedAction([&]()
+	{
+		CloseHandle(fileHandle);
+	});
+
+	auto outBufferSize = GetFileSize(fileHandle, nullptr);
+
+	std::unique_ptr<char[]> tmpBuffer(new char[outBufferSize]);
+
+	if ((ReadFile(fileHandle, tmpBuffer.get(), outBufferSize, &bytesRead, nullptr) == 0) || (outBufferSize != bytesRead))
+		return std::string();
+
+	return std::string(tmpBuffer.get(), outBufferSize);
+}
+
+bool FileStream::streamDump(Stream& stream, const std::string& filePath)
+{			
+	if ((stream.canRead() == false) || (filePath.empty()))
+		return false;
+
+	HANDLE fileHandle;
+	{
+		auto filePathWChar = HorseRadish::StringUtils::conv2UTF16(filePath);
+
+		fileHandle = CreateFile(filePathWChar.c_str(), GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
+		if (fileHandle == nullptr)
+			return false;
+	}
+
+	auto filePos = stream.position();
+	stream.seek(SeekOrigin::Begin, 0);
+
+	unsigned char auxBuffer[1024];
+
+	while (true)
+	{
+		auto bytesRead = stream.read(auxBuffer, sizeof(auxBuffer));
+		if (bytesRead <= 0)
+			break;
+
+		DWORD bytesWritten;
+		WriteFile(fileHandle, auxBuffer, bytesRead, &bytesWritten, nullptr);
+		if (bytesWritten != bytesRead)
+			break;
+
+		if (bytesRead < sizeof(auxBuffer))
+			break;
+	}
+
+	CloseHandle(fileHandle);
+
+	stream.seek(SeekOrigin::Begin, filePos);
+
+	return true;
+}
+
+FileStream::FileStream(FileStream&& stream)
+{
+	mFileHandle = stream.mFileHandle;
+	mCanRead = stream.mCanRead;
+	mCanWrite = stream.mCanWrite;
+	mClosed = stream.mClosed;
+
+	stream.mFileHandle = nullptr;
+	stream.mCanRead = stream.mCanWrite = false;
+	stream.mClosed = true;
+}
+
+FileStream::FileStream(const std::string& filePath, bool toRead, bool toWrite)
+{
+	mCanRead = mCanWrite = false;
+	mClosed = false;
+	mFileHandle = nullptr;
+
+	this->openFile(filePath, toRead, toWrite);
+}
+
+FileStream::~FileStream()
+{
+	if (mClosed == false)
+		close();
+}
+
+void FileStream::close()
+{
+	if (mFileHandle != nullptr)
+		CloseHandle(mFileHandle);
+
+	mClosed = true;
+	mCanRead = false;
+	mCanWrite = false;
+	mFileHandle = nullptr;
+}
+
+void FileStream::flush()
+{
+	if (mFileHandle != nullptr)
+		FlushFileBuffers(mFileHandle);
+}
+
+bool FileStream::canRead() const
+{
+	if (mClosed || !mCanRead)
+		return false;
+
+	return (SetFilePointer(mFileHandle, 0, nullptr, FILE_CURRENT) < GetFileSize(mFileHandle, nullptr));
+}
+
+bool FileStream::canRead(size_t numBytes) const
+{
+	if (mClosed || !mCanRead)
+		return false;
+
+	return ((GetFileSize(mFileHandle, nullptr) - SetFilePointer(mFileHandle, 0, nullptr, FILE_CURRENT)) >= numBytes);
+}
+
+bool FileStream::canWrite() const
+{
+	return (mClosed ? false : mCanWrite);
+}
+
+bool FileStream::canWrite(size_t numBytes) const
+{
+	return canWrite();
+}
+
+size_t FileStream::length() const
+{
+	if (mFileHandle == nullptr)
+		return 0;
+
+	return GetFileSize(mFileHandle, nullptr);
+}
+
+size_t FileStream::position() const
+{
+	if (mFileHandle == nullptr)
+		return 0;
+
+	return SetFilePointer(mFileHandle, 0, nullptr, FILE_CURRENT);
+}
+
+bool FileStream::isValid() const
+{
+	return (mFileHandle != nullptr);
+}
+
+size_t FileStream::read(void* const outBuffer, size_t numBytes)
+{
+	if ((outBuffer == nullptr) || (numBytes <= 0))
+		return 0;
+
+	if (mFileHandle == nullptr)
+		return 0;
+
+	DWORD bytesRead;
+	if (ReadFile(mFileHandle, outBuffer, numBytes, &bytesRead, nullptr) == 0)
+		return 0;
+
+	return bytesRead;
+}
+
+size_t FileStream::write(const void* const inBuffer, size_t numBytes)
+{
+	DWORD bytesWritten;
+
+	if ((inBuffer == nullptr) || (numBytes <= 0))
+		return 0;
+
+	if (mFileHandle == nullptr)
+		return -1;
+
+	if (WriteFile(mFileHandle, inBuffer, numBytes, &bytesWritten, nullptr) == 0)
+		return -1;
+
+	return bytesWritten;
+}
+
+bool FileStream::seek(SeekOrigin seekOrigin, int offset)
+{
+	if (mFileHandle == nullptr)
+		return false;
+
+	switch (seekOrigin)
+	{
+	case SeekOrigin::Begin:
+		return (SetFilePointer(mFileHandle, offset, nullptr, FILE_BEGIN) != INVALID_SET_FILE_POINTER);
+	case SeekOrigin::End:
+		return (SetFilePointer(mFileHandle, offset, nullptr, FILE_END) != INVALID_SET_FILE_POINTER);
+	case SeekOrigin::Current:
+		return (SetFilePointer(mFileHandle, offset, nullptr, FILE_CURRENT) != INVALID_SET_FILE_POINTER);
+	default:
+		break;
+	}
+
+	return false;
+}
+
+std::unique_ptr<MemoryViewStream> FileStream::readEntireContent() const
+{
+	if (mFileHandle == nullptr)
+		return std::unique_ptr<MemoryViewStream>();
+
+	auto outBufferSize = GetFileSize(mFileHandle, nullptr);
+	if (outBufferSize <= 0)
+		return std::unique_ptr<MemoryViewStream>(new MemoryViewStream());
+
+	std::shared_ptr<unsigned char> outBuffer(new unsigned char[outBufferSize], std::default_delete<unsigned char[]>());
+
+	auto curPos = SetFilePointer(mFileHandle, 0, nullptr, FILE_CURRENT);
+	SetFilePointer(mFileHandle, 0, nullptr, FILE_BEGIN);
+
+	DWORD bytesRead;
+	auto readSuccess = (ReadFile(mFileHandle, outBuffer.get(), outBufferSize, &bytesRead, nullptr) != 0);
+
+	SetFilePointer(mFileHandle, curPos, nullptr, FILE_BEGIN);
+
+	if ((readSuccess == false) || (outBufferSize != bytesRead))
+		return std::unique_ptr<MemoryViewStream>();
+
+	return std::unique_ptr<MemoryViewStream>(new MemoryViewStream(outBuffer, outBufferSize));
+}
+
+} }

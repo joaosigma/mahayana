@@ -660,7 +660,7 @@ namespace HorseRadish
 			sq_pushroottable(mVM);
 
 			{
-				auto script = HorseRadish::Streams::FileStream::ReadEntireFileAsString(filePath);
+				auto script = HorseRadish::Streams::FileStream::readEntireFileAsString(filePath);
 				auto scriptWChar = HorseRadish::StringUtils::conv2UTF16(script);
 
 				if (SQ_FAILED(sq_compilebuffer(mVM, scriptWChar.c_str(), scriptWChar.size(), _SC("main runtime"), SQTrue)))

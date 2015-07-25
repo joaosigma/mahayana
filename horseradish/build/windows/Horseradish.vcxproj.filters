@@ -117,15 +117,6 @@
     <ClCompile Include="..\..\src\common\Ray.cpp">
       <Filter>common</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\common\Sorting.cpp">
-      <Filter>common</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\common\Stream.cpp">
-      <Filter>common</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\common\Timer.cpp">
-      <Filter>common</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\console\consoleUI.cpp">
       <Filter>console</Filter>
     </ClCompile>
@@ -430,9 +421,6 @@
     <ClCompile Include="..\..\src\common\opengl\openGL.cpp">
       <Filter>common\opengl</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\common\Types.cpp">
-      <Filter>common</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\engine\engine.cpp">
       <Filter>engine</Filter>
     </ClCompile>
@@ -568,6 +556,18 @@
     <ClCompile Include="..\..\src\common\mesh.cpp">
       <Filter>common</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\common\stream.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\common\sorting.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\common\timer.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\common\types.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\common\opengl\objects.hpp">
@@ -622,21 +622,6 @@
       <Filter>common</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\common\Ray.hpp">
-      <Filter>common</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\common\ScopedAction.hpp">
-      <Filter>common</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\common\Sorting.hpp">
-      <Filter>common</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\common\Stream.hpp">
-      <Filter>common</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\common\Timer.hpp">
-      <Filter>common</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\common\Types.hpp">
       <Filter>common</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\console\consoleUI.hpp">
@@ -1265,6 +1250,21 @@
       <Filter>common</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\common\vector.hpp">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\common\stream.hpp">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\common\scopedAction.hpp">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\common\sorting.hpp">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\common\timer.hpp">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\common\types.hpp">
       <Filter>common</Filter>
     </ClInclude>
   </ItemGroup>
