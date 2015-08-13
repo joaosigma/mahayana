@@ -86,7 +86,7 @@ LRESULT CALLBACK WindowImpl::wndProc(HWND hWnd, UINT messageID, WPARAM wParam, L
 	
 	if ((messageID == WM_CHAR) || (messageID == WM_KEYDOWN) || (messageID == WM_MOUSEWHEEL))
 	{
-		std::unique_lock<std::mutex> lock(window->mEvents.lock);
+		std::lock_guard<std::mutex> lock(window->mEvents.lock);
 
 		if (window->mEvents.queueSize >= window->mEvents.queue.size())
 		{
@@ -473,7 +473,7 @@ int WindowImpl::MessageLoop(std::function<void()> closingCb)
 
 void WindowImpl::ProcessMessages(std::function<void(const Window::Message&)> cb, const bool resetQueue)
 {
-	std::unique_lock<std::mutex> lock(mEvents.lock);
+	std::lock_guard<std::mutex> lock(mEvents.lock);
 
 	for (int i = 0; i < mEvents.queueSize; i++)
 		cb(mEvents.queue[i]);

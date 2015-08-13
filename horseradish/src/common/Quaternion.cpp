@@ -64,7 +64,7 @@ namespace HorseRadish
 		float angleRad = (angleDeg*0.017453292519943295f)*0.5f;
 
 		float resSin;
-		Math::sinCosR(angleRad, resSin, mData[3]);
+		Math::sinCos(angleRad, resSin, mData[3]);
 
 		mData[0] = vx*resSin;
 		mData[1] = vy*resSin;
@@ -76,7 +76,7 @@ namespace HorseRadish
 		float angleRad = (angleDeg*0.017453292519943295f)*0.5f;
 
 		float resSin;
-		Math::sinCosR(angleRad, resSin, mData[3]);
+		Math::sinCos(angleRad, resSin, mData[3]);
 
 		mData[0] = vec[0] * resSin;
 		mData[1] = vec[1] * resSin;
@@ -185,9 +185,9 @@ namespace HorseRadish
 	{
 		float cosR, cosP, cosY, sinR, sinP, sinY, cpcy, spsy;
 
-		Math::sinCosR(angX*0.0087266462599716478846184f, sinR, cosR);
-		Math::sinCosR(angY*0.0087266462599716478846184f, sinP, cosP);
-		Math::sinCosR(angZ*0.0087266462599716478846184f, sinY, cosY);
+		Math::sinCos(angX*0.0087266462599716478846184f, sinR, cosR);
+		Math::sinCos(angY*0.0087266462599716478846184f, sinP, cosP);
+		Math::sinCos(angZ*0.0087266462599716478846184f, sinY, cosY);
 		spsy = sinP * sinY;
 		cpcy = cosP * cosY;
 
@@ -216,7 +216,7 @@ namespace HorseRadish
 		}
 
 		dot = Math::fClamp(dot, -1.0f, 1.0f);
-		Math::sinCosR(acosf(dot)*t, s, c);
+		Math::sinCos(acosf(dot)*t, s, c);
 
 		qAux.mData[0] = to.mData[0] - from.mData[0] * dot;
 		qAux.mData[1] = to.mData[1] - from.mData[1] * dot;
@@ -322,9 +322,9 @@ namespace HorseRadish
 		float degX, degY, degZ;
 		float cosR, cosP, cosY, sinR, sinP, sinY, cpcy, spsy;
 
-		Math::sinCosR(angX*0.0087266462599716478846184f, sinR, cosR);
-		Math::sinCosR(angY*0.0087266462599716478846184f, sinP, cosP);
-		Math::sinCosR(angZ*0.0087266462599716478846184f, sinY, cosY);
+		Math::sinCos(angX*0.0087266462599716478846184f, sinR, cosR);
+		Math::sinCos(angY*0.0087266462599716478846184f, sinP, cosP);
+		Math::sinCos(angZ*0.0087266462599716478846184f, sinY, cosY);
 		spsy = sinP * sinY;
 		cpcy = cosP * cosY;
 

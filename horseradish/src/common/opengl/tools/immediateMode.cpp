@@ -2,6 +2,8 @@
 
 #include "common\Color.hpp"
 
+#include <cstddef>
+
 namespace HorseRadish { namespace OpenGL { namespace Tools {
 
 int ImmediateMode::draw()
@@ -33,12 +35,13 @@ int ImmediateMode::draw()
 				newIndexWriter -= 6;
 			}
 
-			mGl.vertexArray.bind();
-			mGl.arrayBuffer.writeData(mBufferData.get(), numElementosDesenhados * 4 * sizeof(VertexDataLayout), 0);
-			mGl.elementArrayBuffer.writeData(mBufferIndices.get(), numElementosDesenhados * 6 * sizeof(unsigned short), 0);
+			mGl.fence.wait();
+				mGl.vertexArray.bind();
+				mGl.arrayBuffer.writeData(mBufferData.get(), numElementosDesenhados * 4 * sizeof(VertexDataLayout), 0);
+				mGl.elementArrayBuffer.writeData(mBufferIndices.get(), numElementosDesenhados * 6 * sizeof(unsigned short), 0);
 
-			HorseRadish::OpenGL::glDrawRangeElements(GL_TRIANGLES, 0, numElementosDesenhados * 4, numElementosDesenhados * 6, GL_UNSIGNED_SHORT, (void*)0);
-			HorseRadish::OpenGL::glBindVertexArray(0);
+				HorseRadish::OpenGL::glDrawRangeElements(GL_TRIANGLES, 0, numElementosDesenhados * 4, numElementosDesenhados * 6, GL_UNSIGNED_SHORT, (void*)0);
+			mGl.fence.place();
 		}
 	}
 	else if (mState.geomType == GeometryType::Tris)
@@ -47,12 +50,13 @@ int ImmediateMode::draw()
 
 		if (numElementosDesenhados > 0)
 		{
-			mGl.vertexArray.bind();
-			mGl.arrayBuffer.writeData(mBufferData.get(), numElementosDesenhados * 3 * sizeof(VertexDataLayout), 0);
-			mGl.elementArrayBuffer.writeData(mBufferIndices.get(), numElementosDesenhados * 3 * sizeof(unsigned short), 0);
+			mGl.fence.wait();
+				mGl.vertexArray.bind();
+				mGl.arrayBuffer.writeData(mBufferData.get(), numElementosDesenhados * 3 * sizeof(VertexDataLayout), 0);
+				mGl.elementArrayBuffer.writeData(mBufferIndices.get(), numElementosDesenhados * 3 * sizeof(unsigned short), 0);
 
-			HorseRadish::OpenGL::glDrawRangeElements(GL_TRIANGLES, 0, numElementosDesenhados * 3, numElementosDesenhados * 3, GL_UNSIGNED_SHORT, (void*)0);
-			HorseRadish::OpenGL::glBindVertexArray(0);
+				HorseRadish::OpenGL::glDrawRangeElements(GL_TRIANGLES, 0, numElementosDesenhados * 3, numElementosDesenhados * 3, GL_UNSIGNED_SHORT, (void*)0);
+			mGl.fence.place();
 		}
 	}
 	else if (mState.geomType == GeometryType::Lines)
@@ -61,12 +65,13 @@ int ImmediateMode::draw()
 
 		if (numElementosDesenhados > 0)
 		{
-			mGl.vertexArray.bind();
-			mGl.arrayBuffer.writeData(mBufferData.get(), numElementosDesenhados * 2 * sizeof(VertexDataLayout), 0);
-			mGl.elementArrayBuffer.writeData(mBufferIndices.get(), numElementosDesenhados * 2 * sizeof(unsigned short), 0);
+			mGl.fence.wait();
+				mGl.vertexArray.bind();
+				mGl.arrayBuffer.writeData(mBufferData.get(), numElementosDesenhados * 2 * sizeof(VertexDataLayout), 0);
+				mGl.elementArrayBuffer.writeData(mBufferIndices.get(), numElementosDesenhados * 2 * sizeof(unsigned short), 0);
 
-			HorseRadish::OpenGL::glDrawRangeElements(GL_LINES, 0, numElementosDesenhados * 2, numElementosDesenhados * 2, GL_UNSIGNED_SHORT, (void*)0);
-			HorseRadish::OpenGL::glBindVertexArray(0);
+				HorseRadish::OpenGL::glDrawRangeElements(GL_LINES, 0, numElementosDesenhados * 2, numElementosDesenhados * 2, GL_UNSIGNED_SHORT, (void*)0);
+			mGl.fence.place();
 		}
 	}
 	else if (mState.geomType == GeometryType::LineStrip)
@@ -75,12 +80,13 @@ int ImmediateMode::draw()
 
 		if (numElementosDesenhados > 0)
 		{
-			mGl.vertexArray.bind();
-			mGl.arrayBuffer.writeData(mBufferData.get(), mState.curVertex * sizeof(VertexDataLayout), 0);
-			mGl.elementArrayBuffer.writeData(mBufferIndices.get(), mState.curVertex * sizeof(unsigned short), 0);
+			mGl.fence.wait();
+				mGl.vertexArray.bind();
+				mGl.arrayBuffer.writeData(mBufferData.get(), mState.curVertex * sizeof(VertexDataLayout), 0);
+				mGl.elementArrayBuffer.writeData(mBufferIndices.get(), mState.curVertex * sizeof(unsigned short), 0);
 
-			HorseRadish::OpenGL::glDrawRangeElements(GL_LINE_STRIP, 0, mState.curVertex, mState.curVertex, GL_UNSIGNED_SHORT, (void*)0);
-			HorseRadish::OpenGL::glBindVertexArray(0);
+				HorseRadish::OpenGL::glDrawRangeElements(GL_LINE_STRIP, 0, mState.curVertex, mState.curVertex, GL_UNSIGNED_SHORT, (void*)0);
+			mGl.fence.place();
 		}
 	}
 
@@ -122,8 +128,8 @@ ImmediateMode::ImmediateMode(const int maxVertexCount)
 
 	auto maxElementArray = ((mMaxVertexCount / 4) * 6) + 6;
 
-	mGl.arrayBuffer.init(HorseRadish::OpenGL::Objects::Buffer::Type::ArrayBuffer, mMaxVertexCount * sizeof(VertexDataLayout), HorseRadish::OpenGL::Objects::Buffer::UsageType::FrequentOnlyWrite);
-	mGl.elementArrayBuffer.init(HorseRadish::OpenGL::Objects::Buffer::Type::ElementArrayBuffer, sizeof(unsigned short) * maxElementArray, HorseRadish::OpenGL::Objects::Buffer::UsageType::FrequentOnlyWrite);
+	mGl.arrayBuffer.init(HorseRadish::OpenGL::Objects::Buffer::Type::ArrayBuffer, mMaxVertexCount * sizeof(VertexDataLayout), HorseRadish::OpenGL::Objects::Buffer::UsageType::PersistentOnlyWrite);
+	mGl.elementArrayBuffer.init(HorseRadish::OpenGL::Objects::Buffer::Type::ElementArrayBuffer, sizeof(unsigned short) * maxElementArray, HorseRadish::OpenGL::Objects::Buffer::UsageType::PersistentOnlyWrite);
 
 	mGl.vertexArray.init();
 
@@ -132,13 +138,13 @@ ImmediateMode::ImmediateMode(const int maxVertexCount)
 	HorseRadish::OpenGL::glEnableVertexArrayAttrib(mGl.vertexArray.getId(), 4);
 
 	HorseRadish::OpenGL::glVertexArrayAttribBinding(mGl.vertexArray.getId(), 0, 0);
-	HorseRadish::OpenGL::glVertexArrayAttribFormat(mGl.vertexArray.getId(), 0, 3, GL_FLOAT, false, 0);
+	HorseRadish::OpenGL::glVertexArrayAttribFormat(mGl.vertexArray.getId(), 0, 3, GL_FLOAT, false, offsetof(VertexDataLayout, pos));
 
 	HorseRadish::OpenGL::glVertexArrayAttribBinding(mGl.vertexArray.getId(), 1, 0);
-	HorseRadish::OpenGL::glVertexArrayAttribFormat(mGl.vertexArray.getId(), 1, 2, GL_FLOAT, false, 12);
+	HorseRadish::OpenGL::glVertexArrayAttribFormat(mGl.vertexArray.getId(), 1, 2, GL_FLOAT, false, offsetof(VertexDataLayout, uv));
 
 	HorseRadish::OpenGL::glVertexArrayAttribBinding(mGl.vertexArray.getId(), 4, 0);
-	HorseRadish::OpenGL::glVertexArrayAttribFormat(mGl.vertexArray.getId(), 4, 4, GL_UNSIGNED_BYTE, true, 20);
+	HorseRadish::OpenGL::glVertexArrayAttribFormat(mGl.vertexArray.getId(), 4, 4, GL_UNSIGNED_BYTE, true, offsetof(VertexDataLayout, color));
 
 	HorseRadish::OpenGL::glVertexArrayElementBuffer(mGl.vertexArray.getId(), mGl.elementArrayBuffer.getId());
 	HorseRadish::OpenGL::glVertexArrayVertexBuffer(mGl.vertexArray.getId(), 0, mGl.arrayBuffer.getId(), 0, sizeof(VertexDataLayout));
@@ -264,15 +270,15 @@ void ImmediateMode::addPosition(const float &x, const float &y, const float &z)
 		return;
 
 	auto& vertexData = mBufferData[mState.curVertex];
-	vertexData.px = x;
-	vertexData.py = y;
-	vertexData.pz = z;
-	vertexData.tu = mState.uv[0];
-	vertexData.tv = mState.uv[1];
-	vertexData.cr = mState.color[0];
-	vertexData.cg = mState.color[1];
-	vertexData.cb = mState.color[2];
-	vertexData.ca = mState.color[3];
+	vertexData.pos[0] = x;
+	vertexData.pos[1] = y;
+	vertexData.pos[2] = z;
+	vertexData.uv[0] = mState.uv[0];
+	vertexData.uv[1] = mState.uv[1];
+	vertexData.color[0] = mState.color[0];
+	vertexData.color[1] = mState.color[1];
+	vertexData.color[2] = mState.color[2];
+	vertexData.color[3] = mState.color[3];
 
 	mBufferIndices[mState.curVertex] = mState.curVertex;
 

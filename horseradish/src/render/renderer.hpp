@@ -1,22 +1,21 @@
 #pragma once
 
-#include "world.hpp"
-#include "common\FileSystem.hpp"
-#include "common\OpenGL\objects.hpp"
+#include "common/openGL/context.hpp"
 
-namespace HorseRadish
-{
-	namespace Render
+namespace HorseRadish { namespace Render {
+
+	class Renderer
 	{
-		class Renderer
-		{
-		protected:
+	protected:
+		const HorseRadish::OpenGL::Objects::Context& mGlContext;
 
-			const HorseRadish::OpenGL::Objects::Context& mGlContext;
+	public:
+		Renderer(const HorseRadish::OpenGL::Objects::Context& glContext)
+			: mGlContext(glContext)
+		{ }
 
-		public:
-			Renderer(const HorseRadish::OpenGL::Objects::Context& glContext);
-			virtual ~Renderer();
-		};
-	}
-}
+		virtual ~Renderer()
+		{ }
+	};
+
+} }

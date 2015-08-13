@@ -935,7 +935,7 @@ namespace HorseRadish
 	{
 		float c, s, p1, p2, p3, p4;
 
-		Math::sinCosG(angle, s, c);
+		Math::sinCos(Math::convDeg2Rad(angle), s, c);
 
 		p1 = m[4];
 		p2 = m[5];
@@ -959,7 +959,7 @@ namespace HorseRadish
 	{
 		float c, s, p1, p2, p3, p4;
 
-		Math::sinCosG(angle, s, c);
+		Math::sinCos(Math::convDeg2Rad(angle), s, c);
 
 		p1 = m[0];
 		p2 = m[1];
@@ -983,7 +983,7 @@ namespace HorseRadish
 	{
 		float c, s, p1, p2, p3, p4;
 
-		Math::sinCosG(angle, s, c);
+		Math::sinCos(Math::convDeg2Rad(angle), s, c);
 
 		p1 = m[0];
 		p2 = m[1];
@@ -1241,7 +1241,7 @@ namespace HorseRadish
 	{
 		float c, s;
 
-		Math::sinCosG(angle, s, c);
+		Math::sinCos(Math::convDeg2Rad(angle), s, c);
 
 		m[9] = -s;
 		m[10] = c;
@@ -1256,7 +1256,7 @@ namespace HorseRadish
 	{
 		float c, s;
 
-		Math::sinCosG(angle, s, c);
+		Math::sinCos(Math::convDeg2Rad(angle), s, c);
 
 		m[0] = c;
 		m[2] = -s;
@@ -1271,7 +1271,7 @@ namespace HorseRadish
 	{
 		float c, s;
 
-		Math::sinCosG(angle, s, c);
+		Math::sinCos(Math::convDeg2Rad(angle), s, c);
 
 		m[0] = c;
 		m[1] = s;
@@ -1290,7 +1290,7 @@ namespace HorseRadish
 		aux = vec;
 		aux.normalize();
 
-		Math::sinCosG(angle, s, c);
+		Math::sinCos(Math::convDeg2Rad(angle), s, c);
 
 		t = 1.0f - c;
 		txx = aux[0] * aux[0] * t;
@@ -1323,9 +1323,9 @@ namespace HorseRadish
 	{
 		float cx, cy, cz, sx, sy, sz;
 
-		Math::sinCosG(angleX, sx, cx);
-		Math::sinCosG(angleY, sy, cy);
-		Math::sinCosG(angleZ, sz, cz);
+		Math::sinCos(Math::convDeg2Rad(angleX), sx, cx);
+		Math::sinCos(Math::convDeg2Rad(angleY), sy, cy);
+		Math::sinCos(Math::convDeg2Rad(angleZ), sz, cz);
 
 		m[0] = cy * cz;
 		m[1] = -cy * sz;
@@ -1502,8 +1502,8 @@ namespace HorseRadish
 		Vector3f target, x, y, z;
 		float sx, sy, cx, cy;
 
-		Math::sinCosG(angX, sx, cx);
-		Math::sinCosG(angY, sy, cy);
+		Math::sinCos(Math::convDeg2Rad(angX), sx, cx);
+		Math::sinCos(Math::convDeg2Rad(angY), sy, cy);
 
 		target[0] = pos[0] + sx*cy;
 		target[1] = pos[1] + sy;
@@ -2065,7 +2065,7 @@ namespace HorseRadish
 	{
 		float c, s, p1, p2, p3;
 
-		Math::sinCosG(angle, s, c);
+		Math::sinCos(Math::convDeg2Rad(angle), s, c);
 
 		p1 = m[3];
 		p2 = m[4];
@@ -2084,7 +2084,7 @@ namespace HorseRadish
 	{
 		float c, s, p1, p2, p3;
 
-		Math::sinCosG(angle, s, c);
+		Math::sinCos(Math::convDeg2Rad(angle), s, c);
 
 		p1 = m[0];
 		p2 = m[1];
@@ -2103,7 +2103,7 @@ namespace HorseRadish
 	{
 		float c, s, p1, p2, p3;
 
-		Math::sinCosG(angle, s, c);
+		Math::sinCos(Math::convDeg2Rad(angle), s, c);
 
 		p1 = m[0];
 		p2 = m[1];
@@ -2157,7 +2157,7 @@ namespace HorseRadish
 	{
 		float c, s;
 
-		Math::sinCosG(angle, s, c);
+		Math::sinCos(Math::convDeg2Rad(angle), s, c);
 
 		m[7] = -s;
 		m[8] = c;
@@ -2172,7 +2172,7 @@ namespace HorseRadish
 	{
 		float c, s;
 
-		Math::sinCosG(angle, s, c);
+		Math::sinCos(Math::convDeg2Rad(angle), s, c);
 
 		m[0] = c;
 		m[2] = -s;
@@ -2187,7 +2187,7 @@ namespace HorseRadish
 	{
 		float c, s;
 
-		Math::sinCosG(angle, s, c);
+		Math::sinCos(Math::convDeg2Rad(angle), s, c);
 
 		m[0] = c;
 		m[1] = s;
@@ -2206,7 +2206,7 @@ namespace HorseRadish
 		aux = vec;
 		aux.normalize();
 
-		Math::sinCosG(angle, s, c);
+		Math::sinCos(Math::convDeg2Rad(angle), s, c);
 
 		t = 1.0f - c;
 		txx = aux[0] * aux[0] * t;
@@ -2234,9 +2234,9 @@ namespace HorseRadish
 	{
 		float cx, cy, cz, sx, sy, sz;
 
-		Math::sinCosG(angleX, sx, cx);
-		Math::sinCosG(angleY, sy, cy);
-		Math::sinCosG(angleZ, sz, cz);
+		Math::sinCos(Math::convDeg2Rad(angleX), sx, cx);
+		Math::sinCos(Math::convDeg2Rad(angleY), sy, cy);
+		Math::sinCos(Math::convDeg2Rad(angleZ), sz, cz);
 
 		m[0] = cy * cz;
 		m[1] = -cy * sz;

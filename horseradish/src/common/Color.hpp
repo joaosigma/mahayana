@@ -675,14 +675,14 @@ namespace HorseRadish
 
 		void writeCMYK(float * const dest) const
 		{
-			if ((Math::isZero(this->r, 0.000001f) == true) && (Math::isZero(this->g, 0.000001f) == true) && (Math::isZero(this->b, 0.000001f) == true))
+			if ((Math::isZero(this->r) == true) && (Math::isZero(this->g) == true) && (Math::isZero(this->b) == true))
 			{
 				dest[0] = dest[1] = dest[2] = 0.0f;
 				dest[3] = 1.0f;
 				return;
 			}
 
-			float w = Math::fMax(this->r, this->g, this->b);
+			float w = std::fmax(this->r, std::fmax(this->g, this->b));
 			float wInv = 1.0f / w;
 
 			dest[0] = (w - this->r) * wInv;

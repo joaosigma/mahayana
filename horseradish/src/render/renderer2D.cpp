@@ -1,6 +1,6 @@
 #include "renderer2D.hpp"
 
-#include "common\ImageFactory.hpp"
+#include "common/ImageFactory.hpp"
 
 namespace HorseRadish
 {
@@ -9,29 +9,29 @@ namespace HorseRadish
 		Renderer2D::Renderer2D(const HorseRadish::OpenGL::Objects::Context& glContext)
 			: Renderer(glContext)
 		{
-			this->glImmediateMode = std::make_unique<HorseRadish::OpenGL::Tools::ImmediateMode>(102);
+			mGlImmediateMode = std::make_unique<HorseRadish::OpenGL::Tools::ImmediateMode>(102);
 		}
 
-		void Renderer2D::Initialize(const int &renderWidth, const int &renderHeight, HorseRadish::IO::FileSystem * const fileSystem, const char* const textFont, int textSize)
+		void Renderer2D::initialize(const int &renderWidth, const int &renderHeight, HorseRadish::IO::FileSystem * const fileSystem, const char* const textFont, int textSize)
 		{
-			this->renderWidth = renderWidth;
-			this->renderHeight = renderHeight;
+			mRenderWidth = renderWidth;
+			mRenderHeight = renderHeight;
 
-			shaders.drawNoTex.progVertex.init(HorseRadish::OpenGL::Objects::ShaderProgram::Type::Vertex, fileSystem->readFileAsString("shaders/2dDraw.vshader"));
-			shaders.drawNoTex.progFragment.init(HorseRadish::OpenGL::Objects::ShaderProgram::Type::Fragment, fileSystem->readFileAsString("shaders/2dDraw.fshader"));
+			mShaders.drawNoTex.progVertex.init(HorseRadish::OpenGL::Objects::ShaderProgram::Type::Vertex, fileSystem->readFileAsString("shaders/2dDraw.vshader"));
+			mShaders.drawNoTex.progFragment.init(HorseRadish::OpenGL::Objects::ShaderProgram::Type::Fragment, fileSystem->readFileAsString("shaders/2dDraw.fshader"));
 
-			shaders.drawNoTex.progPipeline.init();
-			shaders.drawNoTex.progPipeline.setStage(shaders.drawNoTex.progVertex);
-			shaders.drawNoTex.progPipeline.setStage(shaders.drawNoTex.progFragment);
+			mShaders.drawNoTex.progPipeline.init();
+			mShaders.drawNoTex.progPipeline.setStage(mShaders.drawNoTex.progVertex);
+			mShaders.drawNoTex.progPipeline.setStage(mShaders.drawNoTex.progFragment);
 
-			shaders.text.progVertex.init(HorseRadish::OpenGL::Objects::ShaderProgram::Type::Vertex, fileSystem->readFileAsString("shaders/2dText.vshader"));
-			shaders.text.progFragment.init(HorseRadish::OpenGL::Objects::ShaderProgram::Type::Fragment, fileSystem->readFileAsString("shaders/2dText.fshader"));
+			mShaders.text.progVertex.init(HorseRadish::OpenGL::Objects::ShaderProgram::Type::Vertex, fileSystem->readFileAsString("shaders/2dText.vshader"));
+			mShaders.text.progFragment.init(HorseRadish::OpenGL::Objects::ShaderProgram::Type::Fragment, fileSystem->readFileAsString("shaders/2dText.fshader"));
 
-			shaders.text.progPipeline.init();
-			shaders.text.progPipeline.setStage(shaders.text.progVertex);
-			shaders.text.progPipeline.setStage(shaders.text.progFragment);
+			mShaders.text.progPipeline.init();
+			mShaders.text.progPipeline.setStage(mShaders.text.progVertex);
+			mShaders.text.progPipeline.setStage(mShaders.text.progFragment);
 
-			this->gui.font = std::make_unique<Tools::Font>(textSize, textFont, shaders.text.progVertex.getId(), shaders.text.progFragment.getId(), shaders.text.progPipeline.getId());
+			mGui.font = std::make_unique<Tools::Font>(textSize, textFont, mShaders.text.progVertex.getId(), mShaders.text.progFragment.getId(), mShaders.text.progPipeline.getId());
 		}
 
 	} //Render

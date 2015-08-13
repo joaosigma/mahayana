@@ -1,6 +1,4 @@
 #pragma once
-#ifndef __HOPENGL_OBJECTS__
-#define __HOPENGL_OBJECTS__
 
 #include "context.hpp"
 #include "openGL.hpp"
@@ -238,12 +236,12 @@ public:
 
 	static int calculateNumMipMaps(GLuint width, GLuint height)
 	{
-		return calculateNumMipMaps(HorseRadish::Math::iMax(width, height));
+		return calculateNumMipMaps(std::max(width, height));
 	}
 
 	static int calculateNumMipMaps(GLuint width, GLuint height, GLuint depth)
 	{
-		return calculateNumMipMaps(HorseRadish::Math::iMax(HorseRadish::Math::iMax(width, height), depth));
+		return calculateNumMipMaps(std::max(std::max(width, height), depth));
 	}
 
 public:
@@ -784,24 +782,25 @@ class Buffer : public ObjectGL
 {
 public:
 	enum class Type { ArrayBuffer, ElementArrayBuffer, PixelPackBuffer, PixelUnpackBuffer, TextureBuffer, UniformBuffer, DrawIndirect };
-	enum class UsageType { ServerStatic, FrequentOnlyRead, FrequentOnlyWrite };
+	enum class UsageType { ServerStatic, OnlyRead, OnlyWrite, PersistentOnlyRead, PersistentOnlyWrite};
 
-	typedef struct {
+	struct DrawElementsIndirectCommand {
 		GLuint count;
 		GLuint instanceCount;
 		GLuint firstIndex;
 		GLuint baseVertex;
 		GLuint baseInstance;
-	} DrawElementsIndirectCommand;
+	};
 	static_assert(sizeof(DrawElementsIndirectCommand) == 20, "DrawElementsIndirectCommand must be tightly packed: sizeof() == 20");
 
 private:
 	GLenum mType;
+	void* mMappedPtr;
 	UsageType mUsageType;
 	
 public:
 	Buffer()
-		: mType(0), mUsageType(UsageType::ServerStatic)
+		: mType(0), mMappedPtr(nullptr), mUsageType(UsageType::ServerStatic)
 	{ }
 
 	~Buffer()
@@ -825,13 +824,23 @@ public:
 			glCreateBuffers(1, &mId);
 			glNamedBufferStorage(mId, dataSize, dataPtr, 0);
 			break;
-		case UsageType::FrequentOnlyRead:
+		case UsageType::OnlyRead:
 			glCreateBuffers(1, &mId);
 			glNamedBufferStorage(mId, dataSize, dataPtr, GL_MAP_READ_BIT);
 			break;
-		case UsageType::FrequentOnlyWrite:
+		case UsageType::OnlyWrite:
 			glCreateBuffers(1, &mId);
 			glNamedBufferStorage(mId, dataSize, dataPtr, GL_MAP_WRITE_BIT);
+			break;
+		case UsageType::PersistentOnlyRead:
+			glCreateBuffers(1, &mId);
+			glNamedBufferStorage(mId, dataSize, dataPtr, GL_MAP_READ_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
+			mMappedPtr = glMapNamedBufferRange(mId, 0, dataSize, GL_MAP_READ_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
+			break;
+		case UsageType::PersistentOnlyWrite:
+			glCreateBuffers(1, &mId);
+			glNamedBufferStorage(mId, dataSize, dataPtr, GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
+			mMappedPtr = glMapNamedBufferRange(mId, 0, dataSize, GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
 			break;
 		default:
 			return false;
@@ -872,6 +881,12 @@ public:
 	{
 		if (!isValid())
 			return;
+
+		if (mMappedPtr)
+		{
+			glUnmapNamedBuffer(mId);
+			mMappedPtr = nullptr;
+		}
 
 		glDeleteBuffers(1, &mId);
 		mId = 0;
@@ -914,16 +929,16 @@ public:
 		{
 		case 0:
 			glClearNamedBufferSubData(mId, GL_R32F, bufferOffset, bufferSize, GL_RED, GL_FLOAT, dataPtr);
-			break;
+			return true;
 		case 1:
 			glClearNamedBufferSubData(mId, GL_RG32F, bufferOffset, bufferSize, GL_RG, GL_FLOAT, dataPtr);
-			break;
+			return true;
 		case 2:
 			glClearNamedBufferSubData(mId, GL_RGB32F, bufferOffset, bufferSize, GL_RGB, GL_FLOAT, dataPtr);
-			break;
-		default:
-			return false;
+			return true;
 		}
+
+		return false;
 	}
 
 	bool writeData(const void* const dataPtr, const unsigned int dataSize, const unsigned int bufferOffset) const
@@ -931,12 +946,19 @@ public:
 		if (!isValid() || (dataPtr == nullptr) || (dataSize <= 0))
 			return false;
 
-		if (mUsageType != UsageType::FrequentOnlyWrite)
+		if ((mUsageType != UsageType::OnlyWrite) && (mUsageType != UsageType::PersistentOnlyWrite))
 			return false;
 
-		auto mappedPtr = glMapNamedBufferRange(mId, bufferOffset, dataSize, GL_MAP_WRITE_BIT);
-		memcpy(mappedPtr, dataPtr, dataSize);
-		glUnmapNamedBuffer(mId);
+		if (mMappedPtr)
+		{
+			memcpy(reinterpret_cast<unsigned char*>(mMappedPtr) + bufferOffset, dataPtr, dataSize);
+		}
+		else
+		{
+			auto mappedPtr = glMapNamedBufferRange(mId, bufferOffset, dataSize, GL_MAP_WRITE_BIT);
+			memcpy(mappedPtr, dataPtr, dataSize);
+			glUnmapNamedBuffer(mId);
+		}
 
 		return true;
 	}
@@ -946,12 +968,19 @@ public:
 		if (!isValid() || (dataPtr == nullptr) || (dataSize <= 0))
 			return false;
 
-		if (mUsageType != UsageType::FrequentOnlyRead)
+		if ((mUsageType != UsageType::OnlyRead) && (mUsageType != UsageType::PersistentOnlyRead))
 			return false;
 
-		auto mappedPtr = glMapNamedBufferRange(mId, bufferOffset, dataSize, GL_MAP_READ_BIT);
-		memcpy(dataPtr, mappedPtr, dataSize);
-		glUnmapNamedBuffer(mId);
+		if (mMappedPtr)
+		{
+			memcpy(dataPtr, reinterpret_cast<unsigned char*>(mMappedPtr) + bufferOffset, dataSize);
+		}
+		else
+		{
+			auto mappedPtr = glMapNamedBufferRange(mId, bufferOffset, dataSize, GL_MAP_READ_BIT);
+			memcpy(dataPtr, mappedPtr, dataSize);
+			glUnmapNamedBuffer(mId);
+		}
 
 		return true;
 	}
@@ -1545,6 +1574,44 @@ public:
 	}
 };
 
-} } }
+//a glFenceSync is not considered a GL object
 
-#endif
+class FenceSync
+{
+	GLsync mSync;
+
+public:
+	FenceSync()
+		: mSync(0)
+	{ }
+
+	~FenceSync()
+	{
+		glDeleteSync(mSync);
+		mSync = 0;
+	}
+
+	void place()
+	{
+		glDeleteSync(mSync);
+		mSync = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+	}
+
+	void wait() const
+	{
+		if (!mSync)
+			return;
+
+		while (true)
+		{
+			switch (glClientWaitSync(mSync, GL_SYNC_FLUSH_COMMANDS_BIT, 1))
+			{
+			case GL_ALREADY_SIGNALED:
+			case GL_CONDITION_SATISFIED:
+				return;
+			}
+		}
+	}
+};
+
+} } }

@@ -4,16 +4,16 @@ namespace HorseRadish
 {
 	BRect::BRect(const Vector3f * const points, const unsigned int numVec)
 	{
-		minX = minY = Math::INFINITY;
-		maxX = maxY = -Math::INFINITY;
+		minX = minY = std::numeric_limits<float>::infinity();
+		maxX = maxY = -std::numeric_limits<float>::infinity();
 
 		Merge(points, numVec);
 	}
 
 	BRect::BRect(const BRect * const brects, const unsigned int numBRect)
 	{
-		minX = minY = Math::INFINITY;
-		maxX = maxY = -Math::INFINITY;
+		minX = minY = std::numeric_limits<float>::infinity();
+		maxX = maxY = -std::numeric_limits<float>::infinity();
 
 		for (unsigned int i = 0; i < numBRect; i++)
 		{
@@ -65,37 +65,37 @@ namespace HorseRadish
 
 	void BRect::Merge(const Vector3f &pt)
 	{
-		minX = Math::fMin(minX, pt[0]);
-		minY = Math::fMin(minY, pt[1]);
-		maxX = Math::fMax(maxX, pt[0]);
-		maxY = Math::fMax(maxY, pt[1]);
+		minX = std::fmin(minX, pt[0]);
+		minY = std::fmin(minY, pt[1]);
+		maxX = std::fmax(maxX, pt[0]);
+		maxY = std::fmax(maxY, pt[1]);
 	}
 
 	void BRect::Merge(const float * const pt)
 	{
-		minX = Math::fMin(minX, pt[0]);
-		minY = Math::fMin(minY, pt[1]);
-		maxX = Math::fMax(maxX, pt[0]);
-		maxY = Math::fMax(maxY, pt[1]);
+		minX = std::fmin(minX, pt[0]);
+		minY = std::fmin(minY, pt[1]);
+		maxX = std::fmax(maxX, pt[0]);
+		maxY = std::fmax(maxY, pt[1]);
 	}
 
 	void BRect::Merge(const Vector3f * const pts, const int numPts)
 	{
 		for (int i = 0; i < numPts; i++)
 		{
-			minX = Math::fMin(minX, pts[i][0]);
-			minY = Math::fMin(minY, pts[i][1]);
-			maxX = Math::fMax(maxX, pts[i][0]);
-			maxY = Math::fMax(maxY, pts[i][1]);
+			minX = std::fmin(minX, pts[i][0]);
+			minY = std::fmin(minY, pts[i][1]);
+			maxX = std::fmax(maxX, pts[i][0]);
+			maxY = std::fmax(maxY, pts[i][1]);
 		}
 	}
 
 	void BRect::Merge(const float &x, const float &y)
 	{
-		minX = Math::fMin(minX, x);
-		minY = Math::fMin(minY, y);
-		maxX = Math::fMax(maxX, x);
-		maxY = Math::fMax(maxY, y);
+		minX = std::fmin(minX, x);
+		minY = std::fmin(minY, y);
+		maxX = std::fmax(maxX, x);
+		maxY = std::fmax(maxY, y);
 	}
 
 	void BRect::Translate(const Vector3f &translation)
@@ -124,10 +124,10 @@ namespace HorseRadish
 
 	void BRect::CrossSection(const BRect& brect, BRect& brectResult) const
 	{
-		brectResult.minX = Math::fMax(minX, brect.minX);
-		brectResult.minY = Math::fMax(minY, brect.minY);
-		brectResult.maxX = Math::fMin(maxX, brect.maxX);
-		brectResult.maxY = Math::fMin(maxY, brect.maxY);
+		brectResult.minX = std::fmax(minX, brect.minX);
+		brectResult.minY = std::fmax(minY, brect.minY);
+		brectResult.maxX = std::fmin(maxX, brect.maxX);
+		brectResult.maxY = std::fmin(maxY, brect.maxY);
 
 		if ((brectResult.minX <= brectResult.maxX) && (brectResult.minY <= brectResult.maxY))
 			return;

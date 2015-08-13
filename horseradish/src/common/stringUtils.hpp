@@ -15,18 +15,25 @@ namespace HorseRadish
 		public:
 			class utf8Iterator : public std::iterator<std::forward_iterator_tag, unsigned int>
 			{
+				static const unsigned __int32 offsetsFromUTF8[6];
+
+				static bool isutf8(const char &value)
+				{
+					return ((value & 0xC0) != 0x80);
+				}
+
+				std::string::const_iterator mStrIt, mStrItNext, mStrItEnd;
+
 			public:
 				utf8Iterator(const std::string& str)
 				{
-					mStrIt = str.begin();
+					mStrIt = mStrItNext = str.begin();
 					mStrItEnd = str.end();
 				}
 
-				utf8Iterator(const std::string& str, std::string::const_iterator it)
-					: mStrIt(it)
-				{
-					mStrItEnd = str.end();
-				}
+				utf8Iterator(std::string::const_iterator itBegin, std::string::const_iterator itEnd)
+					: mStrIt(itBegin), mStrItEnd(itEnd)
+				{ }
 
 				utf8Iterator(const utf8Iterator& it)
 				{
@@ -89,17 +96,6 @@ namespace HorseRadish
 					finalChar -= utf8Iterator::offsetsFromUTF8[bytesRead - 1];
 					return finalChar;
 				}
-
-			private:
-				static const unsigned __int32 offsetsFromUTF8[6];
-
-				static bool isutf8(const char &value)
-				{
-					return ((value & 0xC0) != 0x80);
-				}
-
-			private:
-				std::string::const_iterator mStrIt, mStrItNext, mStrItEnd;
 			};
 
 		public:
@@ -117,7 +113,7 @@ namespace HorseRadish
 
 			const_iterator end() const
 			{
-				return utf8Iterator(mStr, mStr.end());
+				return utf8Iterator(mStr.end(), mStr.end());
 			}
 
 		private:
@@ -189,6 +185,10 @@ namespace HorseRadish
 		}
 
 	public:
+		static void conv2UTF8(const std::wstring& strUTF16, std::string& strUTF8);
+		static void conv2UTF8(const wchar_t* const strUTF16, std::string& strUTF8);
+		static void conv2UTF8(const unsigned int charUnicode, std::string& strUTF8);
+		static void conv2UTF8(const std::vector<unsigned int>& strUnicode, std::string& strUTF8);
 		static std::string conv2UTF8(const std::wstring& strUTF16);
 		static std::string conv2UTF8(const wchar_t* const strUTF16);
 		static std::string conv2UTF8(const unsigned int charUnicode);
@@ -200,8 +200,11 @@ namespace HorseRadish
 
 		static bool endsWith(const std::string& str, const std::string& ending);
 
-		static std::string trimCopy(const std::string& str);
+		static void closeAt(std::string& str, unsigned int pos);
+		static std::string closeAtCopy(const std::string& str, unsigned int pos);
+
 		static void trim(std::string& str);
+		static std::string trimCopy(const std::string& str);
 
 		static void replace(std::string& str, const unsigned int unicodeCharOld, const unsigned int unicodeCharNew);
 		static std::string replaceCopy(const std::string& str, const unsigned int replaceOldChar, const unsigned int replaceNewChar);

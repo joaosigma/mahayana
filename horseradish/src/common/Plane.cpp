@@ -89,7 +89,7 @@ namespace HorseRadish
 	bool Plane::TestIntersectRay(const Vector3f &origin, const Vector3f &dir) const
 	{
 		Vector3f result;
-		return TestIntersectRay(origin, dir);
+		return TestIntersectRay(origin, dir, result);
 	}
 
 	bool Plane::TestIntersectRay(const Vector3f &origin, const Vector3f &dir, Vector3f& result) const
@@ -112,7 +112,7 @@ namespace HorseRadish
 	bool Plane::TestIntersectLine(const Vector3f &p1, const Vector3f &p2) const
 	{
 		Vector3f result;
-		return TestIntersectLine(p1, p2);
+		return TestIntersectLine(p1, p2, result);
 	}
 
 	bool Plane::TestIntersectLine(const Vector3f &p1, const Vector3f &p2, Vector3f& result) const
@@ -135,7 +135,7 @@ namespace HorseRadish
 	bool Plane::TestIntersectLineSegment(const Vector3f &p1, const Vector3f &p2) const
 	{
 		Vector3f result;
-		return TestIntersectLineSegment(p1, p2);
+		return TestIntersectLineSegment(p1, p2, result);
 	}
 
 	bool Plane::TestIntersectLineSegment(const Vector3f &p1, const Vector3f &p2, Vector3f& result) const
@@ -160,7 +160,7 @@ namespace HorseRadish
 	bool Plane::TestIntersectPlanes(const Plane &p2, const Plane &p3) const
 	{
 		Vector3f result;
-		return TestIntersectPlanes(p2, p3);
+		return TestIntersectPlanes(p2, p3, result);
 	}
 
 	bool Plane::TestIntersectPlanes(const Plane &p2, const Plane &p3, Vector3f& result) const
@@ -195,7 +195,7 @@ namespace HorseRadish
 		float d0 = GetDotCoord(spherePrevPos);
 		float d1 = GetDotCoord(sphereCurPos);
 
-		if (Math::fAbs(d0) <= sphereRadius)
+		if (std::abs(d0) <= sphereRadius)
 		{
 			if (hitPoint)
 				hitPoint->set(spherePrevPos);

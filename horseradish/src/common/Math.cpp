@@ -19,7 +19,6 @@ union ieee_single {
 
 namespace HorseRadish
 {
-
 	float Math::htof(const unsigned short &val)
 	{
 		halfType h;
@@ -154,78 +153,7 @@ namespace HorseRadish
 		return h.bits;
 	}
 
-	void Math::fMAD(float *buf, const unsigned int num, const float mulVal, const float addVal)
-	{
-		int remain, leftOver;
-		__m128 do1, do2, do3, do4, mulReg, addReg;
-
-		auto walker = buf;
-		remain = reinterpret_cast<uintptr_t>(buf) % 16;
-		mulReg = _mm_load_ps1(&mulVal);
-		addReg = _mm_load_ps1(&addVal);
-
-		if (remain == 4 || remain == 8 || remain == 12 || remain == 0)
-		{
-			if (remain != 0)
-			{
-				remain = (16 - remain) / 4;
-				while (remain > 0)
-				{
-					*walker = (*walker)*mulVal + addVal;
-					remain--;
-					walker++;
-				}
-			}
-
-			leftOver = num;
-			for (; leftOver >= 16; leftOver -= 16, walker += 16)
-			{
-				do1 = _mm_load_ps(walker + 0);
-				do2 = _mm_load_ps(walker + 4);
-				do3 = _mm_load_ps(walker + 8);
-				do4 = _mm_load_ps(walker + 12);
-
-				do1 = _mm_add_ps(_mm_mul_ps(do1, mulReg), addReg);
-				do2 = _mm_add_ps(_mm_mul_ps(do2, mulReg), addReg);
-				do3 = _mm_add_ps(_mm_mul_ps(do3, mulReg), addReg);
-				do4 = _mm_add_ps(_mm_mul_ps(do4, mulReg), addReg);
-
-				_mm_store_ps(walker + 0, do1);
-				_mm_store_ps(walker + 4, do2);
-				_mm_store_ps(walker + 8, do3);
-				_mm_store_ps(walker + 12, do4);
-			}
-
-			for (; leftOver > 0; leftOver--, walker++)
-				*walker = (*walker)*mulVal + addVal;
-
-			return;
-		}
-
-		leftOver = num;
-		for (; leftOver >= 16; leftOver -= 16, walker += 16)
-		{
-			do1 = _mm_loadu_ps(walker + 0);
-			do2 = _mm_loadu_ps(walker + 4);
-			do3 = _mm_loadu_ps(walker + 8);
-			do4 = _mm_loadu_ps(walker + 12);
-
-			do1 = _mm_add_ps(_mm_mul_ps(do1, mulReg), addReg);
-			do2 = _mm_add_ps(_mm_mul_ps(do2, mulReg), addReg);
-			do3 = _mm_add_ps(_mm_mul_ps(do3, mulReg), addReg);
-			do4 = _mm_add_ps(_mm_mul_ps(do4, mulReg), addReg);
-
-			_mm_storeu_ps(walker + 0, do1);
-			_mm_storeu_ps(walker + 4, do2);
-			_mm_storeu_ps(walker + 8, do3);
-			_mm_storeu_ps(walker + 12, do4);
-		}
-
-		for (; leftOver > 0; leftOver--, walker++)
-			*walker = (*walker)*mulVal + addVal;
-	}
-
-	float Math::WaveEvalLinear(const float * const items, const int numItems, const float t)
+	float Math::sampleWave(const float * const items, const int numItems, const float t)
 	{
 		float normalized, start;
 		int readStart;
@@ -237,127 +165,6 @@ namespace HorseRadish
 		normalized = start - floorf(start);
 		return items[readStart] * (1.0f - normalized) + items[readStart + 1] * normalized;
 	}
-
-	float Math::WaveEvalSnap(const float * const items, const int numItems, const float t)
-	{
-		float start;
-		int readStart;
-
-		start = (t - floorf(t)) * (numItems - 1);
-		readStart = ftoi(floorf(start));
-		return items[readStart];
-	}
-
-	void Math::EvalCatmullRom(const float * const p1, const float * const p2, const float * const p3, const float * const p4, const float t, float *output)
-	{
-		float tSqr, tSqrSqr, newT;
-
-		newT = fClamp(t, 0.0f, 1.0f);
-
-		tSqr = newT*newT*0.5f;
-		tSqrSqr = newT*tSqr;
-		newT *= 0.5f;
-
-		output[0] = output[1] = output[2] = 0.0f;
-
-		// matrix row 1
-		output[0] += p1[0] * (-tSqrSqr);
-		output[1] += p1[1] * (-tSqrSqr);
-		output[2] += p1[2] * (-tSqrSqr);
-
-		output[0] += p2[0] * tSqrSqr*3.0f;
-		output[1] += p2[1] * tSqrSqr*3.0f;
-		output[2] += p2[2] * tSqrSqr*3.0f;
-
-		output[0] += p3[0] * tSqrSqr*(-3.0f);
-		output[1] += p3[1] * tSqrSqr*(-3.0f);
-		output[2] += p3[2] * tSqrSqr*(-3.0f);
-
-		output[0] += p4[0] * tSqrSqr;
-		output[1] += p4[1] * tSqrSqr;
-		output[2] += p4[2] * tSqrSqr;
-
-		// matrix row 2
-		output[0] += p1[0] * tSqr*2.0f;
-		output[1] += p1[1] * tSqr*2.0f;
-		output[2] += p1[2] * tSqr*2.0f;
-
-		output[0] += p2[0] * tSqr*(-5.0f);
-		output[1] += p2[1] * tSqr*(-5.0f);
-		output[2] += p2[2] * tSqr*(-5.0f);
-
-		output[0] += p3[0] * tSqr*4.0f;
-		output[1] += p3[1] * tSqr*4.0f;
-		output[2] += p3[2] * tSqr*4.0f;
-
-		output[0] += p4[0] * (-tSqr);
-		output[1] += p4[1] * (-tSqr);
-		output[2] += p4[2] * (-tSqr);
-
-		// matrix row 3
-		output[0] += p1[0] * (-newT);
-		output[1] += p1[1] * (-newT);
-		output[2] += p1[2] * (-newT);
-
-		output[0] += p3[0] * newT;
-		output[1] += p3[1] * newT;
-		output[2] += p3[2] * newT;
-
-		// matrix row 4
-		output[0] += p2[0];
-		output[1] += p2[1];
-		output[2] += p2[2];
-	}
-
-	void Math::EvalHermite(const float * const p1, const float * const p2, const float * const p3, const float * const p4, const float t, float *output)
-	{
-		float tSqr, tCube, newT;
-		float d1[3], d2[3];
-
-		newT = fClamp(t, 0.0f, 1.0f);
-
-		tSqr = newT*newT;
-		tCube = newT*tSqr;
-
-		d1[0] = p2[0] - p1[0];
-		d1[1] = p2[1] - p1[1];
-		d1[2] = p2[2] - p1[2];
-
-		d2[0] = p4[0] - p3[0];
-		d2[1] = p4[1] - p3[1];
-		d2[2] = p4[2] - p3[2];
-
-		output[0] = p2[0] * (2.0f*tCube - 3.0f*tSqr + 1.0f);
-		output[1] = p2[1] * (2.0f*tCube - 3.0f*tSqr + 1.0f);
-		output[2] = p2[2] * (2.0f*tCube - 3.0f*tSqr + 1.0f);
-
-		output[0] += p3[0] * (-2.0f*tCube + 3.0f*tSqr);
-		output[1] += p3[1] * (-2.0f*tCube + 3.0f*tSqr);
-		output[2] += p3[2] * (-2.0f*tCube + 3.0f*tSqr);
-
-		output[0] += d1[0] * (tCube - 2.0f*tSqr + t);
-		output[1] += d1[1] * (tCube - 2.0f*tSqr + t);
-		output[2] += d1[2] * (tCube - 2.0f*tSqr + t);
-
-		output[0] += d2[0] * (tCube - tSqr);
-		output[1] += d2[1] * (tCube - tSqr);
-		output[2] += d2[2] * (tCube - tSqr);
-	}
-
-	//as constantes
-	const float	Math::PI = 3.14159265358979323846f;
-	const float	Math::TWO_PI = 6.28318530717958647692f;
-	const float	Math::HALF_PI = 1.57079632679489661923f;
-	const float	Math::ONEFOURTH_PI = 0.78539816339744830961f;
-	const float Math::E = 2.71828182845904523536f;
-	const float Math::SQRT_TWO = 1.41421356237309504880f;
-	const float Math::SQRT_THREE = 1.73205080756887729352f;
-	const float	Math::SQRT_1OVER2 = 0.70710678118654752440f;
-	const float	Math::SQRT_1OVER3 = 0.57735026918962576450f;
-	const float	Math::DEG2RAD = 0.017453292519943295769f;
-	const float	Math::RAD2DEG = 57.29577951308232087679f;
-	const float	Math::INFINITY = 1e30f;
-	const float Math::EPSILON = 1.192092896e-07f;
 
 	const float Math::WaveTableSin[] = {
 		0.000000f, 0.024541f, 0.049068f, 0.073565f, 0.098017f, 0.122411f, 0.146730f, 0.170962f,
@@ -434,13 +241,13 @@ namespace HorseRadish
 
 	const __m128 Math::SIMD::fOne = _mm_set_ps1(1.0f);
 	const __m128 Math::SIMD::fHalfOne = _mm_set_ps1(0.5f);
-	const __m128 Math::SIMD::fPi = _mm_set_ps1(Math::PI);
-	const __m128 Math::SIMD::fDeg2Rad = _mm_set_ps1(Math::DEG2RAD);
-	const __m128 Math::SIMD::fRad2Deg = _mm_set_ps1(Math::RAD2DEG);
+	const __m128 Math::SIMD::fPi = _mm_set_ps1(Math::constPi());
+	const __m128 Math::SIMD::fDeg2Rad = _mm_set_ps1(Math::convDeg2Rad(1.0f));
+	const __m128 Math::SIMD::fRad2Deg = _mm_set_ps1(Math::convRad2Deg(1.0f));
 	const __m128 Math::SIMD::fUByteMax = _mm_set_ps1(255.0f);
 	const __m128 Math::SIMD::fUByteMaxInv = _mm_set_ps1(0.003921568627450980392f);
 
-	//as funções em baixo (tiradas daqui: http://gruntthepeon.free.fr/ssemath/) precisam destas constantes todas
+	//the following functions (found here: http://gruntthepeon.free.fr/ssemath/) require these constants
 
 #define _PS_CONST(Name, Val) static const __declspec(align(16)) float _ps_##Name[4]  = { Val, Val, Val, Val }
 #define _PI32_CONST(Name, Val) static const __declspec(align(16)) int _pi32_##Name[4] = { Val, Val, Val, Val }
@@ -497,12 +304,7 @@ namespace HorseRadish
 	_PS_CONST(cephes_exp_p4, 1.6666665459E-1);
 	_PS_CONST(cephes_exp_p5, 5.0000001201E-1);
 
-	void Math::SIMD::sinCosG(__m128 degrees, __m128 * const s, __m128 * const c)
-	{
-		Math::SIMD::sinCosR(_mm_mul_ps(degrees, Math::SIMD::fDeg2Rad), s, c);
-	}
-
-	void Math::SIMD::sinCosR(__m128 radians, __m128 * const s, __m128 * const c)
+	void Math::SIMD::sinCos(__m128 radians, __m128 * const s, __m128 * const c)
 	{
 		//since sin_ps and cos_ps are almost identical, sincos_ps could replace both of them..	it is almost as fast, and gives you a free cosine with your sine
 		__m128 xmm1, xmm2, xmm3 = _mm_setzero_ps(), sign_bit_sin, y;
@@ -668,7 +470,7 @@ namespace HorseRadish
 		return x;
 	}
 
-	__m128 exp(__m128 x)
+	__m128 Math::SIMD::exp(__m128 x)
 	{
 		__m128 tmp = _mm_setzero_ps(), fx;
 		__m128i emm0;
@@ -717,6 +519,77 @@ namespace HorseRadish
 		__m128 pow2n = _mm_castsi128_ps(emm0);
 		y = _mm_mul_ps(y, pow2n);
 		return y;
+	}
+
+	void Math::SIMD::mad(float *values, const unsigned int numValues, const float mulVal, const float addVal)
+	{
+		int remain, leftOver;
+		__m128 do1, do2, do3, do4, mulReg, addReg;
+
+		auto walker = values;
+		remain = reinterpret_cast<uintptr_t>(values) % 16;
+		mulReg = _mm_load_ps1(&mulVal);
+		addReg = _mm_load_ps1(&addVal);
+
+		if (remain == 4 || remain == 8 || remain == 12 || remain == 0)
+		{
+			if (remain != 0)
+			{
+				remain = (16 - remain) / 4;
+				while (remain > 0)
+				{
+					*walker = (*walker) * mulVal + addVal;
+					remain--;
+					walker++;
+				}
+			}
+
+			leftOver = numValues;
+			for (; leftOver >= 16; leftOver -= 16, walker += 16)
+			{
+				do1 = _mm_load_ps(walker + 0);
+				do2 = _mm_load_ps(walker + 4);
+				do3 = _mm_load_ps(walker + 8);
+				do4 = _mm_load_ps(walker + 12);
+
+				do1 = _mm_add_ps(_mm_mul_ps(do1, mulReg), addReg);
+				do2 = _mm_add_ps(_mm_mul_ps(do2, mulReg), addReg);
+				do3 = _mm_add_ps(_mm_mul_ps(do3, mulReg), addReg);
+				do4 = _mm_add_ps(_mm_mul_ps(do4, mulReg), addReg);
+
+				_mm_store_ps(walker + 0, do1);
+				_mm_store_ps(walker + 4, do2);
+				_mm_store_ps(walker + 8, do3);
+				_mm_store_ps(walker + 12, do4);
+			}
+
+			for (; leftOver > 0; leftOver--, walker++)
+				*walker = (*walker)*mulVal + addVal;
+
+			return;
+		}
+
+		leftOver = numValues;
+		for (; leftOver >= 16; leftOver -= 16, walker += 16)
+		{
+			do1 = _mm_loadu_ps(walker + 0);
+			do2 = _mm_loadu_ps(walker + 4);
+			do3 = _mm_loadu_ps(walker + 8);
+			do4 = _mm_loadu_ps(walker + 12);
+
+			do1 = _mm_add_ps(_mm_mul_ps(do1, mulReg), addReg);
+			do2 = _mm_add_ps(_mm_mul_ps(do2, mulReg), addReg);
+			do3 = _mm_add_ps(_mm_mul_ps(do3, mulReg), addReg);
+			do4 = _mm_add_ps(_mm_mul_ps(do4, mulReg), addReg);
+
+			_mm_storeu_ps(walker + 0, do1);
+			_mm_storeu_ps(walker + 4, do2);
+			_mm_storeu_ps(walker + 8, do3);
+			_mm_storeu_ps(walker + 12, do4);
+		}
+
+		for (; leftOver > 0; leftOver--, walker++)
+			*walker = (*walker)*mulVal + addVal;
 	}
 
 } //HorseRadish

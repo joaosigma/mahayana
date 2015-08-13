@@ -13,17 +13,22 @@ public:
 	enum class InfoType{ FreeVertexCount, MaxVertexCount };
 
 private:
+	static constexpr unsigned int MaxVertexCount = 10;
+	static constexpr unsigned int MaxIndexCount = ((MaxVertexCount / 4) * 6) + 6;
+
 	struct VertexDataLayout
 	{
-		float px, py, pz, tu, tv;
-		unsigned char cr, cg, cb, ca;
+		float pos[3], uv[2];
+		unsigned char color[4];
 	};
 
 	struct
 	{
+		HorseRadish::OpenGL::Objects::FenceSync fence;
 		HorseRadish::OpenGL::Objects::VertexArray vertexArray;
 		HorseRadish::OpenGL::Objects::Buffer arrayBuffer, elementArrayBuffer;
 	} mGl;
+
 	struct
 	{
 		float uv[2];
@@ -31,6 +36,7 @@ private:
 		GeometryType geomType;
 		unsigned char color[4];
 	} mState;
+
 	std::unique_ptr<VertexDataLayout[]> mBufferData;
 	std::unique_ptr<unsigned short[]> mBufferIndices;
 	int mMaxVertexCount;

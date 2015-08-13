@@ -93,23 +93,13 @@ private:
 		ModuleType moduleType;
 		std::chrono::time_point<std::chrono::system_clock> timestamp;
 
+		EntryData()
+			: isMsgFormated(false), entryType(EntryType::Error), moduleType(ModuleType::Misc)
+		{ }
+
 		EntryData(EntryType entryType, ModuleType moduleType)
-			: entryType(entryType), moduleType(moduleType)
+			: isMsgFormated(false), entryType(entryType), moduleType(moduleType)
 		{ }
-
-		EntryData(EntryData&& entry)
-			: msg(std::move(entry.msg)), isMsgFormated(std::move(entry.isMsgFormated))
-			, entryType(std::move(entry.entryType)), moduleType(std::move(entry.moduleType)), timestamp(std::move(entry.timestamp))
-		{ }
-
-		EntryData& operator=(EntryData&& entry) {
-			msg = std::move(entry.msg);
-			isMsgFormated = std::move(entry.isMsgFormated);
-			entryType = std::move(entry.entryType);
-			moduleType = std::move(entry.moduleType);
-			timestamp = std::move(entry.timestamp);
-			return *this;
-		}
 	};
 
 	static bool checkEntryData(const char * const entryData, bool &hasFormattedText, unsigned int &dataSize);
@@ -199,7 +189,7 @@ public:
 		log(EntryType::Error, moduleType, entryData.c_str(), std::forward<TValues>(params)...);
 	}
 
-	void iterateBuffer(std::function<bool(const EntryType, const ModuleType, const bool, const std::string&)> logEntryCb, unsigned int offset);
+	void iterateBuffer(std::function<bool(const EntryType, const ModuleType, const bool, const std::string&)> logEntryCb, unsigned int offset) const;
 };
 
 } }

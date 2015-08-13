@@ -36,7 +36,7 @@ namespace HorseRadish {	namespace Render {
 
 		mRenderData.texVideo.init(HorseRadish::OpenGL::Objects::Texture::Type::TexRectangle, HorseRadish::OpenGL::Objects::Texture::StorageType::RGBA_8, mVideoData.frameSize.width, mVideoData.frameSize.height);
 
-		mRenderData.bufferPBO.init(HorseRadish::OpenGL::Objects::Buffer::Type::PixelUnpackBuffer, mVideoData.stream->GetVideoFrameDataSize(), HorseRadish::OpenGL::Objects::Buffer::UsageType::FrequentOnlyWrite);
+		mRenderData.bufferPBO.init(HorseRadish::OpenGL::Objects::Buffer::Type::PixelUnpackBuffer, mVideoData.stream->GetVideoFrameDataSize(), HorseRadish::OpenGL::Objects::Buffer::UsageType::OnlyWrite);
 
 		mRenderData.sampler.init(HorseRadish::OpenGL::Objects::Sampler::FilterType::Linear, HorseRadish::OpenGL::Objects::Sampler::FilterType::Linear, HorseRadish::OpenGL::Objects::Sampler::WrapType::ClampEdge);
 

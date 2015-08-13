@@ -9,51 +9,73 @@ namespace HorseRadish
 {
 	const unsigned __int32 StringUtils::utf8Wrapper::utf8Iterator::offsetsFromUTF8[6] = { 0x00000000UL, 0x00003080UL, 0x000E2080UL, 0x03C82080UL, 0xFA082080UL, 0x82082080UL };
 
-	std::string StringUtils::conv2UTF8(const std::wstring& strUTF16)
+	void StringUtils::conv2UTF8(const std::wstring& strUTF16, std::string& strUTF8)
 	{
 		if (strUTF16.empty())
-			return std::string();
+			return;
 
-		return std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t>().to_bytes(strUTF16);
+		strUTF8.append(std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t>().to_bytes(strUTF16));
 	}
 
-	std::string StringUtils::conv2UTF8(const wchar_t* const strUTF16)
+	void StringUtils::conv2UTF8(const wchar_t* const strUTF16, std::string& strUTF8)
 	{
 		if (strUTF16 == nullptr)
-			return std::string();
+			return;
 
-		return std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t>().to_bytes(strUTF16);
+		strUTF8.append(std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t>().to_bytes(strUTF16));
 	}
 
-	std::string StringUtils::conv2UTF8(const unsigned int charUnicode)
+	void StringUtils::conv2UTF8(const unsigned int charUnicode, std::string& strUTF8)
 	{
-		std::string str;
-		str.reserve(4);
+		strUTF8.reserve(strUTF8.size() + 4);
 
 		char tmpBuffer[4];
 
-		auto numChars = StringUtils::unicodeUTF8(charUnicode, tmpBuffer);
-		str.append(tmpBuffer, numChars);
-
-		return str;
+		auto numBytes = StringUtils::unicodeUTF8(charUnicode, tmpBuffer);
+		strUTF8.append(tmpBuffer, numBytes);
 	}
 
-	std::string StringUtils::conv2UTF8(const std::vector<unsigned int>& strUnicode)
+	void StringUtils::conv2UTF8(const std::vector<unsigned int>& strUnicode, std::string& strUTF8)
 	{
 		if (strUnicode.empty())
-			return std::string();
+			return;
 
-		std::string str;
-		str.reserve(strUnicode.size() * 2);
+		strUTF8.reserve(strUTF8.size() + (strUnicode.size() * 2));
 
 		char tmpBuffer[4];
 		for (const auto& curUnicode : strUnicode)
 		{
-			auto numChars = StringUtils::unicodeUTF8(curUnicode, tmpBuffer);
-			str.append(tmpBuffer, numChars);
+			auto numBytes = StringUtils::unicodeUTF8(curUnicode, tmpBuffer);
+			strUTF8.append(tmpBuffer, numBytes);
 		}
+	}
 
-		return str;
+	std::string StringUtils::conv2UTF8(const std::wstring& strUTF16)
+	{
+		std::string strUTF8;
+		StringUtils::conv2UTF8(strUTF16, strUTF8);
+		return strUTF8;
+	}
+
+	std::string StringUtils::conv2UTF8(const wchar_t* const strUTF16)
+	{
+		std::string strUTF8;
+		StringUtils::conv2UTF8(strUTF16, strUTF8);
+		return strUTF8;
+	}
+
+	std::string StringUtils::conv2UTF8(const unsigned int charUnicode)
+	{
+		std::string strUTF8;
+		StringUtils::conv2UTF8(charUnicode, strUTF8);
+		return strUTF8;
+	}
+
+	std::string StringUtils::conv2UTF8(const std::vector<unsigned int>& strUnicode)
+	{
+		std::string strUTF8;
+		StringUtils::conv2UTF8(strUnicode, strUTF8);
+		return strUTF8;
 	}
 
 	std::wstring StringUtils::conv2UTF16(const std::string& strUTF8)
@@ -91,12 +113,30 @@ namespace HorseRadish
 		return (str.size() >= ending.size()) && equal(ending.rbegin(), ending.rend(), str.rbegin());
 	}
 
-	std::string StringUtils::trimCopy(const std::string& str)
+	void StringUtils::closeAt(std::string& str, unsigned int pos)
 	{
-		if (str.empty())
+		str = StringUtils::closeAtCopy(str, pos);
+	}
+
+	std::string StringUtils::closeAtCopy(const std::string& str, unsigned int pos)
+	{
+		if (pos == 0)
 			return std::string();
 
-		return std::string(StringUtils::findFirst(str.c_str()), StringUtils::findLast(str.c_str() + str.length()));
+		std::string newStr;
+		newStr.reserve(str.size());
+
+		char tmpBuffer[4];
+		for (const auto& curChar : StringUtils::utf8Wrapper(str))
+		{
+			if ((pos--) == 0)
+				break;
+
+			auto numBytes = StringUtils::unicodeUTF8(curChar, tmpBuffer);
+			newStr.append(tmpBuffer, numBytes);
+		}
+
+		return newStr;
 	}
 
 	void StringUtils::trim(std::string& str)
@@ -107,10 +147,17 @@ namespace HorseRadish
 		str.assign(StringUtils::findFirst(str.c_str()), StringUtils::findLast(str.c_str() + str.length()));
 	}
 
+	std::string StringUtils::trimCopy(const std::string& str)
+	{
+		if (str.empty())
+			return std::string();
+
+		return std::string(StringUtils::findFirst(str.c_str()), StringUtils::findLast(str.c_str() + str.length()));
+	}
+
 	void StringUtils::replace(std::string& str, const unsigned int unicodeCharOld, const unsigned int unicodeCharNew)
 	{
-		auto newStr = StringUtils::replaceCopy(str, unicodeCharOld, unicodeCharNew);
-		str = newStr;
+		str = StringUtils::replaceCopy(str, unicodeCharOld, unicodeCharNew);
 	}
 
 	std::string StringUtils::replaceCopy(const std::string& str, const unsigned int replaceOldChar, const unsigned int replaceNewChar)
@@ -121,8 +168,8 @@ namespace HorseRadish
 		char tmpBuffer[4];
 		for (const auto& curChar : StringUtils::utf8Wrapper(str))
 		{
-			auto numChars = StringUtils::unicodeUTF8((curChar == replaceOldChar) ? replaceNewChar : curChar, tmpBuffer);
-			newStr.append(tmpBuffer, numChars);
+			auto numBytes = StringUtils::unicodeUTF8((curChar == replaceOldChar) ? replaceNewChar : curChar, tmpBuffer);
+			newStr.append(tmpBuffer, numBytes);
 		}
 
 		return newStr;
@@ -130,8 +177,7 @@ namespace HorseRadish
 
 	void StringUtils::replace(std::string& str, const std::string& replaceOldStr, const std::string& replaceNewStr)
 	{
-		auto newStr = StringUtils::replaceCopy(str, replaceOldStr, replaceNewStr);
-		str = newStr;
+		str = StringUtils::replaceCopy(str, replaceOldStr, replaceNewStr);
 	}
 
 	std::string StringUtils::replaceCopy(const std::string& str, const std::string& replaceOldStr, const std::string& replaceNewStr)

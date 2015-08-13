@@ -1,9 +1,12 @@
 #pragma once
 
 #include "renderer.hpp"
-#include "tools\camera.hpp"
-#include "common\openGL\tools\viewport.hpp"
-#include "common\openGL\tools\immediateMode.hpp"
+#include "world.hpp"
+
+#include "tools/camera.hpp"
+#include "common/FileSystem.hpp"
+#include "common/openGL/tools/viewport.hpp"
+#include "common/openGL/tools/immediateMode.hpp"
 
 namespace HorseRadish
 {
@@ -49,7 +52,7 @@ namespace HorseRadish
 				HorseRadish::OpenGL::Objects::Sampler samplerNormals;
 			};
 
-			HorseRadish::Render::World *renderWorld;
+			HorseRadish::Render::World& renderWorld;
 			VBOs vbos;
 			FBOs fbos;
 			Shaders shaders;
@@ -67,7 +70,7 @@ namespace HorseRadish
 			void loadTextures(HorseRadish::IO::FileSystem &fileSystem);
 
 		public:
-			RendererDeferred(const HorseRadish::OpenGL::Objects::Context& glContext, HorseRadish::Render::World* const renderWorld);
+			RendererDeferred(const HorseRadish::OpenGL::Objects::Context& glContext, HorseRadish::Render::World& renderWorld);
 			~RendererDeferred();
 
 			void Initialize(const int &renderWidth, const int &renderHeight, HorseRadish::IO::FileSystem * const fileSystem);

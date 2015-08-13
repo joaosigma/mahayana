@@ -2,10 +2,10 @@
 
 #include "common/opengl/openGL.hpp"
 #include "common/opengl/tools/viewport.hpp"
-#include "console/consoleUI.hpp"
 
 #include "render/stage.hpp"
 #include "render/world.hpp"
+#include "render/console.hpp"
 #include "render/rendererDeferred.hpp"
 #include "render/renderer2D.hpp"
 
@@ -86,7 +86,6 @@ namespace HorseRadish
 	static
 	void CALLBACK openglDebugMessagesCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *message, void *userParam)
 	{
-		return;
 		const char *glSource, *glType, *glSeverity;
 
 		auto logger = reinterpret_cast<HorseRadish::Engine::Logger*>(userParam);
@@ -176,13 +175,11 @@ namespace HorseRadish
 		{
 			float timeSpentDrawing, timeSpentProcessing, timeSpentIdle;
 			HorseRadish::Timer timerSecond, timerFrame, timerTotal;
-			HorseRadish::Render::RendererDeferred *rendererDeferred;
-			HorseRadish::Render::Renderer2D *renderer2D;
-			HorseRadish::Render::World *renderData;
-			HorseRadish::OpenGL::Tools::Viewport *viewport;
-			HorseRadish::Render::Tools::Camera *camera;
-			Console::UI::ConsoleGUI *consolaGUI;
-			OpenglContext *glContext;
+			std::unique_ptr<HorseRadish::Render::RendererDeferred> rendererDeferred;
+			std::unique_ptr<HorseRadish::Render::Renderer2D> renderer2D;
+			std::unique_ptr<HorseRadish::Render::World> renderData;
+			std::unique_ptr<OpenglContext> glContext;
+			std::unique_ptr<HorseRadish::Render::Console> rendererConsole;
 
 			mLoggerRenderCtx->info(" ");
 			mLoggerRenderCtx->info("${olive}->${default}Render thread initialized.");
@@ -191,10 +188,10 @@ namespace HorseRadish
 			{
 				int glMajorVersion, glMinorVersion;
 
-				glContext = new OpenglContext(*mWindow, "OpenGL32.dll", 4, 5, this->VarGet<bool>("renderer.glDebug"), false);
-				if ((glContext == nullptr) || !glContext->IsValid())
+				glContext = std::make_unique<OpenglContext>(*mWindow, "OpenGL32.dll", 4, 5, this->VarGet<bool>("renderer.glDebug"), true);
+				if (!glContext->isValid())
 				{
-					std::string errorMsg = glContext->GetErrorMsg();
+					std::string errorMsg = glContext->getErrorMsg();
 					if (errorMsg.empty())
 						exit(ExitAction::Nothing, "Unable to create OpenGL context");
 					else
@@ -222,35 +219,32 @@ namespace HorseRadish
 				mLoggerRenderCtx->info("${olive}->${default}OpenGL system initialized.");
 			}
 
-			//prepare some debug stuff
 			if (this->VarGet<bool>("renderer.glDebug"))
 			{
-				HorseRadish::OpenGL::glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, true);
+				/*HorseRadish::OpenGL::glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
 				HorseRadish::OpenGL::glDebugMessageCallback(openglDebugMessagesCallback, mLogger.get());
 				HorseRadish::OpenGL::glEnable(GL_DEBUG_OUTPUT);
 				HorseRadish::OpenGL::glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
 
-				glContext->dispatchDebugMessages();
+				glContext->dispatchDebugMessages();*/
 			}
 
-			//mostro a primeira/segunda frame
-			glContext->SwapBuffers();
-			glContext->SwapBuffers();
+			glContext->swapBuffers();
 
 			//inicio agora o renderer (fbos, vbos, shaders, etc)
-			renderData = new HorseRadish::Render::World();
+			renderData = std::make_unique<HorseRadish::Render::World>();
 
-			renderer2D = new HorseRadish::Render::Renderer2D(*glContext);
-			renderer2D->Initialize(this->VarGet<int>("renderer.winWidth"), this->VarGet<int>("renderer.winHeight"), mFileSystem.get(), this->VarGet<std::string>("sys.console.text.font").c_str(), this->VarGet<int>("sys.console.text.size"));
+			renderer2D = std::make_unique<HorseRadish::Render::Renderer2D>(*glContext);
+			renderer2D->initialize(this->VarGet<int>("renderer.winWidth"), this->VarGet<int>("renderer.winHeight"), mFileSystem.get(), this->VarGet<std::string>("sys.console.text.font").c_str(), this->VarGet<int>("sys.console.text.size"));
 
-			rendererDeferred = new HorseRadish::Render::RendererDeferred(*glContext, renderData);
+			rendererDeferred = std::make_unique<HorseRadish::Render::RendererDeferred>(*glContext, *renderData);
 			rendererDeferred->Initialize(this->VarGet<int>("renderer.winWidth"), this->VarGet<int>("renderer.winHeight"), mFileSystem.get());
 
 			//escrevo alguma informação acerda do GL
 			openGLWriteInfo(*mLogger, *glContext);
 
 			//a camera
-			camera = new HorseRadish::Render::Tools::Camera();
+			auto camera = std::make_unique<HorseRadish::Render::Tools::Camera>();
 
 			//coloco alguns valores por defeito na camera
 			camera->SetPos(0.0f, 0.0f, 1.0f);
@@ -258,29 +252,18 @@ namespace HorseRadish
 			camera->SetSensitivity(HorseRadish::Render::Tools::Camera::Keyboard, 10.0f);
 
 			//o viewport
-			viewport = new HorseRadish::OpenGL::Tools::Viewport(90.0f, this->VarGet<int>("renderer.winWidth"), this->VarGet<int>("renderer.winHeight"), 1.0f, 500.0f);
+			auto viewport = std::make_unique<HorseRadish::OpenGL::Tools::Viewport>(90.0f, this->VarGet<int>("renderer.winWidth"), this->VarGet<int>("renderer.winHeight"), 1.0f, 500.0f);
 			HorseRadish::OpenGL::glViewport(0, 0, viewport->getWidth(), viewport->getHeight());
 
-			glContext->SetSwapInterval(this->VarGet<int>("renderer.winSwapInterval"));
+			glContext->setSwapInterval(this->VarGet<int>("renderer.winSwapInterval"));
 
-			//inicio o UI da consola (e abro-a se for developer)
-			consolaGUI = new Console::UI::ConsoleGUI(renderer2D);
 			if (this->VarGet<bool>("sys.developer"))
-				consolaGUI->ConsoleVisible(true);
-			//SOverlayInit();
-
-			std::shared_ptr<Render::Stage> stage = std::make_shared<Render::Stage>(*mRuntime, *mLoggerRuntimeCtx, *mFileSystem, *glContext, this->VarGet<int>("renderer.winWidth"), this->VarGet<int>("renderer.winHeight"));
-
-			//crio as tabs necessárias para o UI da consola
-			auto consoleUIMain = new Console::UI::ConsoleTabConsole([&](const char * const newInput)
 			{
-				mRuntime->runScript(newInput);
-			}, this->mLogger);
-			consolaGUI->ConsoleAddTab(consoleUIMain);
-
-			//preparo o texto da consola propriamente dita
-			consoleUIMain->CriaTextoConsola(renderer2D);
-			consoleUIMain->ActualizaTextoConsola();
+				rendererConsole = std::make_unique<HorseRadish::Render::Console>(*mLogger, *renderer2D, 20);
+				rendererConsole->setVisible(true);
+			}
+			
+			std::shared_ptr<Render::Stage> stage = std::make_shared<Render::Stage>(*mRuntime, *mLoggerRuntimeCtx, *mFileSystem, *glContext, this->VarGet<int>("renderer.winWidth"), this->VarGet<int>("renderer.winHeight"));
 
 			//se sou developer preciso de fazer algumas coisas
 			if (this->VarGet<bool>("sys.developer") != 0)
@@ -308,8 +291,8 @@ namespace HorseRadish
 			{
 				
 				//HorseRadish::Streams::FileStream readStream("c:/Users/Sigma/Desktop/doom3.json", true, false);
-				//HorseRadish::Streams::FileStream readStream("c:/Users/Sigma/Desktop/test_scene.json", true, false);
-				HorseRadish::Streams::FileStream readStream("c:/Users/Sigma/Desktop/volund.json", true, false);
+				HorseRadish::Streams::FileStream readStream("c:/Users/Sigma/Desktop/test_scene.json", true, false);
+				//HorseRadish::Streams::FileStream readStream("c:/Users/Sigma/Desktop/volund.json", true, false);
 
 				renderData->Cleanup();
 				if (!renderData->ImportJSON(HorseRadish::Streams::StreamReader(readStream)))
@@ -347,8 +330,8 @@ namespace HorseRadish
 				while (mCurState == State::Running)
 				{
 					//a primeira coisa é acertar os tempos
-					renderer2D->auxTools.lastTimeS = renderer2D->auxTools.curTimeS;
-					renderer2D->auxTools.curTimeS = timerTotal.getTimeS();
+					renderer2D->mAuxTools.lastTimeS = renderer2D->mAuxTools.curTimeS;
+					renderer2D->mAuxTools.curTimeS = timerTotal.getTimeS();
 
 					//caso nao desenhe nada
 					HorseRadish::OpenGL::glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
@@ -382,41 +365,26 @@ namespace HorseRadish
 					//leio o tempo que estive à espera para desenhar o 3D
 					timeSpentDrawing = timerFrame.getTimeMS();
 
-					//se for para tirar algum screenshot
 					if (this->VarGet<int>("sys.screenshot") > 0)
 					{
-						//diminuo o número de imagens a tirar e espero que todos os comandos do OpenGL acabei
-						this->VarSet("sys.screenshot", this->VarGet<int>("sys.screenshot") - 1);
-						HorseRadish::OpenGL::glFinish();
-
-						//crio um ficheiro (ao sair do scope o ficheiro é fechado)
+						this->VarSet("sys.screenshot", this->VarGet<int>("sys.screenshot") - 1); //several screenshots can be taken
+						
 						HorseRadish::Streams::FileStream fileStream("screenshot.bmp", false, true);
 
-						//basta mandar tirar o screenshot
+						HorseRadish::OpenGL::glFinish();
 						//glContext->TakeScreenshot(fileStream); //should come from the framebuffers
 					}
 
-					//se alguma coisa da consola precisar de ser desenhado
-					if (consolaGUI->GUIVisivel())
+					if (rendererConsole && rendererConsole->isVisible())
 					{
-						//o opengl (não esquecer: não tenho depth buffer por defeito)
 						HorseRadish::OpenGL::glEnable(GL_BLEND);
 						HorseRadish::OpenGL::glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-						//se for preciso, actualizo o texto da consola propriamente dita
-						//if (gbMainConsole->AsChanged() == true)
-						consoleUIMain->ActualizaTextoConsola();
-
-						//mando desenhar a consola
-						//SOverlayDraw(gbMainConsole);
-						consolaGUI->Draw(viewport);
-
-						//reponho o opengl
+							rendererConsole->draw(*viewport);
 						HorseRadish::OpenGL::glDisable(GL_BLEND);
 					}
 
 					//se houver uma camera e a consola não estiver a consumir input
-					if ((camera != nullptr) && (consolaGUI->ConsoleConsumesInput() == false))
+					if ((camera != nullptr) && (!rendererConsole || !rendererConsole->isVisible()))
 					{
 						HorseRadish::Render::Tools::Camera::CameraAction cameraActions;
 
@@ -444,7 +412,7 @@ namespace HorseRadish
 
 						//posso actualizar a camera
 						auto mousePosition = mWindow->RawInputGetMouseStatus();
-						camera->CommitInput(cameraActions, mousePosition[0], mousePosition[1], true, renderer2D->auxTools.curTimeS - renderer2D->auxTools.lastTimeS);
+						camera->CommitInput(cameraActions, mousePosition[0], mousePosition[1], true, renderer2D->mAuxTools.curTimeS - renderer2D->mAuxTools.lastTimeS);
 					}
 
 					mWindow->ProcessMessages([&](const Window::Message &msg)
@@ -454,7 +422,14 @@ namespace HorseRadish
 
 						stage->processMessage(msg);
 
-						consolaGUI->ConsoleProcessMSG(msg);
+						if (rendererConsole)
+						{
+							rendererConsole->processMsg([&](const char * const newInput)
+							{
+								mRuntime->runScript(newInput);
+							}, msg);
+						}
+
 					}, true);
 
 					//se já passou um segundo
@@ -482,11 +457,14 @@ namespace HorseRadish
 					renderData->PrepareNextFrame(*camera, *viewport);
 					stage->processStep();
 
+					if (rendererConsole)
+						rendererConsole->processStep();
+
 					//leio o tempo que estive à espera de processar as coisas do motor
 					timeSpentProcessing = timerFrame.getTimeMS() - timeSpentDrawing;
 
 					//mostro o que desenhei, isto tá no fim pra ajudar no paralelismo entre CPU e GPU
-					glContext->SwapBuffers();
+					glContext->swapBuffers();
 
 					//leio o tempo que estive à espera de acabar de fazer o swap
 					timeSpentIdle = timerFrame.getTimeMS() - timeSpentProcessing;
@@ -535,30 +513,18 @@ namespace HorseRadish
 
 			stage.reset();
 
-			delete consolaGUI;
-			consolaGUI = nullptr;
+			rendererConsole.reset();
 
-			delete rendererDeferred;
-			rendererDeferred = nullptr;
-
-			delete renderer2D;
-			renderer2D = nullptr;
+			rendererDeferred.reset();
+			renderer2D.reset();
 
 			renderData->Cleanup();
+			renderData.reset();
 
-			//delete renderData->stats.gpuCounter;
-			//renderData->stats.gpuCounter = nullptr;
+			camera.reset();
+			viewport.reset();
 
-			delete camera;
-			delete viewport;
-			camera = nullptr;
-			viewport = nullptr;
-
-			delete renderData;
-			renderData = nullptr;
-
-			delete glContext;
-			glContext = nullptr;
+			glContext.reset();
 		}
 
 	} //Engine

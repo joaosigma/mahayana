@@ -5,6 +5,8 @@
 #include "Plane.hpp"
 #include "Math.hpp"
 
+#include <limits>
+
 namespace HorseRadish
 {
 	class BBox;
@@ -19,7 +21,7 @@ namespace HorseRadish
 			Inside, Outside, Intersect
 		};
 
-		BBox() : minPt(Math::INFINITY), maxPt(-Math::INFINITY) { }
+		BBox() : minPt(std::numeric_limits<float>::infinity()), maxPt(-std::numeric_limits<float>::infinity()) { }
 		BBox(const BBox& bbox) : minPt(bbox.minPt), maxPt(bbox.maxPt) { }
 		explicit BBox(const Vector3f * const points, const unsigned int numVec);
 		explicit BBox(const BBox * const bboxes, const unsigned int numBBox);
@@ -67,7 +69,7 @@ namespace HorseRadish
 		void SetMinMax(const float * const min, const float * const max) { minPt.set(min); maxPt.set(max); }
 		void SetMinMax(const Vector3f &min, const Vector3f &max) { minPt.set(min); maxPt.set(max); }
 
-		void Reset(){ minPt[0] = minPt[1] = minPt[2] = Math::INFINITY; maxPt[0] = maxPt[1] = maxPt[2] = -Math::INFINITY; }
+		void Reset(){ minPt[0] = minPt[1] = minPt[2] = std::numeric_limits<float>::infinity(); maxPt[0] = maxPt[1] = maxPt[2] = -std::numeric_limits<float>::infinity(); }
 
 		void Translate(const Vector3f &translation);
 		void Translate(BBox& bbox, const Vector3f &translation) const;
@@ -96,7 +98,7 @@ namespace HorseRadish
 			Inside, Outside, Intersect
 		};
 
-		BSphere() : x(0), y(0), z(0), radius(Math::INFINITY) { }
+		BSphere() : x(0), y(0), z(0), radius(std::numeric_limits<float>::infinity()) { }
 		BSphere(const BSphere& bsphere) : x(bsphere.x), y(bsphere.y), z(bsphere.z), radius(bsphere.radius) { }
 		~BSphere() {}
 
@@ -123,7 +125,7 @@ namespace HorseRadish
 		void SetCenter(const float &newx, const float &newy, const float &newz) { x = newx; y = newy; z = newz; }
 		void SetCenter(const Vector3f &center) { x = center[0]; y = center[1]; z = center[2]; }
 		void SetRadius(const float &newradius) { radius = newradius; }
-		void Reset(){ x = y = z = 0.0f; radius = Math::INFINITY; }
+		void Reset(){ x = y = z = 0.0f; radius = std::numeric_limits<float>::infinity(); }
 		void Translate(const Vector3f &translation) { x += translation[0]; y += translation[1]; z += translation[2]; }
 		void Translate(BSphere& bsphereDest, const Vector3f &translation) const { bsphereDest.x = x + translation[0]; bsphereDest.y = y + translation[1]; bsphereDest.z = z + translation[2]; bsphereDest.radius = radius; }
 

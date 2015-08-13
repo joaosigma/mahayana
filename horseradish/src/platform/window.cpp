@@ -105,29 +105,25 @@ OpenglContext::OpenglContext(const Window &window, const std::string& openGLModu
 	: mIsValid(false)
 	, mImpl(new OpenglContextImpl(*window.mImpl, openGLModuleName, contextMajorVersion, contextMinorVersion, contextDebug, contextForwardCompatible))
 {
-	mIsValid = this->initContext();
+	mIsValid = initContext();
 }
 
-OpenglContext::~OpenglContext()
-{
-}
-
-bool OpenglContext::IsValid() const
+bool OpenglContext::isValid() const
 {
 	return (mImpl->IsValid() & mIsValid);
 }
 
-std::string OpenglContext::GetErrorMsg() const
+std::string OpenglContext::getErrorMsg() const
 {
 	return mImpl->GetErrorMsg();
 }
 
-void OpenglContext::SetSwapInterval(const unsigned int &interval) const
+void OpenglContext::setSwapInterval(const unsigned int &interval) const
 {
 	mImpl->SetSwapInterval(interval);
 }
 
-bool OpenglContext::SwapBuffers() const
+bool OpenglContext::swapBuffers() const
 {
 	return mImpl->SwapBuffers();
 }

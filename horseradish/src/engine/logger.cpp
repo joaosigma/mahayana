@@ -47,29 +47,6 @@ void Logger::processAsyncBuffer()
 	if (mAsyncBuffer.empty())
 		return;
 
-	if (mMaxBufferSize > 0)
-	{
-		std::unique_lock<std::mutex> lock(mBufferLock);
-
-		size_t bufferIndex = 0;
-
-		if (mAsyncBuffer.size() >= mMaxBufferSize)
-		{
-			mBuffer.clear();
-			bufferIndex = mAsyncBuffer.size() - mMaxBufferSize;
-		}
-		else if ((mBuffer.size() + mAsyncBuffer.size()) >= mMaxBufferSize)
-		{
-			while ((mMaxBufferSize - mBuffer.size()) < mAsyncBuffer.size())
-				mBuffer.pop_back();
-		}
-
-		for (; bufferIndex < mAsyncBuffer.size(); bufferIndex++)
-			mBuffer.push_front(mAsyncBuffer[bufferIndex]);
-
-		assert(mBuffer.size() <= mMaxBufferSize);
-	}
-
 	for (const auto& entry : mAsyncBuffer)
 		writeToFile(entry);
 
@@ -211,19 +188,19 @@ bool Logger::addEntry(const EntryType entryType, const ModuleType moduleType, co
 
 	std::lock_guard<std::mutex> lock(mASyncLock);
 
+	if (mMaxBufferSize > 0)
+	{
+		std::lock_guard<std::mutex> lock(mBufferLock);
+
+		if (mBuffer.size() >= mMaxBufferSize)
+			mBuffer.pop_back();
+
+		mBuffer.push_front(entry);
+		assert(mBuffer.size() <= mMaxBufferSize);
+	}
+
 	if (mMaxAsyncBufferSize == 0)
 	{
-		if (mMaxBufferSize > 0)
-		{
-			std::unique_lock<std::mutex> lock(mBufferLock);
-
-			if (mBuffer.size() >= mMaxBufferSize)
-				mBuffer.pop_back();
-
-			mBuffer.push_front(entry);
-			assert(mBuffer.size() <= mMaxBufferSize);
-		}
-
 		writeToFile(entry);
 	}
 	else
@@ -278,7 +255,7 @@ Logger::~Logger()
 	}
 }
 
-void Logger::iterateBuffer(std::function<bool(const EntryType, const ModuleType, const bool, const std::string&)> logEntryCb, unsigned int offset)
+void Logger::iterateBuffer(std::function<bool(const EntryType, const ModuleType, const bool, const std::string&)> logEntryCb, unsigned int offset) const
 {
 	if ((mMaxBufferSize == 0) || !logEntryCb)
 		return;

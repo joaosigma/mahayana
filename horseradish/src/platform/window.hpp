@@ -108,17 +108,15 @@ public:
 
 class OpenglContext : public HorseRadish::OpenGL::Objects::Context
 {
-private:
 	bool mIsValid;
 	std::unique_ptr<OpenglContextImpl> mImpl;
 
 public:
 	OpenglContext(const Window &window, const std::string& openGLModuleName, int contextMajorVersion, int contextMinorVersion, bool contextDebug, bool contextForwardCompatible);
-	~OpenglContext();
 
-	bool IsValid() const;
-	std::string GetErrorMsg() const;
+	bool isValid() const;
+	std::string getErrorMsg() const;
 
-	void SetSwapInterval(const unsigned int &interval) const;
-	bool SwapBuffers(void) const;
+	void setSwapInterval(const unsigned int &interval) const;
+	bool swapBuffers(void) const;
 };

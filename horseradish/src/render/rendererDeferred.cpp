@@ -47,9 +47,9 @@ namespace HorseRadish
 			this->samplers.samplerAlbedo.bind(0);
 
 			vbos.vboIndirectDraw.bind();
-			for (auto& curObject : this->renderWorld->mRenderData.objects)
+			for (auto& curObject : this->renderWorld.mRenderData.objects)
 			{
-				auto& concept = this->renderWorld->mConcepts[curObject->conceptName];
+				auto& concept = this->renderWorld.mConcepts[curObject->conceptName];
 
 				if (concept.renderData.texNormal.isValid())
 					concept.renderData.texNormal.bind(1);
@@ -108,19 +108,19 @@ namespace HorseRadish
 			vbos.vboMeshIndexData.reset();
 			this->vbos.vboMeshSize = this->vbos.vboMeshIndexSize = 0;
 
-			for (const auto& concept : this->renderWorld->mConcepts)
+			for (const auto& concept : this->renderWorld.mConcepts)
 			{
 				this->vbos.vboMeshSize += concept.second.mesh.sizeVertices();
 				this->vbos.vboMeshIndexSize += concept.second.mesh.sizeIndices();
 			}
 
-			vbos.vboMeshData.init(OpenGL::Objects::Buffer::Type::ArrayBuffer, vbos.vboMeshSize, OpenGL::Objects::Buffer::UsageType::FrequentOnlyWrite);
-			vbos.vboMeshIndexData.init(OpenGL::Objects::Buffer::Type::ElementArrayBuffer, vbos.vboMeshIndexSize, OpenGL::Objects::Buffer::UsageType::FrequentOnlyWrite);
+			vbos.vboMeshData.init(OpenGL::Objects::Buffer::Type::ArrayBuffer, vbos.vboMeshSize, OpenGL::Objects::Buffer::UsageType::PersistentOnlyWrite);
+			vbos.vboMeshIndexData.init(OpenGL::Objects::Buffer::Type::ElementArrayBuffer, vbos.vboMeshIndexSize, OpenGL::Objects::Buffer::UsageType::PersistentOnlyWrite);
 
 			int baseVertexOffset = 0;
 			int poolVertex = 0, poolIndex = 0;
 			int numGeoms = 0;
-			for (auto& concept : this->renderWorld->mConcepts)
+			for (auto& concept : this->renderWorld.mConcepts)
 			{
 				numGeoms++;
 				concept.second.renderData.meshVBOVertexOffset = baseVertexOffset;
@@ -139,7 +139,7 @@ namespace HorseRadish
 				auto drawCommands = std::unique_ptr<OpenGL::Objects::Buffer::DrawElementsIndirectCommand[]>(new OpenGL::Objects::Buffer::DrawElementsIndirectCommand[numGeoms]);
 
 				numGeoms = 0;
-				for (auto& concept : this->renderWorld->mConcepts)
+				for (auto& concept : this->renderWorld.mConcepts)
 				{
 					OpenGL::Objects::Buffer::DrawElementsIndirectCommand drawIndirect;
 					drawIndirect.baseInstance = 0;
@@ -174,7 +174,7 @@ namespace HorseRadish
 			HorseRadish::OpenGL::glVertexArrayAttribFormat(vbos.vaoMesh.getId(), 0, 3, GL_FLOAT, false, offsetof(HorseRadish::Geometry::Mesh::VertexData, pos));
 			HorseRadish::OpenGL::glVertexArrayAttribFormat(vbos.vaoMesh.getId(), 1, 2, GL_FLOAT, false, offsetof(HorseRadish::Geometry::Mesh::VertexData, uv));
 			HorseRadish::OpenGL::glVertexArrayAttribFormat(vbos.vaoMesh.getId(), 2, 3, GL_UNSIGNED_SHORT, true, offsetof(HorseRadish::Geometry::Mesh::VertexData, normal));
-			HorseRadish::OpenGL::glVertexArrayAttribFormat(vbos.vaoMesh.getId(), 4, 4, GL_UNSIGNED_SHORT, true, offsetof(HorseRadish::Geometry::Mesh::VertexData, tangent));
+			HorseRadish::OpenGL::glVertexArrayAttribFormat(vbos.vaoMesh.getId(), 3, 4, GL_UNSIGNED_SHORT, true, offsetof(HorseRadish::Geometry::Mesh::VertexData, tangent));
 
 			HorseRadish::OpenGL::glVertexArrayElementBuffer(vbos.vaoMesh.getId(), vbos.vboMeshIndexData.getId());
 			HorseRadish::OpenGL::glVertexArrayVertexBuffer(vbos.vaoMesh.getId(), 0, vbos.vboMeshData.getId(), 0, sizeof(HorseRadish::Geometry::Mesh::VertexData));
@@ -256,7 +256,7 @@ namespace HorseRadish
 
 		void RendererDeferred::loadTextures(HorseRadish::IO::FileSystem &fileSystem)
 		{
-			for (auto& concept : this->renderWorld->mConcepts)
+			for (auto& concept : this->renderWorld.mConcepts)
 			{
 				concept.second.renderData.texDiffuse.reset();
 				concept.second.renderData.texNormal.reset();
@@ -266,7 +266,7 @@ namespace HorseRadish
 			}
 		}
 
-		RendererDeferred::RendererDeferred(const HorseRadish::OpenGL::Objects::Context& glContext, HorseRadish::Render::World* const renderWorld)
+		RendererDeferred::RendererDeferred(const HorseRadish::OpenGL::Objects::Context& glContext, HorseRadish::Render::World& renderWorld)
 			: Renderer(glContext), renderWorld(renderWorld)
 		{
 			this->glImmediateMode = new HorseRadish::OpenGL::Tools::ImmediateMode(102);

@@ -15,8 +15,8 @@ class Font
 {
 	struct VertexDataLayout
 	{
-		float px, py, tu, tv;
-		unsigned char rgba[4];
+		float pos[2], uv[2];
+		unsigned char color[4];
 	};
 
 	struct KerningData
@@ -44,15 +44,33 @@ class Font
 		{ }
 	};
 
-	static int sMumMaxChar;
-	static unsigned short sBufferPadding;
+	struct UnicodeRange
+	{
+		int numCharsMax;
+		unsigned int numCharsSkip;
+
+		UnicodeRange()
+			: numCharsSkip(0), numCharsMax(-1)
+		{ }
+
+		UnicodeRange(int numCharsSkip)
+			: numCharsSkip(numCharsSkip), numCharsMax(-1)
+		{ }
+
+		UnicodeRange(unsigned int numCharsSkip, int numCharsMax)
+			: numCharsSkip(numCharsSkip), numCharsMax(numCharsMax)
+		{ }
+	};
+
+	static constexpr unsigned int sMumMaxChar = 256;
+	static constexpr unsigned short sBufferPadding = 5;
 
 private:
 	bool mValid;
 	std::vector<KerningData> mKerningData;
 	std::unordered_map<unsigned short, CharacterData> mCharMap;
 	
-	unsigned int glVertexProgramID, glFragmentProgramID, glProgramPipelineID, glUniformSampler, glUniformMatrix;
+	unsigned int mGlVertexProgramID, mGlFragmentProgramID, mGlProgramPipelineID, mGlUniformSampler, mGlUniformMatrix;
 	
 	struct
 	{
@@ -60,6 +78,7 @@ private:
 		HorseRadish::OpenGL::Objects::Sampler sampler;
 		HorseRadish::OpenGL::Objects::VertexArray vertexArray;
 		HorseRadish::OpenGL::Objects::Buffer arrayBuffer, elementArrayBuffer;
+		HorseRadish::OpenGL::Objects::FenceSync fence;
 	} mGl;
 
 	struct
@@ -68,8 +87,8 @@ private:
 		bool paintStarted;
 		HorseRadish::Color stateColor;
 
-		mutable unsigned int numCharWritten;
-		mutable std::array<VertexDataLayout, 512 * 4> charData;
+		unsigned int numCharWritten;
+		std::array<VertexDataLayout, Font::sMumMaxChar * 4> charData;
 	} mState;
 
 	struct
@@ -78,31 +97,41 @@ private:
 		float maxHeight, baseHeight;
 	} mFontInfo;
 
-	void commitGL() const;
+	void commitGL();
 	bool createCharData();
 	float getCharKerning(const CharacterData& leftCharData, unsigned short leftCharUnicodeID, unsigned short rightCharUnicodeID) const;
 	bool initFont(const char * const fontFilePath);
-	void internalWrite(const float &px, const float &py, const std::string& text) const;
+	void internalWrite(const float &px, const float &py, const std::string& str, UnicodeRange strRange);
 
 public:
 	Font(const int fontSize, const char * const fontFilePath, unsigned int glVertexProgramID, unsigned int glFragmentProgramID, unsigned int glProgramPipelineID);
 	~Font();
 
-	void write(const float &px, const float &py, const std::string& text) const;
-	void write(const std::string& text) const;
-	float writeChar(const unsigned int &unicodeChar) const;
-	float writeChar(const float &px, const float &py, const unsigned int &unicodeChar) const;
+	void layout(const std::string& text, const float maxWidth, std::function<void(unsigned int curLine, unsigned int unicodeCharOffset, unsigned int unicodeCharCount)> writeCb) const;
+
+	void write(const std::string& text);
+	void write(const float &px, const float &py, const std::string& text);
+	void write(const float &px, const float &py, const std::string& text, const unsigned int numUnicodeCharsSkip);
+	void write(const float &px, const float &py, const std::string& text, const unsigned int numUnicodeCharsSkip, const unsigned int maxUnicodeCharsWrite);
+
+	float writeChar(const unsigned int &unicodeChar);
+	float writeChar(const float &px, const float &py, const unsigned int &unicodeChar);
 
 	void setColor(const float &r, const float &g, const float &b, const float &a);
 	void setColor(const float &r, const float &g, const float &b);
 	void setColor(const float * const color);
 	void setColor(const Color &color);
 
-	bool getOperacional() const;
+	bool isValid() const;
+
 	float getMaxHeight() const;
 	float getCharWidth(const unsigned int &unicodeChar) const;
-	float getStringWidth(const std::string& text) const;
-	float getStringWidth(const std::string&, const unsigned int numMaxChar) const;
+
+	unsigned int countUnicodeChars(const std::string& text, const float maxWidth) const;
+	unsigned int countUnicodeChars(const std::string& text, const unsigned int numUnicodeCharsSkip, const float maxWidth) const;
+
+	float getTextWidth(const std::string& text) const;
+	float getTextWidth(const std::string&, const unsigned int numUnicodeCharsSkip, const unsigned int maxUnicodeCharsRead) const;
 
 	void paintBegin(const float * const tranformationMatrix, float scale = 1.0f);
 	void paintEnd();

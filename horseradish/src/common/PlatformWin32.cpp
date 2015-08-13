@@ -1,5 +1,4 @@
 #include "Platform.hpp"
-#include "PlatformWin32.hpp"
 
 #include "stringUtils.hpp"
 #include "ScopedAction.hpp"
@@ -8,11 +7,12 @@
 
 #if defined(_WIN32)
 
+#include <io.h>
+#include <regex>
+#include <fcntl.h>
+
 #include <windows.h>
 #include <shellapi.h>
-#include <io.h>
-#include <fcntl.h>
-#include <regex>
 
 struct RedirectData {
 
@@ -439,10 +439,13 @@ namespace HorseRadish
 
 		auto clipDataUTF8 = HorseRadish::StringUtils::conv2UTF8(static_cast<const wchar_t*>(clipData));
 
-		/*
-		TODO: VS 2013 issue
 
-		std::sregex_token_iterator first(clipDataUTF8.begin(), clipDataUTF8.end(), "\\n+", -1), last;
+		funcCallback(clipDataUTF8);
+
+		/*
+		TODO: VS205 doesn't support this!!! :/
+
+		std::sregex_token_iterator first(clipDataUTF8.begin(), clipDataUTF8.end(), std::regex("\\n+"), -1), last;
 		for (; first != last; first++)
 		{
 			if (!funcCallback(*first))
@@ -1117,7 +1120,7 @@ namespace HorseRadish
 #ifdef _M_X64
 
 		for (int i = 0; i < num; i++)
-			dest[i] = Math::iClampZero((Math::ftoi(src[i]) * mulVal) + addVal, 255);
+			dest[i] = std::min(std::max((Math::ftoi(src[i]) * mulVal) + addVal, 0), 255);
 
 #else
 

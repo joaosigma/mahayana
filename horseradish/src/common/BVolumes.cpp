@@ -1,21 +1,22 @@
 #include "BVolumes.hpp"
 
+#include <cmath>
 #include <cassert>
 
 namespace HorseRadish
 {
 	BBox::BBox(const Vector3f * const points, const unsigned int numVec)
 	{
-		minPt.set(Math::INFINITY);
-		maxPt.set(-Math::INFINITY);
+		minPt.set(std::numeric_limits<float>::infinity());
+		maxPt.set(-std::numeric_limits<float>::infinity());
 
 		Merge(points, numVec);
 	}
 
 	BBox::BBox(const BBox * const bboxes, const unsigned int numBBox)
 	{
-		minPt.set(Math::INFINITY);
-		maxPt.set(-Math::INFINITY);
+		minPt.set(std::numeric_limits<float>::infinity());
+		maxPt.set(-std::numeric_limits<float>::infinity());
 
 		for (unsigned int i = 0; i < numBBox; i++)
 		{
@@ -57,9 +58,9 @@ namespace HorseRadish
 
 		GetCenter(center);
 
-		minDist = Math::fAbs(minPt[0] - center[0]);
-		minDist = Math::fMin(minDist, Math::fAbs(minPt[1] - center[1]));
-		return Math::fMin(minDist, Math::fAbs(minPt[2] - center[2]));
+		minDist = std::abs(minPt[0] - center[0]);
+		minDist = std::fmin(minDist, std::abs(minPt[1] - center[1]));
+		return std::fmin(minDist, std::abs(minPt[2] - center[2]));
 	}
 
 	float BBox::GetVolume(void) const
@@ -149,9 +150,9 @@ namespace HorseRadish
 		d1 = plane.GetDotCoord(center);
 		plane.GetNormal(planeNormal);
 
-		d2 = Math::fAbs((maxPt[0] - center[0]) * planeNormal[0]);
-		d2 += Math::fAbs((maxPt[1] - center[1]) * planeNormal[1]);
-		d2 += Math::fAbs((maxPt[2] - center[2]) * planeNormal[2]);
+		d2 = std::abs((maxPt[0] - center[0]) * planeNormal[0]);
+		d2 += std::abs((maxPt[1] - center[1]) * planeNormal[1]);
+		d2 += std::abs((maxPt[2] - center[2]) * planeNormal[2]);
 
 		if ((d1 - d2) > 0.0f)
 			return (d1 - d2);
@@ -195,12 +196,12 @@ namespace HorseRadish
 
 	void BBox::Merge(const float * const pt)
 	{
-		minPt[0] = Math::fMin(minPt[0], pt[0]);
-		minPt[1] = Math::fMin(minPt[1], pt[1]);
-		minPt[2] = Math::fMin(minPt[2], pt[2]);
-		maxPt[0] = Math::fMax(maxPt[0], pt[0]);
-		maxPt[1] = Math::fMax(maxPt[1], pt[1]);
-		maxPt[2] = Math::fMax(maxPt[2], pt[2]);
+		minPt[0] = std::fmin(minPt[0], pt[0]);
+		minPt[1] = std::fmin(minPt[1], pt[1]);
+		minPt[2] = std::fmin(minPt[2], pt[2]);
+		maxPt[0] = std::fmax(maxPt[0], pt[0]);
+		maxPt[1] = std::fmax(maxPt[1], pt[1]);
+		maxPt[2] = std::fmax(maxPt[2], pt[2]);
 	}
 
 	void BBox::Merge(const Vector3f * const pts, const int numPts)
@@ -338,25 +339,25 @@ namespace HorseRadish
 		auto lineCenter = lineStart + lineDir;
 		auto dir = lineCenter - center;
 
-		ld[0] = Math::fAbs(lineDir[0]);
-		if (Math::fAbs(dir[0]) > (extents[0] + ld[0]))
+		ld[0] = std::abs(lineDir[0]);
+		if (std::abs(dir[0]) > (extents[0] + ld[0]))
 			return false;
 
-		ld[1] = Math::fAbs(lineDir[1]);
-		if (Math::fAbs(dir[1]) > (extents[1] + ld[1]))
+		ld[1] = std::abs(lineDir[1]);
+		if (std::abs(dir[1]) > (extents[1] + ld[1]))
 			return false;
 
-		ld[2] = Math::fAbs(lineDir[2]);
-		if (Math::fAbs(dir[2]) > (extents[2] + ld[2]))
+		ld[2] = std::abs(lineDir[2]);
+		if (std::abs(dir[2]) > (extents[2] + ld[2]))
 			return false;
 
 		auto cross = lineDir.crossProduct(dir);
 
-		if (Math::fAbs(cross[0]) > (extents[1] * ld[2] + extents[2] * ld[1]))
+		if (std::abs(cross[0]) > (extents[1] * ld[2] + extents[2] * ld[1]))
 			return false;
-		if (Math::fAbs(cross[1]) > (extents[0] * ld[2] + extents[2] * ld[0]))
+		if (std::abs(cross[1]) > (extents[0] * ld[2] + extents[2] * ld[0]))
 			return false;
-		if (Math::fAbs(cross[2]) > (extents[0] * ld[1] + extents[1] * ld[0]))
+		if (std::abs(cross[2]) > (extents[0] * ld[1] + extents[1] * ld[0]))
 			return false;
 		return true;
 	}
@@ -397,7 +398,7 @@ namespace HorseRadish
 			assert((side == 0) || (side == 1));
 
 			f = (rayOrigin[i] - ((side == 0) ? this->minPt : this->maxPt)[i]);
-			if ((ax0 < 0) || (Math::fAbs(f) > Math::fAbs(scale * rayDir[i])))
+			if ((ax0 < 0) || (std::abs(f) > std::abs(scale * rayDir[i])))
 			{
 				scale = -(f / rayDir[i]);
 				ax0 = i;
@@ -487,28 +488,28 @@ namespace HorseRadish
 
 	void BSphere::Merge(const Vector3f &pt)
 	{
-		radius = Math::fMax(radius, calcDist(pt));
+		radius = std::fmax(radius, calcDist(pt));
 	}
 
 	void BSphere::Merge(const float * const pt)
 	{
-		radius = Math::fMax(radius, calcDist(pt));
+		radius = std::fmax(radius, calcDist(pt));
 	}
 
 	void BSphere::Merge(const Vector3f * const pts, const int numPts)
 	{
 		for (int i = 0; i < numPts; i++)
-			this->radius = Math::fMax(this->radius, calcDist(pts[i]));
+			this->radius = std::fmax(this->radius, calcDist(pts[i]));
 	}
 
 	void BSphere::Merge(const float &x, const float &y, const float &z)
 	{
-		radius = Math::fMax(radius, calcDist(x, y, z));
+		radius = std::fmax(radius, calcDist(x, y, z));
 	}
 
 	void BSphere::Merge(const BSphere &sphere)
 	{
-		radius = Math::fMax(radius, calcDist(sphere) + sphere.radius);
+		radius = std::fmax(radius, calcDist(sphere) + sphere.radius);
 	}
 
 	void BSphere::Merge(const BBox &bbox)
@@ -516,7 +517,7 @@ namespace HorseRadish
 		BSphere boxSphere;
 
 		bbox.GetBoundingSphere(boxSphere);
-		radius = Math::fMax(radius, calcDist(boxSphere) + boxSphere.radius);
+		radius = std::fmax(radius, calcDist(boxSphere) + boxSphere.radius);
 	}
 
 	void BSphere::Expand(const float &amount)

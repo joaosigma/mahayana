@@ -243,7 +243,7 @@ namespace HorseRadish
 		FileSystem::FileSystem(unsigned int maxNumMounts)
 			: mMaxNumMounts(0)
 		{
-			mMaxNumMounts = Math::iClamp(maxNumMounts, 1, 10);
+			mMaxNumMounts = (maxNumMounts < 1) ? 1 : ((maxNumMounts > 10) ? 10 : maxNumMounts);
 
 			mListMounts.reserve(mMaxNumMounts);
 		}

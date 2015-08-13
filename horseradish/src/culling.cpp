@@ -2,6 +2,8 @@
 
 #include "common\platform.hpp"
 
+#include <limits>
+
 #define BSP_POS_OPAQUE		(1<<0)
 #define BSP_POS_AREA		(1<<1)
 #define BSP_POS_NODE		(1<<2)
@@ -351,10 +353,9 @@ int SCULLING::getArea(const HorseRadish::Vector3f &point, const bool useBSPTree)
 int SCULLING::getAreaClosest(const HorseRadish::Vector3f &point) const
 {
 	HorseRadish::Vector3f pontoBBox;
-	float closestDist;
-	int closestArea;
+	int closestArea = -1;
 
-	closestDist = HorseRadish::Math::INFINITY;
+	float closestDist = std::numeric_limits<float>::infinity();
 
 	const AREA *areaWalker = this->areas.data();
 	for (int i = 0; i < this->areas.size(); i++, areaWalker++)

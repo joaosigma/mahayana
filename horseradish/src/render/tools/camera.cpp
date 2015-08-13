@@ -97,7 +97,7 @@ void evalPointList(const HorseRadish::Vector3f * const pList, const int pNum, co
 	float step = (float)(pNum - 3);
 
 	int start = HorseRadish::Math::ftoi((tPos*step) - (fmod(tPos, 1.0f / step)*step));
-	start = HorseRadish::Math::iClampZero(start, pNum - 4);
+	start = std::min(std::max(start, 0), pNum - 4);
 
 	tPos = tPos*step - ((float)start);
 
@@ -454,8 +454,8 @@ HorseRadish::Vector3f Camera::GetTarget() const
 
 void Camera::GetRay(HorseRadish::Ray &ray) const
 {
-	ray.SetOrigin(camPos);
-	ray.SetDirection(camDir);
+	ray.setOrigin(camPos);
+	ray.setDirection(camDir);
 }
 
 void Camera::GetViewDir(HorseRadish::Vector3f &dir) const
@@ -467,7 +467,6 @@ HorseRadish::Vector3f Camera::GetViewDir() const
 {
 	return HorseRadish::Vector3f(camDir);
 }
-
 
 void Camera::GetStrideDir(HorseRadish::Vector3f &dir) const
 {

@@ -2,6 +2,8 @@
 
 #include "..\openGL.hpp"
 
+#include <limits>
+
 namespace HorseRadish { namespace OpenGL { namespace Tools {
 
 void Frustum::extractPlanes(const HorseRadish::Vector4f &col1, const HorseRadish::Vector4f &col2, const HorseRadish::Vector4f &col3, const HorseRadish::Vector4f &col4)
@@ -37,7 +39,7 @@ bool Frustum::sweptSpherePlaneIntersect(float &t0, float &t1, const HorseRadish:
 		if (b_dot_n <= sphereRadius)
 		{
 			t0 = 0.0f;
-			t1 = HorseRadish::Math::INFINITY;
+			t1 = std::numeric_limits<float>::infinity();
 			return true;
 		}
 		return false;
@@ -46,8 +48,8 @@ bool Frustum::sweptSpherePlaneIntersect(float &t0, float &t1, const HorseRadish:
 	d_dot_n = 1.0f / d_dot_n;
 	tmp0 = (sphereRadius - b_dot_n) * d_dot_n;
 	tmp1 = (-sphereRadius - b_dot_n) * d_dot_n;
-	t0 = HorseRadish::Math::fMin(tmp0, tmp1);
-	t1 = HorseRadish::Math::fMax(tmp0, tmp1);
+	t0 = std::fmin(tmp0, tmp1);
+	t1 = std::fmax(tmp0, tmp1);
 	return true;
 }
 

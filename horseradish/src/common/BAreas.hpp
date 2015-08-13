@@ -3,6 +3,8 @@
 #include "Vector.hpp"
 #include "Math.hpp"
 
+#include <limits>
+
 namespace HorseRadish
 {
 	class BRect
@@ -11,7 +13,7 @@ namespace HorseRadish
 
 	public:
 
-		BRect() : minX(Math::INFINITY), minY(Math::INFINITY), maxX(-Math::INFINITY), maxY(-Math::INFINITY) { }
+		BRect() : minX(std::numeric_limits<float>::infinity()), minY(std::numeric_limits<float>::infinity()), maxX(-std::numeric_limits<float>::infinity()), maxY(-std::numeric_limits<float>::infinity()) { }
 		BRect(const BRect& brect) : minX(brect.minX), minY(brect.minY), maxX(brect.maxX), maxY(brect.maxY) { }
 		BRect(const float &minX, const float &minY, const float &maxX, const float &maxY) : minX(minX), minY(minY), maxX(maxX), maxY(maxY) { }
 		BRect(const float &centerX, const float &centerY, const float &expandAmount) : minX(centerX), minY(centerY), maxX(centerX), maxY(centerY) { this->Expand(expandAmount); }
@@ -56,7 +58,8 @@ namespace HorseRadish
 		void SetMax(const Vector3f &max) { maxX = max[0]; maxY = max[1]; }
 		void SetMax(const float &x, const float &y) { maxX = x; maxY = y; }
 		
-		void Reset(){ minX = Math::INFINITY; minY = Math::INFINITY; maxX = -Math::INFINITY; maxY = -Math::INFINITY; }
+		void Reset(){ minX = std::numeric_limits<float>::infinity(); minY = std::numeric_limits<float>::infinity(); maxX = -std::numeric_limits<float>::infinity(); maxY = -std::numeric_limits<float>::infinity()
+			; }
 		
 		void Translate(const Vector3f &translation);
 		void Expand(const float amount);

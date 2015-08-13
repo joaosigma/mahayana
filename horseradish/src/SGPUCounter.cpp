@@ -2,6 +2,8 @@
 
 #include "common\platform.hpp"
 
+#include <limits>
+
 SGPUCounter::SGPUCounter(unsigned int maxSaveSamples)
 	: numMaxSamples(maxSaveSamples), curSample(0)
 {
@@ -35,8 +37,8 @@ bool SGPUCounter::addCounter(const std::string& counterName, bool isPercent, con
 	newCounter.index = 0;
 	newCounter.name = counterName;
 	newCounter.values = valuesArray;
-	newCounter.minValue = HorseRadish::Math::INFINITY;
-	newCounter.maxValue = -HorseRadish::Math::INFINITY;
+	newCounter.minValue = std::numeric_limits<float>::infinity();
+	newCounter.maxValue = -std::numeric_limits<float>::infinity();
 	newCounter.color[0] = r;
 	newCounter.color[1] = g;
 	newCounter.color[2] = b;
@@ -65,8 +67,8 @@ void SGPUCounter::sampleCounter(const std::string& counterName, const float &new
 			continue;
 
 		counter.values[curSample] = newSample;
-		counter.minValue = HorseRadish::Math::fMin(counter.minValue, counter.values[curSample]);
-		counter.maxValue = HorseRadish::Math::fMax(counter.maxValue, counter.values[curSample]);
+		counter.minValue = std::fmin(counter.minValue, counter.values[curSample]);
+		counter.maxValue = std::fmax(counter.maxValue, counter.values[curSample]);
 		break;
 	}
 }
@@ -81,8 +83,8 @@ void SGPUCounter::sampleMoveNext()
 
 		for (auto &counter : this->arrayCounters)
 		{
-			counter.minValue = HorseRadish::Math::INFINITY;
-			counter.maxValue = -HorseRadish::Math::INFINITY;
+			counter.minValue = std::numeric_limits<float>::infinity();
+			counter.maxValue = -std::numeric_limits<float>::infinity();
 		}
 	}
 }

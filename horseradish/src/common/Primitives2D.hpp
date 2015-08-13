@@ -99,6 +99,12 @@ namespace HorseRadish
 			{
 				return (width * height);
 			}
+
+			template<typename TNew>
+			Rectangle<TNew> convert() const
+			{
+				return Rectangle<TNew>(static_cast<TNew>(x), static_cast<TNew>(y), static_cast<TNew>(width), static_cast<TNew>(height));
+			}
 		};
 
 		template <typename T>

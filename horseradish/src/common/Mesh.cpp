@@ -7,6 +7,7 @@
 #include "libs\forsyth\forsythtriangleorderoptimizer.h"
 
 #include <vector>
+#include <limits>
 
 namespace HorseRadish { namespace Geometry {
 
@@ -191,8 +192,8 @@ Mesh Mesh::genSphere(const float radius, const int slices, const int stacks)
 	float ds = 1.0f / static_cast<float>(slices);
 	float dt = 1.0f / static_cast<float>(stacks);
 	float t = 1.0f;
-	float drho = Math::PI / static_cast<float>(stacks);
-	float dtheta = Math::TWO_PI / static_cast<float>(slices - 1);
+	float drho = Math::constPi() / static_cast<float>(stacks);
+	float dtheta = Math::constPiScaled(2.0f) / static_cast<float>(slices - 1);
 
 	auto pIndices = mesh.mIndices.get();
 
@@ -236,14 +237,14 @@ Mesh Mesh::genSphere(const float radius, const int slices, const int stacks)
 		}
 
 		float sinRho, cosRho;
-		Math::sinCosR(rho, sinRho, cosRho);
+		Math::sinCos(rho, sinRho, cosRho);
 
 		for (int j = 0; j < slices; j++, s += ds)
 		{
 			float theta = static_cast<float>(j)* dtheta;
 
 			HorseRadish::Vector3f calc;
-			Math::sinCosR(theta, calc[0], calc[2]);
+			Math::sinCos(theta, calc[0], calc[2]);
 			calc[0] *= -sinRho;
 			calc[2] *= sinRho;
 			calc[1] = cosRho;
@@ -476,7 +477,7 @@ bool Mesh::getRayIntersect(const Vector3f& rayOrigin, const Vector3f& rayDir, fl
 {
 	hitDistance = 0.0f;
 
-	float minHistDist = HorseRadish::Math::INFINITY;
+	float minHistDist = std::numeric_limits<float>::max();
 	auto hit = false;
 
 	for (unsigned int i = 0; i < mNumIndices; i += 3)
@@ -541,7 +542,7 @@ bool Mesh::getRayIntersect(const Vector3f& rayOrigin, const Vector3f& rayDir, fl
 		}
 
 		hit = true;
-		minHistDist = HorseRadish::Math::fMin(minHistDist, hitPoint.getDistance(rayOrigin));
+		minHistDist = std::fmin(minHistDist, hitPoint.getDistance(rayOrigin));
 	}
 
 	if (!hit)
@@ -589,9 +590,9 @@ void Mesh::centerMass(const Vector3f& center)
 	bbox.GetMax(maxP);
 
 	auto distance = maxP - minP;
-	distance[0] = HorseRadish::Math::fAbs(distance[0])*0.5f;
-	distance[1] = HorseRadish::Math::fAbs(distance[1])*0.5f;
-	distance[2] = HorseRadish::Math::fAbs(distance[2])*0.5f;
+	distance[0] = std::abs(distance[0])*0.5f;
+	distance[1] = std::abs(distance[1])*0.5f;
+	distance[2] = std::abs(distance[2])*0.5f;
 
 	distance = center - (minP + distance);
 
@@ -613,12 +614,12 @@ void Mesh::confine(float maxAxis)
 	bbox.GetMax(maxP);
 
 	auto distance = maxP - minP;
-	distance[0] = HorseRadish::Math::fAbs(distance[0]);
-	distance[1] = HorseRadish::Math::fAbs(distance[1]);
-	distance[2] = HorseRadish::Math::fAbs(distance[2]);
+	distance[0] = std::abs(distance[0]);
+	distance[1] = std::abs(distance[1]);
+	distance[2] = std::abs(distance[2]);
 
-	auto distanceMax = HorseRadish::Math::fMax(distance[0], distance[1]);
-	distanceMax = HorseRadish::Math::fMax(distanceMax, distance[2]);
+	auto distanceMax = std::fmax(distance[0], distance[1]);
+	distanceMax = std::fmax(distanceMax, distance[2]);
 
 	auto scale = maxAxis / distanceMax;
 
@@ -640,12 +641,12 @@ void Mesh::confine(const Vector3f& center, float maxAxis)
 	bbox.GetMax(maxP);
 
 	auto distance = maxP - minP;
-	distance[0] = HorseRadish::Math::fAbs(distance[0]);
-	distance[1] = HorseRadish::Math::fAbs(distance[1]);
-	distance[2] = HorseRadish::Math::fAbs(distance[2]);
+	distance[0] = std::abs(distance[0]);
+	distance[1] = std::abs(distance[1]);
+	distance[2] = std::abs(distance[2]);
 
-	auto distanceMax = HorseRadish::Math::fMax(distance[0], distance[1]);
-	distanceMax = HorseRadish::Math::fMax(distanceMax, distance[2]);
+	auto distanceMax = std::fmax(distance[0], distance[1]);
+	distanceMax = std::fmax(distanceMax, distance[2]);
 
 	auto scale = maxAxis / distanceMax;
 

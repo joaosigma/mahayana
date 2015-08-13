@@ -7,6 +7,7 @@
 #include "libs\sdf\sdf.h"
 
 #include <algorithm>
+#include <cstddef>
 
 #include <ft2build.h>
 #include FT_FREETYPE_H
@@ -19,20 +20,17 @@ const wchar_t validAditionalFontCharacters[] = {L"¥§©®±µ€"};
 
 namespace HorseRadish { namespace Render { namespace Tools {
 
-int Font::sMumMaxChar = 512; //check out declaration of mState.charData
-unsigned short Font::sBufferPadding = 5;
-
-void Font::commitGL() const
+void Font::commitGL()
 {
 	if (mState.numCharWritten == 0)
 		return;
 
-	mGl.arrayBuffer.writeData(mState.charData.data(), sizeof(VertexDataLayout) * mState.numCharWritten * 4, 0);
-
 	assert(mState.paintStarted);
 
-	mGl.vertexArray.bind();
-	HorseRadish::OpenGL::glDrawRangeElements(GL_TRIANGLES, 0, mState.numCharWritten * 4, mState.numCharWritten * 6, GL_UNSIGNED_SHORT, (void*)0);
+	mGl.fence.wait();
+		mGl.arrayBuffer.writeData(mState.charData.data(), sizeof(VertexDataLayout) * mState.numCharWritten * 4, 0);
+		HorseRadish::OpenGL::glDrawRangeElements(GL_TRIANGLES, 0, mState.numCharWritten * 4, mState.numCharWritten * 6, GL_UNSIGNED_SHORT, (void*)0);
+	mGl.fence.place();
 
 	mState.numCharWritten = 0;
 }
@@ -148,7 +146,7 @@ bool Font::initFont(const char * const fontFilePath)
 		CharacterData& curChar = it->second;
 		++it;
 
-		float glyphOffset[] = { static_cast<float>(ftFace->glyph->bitmap_left), static_cast<float>(ftFace->glyph->bitmap_top - ftFace->glyph->bitmap.rows) };
+		float glyphOffset[] = { static_cast<float>(ftFace->glyph->bitmap_left), static_cast<float>(ftFace->glyph->bitmap_top) - static_cast<float>(ftFace->glyph->bitmap.rows) };
 
 		curChar.advanceX = static_cast<float>(ftFace->glyph->advance.x >> 6) * downScale;
 		curChar.rect.offsetX = (glyphOffset[0] - static_cast<float>(Font::sBufferPadding)) * downScale;
@@ -217,7 +215,7 @@ bool Font::initFont(const char * const fontFilePath)
 			if (charData.skipDraw)
 				continue;
 
-			charData.rect.minUV[0] = static_cast<float>(glyphData.texX)* invTexWidth;
+			charData.rect.minUV[0] = static_cast<float>(glyphData.texX) * invTexWidth;
 			charData.rect.minUV[1] = static_cast<float>(glyphData.texY) * invTexHeight;
 
 			charData.rect.maxUV[0] = charData.rect.minUV[0] + static_cast<float>(glyphData.width + Font::sBufferPadding) * invTexWidth;
@@ -316,9 +314,9 @@ bool Font::initFont(const char * const fontFilePath)
 	return true;
 }
 
-void Font::internalWrite(const float &px, const float &py, const std::string& text) const
+void Font::internalWrite(const float &px, const float &py, const std::string& str, UnicodeRange strRange)
 {
-	if (!mValid || text.empty())
+	if (!mValid || str.empty())
 		return;
 
 	float posX = px;
@@ -330,14 +328,27 @@ void Font::internalWrite(const float &px, const float &py, const std::string& te
 	auto writeData = mState.charData.data() + (mState.numCharWritten * 4);
 
 	unsigned int lastCharUnicode = 0;
-	for (const auto& curCharUnicode : StringUtils::utf8Wrapper(text))
+	for (const auto& curCharUnicode : StringUtils::utf8Wrapper(str))
 	{
 		if (curCharUnicode == 0)
 			break;
 
+		if (strRange.numCharsSkip > 0)
+		{
+			strRange.numCharsSkip--;
+			continue;
+		}
+
 		std::unordered_map<unsigned short, CharacterData>::const_iterator it = mCharMap.find(curCharUnicode);
 		if (it == mCharMap.end())
 			continue;
+
+		if (strRange.numCharsMax >= 0)
+		{
+			strRange.numCharsMax--;
+			if (strRange.numCharsMax < 0)
+				break;
+		}
 
 		const CharacterData& curCharData = it->second;
 		if (curCharData.skipDraw)
@@ -356,20 +367,20 @@ void Font::internalWrite(const float &px, const float &py, const std::string& te
 			posX += getCharKerning(curCharData, lastCharUnicode, curCharUnicode) * mState.scale;
 		lastCharUnicode = curCharUnicode;
 
-		writeData[0].px = writeData[3].px = posX + curCharData.rect.offsetX * mState.scale;
-		writeData[1].px = writeData[2].px = writeData[0].px + curCharData.rect.width * mState.scale;
-		writeData[0].py = writeData[1].py = posY + curCharData.rect.offsetY * mState.scale;
-		writeData[2].py = writeData[3].py = writeData[0].py + curCharData.rect.height * mState.scale;
+		writeData[0].pos[0] = writeData[3].pos[0] = posX + curCharData.rect.offsetX * mState.scale;
+		writeData[1].pos[0] = writeData[2].pos[0] = writeData[0].pos[0] + curCharData.rect.width * mState.scale;
+		writeData[0].pos[1] = writeData[1].pos[1] = posY + curCharData.rect.offsetY * mState.scale;
+		writeData[2].pos[1] = writeData[3].pos[1] = writeData[0].pos[1] + curCharData.rect.height * mState.scale;
 
-		writeData[0].tu = writeData[3].tu = curCharData.rect.minUV[0];
-		writeData[1].tu = writeData[2].tu = curCharData.rect.maxUV[0];
-		writeData[0].tv = writeData[1].tv = curCharData.rect.minUV[1];
-		writeData[2].tv = writeData[3].tv = curCharData.rect.maxUV[1];
+		writeData[0].uv[0] = writeData[3].uv[0] = curCharData.rect.minUV[0];
+		writeData[1].uv[0] = writeData[2].uv[0] = curCharData.rect.maxUV[0];
+		writeData[0].uv[1] = writeData[1].uv[1] = curCharData.rect.minUV[1];
+		writeData[2].uv[1] = writeData[3].uv[1] = curCharData.rect.maxUV[1];
 
-		memcpy(writeData[0].rgba, colorTemp, sizeof(unsigned char) * 4);
-		memcpy(writeData[1].rgba, colorTemp, sizeof(unsigned char) * 4);
-		memcpy(writeData[2].rgba, colorTemp, sizeof(unsigned char) * 4);
-		memcpy(writeData[3].rgba, colorTemp, sizeof(unsigned char) * 4);
+		memcpy(writeData[0].color, colorTemp, sizeof(unsigned char) * 4);
+		memcpy(writeData[1].color, colorTemp, sizeof(unsigned char) * 4);
+		memcpy(writeData[2].color, colorTemp, sizeof(unsigned char) * 4);
+		memcpy(writeData[3].color, colorTemp, sizeof(unsigned char) * 4);
 
 		writeData += 4;
 		mState.numCharWritten++;
@@ -395,7 +406,7 @@ float Font::getCharKerning(const CharacterData& leftCharData, unsigned short lef
 }
 
 Font::Font(const int fontSize, const char * const fontFilePath, unsigned int glVertexProgramID, unsigned int glFragmentProgramID, unsigned int glProgramPipelineID)
-	: glVertexProgramID(glVertexProgramID), glFragmentProgramID(glFragmentProgramID), glProgramPipelineID(glProgramPipelineID)
+	: mGlVertexProgramID(glVertexProgramID), mGlFragmentProgramID(glFragmentProgramID), mGlProgramPipelineID(glProgramPipelineID)
 {
 	mValid = false;
 
@@ -410,11 +421,11 @@ Font::Font(const int fontSize, const char * const fontFilePath, unsigned int glV
 	if (fontSize <= 2 || fontFilePath == nullptr)
 		return;
 
-	glUniformSampler = HorseRadish::OpenGL::glGetUniformLocation(glFragmentProgramID, "texTextSampler");
-	glUniformMatrix = HorseRadish::OpenGL::glGetUniformLocation(glVertexProgramID, "transformationMatrix");
+	mGlUniformSampler = HorseRadish::OpenGL::glGetUniformLocation(glFragmentProgramID, "texTextSampler");
+	mGlUniformMatrix = HorseRadish::OpenGL::glGetUniformLocation(glVertexProgramID, "transformationMatrix");
 
 	{
-		std::unique_ptr<unsigned short[]> fontIndexArray = std::unique_ptr<unsigned short[]>(new unsigned short[Font::sMumMaxChar * 6]);
+		auto fontIndexArray = std::make_unique<unsigned short[]>(Font::sMumMaxChar * 6);
 		for (int i = 0, curIndex = 0; i < Font::sMumMaxChar; i++, curIndex += 4)
 		{
 			fontIndexArray[i * 6 + 0] = curIndex + 0;
@@ -425,7 +436,7 @@ Font::Font(const int fontSize, const char * const fontFilePath, unsigned int glV
 			fontIndexArray[i * 6 + 5] = curIndex + 3;
 		}
 
-		mGl.arrayBuffer.init(HorseRadish::OpenGL::Objects::Buffer::Type::ArrayBuffer, sizeof(Font::VertexDataLayout) * Font::sMumMaxChar * 4, HorseRadish::OpenGL::Objects::Buffer::UsageType::FrequentOnlyWrite);
+		mGl.arrayBuffer.init(HorseRadish::OpenGL::Objects::Buffer::Type::ArrayBuffer, sizeof(Font::VertexDataLayout) * Font::sMumMaxChar * 4, HorseRadish::OpenGL::Objects::Buffer::UsageType::PersistentOnlyWrite);
 		mGl.elementArrayBuffer.init(HorseRadish::OpenGL::Objects::Buffer::Type::ElementArrayBuffer, fontIndexArray.get(), sizeof(unsigned short) * Font::sMumMaxChar * 6, HorseRadish::OpenGL::Objects::Buffer::UsageType::ServerStatic);
 	}
 
@@ -436,13 +447,13 @@ Font::Font(const int fontSize, const char * const fontFilePath, unsigned int glV
 	HorseRadish::OpenGL::glEnableVertexArrayAttrib(mGl.vertexArray.getId(), 4);
 
 	HorseRadish::OpenGL::glVertexArrayAttribBinding(mGl.vertexArray.getId(), 0, 0);
-	HorseRadish::OpenGL::glVertexArrayAttribFormat(mGl.vertexArray.getId(), 0, 2, GL_FLOAT, false, 0);
+	HorseRadish::OpenGL::glVertexArrayAttribFormat(mGl.vertexArray.getId(), 0, 2, GL_FLOAT, false, offsetof(Font::VertexDataLayout, pos));
 
 	HorseRadish::OpenGL::glVertexArrayAttribBinding(mGl.vertexArray.getId(), 1, 0);
-	HorseRadish::OpenGL::glVertexArrayAttribFormat(mGl.vertexArray.getId(), 1, 2, GL_FLOAT, false, 8);
+	HorseRadish::OpenGL::glVertexArrayAttribFormat(mGl.vertexArray.getId(), 1, 2, GL_FLOAT, false, offsetof(Font::VertexDataLayout, uv));
 
 	HorseRadish::OpenGL::glVertexArrayAttribBinding(mGl.vertexArray.getId(), 4, 0);
-	HorseRadish::OpenGL::glVertexArrayAttribFormat(mGl.vertexArray.getId(), 4, 4, GL_UNSIGNED_BYTE, true, 16);
+	HorseRadish::OpenGL::glVertexArrayAttribFormat(mGl.vertexArray.getId(), 4, 4, GL_UNSIGNED_BYTE, true, offsetof(Font::VertexDataLayout, color));
 
 	HorseRadish::OpenGL::glVertexArrayElementBuffer(mGl.vertexArray.getId(), mGl.elementArrayBuffer.getId());
 	HorseRadish::OpenGL::glVertexArrayVertexBuffer(mGl.vertexArray.getId(), 0, mGl.arrayBuffer.getId(), 0, sizeof(Font::VertexDataLayout));
@@ -465,22 +476,52 @@ Font::~Font()
 	mCharMap.clear();
 }
 
-void Font::write(const float &px, const float &py, const std::string& text) const
+void Font::layout(const std::string& text, const float maxWidth, std::function<void(unsigned int, unsigned int, unsigned int)> writeCb) const
 {
-	internalWrite(px, py, text);
+	if ((maxWidth <= 0.0f) || !writeCb)
+		return;
+
+	auto numLines = static_cast<unsigned int>(std::ceil(getTextWidth(text) / maxWidth));
+	if (numLines == 0)
+		numLines = 1;
+
+	unsigned int numCharsWritten = 0;
+	for (; numLines > 0; numLines--)
+	{
+		auto maxChars = countUnicodeChars(text, numCharsWritten, maxWidth);
+
+		writeCb(numLines - 1, numCharsWritten, maxChars);
+
+		numCharsWritten += maxChars;
+	}
 }
 
-void Font::write(const std::string& text) const
+void Font::write(const std::string& text)
 {
 	write(0.0f, 0.0f, text);
 }
 
-float Font::writeChar(const unsigned int &unicodeChar) const
+void Font::write(const float &px, const float &py, const std::string& text)
+{
+	internalWrite(px, py, text, UnicodeRange());
+}
+
+void Font::write(const float &px, const float &py, const std::string& text, const unsigned int numUnicodeCharsSkip)
+{
+	internalWrite(px, py, text, UnicodeRange(numUnicodeCharsSkip));
+}
+
+void Font::write(const float &px, const float &py, const std::string& text, const unsigned int numUnicodeCharsSkip, const unsigned int maxUnicodeCharsWrite)
+{
+	internalWrite(px, py, text, UnicodeRange(numUnicodeCharsSkip, static_cast<int>(maxUnicodeCharsWrite)));
+}
+
+float Font::writeChar(const unsigned int &unicodeChar)
 {
 	return writeChar(0.0f, 0.0f, unicodeChar);
 }
 
-float Font::writeChar(const float &px, const float &py, const unsigned int &unicodeChar) const
+float Font::writeChar(const float &px, const float &py, const unsigned int &unicodeChar)
 {
 	unsigned char colorTemp[4];
 
@@ -503,21 +544,21 @@ float Font::writeChar(const float &px, const float &py, const unsigned int &unic
 
 	float posY = py + (mFontInfo.baseHeight * mState.scale);
 
-	writeData[0].px = writeData[3].px = px + charData.rect.offsetX * mState.scale;
-	writeData[1].px = writeData[2].px = writeData[0].px + charData.rect.width * mState.scale;
-	writeData[0].py = writeData[1].py = posY + charData.rect.offsetY * mState.scale;
-	writeData[2].py = writeData[3].py = writeData[0].py + charData.rect.height * mState.scale;
+	writeData[0].pos[0] = writeData[3].pos[0] = px + charData.rect.offsetX * mState.scale;
+	writeData[1].pos[0] = writeData[2].pos[0] = writeData[0].pos[0] + charData.rect.width * mState.scale;
+	writeData[0].pos[1] = writeData[1].pos[1] = posY + charData.rect.offsetY * mState.scale;
+	writeData[2].pos[1] = writeData[3].pos[1] = writeData[0].pos[1] + charData.rect.height * mState.scale;
 
-	writeData[0].tu = writeData[3].tu = charData.rect.minUV[0];
-	writeData[1].tu = writeData[2].tu = charData.rect.maxUV[0];
-	writeData[0].tv = writeData[1].tv = charData.rect.minUV[1];
-	writeData[2].tv = writeData[3].tv = charData.rect.maxUV[1];
+	writeData[0].uv[0] = writeData[3].uv[0] = charData.rect.minUV[0];
+	writeData[1].uv[0] = writeData[2].uv[0] = charData.rect.maxUV[0];
+	writeData[0].uv[1] = writeData[1].uv[1] = charData.rect.minUV[1];
+	writeData[2].uv[1] = writeData[3].uv[1] = charData.rect.maxUV[1];
 
 	mState.stateColor.write(colorTemp);
-	memcpy(writeData[0].rgba, colorTemp, sizeof(unsigned char) * 4);
-	memcpy(writeData[1].rgba, colorTemp, sizeof(unsigned char) * 4);
-	memcpy(writeData[2].rgba, colorTemp, sizeof(unsigned char) * 4);
-	memcpy(writeData[3].rgba, colorTemp, sizeof(unsigned char) * 4);
+	memcpy(writeData[0].color, colorTemp, sizeof(unsigned char) * 4);
+	memcpy(writeData[1].color, colorTemp, sizeof(unsigned char) * 4);
+	memcpy(writeData[2].color, colorTemp, sizeof(unsigned char) * 4);
+	memcpy(writeData[3].color, colorTemp, sizeof(unsigned char) * 4);
 
 	mState.numCharWritten++;
 	return charData.advanceX * mState.scale;
@@ -543,7 +584,7 @@ void Font::setColor(const Color &color)
 	mState.stateColor.set(color);
 }
 
-bool Font::getOperacional() const
+bool Font::isValid() const
 {
 	return mValid;
 }
@@ -562,7 +603,43 @@ float Font::getCharWidth(const unsigned int &unicodeChar) const
 	return it->second.advanceX * mState.scale;
 }
 
-float Font::getStringWidth(const std::string& text) const
+unsigned int Font::countUnicodeChars(const std::string& text, const float maxWidth) const
+{
+	return countUnicodeChars(text, 0, maxWidth);
+}
+
+unsigned int Font::countUnicodeChars(const std::string& text, const unsigned int numUnicodeCharsSkip, const float maxWidth) const
+{
+	if (!mValid || text.empty() || (maxWidth <= 0.0f))
+		return 0;
+
+	float totalWidth = 0.0f;
+	unsigned int numChars = 0;
+	unsigned int numCharsSkip = numUnicodeCharsSkip;
+
+	for (const auto& curCharUnicode : StringUtils::utf8Wrapper(text))
+	{
+		std::unordered_map<unsigned short, CharacterData>::const_iterator itChar = mCharMap.find(curCharUnicode);
+		if (itChar == mCharMap.end())
+			continue;
+
+		if (numCharsSkip > 0)
+		{
+			numCharsSkip--;
+			continue;
+		}
+
+		totalWidth += itChar->second.advanceX;
+		if (totalWidth > maxWidth)
+			return numChars;
+
+		numChars++;
+	}
+
+	return numChars;
+}
+
+float Font::getTextWidth(const std::string& text) const
 {
 	if (!mValid || text.empty())
 		return 0.0f;
@@ -580,20 +657,25 @@ float Font::getStringWidth(const std::string& text) const
 	return totalWidth * mState.scale;
 }
 
-float Font::getStringWidth(const std::string& text, const unsigned int numMaxChar) const
+float Font::getTextWidth(const std::string& text, const unsigned int numUnicodeCharsSkip, const unsigned int maxUnicodeCharsRead) const
 {
-	if (!mValid || text.empty() || (numMaxChar == 0))
+	if (!mValid || text.empty() || (maxUnicodeCharsRead == 0))
 		return 0.0f;
 
 	float totalWidth = 0.0f;
 	unsigned int numChars = 0;
+	unsigned int numCharsSkip = numUnicodeCharsSkip;
 
 	for (const auto& curCharUnicode : StringUtils::utf8Wrapper(text))
 	{
-		if (numChars >= numMaxChar)
-			break;
+		if (numCharsSkip > 0)
+		{
+			numCharsSkip--;
+			continue;
+		}
 
-		numChars++;
+		if ((numChars++) >= maxUnicodeCharsRead)
+			break;
 
 		std::unordered_map<unsigned short, CharacterData>::const_iterator itChar = mCharMap.find(curCharUnicode);
 		if (itChar == mCharMap.end())
@@ -614,12 +696,12 @@ void Font::paintBegin(const float * const tranformationMatrix, float scale)
 	mGl.sampler.bind(0);
 	mGl.vertexArray.bind();
 
-	HorseRadish::OpenGL::glProgramUniform1i(glFragmentProgramID, glUniformSampler, 0);
+	HorseRadish::OpenGL::glProgramUniform1i(mGlFragmentProgramID, mGlUniformSampler, 0);
 	if (tranformationMatrix != nullptr)
-		HorseRadish::OpenGL::glProgramUniformMatrix4fv(glVertexProgramID, glUniformMatrix, 1, false, tranformationMatrix);
+		HorseRadish::OpenGL::glProgramUniformMatrix4fv(mGlVertexProgramID, mGlUniformMatrix, 1, false, tranformationMatrix);
 
 	HorseRadish::OpenGL::glUseProgram(0);
-	HorseRadish::OpenGL::glBindProgramPipeline(glProgramPipelineID);
+	HorseRadish::OpenGL::glBindProgramPipeline(mGlProgramPipelineID);
 
 	mState.scale = scale;
 	mState.paintStarted = true;
