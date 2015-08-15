@@ -2,6 +2,7 @@
 
 #include "..\objects.hpp"
 
+#include <array>
 #include <memory>
 
 namespace HorseRadish { namespace OpenGL { namespace Tools {
@@ -13,7 +14,7 @@ public:
 	enum class InfoType{ FreeVertexCount, MaxVertexCount };
 
 private:
-	static constexpr unsigned int MaxVertexCount = 10;
+	static constexpr unsigned int MaxVertexCount = 400; //100 quads
 	static constexpr unsigned int MaxIndexCount = ((MaxVertexCount / 4) * 6) + 6;
 
 	struct VertexDataLayout
@@ -37,16 +38,15 @@ private:
 		unsigned char color[4];
 	} mState;
 
-	std::unique_ptr<VertexDataLayout[]> mBufferData;
-	std::unique_ptr<unsigned short[]> mBufferIndices;
-	int mMaxVertexCount;
+	std::array<VertexDataLayout, MaxVertexCount> mBufferData;
+	std::array<unsigned short, MaxIndexCount> mBufferIndices;
 
 	int draw();
 	void resetState();
 	bool checkStateDraw() const;
 
 public:
-	ImmediateMode(const int maxVertexCount);
+	ImmediateMode();
 	~ImmediateMode();
 
 	void beginDraw(const GeometryType geometryType);

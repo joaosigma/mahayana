@@ -32,7 +32,7 @@ namespace HorseRadish {	namespace Render {
 			HorseRadish::OpenGL::Objects::ProgramPipeline progPipeline;
 			HorseRadish::OpenGL::Objects::Texture texColor;
 
-			HorseRadish::OpenGL::Tools::ImmediateMode *imode;
+			HorseRadish::OpenGL::Tools::ImmediateMode imode;
 		} mRenderData;
 
 		void runtimeFuncSceneGet(const std::string &funcName, Engine::Runtime::FunctionReturnContext &ctx);

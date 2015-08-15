@@ -32,7 +32,6 @@ namespace HorseRadish {	namespace Render {
 
 		mRenderData.fading = false;
 		mRenderData.fadingAlpha = 1.0f;
-		mRenderData.imode = new HorseRadish::OpenGL::Tools::ImmediateMode(1024);
 
 		mRenderData.texVideo.init(HorseRadish::OpenGL::Objects::Texture::Type::TexRectangle, HorseRadish::OpenGL::Objects::Texture::StorageType::RGBA_8, mVideoData.frameSize.width, mVideoData.frameSize.height);
 
@@ -60,7 +59,6 @@ namespace HorseRadish {	namespace Render {
 
 	Scene::~Scene()
 	{
-		delete mRenderData.imode;
 		if (mVideoData.stream)
 			delete mVideoData.stream;
 	}
@@ -112,21 +110,21 @@ namespace HorseRadish {	namespace Render {
 			mRenderData.sampler.bind(0);
 			mRenderData.texVideo.bind(0);
 
-			mRenderData.imode->beginDraw(HorseRadish::OpenGL::Tools::ImmediateMode::GeometryType::Quads);
-			mRenderData.imode->setColorF(1.0f, 1.0f, 1.0f, mRenderData.fadingAlpha);
+			mRenderData.imode.beginDraw(HorseRadish::OpenGL::Tools::ImmediateMode::GeometryType::Quads);
+			mRenderData.imode.setColorF(1.0f, 1.0f, 1.0f, mRenderData.fadingAlpha);
 
-			mRenderData.imode->setTexCoord(0.0f, mVideoData.frameSize.height);
-			mRenderData.imode->addPosition(viewRect.x, viewRect.y);
+			mRenderData.imode.setTexCoord(0.0f, mVideoData.frameSize.height);
+			mRenderData.imode.addPosition(viewRect.x, viewRect.y);
 
-			mRenderData.imode->setTexCoord(mVideoData.frameSize.width, mVideoData.frameSize.height);
-			mRenderData.imode->addPosition(viewRect.x + viewRect.width, viewRect.y);
+			mRenderData.imode.setTexCoord(mVideoData.frameSize.width, mVideoData.frameSize.height);
+			mRenderData.imode.addPosition(viewRect.x + viewRect.width, viewRect.y);
 
-			mRenderData.imode->setTexCoord(mVideoData.frameSize.width, 0.0f);
-			mRenderData.imode->addPosition(viewRect.x + viewRect.width, viewRect.y + viewRect.height);
+			mRenderData.imode.setTexCoord(mVideoData.frameSize.width, 0.0f);
+			mRenderData.imode.addPosition(viewRect.x + viewRect.width, viewRect.y + viewRect.height);
 
-			mRenderData.imode->setTexCoord(0.0f, 0.0f);
-			mRenderData.imode->addPosition(viewRect.x, viewRect.y + viewRect.height);
-			mRenderData.imode->endDraw();
+			mRenderData.imode.setTexCoord(0.0f, 0.0f);
+			mRenderData.imode.addPosition(viewRect.x, viewRect.y + viewRect.height);
+			mRenderData.imode.endDraw();
 
 			HorseRadish::OpenGL::glDisable(GL_BLEND);
 			HorseRadish::OpenGL::glBindProgramPipeline(0);

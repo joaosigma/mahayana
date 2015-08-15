@@ -240,7 +240,6 @@ namespace HorseRadish { namespace Render {
 		//render
 		mRenderData.width = static_cast<float>(glRenderWidth);
 		mRenderData.height = static_cast<float>(glRenderHeight);
-		mRenderData.imode = new HorseRadish::OpenGL::Tools::ImmediateMode(1024);
 
 		mRenderData.texColor.init(HorseRadish::OpenGL::Objects::Texture::Type::TexRectangle, HorseRadish::OpenGL::Objects::Texture::StorageType::RGBA_8, glRenderWidth, glRenderHeight);
 
@@ -314,10 +313,10 @@ namespace HorseRadish { namespace Render {
 		mRenderData.sampler.bind(0);
 		mRenderData.texColor.bind(0);
 
-		mRenderData.imode->beginDraw(HorseRadish::OpenGL::Tools::ImmediateMode::GeometryType::Quads);
-			mRenderData.imode->setColorF(1.0f, 1.0f, 1.0f, 1.0f);
-			mRenderData.imode->addQuadTexCoords(0.0f, 0.0f, mRenderData.width, mRenderData.height, false);
-		mRenderData.imode->endDraw();
+		mRenderData.imode.beginDraw(HorseRadish::OpenGL::Tools::ImmediateMode::GeometryType::Quads);
+			mRenderData.imode.setColorF(1.0f, 1.0f, 1.0f, 1.0f);
+			mRenderData.imode.addQuadTexCoords(0.0f, 0.0f, mRenderData.width, mRenderData.height, false);
+		mRenderData.imode.endDraw();
 	}
 
 	void Stage::processStep()

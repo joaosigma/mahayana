@@ -9,7 +9,6 @@ namespace HorseRadish
 		Renderer2D::Renderer2D(const HorseRadish::OpenGL::Objects::Context& glContext)
 			: Renderer(glContext)
 		{
-			mGlImmediateMode = std::make_unique<HorseRadish::OpenGL::Tools::ImmediateMode>(102);
 		}
 
 		void Renderer2D::initialize(const int &renderWidth, const int &renderHeight, HorseRadish::IO::FileSystem * const fileSystem, const char* const textFont, int textSize)

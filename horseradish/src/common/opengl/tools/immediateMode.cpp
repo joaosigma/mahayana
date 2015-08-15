@@ -19,7 +19,7 @@ int ImmediateMode::draw()
 
 		if (numElementosDesenhados > 0)
 		{
-			auto newIndexWriter = mBufferIndices.get() + (numElementosDesenhados * 6 - 6);
+			auto newIndexWriter = mBufferIndices.data() + (numElementosDesenhados * 6 - 6);
 
 			for (int curQuad = mState.curVertex - 4; curQuad >= 0; curQuad -= 4)
 			{
@@ -37,8 +37,8 @@ int ImmediateMode::draw()
 
 			mGl.fence.wait();
 				mGl.vertexArray.bind();
-				mGl.arrayBuffer.writeData(mBufferData.get(), numElementosDesenhados * 4 * sizeof(VertexDataLayout), 0);
-				mGl.elementArrayBuffer.writeData(mBufferIndices.get(), numElementosDesenhados * 6 * sizeof(unsigned short), 0);
+				mGl.arrayBuffer.writeData(mBufferData.data(), numElementosDesenhados * 4 * sizeof(VertexDataLayout), 0);
+				mGl.elementArrayBuffer.writeData(mBufferIndices.data(), numElementosDesenhados * 6 * sizeof(unsigned short), 0);
 
 				HorseRadish::OpenGL::glDrawRangeElements(GL_TRIANGLES, 0, numElementosDesenhados * 4, numElementosDesenhados * 6, GL_UNSIGNED_SHORT, (void*)0);
 			mGl.fence.place();
@@ -52,8 +52,8 @@ int ImmediateMode::draw()
 		{
 			mGl.fence.wait();
 				mGl.vertexArray.bind();
-				mGl.arrayBuffer.writeData(mBufferData.get(), numElementosDesenhados * 3 * sizeof(VertexDataLayout), 0);
-				mGl.elementArrayBuffer.writeData(mBufferIndices.get(), numElementosDesenhados * 3 * sizeof(unsigned short), 0);
+				mGl.arrayBuffer.writeData(mBufferData.data(), numElementosDesenhados * 3 * sizeof(VertexDataLayout), 0);
+				mGl.elementArrayBuffer.writeData(mBufferIndices.data(), numElementosDesenhados * 3 * sizeof(unsigned short), 0);
 
 				HorseRadish::OpenGL::glDrawRangeElements(GL_TRIANGLES, 0, numElementosDesenhados * 3, numElementosDesenhados * 3, GL_UNSIGNED_SHORT, (void*)0);
 			mGl.fence.place();
@@ -67,8 +67,8 @@ int ImmediateMode::draw()
 		{
 			mGl.fence.wait();
 				mGl.vertexArray.bind();
-				mGl.arrayBuffer.writeData(mBufferData.get(), numElementosDesenhados * 2 * sizeof(VertexDataLayout), 0);
-				mGl.elementArrayBuffer.writeData(mBufferIndices.get(), numElementosDesenhados * 2 * sizeof(unsigned short), 0);
+				mGl.arrayBuffer.writeData(mBufferData.data(), numElementosDesenhados * 2 * sizeof(VertexDataLayout), 0);
+				mGl.elementArrayBuffer.writeData(mBufferIndices.data(), numElementosDesenhados * 2 * sizeof(unsigned short), 0);
 
 				HorseRadish::OpenGL::glDrawRangeElements(GL_LINES, 0, numElementosDesenhados * 2, numElementosDesenhados * 2, GL_UNSIGNED_SHORT, (void*)0);
 			mGl.fence.place();
@@ -82,8 +82,8 @@ int ImmediateMode::draw()
 		{
 			mGl.fence.wait();
 				mGl.vertexArray.bind();
-				mGl.arrayBuffer.writeData(mBufferData.get(), mState.curVertex * sizeof(VertexDataLayout), 0);
-				mGl.elementArrayBuffer.writeData(mBufferIndices.get(), mState.curVertex * sizeof(unsigned short), 0);
+				mGl.arrayBuffer.writeData(mBufferData.data(), mState.curVertex * sizeof(VertexDataLayout), 0);
+				mGl.elementArrayBuffer.writeData(mBufferIndices.data(), mState.curVertex * sizeof(unsigned short), 0);
 
 				HorseRadish::OpenGL::glDrawRangeElements(GL_LINE_STRIP, 0, mState.curVertex, mState.curVertex, GL_UNSIGNED_SHORT, (void*)0);
 			mGl.fence.place();
@@ -121,15 +121,12 @@ bool ImmediateMode::checkStateDraw() const
 	return false;
 }
 
-ImmediateMode::ImmediateMode(const int maxVertexCount)
-	: mMaxVertexCount((maxVertexCount < 20) ? 20 : maxVertexCount)
+ImmediateMode::ImmediateMode()
 {
 	resetState();
 
-	auto maxElementArray = ((mMaxVertexCount / 4) * 6) + 6;
-
-	mGl.arrayBuffer.init(HorseRadish::OpenGL::Objects::Buffer::Type::ArrayBuffer, mMaxVertexCount * sizeof(VertexDataLayout), HorseRadish::OpenGL::Objects::Buffer::UsageType::PersistentOnlyWrite);
-	mGl.elementArrayBuffer.init(HorseRadish::OpenGL::Objects::Buffer::Type::ElementArrayBuffer, sizeof(unsigned short) * maxElementArray, HorseRadish::OpenGL::Objects::Buffer::UsageType::PersistentOnlyWrite);
+	mGl.arrayBuffer.init(HorseRadish::OpenGL::Objects::Buffer::Type::ArrayBuffer, ImmediateMode::MaxVertexCount * sizeof(VertexDataLayout), HorseRadish::OpenGL::Objects::Buffer::UsageType::PersistentOnlyWrite);
+	mGl.elementArrayBuffer.init(HorseRadish::OpenGL::Objects::Buffer::Type::ElementArrayBuffer, sizeof(unsigned short) * ImmediateMode::MaxIndexCount, HorseRadish::OpenGL::Objects::Buffer::UsageType::PersistentOnlyWrite);
 
 	mGl.vertexArray.init();
 
@@ -148,9 +145,6 @@ ImmediateMode::ImmediateMode(const int maxVertexCount)
 
 	HorseRadish::OpenGL::glVertexArrayElementBuffer(mGl.vertexArray.getId(), mGl.elementArrayBuffer.getId());
 	HorseRadish::OpenGL::glVertexArrayVertexBuffer(mGl.vertexArray.getId(), 0, mGl.arrayBuffer.getId(), 0, sizeof(VertexDataLayout));
-
-	mBufferData.reset(new VertexDataLayout[mMaxVertexCount]);
-	mBufferIndices.reset(new unsigned short[maxElementArray]);
 }
 
 ImmediateMode::~ImmediateMode()
@@ -160,9 +154,6 @@ ImmediateMode::~ImmediateMode()
 	mGl.arrayBuffer.reset();
 	mGl.elementArrayBuffer.reset();
 	mGl.vertexArray.reset();
-
-	mBufferData.reset();
-	mBufferIndices.reset();
 }
 
 void ImmediateMode::beginDraw(const GeometryType geometryType)
@@ -266,7 +257,7 @@ void ImmediateMode::addPosition(const float &x, const float &y)
 
 void ImmediateMode::addPosition(const float &x, const float &y, const float &z)
 {
-	if ((mState.curVertex >= mMaxVertexCount) || (mState.geomType == GeometryType::None))
+	if ((mState.curVertex >= ImmediateMode::MaxVertexCount) || (mState.geomType == GeometryType::None))
 		return;
 
 	auto& vertexData = mBufferData[mState.curVertex];
@@ -359,9 +350,9 @@ unsigned int ImmediateMode::getInfo(const InfoType infoType) const
 	switch (infoType)
 	{
 	case InfoType::FreeVertexCount:
-		return (mMaxVertexCount - mState.curVertex);
+		return (ImmediateMode::MaxVertexCount - mState.curVertex);
 	case InfoType::MaxVertexCount:
-		return (mMaxVertexCount);
+		return (ImmediateMode::MaxVertexCount);
 	}
 
 	return 0;

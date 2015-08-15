@@ -23,15 +23,8 @@ namespace HorseRadish { namespace Render {
 			std::unique_ptr<Tools::Font> font;
 		}mGui;
 
-		struct AuxTools{
-			HorseRadish::OpenGL::Tools::ImmediateMode *glImmediateMode;
-			float curTimeS, lastTimeS;
-
-			AuxTools(){ this->glImmediateMode = nullptr; this->curTimeS = this->lastTimeS = 0.0f; }
-		}mAuxTools;
-
 		int mRenderWidth, mRenderHeight;
-		std::unique_ptr<HorseRadish::OpenGL::Tools::ImmediateMode> mGlImmediateMode;
+		HorseRadish::OpenGL::Tools::ImmediateMode mGlImmediateMode;
 
 	public:
 		Renderer2D(const HorseRadish::OpenGL::Objects::Context& glContext);

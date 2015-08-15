@@ -327,11 +327,13 @@ namespace HorseRadish
 					HorseRadish::OpenGL::Objects::Query::Type::ClippingInputPrimitives, HorseRadish::OpenGL::Objects::Query::Type::ClippingOutputPrimitives
 					};
 
+				float lastTimeS = 0.0f, curTimeS = 0.0f;
+
 				while (mCurState == State::Running)
 				{
 					//a primeira coisa é acertar os tempos
-					renderer2D->mAuxTools.lastTimeS = renderer2D->mAuxTools.curTimeS;
-					renderer2D->mAuxTools.curTimeS = timerTotal.getTimeS();
+					lastTimeS = curTimeS;
+					curTimeS = timerTotal.getTimeS();
 
 					//caso nao desenhe nada
 					HorseRadish::OpenGL::glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
@@ -412,7 +414,7 @@ namespace HorseRadish
 
 						//posso actualizar a camera
 						auto mousePosition = mWindow->RawInputGetMouseStatus();
-						camera->CommitInput(cameraActions, mousePosition[0], mousePosition[1], true, renderer2D->mAuxTools.curTimeS - renderer2D->mAuxTools.lastTimeS);
+						camera->CommitInput(cameraActions, mousePosition[0], mousePosition[1], true, curTimeS - lastTimeS);
 					}
 
 					mWindow->ProcessMessages([&](const Window::Message &msg)

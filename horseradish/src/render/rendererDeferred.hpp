@@ -58,7 +58,7 @@ namespace HorseRadish
 			Shaders shaders;
 			Samplers samplers;
 			HorseRadish::IO::FileSystem *fileSystem;
-			HorseRadish::OpenGL::Tools::ImmediateMode *glImmediateMode;
+			HorseRadish::OpenGL::Tools::ImmediateMode mGlImmediateMode;
 			int renderWidth, renderHeight, shadersWatchFolderID;
 			HorseRadish::OpenGL::Objects::Texture texDefaultAlbedo, texDefaultNormals;
 

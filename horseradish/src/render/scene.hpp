@@ -39,7 +39,7 @@ namespace HorseRadish {	namespace Render {
 			float fadingAlpha;
 			HorseRadish::Matrix proj2D;
 			HorseRadish::Primitives2D::Size<int> windowSize;
-			HorseRadish::OpenGL::Tools::ImmediateMode *imode;
+			HorseRadish::OpenGL::Tools::ImmediateMode imode;
 			HorseRadish::OpenGL::Objects::Texture texVideo;
 			
 			HorseRadish::OpenGL::Objects::Buffer bufferPBO;

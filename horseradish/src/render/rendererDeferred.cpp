@@ -96,10 +96,10 @@ namespace HorseRadish
 			fbos.texDeferredNormals.bind(1);
 			fbos.texDeferredAlbedo.bind(0);
 
-			glImmediateMode->beginDraw(HorseRadish::OpenGL::Tools::ImmediateMode::GeometryType::Quads);
-				glImmediateMode->setColorF(1.0f);
-				glImmediateMode->addQuadTexCoords(0.0f, 0.0f, winX, winY, false);
-			glImmediateMode->endDraw();
+			mGlImmediateMode.beginDraw(HorseRadish::OpenGL::Tools::ImmediateMode::GeometryType::Quads);
+				mGlImmediateMode.setColorF(1.0f);
+				mGlImmediateMode.addQuadTexCoords(0.0f, 0.0f, winX, winY, false);
+			mGlImmediateMode.endDraw();
 		}
 
 		void RendererDeferred::loadGeometry()
@@ -269,8 +269,6 @@ namespace HorseRadish
 		RendererDeferred::RendererDeferred(const HorseRadish::OpenGL::Objects::Context& glContext, HorseRadish::Render::World& renderWorld)
 			: Renderer(glContext), renderWorld(renderWorld)
 		{
-			this->glImmediateMode = new HorseRadish::OpenGL::Tools::ImmediateMode(102);
-
 			//this->texDefaultAlbedo = this->glObjectManager->Create2D(HorseRadish::IO::Path("media\\defaultAlbedo.png"), HorseRadish::OpenGL::Objects::ObjectsManager::TargetType::RGBA32, 0);
 			//this->texDefaultNormals = this->glObjectManager->Create2D(HorseRadish::IO::Path("media\\defaultNormals.png"), HorseRadish::OpenGL::Objects::ObjectsManager::TargetType::RGBA32, STEXTURE_NORMAL_MAP_MIPS);
 		}
@@ -279,10 +277,6 @@ namespace HorseRadish
 		{
 			this->texDefaultAlbedo.reset();
 			this->texDefaultNormals.reset();
-
-			delete this->glImmediateMode;
-
-			this->glImmediateMode = nullptr;
 		}
 
 		void RendererDeferred::Initialize(const int &renderWidth, const int &renderHeight, HorseRadish::IO::FileSystem * const fileSystem)

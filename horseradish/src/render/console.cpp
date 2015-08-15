@@ -319,18 +319,18 @@ void Console::drawBackground(const HorseRadish::Matrix &transformMatrix, float b
 	auto& glImmediateMode = mRenderer.mGlImmediateMode;
 	auto& guiFont = mRenderer.mGui.font;
 
-	glImmediateMode->beginDraw(HorseRadish::OpenGL::Tools::ImmediateMode::GeometryType::Quads);
-		glImmediateMode->setColor(0, 0, 0, HorseRadish::Color::convertColor(bkgAlpha));
-		glImmediateMode->addQuad(mViewRect.x, mViewRect.y, mViewRect.width, mViewRect.height);
-	glImmediateMode->endDraw();
+	glImmediateMode.beginDraw(HorseRadish::OpenGL::Tools::ImmediateMode::GeometryType::Quads);
+		glImmediateMode.setColor(0, 0, 0, HorseRadish::Color::convertColor(bkgAlpha));
+		glImmediateMode.addQuad(mViewRect.x, mViewRect.y, mViewRect.width, mViewRect.height);
+	glImmediateMode.endDraw();
 
-	glImmediateMode->beginDraw(HorseRadish::OpenGL::Tools::ImmediateMode::GeometryType::Lines);
-		glImmediateMode->setColor(128, 128, 128);
-		glImmediateMode->addLineV(mViewRect.x, mViewRect.y, mViewRect.y + mViewRect.height);
-		glImmediateMode->addLineH(mViewRect.x, mViewRect.x + mViewRect.width, mViewRect.y);
-		glImmediateMode->addLineV(mViewRect.x + mViewRect.width, mViewRect.y, mViewRect.y + mViewRect.height);
-		glImmediateMode->addLineH(mViewRect.x, mViewRect.x + mViewRect.width, mViewRect.y + mViewRect.height);
-	glImmediateMode->endDraw();
+	glImmediateMode.beginDraw(HorseRadish::OpenGL::Tools::ImmediateMode::GeometryType::Lines);
+		glImmediateMode.setColor(128, 128, 128);
+		glImmediateMode.addLineV(mViewRect.x, mViewRect.y, mViewRect.y + mViewRect.height);
+		glImmediateMode.addLineH(mViewRect.x, mViewRect.x + mViewRect.width, mViewRect.y);
+		glImmediateMode.addLineV(mViewRect.x + mViewRect.width, mViewRect.y, mViewRect.y + mViewRect.height);
+		glImmediateMode.addLineH(mViewRect.x, mViewRect.x + mViewRect.width, mViewRect.y + mViewRect.height);
+	glImmediateMode.endDraw();
 }
 
 Console::Console(const HorseRadish::Engine::Logger& logger, HorseRadish::Render::Renderer2D& renderer, unsigned int maxPromptHistory)
