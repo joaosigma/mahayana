@@ -312,9 +312,9 @@ namespace HorseRadish
 			if (versionInfo.wServicePackMajor > 0)
 			{
 				if (versionInfo.wServicePackMinor > 0)
-					infoValue += fmt::format(" SP%d.%d", versionInfo.wServicePackMajor, versionInfo.wServicePackMinor);
+					infoValue += fmt::format(" SP{0}.{1}", versionInfo.wServicePackMajor, versionInfo.wServicePackMinor);
 				else
-					infoValue += fmt::format(" SP%d", versionInfo.wServicePackMajor);
+					infoValue += fmt::format(" SP{0}", versionInfo.wServicePackMajor);
 			}
 
 			return true;

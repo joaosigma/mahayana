@@ -1,11 +1,14 @@
 #include "engine.hpp"
 
+#include "profiler.hpp"
+
 #include "common/opengl/openGL.hpp"
 #include "common/opengl/tools/viewport.hpp"
 
 #include "render/stage.hpp"
 #include "render/world.hpp"
-#include "render/console.hpp"
+#include "render/consoleUI.hpp"
+#include "render/profilerUI.hpp"
 #include "render/rendererDeferred.hpp"
 #include "render/renderer2D.hpp"
 
@@ -173,16 +176,26 @@ namespace HorseRadish
 	{
 		void Engine::renderLoop()
 		{
-			float timeSpentDrawing, timeSpentProcessing, timeSpentIdle;
-			HorseRadish::Timer timerSecond, timerFrame, timerTotal;
+			HorseRadish::Timer timerFrame;
 			std::unique_ptr<HorseRadish::Render::RendererDeferred> rendererDeferred;
 			std::unique_ptr<HorseRadish::Render::Renderer2D> renderer2D;
 			std::unique_ptr<HorseRadish::Render::World> renderData;
 			std::unique_ptr<OpenglContext> glContext;
-			std::unique_ptr<HorseRadish::Render::Console> rendererConsole;
+			std::unique_ptr<HorseRadish::Render::ConsoleUI> rendererConsole;
+			std::unique_ptr<HorseRadish::Render::ProfilerUI> profilerUI;
 
 			mLoggerRenderCtx->info(" ");
 			mLoggerRenderCtx->info("${olive}->${default}Render thread initialized.");
+
+			auto profiler = std::make_unique<Profiler>();
+			if (Profiler::isSupported())
+			{
+				profiler->enableStat(Profiler::StatId::FrameTotal, Profiler::StatId::FrameDraw, Profiler::StatId::FrameGPU, Profiler::StatId::FrameLogic);
+
+				profiler->enableStat(Profiler::StatId::GPUTimeElapsed, Profiler::StatId::GPUSamples,
+					Profiler::StatId::GPUVerticesSubmitted, Profiler::StatId::GPUPrimitivesSubmitted, Profiler::StatId::GPUVertexShaderInvocations,
+					Profiler::StatId::GPUFragmentShaderInvocations, Profiler::StatId::GPUClipInputPrimitives, Profiler::StatId::GPUClipOutputPrimitives);
+			}
 
 			//start everything related to OpenGL
 			{
@@ -257,10 +270,16 @@ namespace HorseRadish
 
 			glContext->setSwapInterval(this->VarGet<int>("renderer.winSwapInterval"));
 
+			if (Profiler::isSupported())
+				profilerUI = std::make_unique<HorseRadish::Render::ProfilerUI>(*profiler, *renderer2D);
+
 			if (this->VarGet<bool>("sys.developer"))
 			{
-				rendererConsole = std::make_unique<HorseRadish::Render::Console>(*mLogger, *renderer2D, 20);
+				rendererConsole = std::make_unique<HorseRadish::Render::ConsoleUI>(*mLogger, *renderer2D, 20);
 				rendererConsole->setVisible(true);
+
+				if (profilerUI)
+					profilerUI->setInfoState(true);
 			}
 			
 			std::shared_ptr<Render::Stage> stage = std::make_shared<Render::Stage>(*mRuntime, *mLoggerRuntimeCtx, *mFileSystem, *glContext, this->VarGet<int>("renderer.winWidth"), this->VarGet<int>("renderer.winHeight"));
@@ -312,11 +331,6 @@ namespace HorseRadish
 
 			mRuntime->callVoidMethod("events.ready");
 
-			//antes de começar a desenhar, tenho de iniciar os contadores
-			timerSecond.reStart();
-			timerFrame.reStart();
-			timerTotal.reStart();
-
 			HorseRadish::OpenGL::glEnable(GL_FRAMEBUFFER_SRGB);
 
 			{
@@ -327,27 +341,27 @@ namespace HorseRadish
 					HorseRadish::OpenGL::Objects::Query::Type::ClippingInputPrimitives, HorseRadish::OpenGL::Objects::Query::Type::ClippingOutputPrimitives
 					};
 
-				float lastTimeS = 0.0f, curTimeS = 0.0f;
+				float lastDeltaTimeS = 0.0f;
 
 				while (mCurState == State::Running)
 				{
-					//a primeira coisa é acertar os tempos
-					lastTimeS = curTimeS;
-					curTimeS = timerTotal.getTimeS();
+					timerFrame.reStart();
+					profiler->nextSample();
 
 					//caso nao desenhe nada
 					HorseRadish::OpenGL::glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 					HorseRadish::OpenGL::glDepthMask(GL_TRUE);
 					HorseRadish::OpenGL::glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-
-					renderGlQueryGroup.queriesBegin();
+					if (Profiler::isSupported())
+						renderGlQueryGroup.queriesBegin();
 
 					//desenho a cena normalmente
 					//renderData->RenderFrame(*camera, viewport);
 					rendererDeferred->Render(*camera, *viewport);
 
-					renderGlQueryGroup.queriesEnd();
+					if (Profiler::isSupported())
+						renderGlQueryGroup.queriesEnd();
 
 					//desenho algum debug se existir
 					//renderData->RenderDebug(gbMainConsole, camera, viewport);
@@ -364,8 +378,8 @@ namespace HorseRadish
 						stage->drawComposite();
 					}
 
-					//leio o tempo que estive à espera para desenhar o 3D
-					timeSpentDrawing = timerFrame.getTimeMS();
+					if (Profiler::isSupported())
+						profiler->addSample(Profiler::StatId::FrameDraw, timerFrame.getTimeIntMS());
 
 					if (this->VarGet<int>("sys.screenshot") > 0)
 					{
@@ -375,6 +389,14 @@ namespace HorseRadish
 
 						HorseRadish::OpenGL::glFinish();
 						//glContext->TakeScreenshot(fileStream); //should come from the framebuffers
+					}
+
+					if (profilerUI && profilerUI->isVisible())
+					{
+						HorseRadish::OpenGL::glEnable(GL_BLEND);
+						HorseRadish::OpenGL::glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+							profilerUI->draw(*viewport);
+						HorseRadish::OpenGL::glDisable(GL_BLEND);
 					}
 
 					if (rendererConsole && rendererConsole->isVisible())
@@ -414,7 +436,7 @@ namespace HorseRadish
 
 						//posso actualizar a camera
 						auto mousePosition = mWindow->RawInputGetMouseStatus();
-						camera->CommitInput(cameraActions, mousePosition[0], mousePosition[1], true, curTimeS - lastTimeS);
+						camera->CommitInput(cameraActions, mousePosition[0], mousePosition[1], true, lastDeltaTimeS);
 					}
 
 					mWindow->ProcessMessages([&](const Window::Message &msg)
@@ -434,25 +456,16 @@ namespace HorseRadish
 
 					}, true);
 
-					//se já passou um segundo
-					if (timerSecond.getTimeMS() > 1000.0)
+					if (Profiler::isSupported())
 					{
-						//para ajudar nos cálculos
-						double tempoAux = 1.0 / timerSecond.getTimeS(true);
-
-						//ajusto o valor das variáveis
-						//this->VarSet("sys.infoFPS", HorseRadish::Math::ftoi(((double)glContext->counterGetValue(HorseRadish::OpenGL::Objects::Context::CounterType::Frames)) * tempoAux));
-						//this->VarSet("renderer.infoMTRIS", ((double)glContext->counterGetValue(HorseRadish::OpenGL::Objects::Context::CounterType::Triangles)) * tempoAux);
-						//this->VarSet("renderer.infoMVERTS", ((double)glContext->counterGetValue(HorseRadish::OpenGL::Objects::Context::CounterType::Vertices)) * tempoAux);
-
-						VarSet("renderer.stats.timeElapsed", static_cast<int64_t>(renderGlQueryGroup.getResultI64<0>() / 1000));
-						VarSet("renderer.stats.samples", static_cast<int64_t>(renderGlQueryGroup.getResultI64<1>()));
-						VarSet("renderer.stats.vertices", static_cast<int64_t>(renderGlQueryGroup.getResultI64<2>()));
-						VarSet("renderer.stats.primitives", static_cast<int64_t>(renderGlQueryGroup.getResultI64<3>()));
-						VarSet("renderer.stats.vertexShader", static_cast<int64_t>(renderGlQueryGroup.getResultI64<4>()));
-						VarSet("renderer.stats.fragmentShader", static_cast<int64_t>(renderGlQueryGroup.getResultI64<5>()));
-						VarSet("renderer.stats.clipInputPrimitives", static_cast<int64_t>(renderGlQueryGroup.getResultI64<6>()));
-						VarSet("renderer.stats.clipOutputPrimitives", static_cast<int64_t>(renderGlQueryGroup.getResultI64<7>()));
+						profiler->addSample(Profiler::StatId::GPUTimeElapsed, static_cast<int64_t>(renderGlQueryGroup.getResultI64<0>() / 1000));
+						profiler->addSample(Profiler::StatId::GPUSamples, static_cast<int64_t>(renderGlQueryGroup.getResultI64<1>()));
+						profiler->addSample(Profiler::StatId::GPUVerticesSubmitted, static_cast<int64_t>(renderGlQueryGroup.getResultI64<2>()));
+						profiler->addSample(Profiler::StatId::GPUPrimitivesSubmitted, static_cast<int64_t>(renderGlQueryGroup.getResultI64<3>()));
+						profiler->addSample(Profiler::StatId::GPUVertexShaderInvocations, static_cast<int64_t>(renderGlQueryGroup.getResultI64<4>()));
+						profiler->addSample(Profiler::StatId::GPUFragmentShaderInvocations, static_cast<int64_t>(renderGlQueryGroup.getResultI64<5>()));
+						profiler->addSample(Profiler::StatId::GPUClipInputPrimitives, static_cast<int64_t>(renderGlQueryGroup.getResultI64<6>()));
+						profiler->addSample(Profiler::StatId::GPUClipOutputPrimitives, static_cast<int64_t>(renderGlQueryGroup.getResultI64<7>()));
 					}
 
 					//mando o renderer preparar a próxima frame
@@ -461,41 +474,14 @@ namespace HorseRadish
 
 					if (rendererConsole)
 						rendererConsole->processStep();
+					
+					if (Profiler::isSupported())
+						profiler->addSample(Profiler::StatId::FrameGPU, timerFrame.getTimeIntMS());
 
-					//leio o tempo que estive à espera de processar as coisas do motor
-					timeSpentProcessing = timerFrame.getTimeMS() - timeSpentDrawing;
-
-					//mostro o que desenhei, isto tá no fim pra ajudar no paralelismo entre CPU e GPU
+					if (profilerUI)
+						profilerUI->processStats();
+					
 					glContext->swapBuffers();
-
-					//leio o tempo que estive à espera de acabar de fazer o swap
-					timeSpentIdle = timerFrame.getTimeMS() - timeSpentProcessing;
-
-					//se tiver coisas para ler do GPU, leio
-					//if (renderData->stats.gpuCounter != nullptr)
-					//{
-					//	float slotTotalInv;
-
-					//	//preciso de calcular o máximo dos tempos para poder fazer as percentagens correctas
-					//	slotTotalInv = 1.0f / (timeSpentDrawing + timeSpentProcessing + timeSpentIdle) * 100.0f;
-
-					//	//os contadores a usar
-					//	renderData->stats.gpuCounter->sampleCounter("timeSlot_draw3D", timeSpentDrawing * slotTotalInv);
-					//	renderData->stats.gpuCounter->sampleCounter("timeSlot_process", timeSpentProcessing * slotTotalInv);
-					//	renderData->stats.gpuCounter->sampleCounter("timeSlot_idle", timeSpentIdle * slotTotalInv);
-					//	renderData->stats.gpuCounter->sampleCounter("render_numTris", renderData->stats.numTris);
-					//	renderData->stats.gpuCounter->sampleCounter("render_glDrawElements", renderData->stats.numGlDrawElements);
-
-					//	//posso avançar com o sample
-					//	renderData->stats.gpuCounter->sampleMoveNext();
-					//}
-
-					//vejo o estado da musica e quando para, coloco outra
-					//if (SAudio::SAudioMusicStatus()==SAUDIO_STATUS_STOPPED)
-					//	{
-					//	SAudio::SAudioMusicLoad("~/test2.ogg");
-					//	SAudio::SAudioMusicAction(SAUDIO_ACTION_PLAY);
-					//	}
 
 					//only limit FPS if not developing
 					if (this->VarGet<bool>("sys.developer") == 0)
@@ -508,12 +494,17 @@ namespace HorseRadish
 						}
 					}
 
-					//agora sim, faço restart do timer
-					timerFrame.reStart();
+					if (Profiler::isSupported())
+						profiler->addSample(Profiler::StatId::FrameTotal, timerFrame.getTimeIntMS());
+
+					lastDeltaTimeS = static_cast<float>(timerFrame.getTimeS());
 				}
 			}
 
 			stage.reset();
+
+			profilerUI.reset();
+			profiler.reset();
 
 			rendererConsole.reset();
 

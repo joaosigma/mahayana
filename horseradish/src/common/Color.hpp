@@ -367,7 +367,7 @@ namespace HorseRadish
 			_mm_storeu_ps(&r, _mm_loadu_ps(color));
 		}
 
-		void Set(const float *color, const float &a)
+		void set(const float *color, const float &a)
 		{
 			this->r = color[0];
 			this->g = color[1];

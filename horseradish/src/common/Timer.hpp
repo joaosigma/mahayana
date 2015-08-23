@@ -15,10 +15,16 @@ namespace HorseRadish
 
 		void reStart();
 
-		double getTimeS(const bool restart = false);
-		double getTimeMS(const bool restart = false);
-		hUInt64 getTimeIntS(const bool restart = false);
-		hUInt64 getTimeIntMS(const bool restart = false);
+		std::chrono::milliseconds getTime() const;
+
+		double getTimeS() const;
+		double getTimeS(const bool restart);
+		double getTimeMS() const;
+		double getTimeMS(const bool restart);
+		hUInt64 getTimeIntS() const;
+		hUInt64 getTimeIntS(const bool restart);
+		hUInt64 getTimeIntMS() const;
+		hUInt64 getTimeIntMS(const bool restart);
 
 		void setS(const hUInt64 seconds);
 		void setS(const double seconds);

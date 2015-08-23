@@ -12,6 +12,19 @@ namespace HorseRadish
 		mTimepoint = std::chrono::high_resolution_clock::now();
 	}
 
+	std::chrono::milliseconds Timer::getTime() const
+	{
+		return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - mTimepoint);
+	}
+
+	double Timer::getTimeS() const
+	{
+		auto curTime = std::chrono::high_resolution_clock::now();
+		auto elapsed = std::chrono::duration<double, std::chrono::seconds::period>(curTime - mTimepoint).count();
+
+		return elapsed;
+	}
+
 	double Timer::getTimeS(const bool restart)
 	{
 		auto curTime = std::chrono::high_resolution_clock::now();
@@ -19,6 +32,14 @@ namespace HorseRadish
 
 		if (restart)
 			mTimepoint = curTime;
+
+		return elapsed;
+	}
+
+	double Timer::getTimeMS() const
+	{
+		auto curTime = std::chrono::high_resolution_clock::now();
+		auto elapsed = std::chrono::duration<double, std::chrono::milliseconds::period>(curTime - mTimepoint).count();
 
 		return elapsed;
 	}
@@ -34,6 +55,14 @@ namespace HorseRadish
 		return elapsed;
 	}
 
+	hUInt64 Timer::getTimeIntS() const
+	{
+		auto curTime = std::chrono::high_resolution_clock::now();
+		auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(curTime - mTimepoint).count();
+
+		return static_cast<hUInt64>(elapsed);
+	}
+
 	hUInt64 Timer::getTimeIntS(const bool restart)
 	{
 		auto curTime = std::chrono::high_resolution_clock::now();
@@ -41,6 +70,14 @@ namespace HorseRadish
 
 		if (restart)
 			mTimepoint = curTime;
+
+		return static_cast<hUInt64>(elapsed);
+	}
+
+	hUInt64 Timer::getTimeIntMS() const
+	{
+		auto curTime = std::chrono::high_resolution_clock::now();
+		auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(curTime - mTimepoint).count();
 
 		return static_cast<hUInt64>(elapsed);
 	}

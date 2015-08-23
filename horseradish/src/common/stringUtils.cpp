@@ -243,18 +243,18 @@ namespace HorseRadish
 
 		double remaining = static_cast<double>(miliseconds) * 0.001;
 		if (remaining < 60.0)
-			return fmt::format("{0:.3} seconds", remaining);
+			return fmt::format("{0:.3f} seconds", remaining);
 
 		remaining = static_cast<double>(remaining) * 0.01666666666666666666666666666667;
 		if (remaining < 60.0)
-			return fmt::format("{0:.3} minutes", remaining);
+			return fmt::format("{0:.3f} minutes", remaining);
 
 		remaining = static_cast<double>(remaining) * 0.01666666666666666666666666666667;
 		if (remaining < 60.0)
-			return fmt::format("{0:.3} hours", remaining);
+			return fmt::format("{0:.3f} hours", remaining);
 
 		remaining = static_cast<double>(remaining) * 0.04166666666666666666666666666667;
-		return fmt::format("{0:.3} days", remaining);
+		return fmt::format("{0:.3f} days", remaining);
 	}
 
 	std::string StringUtils::formatSize(unsigned int bytes)
@@ -264,13 +264,13 @@ namespace HorseRadish
 
 		double remaining = static_cast<double>(bytes) * 0.0009765625;
 		if (remaining < 1024.0)
-			return fmt::format("{0:.3} KB", remaining);
+			return fmt::format("{0:.3f} KB", remaining);
 
 		remaining = static_cast<double>(remaining)* 0.0009765625;
 		if (remaining < 1024.0)
-			return fmt::format("{0:.3} MB", remaining);
+			return fmt::format("{0:.3f} MB", remaining);
 
 		remaining = static_cast<double>(remaining)* 0.0009765625;
-		return fmt::format("{0:.3} GB", remaining);
+		return fmt::format("{0:.3f} GB", remaining);
 	}
 }

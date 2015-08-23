@@ -41,7 +41,7 @@ private:
 	std::array<VertexDataLayout, MaxVertexCount> mBufferData;
 	std::array<unsigned short, MaxIndexCount> mBufferIndices;
 
-	int draw();
+	void draw(bool keepLeftovers);
 	void resetState();
 	bool checkStateDraw() const;
 
@@ -50,7 +50,7 @@ public:
 	~ImmediateMode();
 
 	void beginDraw(const GeometryType geometryType);
-	int endDraw();
+	void endDraw();
 	
 	void setTexCoord(const float &u, const float &v);
 	void setColor(const unsigned char &r, const unsigned char &g, const unsigned char &b);

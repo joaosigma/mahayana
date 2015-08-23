@@ -176,7 +176,6 @@
     </ClCompile>
     <ClCompile Include="..\..\src\culling.cpp" />
     <ClCompile Include="..\..\src\main.cpp" />
-    <ClCompile Include="..\..\src\SGPUCounter.cpp" />
     <ClCompile Include="..\..\src\videoStream.cpp" />
     <ClCompile Include="..\..\src\libs\lodepng\lodepng.cpp">
       <Filter>libs\lodepng</Filter>
@@ -334,7 +333,13 @@
     <ClCompile Include="..\..\src\common\types.cpp">
       <Filter>common</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\render\console.cpp">
+    <ClCompile Include="..\..\src\engine\profiler.cpp">
+      <Filter>engine</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\render\consoleUI.cpp">
+      <Filter>render</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\render\profilerUI.cpp">
       <Filter>render</Filter>
     </ClCompile>
   </ItemGroup>
@@ -452,7 +457,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\build.hpp" />
     <ClInclude Include="..\..\src\culling.hpp" />
-    <ClInclude Include="..\..\src\SGPUCounter.hpp" />
     <ClInclude Include="..\..\src\videoStream.hpp" />
     <ClInclude Include="..\..\src\libs\lodepng\lodepng.h">
       <Filter>libs\lodepng</Filter>
@@ -730,7 +734,13 @@
     <ClInclude Include="..\..\src\common\types.hpp">
       <Filter>common</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\render\console.hpp">
+    <ClInclude Include="..\..\src\engine\profiler.hpp">
+      <Filter>engine</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\render\consoleUI.hpp">
+      <Filter>render</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\render\profilerUI.hpp">
       <Filter>render</Filter>
     </ClInclude>
   </ItemGroup>

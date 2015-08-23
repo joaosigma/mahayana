@@ -6,20 +6,19 @@
 
 namespace HorseRadish { namespace OpenGL { namespace Tools {
 
-int ImmediateMode::draw()
+void ImmediateMode::draw(bool keepLeftovers)
 {
 	if (checkStateDraw() == false)
-		return 0;
+		return;
 
-	int numElementosDesenhados = 0;
+	int numElements = 0;
 
 	if (mState.geomType == GeometryType::Quads)
 	{
-		numElementosDesenhados = mState.curVertex / 4;
-
-		if (numElementosDesenhados > 0)
+		numElements = mState.curVertex / 4;
+		if (numElements > 0)
 		{
-			auto newIndexWriter = mBufferIndices.data() + (numElementosDesenhados * 6 - 6);
+			auto newIndexWriter = mBufferIndices.data() + (numElements * 6 - 6);
 
 			for (int curQuad = mState.curVertex - 4; curQuad >= 0; curQuad -= 4)
 			{
@@ -37,48 +36,44 @@ int ImmediateMode::draw()
 
 			mGl.fence.wait();
 				mGl.vertexArray.bind();
-				mGl.arrayBuffer.writeData(mBufferData.data(), numElementosDesenhados * 4 * sizeof(VertexDataLayout), 0);
-				mGl.elementArrayBuffer.writeData(mBufferIndices.data(), numElementosDesenhados * 6 * sizeof(unsigned short), 0);
+				mGl.arrayBuffer.writeData(mBufferData.data(), numElements * 4 * sizeof(VertexDataLayout), 0);
+				mGl.elementArrayBuffer.writeData(mBufferIndices.data(), numElements * 6 * sizeof(unsigned short), 0);
 
-				HorseRadish::OpenGL::glDrawRangeElements(GL_TRIANGLES, 0, numElementosDesenhados * 4, numElementosDesenhados * 6, GL_UNSIGNED_SHORT, (void*)0);
+				HorseRadish::OpenGL::glDrawRangeElements(GL_TRIANGLES, 0, numElements * 4, numElements * 6, GL_UNSIGNED_SHORT, (void*)0);
 			mGl.fence.place();
 		}
 	}
 	else if (mState.geomType == GeometryType::Tris)
 	{
-		numElementosDesenhados = mState.curVertex / 3;
-
-		if (numElementosDesenhados > 0)
+		numElements = mState.curVertex / 3;
+		if (numElements > 0)
 		{
 			mGl.fence.wait();
 				mGl.vertexArray.bind();
-				mGl.arrayBuffer.writeData(mBufferData.data(), numElementosDesenhados * 3 * sizeof(VertexDataLayout), 0);
-				mGl.elementArrayBuffer.writeData(mBufferIndices.data(), numElementosDesenhados * 3 * sizeof(unsigned short), 0);
+				mGl.arrayBuffer.writeData(mBufferData.data(), numElements * 3 * sizeof(VertexDataLayout), 0);
+				mGl.elementArrayBuffer.writeData(mBufferIndices.data(), numElements * 3 * sizeof(unsigned short), 0);
 
-				HorseRadish::OpenGL::glDrawRangeElements(GL_TRIANGLES, 0, numElementosDesenhados * 3, numElementosDesenhados * 3, GL_UNSIGNED_SHORT, (void*)0);
+				HorseRadish::OpenGL::glDrawRangeElements(GL_TRIANGLES, 0, numElements * 3, numElements * 3, GL_UNSIGNED_SHORT, (void*)0);
 			mGl.fence.place();
 		}
 	}
 	else if (mState.geomType == GeometryType::Lines)
 	{
-		numElementosDesenhados = mState.curVertex / 2;
-
-		if (numElementosDesenhados > 0)
+		numElements = mState.curVertex / 2;
+		if (numElements > 0)
 		{
 			mGl.fence.wait();
 				mGl.vertexArray.bind();
-				mGl.arrayBuffer.writeData(mBufferData.data(), numElementosDesenhados * 2 * sizeof(VertexDataLayout), 0);
-				mGl.elementArrayBuffer.writeData(mBufferIndices.data(), numElementosDesenhados * 2 * sizeof(unsigned short), 0);
+				mGl.arrayBuffer.writeData(mBufferData.data(), numElements * 2 * sizeof(VertexDataLayout), 0);
+				mGl.elementArrayBuffer.writeData(mBufferIndices.data(), numElements * 2 * sizeof(unsigned short), 0);
 
-				HorseRadish::OpenGL::glDrawRangeElements(GL_LINES, 0, numElementosDesenhados * 2, numElementosDesenhados * 2, GL_UNSIGNED_SHORT, (void*)0);
+				HorseRadish::OpenGL::glDrawRangeElements(GL_LINES, 0, numElements * 2, numElements * 2, GL_UNSIGNED_SHORT, (void*)0);
 			mGl.fence.place();
 		}
 	}
 	else if (mState.geomType == GeometryType::LineStrip)
 	{
-		numElementosDesenhados = mState.curVertex - 1;
-
-		if (numElementosDesenhados > 0)
+		if (mState.curVertex >= 2)
 		{
 			mGl.fence.wait();
 				mGl.vertexArray.bind();
@@ -90,9 +85,34 @@ int ImmediateMode::draw()
 		}
 	}
 
-	mState.curVertex = 0;
+	if (!keepLeftovers)
+	{
+		mState.curVertex = 0;
+		return;
+	}
 
-	return numElementosDesenhados;
+	if (mState.geomType == GeometryType::LineStrip)
+	{
+		mBufferData[0] = mBufferData[mState.curVertex - 1];
+		mBufferIndices[0] = 0;
+		mState.curVertex = 1;
+		return;
+	}
+
+	if (numElements == 0)
+		return;
+
+	auto numLeftOvers = mState.curVertex - numElements;
+	if (numLeftOvers <= 0)
+		return;
+
+	for (int i = 0; i < numLeftOvers; i++)
+	{
+		mBufferData[i] = mBufferData[numElements + i];
+		mBufferIndices[i] = i;
+	}
+
+	mState.curVertex = numLeftOvers;
 }
 
 void ImmediateMode::resetState()
@@ -166,13 +186,10 @@ void ImmediateMode::beginDraw(const GeometryType geometryType)
 	mState.geomType = geometryType;
 }
 
-int ImmediateMode::endDraw()
+void ImmediateMode::endDraw()
 {
-	auto numElementosDesenhados = draw();
-
+	draw(false);
 	resetState();
-
-	return numElementosDesenhados;
 }
 
 void ImmediateMode::setTexCoord(const float &u, const float &v)
@@ -257,8 +274,11 @@ void ImmediateMode::addPosition(const float &x, const float &y)
 
 void ImmediateMode::addPosition(const float &x, const float &y, const float &z)
 {
-	if ((mState.curVertex >= ImmediateMode::MaxVertexCount) || (mState.geomType == GeometryType::None))
+	if (mState.geomType == GeometryType::None)
 		return;
+
+	if (mState.curVertex >= ImmediateMode::MaxVertexCount)
+		draw(true);
 
 	auto& vertexData = mBufferData[mState.curVertex];
 	vertexData.pos[0] = x;

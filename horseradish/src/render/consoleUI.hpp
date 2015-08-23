@@ -12,7 +12,7 @@
 
 namespace HorseRadish { namespace Render {
 
-class Console
+class ConsoleUI
 {
 	struct {
 		int offset;
@@ -44,7 +44,7 @@ class Console
 	void drawBackground(const HorseRadish::Matrix &transformMatrix, float bkgAlpha) const;
 
 public:
-	Console(const HorseRadish::Engine::Logger& logger, HorseRadish::Render::Renderer2D& renderer, unsigned int maxPromptHistory);
+	ConsoleUI(const HorseRadish::Engine::Logger& logger, HorseRadish::Render::Renderer2D& renderer, unsigned int maxPromptHistory);
 
 	void draw(const HorseRadish::OpenGL::Tools::Viewport& viewport) const;
 

@@ -1,11 +1,11 @@
-#include "console.hpp"
+#include "ConsoleUI.hpp"
 
 namespace HorseRadish { namespace Render {
 
 static std::string PromptDefault = "console@main# "; //ASCII only
 static const unsigned int PromptMaxSize = 1024;
 
-void Console::updateCursorOffset(int offset)
+void ConsoleUI::updateCursorOffset(int offset)
 {
 	mCursor.offset = offset;
 	if (mCursor.offset < 0)
@@ -17,7 +17,7 @@ void Console::updateCursorOffset(int offset)
 	mCursor.timer.reStart();
 }
 
-void Console::processMsgPrompt(const Window::Message &msg)
+void ConsoleUI::processMsgPrompt(const Window::Message &msg)
 {
 	if (msg.getType() == Window::Message::MessageType::VirtualKey)
 	{
@@ -129,7 +129,7 @@ void Console::processMsgPrompt(const Window::Message &msg)
 	}
 }
 
-void Console::drawContent(const HorseRadish::Matrix &transformMatrix) const
+void ConsoleUI::drawContent(const HorseRadish::Matrix &transformMatrix) const
 {
 	if (!mRenderer.mGui.font)
 		return;
@@ -310,14 +310,13 @@ void Console::drawContent(const HorseRadish::Matrix &transformMatrix) const
 	}
 }
 
-void Console::drawBackground(const HorseRadish::Matrix &transformMatrix, float bkgAlpha) const
+void ConsoleUI::drawBackground(const HorseRadish::Matrix &transformMatrix, float bkgAlpha) const
 {
 	HorseRadish::OpenGL::glUseProgram(0);
 	HorseRadish::OpenGL::glBindProgramPipeline(mRenderer.mShaders.drawNoTex.progPipeline.getId());
 	HorseRadish::OpenGL::glProgramUniformMatrix4fv(mRenderer.mShaders.drawNoTex.progVertex.getId(), mRenderer.mShaders.drawNoTex.progVertex.getUniformLocation("transformationMatrix"), 1, false, transformMatrix.data());
 
 	auto& glImmediateMode = mRenderer.mGlImmediateMode;
-	auto& guiFont = mRenderer.mGui.font;
 
 	glImmediateMode.beginDraw(HorseRadish::OpenGL::Tools::ImmediateMode::GeometryType::Quads);
 		glImmediateMode.setColor(0, 0, 0, HorseRadish::Color::convertColor(bkgAlpha));
@@ -333,7 +332,7 @@ void Console::drawBackground(const HorseRadish::Matrix &transformMatrix, float b
 	glImmediateMode.endDraw();
 }
 
-Console::Console(const HorseRadish::Engine::Logger& logger, HorseRadish::Render::Renderer2D& renderer, unsigned int maxPromptHistory)
+ConsoleUI::ConsoleUI(const HorseRadish::Engine::Logger& logger, HorseRadish::Render::Renderer2D& renderer, unsigned int maxPromptHistory)
 	: mMainVisible(false), mRenderer(renderer), mLogger(logger)
 {
 	mLogView.offset = 0;
@@ -346,28 +345,28 @@ Console::Console(const HorseRadish::Engine::Logger& logger, HorseRadish::Render:
 	mTextRect.Set(mViewRect.x + 9.0f, mViewRect.y + 9.0f, mViewRect.width - 18.0f, mViewRect.height - 18.0f);
 }
 
-void Console::draw(const HorseRadish::OpenGL::Tools::Viewport& viewport) const
+void ConsoleUI::draw(const HorseRadish::OpenGL::Tools::Viewport& viewport) const
 {
 	if (!isVisible())
 		return;
 
 	HorseRadish::Matrix transformMatrix = viewport.getProjection(HorseRadish::OpenGL::Tools::Viewport::ProjectionType::Proj2D);
 
-	drawBackground(transformMatrix, 0.6f);
+	drawBackground(transformMatrix, 0.8f);
 	drawContent(transformMatrix);
 }
 
-bool Console::isVisible() const
+bool ConsoleUI::isVisible() const
 {
 	return (mMainVisible || !mAlerts.empty());
 }
 
-void Console::setVisible(bool visible)
+void ConsoleUI::setVisible(bool visible)
 {
 	mMainVisible = visible;
 }
 
-void Console::processStep()
+void ConsoleUI::processStep()
 {
 	if (mCursor.timer.getTimeMS() > 750.0f)
 	{
@@ -376,7 +375,7 @@ void Console::processStep()
 	}
 }
 
-void Console::processMsg(std::function<void(const char * const)> execPromptCmdCb, const Window::Message &msg)
+void ConsoleUI::processMsg(std::function<void(const char * const)> execPromptCmdCb, const Window::Message &msg)
 {
 	if (isVisible())
 	{

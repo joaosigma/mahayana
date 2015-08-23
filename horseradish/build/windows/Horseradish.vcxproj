@@ -88,7 +88,7 @@
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;NOMINMAX;WINVER=0x0601;_WIN32_WINNT=0x0601;NTDDI_VERSION=0x06010000;WIN32_LEAN_AND_MEAN;NOGDICAPMASKS;NOMENUS;NOICONS;NOSYSCOMMANDS;NOSHOWWINDOW;NOCTLMGR;NOMEMMGR;NOOPENFILE;NOWH;NODEFERWINDOWPOS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>HR_DEVEL;HR_PROFILLING;WIN32;_DEBUG;_WINDOWS;NOMINMAX;WINVER=0x0601;_WIN32_WINNT=0x0601;NTDDI_VERSION=0x06010000;WIN32_LEAN_AND_MEAN;NOGDICAPMASKS;NOMENUS;NOICONS;NOSYSCOMMANDS;NOSHOWWINDOW;NOCTLMGR;NOMEMMGR;NOOPENFILE;NOWH;NODEFERWINDOWPOS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions</EnableEnhancedInstructionSet>
       <AdditionalIncludeDirectories>$(SolutionDir)$(ProjectName)\src;$(SolutionDir)$(ProjectName)\external_includes\gl;$(SolutionDir)$(ProjectName)\external_includes\freetype2;$(SolutionDir)$(ProjectName)\external_includes\ffmpeg;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -108,7 +108,7 @@
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;NOMINMAX;WINVER=0x0601;_WIN32_WINNT=0x0601;NTDDI_VERSION=0x06010000;WIN32_LEAN_AND_MEAN;NOGDICAPMASKS;NOMENUS;NOICONS;NOSYSCOMMANDS;NOSHOWWINDOW;NOCTLMGR;NOMEMMGR;NOOPENFILE;NOWH;NODEFERWINDOWPOS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>HR_DEVEL;HR_PROFILLING;WIN32;_DEBUG;_WINDOWS;NOMINMAX;WINVER=0x0601;_WIN32_WINNT=0x0601;NTDDI_VERSION=0x06010000;WIN32_LEAN_AND_MEAN;NOGDICAPMASKS;NOMENUS;NOICONS;NOSYSCOMMANDS;NOSHOWWINDOW;NOCTLMGR;NOMEMMGR;NOOPENFILE;NOWH;NODEFERWINDOWPOS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions</EnableEnhancedInstructionSet>
       <AdditionalIncludeDirectories>$(SolutionDir)$(ProjectName)\src;$(SolutionDir)$(ProjectName)\external_includes\gl;$(SolutionDir)$(ProjectName)\external_includes\freetype2;$(SolutionDir)$(ProjectName)\external_includes\ffmpeg;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -201,6 +201,7 @@
     <ClCompile Include="..\..\src\engine\engine.cpp" />
     <ClCompile Include="..\..\src\engine\engineRender.cpp" />
     <ClCompile Include="..\..\src\engine\logger.cpp" />
+    <ClCompile Include="..\..\src\engine\profiler.cpp" />
     <ClCompile Include="..\..\src\engine\runtime.cpp" />
     <ClCompile Include="..\..\src\libs\cppformat\format.cc" />
     <ClCompile Include="..\..\src\libs\forsyth\forsythtriangleorderoptimizer.cpp" />
@@ -252,7 +253,8 @@
     <ClCompile Include="..\..\src\main.cpp" />
     <ClCompile Include="..\..\src\platform\window.cpp" />
     <ClCompile Include="..\..\src\platform\windowImplWin32.cpp" />
-    <ClCompile Include="..\..\src\render\console.cpp" />
+    <ClCompile Include="..\..\src\render\consoleUI.cpp" />
+    <ClCompile Include="..\..\src\render\profilerUI.cpp" />
     <ClCompile Include="..\..\src\render\renderer2D.cpp" />
     <ClCompile Include="..\..\src\render\rendererDeferred.cpp" />
     <ClCompile Include="..\..\src\render\scene.cpp" />
@@ -260,7 +262,6 @@
     <ClCompile Include="..\..\src\render\tools\camera.cpp" />
     <ClCompile Include="..\..\src\render\tools\font.cpp" />
     <ClCompile Include="..\..\src\render\world.cpp" />
-    <ClCompile Include="..\..\src\SGPUCounter.cpp" />
     <ClCompile Include="..\..\src\videoStream.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -302,6 +303,7 @@
     <ClInclude Include="..\..\src\culling.hpp" />
     <ClInclude Include="..\..\src\engine\engine.hpp" />
     <ClInclude Include="..\..\src\engine\logger.hpp" />
+    <ClInclude Include="..\..\src\engine\profiler.hpp" />
     <ClInclude Include="..\..\src\engine\runtime.hpp" />
     <ClInclude Include="..\..\src\libs\cppformat\format.h" />
     <ClInclude Include="..\..\src\libs\forsyth\forsythtriangleorderoptimizer.h" />
@@ -387,7 +389,8 @@
     <ClInclude Include="..\..\src\libs\zlib\zutil.h" />
     <ClInclude Include="..\..\src\platform\window.hpp" />
     <ClInclude Include="..\..\src\platform\windowImplWin32.hpp" />
-    <ClInclude Include="..\..\src\render\console.hpp" />
+    <ClInclude Include="..\..\src\render\consoleUI.hpp" />
+    <ClInclude Include="..\..\src\render\profilerUI.hpp" />
     <ClInclude Include="..\..\src\render\renderer.hpp" />
     <ClInclude Include="..\..\src\render\renderer2D.hpp" />
     <ClInclude Include="..\..\src\render\rendererDeferred.hpp" />
@@ -396,7 +399,6 @@
     <ClInclude Include="..\..\src\render\tools\camera.hpp" />
     <ClInclude Include="..\..\src\render\tools\font.hpp" />
     <ClInclude Include="..\..\src\render\world.hpp" />
-    <ClInclude Include="..\..\src\SGPUCounter.hpp" />
     <ClInclude Include="..\..\src\videoStream.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

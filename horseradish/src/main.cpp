@@ -5,10 +5,10 @@
 	#include <crtdbg.h>
 #endif
 
-#include "common\platform.hpp"
-#include "common\stringUtils.hpp"
+#include "common/platform.hpp"
+#include "common/stringUtils.hpp"
 
-#include "engine\engine.hpp"
+#include "engine/engine.hpp"
 
 int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PWSTR lpCmdLine, int nCmdShow)
 {
