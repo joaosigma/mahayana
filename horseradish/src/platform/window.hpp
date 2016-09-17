@@ -12,12 +12,16 @@ class Window
 	friend class OpenglContext;
 
 public:
+	enum class WindowStyle { StyleFullscreen, StyleFullscreenWindow, StyleWindow };
 	enum class VirtualKeys {
 		Invalid, MouseLButton, MouseRButton, MouseMButton, Tab, Backspace, Return, Shift, Control, Escape, Space, PageUp, PageDown, End, Home, Left, Right, Up, Down, Delete,
-		F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12 }; //0-9 correspond to ASCII '0'-'9' and A-Z correspond to ASCII 'A'-'Z'
+		F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12
 
-	class Message {
+		//0-9 correspond to ASCII '0'-'9' and A-Z correspond to ASCII 'A'-'Z'
+	}; 
 
+	class Message
+	{
 	public:
 		enum class MessageType
 		{ 
@@ -26,8 +30,10 @@ public:
 						  //*flags*: short0 is the repeat count while short1 is the bitmask of MessageFlags values
 			VirtualKey, //*params*: the virtual key code
 					    //*flags*: short0 is the repeat count while short1 is the bitmask of MessageFlags values
-			MouseWheel //*params*: X coordinate in the low 16 bits and the Y coordinate in the high 16 bits (origin is upper-left)
-					   //*flags*: short0 is signed-short representing the amount the distance the wheel rotates while short1 is the bitmask of MessageFlags values
+			MouseWheel, //*params*: X coordinate in the low 16 bits and the Y coordinate in the high 16 bits (origin is upper-left)
+						//*flags*: short0 is signed-short representing the amount the distance the wheel rotates while short1 is the bitmask of MessageFlags values
+			Resize //*params*: X coordinate in the low 16 bits and the Y coordinate in the high 16 bits (origin is upper-left)
+				   //*flags*: unused
 		};
 		enum class MessageFlags { ControlKey = (1 << 0), ShiftKey = (1 << 1) };
 
@@ -81,22 +87,24 @@ public:
 	Window(HorseRadish::Engine::Logger &logger);
 	~Window();
 
-	std::string GetErrorMsg() const;
+	std::string getErrorMsg() const;
 
-	bool WindowInit(const std::string& windowTitle, const unsigned int winWidth, const unsigned int winHeight, const bool winFullscreen);
-	bool WindowEditorInit(const std::string& windowTitle, const unsigned int winWidth, const unsigned int winHeight, const HWND handleWindowParent);
+	bool windowInit(const std::string& windowTitle, WindowStyle style, bool targetSecondaryDisplay, const size_t targetWidth, const size_t targeHeight);
 
-	bool SetWindowAlpha(const unsigned char &valorAlpha) const;
-	bool SendMessageClose() const;
-	bool SetFocus() const;
+	size_t getDisplayWidth() const;
+	size_t getDisplayHeight() const;
 
-	void RawInputSnapshot();
-	bool RawInputGetKeyStatus(const unsigned int &vcode);
-	bool RawInputGetKeyStatus(const Window::VirtualKeys &vcode);
-	HorseRadish::Vector3f RawInputGetMouseStatus();
+	bool setWindowAlpha(const unsigned char &valorAlpha) const;
+	bool sendMessageClose() const;
+	bool setFocus() const;
+
+	void rawInputSnapshot();
+	bool rawInputGetKeyStatus(const unsigned int &vcode);
+	bool rawInputGetKeyStatus(const Window::VirtualKeys &vcode);
+	HorseRadish::Vector3f rawInputGetMouseStatus();
 	
-	int MessageLoop(std::function<void()> closingCb);
-	void ProcessMessages(std::function<void(const Message&)> cb, const bool resetQueue);
+	int messageLoop(std::function<void()> closingCb);
+	void processMessages(std::function<void(const Message&)> cb, const bool resetQueue);
 
 	static void MsgBoxInfo(const std::string& msg);
 	static void MsgBoxInfo(const char * const msg);
@@ -108,7 +116,7 @@ public:
 
 class OpenglContext : public HorseRadish::OpenGL::Objects::Context
 {
-	bool mIsValid;
+	bool mIsValid = false;
 	std::unique_ptr<OpenglContextImpl> mImpl;
 
 public:

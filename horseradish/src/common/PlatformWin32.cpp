@@ -389,12 +389,13 @@ namespace HorseRadish
 		return false;
 	}
 
-	bool Platform::InstanciateProcess(const std::string& commandLine)
+	bool Platform::spawnSelf()
 	{
 		STARTUPINFO startInfo;
 		PROCESS_INFORMATION processInfo;
 
-		if (commandLine.empty())
+		wchar_t szFileName[MAX_PATH];
+		if (!GetModuleFileName(nullptr, szFileName, MAX_PATH))
 			return false;
 
 		memset(&startInfo, 0, sizeof(STARTUPINFO));
@@ -402,14 +403,7 @@ namespace HorseRadish
 		startInfo.cb = sizeof(STARTUPINFO);
 		startInfo.lpDesktop = L"";
 
-		wchar_t commandLineWChar[1024];
-		{
-			auto tmpBuffer = HorseRadish::StringUtils::conv2UTF16(commandLine);
-			if (tmpBuffer.size() < 1024)
-				memcpy(commandLineWChar, tmpBuffer.data(), sizeof(wchar_t) * tmpBuffer.size());
-		}
-
-		CreateProcess(nullptr, commandLineWChar, nullptr, nullptr, FALSE, 0, nullptr, nullptr, &startInfo, &processInfo);
+		CreateProcess(nullptr, szFileName, nullptr, nullptr, FALSE, 0, nullptr, nullptr, &startInfo, &processInfo);
 
 		CloseHandle(processInfo.hProcess);
 		CloseHandle(processInfo.hThread);

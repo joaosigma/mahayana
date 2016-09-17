@@ -88,32 +88,31 @@ private:
 	struct EntryData
 	{
 		std::string msg;
-		bool isMsgFormated;
-		EntryType entryType;
-		ModuleType moduleType;
+		bool isMsgFormated = false;
+		EntryType entryType = EntryType::Error;
+		ModuleType moduleType = ModuleType::Misc;
 		std::chrono::time_point<std::chrono::system_clock> timestamp;
 
 		EntryData()
-			: isMsgFormated(false), entryType(EntryType::Error), moduleType(ModuleType::Misc)
 		{ }
 
 		EntryData(EntryType entryType, ModuleType moduleType)
-			: isMsgFormated(false), entryType(entryType), moduleType(moduleType)
+			: entryType(entryType), moduleType(moduleType)
 		{ }
 	};
 
-	static bool checkEntryData(const char * const entryData, bool &hasFormattedText, unsigned int &dataSize);
+	static bool checkEntryData(const char * const entryData, bool &hasFormattedText, size_t &dataSize);
 
 	mutable std::mutex mASyncLock;
 	mutable std::mutex mBufferLock;
 
 	std::deque<EntryData> mBuffer;
 	std::vector<EntryData> mAsyncBuffer;
-	unsigned int mMaxBufferSize;
-	unsigned int mMaxAsyncBufferSize;
+	size_t mMaxBufferSize = 0;
+	size_t mMaxAsyncBufferSize = 0;
 
-	std::thread *mThreadFlush;
-	std::atomic<bool> mThreadFlushExit;
+	std::thread *mThreadFlush = nullptr;
+	std::atomic<bool> mThreadFlushExit = {false};
 	std::condition_variable mThreadFlushCondition;
 	std::shared_ptr<HorseRadish::Streams::FileStream> mOutFileStream;
 
@@ -123,9 +122,9 @@ private:
 	bool addEntry(const EntryType entryType, const ModuleType moduleType, const char * const entryData);
 
 public:
-	Logger(unsigned int asyncMaxEntries);
-	Logger(unsigned int asyncMaxEntries, unsigned int maxBufferedEntries);
-	Logger(unsigned int asyncMaxEntries, unsigned int maxBufferedEntries, const HorseRadish::IO::Path &filePath);
+	Logger(size_t asyncMaxEntries);
+	Logger(size_t asyncMaxEntries, size_t maxBufferedEntries);
+	Logger(size_t asyncMaxEntries, size_t maxBufferedEntries, const HorseRadish::IO::Path &filePath);
 	~Logger();
 
 	Logger(const Logger&) = delete;
@@ -189,7 +188,7 @@ public:
 		log(EntryType::Error, moduleType, entryData.c_str(), std::forward<TValues>(params)...);
 	}
 
-	void iterateBuffer(std::function<bool(const EntryType, const ModuleType, const bool, const std::string&)> logEntryCb, unsigned int offset) const;
+	void iterateBuffer(std::function<bool(const EntryType, const ModuleType, const bool, const std::string&)> logEntryCb, size_t offset) const;
 };
 
 } }

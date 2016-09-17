@@ -26,7 +26,7 @@ namespace HorseRadish { namespace Engine {
 		}
 
 		if (mWindow)
-			mWindow->SendMessageClose();
+			mWindow->sendMessageClose();
 	}
 
 	void Engine::initFileSystem()
@@ -43,13 +43,13 @@ namespace HorseRadish { namespace Engine {
 		mFileSystem->MountPath(HorseRadish::IO::Path("d:/jogos/doom3/base/"), nullptr);
 		mLoggerRuntimeCtx->info("${olive}->${default}Path set to: \"d:/jogos/doom3/base/\"");
 
-		int totalFich = 0;
-		int totalPacks = 0;
+		size_t totalFich = 0;
+		size_t totalPacks = 0;
 
 		//for every pack/zip/7zip file
 		HorseRadish::IO::FileSystem::FindFiles("d:/jogos/doom3/base/pak*.pk4", true, [&](const HorseRadish::IO::Path &filePath, const HorseRadish::hUInt64 &fileSize)
 		{
-			int numFilesZip;
+			size_t numFilesZip;
 
 			//mount the zip file as a directoty
 			if (mFileSystem->MountZip(filePath, nullptr, &numFilesZip))
@@ -119,19 +119,19 @@ namespace HorseRadish { namespace Engine {
 			return;
 		}
 
-		switch (varData->GetVarType())
+		switch (varData->type())
 		{
 		case IVariable::VariableType::Bool:
-			ctx.setReturnValue(std::static_pointer_cast<VariableBool>(varData)->GetValue());
+			ctx.setReturnValue(std::static_pointer_cast<VariableBool>(varData)->value());
 			return;
 		case IVariable::VariableType::Integer:
-			ctx.setReturnValue(static_cast<int>(std::static_pointer_cast<VariableInt>(varData)->GetValue()));
+			ctx.setReturnValue(static_cast<int>(std::static_pointer_cast<VariableInt>(varData)->value()));
 			return;
 		case IVariable::VariableType::Double:
-			ctx.setReturnValue(static_cast<float>(std::static_pointer_cast<VariableDouble>(varData)->GetValue()));
+			ctx.setReturnValue(static_cast<float>(std::static_pointer_cast<VariableDouble>(varData)->value()));
 			return;
 		case IVariable::VariableType::String:
-			ctx.setReturnValue(std::static_pointer_cast<VariableString>(varData)->GetValue());
+			ctx.setReturnValue(std::static_pointer_cast<VariableString>(varData)->value());
 			return;
 		default:
 			break;
@@ -148,14 +148,14 @@ namespace HorseRadish { namespace Engine {
 		if (!mVars.findData(varName.c_str(), varData) || !varData)
 			return;
 
-		switch (varData->GetVarType())
+		switch (varData->type())
 		{
 		case IVariable::VariableType::Bool:
 		{
 			if (ctx.getParamType(1) != Runtime::FunctionContext::ParamType::Bool)
 				ctx.throwError("Invalid value type (expected bool)");
 			else
-				std::static_pointer_cast<VariableBool>(varData)->SetValue(ctx.getParamValue<bool>(1));
+				std::static_pointer_cast<VariableBool>(varData)->value(ctx.getParamValue<bool>(1));
 		}
 		return;
 
@@ -164,7 +164,7 @@ namespace HorseRadish { namespace Engine {
 			if (ctx.getParamType(1) != Runtime::FunctionContext::ParamType::Integer)
 				ctx.throwError("Invalid value type (expected integer)");
 			else
-				std::static_pointer_cast<VariableInt>(varData)->SetValue(ctx.getParamValue<int>(1));
+				std::static_pointer_cast<VariableInt>(varData)->value(ctx.getParamValue<int>(1));
 		}
 		return;
 
@@ -173,7 +173,7 @@ namespace HorseRadish { namespace Engine {
 			if (ctx.getParamType(1) != Runtime::FunctionContext::ParamType::Float)
 				ctx.throwError("Invalid value type (expected double)");
 			else
-				std::static_pointer_cast<VariableDouble>(varData)->SetValue(ctx.getParamValue<float>(1));
+				std::static_pointer_cast<VariableDouble>(varData)->value(ctx.getParamValue<float>(1));
 		}
 		return;
 
@@ -182,7 +182,7 @@ namespace HorseRadish { namespace Engine {
 			if (ctx.getParamType(1) != Runtime::FunctionContext::ParamType::String)
 				ctx.throwError("Invalid value type (expected string)");
 			else
-				std::static_pointer_cast<VariableString>(varData)->SetValue(ctx.getParamValue<std::string>(1));
+				std::static_pointer_cast<VariableString>(varData)->value(ctx.getParamValue<std::string>(1));
 		}
 		return;
 
@@ -274,7 +274,7 @@ namespace HorseRadish { namespace Engine {
 	}
 
 	Engine::Engine(const std::string &cmdLine, bool devMode)
-		: mDevMode(devMode), mCurState(State::Created), mExitCode(0), mExitAction(ExitAction::Nothing)
+		: mDevMode(devMode)
 	{
 		//initiate logger
 		mLogger = std::make_shared<Logger>(10, 500, HorseRadish::IO::Path("../logs/log.txt"));
@@ -299,16 +299,18 @@ namespace HorseRadish { namespace Engine {
 
 		mRuntime->runScriptFile("../engine.runtime.nut");
 
-		mStats[StatSampleType::Fps] = std::make_shared<StatSeries<3000>>(" FPS");
-		mStats[StatSampleType::NumTris] = std::make_shared<StatSeries<3000>>(" Ktris/s");
+		mStats[StatSampleType::Fps] = std::unique_ptr<StatSeries<3000>>(new StatSeries<3000>(" FPS"));
+		mStats[StatSampleType::NumTris] = std::unique_ptr<StatSeries<3000>>(new StatSeries<3000>(" Ktris/s"));
 
 		//some vars can already be set
 		{
 			std::string strAux;
 
-			if (HorseRadish::Platform::CPUGetVendorID(strAux)) this->VarSet<std::string>("sys.info.cpuVendor", strAux);
-			if (HorseRadish::Platform::CPUGetProcessorName(strAux)) this->VarSet<std::string>("sys.info.cpuName", strAux);
-			this->VarSet<std::string>("sys.info.build", fmt::format("Horseradish v1.0.0 (alpha build {0})", HorseRadish::Build::BuildNumber));
+			if (HorseRadish::Platform::CPUGetVendorID(strAux))
+				var<std::string>("sys.info.cpuVendor", strAux);
+			if (HorseRadish::Platform::CPUGetProcessorName(strAux))
+				var<std::string>("sys.info.cpuName", strAux);
+			var<std::string>("sys.info.build", fmt::format("Horseradish v1.0.0 (alpha build {0})", HorseRadish::Build::BuildNumber));
 		}
 
 		//first entries
@@ -327,114 +329,114 @@ namespace HorseRadish { namespace Engine {
 	}
 
 	template<>
-	bool Engine::VarGet<bool>(const char* const name) const
+	bool Engine::var<bool>(const char* const name) const
 	{
 		auto var = mVars.getData(name);
-		assert(var && var->IsOfType(IVariable::VariableType::Bool));
+		assert(var && var->isType(IVariable::VariableType::Bool));
 
-		return std::static_pointer_cast<VariableBool>(var)->GetValue();
+		return std::static_pointer_cast<VariableBool>(var)->value();
 	}
 
 	template<>
-	int32_t Engine::VarGet<int32_t>(const char* const name) const
+	int32_t Engine::var<int32_t>(const char* const name) const
 	{
 		auto var = mVars.getData(name);
-		assert(var && var->IsOfType(IVariable::VariableType::Integer));
+		assert(var && var->isType(IVariable::VariableType::Integer));
 
-		return static_cast<int32_t>(std::static_pointer_cast<VariableInt>(var)->GetValue());
+		return static_cast<int32_t>(std::static_pointer_cast<VariableInt>(var)->value());
 	}
 
 	template<>
-	int64_t Engine::VarGet<int64_t>(const char* const name) const
+	int64_t Engine::var<int64_t>(const char* const name) const
 	{
 		auto var = mVars.getData(name);
-		assert(var && var->IsOfType(IVariable::VariableType::Integer));
+		assert(var && var->isType(IVariable::VariableType::Integer));
 
-		return std::static_pointer_cast<VariableInt>(var)->GetValue();
+		return std::static_pointer_cast<VariableInt>(var)->value();
 	}
 
 	template<>
-	float Engine::VarGet<float>(const char* const name) const
+	float Engine::var<float>(const char* const name) const
 	{
 		auto var = mVars.getData(name);
-		assert(var && var->IsOfType(IVariable::VariableType::Double));
+		assert(var && var->isType(IVariable::VariableType::Double));
 
-		return static_cast<float>(std::static_pointer_cast<VariableDouble>(var)->GetValue());
+		return static_cast<float>(std::static_pointer_cast<VariableDouble>(var)->value());
 	}
 
 	template<>
-	double Engine::VarGet<double>(const char* const name) const
+	double Engine::var<double>(const char* const name) const
 	{
 		auto var = mVars.getData(name);
-		assert(var && var->IsOfType(IVariable::VariableType::Double));
+		assert(var && var->isType(IVariable::VariableType::Double));
 
-		return std::static_pointer_cast<VariableDouble>(var)->GetValue();
+		return std::static_pointer_cast<VariableDouble>(var)->value();
 	}
 
 	template<>
-	std::string Engine::VarGet<std::string>(const char* const name) const
+	std::string Engine::var<std::string>(const char* const name) const
 	{
 		auto var = mVars.getData(name);
-		assert(var && var->IsOfType(IVariable::VariableType::String));
+		assert(var && var->isType(IVariable::VariableType::String));
 
-		return std::static_pointer_cast<VariableString>(var)->GetValue();
+		return std::static_pointer_cast<VariableString>(var)->value();
 	}
 
 	template<>
-	void Engine::VarSet(const char* const name, const bool& value)
+	void Engine::var(const char* const name, const bool& value)
 	{
 		auto var = mVars.getData(name);
-		assert(var && var->IsOfType(IVariable::VariableType::Bool));
+		assert(var && var->isType(IVariable::VariableType::Bool));
 
-		std::static_pointer_cast<VariableBool>(var)->SetValue(value);
+		std::static_pointer_cast<VariableBool>(var)->value(value);
 	}
 
 	template<>
-	void Engine::VarSet(const char* const name, const int32_t& value)
+	void Engine::var(const char* const name, const int32_t& value)
 	{
 		auto var = mVars.getData(name);
-		assert(var && var->IsOfType(IVariable::VariableType::Integer));
+		assert(var && var->isType(IVariable::VariableType::Integer));
 
-		std::static_pointer_cast<VariableInt>(var)->SetValue(value);
+		std::static_pointer_cast<VariableInt>(var)->value(value);
 	}
 
 	template<>
-	void Engine::VarSet(const char* const name, const int64_t& value)
+	void Engine::var(const char* const name, const int64_t& value)
 	{
 		auto var = mVars.getData(name);
-		assert(var && var->IsOfType(IVariable::VariableType::Integer));
+		assert(var && var->isType(IVariable::VariableType::Integer));
 
-		std::static_pointer_cast<VariableInt>(var)->SetValue(value);
+		std::static_pointer_cast<VariableInt>(var)->value(value);
 	}
 
 	template<>
-	void Engine::VarSet(const char* const name, const float& value)
+	void Engine::var(const char* const name, const float& value)
 	{
 		auto var = mVars.getData(name);
-		assert(var && var->IsOfType(IVariable::VariableType::Double));
+		assert(var && var->isType(IVariable::VariableType::Double));
 
-		std::static_pointer_cast<VariableDouble>(var)->SetValue(value);
+		std::static_pointer_cast<VariableDouble>(var)->value(value);
 	}
 
 	template<>
-	void Engine::VarSet(const char* const name, const double& value)
+	void Engine::var(const char* const name, const double& value)
 	{
 		auto var = mVars.getData(name);
-		assert(var && var->IsOfType(IVariable::VariableType::Double));
+		assert(var && var->isType(IVariable::VariableType::Double));
 
-		std::static_pointer_cast<VariableDouble>(var)->SetValue(value);
+		std::static_pointer_cast<VariableDouble>(var)->value(value);
 	}
 
 	template<>
-	void Engine::VarSet(const char* const name, const std::string& value)
+	void Engine::var(const char* const name, const std::string& value)
 	{
 		auto var = mVars.getData(name);
-		assert(var && var->IsOfType(IVariable::VariableType::String));
+		assert(var && var->isType(IVariable::VariableType::String));
 
-		std::static_pointer_cast<VariableString>(var)->SetValue(value);
+		std::static_pointer_cast<VariableString>(var)->value(value);
 	}
 
-	bool Engine::MainLoop()
+	bool Engine::mainLoop()
 	{
 		assert(mCurState == State::Created);
 		if (mCurState != State::Created)
@@ -458,11 +460,17 @@ namespace HorseRadish { namespace Engine {
 			mLoggerRuntimeCtx->info("");
 
 			mWindow = std::make_shared<Window>(*mLogger);
-			if (!mWindow->WindowInit("Horseradish engine v1.0", this->VarGet<int>("renderer.winWidth"), this->VarGet<int>("renderer.winHeight"), this->VarGet<bool>("renderer.winFullscreen")))
+
+			auto windowStyle = Window::WindowStyle::StyleWindow;
+			bool onSecondary = false;
+			size_t targetWidth = var<int>("renderer.dims.width");
+			size_t targetHeight = var<int>("renderer.dims.height");
+
+			if (!mWindow->windowInit("Horseradish engine v1.0", windowStyle, onSecondary, targetWidth, targetHeight))
 			{
 				mWindow.reset();
 
-				const std::string windowErrorMsg = mWindow->GetErrorMsg();
+				const auto windowErrorMsg = mWindow->getErrorMsg();
 				if (windowErrorMsg.empty())
 					exit(ExitAction::Nothing, "Unable to create main window");
 				else
@@ -471,20 +479,24 @@ namespace HorseRadish { namespace Engine {
 				return false;
 			}
 
+			var<int>("display.dims.width", mWindow->getDisplayWidth());
+			var<int>("display.dims.height", mWindow->getDisplayHeight());
+
 			mLoggerRuntimeCtx->info("${olive}->${default}Main window initialized.");
 		}
 
 		//main render loop
 		mCurState = State::Running;
 		{
+			//render thread
 			std::thread threadRender(&Engine::renderLoop, this);
-			auto windowExitCode = mWindow->MessageLoop([&]()
+
+			//this will block until the window message loop ends
+			mExitCode = mWindow->messageLoop([&]()
 			{
 				mCurState = State::Stopping;
 				threadRender.join();
 			});
-
-			mExitCode = windowExitCode;
 		}
 
 		//stop/clean everything
@@ -494,12 +506,12 @@ namespace HorseRadish { namespace Engine {
 			HorseRadish::OpenGL::OpenGLUnloadLibrary();
 		}
 
-		//so long, all thanks for all the fish
+		//so long, and thanks for all the fish
 		mCurState = State::Stopped;
 		return true;
 	}
 
-	int Engine::GetExitCode() const
+	int Engine::getExitCode() const
 	{
 		auto state = mCurState.load();
 
@@ -508,15 +520,14 @@ namespace HorseRadish { namespace Engine {
 		return mExitCode;
 	}
 
-	Engine::ExitAction Engine::GetExitAction() const
+	Engine::ExitAction Engine::getExitAction() const
 	{
 		return mExitAction;
 	}
 
-	std::string Engine::GetErrorDesc() const
+	std::string Engine::getErrorDesc() const
 	{
 		return ((mCurState == State::StoppedError) ? mErrorDesc : std::string());
 	}
-
 } }
 

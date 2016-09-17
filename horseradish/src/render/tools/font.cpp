@@ -37,30 +37,28 @@ void Font::commitGL()
 
 bool Font::createCharData()
 {
-	int numCharPairs, numNormalChars;
-
-	numCharPairs = sizeof(validFontCharacters) / sizeof(unsigned short);
+	auto numCharPairs = sizeof(validFontCharacters) / sizeof(unsigned short);
 	if ((numCharPairs % 2) != 0)
 		return false;
 
 	numCharPairs /= 2;
-	for (int curPair = 0; curPair < numCharPairs; curPair++)
+	for (size_t curPair = 0; curPair < numCharPairs; curPair++)
 	{
 		if (validFontCharacters[curPair * 2 + 0] > validFontCharacters[curPair * 2 + 1])
 			return false;
 	}
 
-	numNormalChars = 0;
-	for (int curPair = 0; curPair < numCharPairs; curPair++)
+	size_t numNormalChars = 0;
+	for (size_t curPair = 0; curPair < numCharPairs; curPair++)
 		numNormalChars += validFontCharacters[curPair * 2 + 1] - validFontCharacters[curPair * 2 + 0] + 1;
 
 	auto strExtraChars = HorseRadish::StringUtils::conv2UTF8(validAditionalFontCharacters);
 
 	mCharMap.reserve(numNormalChars + (sizeof(validAditionalFontCharacters) / sizeof(wchar_t)));
 
-	for (int curPair = 0; curPair < numCharPairs; curPair++)
+	for (size_t curPair = 0; curPair < numCharPairs; curPair++)
 	{
-		for (int curCharIndex = validFontCharacters[curPair * 2 + 0]; curCharIndex <= validFontCharacters[curPair * 2 + 1]; curCharIndex++)
+		for (unsigned short curCharIndex = validFontCharacters[curPair * 2 + 0]; curCharIndex <= validFontCharacters[curPair * 2 + 1]; curCharIndex++)
 			mCharMap[curCharIndex];
 	}
 
@@ -94,7 +92,7 @@ bool Font::initFont(const char * const fontFilePath)
 	}
 
 	FT_Set_Pixel_Sizes(ftFace, 0, 96); //always choose 64 pixels
-	float downScale = static_cast<float>(mFontInfo.size) / 96.0f;
+	auto downScale = static_cast<float>(mFontInfo.size) / 96.0f;
 
 	mFontInfo.maxHeight = static_cast<float>(ftFace->size->metrics.height >> 6) * downScale;
 	mFontInfo.baseHeight = -1.0f * static_cast<float>(ftFace->size->metrics.descender >> 6) * downScale;
@@ -167,7 +165,7 @@ bool Font::initFont(const char * const fontFilePath)
 	texHeight = 0;
 
 	texLastWidth = 0;
-	for (int charIndex = 0; charIndex < validGlyphs.size(); charIndex++)
+	for (size_t charIndex = 0; charIndex < validGlyphs.size(); charIndex++)
 	{
 		GlyphData& glyphData = validGlyphs[charIndex];
 		CharacterData& charData = mCharMap[glyphData.unicodeId];
@@ -205,10 +203,10 @@ bool Font::initFont(const char * const fontFilePath)
 	texHeight = HorseRadish::Math::iProxPowerOfTwo(texMaxLineHeight + (texMaxLineHeight % 2));
 
 	{
-		float invTexWidth = 1.0f / static_cast<float>(texWidth);
-		float invTexHeight = 1.0f / static_cast<float>(texHeight);
+		auto invTexWidth = 1.0f / static_cast<float>(texWidth);
+		auto invTexHeight = 1.0f / static_cast<float>(texHeight);
 
-		for (int charIndex = 0; charIndex < validGlyphs.size(); charIndex++)
+		for (size_t charIndex = 0; charIndex < validGlyphs.size(); charIndex++)
 		{
 			GlyphData& glyphData = validGlyphs[charIndex];
 			CharacterData& charData = mCharMap[glyphData.unicodeId];
@@ -405,17 +403,10 @@ float Font::getCharKerning(const CharacterData& leftCharData, unsigned short lef
 	return 0.0f;
 }
 
-Font::Font(const int fontSize, const char * const fontFilePath, unsigned int glVertexProgramID, unsigned int glFragmentProgramID, unsigned int glProgramPipelineID)
+Font::Font(const size_t fontSize, const char * const fontFilePath, unsigned int glVertexProgramID, unsigned int glFragmentProgramID, unsigned int glProgramPipelineID)
 	: mGlVertexProgramID(glVertexProgramID), mGlFragmentProgramID(glFragmentProgramID), mGlProgramPipelineID(glProgramPipelineID)
 {
-	mValid = false;
-
 	mFontInfo.size = fontSize;
-	mFontInfo.baseHeight = mFontInfo.maxHeight = 0.0f;
-
-	mState.scale = 1.0f;
-	mState.numCharWritten = 0;
-	mState.paintStarted = false;
 	mState.stateColor.set(1.0f, 1.0f, 1.0f, 1.0f);
 	
 	if (fontSize <= 2 || fontFilePath == nullptr)
@@ -476,7 +467,7 @@ Font::~Font()
 	mCharMap.clear();
 }
 
-void Font::layout(const std::string& text, const float maxWidth, std::function<void(unsigned int, unsigned int, unsigned int)> writeCb) const
+void Font::layout(const std::string& text, const float maxWidth, std::function<void(size_t, size_t, size_t)> writeCb) const
 {
 	if ((maxWidth <= 0.0f) || !writeCb)
 		return;
@@ -506,12 +497,12 @@ void Font::write(const float &px, const float &py, const std::string& text)
 	internalWrite(px, py, text, UnicodeRange());
 }
 
-void Font::write(const float &px, const float &py, const std::string& text, const unsigned int numUnicodeCharsSkip)
+void Font::write(const float &px, const float &py, const std::string& text, const size_t numUnicodeCharsSkip)
 {
 	internalWrite(px, py, text, UnicodeRange(numUnicodeCharsSkip));
 }
 
-void Font::write(const float &px, const float &py, const std::string& text, const unsigned int numUnicodeCharsSkip, const unsigned int maxUnicodeCharsWrite)
+void Font::write(const float &px, const float &py, const std::string& text, const size_t numUnicodeCharsSkip, const size_t maxUnicodeCharsWrite)
 {
 	internalWrite(px, py, text, UnicodeRange(numUnicodeCharsSkip, static_cast<int>(maxUnicodeCharsWrite)));
 }
@@ -603,19 +594,19 @@ float Font::getCharWidth(const unsigned int &unicodeChar) const
 	return it->second.advanceX * mState.scale;
 }
 
-unsigned int Font::countUnicodeChars(const std::string& text, const float maxWidth) const
+size_t Font::countUnicodeChars(const std::string& text, const float maxWidth) const
 {
 	return countUnicodeChars(text, 0, maxWidth);
 }
 
-unsigned int Font::countUnicodeChars(const std::string& text, const unsigned int numUnicodeCharsSkip, const float maxWidth) const
+size_t Font::countUnicodeChars(const std::string& text, const size_t numUnicodeCharsSkip, const float maxWidth) const
 {
 	if (!mValid || text.empty() || (maxWidth <= 0.0f))
 		return 0;
 
 	float totalWidth = 0.0f;
-	unsigned int numChars = 0;
-	unsigned int numCharsSkip = numUnicodeCharsSkip;
+	size_t numChars = 0;
+	size_t numCharsSkip = numUnicodeCharsSkip;
 
 	for (const auto& curCharUnicode : StringUtils::utf8Wrapper(text))
 	{
@@ -657,7 +648,7 @@ float Font::getTextWidth(const std::string& text) const
 	return totalWidth * mState.scale;
 }
 
-float Font::getTextWidth(const std::string& text, const unsigned int numUnicodeCharsSkip, const unsigned int maxUnicodeCharsRead) const
+float Font::getTextWidth(const std::string& text, const size_t numUnicodeCharsSkip, const size_t maxUnicodeCharsRead) const
 {
 	if (!mValid || text.empty() || (maxUnicodeCharsRead == 0))
 		return 0.0f;

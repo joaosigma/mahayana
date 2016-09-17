@@ -5,7 +5,7 @@ namespace HorseRadish { namespace Imaging {
 template <class TFormat>
 class ImageFormat
 {
-	static unsigned int size()
+	static size_t size()
 	{
 		TFormat::size();
 	}
@@ -42,7 +42,7 @@ class ImageFormat
 
 struct ImageFormatR : ImageFormat<ImageFormatR>
 {
-	static unsigned int size()
+	static size_t size()
 	{
 		return 1;
 	}
@@ -82,7 +82,7 @@ struct ImageFormatR : ImageFormat<ImageFormatR>
 
 struct ImageFormatRA : ImageFormat<ImageFormatR>
 {
-	static unsigned int size()
+	static size_t size()
 	{
 		return 2;
 	}
@@ -123,7 +123,7 @@ struct ImageFormatRA : ImageFormat<ImageFormatR>
 
 struct ImageFormatRGB : ImageFormat<ImageFormatRGB>
 {
-	static unsigned int size()
+	static size_t size()
 	{
 		return 3;
 	}
@@ -161,7 +161,7 @@ struct ImageFormatRGB : ImageFormat<ImageFormatRGB>
 
 struct ImageFormatRGBA : ImageFormat<ImageFormatRGBA>
 {
-	static unsigned int size()
+	static size_t size()
 	{
 		return 4;
 	}

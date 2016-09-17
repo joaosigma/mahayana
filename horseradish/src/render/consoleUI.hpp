@@ -15,23 +15,23 @@ namespace HorseRadish { namespace Render {
 class ConsoleUI
 {
 	struct {
-		int offset;
+		int offset = 0;
 	} mLogView;
 
 	struct {
-		int offset;
-		bool isVisivel;
+		int offset = 0;
+		bool isVisivel = false;
 		HorseRadish::Timer timer;
 	} mCursor;
 
 	struct {
-		unsigned int historyOffset;
-		unsigned int maxHistorySize;
+		size_t historyOffset = 0;
+		size_t maxHistorySize = 0;
 		std::deque<std::string> history;
 		std::vector<unsigned int> promptUnicode;
 	} mPrompt;
 
-	bool mMainVisible;
+	bool mMainVisible = false;
 	std::deque<std::string> mAlerts;
 	HorseRadish::Render::Renderer2D& mRenderer;
 	const HorseRadish::Engine::Logger& mLogger;
@@ -44,7 +44,7 @@ class ConsoleUI
 	void drawBackground(const HorseRadish::Matrix &transformMatrix, float bkgAlpha) const;
 
 public:
-	ConsoleUI(const HorseRadish::Engine::Logger& logger, HorseRadish::Render::Renderer2D& renderer, unsigned int maxPromptHistory);
+	ConsoleUI(const HorseRadish::Engine::Logger& logger, HorseRadish::Render::Renderer2D& renderer, size_t maxPromptHistory);
 
 	void draw(const HorseRadish::OpenGL::Tools::Viewport& viewport) const;
 
@@ -52,7 +52,7 @@ public:
 	void setVisible(bool visible);
 
 	void processStep();
-	void processMsg(std::function<void(const char * const)> execPromptCmdCb, const Window::Message &msg);
+	void processMsg(const Window::Message &msg, std::function<void(const char * const)> execPromptCmdCb);
 };
 
 } }

@@ -4,6 +4,7 @@
 #include "engine/logger.hpp"
 #include "engine/runtime.hpp"
 #include "common/opengl/objects.hpp"
+#include "common/opengl/tools/viewport.hpp"
 
 #include "platform/window.hpp"
 
@@ -14,7 +15,7 @@ namespace HorseRadish {	namespace Render {
 		class SceneRuntimeProxy;
 
 	private:
-		bool mScenesDrawned;
+		bool mScenesDrawned = false;
 		Engine::Runtime& mRuntime;
 		Engine::Logger::Context& mLogger;
 		HorseRadish::IO::FileSystem& mFileSystem;
@@ -24,7 +25,6 @@ namespace HorseRadish {	namespace Render {
 
 		struct RenderData
 		{
-			float width, height;
 			HorseRadish::OpenGL::Objects::FrameBuffer fbo;
 			HorseRadish::OpenGL::Objects::Sampler sampler;
 			HorseRadish::OpenGL::Objects::ShaderProgram progVertex;
@@ -41,14 +41,14 @@ namespace HorseRadish {	namespace Render {
 		void runtimeFuncSceneAddRemove(const std::string &funcName, Engine::Runtime::FunctionReturnContext &ctx);
 
 	public:
-		Stage(Engine::Runtime& runtime, Engine::Logger::Context& logger, HorseRadish::IO::FileSystem& fileSystem, HorseRadish::OpenGL::Objects::Context &glCtx, unsigned int glRenderWidth, unsigned int glRenderHeight);
+		Stage(Engine::Runtime& runtime, Engine::Logger::Context& logger, HorseRadish::IO::FileSystem& fileSystem, HorseRadish::OpenGL::Objects::Context &glCtx, size_t renderWidth, size_t renderHeight);
 		~Stage();
 
 		Stage(const Stage&) = delete;
 		Stage& operator=(const Stage&) = delete;
 
 		void drawScenes();
-		void drawComposite();
+		void drawComposite(const HorseRadish::OpenGL::Tools::Viewport& viewport);
 		void processStep();
 		void processMessage(const Window::Message& msg);
 	};

@@ -16,11 +16,10 @@ class ProfilerUI
 	HorseRadish::Timer mTimer;
 	HorseRadish::Render::Renderer2D& mRenderer;
 	const HorseRadish::Engine::Profiler& mProfiler;
-	HorseRadish::Primitives2D::Rectangle<float> mViewRect;
 	
-	void drawInfo(const HorseRadish::Matrix &transformMatrix) const;
-	void drawStats(const HorseRadish::Matrix &transformMatrix) const;
-	void drawStatsBackground(const HorseRadish::Matrix &transformMatrix, float bkgAlpha) const;
+	void drawInfo(const HorseRadish::Primitives2D::Rectangle<float>& viewRect, const HorseRadish::Matrix &transformMatrix) const;
+	void drawStats(const HorseRadish::Primitives2D::Rectangle<float>& viewRect, const HorseRadish::Matrix &transformMatrix) const;
+	void drawStatsBackground(const HorseRadish::Primitives2D::Rectangle<float>& viewRect, const HorseRadish::Matrix &transformMatrix, float bkgAlpha) const;
 
 public:
 	ProfilerUI(const HorseRadish::Engine::Profiler& profiler, HorseRadish::Render::Renderer2D& renderer);

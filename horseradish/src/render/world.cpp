@@ -66,11 +66,11 @@ namespace HorseRadish
 
 							if (dataBase64.size() == newMesh.sizeVertices())
 							{
-								memcpy(newMesh.dataVertices(), dataBase64.data(), newMesh.sizeVertices());
+								memcpy(newMesh.vertices(), dataBase64.data(), newMesh.sizeVertices());
 							}
 							else
 							{
-								auto decompressSize = LZ4_decompress_safe(reinterpret_cast<const char*>(dataBase64.data()), reinterpret_cast<char*>(newMesh.dataVertices()), dataBase64.size(), newMesh.sizeVertices());
+								auto decompressSize = LZ4_decompress_safe(reinterpret_cast<const char*>(dataBase64.data()), reinterpret_cast<char*>(newMesh.vertices()), dataBase64.size(), newMesh.sizeVertices());
 								assert(decompressSize == newMesh.sizeVertices());
 							}
 						}
@@ -83,11 +83,11 @@ namespace HorseRadish
 
 							if (dataBase64.size() == newMesh.sizeIndices())
 							{
-								memcpy(newMesh.dataIndices(), dataBase64.data(), newMesh.sizeIndices());
+								memcpy(newMesh.indices(), dataBase64.data(), newMesh.sizeIndices());
 							}
 							else
 							{
-								auto decompressSize = LZ4_decompress_safe(reinterpret_cast<const char*>(dataBase64.data()), reinterpret_cast<char*>(newMesh.dataIndices()), dataBase64.size(), newMesh.sizeIndices());
+								auto decompressSize = LZ4_decompress_safe(reinterpret_cast<const char*>(dataBase64.data()), reinterpret_cast<char*>(newMesh.indices()), dataBase64.size(), newMesh.sizeIndices());
 								assert(decompressSize == newMesh.sizeIndices());
 							}
 						}
@@ -173,7 +173,7 @@ namespace HorseRadish
 						//if ((compressedSize > 0) && (compressedSize < curGeom.mesh.sizeVertices()))
 						//	writer.String(HorseRadish::Encoders::EncodeBase64(compressedBuffer.get(), compressedSize).c_str());
 						//else
-							writer.String(HorseRadish::Encoders::EncodeBase64(concept.second.mesh.dataVertices(), concept.second.mesh.sizeVertices()).c_str());
+							writer.String(HorseRadish::Encoders::EncodeBase64(concept.second.mesh.vertices(), concept.second.mesh.sizeVertices()).c_str());
 					}
 
 					writer.String("indexData");
@@ -187,7 +187,7 @@ namespace HorseRadish
 						//if ((compressedSize > 0) && (compressedSize < curGeom.mesh.sizeIndices()))
 						//	writer.String(HorseRadish::Encoders::EncodeBase64(compressedBuffer.get(), compressedSize).c_str());
 						//else
-							writer.String(HorseRadish::Encoders::EncodeBase64(concept.second.mesh.dataIndices(), concept.second.mesh.sizeIndices()).c_str());
+							writer.String(HorseRadish::Encoders::EncodeBase64(concept.second.mesh.indices(), concept.second.mesh.sizeIndices()).c_str());
 					}
 
 				writer.EndObject();
@@ -265,20 +265,20 @@ namespace HorseRadish
 
 				for (unsigned int i = 0; i < newMesh.numVertices(); i++)
 				{
-					newMesh.dataVertices()[i].pos[0] = shape.mesh.positions[i * 3 + 0];
-					newMesh.dataVertices()[i].pos[1] = shape.mesh.positions[i * 3 + 1];
-					newMesh.dataVertices()[i].pos[2] = shape.mesh.positions[i * 3 + 2];
+					newMesh.vertices()[i].pos[0] = shape.mesh.positions[i * 3 + 0];
+					newMesh.vertices()[i].pos[1] = shape.mesh.positions[i * 3 + 1];
+					newMesh.vertices()[i].pos[2] = shape.mesh.positions[i * 3 + 2];
 
-					newMesh.dataVertices()[i].uv[0] = shape.mesh.texcoords[i * 2 + 0];
-					newMesh.dataVertices()[i].uv[1] = shape.mesh.texcoords[i * 2 + 1];
+					newMesh.vertices()[i].uv[0] = shape.mesh.texcoords[i * 2 + 0];
+					newMesh.vertices()[i].uv[1] = shape.mesh.texcoords[i * 2 + 1];
 
-					newMesh.dataVertices()[i].normal[0] = HorseRadish::Geometry::Mesh::pack(shape.mesh.positions[i * 3 + 0]);
-					newMesh.dataVertices()[i].normal[1] = HorseRadish::Geometry::Mesh::pack(shape.mesh.positions[i * 3 + 1]);
-					newMesh.dataVertices()[i].normal[2] = HorseRadish::Geometry::Mesh::pack(shape.mesh.positions[i * 3 + 2]);
+					newMesh.vertices()[i].normal[0] = HorseRadish::Geometry::Mesh::pack(shape.mesh.positions[i * 3 + 0]);
+					newMesh.vertices()[i].normal[1] = HorseRadish::Geometry::Mesh::pack(shape.mesh.positions[i * 3 + 1]);
+					newMesh.vertices()[i].normal[2] = HorseRadish::Geometry::Mesh::pack(shape.mesh.positions[i * 3 + 2]);
 				}
 
 				for (unsigned int i = 0; i < newMesh.numIndices(); i++)
-					newMesh.dataIndices()[i] = shape.mesh.indices[i];
+					newMesh.indices()[i] = shape.mesh.indices[i];
 					
 				assert(newMesh.check());
 				newMesh.genTangents4();
@@ -305,12 +305,12 @@ namespace HorseRadish
 			HorseRadish::OpenGL::Tools::Frustum camFrustum;
 			HorseRadish::Vector3f camPos;
 
-			camPos = hrCamera.GetPos();
+			camPos = hrCamera.getPos();
 
 			camFrustum.setCamPosition(camPos);
 			camFrustum.setZNear(hrViewport.getZNear());
 			camFrustum.setZFar(hrViewport.getZFar());
-			camFrustum.calculateFrustum(hrViewport.getProjection(HorseRadish::OpenGL::Tools::Viewport::ProjectionType::Proj3D).data(), hrCamera.GetModelView());
+			camFrustum.calculateFrustum(hrViewport.getProjection(HorseRadish::OpenGL::Tools::Viewport::ProjectionType::Proj3D).data(), hrCamera.getModelView());
 
 			mRenderData.objects.clear();
 			for (auto& curObject : mObjects)

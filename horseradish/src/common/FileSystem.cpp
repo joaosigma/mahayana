@@ -196,7 +196,7 @@ namespace HorseRadish
 			return FileSystem::MountTypeZIP;
 		}
 
-		int FileSystem::MountDataZip::GetNumberFiles() const
+		size_t FileSystem::MountDataZip::GetNumberFiles() const
 		{
 			return this->mFileEntries.size();
 		}
@@ -336,7 +336,7 @@ namespace HorseRadish
 			return true;
 		}
 
-		bool FileSystem::MountZip(const HorseRadish::IO::Path &zipPath, const char* const mountPoint, int * const numFilesZip)
+		bool FileSystem::MountZip(const HorseRadish::IO::Path &zipPath, const char* const mountPoint, size_t* const numFilesZip)
 		{
 			if (mListMounts.size() >= mMaxNumMounts)
 				return false;

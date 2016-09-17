@@ -34,7 +34,7 @@ Image<unsigned char, ImageFormatRGB> Factory::readPNG(HorseRadish::Streams::Stre
 {
 	auto streamContent = streamReader.stream().readEntireContent();
 
-	unsigned int outW = 0, outH = 0;
+	size_t outW = 0, outH = 0;
 	unsigned char* outBuffer = nullptr;
 
 	if (lodepng_decode24(&outBuffer, &outW, &outH, static_cast<const unsigned char *>(streamContent->getData()), streamContent->length()) != 0)
@@ -50,7 +50,7 @@ Image<unsigned char, ImageFormatRGBA> Factory::readPNGWithAlpha(HorseRadish::Str
 {
 	auto streamContent = streamReader.stream().readEntireContent();
 
-	unsigned int outW = 0, outH = 0;
+	size_t outW = 0, outH = 0;
 	unsigned char* outBuffer = nullptr;
 
 	if (lodepng_decode32(&outBuffer, &outW, &outH, static_cast<const unsigned char *>(streamContent->getData()), streamContent->length()) != 0)
@@ -164,21 +164,21 @@ Image<unsigned char, ImageFormatRGBA> Factory::readTGA(HorseRadish::Streams::Str
 		}
 	}
 
-	unsigned int rawSize = newImage.getArea() * (header.bpp / 8);
+	size_t rawSize = newImage.getArea() * (header.bpp / 8);
 	std::unique_ptr<unsigned char[]> rawData = std::unique_ptr<unsigned char[]>(new unsigned char[rawSize]);
 
 	if (header.imagetype & 0x08) //raw data is compressed
 	{
 		unsigned char v[16];
 
-		unsigned int dataChannels = header.bpp / 8;
+		size_t dataChannels = header.bpp / 8;
 		auto rawWalker = rawData.get();
 		while (rawSize > 0)
 		{
-			unsigned int c = 0;
+			size_t c = 0;
 			streamReader.read(&c, 0);
 
-			unsigned int count = (c & 0x7f) + 1;
+			size_t count = (c & 0x7f) + 1;
 			rawSize -= count*dataChannels;
 			if (c & 0x80)
 			{
@@ -215,12 +215,12 @@ Image<unsigned char, ImageFormatRGBA> Factory::readTGA(HorseRadish::Streams::Str
 
 		if (palette)
 		{
-			for (unsigned int y = 0; y < imgHeight; y++)
+			for (size_t y = 0; y < imgHeight; y++)
 			{
 				auto rawWalker = rawData.get() + imgWidth * (imgHeight - y - 1);
-				for (unsigned int x = 0; x < imgWidth; x++)
+				for (size_t x = 0; x < imgWidth; x++)
 				{
-					unsigned int tempPixel = (*rawWalker) * 3;
+					size_t tempPixel = (*rawWalker) * 3;
 					rawWalker++;
 
 					imgWalker[0] = palette[tempPixel + 0];
@@ -233,10 +233,10 @@ Image<unsigned char, ImageFormatRGBA> Factory::readTGA(HorseRadish::Streams::Str
 			break;
 		}
 
-		for (unsigned int y = 0; y < imgHeight; y++)
+		for (size_t y = 0; y < imgHeight; y++)
 		{
 			auto rawWalker = rawData.get() + imgWidth*(imgHeight - y - 1);
-			for (unsigned int x = 0; x < imgWidth; x++)
+			for (size_t x = 0; x < imgWidth; x++)
 			{
 				imgWalker[0] = imgWalker[1] = imgWalker[2] = *rawWalker;
 				imgWalker[3] = 255;
@@ -247,12 +247,12 @@ Image<unsigned char, ImageFormatRGBA> Factory::readTGA(HorseRadish::Streams::Str
 		break;
 
 	case 16:
-		for (unsigned int y = 0; y < imgHeight; y++)
+		for (size_t y = 0; y < imgHeight; y++)
 		{
-			for (unsigned int x = 0; x < imgWidth; x++)
+			for (size_t x = 0; x < imgWidth; x++)
 			{
 				__int16 temp = ((__int16 *)rawData.get())[(imgWidth * (imgHeight - y - 1) + x)];
-				unsigned int pixelPos = 4 * (y * imgWidth + x);
+				size_t pixelPos = 4 * (y * imgWidth + x);
 
 				imgWalker[0] = (temp & 0x1F) << 3;
 				imgWalker[1] = ((temp >> 5) & 0x1F) << 3;
@@ -264,10 +264,10 @@ Image<unsigned char, ImageFormatRGBA> Factory::readTGA(HorseRadish::Streams::Str
 		break;
 
 	case 24:
-		for (unsigned int y = 0; y < imgHeight; y++)
+		for (size_t y = 0; y < imgHeight; y++)
 		{
 			auto rawWalker = rawData.get() + (imgWidth*(imgHeight - y - 1) * 3);
-			for (unsigned int x = 0; x < imgWidth; x++)
+			for (size_t x = 0; x < imgWidth; x++)
 			{
 				imgWalker[0] = rawWalker[0];
 				imgWalker[1] = rawWalker[1];
@@ -280,7 +280,7 @@ Image<unsigned char, ImageFormatRGBA> Factory::readTGA(HorseRadish::Streams::Str
 		break;
 
 	case 32:
-		for (unsigned int y = 0; y < imgHeight; y++)
+		for (size_t y = 0; y < imgHeight; y++)
 		{
 			memcpy(imgWalker, rawData.get() + (imgWidth*(imgHeight - y - 1) * 4), imgWidth * 4);
 			imgWalker += imgWidth * 4;

@@ -135,11 +135,9 @@ void Camera::commitFirstPerson(const CameraAction &actionBitfield, const float &
 
 	if (updatePosition)
 	{
-		HorseRadish::Vector3f strideDir;
-
 		float moveAmount = ((actionBitfield & Run) == Run) ? 2.0f : 1.0f;
 
-		GetStrideDir(strideDir);
+		auto strideDir = getStrideDir();
 
 		if ((actionBitfield & Forward) == Forward)
 			camPos += camDir*(keyS*timeDeltaS*moveAmount);
@@ -155,13 +153,13 @@ void Camera::commitFirstPerson(const CameraAction &actionBitfield, const float &
 			camPos[1] -= keyS*timeDeltaS*moveAmount;
 	}
 
-	modelView.setGLModelView(camPos, GetTarget(), camUp);
+	modelView.setGLModelView(camPos, getTarget(), camUp);
 }
 
 void Camera::commitOnSphere(const CameraAction &actionBitfield, const float &mouseDeltaX, const float &mouseDeltaY, const float timeDeltaS)
 {
 	HorseRadish::Quaternion quat;
-	HorseRadish::Vector3f newDir, posChange, curTarget;
+	HorseRadish::Vector3f newDir;
 
 	sumRato[0] += mouseDeltaX * ratoS;
 	sumRato[1] += mouseDeltaY * ratoS * (-1.0f);
@@ -171,7 +169,7 @@ void Camera::commitOnSphere(const CameraAction &actionBitfield, const float &mou
 	quat.rotateVector3(newDir);
 	newDir.normalize();
 
-	GetTarget(curTarget);
+	auto curTarget = getTarget();
 	camDir = newDir;
 
 	float moveAmount = ((actionBitfield & Run) == Run) ? 2.0f : 1.0f;
@@ -184,7 +182,7 @@ void Camera::commitOnSphere(const CameraAction &actionBitfield, const float &mou
 	absFocus = HorseRadish::Math::fClamp(absFocus, onSphereMinDist, onSphereMaxDist);
 	camPos = curTarget - (newDir * absFocus);
 
-	modelView.setGLModelView(camPos, GetTarget(), camUp);
+	modelView.setGLModelView(camPos, getTarget(), camUp);
 }
 
 Camera::Camera()
@@ -192,105 +190,67 @@ Camera::Camera()
 	camPos.set(0.0f, 0.0f, 1.0f);
 	camDir.set(0.0f, 0.0f, 0.0f);
 	camUp.set(0.0f, 1.0f, 0.0f);
-	absFocus = 1.0f;
-
-	rato[0][0] = rato[0][1] = 0.0f;
-	rato[1][0] = rato[1][1] = 0.0f;
-	rato[2][0] = rato[2][1] = 0.0f;
-	sumRato[0] = sumRato[1] = 0.0f;
 
 	modelView.setIdentity();
 
-	ratoS = keyS = 1.0f;
-
-	targetMode = FirstPerson;
-	onSphereMaxDist = 1000.0f;
-	onSphereMinDist = 1.0f;
-
-	numPos = numTarget = 0;
-	pointsPos = new HorseRadish::Vector3f[CAMERA_MAX_POINTS];
-	pointsTarget = new HorseRadish::Vector3f[CAMERA_MAX_POINTS];
-	if (pointsPos == nullptr || pointsTarget == nullptr)
-	{
-		if (pointsPos)
-			delete[] pointsPos;
-		if (pointsTarget)
-			delete[] pointsTarget;
-		pointsPos = pointsTarget = nullptr;
-	}
+	pointsPos = std::unique_ptr<HorseRadish::Vector3f[]>(new HorseRadish::Vector3f[CAMERA_MAX_POINTS]);
+	pointsTarget = std::unique_ptr<HorseRadish::Vector3f[]>(new HorseRadish::Vector3f[CAMERA_MAX_POINTS]);
 }
 
-Camera::~Camera()
+void Camera::commitInput(const CameraAction &actionBitfield, const float &mouseDeltaX, const float &mouseDeltaY, const bool updatePosition, const float timeDeltaS)
 {
-	modelView.setIdentity();
-
-	camPos.set(0.0f, 0.0f, 1.0f);
-	camDir.set(0.0f, 0.0f, -1.0f);
-	camUp.set(0.0f, 1.0f, 0.0f);
-	absFocus = 1.0f;
-
-	numPos = numTarget = 0;
-	if (pointsPos)
-		delete[] pointsPos;
-	if (pointsTarget)
-		delete[] pointsTarget;
-	pointsPos = pointsTarget = nullptr;
-}
-
-void Camera::CommitInput(const CameraAction &actionBitfield, const float &mouseDeltaX, const float &mouseDeltaY, const bool updatePosition, const float timeDeltaS)
-{
-	switch (FirstPerson)
+	switch (targetMode)
 	{
-	case FirstPerson:
+	case CameraType::FirstPerson:
 		commitFirstPerson(actionBitfield, mouseDeltaX, mouseDeltaY, updatePosition, timeDeltaS);
 		return;
-	case OnSphere:
+	case CameraType::OnSphere:
 		commitOnSphere(actionBitfield, mouseDeltaX, mouseDeltaY, timeDeltaS);
 		return;
 	}
 }
 
-void Camera::CommitCatmullRom(const CameraComponent &component, const float &normalizedTime)
+void Camera::commitCatmullRom(const CameraComponent &component, const float &normalizedTime)
 {
 	if ((component == Position) && (numPos >= 4))
 	{
-		evalPointList(pointsPos, numPos, normalizedTime, evalCatmullRom, &camPos);
+		evalPointList(pointsPos.get(), numPos, normalizedTime, evalCatmullRom, &camPos);
 
-		modelView.setGLModelView(camPos, GetTarget(), camUp);
+		modelView.setGLModelView(camPos, getTarget(), camUp);
 	}
 
 	if ((component == Target) && (numTarget >= 4))
 	{
 		HorseRadish::Vector3f camTarget;
 
-		evalPointList(pointsTarget, numTarget, normalizedTime, evalCatmullRom, &camTarget);
+		evalPointList(pointsTarget.get(), numTarget, normalizedTime, evalCatmullRom, &camTarget);
 
-		SetTarget(camTarget);
-		modelView.setGLModelView(camPos, GetTarget(), camUp);
+		setTarget(camTarget);
+		modelView.setGLModelView(camPos, getTarget(), camUp);
 	}
 }
 
-void Camera::CommitHermite(const CameraComponent &component, const float &normalizedTime)
+void Camera::commitHermite(const CameraComponent &component, const float &normalizedTime)
 {
 	if ((component == Position) && (numPos >= 4))
 	{
-		evalPointList(pointsPos, numPos, normalizedTime, evalHermite, &camPos);
+		evalPointList(pointsPos.get(), numPos, normalizedTime, evalHermite, &camPos);
 
-		modelView.setGLModelView(camPos, GetTarget(), camUp);
+		modelView.setGLModelView(camPos, getTarget(), camUp);
 	}
 
 	if ((component == Target) && (numTarget >= 4))
 	{
 		HorseRadish::Vector3f camTarget;
 
-		evalPointList(pointsTarget, numTarget, normalizedTime, evalHermite, &camTarget);
+		evalPointList(pointsTarget.get(), numTarget, normalizedTime, evalHermite, &camTarget);
 
-		SetTarget(camTarget);
-		modelView.setGLModelView(camPos, GetTarget(), camUp);
+		setTarget(camTarget);
+		modelView.setGLModelView(camPos, getTarget(), camUp);
 	}
 }
 
-void Camera::PathClear(const CameraComponent &componentsBitField)
+void Camera::pathClear(const CameraComponent &componentsBitField)
 {
 	if ((componentsBitField & Position) == Position)
 		this->numPos = 0;
@@ -298,7 +258,7 @@ void Camera::PathClear(const CameraComponent &componentsBitField)
 		this->numTarget = 0;
 }
 
-void Camera::PathAdd(const CameraComponent &component, const float x, const float y, const float z)
+void Camera::pathAdd(const CameraComponent &component, const float x, const float y, const float z)
 {
 	if ((component == Position) && (pointsPos != nullptr) && (numPos < CAMERA_MAX_POINTS))
 	{
@@ -313,7 +273,7 @@ void Camera::PathAdd(const CameraComponent &component, const float x, const floa
 	}
 }
 
-void Camera::PathAdd(const CameraComponent &component, const HorseRadish::Vector3f &vec)
+void Camera::pathAdd(const CameraComponent &component, const HorseRadish::Vector3f &vec)
 {
 	if ((component == Position) && (pointsPos != nullptr) && (numPos < CAMERA_MAX_POINTS))
 	{
@@ -328,17 +288,17 @@ void Camera::PathAdd(const CameraComponent &component, const HorseRadish::Vector
 	}
 }
 
-bool Camera::SetCamType(const Camera::CameraType &type)
+bool Camera::setCamType(const Camera::CameraType &type)
 {
-	if (type == FirstPerson)
+	if (type == CameraType::FirstPerson)
 	{
-		targetMode = FirstPerson;
+		targetMode = CameraType::FirstPerson;
 		return true;
 	}
 
-	if (type == OnSphere)
+	if (type == CameraType::OnSphere)
 	{
-		targetMode = OnSphere;
+		targetMode = CameraType::OnSphere;
 		sumRato[0] = sumRato[1] = 0.0f;
 		return true;
 	}
@@ -346,62 +306,69 @@ bool Camera::SetCamType(const Camera::CameraType &type)
 	return false;
 }
 
-void Camera::SetSensitivity(const CameraInput &input, const float s)
+void Camera::setSensitivity(const CameraInput &input, const float s)
 {
-	if (input == Keyboard)
+	switch (input)
+	{
+	case CameraInput::Keyboard:
 		keyS = s;
-	if (input == Mouse)
+		break;
+	case CameraInput::Mouse:
 		ratoS = s;
+		break;
+	default:
+		return;
+	}
 }
 
-void Camera::SetPos(const HorseRadish::Vector3f &pos)
+void Camera::setPos(const HorseRadish::Vector3f &pos)
 {
 	camPos.set(pos);
-	modelView.setGLModelView(camPos, GetTarget(), camUp);
+	modelView.setGLModelView(camPos, getTarget(), camUp);
 }
 
-void Camera::SetPos(const float x, const float y, const float z)
+void Camera::setPos(const float x, const float y, const float z)
 {
 	camPos.set(x, y, z);
-	modelView.setGLModelView(camPos, GetTarget(), camUp);
+	modelView.setGLModelView(camPos, getTarget(), camUp);
 }
 
-void Camera::SetTarget(const HorseRadish::Vector3f &target)
+void Camera::setTarget(const HorseRadish::Vector3f &target)
 {
 	camDir = target - camPos;
 	camDir.normalize();
 	absFocus = target.getDistance(camPos);
-	modelView.setGLModelView(camPos, GetTarget(), camUp);
+	modelView.setGLModelView(camPos, getTarget(), camUp);
 }
 
-void Camera::SetTarget(const float x, const float y, const float z)
+void Camera::setTarget(const float x, const float y, const float z)
 {
 	camDir = HorseRadish::Vector3f(x, y, z) - camPos;
 	camDir.normalize();
 	absFocus = camPos.getDistance(x, y, z);
-	modelView.setGLModelView(camPos, GetTarget(), camUp);
+	modelView.setGLModelView(camPos, getTarget(), camUp);
 }
 
-void Camera::SetDir(const HorseRadish::Vector3f &direction)
+void Camera::setDir(const HorseRadish::Vector3f &direction)
 {
 	camDir.set(direction);
 	camDir.normalize();
-	modelView.setGLModelView(camPos, GetTarget(), camUp);
+	modelView.setGLModelView(camPos, getTarget(), camUp);
 }
 
-void Camera::SetDir(const float x, const float y, const float z)
+void Camera::setDir(const float x, const float y, const float z)
 {
 	camDir.set(x, y, z);
 	camDir.normalize();
-	modelView.setGLModelView(camPos, GetTarget(), camUp);
+	modelView.setGLModelView(camPos, getTarget(), camUp);
 }
 
-void Camera::SetAbsoluteFocus(const float focus)
+void Camera::setAbsoluteFocus(const float focus)
 {
 	absFocus = focus;
 }
 
-void Camera::SetOnSphereDists(const float minDist, const float maxDist)
+void Camera::setOnSphereDists(const float minDist, const float maxDist)
 {
 	float realMin, realMax;
 
@@ -425,24 +392,21 @@ void Camera::SetOnSphereDists(const float minDist, const float maxDist)
 	}
 }
 
-void Camera::GetPos(HorseRadish::Vector3f &pos) const
-{
-	pos.set(camPos);
-}
-
-HorseRadish::Vector3f Camera::GetPos() const
+HorseRadish::Vector3f Camera::getPos() const
 {
 	return HorseRadish::Vector3f(camPos);
 }
 
-void Camera::GetTarget(HorseRadish::Vector3f &target) const
+HorseRadish::Ray Camera::getRay() const
 {
-	target = camDir;
-	target *= absFocus;
-	target += camPos;
+	HorseRadish::Ray ray;
+
+	ray.setOrigin(camPos);
+	ray.setDirection(camDir);
+	return ray;
 }
 
-HorseRadish::Vector3f Camera::GetTarget() const
+HorseRadish::Vector3f Camera::getTarget() const
 {
 	HorseRadish::Vector3f target;
 
@@ -452,66 +416,55 @@ HorseRadish::Vector3f Camera::GetTarget() const
 	return target;
 }
 
-void Camera::GetRay(HorseRadish::Ray &ray) const
-{
-	ray.setOrigin(camPos);
-	ray.setDirection(camDir);
-}
-
-void Camera::GetViewDir(HorseRadish::Vector3f &dir) const
-{
-	dir.set(camDir);
-}
-
-HorseRadish::Vector3f Camera::GetViewDir() const
+HorseRadish::Vector3f Camera::getViewDir() const
 {
 	return HorseRadish::Vector3f(camDir);
 }
 
-void Camera::GetStrideDir(HorseRadish::Vector3f &dir) const
+HorseRadish::Vector3f Camera::getStrideDir() const
 {
-	HorseRadish::Vector3f auxVec;
+	HorseRadish::Vector3f strideDir, auxVec;
 
 	auxVec = camDir;
 	auxVec[1] += 1.0f;
 
-	dir.storeCrossProduct(camDir, auxVec);
-	dir.normalize();
-}
+	strideDir.storeCrossProduct(camDir, auxVec);
+	strideDir.normalize();
 
-HorseRadish::Vector3f Camera::GetStrideDir() const
-{
-	HorseRadish::Vector3f strideDir;
-
-	GetStrideDir(strideDir);
 	return strideDir;
 }
 
-float Camera::GetFocalDist() const
+float Camera::getFocalDist() const
 {
 	return absFocus;
 }
 
-float Camera::GetSensitivity(const CameraInput &input) const
+float Camera::getSensitivity(const CameraInput &input) const
 {
-	if (input & Keyboard)
+	switch (input)
+	{
+	case CameraInput::Keyboard:
 		return keyS;
-	if (input & Mouse)
+	case CameraInput::Mouse:
 		return ratoS;
+	default:
+		break;
+	}
+	
 	return 0.0f;
 }
 
-const float* Camera::GetModelView() const
+const float* Camera::getModelView() const
 {
 	return modelView.data();
 }
 
-void Camera::GetModelView(float * const mat) const
+void Camera::getModelView(float * const mat) const
 {
 	modelView.write(mat);
 }
 
-Camera::CameraType Camera::GetTargetMode() const
+Camera::CameraType Camera::getTargetMode() const
 {
 	return targetMode;
 }

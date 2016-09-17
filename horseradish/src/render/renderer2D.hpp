@@ -23,13 +23,13 @@ namespace HorseRadish { namespace Render {
 			std::unique_ptr<Tools::Font> font;
 		}mGui;
 
-		int mRenderWidth, mRenderHeight;
+		size_t mRenderWidth = 0, mRenderHeight = 0;
 		HorseRadish::OpenGL::Tools::ImmediateMode mGlImmediateMode;
 
 	public:
 		Renderer2D(const HorseRadish::OpenGL::Objects::Context& glContext);
 
-		void initialize(const int &renderWidth, const int &renderHeight, HorseRadish::IO::FileSystem * const fileSystem, const char* const textFont, int textSize);
+		void initialize(size_t renderWidth, size_t renderHeight, HorseRadish::IO::FileSystem * const fileSystem, const char* const textFont, size_t textSize);
 	};
 
 } }

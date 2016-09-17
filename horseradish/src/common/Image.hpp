@@ -26,7 +26,7 @@ class ImageViewBase
 	friend class Image;
 
 public:
-	ImageViewBase(TDataType* const data, unsigned int width, unsigned int height)
+	ImageViewBase(TDataType* const data, size_t width, size_t height)
 		: mDataPtr(data), mWidth(width), mHeight(height)
 	{ }
 
@@ -34,14 +34,19 @@ public:
 	ImageViewBase& operator=(const ImageViewBase&) = delete;
 
 	ImageViewBase(ImageViewBase&& imgView)
-		: mDataPtr(std::move(imgView.mDataPtr)), mWidth(std::move(imgView.mWidth)), mHeight(std::move(imgView.mHeight))
-	{ }
+	{ 
+		*this = std::move(imgView);
+	}
 
 	ImageViewBase& operator=(ImageViewBase&& imgView)
 	{
-		mDataPtr = std::move(imgView.mDataPtr);
-		mWidth = std::move(imgView.mWidth);
-		mHeight = std::move(imgView.mHeight);
+		if (this != &imgView)
+		{
+			std::swap(mDataPtr, imgView.mDataPtr);
+			std::swap(mWidth, imgView.mWidth);
+			std::swap(mHeight, imgView.mHeight);
+		}
+
 		return *this;
 	}
 
@@ -51,12 +56,12 @@ public:
 		return mDataPtr;
 	}
 
-	unsigned int width() const
+	size_t width() const
 	{
 		return mWidth;
 	}
 
-	unsigned int height() const
+	size_t height() const
 	{
 		return mHeight;
 	}
@@ -66,27 +71,27 @@ public:
 		return (getArea() == 0);
 	}
 
-	unsigned int getArea() const
+	size_t getArea() const
 	{
 		return mWidth * mHeight;
 	}
 
-	unsigned int getSize() const
+	size_t getSize() const
 	{
 		return (mWidth * mHeight * TDataFormat::size() * sizeof(TDataType));
 	}
 
-	unsigned int getRowSize() const
+	size_t getRowSize() const
 	{
 		return (mWidth * TDataFormat::size() * sizeof(TDataType));
 	}
 
-	unsigned int getPixelSize() const
+	size_t getPixelSize() const
 	{
 		return (TDataFormat::size() * sizeof(TDataType));
 	}
 
-	Image<TDataType, TDataFormat> crop(unsigned int cropX, unsigned int cropY, unsigned int cropWidth, unsigned int cropHeight) const
+	Image<TDataType, TDataFormat> crop(size_t cropX, size_t cropY, size_t cropWidth, size_t cropHeight) const
 	{
 		if (empty() || ((cropWidth * cropHeight) <= 0) || ((cropX + cropWidth) > mWidth) || ((cropY + cropHeight) > mHeight))
 			return Image<TDataType, TDataFormat>();
@@ -96,7 +101,7 @@ public:
 		auto srcRowSize = width() * TDataFormat::size();
 		auto destRowSize = cropWidth * TDataFormat::size();
 
-		for (unsigned int curY = 0; curY < cropHeight; curY++)
+		for (size_t curY = 0; curY < cropHeight; curY++)
 		{
 			auto sourcePos = ((curY + cropY) * srcRowSize) + (cropX * TDataFormat::size());
 			auto destPos = curY * destRowSize;
@@ -109,17 +114,16 @@ public:
 
 private:
 	ImageViewBase()
-		: mDataPtr(nullptr), mWidth(0), mHeight(0)
 	{ }
 
-	unsigned int getPos(const unsigned int x, const unsigned int y) const
+	size_t getPos(const size_t x, const size_t y) const
 	{
 		return ((y * mWidth * TDataFormat::size()) + (x * TDataFormat::size()));
 	}
 
 private:
-	TDataType* mDataPtr;
-	unsigned int mWidth, mHeight;
+	TDataType* mDataPtr = nullptr;
+	size_t mWidth = 0, mHeight = 0;
 };
 
 template<typename TDataType, typename TDataFormat> // generic ImageView (any type supported)
@@ -133,19 +137,12 @@ class ImageView : public ImageViewBase<TDataType, TDataFormat, ImageView<TDataTy
 	friend class Image;
 
 public:
-	ImageView(TDataType* const data, unsigned int width, unsigned int height)
+	ImageView(TDataType* const data, size_t width, size_t height)
 		: BaseType(data, width, height)
 	{ }
 
-	ImageView(ImageView&& imgView)
-		: BaseType(std::forward<BaseType>(imgView))
-	{ }
-
-	ImageView& operator=(ImageView&& imgView)
-	{
-		BaseType::operator=(std::move(imgView));
-		return *this;
-	}
+	ImageView(ImageView&& imgView) = default;
+	ImageView& operator=(ImageView&& imgView) = default;
 
 	Image<TDataType, TDataFormat> clone() const
 	{
@@ -155,7 +152,7 @@ public:
 		return newImg;
 	}
 
-	void getPixel(const unsigned int x, const unsigned int y, TDataType* const pixelValue, const TDataType defaultColorValue, const TDataType defaultAlphaValue) const
+	void getPixel(const size_t x, const size_t y, TDataType* const pixelValue, const TDataType defaultColorValue, const TDataType defaultAlphaValue) const
 	{
 		assert(mDataPtr);
 		assert(pixelValue);
@@ -178,11 +175,11 @@ class ImageView<unsigned char, TDataFormat> : public ImageViewBase<unsigned char
 	template<typename T1, typename T2>
 	friend class Image;
 
-	void convertTo(float* dataOut, const unsigned int pos, const unsigned int count) const
+	void convertTo(float* dataOut, const size_t pos, const size_t count) const
 	{
 		assert(mDataPtr);
 
-		unsigned int curPos = 0;
+		size_t curPos = 0;
 		auto walker = mDataPtr + pos;
 		auto countBlock = (count / 4) * 4;
 
@@ -194,21 +191,14 @@ class ImageView<unsigned char, TDataFormat> : public ImageViewBase<unsigned char
 	}
 
 public:
-	ImageView(unsigned char* const data, unsigned int width, unsigned int height)
+	ImageView(unsigned char* const data, size_t width, size_t height)
 		: BaseType(data, width, height)
 	{ }
 
-	ImageView(ImageView&& imgView)
-		: BaseType(std::forward<BaseType>(imgView))
-	{ }
+	ImageView(ImageView&& imgView) = default;
+	ImageView& operator=(ImageView&& imgView) = default;
 
-	ImageView& operator=(ImageView&& imgView)
-	{
-		BaseType::operator=(std::move(imgView));
-		return *this;
-	}
-
-	void getPixel(const unsigned int x, const unsigned int y, HorseRadish::Color &pixelValue) const
+	void getPixel(const size_t x, const size_t y, HorseRadish::Color &pixelValue) const
 	{
 		assert(mDataPtr);
 
@@ -218,7 +208,7 @@ public:
 		pixelValue.Set(tmpPixel);
 	}
 
-	void getPixel(const unsigned int x, const unsigned int y, unsigned char* const pixelValue) const
+	void getPixel(const size_t x, const size_t y, unsigned char* const pixelValue) const
 	{
 		assert(mDataPtr);
 		assert(pixelValue);
@@ -244,7 +234,7 @@ public:
 		return newImg;
 	}
 
-	Image<unsigned char, TDataFormat> resize(unsigned int width, unsigned int height) const
+	Image<unsigned char, TDataFormat> resize(size_t width, size_t height) const
 	{
 		Image<unsigned char, TDataFormat> newImg(width, height);
 
@@ -271,11 +261,11 @@ class ImageView<float, TDataFormat> : public ImageViewBase<float, TDataFormat, I
 	template<typename T1, typename T2>
 	friend class Image;
 
-	void convertTo(unsigned char* dataOut, const unsigned int pos, const unsigned int count) const
+	void convertTo(unsigned char* dataOut, const size_t pos, const size_t count) const
 	{
 		assert(mDataPtr);
 
-		unsigned int curPos = 0;
+		size_t curPos = 0;
 		auto walker = mDataPtr + pos;
 		auto countBlock = (count / 4) * 4;
 
@@ -287,21 +277,14 @@ class ImageView<float, TDataFormat> : public ImageViewBase<float, TDataFormat, I
 	}
 
 public:
-	ImageView(float* const data, unsigned int width, unsigned int height)
+	ImageView(float* const data, size_t width, size_t height)
 		: BaseType(data, width, height)
 	{ }
 
-	ImageView(ImageView&& imgView)
-		: BaseType(std::forward<BaseType>(imgView))
-	{ }
+	ImageView(ImageView&& imgView) = default;
+	ImageView& operator=(ImageView&& imgView) = default;
 
-	ImageView& operator=(ImageView&& imgView)
-	{
-		BaseType::operator=(std::move(imgView));
-		return *this;
-	}
-
-	void getPixel(const unsigned int x, const unsigned int y, HorseRadish::Color &pixelValue) const
+	void getPixel(const size_t x, const size_t y, HorseRadish::Color &pixelValue) const
 	{
 		assert(mDataPtr);
 
@@ -311,7 +294,7 @@ public:
 		pixelValue.Set(tmpPixel);
 	}
 
-	void getPixel(const unsigned int x, const unsigned int y, float* const pixelValue) const
+	void getPixel(const size_t x, const size_t y, float* const pixelValue) const
 	{
 		assert(mDataPtr);
 		assert(pixelValue);
@@ -337,7 +320,7 @@ public:
 		return newImg;
 	}
 
-	Image<float, TDataFormat> resize(unsigned int width, unsigned int height) const
+	Image<float, TDataFormat> resize(size_t width, size_t height) const
 	{
 		Image<float, TDataFormat> newImg(width, height);
 
@@ -363,19 +346,8 @@ class ImageBase : public ImageView<TDataType, TDataFormat>
 public:
 	ImageBase(const ImageBase&) = delete;
 	ImageBase& operator=(const ImageBase&) = delete;
-
-	ImageBase(ImageBase&& img)
-		: mDataSource(std::move(img.mDataSource))
-		, ImageView<TDataType, TDataFormat>(std::forward<ImageView<TDataType, TDataFormat>>(img))
-	{ }
-
-	ImageBase& operator=(ImageBase&& img)
-	{
-		mDataSource = std::move(img.mDataSource);
-		ImageView<TDataType, TDataFormat>::operator=(std::move(img));
-
-		return *this;
-	}
+	ImageBase(ImageBase&& img) = default;
+	ImageBase& operator=(ImageBase&& img) = default;
 
 	TDataType* data()
 	{
@@ -393,7 +365,7 @@ public:
 		auto bottomPtr = mDataPtr;
 		auto topPtr = mDataPtr + ((height() - 1) * rowSize);
 
-		for (unsigned int curY = 0; curY < numRows; curY++)
+		for (size_t curY = 0; curY < numRows; curY++)
 		{
 			memcpy(tempRow.get(), topPtr, rowSize * sizeof(TDataType));
 			memcpy(topPtr, bottomPtr, rowSize * sizeof(TDataType));
@@ -404,7 +376,7 @@ public:
 		}
 	}
 
-	bool setPixelRegion(const ImageView<TDataType, TDataFormat>& imgView, const unsigned int offsetX, const unsigned int offsetY, const bool flipSource = false)
+	bool setPixelRegion(const ImageView<TDataType, TDataFormat>& imgView, const size_t offsetX, const size_t offsetY, const bool flipSource = false)
 	{
 		if (((offsetX + imgView.width()) > mWidth) || ((offsetY + imgView.height()) > mHeight))
 			return false;
@@ -414,7 +386,7 @@ public:
 
 		if (!flipSource)
 		{
-			for (unsigned int curY = 0; curY < imgView.height(); curY++)
+			for (size_t curY = 0; curY < imgView.height(); curY++)
 			{
 				auto destY = ((offsetY + curY) * destRowSize) + (offsetX * TDataFormat::size());
 				auto sourceY = (curY * srcRowSize);
@@ -423,7 +395,7 @@ public:
 		}
 		else
 		{
-			for (unsigned int curY = 0; curY < imgView.height(); curY++)
+			for (size_t curY = 0; curY < imgView.height(); curY++)
 			{
 				auto destY = ((offsetY + curY) * destRowSize) + (offsetX * TDataFormat::size());
 				auto sourceY = (imgView.height() - curY - 1) * srcRowSize;
@@ -439,13 +411,13 @@ private:
 		: ImageView(nullptr, 0, 0)
 	{ }
 
-	ImageBase(unsigned int width, unsigned int height)
+	ImageBase(size_t width, size_t height)
 		: mDataSource(new TDataType[width * height * TDataFormat::size()]), ImageView(nullptr, width, height)
 	{
 		mDataPtr = mDataSource.get();
 	}
 
-	ImageBase(std::unique_ptr<TDataType[]> data, unsigned int width, unsigned int height)
+	ImageBase(std::unique_ptr<TDataType[]> data, size_t width, size_t height)
 		: mDataSource(std::move(data)), ImageView(nullptr, width, height)
 	{
 		mDataPtr = mDataSource.get();
@@ -467,26 +439,18 @@ public:
 	Image()
 	{ }
 
-	Image(unsigned int width, unsigned int height)
+	Image(size_t width, size_t height)
 		: BaseType(width, height)
 	{ }
 
-	Image(std::unique_ptr<TDataType[]> data, unsigned int width, unsigned int height)
+	Image(std::unique_ptr<TDataType[]> data, size_t width, size_t height)
 		: BaseType(data, width, height)
 	{ }
 
 	Image(const Image&) = delete;
 	Image& operator=(const Image&) = delete;
-
-	Image(Image&& img)
-		: BaseType(std::forward<BaseType>(img))
-	{ }
-
-	Image& operator=(Image&& img)
-	{
-		BaseType::operator=(std::move(img));
-		return *this;
-	}
+	Image(Image&& img) = default;
+	Image& operator=(Image&& img) = default;
 };
 
 template<typename TDataFormat> // unsigned char specialization
@@ -501,32 +465,24 @@ public:
 	Image()
 	{ }
 
-	Image(unsigned int width, unsigned int height)
+	Image(size_t width, size_t height)
 		: BaseType(width, height)
 	{ }
 
-	Image(std::unique_ptr<unsigned char[]> data, unsigned int width, unsigned int height)
+	Image(std::unique_ptr<unsigned char[]> data, size_t width, size_t height)
 		: BaseType(std::move(data), width, height)
 	{ }
 
 	Image(const Image&) = delete;
 	Image& operator=(const Image&) = delete;
-
-	Image(Image&& img)
-		: BaseType(std::forward<BaseType>(img))
-	{ }
-
-	Image& operator=(Image&& img)
-	{
-		BaseType::operator=(std::move(img));
-		return *this;
-	}
+	Image(Image&& img) = default;
+	Image& operator=(Image&& img) = default;
 
 	void clear(const unsigned char r, const unsigned char g, const unsigned char b, const unsigned char a)
 	{
 		unsigned char tmpPixel[] = { r, g, b, a };
 
-		unsigned int curPos = 0;
+		size_t curPos = 0;
 		auto walkerPtr = mDataPtr;
 
 		auto imgArea = getArea();
@@ -559,7 +515,7 @@ public:
 		HorseRadish::Color pixelValue;
 		unsigned char tmpPixel[4];
 
-		for (unsigned int curPos = 0; curPos < imgArea; curPos++)
+		for (size_t curPos = 0; curPos < imgArea; curPos++)
 		{
 			TDataFormat::readRGBA<unsigned char>(walkerPtr, tmpPixel, 0, 255);
 			if (tmpPixel[3] != 255)
@@ -591,7 +547,7 @@ public:
 			auto imgArea = getArea();
 
 			unsigned char tmpPixel[4];
-			for (unsigned int curPos = 0; curPos < imgArea; curPos++)
+			for (size_t curPos = 0; curPos < imgArea; curPos++)
 			{
 				TDataFormat::readRGB<unsigned char>(walkerPtr, tmpPixel, 0);
 				tmpPixel[0] = Color::gammaCorrect(tmpPixel[0]);
@@ -604,7 +560,7 @@ public:
 		}
 	}
 
-	void setPixel(const unsigned int x, const unsigned int y, HorseRadish::Color &pixelValue)
+	void setPixel(const size_t x, const size_t y, HorseRadish::Color &pixelValue)
 	{
 		unsigned char tmpPixel[4];
 		HorseRadish::Color::ConvertColor(HorseRadish::Color(r, g, b, a), tmpPixel, true);
@@ -612,7 +568,7 @@ public:
 		TDataFormat::writeRGBA(mDataPtr + getPos(x, y), tmpPixel);
 	}
 
-	void setPixel(const unsigned int x, const unsigned int y, const unsigned char* const pixelValue)
+	void setPixel(const size_t x, const size_t y, const unsigned char* const pixelValue)
 	{
 		TDataFormat::writeRGBA(mDataPtr + getPos(x, y), pixelValue);
 	}
@@ -628,7 +584,7 @@ public:
 		unsigned char tmpPixel[4];
 		HorseRadish::Color pixelValue;
 
-		for (unsigned int curPos = 0; curPos < imgArea; curPos++)
+		for (size_t curPos = 0; curPos < imgArea; curPos++)
 		{
 			TDataFormat::readRGBA<unsigned char>(walkerPtr, tmpPixel, 0, 255);
 
@@ -656,32 +612,24 @@ public:
 	Image()
 	{ }
 
-	Image(unsigned int width, unsigned int height)
+	Image(size_t width, size_t height)
 		: BaseType(width, height)
 	{ }
 
-	Image(std::unique_ptr<float[]> data, unsigned int width, unsigned int height)
+	Image(std::unique_ptr<float[]> data, size_t width, size_t height)
 		: BaseType(std::move(data), width, height)
 	{ }
 
 	Image(const Image&) = delete;
 	Image& operator=(const Image&) = delete;
-
-	Image(Image&& img)
-		: BaseType(std::forward<BaseType>(img))
-	{ }
-
-	Image& operator=(Image&& img)
-	{
-		BaseType::operator=(std::move(img));
-		return *this;
-	}
+	Image(Image&& img) = default;
+	Image& operator=(Image&& img) = default;
 
 	void clear(const float r, const float g, const float b, const float a)
 	{
 		float tmpPixel[] = { r, g, b, a };
 
-		unsigned int curPos = 0;
+		size_t curPos = 0;
 		auto walkerPtr = mDataPtr;
 
 		auto imgArea = getArea();
@@ -703,12 +651,12 @@ public:
 		}
 	}
 
-	void setPixel(const unsigned int x, const unsigned int y, HorseRadish::Color &pixelValue)
+	void setPixel(const size_t x, const size_t y, HorseRadish::Color &pixelValue)
 	{
 		TDataFormat::writeRGBA(mDataPtr + getPos(x, y), pixelValue);
 	}
 
-	void setPixel(const unsigned int x, const unsigned int y, const float* const pixelValue)
+	void setPixel(const size_t x, const size_t y, const float* const pixelValue)
 	{
 		TDataFormat::writeRGBA(mDataPtr + getPos(x, y), pixelValue);
 	}

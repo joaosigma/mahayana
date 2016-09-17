@@ -3,68 +3,65 @@
 #include "common\Matrix.hpp"
 #include "common\Ray.hpp"
 
+#include <memory>
+
 namespace HorseRadish { namespace Render { namespace Tools {
 			
 class Camera
 {
-
 public:
-	enum CameraType { FirstPerson, OnSphere };
-	enum CameraInput { Keyboard, Mouse };
+	enum class CameraType { FirstPerson, OnSphere };
+	enum class CameraInput { Keyboard, Mouse };
 	enum CameraComponent { Position = (1 << 0), Target = (1 << 1) };
 	enum CameraAction { None = 0, Forward = (1 << 0), Backward = (1 << 1), StrifeLeft = (1 << 2), StrifeRight = (1 << 3), Up = (1 << 4), Down = (1 << 5), Run = (1 << 6) };
 
 private:
 	HorseRadish::Vector3f camPos, camDir, camUp;
-	float rato[3][2], sumRato[2], ratoS, keyS, absFocus, onSphereMaxDist, onSphereMinDist;
+	float rato[3][2] = { {0.0f, 0.0f}, { 0.0f, 0.0f }, { 0.0f, 0.0f } }, sumRato[2] = { 0.0f, 0.0f }, ratoS = 1.0f, keyS = 1.0f;
+	float absFocus = 1.0f, onSphereMaxDist = 1000.0f, onSphereMinDist = 1.0f;
 	HorseRadish::Matrix modelView;
-	HorseRadish::Vector3f *pointsPos, *pointsTarget;
-	int numPos, numTarget;
-	CameraType targetMode;
+	std::unique_ptr<Vector3f[]> pointsPos, pointsTarget;
+	int numPos = 0, numTarget = 0;
+	CameraType targetMode = CameraType::FirstPerson;
 
 	void commitFirstPerson(const CameraAction &actionBitfield, const float &mouseDeltaX, const float &mouseDeltaY, const bool updatePosition, const float timeDeltaS);
 	void commitOnSphere(const CameraAction &actionBitfield, const float &mouseDeltaX, const float &mouseDeltaY, const float timeDeltaS);
 
 public:
 	Camera();
-	~Camera();
 
-	void CommitInput(const CameraAction &actionBitfield, const float &mouseDeltaX, const float &mouseDeltaY, const bool updatePosition, const float timeDeltaS);
-	void CommitCatmullRom(const CameraComponent &component, const float &normalizedTime);
-	void CommitHermite(const CameraComponent &component, const float &normalizedTime);
+	void commitInput(const CameraAction &actionBitfield, const float &mouseDeltaX, const float &mouseDeltaY, const bool updatePosition, const float timeDeltaS);
+	void commitCatmullRom(const CameraComponent &component, const float &normalizedTime);
+	void commitHermite(const CameraComponent &component, const float &normalizedTime);
 
-	void PathClear(const CameraComponent &componentsBitField);
-	void PathAdd(const CameraComponent &component, const float x, const float y, const float z);
-	void PathAdd(const CameraComponent &component, const HorseRadish::Vector3f &vec);
+	void pathClear(const CameraComponent &componentsBitField);
+	void pathAdd(const CameraComponent &component, const float x, const float y, const float z);
+	void pathAdd(const CameraComponent &component, const HorseRadish::Vector3f &vec);
 
-	bool SetCamType(const CameraType &type);
-	void SetSensitivity(const CameraInput &input, const float s);
-	void SetPos(const HorseRadish::Vector3f &pos);
-	void SetPos(const float x, const float y, const float z);
-	void SetTarget(const HorseRadish::Vector3f &target);
-	void SetTarget(const float x, const float y, const float z);
-	void SetDir(const HorseRadish::Vector3f &direction);
-	void SetDir(const float x, const float y, const float z);
-	void SetAbsoluteFocus(const float focus);
-	void SetOnSphereDists(const float minDist, const float maxDist);
+	bool setCamType(const CameraType &type);
+	void setSensitivity(const CameraInput &input, const float s);
+	void setPos(const HorseRadish::Vector3f &pos);
+	void setPos(const float x, const float y, const float z);
+	void setTarget(const HorseRadish::Vector3f &target);
+	void setTarget(const float x, const float y, const float z);
+	void setDir(const HorseRadish::Vector3f &direction);
+	void setDir(const float x, const float y, const float z);
+	void setAbsoluteFocus(const float focus);
+	void setOnSphereDists(const float minDist, const float maxDist);
 
-	void GetPos(HorseRadish::Vector3f &pos) const;
-	HorseRadish::Vector3f GetPos() const;
-	void GetTarget(HorseRadish::Vector3f &target) const;
-	HorseRadish::Vector3f GetTarget() const;
-	void GetViewDir(HorseRadish::Vector3f &dir) const;
-	HorseRadish::Vector3f GetViewDir() const;
-	void GetStrideDir(HorseRadish::Vector3f &dir) const;
-	HorseRadish::Vector3f GetStrideDir() const;
+	HorseRadish::Vector3f getPos() const;
+	HorseRadish::Ray getRay() const;
+	HorseRadish::Vector3f getTarget() const;
+	HorseRadish::Vector3f getViewDir() const;
+	HorseRadish::Vector3f getStrideDir() const;
 
-	float GetFocalDist() const;
-	float GetSensitivity(const CameraInput &input) const;
-	void GetRay(HorseRadish::Ray &ray) const;
-	Camera::CameraType GetTargetMode() const;
+	float getFocalDist() const;
+	float getSensitivity(const CameraInput &input) const;
+	
+	Camera::CameraType getTargetMode() const;
 
-	const float* GetModelView() const;
-	void GetModelView(float * const mat) const;
-	void GetFrustumCorners() const;
+	const float* getModelView() const;
+	void getModelView(float * const mat) const;
 };
 
 } } }

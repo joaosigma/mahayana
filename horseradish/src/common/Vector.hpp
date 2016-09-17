@@ -470,7 +470,9 @@ namespace HorseRadish
 
 		explicit Vector(const float* const v)
 		{
-			std::memcpy(mData, v, sizeof(float) * 3);
+			mData[0] = v[0];
+			mData[1] = v[1];
+			mData[2] = v[2];
 			mData[3] = 0.0f;
 		}
 

@@ -26,8 +26,8 @@ namespace HorseRadish
 
 			Stream()
 			{ }
-
-			virtual ~Stream();
+			virtual ~Stream()
+			{ }
 
 			virtual void close() = 0;
 			virtual void flush() = 0;
@@ -46,83 +46,141 @@ namespace HorseRadish
 			virtual std::unique_ptr<MemoryViewStream> readEntireContent() const = 0;
 		};
 
-		class MemoryStream : public Stream
+		class MemoryStream final : public Stream
 		{
-			void* mData;
-			unsigned char *mDataBegin, *mDataEnd, *mDataWalker;
-			size_t mDataSize;
-			bool mIsClosed;
+			void* mData = nullptr;
+			unsigned char *mDataBegin = nullptr, *mDataEnd = nullptr, *mDataWalker = nullptr;
+			size_t mDataSize = 0;
+			bool mIsClosed = false;
 
 		public:
-			MemoryStream(size_t reserveSize = 1024);
-			~MemoryStream();
+			MemoryStream(size_t reserveSize = 1024)
+			{
+				mDataSize = (reserveSize < 1024) ? 1024 : reserveSize;
+				mData = realloc(mData, mDataSize);
+
+				mDataBegin = mDataWalker = reinterpret_cast<unsigned char*>(mData);
+				mDataEnd = mDataBegin + mDataSize;
+			}
+
+			~MemoryStream()
+			{
+				close();
+			}
 
 			MemoryStream(const MemoryStream&) = delete;
 			const MemoryStream& operator=(const MemoryStream&) = delete;
 
-			MemoryStream(MemoryStream&& stream);
+			MemoryStream(MemoryStream&& stream)
+			{
+				*this = std::move(stream);
+			}
 
-			void close();
-			void flush();
+			MemoryStream& operator=(MemoryStream&& stream)
+			{
+				if (this != &stream)
+				{
+					std::swap(mData, stream.mData);
+					std::swap(mDataBegin, stream.mDataBegin);
+					std::swap(mDataEnd, stream.mDataEnd);
+					std::swap(mDataWalker, stream.mDataWalker);
+					std::swap(mDataSize, stream.mDataSize);
+					std::swap(mIsClosed, stream.mIsClosed);
+				}
 
-			bool canRead() const;
-			bool canRead(size_t numBytes) const;
-			bool canWrite() const;
-			bool canWrite(size_t numBytes) const;
-			size_t length() const;
-			size_t position() const;
+				return *this;
+			}
 
-			size_t read(void* const outBuffer, size_t numBytes);
-			size_t write(const void* const inBuffer, size_t numBytes);
-			bool seek(SeekOrigin seekOrigin, int offset);
+			void close() override;
+			void flush() override;
 
-			std::unique_ptr<MemoryViewStream> readEntireContent() const;
+			bool canRead() const override;
+			bool canRead(size_t numBytes) const override;
+			bool canWrite() const override;
+			bool canWrite(size_t numBytes) const override;
+			size_t length() const override;
+			size_t position() const override;
+
+			size_t read(void* const outBuffer, size_t numBytes) override;
+			size_t write(const void* const inBuffer, size_t numBytes) override;
+			bool seek(SeekOrigin seekOrigin, int offset) override;
+
+			std::unique_ptr<MemoryViewStream> readEntireContent() const override;
 
 			const void* getData() const;
 			std::string toStr() const;
 		};
 
-		class MemoryViewStream : public Stream
+		class MemoryViewStream final : public Stream
 		{
-			const void* mData;
-			const unsigned char *mDataBegin, *mDataEnd, *mDataWalker;
-			bool mIsClosed;
+			const void* mData = nullptr;
+			const unsigned char *mDataBegin = nullptr, *mDataEnd = nullptr, *mDataWalker = nullptr;
+			bool mIsClosed = false;
 			std::shared_ptr<unsigned char> mDataShared;
 
 		public:
-			MemoryViewStream();
-			MemoryViewStream(std::shared_ptr<unsigned char> data, size_t dataSize);
-			MemoryViewStream(std::shared_ptr<unsigned char>, size_t dataOffset, size_t dataSize);
+			MemoryViewStream()
+			{ }
+
+			MemoryViewStream(std::shared_ptr<unsigned char> data, size_t dataSize)
+				: MemoryViewStream(data, 0, dataSize)
+			{ }
+
+			MemoryViewStream(std::shared_ptr<unsigned char> data, size_t dataOffset, size_t dataSize)
+			{
+				mDataShared = data;
+				mData = data.get();
+				mDataBegin = reinterpret_cast<const unsigned char*>(mData) + dataOffset;
+				mDataEnd = mDataBegin + dataSize;
+			}
 
 			MemoryViewStream(const MemoryViewStream&) = delete;
 			const MemoryViewStream& operator=(const MemoryViewStream&) = delete;
 
-			MemoryViewStream(MemoryViewStream&& stream);
+			MemoryViewStream(MemoryViewStream&& stream)
+			{
+				*this = std::move(stream);
+			}
 
-			void close();
-			void flush();
+			MemoryViewStream& operator=(MemoryViewStream&& stream)
+			{
+				if (this != &stream)
+				{
+					std::swap(mData, stream.mData);
+					std::swap(mDataBegin, stream.mDataBegin);
+					std::swap(mDataEnd, stream.mDataEnd);
+					std::swap(mDataWalker, stream.mDataWalker);
+					std::swap(mDataShared, stream.mDataShared);
+					std::swap(mIsClosed, stream.mIsClosed);
+				}
 
-			bool canRead() const;
-			bool canRead(size_t numBytes) const;
-			bool canWrite() const;
-			bool canWrite(size_t numBytes) const;
-			size_t length() const;
-			size_t position() const;
+				return *this;
+			}
 
-			size_t read(void* const outBuffer, size_t numBytes);
-			size_t write(const void* const inBuffer, size_t numBytes);
-			bool seek(SeekOrigin seekOrigin, int offset);
+			void close() override;
+			void flush() override;
 
-			std::unique_ptr<MemoryViewStream> readEntireContent() const;
+			bool canRead() const override;
+			bool canRead(size_t numBytes) const override;
+			bool canWrite() const override;
+			bool canWrite(size_t numBytes) const override;
+			size_t length() const override;
+			size_t position() const override;
+
+			size_t read(void* const outBuffer, size_t numBytes) override;
+			size_t write(const void* const inBuffer, size_t numBytes) override;
+			bool seek(SeekOrigin seekOrigin, int offset) override;
+
+			std::unique_ptr<MemoryViewStream> readEntireContent() const override;
 
 			const void* getData() const;
 			std::string toStr() const;
 		};
 
-		class FileStream : public Stream
+		class FileStream final : public Stream
 		{
-			HANDLE mFileHandle;
-			bool mCanRead, mCanWrite, mClosed;
+			HANDLE mFileHandle = nullptr;
+			bool mCanRead = false, mCanWrite = false, mClosed = false;
 
 			bool openFile(const std::string& filePath, bool toRead, bool toWrite);
 
@@ -132,30 +190,55 @@ namespace HorseRadish
 			static bool streamDump(Stream& stream, const std::string& filePath);
 
 		public:
-			FileStream(FileStream&& stream);
-			FileStream(const std::string& filePath, bool toRead, bool toWrite);
-			~FileStream();
+			FileStream(const std::string& filePath, bool toRead, bool toWrite)
+			{
+				openFile(filePath, toRead, toWrite);
+			}
+
+			~FileStream()
+			{
+				if (!mClosed)
+					close();
+			}
 
 			FileStream(const FileStream&) = delete;
 			const FileStream& operator=(const FileStream&) = delete;
 
-			void close();
-			void flush();
+			FileStream(FileStream&& stream)
+			{
+				*this = std::move(stream);
+			}
 
-			bool canRead() const;
-			bool canRead(size_t numBytes) const;
-			bool canWrite() const;
-			bool canWrite(size_t numBytes) const;
-			size_t length() const;
-			size_t position() const;
+			FileStream& operator=(FileStream&& stream)
+			{
+				if (this != &stream)
+				{
+					std::swap(mFileHandle, stream.mFileHandle);
+					std::swap(mCanRead, stream.mCanRead);
+					std::swap(mCanWrite, stream.mCanWrite);
+					std::swap(mClosed, stream.mClosed);
+				}
+
+				return *this;
+			}
+
+			void close() override;
+			void flush() override;
+
+			bool canRead() const override;
+			bool canRead(size_t numBytes) const override;
+			bool canWrite() const override;
+			bool canWrite(size_t numBytes) const override;
+			size_t length() const override;
+			size_t position() const override;
 
 			bool isValid() const;
 
-			size_t read(void* const outBuffer, size_t numBytes);
-			size_t write(const void* const inBuffer, size_t numBytes);
-			bool seek(SeekOrigin seekOrigin, int offset);
+			size_t read(void* const outBuffer, size_t numBytes) override;
+			size_t write(const void* const inBuffer, size_t numBytes) override;
+			bool seek(SeekOrigin seekOrigin, int offset) override;
 
-			std::unique_ptr<MemoryViewStream> readEntireContent() const;
+			std::unique_ptr<MemoryViewStream> readEntireContent() const override;
 		};
 
 		class StreamReader

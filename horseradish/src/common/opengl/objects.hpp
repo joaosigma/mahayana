@@ -16,14 +16,15 @@ namespace HorseRadish { namespace OpenGL { namespace Objects {
 class ObjectGL
 {
 protected:
-	GLuint mId;
+	GLuint mId = 0;
 
 	ObjectGL()
-		: mId(0)
 	{ }
 
 	ObjectGL(const ObjectGL&) = delete;
 	ObjectGL& operator=(const ObjectGL&) = delete;
+	ObjectGL(ObjectGL&&) = default;
+	ObjectGL& operator=(ObjectGL&&) = default;
 
 public:
 	GLuint getId() const
@@ -37,7 +38,7 @@ public:
 	}
 };
 
-class Texture : public ObjectGL
+class Texture final : public ObjectGL
 {
 public:
 	enum class Type { Tex1D, Tex2D, Tex3D, TexRectangle, TexCubemap, Tex1DArray, Tex2DArray };
@@ -55,9 +56,9 @@ public:
 	enum class CubemapFace { PosX, NegX, PosY, NegY, PosZ, NegZ };
 
 private:
-	GLenum mType;
-	GLenum mStorageType;
-	GLuint mWidth, mHeight, mDepth;
+	GLenum mType = 0;
+	GLenum mStorageType = 0;
+	GLuint mWidth = 0, mHeight = 0, mDepth = 0;
 
 	static GLenum translate(Type type)
 	{
@@ -229,24 +230,23 @@ private:
 	}
 
 public:
-	static int calculateNumMipMaps(GLuint width)
+	static size_t calculateNumMipMaps(GLuint width)
 	{
 		return HorseRadish::Math::ftoi(HorseRadish::Math::floor(HorseRadish::Math::iLog2(width))) + 1;
 	}
 
-	static int calculateNumMipMaps(GLuint width, GLuint height)
+	static size_t calculateNumMipMaps(GLuint width, GLuint height)
 	{
 		return calculateNumMipMaps(std::max(width, height));
 	}
 
-	static int calculateNumMipMaps(GLuint width, GLuint height, GLuint depth)
+	static size_t calculateNumMipMaps(GLuint width, GLuint height, GLuint depth)
 	{
 		return calculateNumMipMaps(std::max(std::max(width, height), depth));
 	}
 
 public:
 	Texture()
-		: mType(0), mStorageType(0), mWidth(0), mHeight(0), mDepth(0)
 	{ }
 
 	~Texture()
@@ -364,6 +364,21 @@ public:
 		mType = 0;
 		mStorageType = 0;
 		mWidth = mHeight = mDepth = 0;
+	}
+
+	size_t width() const
+	{
+		return mWidth;
+	}
+
+	size_t height() const
+	{
+		return mHeight;
+	}
+
+	size_t depth() const
+	{
+		return mDepth;
 	}
 
 	void bind(const GLuint textureUnit) const
@@ -533,7 +548,7 @@ public:
 	}
 };
 
-class Sampler : public ObjectGL
+class Sampler final : public ObjectGL
 {
 public:
 	enum class FilterType { Point, Linear, PointMipPoint, PointMipLinear, LinearMipPoint, LinearMipLinear };
@@ -778,7 +793,7 @@ public:
 	}
 };
 
-class Buffer : public ObjectGL
+class Buffer final : public ObjectGL
 {
 public:
 	enum class Type { ArrayBuffer, ElementArrayBuffer, PixelPackBuffer, PixelUnpackBuffer, TextureBuffer, UniformBuffer, DrawIndirect };
@@ -794,13 +809,12 @@ public:
 	static_assert(sizeof(DrawElementsIndirectCommand) == 20, "DrawElementsIndirectCommand must be tightly packed: sizeof() == 20");
 
 private:
-	GLenum mType;
-	void* mMappedPtr;
-	UsageType mUsageType;
+	GLenum mType = 0;
+	void* mMappedPtr = nullptr;
+	UsageType mUsageType = UsageType::ServerStatic;
 	
 public:
 	Buffer()
-		: mType(0), mMappedPtr(nullptr), mUsageType(UsageType::ServerStatic)
 	{ }
 
 	~Buffer()
@@ -808,12 +822,12 @@ public:
 		reset();
 	}
 
-	bool init(Type type, unsigned int datasize, UsageType usageType)
+	bool init(Type type, size_t datasize, UsageType usageType)
 	{
 		return init(type, nullptr, datasize, usageType);
 	}
 
-	bool init(Type type, const void* const dataPtr, unsigned int dataSize, UsageType usageType)
+	bool init(Type type, const void* const dataPtr, size_t dataSize, UsageType usageType)
 	{
 		if (isValid() || (dataSize <= 0))
 			return false;
@@ -911,7 +925,7 @@ public:
 		glBindBuffer(mType, 0);
 	}
 
-	bool copyTo(const GLuint targetBufferId, const unsigned int bufferReadOffset, const unsigned int bufferWriteOffset, const unsigned int copyDataSize)
+	bool copyTo(const GLuint targetBufferId, const size_t bufferReadOffset, const size_t bufferWriteOffset, const size_t copyDataSize)
 	{
 		if (!isValid() || (targetBufferId == 0) || (copyDataSize <= 0))
 			return false;
@@ -920,7 +934,7 @@ public:
 		return true;
 	}
 
-	bool clearData(const unsigned int bufferOffset, const unsigned int bufferSize, const float* dataPtr, const unsigned int dataNumComponents) const
+	bool clearData(const size_t bufferOffset, const size_t bufferSize, const float* dataPtr, const size_t dataNumComponents) const
 	{
 		if (!isValid() || (bufferSize <= 0) || !dataPtr)
 			return false;
@@ -941,7 +955,7 @@ public:
 		return false;
 	}
 
-	bool writeData(const void* const dataPtr, const unsigned int dataSize, const unsigned int bufferOffset) const
+	bool writeData(const void* const dataPtr, const size_t dataSize, const size_t bufferOffset) const
 	{
 		if (!isValid() || (dataPtr == nullptr) || (dataSize <= 0))
 			return false;
@@ -963,7 +977,7 @@ public:
 		return true;
 	}
 
-	bool readData(const unsigned int bufferOffset, const unsigned int dataSize, void* const dataPtr) const
+	bool readData(const size_t bufferOffset, const size_t dataSize, void* const dataPtr) const
 	{
 		if (!isValid() || (dataPtr == nullptr) || (dataSize <= 0))
 			return false;
@@ -986,7 +1000,7 @@ public:
 	}
 };
 
-class Query : public ObjectGL
+class Query final : public ObjectGL
 {
 public:
 	enum class Type {
@@ -1044,11 +1058,10 @@ public:
 	};
 
 private:
-	Type mType;
+	Type mType = Type::SamplesPassed;
 
 public:
 	Query()
-		: mType(Type::SamplesPassed)
 	{ }
 
 	~Query()
@@ -1192,17 +1205,16 @@ public:
 	}
 };
 
-class QueryCounter : public ObjectGL
+class QueryCounter final : public ObjectGL
 {
 public:
 	enum class Type { Timestamp };
 
 private:
-	Type mType;
+	Type mType = Type::Timestamp;
 
 public:
 	QueryCounter()
-		: mType(Type::Timestamp)
 	{ }
 
 	~QueryCounter()
@@ -1266,7 +1278,7 @@ public:
 	}
 };
 
-class VertexArray : public ObjectGL
+class VertexArray final : public ObjectGL
 {
 public:
 	VertexArray()
@@ -1303,7 +1315,7 @@ public:
 	}
 };
 
-class FrameBuffer : public ObjectGL
+class FrameBuffer final : public ObjectGL
 {
 public:
 	enum class Status { Complete, Unsupported, Incomplete, Unknown };
@@ -1416,17 +1428,16 @@ public:
 	}
 };
 
-class ShaderProgram : public ObjectGL
+class ShaderProgram final : public ObjectGL
 {
 	friend class ProgramPipeline;
 
-	GLenum mType;
+	GLenum mType = 0;
 
 public:
 	enum class Type{ Vertex, Fragment };
 
 	ShaderProgram()
-		: mType(0)
 	{ }
 
 	~ShaderProgram()
@@ -1507,7 +1518,7 @@ public:
 	}
 };
 
-class ProgramPipeline : public ObjectGL
+class ProgramPipeline final : public ObjectGL
 {
 public:
 	ProgramPipeline()
@@ -1575,14 +1586,12 @@ public:
 };
 
 //a glFenceSync is not considered a GL object
-
 class FenceSync
 {
-	GLsync mSync;
+	GLsync mSync = 0;
 
 public:
 	FenceSync()
-		: mSync(0)
 	{ }
 
 	~FenceSync()

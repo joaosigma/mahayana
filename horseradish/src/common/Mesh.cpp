@@ -24,15 +24,15 @@ float Mesh::unpack(const short value)
 	return (static_cast<float>(value) * ushortScaleFrom);
 }
 
-void Mesh::pack(const float* const in, short* const out, unsigned int numValues)
+void Mesh::pack(const float* const in, short* const out, size_t numValues)
 {
-	for (unsigned int i = 0; i < numValues; i++)
+	for (size_t i = 0; i < numValues; i++)
 		out[i] = static_cast<unsigned short>(in[i] * ushortScaleTo);
 }
 
-void Mesh::unpack(const short* const in, float* const out, unsigned int numValues)
+void Mesh::unpack(const short* const in, float* const out, size_t numValues)
 {
-	for (unsigned int i = 0; i < numValues; i++)
+	for (size_t i = 0; i < numValues; i++)
 		out[i] = static_cast<float>(in[i])* ushortScaleFrom;
 }
 
@@ -43,15 +43,15 @@ Mesh Mesh::genBox(const float width, const float height, const float depth, cons
 
 	Mesh mesh((2 + precision - 1)*(precision + 1) * 6, precision*precision * 6 * 6);
 
-	for (int i = 0, index = 0, jump = 0, jump2 = 0; i < mesh.mNumVertices; i += 6)
+	for (size_t i = 0, index = 0, jump = 0, jump2 = 0; i < mesh.mNumVertices; i += 6)
 	{
-		mesh.mIndices[i + 0] = index;
-		mesh.mIndices[i + 1] = index + 1;
-		mesh.mIndices[i + 2] = index + precision + 1;
+		mesh.mIndices[i + 0] = static_cast<unsigned short>(index);
+		mesh.mIndices[i + 1] = static_cast<unsigned short>(index + 1);
+		mesh.mIndices[i + 2] = static_cast<unsigned short>(index + precision + 1);
 
-		mesh.mIndices[i + 3] = index + 1;
-		mesh.mIndices[i + 4] = index + precision + 2;
-		mesh.mIndices[i + 5] = index + precision + 1;
+		mesh.mIndices[i + 3] = static_cast<unsigned short>(index + 1);
+		mesh.mIndices[i + 4] = static_cast<unsigned short>(index + precision + 2);
+		mesh.mIndices[i + 5] = static_cast<unsigned short>(index + precision + 1);
 
 		index++;
 		jump++;
@@ -322,26 +322,22 @@ Mesh Mesh::genSphere(const float radius, const int slices, const int stacks)
 	return mesh;
 }
 
-Mesh::Mesh()
-	: mNumVertices(0), mNumIndices(0)
-{ }
-
-Mesh::Mesh(unsigned int numVertices, unsigned int numIndices)
+Mesh::Mesh(size_t numVertices, size_t numIndices)
 	: mNumVertices(numVertices), mNumIndices(numIndices)
 {
 	assert((numVertices > 0) && (numIndices > 0));
-	assert(numVertices < (static_cast<unsigned int>(std::numeric_limits<unsigned short>::max()) * 2));
+	assert(numVertices < (static_cast<size_t>(std::numeric_limits<unsigned short>::max()) * 2));
 	assert((numIndices % 3) == 0);
 
 	mData = std::unique_ptr<VertexData[]>(new VertexData[numVertices]);
 	mIndices = std::unique_ptr<unsigned short[]>(new unsigned short[numIndices]);
 }
 
-Mesh::Mesh(std::unique_ptr<VertexData[]> vertices, unsigned int numVertices, std::unique_ptr<unsigned short[]> indices, unsigned int numIndices)
+Mesh::Mesh(std::unique_ptr<VertexData[]> vertices, size_t numVertices, std::unique_ptr<unsigned short[]> indices, size_t numIndices)
 	: mData(std::move(vertices)), mNumVertices(numVertices), mIndices(std::move(indices)), mNumIndices(numIndices)
 {
 	assert((numVertices > 0) && (numIndices > 0));
-	assert(numVertices < (static_cast<unsigned int>(std::numeric_limits<unsigned short>::max()) * 2));
+	assert(numVertices < (static_cast<size_t>(std::numeric_limits<unsigned short>::max()) * 2));
 	assert((numIndices % 3) == 0);
 
 	assert(mData && mIndices);
@@ -371,27 +367,27 @@ Mesh& Mesh::operator=(const Mesh& mesh)
 	return *this;
 }
 
-unsigned int Mesh::sizeVertices() const
+size_t Mesh::sizeVertices() const
 {
 	return (sizeof(VertexData) * mNumVertices);
 }
 
-unsigned int Mesh::sizeIndices() const
+size_t Mesh::sizeIndices() const
 {
 	return (sizeof(unsigned short) * mNumIndices);
 }
 
-unsigned int Mesh::numIndices() const
+size_t Mesh::numIndices() const
 {
 	return mNumIndices;
 }
 
-unsigned int Mesh::numVertices() const
+size_t Mesh::numVertices() const
 {
 	return mNumVertices;
 }
 
-unsigned int Mesh::numTris() const
+size_t Mesh::numTris() const
 {
 	return mNumIndices / 3;
 }
@@ -404,7 +400,7 @@ bool Mesh::check() const
 	if ((mNumIndices % 3) != 0)
 		return false;
 
-	for (unsigned int i = 0; i < mNumIndices; i++)
+	for (size_t i = 0; i < mNumIndices; i++)
 	{
 		if (mIndices[i] >= mNumVertices)
 			return false;
@@ -422,7 +418,7 @@ BBox Mesh::getBoundingBox() const
 		auto vertexPtr = static_cast<VertexData*>(mData.get());
 
 		minPoint = maxPoint = _mm_loadu_ps(vertexPtr->pos);
-		for (unsigned int i = 1; i < mNumVertices; i++, vertexPtr++)
+		for (size_t i = 1; i < mNumVertices; i++, vertexPtr++)
 		{
 			curPoint = _mm_loadu_ps(vertexPtr->pos);
 			minPoint = _mm_min_ps(minPoint, curPoint);
@@ -437,7 +433,7 @@ BBox Mesh::getBoundingBox() const
 	return BBox(tmpVecs, 2);
 }
 
-float Mesh::getIndicesCacheRatio(unsigned int cacheSize) const
+float Mesh::getIndicesCacheRatio(size_t cacheSize) const
 {
 	if (cacheSize == 0)
 		return 0.0f;
@@ -446,8 +442,8 @@ float Mesh::getIndicesCacheRatio(unsigned int cacheSize) const
 
 	std::vector<int> simCache(cacheSize, -1);
 
-	unsigned int numHits = 0;
-	for (unsigned int i = 0; i < mNumIndices; i++)
+	size_t numHits = 0;
+	for (size_t i = 0; i < mNumIndices; i++)
 	{
 		auto curIndex = static_cast<int>(mIndices[i]);
 
@@ -465,7 +461,7 @@ float Mesh::getIndicesCacheRatio(unsigned int cacheSize) const
 			continue;
 		}
 
-		for (unsigned int j = (cacheSize - 1); j > 0; j--)
+		for (size_t j = (cacheSize - 1); j > 0; j--)
 			simCache[j] = simCache[j - 1];;
 		simCache[0] = curIndex;
 	}
@@ -480,7 +476,7 @@ bool Mesh::getRayIntersect(const Vector3f& rayOrigin, const Vector3f& rayDir, fl
 	float minHistDist = std::numeric_limits<float>::max();
 	auto hit = false;
 
-	for (unsigned int i = 0; i < mNumIndices; i += 3)
+	for (size_t i = 0; i < mNumIndices; i += 3)
 	{
 		Vector3f p1(mData[i * 3 + 0].pos);
 		Vector3f p2(mData[i * 3 + 1].pos);
@@ -555,14 +551,14 @@ bool Mesh::getRayIntersect(const Vector3f& rayOrigin, const Vector3f& rayDir, fl
 void Mesh::flipUV()
 {
 	auto vertexPtr = static_cast<VertexData*>(mData.get());
-	for (unsigned int i = 0; i < mNumVertices; i++, vertexPtr++)
+	for (size_t i = 0; i < mNumVertices; i++, vertexPtr++)
 		vertexPtr->uv[1] = 1.0f - vertexPtr->uv[1];
 }
 
 void Mesh::scale(float scaleAmount)
 {
 	auto vertexPtr = static_cast<VertexData*>(mData.get());
-	for (unsigned int i = 0; i < mNumVertices; i++, vertexPtr++)
+	for (size_t i = 0; i < mNumVertices; i++, vertexPtr++)
 	{
 		vertexPtr->pos[0] *= scaleAmount;
 		vertexPtr->pos[1] *= scaleAmount;
@@ -573,7 +569,7 @@ void Mesh::scale(float scaleAmount)
 void Mesh::translate(const Vector3f& translate)
 {
 	auto vertexPtr = static_cast<VertexData*>(mData.get());
-	for (unsigned int i = 0; i < mNumVertices; i++, vertexPtr++)
+	for (size_t i = 0; i < mNumVertices; i++, vertexPtr++)
 	{
 		vertexPtr->pos[0] += translate[0];
 		vertexPtr->pos[1] += translate[1];
@@ -597,7 +593,7 @@ void Mesh::centerMass(const Vector3f& center)
 	distance = center - (minP + distance);
 
 	auto vertexPtr = static_cast<VertexData*>(mData.get());
-	for (unsigned int i = 0; i < mNumVertices; i++, vertexPtr++)
+	for (size_t i = 0; i < mNumVertices; i++, vertexPtr++)
 	{
 		vertexPtr->pos[0] += distance[0];
 		vertexPtr->pos[1] += distance[1];
@@ -624,7 +620,7 @@ void Mesh::confine(float maxAxis)
 	auto scale = maxAxis / distanceMax;
 
 	auto vertexPtr = static_cast<VertexData*>(mData.get());
-	for (unsigned int i = 0; i < mNumVertices; i++, vertexPtr++)
+	for (size_t i = 0; i < mNumVertices; i++, vertexPtr++)
 	{
 		vertexPtr->pos[0] *= scale;
 		vertexPtr->pos[1] *= scale;
@@ -654,7 +650,7 @@ void Mesh::confine(const Vector3f& center, float maxAxis)
 	distance = center - (minP + distance);
 
 	auto vertexPtr = static_cast<VertexData*>(mData.get());
-	for (unsigned int i = 0; i < mNumVertices; i++, vertexPtr++)
+	for (size_t i = 0; i < mNumVertices; i++, vertexPtr++)
 	{
 		vertexPtr->pos[0] = (vertexPtr->pos[0] + distance[0]) * scale;
 		vertexPtr->pos[1] = (vertexPtr->pos[1] + distance[1]) * scale;
@@ -664,7 +660,7 @@ void Mesh::confine(const Vector3f& center, float maxAxis)
 
 void Mesh::invertTriWinding()
 {
-	for (unsigned int i = 0; i < mNumIndices; i += 3)
+	for (size_t i = 0; i < mNumIndices; i += 3)
 		std::swap(mIndices[0], mIndices[2]);
 }
 
@@ -680,10 +676,10 @@ void Mesh::genNormals()
 {
 	auto normals = std::unique_ptr<Vector3f[]>(new Vector3f[mNumVertices]);
 
-	for (unsigned int i = 0; i < mNumVertices; i++)
+	for (size_t i = 0; i < mNumVertices; i++)
 		normals[i].set(0.0f);
 
-	for (unsigned int i = 0; i < mNumIndices; i += 3)
+	for (size_t i = 0; i < mNumIndices; i += 3)
 	{
 		Vector3f faceNormal;
 		faceNormal.storeNormal(mData[i * 3 + 0].pos, mData[i * 3 + 1].pos, mData[i * 3 + 2].pos);
@@ -693,7 +689,7 @@ void Mesh::genNormals()
 		normals[i * 3 + 2] += faceNormal;
 	}
 
-	for (unsigned int i = 0; i < mNumVertices; i++)
+	for (size_t i = 0; i < mNumVertices; i++)
 	{
 		normals[i].normalize();
 
@@ -706,13 +702,13 @@ void Mesh::genTangents4()
 	auto tan1 = std::unique_ptr<Vector3f[]>(new Vector3f[mNumVertices]);
 	auto tan2 = std::unique_ptr<Vector3f[]>(new Vector3f[mNumVertices]);
 
-	for (unsigned int i = 0; i < mNumVertices; i++)
+	for (size_t i = 0; i < mNumVertices; i++)
 	{
 		tan1[i].set(0.0f);
 		tan2[i].set(0.0f);
 	}
 
-	for (unsigned int i = 0; i < mNumIndices; i += 3)
+	for (size_t i = 0; i < mNumIndices; i += 3)
 	{
 		auto i1 = mIndices[i + 0];
 		auto i2 = mIndices[i + 1];
@@ -747,7 +743,7 @@ void Mesh::genTangents4()
 		tan2[i3] += tdir;
 	}
 
-	for (unsigned int i = 0; i < mNumVertices; i++)
+	for (size_t i = 0; i < mNumVertices; i++)
 	{
 		Vector3f n(Mesh::unpack(mData[i].normal[0]), Mesh::unpack(mData[i].normal[1]), Mesh::unpack(mData[i].normal[2]));
 		const Vector3f& t1 = tan1[i];

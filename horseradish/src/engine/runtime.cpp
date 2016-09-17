@@ -19,7 +19,7 @@ namespace HorseRadish
 	namespace Engine
 	{
 		Runtime::FunctionContext::FunctionContext(HSQUIRRELVM &sqvm, bool hasFreeVar)
-			: mNumParams(0), mSqvm(sqvm)
+			: mSqvm(sqvm)
 		{
 			mNumParams = sq_gettop(sqvm) - (hasFreeVar ? 2 : 1); //'this' (at 1) and the free variable (at the end of the stack) don't count
 		}

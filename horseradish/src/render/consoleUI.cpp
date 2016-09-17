@@ -332,13 +332,9 @@ void ConsoleUI::drawBackground(const HorseRadish::Matrix &transformMatrix, float
 	glImmediateMode.endDraw();
 }
 
-ConsoleUI::ConsoleUI(const HorseRadish::Engine::Logger& logger, HorseRadish::Render::Renderer2D& renderer, unsigned int maxPromptHistory)
-	: mMainVisible(false), mRenderer(renderer), mLogger(logger)
+ConsoleUI::ConsoleUI(const HorseRadish::Engine::Logger& logger, HorseRadish::Render::Renderer2D& renderer, size_t maxPromptHistory)
+	: mRenderer(renderer), mLogger(logger)
 {
-	mLogView.offset = 0;
-	mCursor.offset = 0;
-	mCursor.isVisivel = false;
-	mPrompt.historyOffset = 0;
 	mPrompt.maxHistorySize = maxPromptHistory;
 
 	mViewRect.Set(30.0f, 30.0f, mRenderer.mRenderWidth - 60.0f, mRenderer.mRenderHeight - 60.0f);
@@ -368,14 +364,14 @@ void ConsoleUI::setVisible(bool visible)
 
 void ConsoleUI::processStep()
 {
-	if (mCursor.timer.getTimeMS() > 750.0f)
-	{
-		mCursor.isVisivel = !mCursor.isVisivel;
-		mCursor.timer.reStart();
-	}
+	if (mCursor.timer.getTimeMS() < 750.0f)
+		return;
+
+	mCursor.isVisivel = !mCursor.isVisivel;
+	mCursor.timer.reStart();
 }
 
-void ConsoleUI::processMsg(std::function<void(const char * const)> execPromptCmdCb, const Window::Message &msg)
+void ConsoleUI::processMsg(const Window::Message &msg, std::function<void(const char * const)> execPromptCmdCb)
 {
 	if (isVisible())
 	{

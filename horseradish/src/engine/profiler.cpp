@@ -26,7 +26,7 @@ void Profiler::Recorder::dumpBuffer()
 }
 
 Profiler::Recorder::Recorder(const char* const filePath)
-	: mNumSamples(0), mStream(filePath, false, true)
+	: mStream(filePath, false, true)
 {}
 
 Profiler::Recorder::~Recorder()
@@ -149,7 +149,7 @@ double Profiler::getLastQuantizedSample(StatId statId) const
 	return statData.quantizedSamples.samples[posRead];
 }
 
-unsigned int Profiler::getLastQuantizedSamples(StatId statId, bool normalizeValues, double* const outBuffer, const unsigned int maxItems) const
+size_t Profiler::getLastQuantizedSamples(StatId statId, bool normalizeValues, double* const outBuffer, const size_t maxItems) const
 {
 	if (!outBuffer || maxItems == 0)
 		return 0;
@@ -164,7 +164,7 @@ unsigned int Profiler::getLastQuantizedSamples(StatId statId, bool normalizeValu
 	if ((statData.quantizedSamples.arrayHead == 0) && !statData.quantizedSamples.arrayFull)
 		return 0;
 
-	unsigned int sampledCount = 0;
+	size_t sampledCount = 0;
 	double sampleDist = 1.0 / static_cast<double>(statData.globalInfo.maxValue - statData.globalInfo.minValue);
 
 	if (statData.quantizedSamples.arrayFull)
@@ -228,7 +228,7 @@ double Profiler::getLastQuantizedSamples(StatId statId, std::chrono::millisecond
 	double sampleSum = 0.0;
 	double sampleTime = 0.0f;
 	double sampleTargetTime = static_cast<double>(samplingPeriod.count());
-	unsigned int sampledCount = 0;
+	size_t sampledCount = 0;
 
 	if (statData.quantizedSamples.arrayFull)
 	{

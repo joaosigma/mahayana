@@ -52,7 +52,7 @@ namespace HorseRadish {
 		static bool GetSystemInfo(const SystemInfo &systemInfo, std::string& infoValue);
 		static bool GetSystemInfo(const SystemInfo &systemInfo, int &infoValue);
 
-		static bool InstanciateProcess(const std::string& commandLine);
+		static bool spawnSelf();
 
 		static bool ClipboardGetStrings(std::function<bool(const std::string&)> funcCallback);
 		static bool ClipboardGetFiles(std::function<bool(const std::string&)> funcCallback);

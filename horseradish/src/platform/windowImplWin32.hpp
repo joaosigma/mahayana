@@ -4,10 +4,10 @@
 
 #include "window.hpp"
 
-#include "common\Vector.hpp"
-#include "common\Platform.hpp"
-#include "common\opengl\objects.hpp"
-#include "..\engine\logger.hpp"
+#include "common/vector.hpp"
+#include "common/platform.hpp"
+#include "common/opengl/objects.hpp"
+#include "../engine/logger.hpp"
 
 #include "wglext.h"
 
@@ -20,15 +20,19 @@ class WindowImpl
 {
 	friend class OpenglContextImpl;
 
-private:
-	HWND hWnd;
-	HMODULE hModule;
-	bool closeRequested;
-	std::string errorMsg;
+	HWND mHWnd = nullptr;
+	HMODULE mHModule = nullptr;
+	bool mIsInitialized = false;
+	bool mCloseRequested = false;
+	std::string mErrorMsg;
 	std::wstring mClassName;
-	DEVMODE originalDeviceMode;
-	bool isFullscreen, isInitialized;
+	DEVMODE mOriginalDeviceMode;
 	HorseRadish::Engine::Logger &mLogger;
+
+	struct {
+		size_t width = 0, height = 0;
+		size_t resizeWidth = 0, resizeHeight = 0;
+	} mDisplayInfo;
 
 	struct {
 		std::mutex lock;
@@ -38,7 +42,7 @@ private:
 
 	struct {
 		std::mutex lock;
-		unsigned int queueSize;
+		size_t queueSize = 0;
 		std::array<Window::Message, 1024> queue;
 	} mEvents;
 	
@@ -52,22 +56,24 @@ public:
 	WindowImpl(HorseRadish::Engine::Logger &logger);
 	~WindowImpl();
 
-	std::string GetErrorMsg() const;
+	std::string getErrorMsg() const;
 
-	bool WindowInit(const std::string& windowTitle, const unsigned int winWidth, const unsigned int winHeight, const bool winFullscreen);
-	bool WindowEditorInit(const std::string& windowTitle, const unsigned int winWidth, const unsigned int winHeight, const HWND handleWindowParent);
+	bool windowInit(const std::string& windowTitle, Window::WindowStyle style, bool targetSecondaryDisplay, const unsigned int targetWidth, const unsigned int targeHeight);
 
-	bool SetWindowAlpha(const unsigned char &valorAlpha) const;
-	bool SendMessageClose() const;
-	bool SetFocus() const;
+	size_t getDisplayWidth() const;
+	size_t getDisplayHeight() const;
 
-	void RawInputSnapshot();
-	bool RawInputGetKeyStatus(const unsigned int &vcode);
-	bool RawInputGetKeyStatus(const Window::VirtualKeys &vcode);
-	HorseRadish::Vector3f RawInputGetMouseStatus();
+	bool setWindowAlpha(const unsigned char &valorAlpha) const;
+	bool sendMessageClose() const;
+	bool setFocus() const;
+
+	void rawInputSnapshot();
+	bool rawInputGetKeyStatus(const unsigned int &vcode);
+	bool rawInputGetKeyStatus(const Window::VirtualKeys &vcode);
+	HorseRadish::Vector3f rawInputGetMouseStatus();
 	
-	int MessageLoop(std::function<void()> closingCb);
-	void ProcessMessages(std::function<void(const Window::Message&)> cb, const bool resetQueue);
+	int messageLoop(std::function<void()> closingCb);
+	void processMessages(std::function<void(const Window::Message&)> cb, const bool resetQueue);
 
 	static void MsgBoxInfo(const std::string& msg);
 	static void MsgBoxInfo(const char * const msg);
@@ -79,11 +85,11 @@ public:
 
 class OpenglContextImpl
 {
-	HDC hDC;
-	HGLRC hRC;
-	std::string errorMsg;
-	const WindowImpl &window;
-	unsigned int usedPFD;
+	HDC mHDC;
+	HGLRC mHRC;
+	std::string mErrorMsg;
+	const WindowImpl &mWindow;
+	unsigned int mUsedPFD;
 
 	HGLRC (APIENTRY *wglCreateContext)	(HDC hdc);
 	BOOL  (APIENTRY *wglMakeCurrent)	(HDC hdc, HGLRC hglrc);
@@ -116,11 +122,11 @@ public:
 	OpenglContextImpl(const WindowImpl &window, const std::string& openGLModuleName, int contextMajorVersion, int contextMinorVersion, bool contextDebug, bool contextForwardCompatible);
 	~OpenglContextImpl();
 
-	bool IsValid() const;
-	std::string GetErrorMsg() const;
+	bool isValid() const;
+	std::string getErrorMsg() const;
 
-	void SetSwapInterval(const unsigned int &interval) const;
-	bool SwapBuffers(void) const;
+	void setSwapInterval(const size_t &interval) const;
+	bool swapBuffers(void) const;
 };
 
 #endif

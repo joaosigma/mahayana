@@ -77,7 +77,7 @@ HorseRadish::Color retrieveColor(HorseRadish::Engine::Profiler::StatId statId)
 	return color;
 }
 
-void ProfilerUI::drawInfo(const HorseRadish::Matrix &transformMatrix) const
+void ProfilerUI::drawInfo(const HorseRadish::Primitives2D::Rectangle<float>& viewRect, const HorseRadish::Matrix &transformMatrix) const
 {
 	if (mInfoStr.empty())
 		return;
@@ -85,8 +85,8 @@ void ProfilerUI::drawInfo(const HorseRadish::Matrix &transformMatrix) const
 	auto& glImmediateMode = mRenderer.mGlImmediateMode;
 	auto& guiFont = *mRenderer.mGui.font;
 
-	float posX = static_cast<float>(mRenderer.mRenderWidth) - guiFont.getTextWidth(mInfoStr) - 10.0f;
-	float posY = static_cast<float>(mRenderer.mRenderHeight) - guiFont.getMaxHeight() - 15.0f;
+	float posX = viewRect.width - guiFont.getTextWidth(mInfoStr) - 10.0f;
+	float posY = viewRect.height - guiFont.getMaxHeight() - 15.0f;
 
 	HorseRadish::OpenGL::glUseProgram(0);
 	HorseRadish::OpenGL::glBindProgramPipeline(mRenderer.mShaders.drawNoTex.progPipeline.getId());
@@ -94,10 +94,10 @@ void ProfilerUI::drawInfo(const HorseRadish::Matrix &transformMatrix) const
 
 	glImmediateMode.beginDraw(HorseRadish::OpenGL::Tools::ImmediateMode::GeometryType::LineStrip);
 		glImmediateMode.setColor(128, 128, 128);
-		glImmediateMode.addPosition(mRenderer.mRenderWidth, posY + guiFont.getMaxHeight() + 5.0f);
+		glImmediateMode.addPosition(viewRect.width, posY + guiFont.getMaxHeight() + 5.0f);
 		glImmediateMode.addPosition(posX - 5.0f, posY + guiFont.getMaxHeight() + 5.0f);
 		glImmediateMode.addPosition(posX - 5.0f, posY - 5.0f);
-		glImmediateMode.addPosition(mRenderer.mRenderWidth, posY - 5.0f);
+		glImmediateMode.addPosition(viewRect.width, posY - 5.0f);
 	glImmediateMode.endDraw();
 
 	guiFont.paintBegin(transformMatrix.data());
@@ -106,7 +106,7 @@ void ProfilerUI::drawInfo(const HorseRadish::Matrix &transformMatrix) const
 	guiFont.paintEnd();
 }
 
-void ProfilerUI::drawStats(const HorseRadish::Matrix &transformMatrix) const
+void ProfilerUI::drawStats(const HorseRadish::Primitives2D::Rectangle<float>& viewRect, const HorseRadish::Matrix &transformMatrix) const
 {
 	if (GraphStatIds.empty())
 		return;
@@ -127,7 +127,7 @@ void ProfilerUI::drawStats(const HorseRadish::Matrix &transformMatrix) const
 	auto textPreviewHeight = guiFont.getMaxHeight();
 	auto textPreviewWidth = guiFont.getTextWidth("XXX.XX X") + 5.0f;
 
-	HorseRadish::Primitives2D::Rectangle<float> graphRect(mViewRect.x + 10.0f, mViewRect.y + 10.0f, mViewRect.width - 20.0f - textPreviewWidth, mViewRect.height - 20.0f);
+	HorseRadish::Primitives2D::Rectangle<float> graphRect(viewRect.x + 10.0f, viewRect.y + 10.0f, viewRect.width - 20.0f - textPreviewWidth, viewRect.height - 20.0f);
 	graphRect.y += textPreviewHeight + 10.0f;
 	graphRect.height -= textPreviewHeight + 10.0f;
 	float deltaX = graphRect.width / sampleValues.size();
@@ -197,7 +197,7 @@ void ProfilerUI::drawStats(const HorseRadish::Matrix &transformMatrix) const
 	guiFont.paintEnd();
 }
 
-void ProfilerUI::drawStatsBackground(const HorseRadish::Matrix &transformMatrix, float bkgAlpha) const
+void ProfilerUI::drawStatsBackground(const HorseRadish::Primitives2D::Rectangle<float>& viewRect, const HorseRadish::Matrix &transformMatrix, float bkgAlpha) const
 {
 	HorseRadish::OpenGL::glUseProgram(0);
 	HorseRadish::OpenGL::glBindProgramPipeline(mRenderer.mShaders.drawNoTex.progPipeline.getId());
@@ -208,22 +208,22 @@ void ProfilerUI::drawStatsBackground(const HorseRadish::Matrix &transformMatrix,
 
 	glImmediateMode.beginDraw(HorseRadish::OpenGL::Tools::ImmediateMode::GeometryType::Quads);
 	glImmediateMode.setColor(0, 0, 0, HorseRadish::Color::convertColor(bkgAlpha));
-	glImmediateMode.addQuad(mViewRect.x, mViewRect.y, mViewRect.width, mViewRect.height);
+	glImmediateMode.addQuad(viewRect.x, viewRect.y, viewRect.width, viewRect.height);
 	glImmediateMode.endDraw();
 
 	glImmediateMode.beginDraw(HorseRadish::OpenGL::Tools::ImmediateMode::GeometryType::Lines);
 	glImmediateMode.setColor(128, 128, 128);
-	glImmediateMode.addLineV(mViewRect.x, mViewRect.y, mViewRect.y + mViewRect.height);
-	glImmediateMode.addLineH(mViewRect.x, mViewRect.x + mViewRect.width, mViewRect.y);
-	glImmediateMode.addLineV(mViewRect.x + mViewRect.width, mViewRect.y, mViewRect.y + mViewRect.height);
-	glImmediateMode.addLineH(mViewRect.x, mViewRect.x + mViewRect.width, mViewRect.y + mViewRect.height);
+	glImmediateMode.addLineV(viewRect.x, viewRect.y, viewRect.y + viewRect.height);
+	glImmediateMode.addLineH(viewRect.x, viewRect.x + viewRect.width, viewRect.y);
+	glImmediateMode.addLineV(viewRect.x + viewRect.width, viewRect.y, viewRect.y + viewRect.height);
+	glImmediateMode.addLineH(viewRect.x, viewRect.x + viewRect.width, viewRect.y + viewRect.height);
 	glImmediateMode.endDraw();
 }
 
 ProfilerUI::ProfilerUI(const HorseRadish::Engine::Profiler& profiler, HorseRadish::Render::Renderer2D& renderer)
 	: mShowStats(false), mShowInfo(false), mRenderer(renderer), mProfiler(profiler)
 {
-	mViewRect.Set(20.0f, 20.0f, mRenderer.mRenderWidth - 40.0f, (mRenderer.mRenderHeight * 0.5f) - 20.0f);
+	
 }
 
 void ProfilerUI::draw(const HorseRadish::OpenGL::Tools::Viewport& viewport) const
@@ -234,12 +234,17 @@ void ProfilerUI::draw(const HorseRadish::OpenGL::Tools::Viewport& viewport) cons
 	HorseRadish::Matrix transformMatrix = viewport.getProjection(HorseRadish::OpenGL::Tools::Viewport::ProjectionType::Proj2D);
 
 	if (mShowInfo)
-		drawInfo(transformMatrix);
-
-	if (mShowStats)
 	{
-		drawStatsBackground(transformMatrix, 0.8f);
-		drawStats(transformMatrix);
+		HorseRadish::Primitives2D::Rectangle<float> viewRect(0.0f, 0.0f, viewport.getWidth(), viewport.getHeight());
+		drawInfo(viewRect, transformMatrix);
+	}
+
+	//if (mShowStats)
+	{
+		HorseRadish::Primitives2D::Rectangle<float> viewRect(20.0f, 20.0f, viewport.getWidth() - 40.0f, (viewport.getHeight() * 0.5f) - 40.0f);
+
+		drawStatsBackground(viewRect, transformMatrix, 0.8f);
+		drawStats(viewRect, transformMatrix);
 	}
 }
 

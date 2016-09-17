@@ -15,7 +15,7 @@ namespace HorseRadish
 			HorseRadish::Matrix matrixModelView;
 
 			HorseRadish::Matrix matrixTransformacao = hrViewport.getProjection(HorseRadish::OpenGL::Tools::Viewport::ProjectionType::Proj3D);
-			matrixModelView.set(hrCamera.GetModelView());
+			matrixModelView.set(hrCamera.getModelView());
 			matrixTransformacao *= matrixModelView;
 
 			vbos.vaoMesh.bind();
@@ -126,12 +126,12 @@ namespace HorseRadish
 				concept.second.renderData.meshVBOVertexOffset = baseVertexOffset;
 				concept.second.renderData.meshTriListOffset = (void*)poolIndex;
 
-				vbos.vboMeshData.writeData(concept.second.mesh.dataVertices(), concept.second.mesh.sizeVertices(), poolVertex);
+				vbos.vboMeshData.writeData(concept.second.mesh.vertices(), concept.second.mesh.sizeVertices(), poolVertex);
 				poolVertex += concept.second.mesh.sizeVertices();
 
 				baseVertexOffset += concept.second.mesh.numVertices();
 
-				vbos.vboMeshIndexData.writeData(concept.second.mesh.dataIndices(), concept.second.mesh.sizeIndices(), poolIndex);
+				vbos.vboMeshIndexData.writeData(concept.second.mesh.indices(), concept.second.mesh.sizeIndices(), poolIndex);
 				poolIndex += concept.second.mesh.sizeIndices();
 			}
 

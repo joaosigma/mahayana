@@ -21,7 +21,7 @@ public:
 	typedef uint_fast64_t uint64;
 
 	static constexpr double QuantizationPeriodMS = 250.0;
-	static constexpr unsigned int QuantizationSamples = 240;
+	static constexpr size_t QuantizationSamples = 240;
 
 	enum class StatGroup : unsigned int
 	{
@@ -111,7 +111,7 @@ private:
 			std::chrono::high_resolution_clock::time_point timestamp;
 		};
 
-		unsigned int mNumSamples;
+		size_t mNumSamples = 0;
 		HorseRadish::Streams::FileStream mStream;
 		std::array<SampleInfo, Recorder::BufferSize> mBuffer;
 
@@ -126,11 +126,10 @@ private:
 
 	struct Sample
 	{
-		uint64 sampleId, value;
+		uint64 sampleId = 0, value = 0;
 		std::chrono::high_resolution_clock::time_point timestamp;
 
 		Sample()
-			: sampleId(0), value(0)
 		{ }
 
 		Sample(uint64 sampleId, uint64 value, std::chrono::high_resolution_clock::time_point timestamp)
@@ -141,28 +140,23 @@ private:
 	struct StatData
 	{
 		struct {
-			uint64 numTotalSamples;
-			uint64 lastValue, maxValue, minValue;
+			uint64 numTotalSamples = 0;
+			uint64 lastValue = 0, maxValue = 0, minValue = 0;
 		} globalInfo;
 
 		struct {
-			uint64 sum;
-			unsigned int numSamples;
+			uint64 sum = 0;
+			size_t numSamples = 0;
 		} quantization;
 
 		struct {
-			bool arrayFull;
-			unsigned int arrayHead;
+			bool arrayFull = false;
+			size_t arrayHead = 0;
 			std::array<double, Profiler::QuantizationSamples> samples;
 		} quantizedSamples;
 				
 		StatData()
-		{
-			globalInfo = { 0, 0, 0, 0 };
-			quantization = { 0, 0 };
-			quantizedSamples.arrayFull = false;
-			quantizedSamples.arrayHead = 0;
-		}
+		{ }
 	};
 
 	static constexpr StatGroup extractGroup(StatId statId)
@@ -174,13 +168,12 @@ private:
 
 	HorseRadish::Timer mTimer;
 	std::unique_ptr<Recorder> mRecorder;
-	std::atomic<unsigned int> mSampleId;
+	std::atomic<unsigned int> mSampleId = 0;
 	std::unordered_set<StatGroup> mStatGroups;
 	std::unordered_map<StatId, StatData> mStats;
 
 public:
 	Profiler()
-	: mSampleId(0)
 	{ }
 
 	void enableStat(StatId statId)
@@ -249,7 +242,7 @@ public:
 
 	double getLastQuantizedSample(StatId statId) const;
 
-	unsigned int getLastQuantizedSamples(StatId statId, bool normalizeValues, double* const outBuffer, const unsigned int maxItems) const;
+	size_t getLastQuantizedSamples(StatId statId, bool normalizeValues, double* const outBuffer, const size_t maxItems) const;
 	double getLastQuantizedSamples(StatId statId, std::chrono::milliseconds samplingPeriod) const;
 };
 
@@ -350,7 +343,7 @@ public:
 		return 0.0;
 	}
 
-	unsigned int getLastQuantizedSamples(StatId statId, bool normalizeValues, double* const outBuffer, const unsigned int maxItems) const
+	size_t getLastQuantizedSamples(StatId statId, bool normalizeValues, double* const outBuffer, const size_t maxItems) const
 	{
 		return 0;
 	}

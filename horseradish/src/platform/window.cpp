@@ -4,71 +4,74 @@
 
 Window::Window(HorseRadish::Engine::Logger &logger)
 	: mImpl(new WindowImpl(logger))
-{
-}
+{ }
 
 Window::~Window()
+{ }
+
+std::string Window::getErrorMsg() const
 {
+	return mImpl->getErrorMsg();
 }
 
-std::string Window::GetErrorMsg() const
+bool Window::windowInit(const std::string& windowTitle, WindowStyle style, bool targetSecondaryDisplay, const size_t targetWidth, const size_t targeHeight)
 {
-	return mImpl->GetErrorMsg();
+	return mImpl->windowInit(windowTitle, style, targetSecondaryDisplay, targetWidth, targeHeight);
 }
 
-bool Window::WindowInit(const std::string& windowTitle, const unsigned int winWidth, const unsigned int winHeight, const bool winFullscreen)
+size_t Window::getDisplayWidth() const
 {
-	return mImpl->WindowInit(windowTitle, winWidth, winHeight, winFullscreen);
+	return mImpl->getDisplayWidth();
 }
 
-bool Window::WindowEditorInit(const std::string& windowTitle, const unsigned int winWidth, const unsigned int winHeight, const HWND handleWindowParent)
+size_t Window::getDisplayHeight() const
 {
-	return mImpl->WindowEditorInit(windowTitle, winWidth, winHeight, handleWindowParent);
+	return mImpl->getDisplayHeight();
 }
 
-bool Window::SetWindowAlpha(const unsigned char &valorAlpha) const
+bool Window::setWindowAlpha(const unsigned char &valorAlpha) const
 {
-	return mImpl->SetWindowAlpha(valorAlpha);
+	return mImpl->setWindowAlpha(valorAlpha);
 }
 
-bool Window::SendMessageClose() const
+bool Window::sendMessageClose() const
 {
-	return mImpl->SendMessageClose();
+	return mImpl->sendMessageClose();
 }
 
-bool Window::SetFocus() const
+bool Window::setFocus() const
 {
-	return mImpl->SetFocus();
+	return mImpl->setFocus();
 }
 
-void Window::RawInputSnapshot()
+void Window::rawInputSnapshot()
 {
-	mImpl->RawInputSnapshot();
+	mImpl->rawInputSnapshot();
 }
 
-bool Window::RawInputGetKeyStatus(const unsigned int &vcode)
+bool Window::rawInputGetKeyStatus(const unsigned int &vcode)
 {
-	return mImpl->RawInputGetKeyStatus(vcode);
+	return mImpl->rawInputGetKeyStatus(vcode);
 }
 
-bool Window::RawInputGetKeyStatus(const Window::VirtualKeys &vcode)
+bool Window::rawInputGetKeyStatus(const Window::VirtualKeys &vcode)
 {
-	return mImpl->RawInputGetKeyStatus(vcode);
+	return mImpl->rawInputGetKeyStatus(vcode);
 }
 
-HorseRadish::Vector3f Window::RawInputGetMouseStatus()
+HorseRadish::Vector3f Window::rawInputGetMouseStatus()
 {
-	return mImpl->RawInputGetMouseStatus();
+	return mImpl->rawInputGetMouseStatus();
 }
 
-int Window::MessageLoop(std::function<void()> closingCb)
+int Window::messageLoop(std::function<void()> closingCb)
 {
-	return mImpl->MessageLoop(closingCb);
+	return mImpl->messageLoop(closingCb);
 }
 
-void Window::ProcessMessages(std::function<void(const Message&)> cb, const bool resetQueue)
+void Window::processMessages(std::function<void(const Message&)> cb, const bool resetQueue)
 {
-	mImpl->ProcessMessages(cb, resetQueue);
+	mImpl->processMessages(cb, resetQueue);
 }
 
 void Window::MsgBoxInfo(const std::string& msg)
@@ -102,28 +105,27 @@ void Window::MsgBoxError(const char * const msg)
 }
 
 OpenglContext::OpenglContext(const Window &window, const std::string& openGLModuleName, int contextMajorVersion, int contextMinorVersion, bool contextDebug, bool contextForwardCompatible)
-	: mIsValid(false)
-	, mImpl(new OpenglContextImpl(*window.mImpl, openGLModuleName, contextMajorVersion, contextMinorVersion, contextDebug, contextForwardCompatible))
+	: mImpl(new OpenglContextImpl(*window.mImpl, openGLModuleName, contextMajorVersion, contextMinorVersion, contextDebug, contextForwardCompatible))
 {
 	mIsValid = initContext();
 }
 
 bool OpenglContext::isValid() const
 {
-	return (mImpl->IsValid() & mIsValid);
+	return (mImpl->isValid() & mIsValid);
 }
 
 std::string OpenglContext::getErrorMsg() const
 {
-	return mImpl->GetErrorMsg();
+	return mImpl->getErrorMsg();
 }
 
 void OpenglContext::setSwapInterval(const unsigned int &interval) const
 {
-	mImpl->SetSwapInterval(interval);
+	mImpl->setSwapInterval(interval);
 }
 
 bool OpenglContext::swapBuffers() const
 {
-	return mImpl->SwapBuffers();
+	return mImpl->swapBuffers();
 }

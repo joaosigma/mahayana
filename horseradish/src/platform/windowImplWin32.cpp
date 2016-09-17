@@ -8,37 +8,54 @@
 #include <Windowsx.h>
 
 static
-bool checkBestDisplayFrequency(DEVMODE * const deviceMode)
+bool retrieveMonitorArea(RECT& monitorArea, bool secondaryIfAvailable, bool fullArea)
 {
-	DEVMODE deviceModeAux;
-	DWORD bestModeIndex, bestModeFrequency;
-
-	if (deviceMode == nullptr)
-		return false;
-
-	memset(&deviceModeAux, 0, sizeof(DEVMODE));
-	deviceModeAux.dmSize = sizeof(DEVMODE);
-
-	bestModeIndex = 0;
-	bestModeFrequency = 0;
-
-	for (DWORD modeIndex = 0; EnumDisplaySettingsEx(nullptr, modeIndex, &deviceModeAux, 0) != FALSE; modeIndex++)
+	struct CallbackData
 	{
-		if ((deviceModeAux.dmBitsPerPel != deviceMode->dmBitsPerPel) || (deviceModeAux.dmPelsHeight != deviceMode->dmPelsHeight) || (deviceModeAux.dmPelsWidth != deviceMode->dmPelsWidth))
-			continue;
+		bool foundPrimary = false;
+		RECT primaryAreaFull, primaryAreaWork;
 
-		if (deviceModeAux.dmDisplayFrequency < bestModeFrequency)
-			continue;
+		bool foundSecondary = false;
+		RECT secondaryAreaFull, secondaryAreaWork;
+	} cbData;
 
-		bestModeIndex = modeIndex;
-		bestModeFrequency = deviceModeAux.dmDisplayFrequency;
+	EnumDisplayMonitors(nullptr, nullptr, [](HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData) -> BOOL
+	{
+		MONITORINFO monitorInfo;
+		memset(&monitorInfo, 0, sizeof(MONITORINFO));
+		monitorInfo.cbSize = sizeof(MONITORINFO);
+
+		if (!GetMonitorInfo(hMonitor, &monitorInfo))
+			return TRUE;
+
+		auto cbData = reinterpret_cast<CallbackData*>(dwData);
+
+		if ((monitorInfo.dwFlags & MONITORINFOF_PRIMARY) == MONITORINFOF_PRIMARY)
+		{
+			cbData->foundPrimary = true;
+			cbData->primaryAreaFull = monitorInfo.rcMonitor;
+			cbData->primaryAreaWork = monitorInfo.rcWork;
+		}
+		else if (!cbData->foundSecondary && monitorInfo.rcMonitor.left >= 0)
+		{
+			cbData->foundSecondary = true;
+			cbData->secondaryAreaFull = monitorInfo.rcMonitor;
+			cbData->secondaryAreaWork = monitorInfo.rcWork;
+		}
+
+		return ((cbData->foundPrimary && cbData->foundSecondary) ? FALSE : TRUE);
+	}, reinterpret_cast<LPARAM>(&cbData));
+
+	if (secondaryIfAvailable && cbData.foundSecondary)
+	{
+		monitorArea = fullArea ? cbData.secondaryAreaFull : cbData.secondaryAreaWork;
+		return true;
 	}
 
-	if (bestModeFrequency == 0)
-		return false;
+	if (cbData.foundPrimary)
+		monitorArea = fullArea ? cbData.primaryAreaFull : cbData.primaryAreaWork;
 
-	EnumDisplaySettingsEx(nullptr, bestModeIndex, deviceMode, 0);
-	return true;
+	return cbData.foundPrimary;
 }
 
 static
@@ -63,7 +80,7 @@ LRESULT CALLBACK WindowImpl::wndProc(HWND hWnd, UINT messageID, WPARAM wParam, L
 
 	if (messageID == WM_CLOSE)
 	{
-		window->closeRequested = true;
+		window->mCloseRequested = true;
 		return 0;
 	}
 
@@ -118,6 +135,30 @@ LRESULT CALLBACK WindowImpl::wndProc(HWND hWnd, UINT messageID, WPARAM wParam, L
 			params.piecesShort.short0 = GET_X_LPARAM(lParam);
 			params.piecesShort.short1 = GET_Y_LPARAM(lParam);
 			window->mEvents.queue[window->mEvents.queueSize++] = Window::Message(Window::Message::MessageType::MouseWheel, params.valueWord, flags);
+		}
+
+		return 0;
+	}
+
+	if (messageID == WM_SIZE)
+	{
+		window->mDisplayInfo.resizeWidth = LOWORD(lParam);
+		window->mDisplayInfo.resizeHeight = HIWORD(lParam);
+		return 0;
+	}
+
+	if (messageID == WM_EXITSIZEMOVE)
+	{
+		if ((window->mDisplayInfo.resizeWidth != window->mDisplayInfo.width) || (window->mDisplayInfo.resizeHeight != window->mDisplayInfo.height))
+		{
+			HorseRadish::hSplitUInt32 params(0);
+			params.piecesShort.short0 = window->mDisplayInfo.resizeWidth;
+			params.piecesShort.short1 = window->mDisplayInfo.resizeHeight;
+
+			window->mDisplayInfo.width = window->mDisplayInfo.resizeWidth;
+			window->mDisplayInfo.height = window->mDisplayInfo.resizeHeight;
+
+			window->mEvents.queue[window->mEvents.queueSize++] = Window::Message(Window::Message::MessageType::Resize, params.valueWord, 0);
 		}
 
 		return 0;
@@ -210,66 +251,56 @@ void WindowImpl::processRawInput(const RAWINPUT &inputData)
 }
 
 WindowImpl::WindowImpl(HorseRadish::Engine::Logger &logger)
-	: hWnd(nullptr)
-	, hModule(nullptr)
-	, mLogger(logger)
-	, isFullscreen(false)
-	, isInitialized(false)
+	: mLogger(logger)
 {
-	mEvents.queueSize = 0;
+	memset(&mOriginalDeviceMode, 0, sizeof(DEVMODE));
 
 	mRawInput.mouseAccum = mRawInput.mouseSnapshot = HorseRadish::Vector3f(0.0f);
 	mRawInput.keysSnapshot.fill(false);
 	mRawInput.keysRealtime.fill(false);
-
-	memset(&this->originalDeviceMode, 0, sizeof(this->originalDeviceMode));
-	mClassName.clear();
 }
 
 WindowImpl::~WindowImpl()
 {
+	if (!mOriginalDeviceMode.dmSize)
+		return;
+
+	ChangeDisplaySettings(nullptr, 0);
+	memset(&mOriginalDeviceMode, 0, sizeof(DEVMODE));
 }
 
-std::string WindowImpl::GetErrorMsg() const
+std::string WindowImpl::getErrorMsg() const
 {
-	return errorMsg;
+	return mErrorMsg;
 }
 
-bool WindowImpl::WindowInit(const std::string& windowTitle, const unsigned int winWidth, const unsigned int winHeight, const bool winFullscreen)
+bool WindowImpl::windowInit(const std::string& windowTitle, Window::WindowStyle style, bool targetSecondaryDisplay, const unsigned int targetWidth, const unsigned int targeHeight)
 {
-	DWORD dwExStyle, dwStyle;
-	RECT windowRect, desktopRect;
-
-	if (this->isInitialized)
+	if (mIsInitialized)
 	{
-		errorMsg = "window already initialized";
+		mErrorMsg = "window already initialized";
 		return false;
 	}
 
-	if (windowTitle.empty() || (winWidth == 0) || (winHeight == 0))
+	if (windowTitle.empty() || ((style == Window::WindowStyle::StyleWindow) && ((targetWidth == 0) || (targeHeight == 0))))
 	{
-		errorMsg = "incorrect data to properly create a window";
+		mErrorMsg = "incorrect data to properly create a window";
 		return false;
 	}
-
-	windowRect.left = windowRect.top = 0;
-	windowRect.right = winWidth;
-	windowRect.bottom = winHeight;
 
 	mClassName = HorseRadish::StringUtils::conv2UTF16("HorseRadish graphics engine...");
-
-	this->hModule = GetModuleHandle(NULL); //safe since this is not a DLL
+	mHModule = GetModuleHandle(NULL); //safe since this is not a DLL
 
 	{
 		WNDCLASSEXW windowClass;
 
 		memset(&windowClass, 0, sizeof(WNDCLASSEXW));
 		windowClass.cbSize = sizeof(WNDCLASSEXW);
-		windowClass.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
+		windowClass.style = CS_OWNDC;
 		windowClass.lpfnWndProc = (WNDPROC)&WindowImpl::wndProc;
 		windowClass.cbClsExtra = 0;
 		windowClass.cbWndExtra = 0;
-		windowClass.hInstance = this->hModule;
+		windowClass.hInstance = mHModule;
 		windowClass.hIcon = nullptr;
 		windowClass.hCursor = nullptr;
 		windowClass.hbrBackground = nullptr;
@@ -277,67 +308,102 @@ bool WindowImpl::WindowInit(const std::string& windowTitle, const unsigned int w
 		windowClass.lpszClassName = mClassName.c_str();
 		if (RegisterClassEx(&windowClass) == 0)
 		{
-			errorMsg = "unable to register window class";
+			mErrorMsg = "unable to register window class";
 			return false;
 		}
 	}
 
-	this->originalDeviceMode.dmSize = sizeof(DEVMODE);
-	this->originalDeviceMode.dmDriverExtra = 0;
-	EnumDisplaySettingsEx(nullptr, ENUM_CURRENT_SETTINGS, &this->originalDeviceMode, 0);
-
-	if (winFullscreen)
+	if (style == Window::WindowStyle::StyleFullscreen)
 	{
-		DEVMODE	dmScreenSettings;
+		mOriginalDeviceMode.dmSize = sizeof(DEVMODE);
+		mOriginalDeviceMode.dmDriverExtra = 0;
+		EnumDisplaySettingsEx(nullptr, ENUM_CURRENT_SETTINGS, &mOriginalDeviceMode, 0);
 
-		memset(&dmScreenSettings, 0, sizeof(DEVMODE));
-		dmScreenSettings.dmSize = sizeof(DEVMODE);
-		dmScreenSettings.dmPelsWidth = winWidth;
-		dmScreenSettings.dmPelsHeight = winHeight;
-		dmScreenSettings.dmBitsPerPel = 32;
-		dmScreenSettings.dmFields = DM_BITSPERPEL | DM_PELSWIDTH | DM_PELSHEIGHT;
-
-		if ((checkBestDisplayFrequency(&dmScreenSettings) == false) || (ChangeDisplaySettings(&dmScreenSettings, CDS_FULLSCREEN | CDS_RESET) != DISP_CHANGE_SUCCESSFUL))
+		if (ChangeDisplaySettings(&mOriginalDeviceMode, CDS_FULLSCREEN) != DISP_CHANGE_SUCCESSFUL)
 		{
-			mLogger.logWarning(HorseRadish::Engine::Logger::ModuleType::Graphics, "Unable to change to fullscreen");
+			memset(&mOriginalDeviceMode, 0, sizeof(DEVMODE));
 
-			dwExStyle = WS_EX_APPWINDOW;
-			dwStyle = WS_CAPTION | WS_VISIBLE;
-			AdjustWindowRectEx(&windowRect, dwStyle, false, dwExStyle);
+			mErrorMsg = "unable to change to fullscreen";
+			return false;
 		}
-		else
-		{
-			dwExStyle = WS_EX_APPWINDOW;
-			dwStyle = WS_POPUP | WS_VISIBLE;
 
-			this->isFullscreen = true;
-		}
-	}
-	else
-	{
-		dwExStyle = WS_EX_APPWINDOW;
-		dwStyle = WS_CAPTION | WS_VISIBLE;
-		AdjustWindowRectEx(&windowRect, dwStyle, false, dwExStyle);
-	}
+		DWORD dwExStyle = 0;
+		DWORD dwStyle = WS_POPUP | WS_VISIBLE;
 
-	if (SystemParametersInfo(SPI_GETWORKAREA, 0, &desktopRect, 0) != TRUE)
-		desktopRect.bottom = desktopRect.left = desktopRect.right = desktopRect.top = 0;
-
-	{
 		auto windowTitleWChar = HorseRadish::StringUtils::conv2UTF16(windowTitle);
 
-		this->hWnd = CreateWindowEx(dwExStyle, mClassName.c_str(), windowTitleWChar.c_str(), dwStyle,
-			desktopRect.left + 5, desktopRect.top + 5, (windowRect.right - windowRect.left), (windowRect.bottom - windowRect.top),
-			HWND_DESKTOP, nullptr, this->hModule,
+		mHWnd = CreateWindowEx(dwExStyle, mClassName.c_str(), windowTitleWChar.c_str(), dwStyle,
+			0, 0, mOriginalDeviceMode.dmPelsWidth, mOriginalDeviceMode.dmPelsHeight,
+			HWND_DESKTOP, nullptr, mHModule,
 			this);
 
-		if (this->hWnd == nullptr)
+		mDisplayInfo.resizeWidth = mOriginalDeviceMode.dmPelsWidth;
+		mDisplayInfo.resizeHeight = mOriginalDeviceMode.dmPelsHeight;
+	}
+	else if (style == Window::WindowStyle::StyleFullscreenWindow)
+	{
+		RECT monitorRect;
+		if (!retrieveMonitorArea(monitorRect, targetSecondaryDisplay, true))
 		{
-			errorMsg = "unable to create window";
+			mErrorMsg = "unable to retrieve display device";
 
-			UnregisterClass(mClassName.c_str(), this->hModule);
+			UnregisterClass(mClassName.c_str(), mHModule);
 			return false;
 		}
+
+		DWORD dwExStyle = 0;
+		DWORD dwStyle = WS_POPUP | WS_VISIBLE;
+		
+		auto windowTitleWChar = HorseRadish::StringUtils::conv2UTF16(windowTitle);
+
+		mHWnd = CreateWindowEx(dwExStyle, mClassName.c_str(), windowTitleWChar.c_str(), dwStyle,
+			monitorRect.left, monitorRect.top, monitorRect.right - monitorRect.left, monitorRect.bottom - monitorRect.top,
+			HWND_DESKTOP, nullptr, mHModule,
+			this);
+
+		mDisplayInfo.resizeWidth = monitorRect.right - monitorRect.left;
+		mDisplayInfo.resizeHeight = monitorRect.bottom - monitorRect.top;
+	}
+	else if(style == Window::WindowStyle::StyleWindow)
+	{
+		RECT monitorRect;
+		if (!retrieveMonitorArea(monitorRect, targetSecondaryDisplay, targetSecondaryDisplay))
+		{
+			mErrorMsg = "unable to retrieve display device";
+
+			UnregisterClass(mClassName.c_str(), mHModule);
+			return false;
+		}
+
+		DWORD dwExStyle = 0;
+		DWORD dwStyle = WS_CAPTION | WS_VISIBLE;
+
+		RECT windowRect;
+		windowRect.left = windowRect.top = 0;
+		windowRect.right = targetWidth;
+		windowRect.bottom = targeHeight;
+		AdjustWindowRectEx(&windowRect, dwStyle, false, dwExStyle);
+
+		if (((windowRect.right - windowRect.left) * (windowRect.bottom - windowRect.top)) > ((monitorRect.right - monitorRect.left) * (monitorRect.bottom - monitorRect.top)))
+			windowRect = monitorRect;
+
+		auto windowTitleWChar = HorseRadish::StringUtils::conv2UTF16(windowTitle);
+
+		mHWnd = CreateWindowEx(dwExStyle, mClassName.c_str(), windowTitleWChar.c_str(), dwStyle,
+			monitorRect.left, monitorRect.top, (windowRect.right - windowRect.left), (windowRect.bottom - windowRect.top),
+			HWND_DESKTOP, nullptr, mHModule,
+			this);
+
+		mDisplayInfo.resizeWidth = (windowRect.right - windowRect.left);
+		mDisplayInfo.resizeHeight = (windowRect.bottom - windowRect.top);
+	}
+
+	if (mHWnd == nullptr)
+	{
+		mErrorMsg = "unable to create window";
+		
+		UnregisterClass(mClassName.c_str(), mHModule);
+		return false;
 	}
 
 	{
@@ -346,12 +412,12 @@ bool WindowImpl::WindowInit(const std::string& windowTitle, const unsigned int w
 		rawInputDevice[0].usUsagePage = 0x01; //HID_USAGE_PAGE_GENERIC
 		rawInputDevice[0].usUsage = 0x02; //HID_USAGE_GENERIC_MOUSE
 		rawInputDevice[0].dwFlags = 0;
-		rawInputDevice[0].hwndTarget = hWnd;
+		rawInputDevice[0].hwndTarget = mHWnd;
 		
 		rawInputDevice[1].usUsagePage = 0x01; //HID_USAGE_PAGE_GENERIC
 		rawInputDevice[1].usUsage = 0x06; //HID_USAGE_GENERIC_KEYBOARD
 		rawInputDevice[1].dwFlags = 0;
-		rawInputDevice[1].hwndTarget = hWnd;
+		rawInputDevice[1].hwndTarget = mHWnd;
 
 		if (RegisterRawInputDevices(rawInputDevice, 2, sizeof(rawInputDevice[0])) != TRUE)
 			mLogger.logError(HorseRadish::Engine::Logger::ModuleType::Graphics, "unable to register raw input devices");
@@ -359,36 +425,38 @@ bool WindowImpl::WindowInit(const std::string& windowTitle, const unsigned int w
 
 	SetCursor(nullptr);
 
-	this->isInitialized = true;
+	mIsInitialized = true;
 	return true;
 }
 
-bool WindowImpl::WindowEditorInit(const std::string& windowTitle, const unsigned int winWidth, const unsigned int winHeight, const HWND handleWindowParent)
+size_t WindowImpl::getDisplayWidth() const
 {
-	return false;
+	return mDisplayInfo.resizeWidth;
 }
 
-bool WindowImpl::SetWindowAlpha(const unsigned char &valorAlpha) const
+size_t WindowImpl::getDisplayHeight() const
 {
-	if (this->isFullscreen)
-		return false;
-
-	SetWindowLong(this->hWnd, GWL_EXSTYLE, GetWindowLong(this->hWnd, GWL_EXSTYLE) | WS_EX_LAYERED);
-
-	return (SetLayeredWindowAttributes(this->hWnd, RGB(0,0,0), (valorAlpha < 10) ? 10 : valorAlpha, LWA_ALPHA) == TRUE);
+	return mDisplayInfo.resizeHeight;
 }
 
-bool WindowImpl::SendMessageClose() const
+bool WindowImpl::setWindowAlpha(const unsigned char &valorAlpha) const
 {
-	return (SendNotifyMessage(this->hWnd, WM_CLOSE, 0, 0) == TRUE);
+	SetWindowLong(mHWnd, GWL_EXSTYLE, GetWindowLong(mHWnd, GWL_EXSTYLE) | WS_EX_LAYERED);
+
+	return (SetLayeredWindowAttributes(mHWnd, RGB(0,0,0), (valorAlpha < 10) ? 10 : valorAlpha, LWA_ALPHA) == TRUE);
 }
 
-bool WindowImpl::SetFocus() const
+bool WindowImpl::sendMessageClose() const
 {
-	return (::SetFocus(this->hWnd) != nullptr);
+	return (SendNotifyMessage(mHWnd, WM_CLOSE, 0, 0) == TRUE);
 }
 
-void WindowImpl::RawInputSnapshot()
+bool WindowImpl::setFocus() const
+{
+	return (::SetFocus(mHWnd) != nullptr);
+}
+
+void WindowImpl::rawInputSnapshot()
 {
 	std::lock_guard<std::mutex> lock(mRawInput.lock);
 
@@ -398,7 +466,7 @@ void WindowImpl::RawInputSnapshot()
 	mRawInput.keysSnapshot = mRawInput.keysRealtime;
 }
 
-bool WindowImpl::RawInputGetKeyStatus(const unsigned int &vcode)
+bool WindowImpl::rawInputGetKeyStatus(const unsigned int &vcode)
 {
 	std::lock_guard<std::mutex> lock(mRawInput.lock);
 
@@ -407,28 +475,28 @@ bool WindowImpl::RawInputGetKeyStatus(const unsigned int &vcode)
 	return mRawInput.keysSnapshot[vcode];
 }
 
-bool WindowImpl::RawInputGetKeyStatus(const Window::VirtualKeys &vcode)
+bool WindowImpl::rawInputGetKeyStatus(const Window::VirtualKeys &vcode)
 {
-	return WindowImpl::RawInputGetKeyStatus(static_cast<unsigned int>(vcode));
+	return WindowImpl::rawInputGetKeyStatus(static_cast<unsigned int>(vcode));
 }
 
-HorseRadish::Vector3f WindowImpl::RawInputGetMouseStatus()
+HorseRadish::Vector3f WindowImpl::rawInputGetMouseStatus()
 {
 	std::lock_guard<std::mutex> lock(mRawInput.lock);
 
 	return mRawInput.mouseSnapshot;
 }
 
-int WindowImpl::MessageLoop(std::function<void()> closingCb)
+int WindowImpl::messageLoop(std::function<void()> closingCb)
 {
 	MSG msg;
 	BOOL returnCode;
 
-	if (!this->isInitialized)
+	if (!mIsInitialized)
 		return -1;
 
 	//main loop
-	closeRequested = false;
+	mCloseRequested = false;
 	while ((returnCode = GetMessage(&msg, NULL, 0, 0)) != 0)
 	{
 		if (returnCode == -1)
@@ -437,24 +505,20 @@ int WindowImpl::MessageLoop(std::function<void()> closingCb)
 			continue;
 		}
 
-		if (closeRequested)
+		if (mCloseRequested)
 		{
 			if (closingCb)
 				closingCb();
 
-			if (this->isFullscreen)
-				ChangeDisplaySettings(&this->originalDeviceMode, CDS_RESET | CDS_UPDATEREGISTRY);
-			this->isFullscreen = false;
-
-			if (this->hWnd != nullptr)
+			if (mHWnd != nullptr)
 			{
-				if (DestroyWindow(this->hWnd) == FALSE)
+				if (DestroyWindow(mHWnd) == FALSE)
 					mLogger.logError(HorseRadish::Engine::Logger::ModuleType::Graphics, "Unable to delete window handle");
 
-				this->hWnd = nullptr;
+				mHWnd = nullptr;
 			}
 
-			closeRequested = false;
+			mCloseRequested = false;
 		}
 
 		TranslateMessage(&msg);
@@ -462,16 +526,16 @@ int WindowImpl::MessageLoop(std::function<void()> closingCb)
 	}
 
 	//cleanup
-	if (UnregisterClass(mClassName.c_str(), this->hModule) == FALSE)
+	if (UnregisterClass(mClassName.c_str(), mHModule) == FALSE)
 		mLogger.logError(HorseRadish::Engine::Logger::ModuleType::Graphics, "Unable to unregister window class");
 
-	this->isInitialized = false;
+	mIsInitialized = false;
 
 	//return exit code
 	return msg.wParam;
 }
 
-void WindowImpl::ProcessMessages(std::function<void(const Window::Message&)> cb, const bool resetQueue)
+void WindowImpl::processMessages(std::function<void(const Window::Message&)> cb, const bool resetQueue)
 {
 	std::lock_guard<std::mutex> lock(mEvents.lock);
 
@@ -602,13 +666,13 @@ bool OpenglContextImpl::auxWindowWGLExt(HINSTANCE hInstance, HMODULE openglModul
 }
 
 OpenglContextImpl::OpenglContextImpl(const WindowImpl &window, const std::string& openGLModuleName, int contextMajorVersion, int contextMinorVersion, bool contextDebug, bool contextForwardCompatible)
-	: window(window)
+	: mWindow(window)
 {
 	HMODULE openglModule;
 
-	if ( (this->window.hWnd == nullptr) || openGLModuleName.empty() || (contextMajorVersion < 3) || (contextMinorVersion < 0))
+	if ( (window.mHWnd == nullptr) || openGLModuleName.empty() || (contextMajorVersion < 3) || (contextMinorVersion < 0))
 	{
-		errorMsg = "incorrect data to properly create a OpenGL context";
+		mErrorMsg = "incorrect data to properly create a OpenGL context";
 		return;
 	}
 
@@ -618,39 +682,39 @@ OpenglContextImpl::OpenglContextImpl(const WindowImpl &window, const std::string
 		openglModule = GetModuleHandle(openGLModuleNameWChar.c_str());
 		if (openglModule == nullptr)
 		{
-			errorMsg = "incorrect OpenGL module name";
+			mErrorMsg = "incorrect OpenGL module name";
 			return;
 		}
 	}
 
-	this->wglCreateContext = (HGLRC (APIENTRY *)(HDC hdc))GetProcAddress(openglModule, "wglCreateContext");
-	this->wglDeleteContext = (BOOL (APIENTRY *)(HGLRC hglrc))GetProcAddress(openglModule, "wglDeleteContext");
-	this->wglMakeCurrent = (BOOL (APIENTRY *)(HDC hdc, HGLRC hglrc))GetProcAddress(openglModule, "wglMakeCurrent");
-	this->wglSwapBuffers = (BOOL (APIENTRY *)(HDC hdc))GetProcAddress(openglModule, "wglSwapBuffers");
-	if ((this->wglCreateContext == nullptr) || (this->wglDeleteContext == nullptr) || (this->wglMakeCurrent == nullptr) || (this->wglSwapBuffers == nullptr))
+	wglCreateContext = (HGLRC (APIENTRY *)(HDC hdc))GetProcAddress(openglModule, "wglCreateContext");
+	wglDeleteContext = (BOOL (APIENTRY *)(HGLRC hglrc))GetProcAddress(openglModule, "wglDeleteContext");
+	wglMakeCurrent = (BOOL (APIENTRY *)(HDC hdc, HGLRC hglrc))GetProcAddress(openglModule, "wglMakeCurrent");
+	wglSwapBuffers = (BOOL (APIENTRY *)(HDC hdc))GetProcAddress(openglModule, "wglSwapBuffers");
+	if ((wglCreateContext == nullptr) || (wglDeleteContext == nullptr) || (wglMakeCurrent == nullptr) || (wglSwapBuffers == nullptr))
 		return;
 
-	auxWindowWGLExt(this->window.hModule, openglModule);
+	auxWindowWGLExt(window.mHModule, openglModule);
 
-	if ((this->wglChoosePixelFormatARB == nullptr) || (this->wglGetExtensionsStringARB == nullptr) || (this->wglCreateContextAttribsARB == nullptr))
+	if ((wglChoosePixelFormatARB == nullptr) || (wglGetExtensionsStringARB == nullptr) || (wglCreateContextAttribsARB == nullptr))
 		return;
 
-	this->hDC = GetDC(this->window.hWnd);
-	if (this->hDC == nullptr)
+	mHDC = GetDC(window.mHWnd);
+	if (mHDC == nullptr)
 	{
-		errorMsg = "unable to retrieve device context";
+		mErrorMsg = "unable to retrieve device context";
 		return;
 	}
 
-	auto wglExt = this->wglGetExtensionsStringARB(this->hDC);
+	auto wglExt = wglGetExtensionsStringARB(mHDC);
 	if ((wglExt == nullptr) || (strstr(wglExt, "WGL_ARB_create_context_profile") == nullptr))
 	{
-		errorMsg = "extension WGL_ARB_create_context_profile not supported";
+		mErrorMsg = "extension WGL_ARB_create_context_profile not supported";
 		return;
 	}
 	if ((wglExt == nullptr) || (strstr(wglExt, "WGL_ARB_create_context_profile") == nullptr))
 	{
-		errorMsg = "extension WGL_ARB_create_context_profile not supported";
+		mErrorMsg = "extension WGL_ARB_create_context_profile not supported";
 		return;
 	}
 
@@ -672,14 +736,14 @@ OpenglContextImpl::OpenglContextImpl(const WindowImpl &window, const std::string
 			WGL_FRAMEBUFFER_SRGB_CAPABLE_ARB, GL_TRUE,
 			0, 0 };
 
-		this->usedPFD = -1;
-		if (this->wglChoosePixelFormatARB(this->hDC, iAttributes, fAttributes, 1, &pixelFormat, &numFormats) == TRUE)
-			this->usedPFD = pixelFormat;
+		mUsedPFD = -1;
+		if (wglChoosePixelFormatARB(mHDC, iAttributes, fAttributes, 1, &pixelFormat, &numFormats) == TRUE)
+			mUsedPFD = pixelFormat;
 	}
 
-	if ((this->usedPFD == 0) || (SetPixelFormat(this->hDC,this->usedPFD,nullptr) == false))
+	if ((mUsedPFD == 0) || (SetPixelFormat(mHDC, mUsedPFD, nullptr) == false))
 	{
-		errorMsg = "cannot find a useful pixel format";
+		mErrorMsg = "cannot find a useful pixel format";
 		return;
 	}
 
@@ -691,64 +755,64 @@ OpenglContextImpl::OpenglContextImpl(const WindowImpl &window, const std::string
 			WGL_CONTEXT_PROFILE_MASK_ARB, WGL_CONTEXT_CORE_PROFILE_BIT_ARB,
 			0, 0 };
 
-		this->hRC = this->wglCreateContextAttribsARB(this->hDC, 0, contextAttrib);
-		if (this->hRC == nullptr)
+		mHRC = wglCreateContextAttribsARB(mHDC, 0, contextAttrib);
+		if (!mHRC)
 		{
-			errorMsg = "unable to create a rendering context";
+			mErrorMsg = "unable to create a rendering context";
 			return;
 		}
 	}
 
-	if (this->wglMakeCurrent(this->hDC, this->hRC) == FALSE)
+	if (wglMakeCurrent(mHDC, mHRC) == FALSE)
 	{
-		errorMsg = "unable to activate a rendering context";
+		mErrorMsg = "unable to activate a rendering context";
 		return;
 	}
 
-	this->loadWGLFunctions(openglModule);
+	loadWGLFunctions(openglModule);
 }
 
 OpenglContextImpl::~OpenglContextImpl()
 {
-	if (this->hRC != nullptr)
+	if (mHRC != nullptr)
 	{
-		if (this->wglMakeCurrent(this->hDC, nullptr) == FALSE)
-			this->window.mLogger.logError(HorseRadish::Engine::Logger::ModuleType::Graphics, "Unable to release rendering context.");
+		if (wglMakeCurrent(mHDC, nullptr) == FALSE)
+			mWindow.mLogger.logError(HorseRadish::Engine::Logger::ModuleType::Graphics, "Unable to release rendering context.");
 
-		if (this->wglDeleteContext(this->hRC) == FALSE)
-			this->window.mLogger.logError(HorseRadish::Engine::Logger::ModuleType::Graphics, "Unable to delete rendering context.");
+		if (wglDeleteContext(mHRC) == FALSE)
+			mWindow.mLogger.logError(HorseRadish::Engine::Logger::ModuleType::Graphics, "Unable to delete rendering context.");
 
-		this->hRC = nullptr;
+		mHRC = nullptr;
 	}
 
-	if (this->hDC != nullptr)
+	if (mHDC != nullptr)
 	{
-		if (ReleaseDC(this->window.hWnd, this->hDC) == 0)
-			this->window.mLogger.logError(HorseRadish::Engine::Logger::ModuleType::Graphics, "Unable to release device context.");
+		if (ReleaseDC(mWindow.mHWnd, mHDC) == 0)
+			mWindow.mLogger.logError(HorseRadish::Engine::Logger::ModuleType::Graphics, "Unable to release device context.");
 
-		this->hDC = nullptr;
+		mHDC = nullptr;
 	}
 }
 
-bool OpenglContextImpl::IsValid() const
+bool OpenglContextImpl::isValid() const
 {
-	return errorMsg.empty();
+	return mErrorMsg.empty();
 }
 
-std::string OpenglContextImpl::GetErrorMsg() const
+std::string OpenglContextImpl::getErrorMsg() const
 {
-	return errorMsg;
+	return mErrorMsg;
 }
 
-void OpenglContextImpl::SetSwapInterval(const unsigned int &interval) const
+void OpenglContextImpl::setSwapInterval(const size_t &interval) const
 {
-	if (this->wglSwapIntervalEXT != nullptr)
-		this->wglSwapIntervalEXT(interval);
+	if (wglSwapIntervalEXT != nullptr)
+		wglSwapIntervalEXT(interval);
 }
 
-bool OpenglContextImpl::SwapBuffers() const
+bool OpenglContextImpl::swapBuffers() const
 {
-	return ((this->wglSwapBuffers != nullptr) && (this->wglSwapBuffers(this->hDC) != FALSE));
+	return ((wglSwapBuffers != nullptr) && (wglSwapBuffers(this->mHDC) != FALSE));
 }
 
 #endif

@@ -8,6 +8,8 @@ sandbox/
 *.suo
 *.user
 *.sln.docstates
+*.VC.db
+*.VC.opendb
 
 # Build results
 [Dd]ebug/

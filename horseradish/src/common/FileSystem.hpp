@@ -84,7 +84,7 @@ namespace HorseRadish
 				~MountDataZip();
 
 				FileSystem::MountType GetMountType() const;
-				int GetNumberFiles() const;
+				size_t GetNumberFiles() const;
 
 				void FilesEnumerate();
 				std::unique_ptr<Streams::Stream> FileRead(const char* const filePath);
@@ -103,7 +103,7 @@ namespace HorseRadish
 			static bool FileExists(const char* const filePath);
 
 			bool MountPath(const HorseRadish::IO::Path &baseFolder, const char* const mountPoint);
-			bool MountZip(const HorseRadish::IO::Path &zipPath, const char* const mountPoint, int * const numFilesZip = nullptr);
+			bool MountZip(const HorseRadish::IO::Path &zipPath, const char* const mountPoint, size_t* const numFilesZip = nullptr);
 
 			std::unique_ptr<Streams::Stream> FileRead(const char * const filePath);
 			std::unique_ptr<Streams::Stream> FileRead(const char * const filePath, const MountType mountType);

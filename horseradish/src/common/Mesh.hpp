@@ -12,7 +12,7 @@ namespace HorseRadish { namespace Geometry {
 class Mesh
 {
 public:
-	#pragma pack(1)
+	#pragma pack(push, 1)
 	struct VertexData
 	{
 		float pos[3];
@@ -20,12 +20,13 @@ public:
 		short normal[4];
 		short tangent[4];
 	};
+	#pragma pack(pop)
 	static_assert(sizeof(VertexData) == 36, "VertexData must be tightly packed: sizeof() == 36");
 
 	static short pack(const float value);
 	static float unpack(const short value);
-	static void pack(const float* const in, short* const out, unsigned int numValues);
-	static void unpack(const short* const in, float* const out, unsigned int numValues);
+	static void pack(const float* const in, short* const out, size_t numValues);
+	static void unpack(const short* const in, float* const out, size_t numValues);
 
 	static Mesh genBox(const float width, const float height, const float depth, const int precision);
 	static Mesh genSphere(const float radius, const int slices, const int stacks);
@@ -33,62 +34,52 @@ public:
 private:
 	std::unique_ptr<VertexData[]> mData;
 	std::unique_ptr<unsigned short[]> mIndices;
-	unsigned int mNumVertices, mNumIndices;
+	size_t mNumVertices = 0, mNumIndices = 0;
 
 public:
-	Mesh();
-	Mesh(unsigned int numVertices, unsigned int numIndices);
-	Mesh(std::unique_ptr<VertexData[]> vertices, unsigned int numVertices, std::unique_ptr<unsigned short[]> indices, unsigned int numIndices);
+	Mesh()
+	{ }
+
+	Mesh(size_t numVertices, size_t numIndices);
+	Mesh(std::unique_ptr<VertexData[]> vertices, size_t numVertices, std::unique_ptr<unsigned short[]> indices, size_t numIndices);
 
 	Mesh(const Mesh& mesh);
 	Mesh& operator=(const Mesh& mesh);
 
-	Mesh(Mesh&& mesh)
-		: mData(std::move(mesh.mData)), mIndices(std::move(mesh.mIndices)), mNumVertices(std::move(mesh.mNumVertices)), mNumIndices(std::move(mesh.mNumIndices))
-	{ }
+	Mesh(Mesh&& mesh) = default;
+	Mesh& operator=(Mesh&& mesh) = default;
 
-	Mesh& operator=(Mesh&& mesh)
-	{
-		mData = std::move(mesh.mData);
-		mIndices = std::move(mesh.mIndices);
-
-		mNumVertices = std::move(mesh.mNumVertices);
-		mNumIndices = std::move(mesh.mNumIndices);
-
-		return *this;
-	}
-
-	const VertexData* dataVertices() const
+	const VertexData* vertices() const
 	{
 		return mData.get();
 	}
 
-	VertexData* dataVertices()
+	VertexData* vertices()
 	{
 		return mData.get();
 	}
 
-	const unsigned short* dataIndices() const
+	const unsigned short* indices() const
 	{
 		return mIndices.get();
 	}
 
-	unsigned short* dataIndices()
+	unsigned short* indices()
 	{
 		return mIndices.get();
 	}
 
-	unsigned int sizeVertices() const;
-	unsigned int sizeIndices() const;
+	size_t sizeVertices() const;
+	size_t sizeIndices() const;
 
-	unsigned int numIndices() const;
-	unsigned int numVertices() const;
-	unsigned int numTris() const;
+	size_t numIndices() const;
+	size_t numVertices() const;
+	size_t numTris() const;
 
 	bool check() const;
 
 	BBox getBoundingBox() const;
-	float getIndicesCacheRatio(unsigned int cacheSize) const;
+	float getIndicesCacheRatio(size_t cacheSize) const;
 	bool getRayIntersect(const Vector3f& rayOrigin, const Vector3f& rayDir, float& hitDistance) const;
 
 	void flipUV();

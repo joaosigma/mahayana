@@ -13,8 +13,8 @@ namespace HorseRadish { namespace Render {
 	class Stage::SceneRuntimeProxy : public Engine::Runtime::ClassProxy
 	{
 	private:
-		bool mActive;
-		double mStepDelta, mStepTotal;
+		bool mActive = false;
+		double mStepDelta = 0.0, mStepTotal = 0.0;
 		Timer mTimerDelta, mTimerTotal;
 		std::shared_ptr<Scene> mScene;
 
@@ -50,22 +50,21 @@ namespace HorseRadish { namespace Render {
 
 	public:
 		SceneRuntimeProxy(HSQUIRRELVM vm, HSQOBJECT vmInstance, Stage &stage, const std::string& sceneName, const std::string& sceneFilePath)
-			: Engine::Runtime::ClassProxy(vm, vmInstance), mActive(false), mStepDelta(0.0), mStepTotal(0.0)
+			: Engine::Runtime::ClassProxy(vm, vmInstance)
 		{
-			this->bindTable("events");
+			bindTable("events");
 
-			mScene = std::make_shared<Scene>(stage.mRuntime, stage.mLogger, stage.mFileSystem, stage.mGlCtx, sceneName, sceneFilePath, stage.mRenderData.width, stage.mRenderData.height);
+			mScene = std::make_shared<Scene>(stage.mRuntime, stage.mLogger, stage.mFileSystem, stage.mGlCtx, sceneName, sceneFilePath, stage.mRenderData.texColor.width(), stage.mRenderData.texColor.height());
 		}
 
 		SceneRuntimeProxy(HSQUIRRELVM vm, HSQOBJECT vmInstance, Engine::Runtime::FunctionContext &ctx)
-			: Engine::Runtime::ClassProxy(vm, vmInstance), mActive(false)
+			: Engine::Runtime::ClassProxy(vm, vmInstance)
 		{
 			ctx.throwError("Scenes should only be create through the stage API");
 		}
 
 		~SceneRuntimeProxy()
-		{
-		}
+		{ }
 
 		bool isActive() const
 		{
@@ -228,20 +227,14 @@ namespace HorseRadish { namespace Render {
 		sceneProxy->setActiveState((funcName == "stage.add"));
 	}
 
-	Stage::Stage(Engine::Runtime& runtime, Engine::Logger::Context& logger, HorseRadish::IO::FileSystem& fileSystem, HorseRadish::OpenGL::Objects::Context &glCtx, unsigned int glRenderWidth, unsigned int glRenderHeight)
-		: mScenesDrawned(0)
-		, mRuntime(runtime)
+	Stage::Stage(Engine::Runtime& runtime, Engine::Logger::Context& logger, HorseRadish::IO::FileSystem& fileSystem, HorseRadish::OpenGL::Objects::Context &glCtx, size_t renderWidth, size_t renderHeight)
+		: mRuntime(runtime)
 		, mLogger(logger)
 		, mFileSystem(fileSystem)
 		, mGlCtx(glCtx)
 	{
-		std::memset(&mRenderData, 0, sizeof(RenderData));
-
 		//render
-		mRenderData.width = static_cast<float>(glRenderWidth);
-		mRenderData.height = static_cast<float>(glRenderHeight);
-
-		mRenderData.texColor.init(HorseRadish::OpenGL::Objects::Texture::Type::TexRectangle, HorseRadish::OpenGL::Objects::Texture::StorageType::RGBA_8, glRenderWidth, glRenderHeight);
+		mRenderData.texColor.init(HorseRadish::OpenGL::Objects::Texture::Type::TexRectangle, HorseRadish::OpenGL::Objects::Texture::StorageType::RGBA_8, renderWidth, renderHeight);
 
 		mRenderData.fbo.init();
 		mRenderData.fbo.attachTColor(mRenderData.texColor, 0);
@@ -255,7 +248,7 @@ namespace HorseRadish { namespace Render {
 		mRenderData.progVertex.init(HorseRadish::OpenGL::Objects::ShaderProgram::Type::Vertex, fileSystem.readFileAsString("shaders/stage.vshader"));
 		mRenderData.progFragment.init(HorseRadish::OpenGL::Objects::ShaderProgram::Type::Fragment, fileSystem.readFileAsString("shaders/stage.fshader"));
 
-		auto matrixProj2D = HorseRadish::OpenGL::Tools::Viewport::genMatrix2DProj(mRenderData.width, mRenderData.height);
+		auto matrixProj2D = HorseRadish::OpenGL::Tools::Viewport::genMatrix2DProj(renderWidth, renderHeight);
 		HorseRadish::OpenGL::glProgramUniform1i(mRenderData.progFragment.getId(), mRenderData.progFragment.getUniformLocation("texSampler"), 0);
 		HorseRadish::OpenGL::glProgramUniformMatrix4fv(mRenderData.progVertex.getId(), mRenderData.progVertex.getUniformLocation("transformationMatrix"), 1, false, matrixProj2D.data());
 
@@ -300,7 +293,7 @@ namespace HorseRadish { namespace Render {
 		mTempScenes.clear();
 	}
 
-	void Stage::drawComposite()
+	void Stage::drawComposite(const HorseRadish::OpenGL::Tools::Viewport& viewport)
 	{
 		if (!mScenesDrawned)
 			return;
@@ -315,7 +308,7 @@ namespace HorseRadish { namespace Render {
 
 		mRenderData.imode.beginDraw(HorseRadish::OpenGL::Tools::ImmediateMode::GeometryType::Quads);
 			mRenderData.imode.setColorF(1.0f, 1.0f, 1.0f, 1.0f);
-			mRenderData.imode.addQuadTexCoords(0.0f, 0.0f, mRenderData.width, mRenderData.height, false);
+			mRenderData.imode.addQuadTexCoords(0.0f, 0.0f, static_cast<float>(viewport.getWidth()), static_cast<float>(viewport.getHeight()), false);
 		mRenderData.imode.endDraw();
 	}
 

@@ -54,7 +54,7 @@ int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PWSTR lpCmdLine, int n
 	auto cmdLine = HorseRadish::StringUtils::conv2UTF8(lpCmdLine);
 	
 	HorseRadish::Engine::Engine engine(cmdLine);
-	auto success = engine.MainLoop();
+	auto success = engine.mainLoop();
 
 #ifndef _M_X64
 	_controlfp_s(&curControlWord, _CW_DEFAULT, 0xfffff);
@@ -66,18 +66,18 @@ int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PWSTR lpCmdLine, int n
 		return 0;
 	}
 
-	auto engineError = engine.GetErrorDesc();
+	auto engineError = engine.getErrorDesc();
 	if (!engineError.empty())
 		Window::MsgBoxError(engineError.c_str());
 
-	switch (engine.GetExitAction())
+	switch (engine.getExitAction())
 	{
 	case HorseRadish::Engine::Engine::ExitAction::Restart:
-		HorseRadish::Platform::InstanciateProcess("Horseradish.exe");
+		HorseRadish::Platform::spawnSelf();
 		break;
 	default:
 		break;
 	}
 
-	return engine.GetExitCode();	
+	return engine.getExitCode();	
 }

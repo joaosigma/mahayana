@@ -6,7 +6,7 @@
 
 namespace HorseRadish { namespace Engine {
 
-bool Logger::checkEntryData(const char * const entryData, bool &hasFormattedText, unsigned int &dataSize)
+bool Logger::checkEntryData(const char * const entryData, bool &hasFormattedText, size_t &dataSize)
 {
 	dataSize = 0;
 	hasFormattedText = false;
@@ -214,21 +214,20 @@ bool Logger::addEntry(const EntryType entryType, const ModuleType moduleType, co
 	return true;
 }
 
-Logger::Logger(unsigned int asyncMaxEntries)
-	: mMaxBufferSize(0), mMaxAsyncBufferSize(asyncMaxEntries)
-	, mThreadFlush(nullptr), mThreadFlushExit(false)
+Logger::Logger(size_t asyncMaxEntries)
+	: mMaxAsyncBufferSize(asyncMaxEntries)
 {
 	if (mMaxAsyncBufferSize > 0)
 		mThreadFlush = new std::thread(&Logger::threadFlushFunc, this);
 }
 
-Logger::Logger(unsigned int asyncMaxEntries, unsigned int maxBufferedEntries)
+Logger::Logger(size_t asyncMaxEntries, size_t maxBufferedEntries)
 	: Logger(asyncMaxEntries)
 {
 	mMaxBufferSize = maxBufferedEntries;
 }
 
-Logger::Logger(unsigned int asyncMaxEntries, unsigned int maxBufferedEntries, const HorseRadish::IO::Path &filePath)
+Logger::Logger(size_t asyncMaxEntries, size_t maxBufferedEntries, const HorseRadish::IO::Path &filePath)
 	: Logger(asyncMaxEntries, maxBufferedEntries)
 {
 	mOutFileStream = std::shared_ptr<HorseRadish::Streams::FileStream>(new HorseRadish::Streams::FileStream(filePath.str(), false, true));
@@ -255,7 +254,7 @@ Logger::~Logger()
 	}
 }
 
-void Logger::iterateBuffer(std::function<bool(const EntryType, const ModuleType, const bool, const std::string&)> logEntryCb, unsigned int offset) const
+void Logger::iterateBuffer(std::function<bool(const EntryType, const ModuleType, const bool, const std::string&)> logEntryCb, size_t offset) const
 {
 	if ((mMaxBufferSize == 0) || !logEntryCb)
 		return;

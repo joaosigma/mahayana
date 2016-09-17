@@ -7,33 +7,6 @@
 
 namespace HorseRadish { namespace Streams {
 
-Stream::~Stream()
-{ }
-
-MemoryStream::MemoryStream(size_t reserveSize)
-	: mData(nullptr), mDataBegin(nullptr), mDataEnd(nullptr), mDataWalker(nullptr), mDataSize(0), mIsClosed(false)
-{
-	mDataSize = (reserveSize < 1024) ? 1024 : reserveSize;
-	mData = realloc(mData, mDataSize);
-	
-	mDataBegin = mDataWalker = reinterpret_cast<unsigned char*>(mData);
-	mDataEnd = mDataBegin + mDataSize;
-}
-
-MemoryStream::~MemoryStream()
-{
-}
-
-MemoryStream::MemoryStream(MemoryStream&& stream)
-{
-	mData = std::move(stream.mData);
-	mDataBegin = std::move(stream.mDataBegin);
-	mDataEnd = std::move(stream.mDataEnd);
-	mDataWalker = std::move(stream.mDataWalker);
-	mDataSize = std::move(stream.mDataSize);
-	mIsClosed = std::move(stream.mIsClosed);
-}
-
 void MemoryStream::close()
 {
 	if (mData)
@@ -175,38 +148,6 @@ std::string MemoryStream::toStr() const
 	reinterpret_cast<char*>(&finalStr[0])[length()] = '\0';
 
 	return finalStr;
-}
-
-MemoryViewStream::MemoryViewStream()
-	: mData(nullptr), mDataBegin(nullptr), mDataEnd(nullptr), mDataWalker(nullptr), mIsClosed(false)
-{ }
-
-MemoryViewStream::MemoryViewStream(std::shared_ptr<unsigned char> data, size_t dataSize)
-	: MemoryViewStream(data, 0, dataSize)
-{ }
-
-MemoryViewStream::MemoryViewStream(std::shared_ptr<unsigned char> data, size_t dataOffset, size_t dataSize)
-	: MemoryViewStream()
-{
-	mDataShared = data;
-	mData = data.get();
-	mDataBegin = reinterpret_cast<const unsigned char*>(mData) + dataOffset;
-	mDataEnd = mDataBegin + dataSize;
-}
-
-MemoryViewStream::MemoryViewStream(MemoryViewStream&& stream)
-{
-	mData = stream.mData;
-	mDataBegin = stream.mDataBegin;
-	mDataEnd = stream.mDataEnd;
-	mDataWalker = stream.mDataWalker;
-	mDataShared = stream.mDataShared;
-	mIsClosed = stream.mIsClosed;
-
-	stream.mData = nullptr;
-	stream.mDataBegin = stream.mDataEnd = stream.mDataWalker = nullptr;
-	stream.mDataShared.reset();
-	stream.mIsClosed = false;
 }
 
 void MemoryViewStream::close()
@@ -445,36 +386,9 @@ bool FileStream::streamDump(Stream& stream, const std::string& filePath)
 	return true;
 }
 
-FileStream::FileStream(FileStream&& stream)
-{
-	mFileHandle = stream.mFileHandle;
-	mCanRead = stream.mCanRead;
-	mCanWrite = stream.mCanWrite;
-	mClosed = stream.mClosed;
-
-	stream.mFileHandle = nullptr;
-	stream.mCanRead = stream.mCanWrite = false;
-	stream.mClosed = true;
-}
-
-FileStream::FileStream(const std::string& filePath, bool toRead, bool toWrite)
-{
-	mCanRead = mCanWrite = false;
-	mClosed = false;
-	mFileHandle = nullptr;
-
-	this->openFile(filePath, toRead, toWrite);
-}
-
-FileStream::~FileStream()
-{
-	if (mClosed == false)
-		close();
-}
-
 void FileStream::close()
 {
-	if (mFileHandle != nullptr)
+	if (mFileHandle)
 		CloseHandle(mFileHandle);
 
 	mClosed = true;
@@ -485,7 +399,7 @@ void FileStream::close()
 
 void FileStream::flush()
 {
-	if (mFileHandle != nullptr)
+	if (mFileHandle)
 		FlushFileBuffers(mFileHandle);
 }
 

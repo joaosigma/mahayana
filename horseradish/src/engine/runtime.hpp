@@ -21,7 +21,7 @@ namespace HorseRadish { namespace Engine {
 		{
 			friend class Runtime;
 
-			int mNumParams;
+			int mNumParams = 0;
 			HSQUIRRELVM &mSqvm;
 			std::string mErrorThrown;
 
@@ -266,8 +266,7 @@ namespace HorseRadish { namespace Engine {
 		public:
 			NativeClass(HSQUIRRELVM vm)
 				: mVM(vm)
-			{
-			}
+			{ }
 
 			bool registerClassMethod(const char* const funcName, RegisteredClassFuncType funcCallback)
 			{
