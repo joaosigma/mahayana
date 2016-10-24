@@ -1,16 +1,16 @@
 #include "world.hpp"
 
-#include "common\Encoders.hpp"
-#include "common\ImageFactory.hpp"
+#include "common/encoders.hpp"
+#include "common/imageFactory.hpp"
 
-#include "libs\lz4\lz4.h"
-#include "libs\lz4\lz4hc.h"
-#include "libs\cppformat\format.h"
-#include "libs\rapidjson\document.h"
-#include "libs\rapidjson\rapidjson.h"
-#include "libs\rapidjson\prettywriter.h"
-#include "libs\rapidjson\stringbuffer.h"
-#include "libs\tinyobjloader\tiny_obj_loader.h"
+#include "libs/lz4/lz4.h"
+#include "libs/lz4/lz4hc.h"
+#include "libs/cppformat/format.h"
+#include "libs/rapidjson/document.h"
+#include "libs/rapidjson/rapidjson.h"
+#include "libs/rapidjson/prettywriter.h"
+#include "libs/rapidjson/stringbuffer.h"
+#include "libs/tinyobjloader/tiny_obj_loader.h"
 
 #include <algorithm>
 

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Types.hpp"
+#include "types.hpp"
 
 #include <cmath>
 #include <algorithm>

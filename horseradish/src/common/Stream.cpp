@@ -1,6 +1,6 @@
-#include "Stream.hpp"
+#include "stream.hpp"
 
-#include "ScopedAction.hpp"
+#include "scopedAction.hpp"
 #include "stringUtils.hpp"
 
 #include <memory>

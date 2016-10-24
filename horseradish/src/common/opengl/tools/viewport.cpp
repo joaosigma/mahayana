@@ -1,4 +1,4 @@
-#include "Viewport.hpp"
+#include "viewport.hpp"
 
 namespace HorseRadish { namespace OpenGL { namespace Tools {
 

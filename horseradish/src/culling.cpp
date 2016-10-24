@@ -1,6 +1,6 @@
 #include "culling.hpp"
 
-#include "common\platform.hpp"
+#include "common/platform.hpp"
 
 #include <limits>
 

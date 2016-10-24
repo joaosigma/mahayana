@@ -1,6 +1,6 @@
 #include "camera.hpp"
 
-#include "common\Quaternion.hpp"
+#include "common/quaternion.hpp"
 
 static
 void evalPointListCatmullRom(const HorseRadish::Vector3f * const pList, const int pNum, float nrmTime, HorseRadish::Vector3f& pWrite)

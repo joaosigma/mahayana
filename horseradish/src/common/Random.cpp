@@ -1,4 +1,4 @@
-#include "Random.hpp"
+#include "random.hpp"
 
 namespace HorseRadish
 {

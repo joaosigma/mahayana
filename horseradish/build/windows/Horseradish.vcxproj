@@ -171,14 +171,14 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\src\common\BAreas.cpp" />
-    <ClCompile Include="..\..\src\common\BVolumes.cpp" />
-    <ClCompile Include="..\..\src\common\Encoders.cpp" />
-    <ClCompile Include="..\..\src\common\FileSystem.cpp" />
-    <ClCompile Include="..\..\src\common\Hashing.cpp" />
+    <ClCompile Include="..\..\src\common\bareas.cpp" />
+    <ClCompile Include="..\..\src\common\bvolumes.cpp" />
+    <ClCompile Include="..\..\src\common\encoders.cpp" />
+    <ClCompile Include="..\..\src\common\fileSystem.cpp" />
+    <ClCompile Include="..\..\src\common\hashing.cpp" />
     <ClCompile Include="..\..\src\common\imageFactory.cpp" />
-    <ClCompile Include="..\..\src\common\Math.cpp" />
-    <ClCompile Include="..\..\src\common\Matrix.cpp" />
+    <ClCompile Include="..\..\src\common\math.cpp" />
+    <ClCompile Include="..\..\src\common\matrix.cpp" />
     <ClCompile Include="..\..\src\common\mesh.cpp" />
     <ClCompile Include="..\..\src\common\opengl\context.cpp" />
     <ClCompile Include="..\..\src\common\opengl\openGL.cpp" />
@@ -186,12 +186,12 @@
     <ClCompile Include="..\..\src\common\opengl\tools\frustum.cpp" />
     <ClCompile Include="..\..\src\common\opengl\tools\immediateMode.cpp" />
     <ClCompile Include="..\..\src\common\opengl\tools\viewport.cpp" />
-    <ClCompile Include="..\..\src\common\Path.cpp" />
-    <ClCompile Include="..\..\src\common\Plane.cpp" />
-    <ClCompile Include="..\..\src\common\PlatformWin32.cpp" />
-    <ClCompile Include="..\..\src\common\Quaternion.cpp" />
-    <ClCompile Include="..\..\src\common\Random.cpp" />
-    <ClCompile Include="..\..\src\common\Ray.cpp" />
+    <ClCompile Include="..\..\src\common\path.cpp" />
+    <ClCompile Include="..\..\src\common\plane.cpp" />
+    <ClCompile Include="..\..\src\common\platformWin32.cpp" />
+    <ClCompile Include="..\..\src\common\quaternion.cpp" />
+    <ClCompile Include="..\..\src\common\random.cpp" />
+    <ClCompile Include="..\..\src\common\ray.cpp" />
     <ClCompile Include="..\..\src\common\sorting.cpp" />
     <ClCompile Include="..\..\src\common\stream.cpp" />
     <ClCompile Include="..\..\src\common\stringUtils.cpp" />
@@ -266,18 +266,18 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\build.hpp" />
-    <ClInclude Include="..\..\src\common\AVL-tree.hpp" />
-    <ClInclude Include="..\..\src\common\BAreas.hpp" />
-    <ClInclude Include="..\..\src\common\BVolumes.hpp" />
-    <ClInclude Include="..\..\src\common\Color.hpp" />
-    <ClInclude Include="..\..\src\common\Encoders.hpp" />
-    <ClInclude Include="..\..\src\common\FileSystem.hpp" />
-    <ClInclude Include="..\..\src\common\Hashing.hpp" />
+    <ClInclude Include="..\..\src\common\avl-tree.hpp" />
+    <ClInclude Include="..\..\src\common\bareas.hpp" />
+    <ClInclude Include="..\..\src\common\bvolumes.hpp" />
+    <ClInclude Include="..\..\src\common\color.hpp" />
+    <ClInclude Include="..\..\src\common\encoders.hpp" />
+    <ClInclude Include="..\..\src\common\fileSystem.hpp" />
+    <ClInclude Include="..\..\src\common\hashing.hpp" />
     <ClInclude Include="..\..\src\common\image.hpp" />
     <ClInclude Include="..\..\src\common\imageFactory.hpp" />
     <ClInclude Include="..\..\src\common\imageFormats.hpp" />
-    <ClInclude Include="..\..\src\common\Math.hpp" />
-    <ClInclude Include="..\..\src\common\Matrix.hpp" />
+    <ClInclude Include="..\..\src\common\math.hpp" />
+    <ClInclude Include="..\..\src\common\matrix.hpp" />
     <ClInclude Include="..\..\src\common\mesh.hpp" />
     <ClInclude Include="..\..\src\common\opengl\context.hpp" />
     <ClInclude Include="..\..\src\common\opengl\objects.hpp" />
@@ -286,13 +286,13 @@
     <ClInclude Include="..\..\src\common\opengl\tools\frustum.hpp" />
     <ClInclude Include="..\..\src\common\opengl\tools\immediateMode.hpp" />
     <ClInclude Include="..\..\src\common\opengl\tools\viewport.hpp" />
-    <ClInclude Include="..\..\src\common\Path.hpp" />
-    <ClInclude Include="..\..\src\common\Plane.hpp" />
-    <ClInclude Include="..\..\src\common\Platform.hpp" />
-    <ClInclude Include="..\..\src\common\Primitives2D.hpp" />
-    <ClInclude Include="..\..\src\common\Quaternion.hpp" />
-    <ClInclude Include="..\..\src\common\Random.hpp" />
-    <ClInclude Include="..\..\src\common\Ray.hpp" />
+    <ClInclude Include="..\..\src\common\path.hpp" />
+    <ClInclude Include="..\..\src\common\plane.hpp" />
+    <ClInclude Include="..\..\src\common\platform.hpp" />
+    <ClInclude Include="..\..\src\common\primitives2D.hpp" />
+    <ClInclude Include="..\..\src\common\quaternion.hpp" />
+    <ClInclude Include="..\..\src\common\random.hpp" />
+    <ClInclude Include="..\..\src\common\ray.hpp" />
     <ClInclude Include="..\..\src\common\scopedAction.hpp" />
     <ClInclude Include="..\..\src\common\sorting.hpp" />
     <ClInclude Include="..\..\src\common\stream.hpp" />

@@ -1,5 +1,5 @@
 ﻿#include "openGL.hpp"
-#include "common\stringUtils.hpp"
+#include "common/stringUtils.hpp"
 
 static HINSTANCE openGLModule;
 

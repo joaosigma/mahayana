@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Math.hpp"
+#include "math.hpp"
 
 namespace HorseRadish { namespace Primitives2D {
 

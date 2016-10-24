@@ -1,6 +1,6 @@
-#include "Matrix.hpp"
+#include "matrix.hpp"
 
-#include "Math.hpp"
+#include "math.hpp"
 
 #include <cstring>
 #include <immintrin.h>

@@ -1,7 +1,7 @@
 #pragma once
 
-#include "common\Vector.hpp"
-#include "common\Matrix.hpp"
+#include "common/vector.hpp"
+#include "common/matrix.hpp"
 
 namespace HorseRadish { namespace OpenGL { namespace Tools {
 			

@@ -1,6 +1,6 @@
-#include "Ray.hpp"
+#include "ray.hpp"
 
-#include "Math.hpp"
+#include "math.hpp"
 
 namespace HorseRadish
 {

@@ -1,9 +1,9 @@
 #pragma once
 
-#include "Types.hpp"
-#include "Vector.hpp"
-#include "Math.hpp"
-#include "Encoders.hpp"
+#include "types.hpp"
+#include "vector.hpp"
+#include "math.hpp"
+#include "encoders.hpp"
 
 #include <xmmintrin.h>
 #include <emmintrin.h>

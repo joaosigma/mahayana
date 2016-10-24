@@ -1,6 +1,6 @@
-#include "Hashing.hpp"
+#include "hashing.hpp"
 
-#include "Types.hpp"
+#include "types.hpp"
 
 /*
    MD5 Message Digest Algorithm. (RFC1321)

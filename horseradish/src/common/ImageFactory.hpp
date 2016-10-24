@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Image.hpp"
-#include "Stream.hpp"
+#include "image.hpp"
+#include "stream.hpp"
 
 namespace HorseRadish { namespace Imaging {
 

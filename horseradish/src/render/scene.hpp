@@ -2,11 +2,11 @@
 
 #include "engine/logger.hpp"
 #include "engine/runtime.hpp"
-#include "common/Timer.hpp"
-#include "common/Matrix.hpp"
-#include "common\FileSystem.hpp"
-#include "common/Primitives2D.hpp"
-#include "common/opengl/tools\immediateMode.hpp"
+#include "common/timer.hpp"
+#include "common/matrix.hpp"
+#include "common/fileSystem.hpp"
+#include "common/primitives2D.hpp"
+#include "common/opengl/tools/immediateMode.hpp"
 #include "common/opengl/objects.hpp"
 
 #include <chrono>

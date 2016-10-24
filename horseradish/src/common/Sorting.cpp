@@ -1,4 +1,4 @@
-#include "Sorting.hpp"
+#include "sorting.hpp"
 
 namespace HorseRadish
 {

@@ -1,9 +1,9 @@
 #pragma once
 
-#include "common\ImageFactory.hpp"
+#include "common/imageFactory.hpp"
 
-#include "libs\stb\stb_image.h"
-#include "libs\lodepng\lodepng.h"
+#include "libs/stb/stb_image.h"
+#include "libs/lodepng/lodepng.h"
 
 #include <memory>
 

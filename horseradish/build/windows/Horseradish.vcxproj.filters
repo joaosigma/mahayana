@@ -72,42 +72,6 @@
     <ClCompile Include="..\..\src\common\opengl\openGLext.cpp">
       <Filter>common\opengl</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\common\BAreas.cpp">
-      <Filter>common</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\common\BVolumes.cpp">
-      <Filter>common</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\common\Encoders.cpp">
-      <Filter>common</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\common\FileSystem.cpp">
-      <Filter>common</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\common\Hashing.cpp">
-      <Filter>common</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\common\Math.cpp">
-      <Filter>common</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\common\Matrix.cpp">
-      <Filter>common</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\common\Path.cpp">
-      <Filter>common</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\common\Plane.cpp">
-      <Filter>common</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\common\Quaternion.cpp">
-      <Filter>common</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\common\Random.cpp">
-      <Filter>common</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\common\Ray.cpp">
-      <Filter>common</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\libs\zlib\adler32.c">
       <Filter>libs\zlib</Filter>
     </ClCompile>
@@ -176,9 +140,6 @@
     <ClCompile Include="..\..\src\videoStream.cpp" />
     <ClCompile Include="..\..\src\libs\lodepng\lodepng.cpp">
       <Filter>libs\lodepng</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\common\PlatformWin32.cpp">
-      <Filter>common</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\common\opengl\openGL.cpp">
       <Filter>common\opengl</Filter>
@@ -303,9 +264,6 @@
     <ClCompile Include="..\..\src\libs\stb\stb_image.cpp">
       <Filter>libs\stb</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\common\imageFactory.cpp">
-      <Filter>common</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\libs\lz4\lz4.c">
       <Filter>libs\lz4</Filter>
     </ClCompile>
@@ -314,9 +272,6 @@
     </ClCompile>
     <ClCompile Include="..\..\src\libs\tinyobjloader\tiny_obj_loader.cc">
       <Filter>libs\tinyobjloader</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\common\mesh.cpp">
-      <Filter>common</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\common\stream.cpp">
       <Filter>common</Filter>
@@ -339,6 +294,51 @@
     <ClCompile Include="..\..\src\render\profilerUI.cpp">
       <Filter>render</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\common\bareas.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\common\bvolumes.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\common\encoders.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\common\fileSystem.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\common\hashing.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\common\imageFactory.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\common\math.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\common\matrix.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\common\mesh.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\common\path.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\common\plane.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\common\platformWin32.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\common\quaternion.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\common\random.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\common\ray.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\common\opengl\objects.hpp">
@@ -346,54 +346,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\common\opengl\openGLext.hpp">
       <Filter>common\opengl</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\common\AVL-tree.hpp">
-      <Filter>common</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\common\BAreas.hpp">
-      <Filter>common</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\common\BVolumes.hpp">
-      <Filter>common</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\common\Color.hpp">
-      <Filter>common</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\common\Encoders.hpp">
-      <Filter>common</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\common\FileSystem.hpp">
-      <Filter>common</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\common\Hashing.hpp">
-      <Filter>common</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\common\Math.hpp">
-      <Filter>common</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\common\Matrix.hpp">
-      <Filter>common</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\common\Path.hpp">
-      <Filter>common</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\common\Plane.hpp">
-      <Filter>common</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\common\Platform.hpp">
-      <Filter>common</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\common\Primitives2D.hpp">
-      <Filter>common</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\common\Quaternion.hpp">
-      <Filter>common</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\common\Random.hpp">
-      <Filter>common</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\common\Ray.hpp">
-      <Filter>common</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\libs\zlib\crc32.h">
       <Filter>libs\zlib</Filter>
@@ -602,15 +554,6 @@
     <ClInclude Include="..\..\src\libs\stb\stb_image.h">
       <Filter>libs\stb</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\common\image.hpp">
-      <Filter>common</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\common\imageFactory.hpp">
-      <Filter>common</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\common\imageFormats.hpp">
-      <Filter>common</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\libs\rapidjson\allocators.h">
       <Filter>libs\rapidjson</Filter>
     </ClInclude>
@@ -710,9 +653,6 @@
     <ClInclude Include="..\..\src\libs\tinyobjloader\tiny_obj_loader.h">
       <Filter>libs\tinyobjloader</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\common\mesh.hpp">
-      <Filter>common</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\common\vector.hpp">
       <Filter>common</Filter>
     </ClInclude>
@@ -739,6 +679,66 @@
     </ClInclude>
     <ClInclude Include="..\..\src\render\profilerUI.hpp">
       <Filter>render</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\common\bareas.hpp">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\common\bvolumes.hpp">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\common\color.hpp">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\common\encoders.hpp">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\common\fileSystem.hpp">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\common\hashing.hpp">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\common\image.hpp">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\common\imageFactory.hpp">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\common\imageFormats.hpp">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\common\math.hpp">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\common\matrix.hpp">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\common\mesh.hpp">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\common\path.hpp">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\common\plane.hpp">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\common\platform.hpp">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\common\primitives2D.hpp">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\common\quaternion.hpp">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\common\random.hpp">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\common\ray.hpp">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\common\avl-tree.hpp">
+      <Filter>common</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

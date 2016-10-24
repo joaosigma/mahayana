@@ -1,6 +1,6 @@
-#include "Plane.hpp"
+#include "plane.hpp"
 
-#include "Math.hpp"
+#include "math.hpp"
 
 namespace HorseRadish
 {

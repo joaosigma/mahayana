@@ -1,7 +1,7 @@
 #include "rendererDeferred.hpp"
 
-#include "common\stringUtils.hpp"
-#include "common\imageFactory.hpp"
+#include "common/stringUtils.hpp"
+#include "common/imageFactory.hpp"
 
 #include <cstddef>
 #include <algorithm>

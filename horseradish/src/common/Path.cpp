@@ -1,5 +1,5 @@
-#include "Path.hpp"
-#include "Platform.hpp"
+#include "path.hpp"
+#include "platform.hpp"
 #include "stringUtils.hpp"
 
 namespace HorseRadish { namespace IO {

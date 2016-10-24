@@ -1,9 +1,9 @@
-#include "Platform.hpp"
+#include "platform.hpp"
 
 #include "stringUtils.hpp"
-#include "ScopedAction.hpp"
+#include "scopedAction.hpp"
 
-#include <libs\cppformat\format.h>
+#include <libs/cppformat/format.h>
 
 #if defined(_WIN32)
 

@@ -1,10 +1,9 @@
 #pragma once
 
-#include "Types.hpp"
-#include "Math.hpp"
-#include "Path.hpp"
-
-#include "Platform.hpp"
+#include "types.hpp"
+#include "math.hpp"
+#include "path.hpp"
+#include "platform.hpp"
 
 #include <memory>
 #include <type_traits>

@@ -1,10 +1,10 @@
 #include "font.hpp"
 
-#include "common\image.hpp"
-#include "common\Platform.hpp"
-#include "common\opengl\openGLext.hpp"
+#include "common/image.hpp"
+#include "common/platform.hpp"
+#include "common/opengl/openGLext.hpp"
 
-#include "libs\sdf\sdf.h"
+#include "libs/sdf/sdf.h"
 
 #include <algorithm>
 #include <cstddef>

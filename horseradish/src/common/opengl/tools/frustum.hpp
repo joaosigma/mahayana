@@ -1,8 +1,8 @@
 #pragma once
 
-#include "common\vector.hpp"
-#include "common\Matrix.hpp"
-#include "common\Ray.hpp"
+#include "common/vector.hpp"
+#include "common/matrix.hpp"
+#include "common/ray.hpp"
 
 namespace HorseRadish { namespace OpenGL { namespace Tools {
 			

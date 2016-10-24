@@ -1,9 +1,9 @@
 #pragma once
 
-#include "common\opengl\openGL.hpp"
-#include "common\opengl\objects.hpp"
-#include "common\Color.hpp"
-#include "common\stringUtils.hpp"
+#include "common/opengl/openGL.hpp"
+#include "common/opengl/objects.hpp"
+#include "common/color.hpp"
+#include "common/stringUtils.hpp"
 
 #include <array>
 #include <vector>

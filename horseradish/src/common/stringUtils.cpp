@@ -1,6 +1,6 @@
 #include "stringUtils.hpp"
 
-#include <libs\cppformat\format.h>
+#include <libs/cppformat/format.h>
 
 #include <memory>
 #include <codecvt>

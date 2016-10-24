@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Stream.hpp"
+#include "stream.hpp"
 
 #include <string>
 #include <vector>

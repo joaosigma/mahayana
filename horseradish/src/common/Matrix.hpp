@@ -1,9 +1,9 @@
 #pragma once
 
-#include "Types.hpp"
-#include "Vector.hpp"
-#include "Plane.hpp"
-#include "BVolumes.hpp"
+#include "types.hpp"
+#include "vector.hpp"
+#include "plane.hpp"
+#include "bvolumes.hpp"
 
 namespace HorseRadish
 {

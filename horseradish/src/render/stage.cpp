@@ -1,7 +1,7 @@
 #include "render/stage.hpp"
 #include "render/scene.hpp"
 
-#include "common/Timer.hpp"
+#include "common/timer.hpp"
 #include "common/opengl/tools/viewport.hpp"
 
 #include <codecvt>

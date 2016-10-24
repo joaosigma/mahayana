@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Platform.hpp"
-#include "Types.hpp"
+#include "platform.hpp"
+#include "types.hpp"
 
 namespace HorseRadish
 {

@@ -2,7 +2,7 @@
 
 #include "renderer.hpp"
 #include "tools/font.hpp"
-#include "common/FileSystem.hpp"
+#include "common/fileSystem.hpp"
 #include "common/openGL/tools/immediateMode.hpp"
 
 namespace HorseRadish { namespace Render {

@@ -1,7 +1,7 @@
 #pragma once
 
-#include "common/Timer.hpp"
-#include "common/Primitives2D.hpp"
+#include "common/timer.hpp"
+#include "common/primitives2D.hpp"
 #include "common/openGL/tools/viewport.hpp"
 #include "render/renderer2D.hpp"
 

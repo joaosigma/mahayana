@@ -1,11 +1,11 @@
 #pragma once
 
-#include "Path.hpp"
-#include "Stream.hpp"
-#include "Types.hpp"
+#include "path.hpp"
+#include "stream.hpp"
+#include "types.hpp"
 
-#include "libs\zlib\zlib.h"
-#include "libs\zlib\minizip\unzip.h"
+#include "libs/zlib/zlib.h"
+#include "libs/zlib/minizip/unzip.h"
 
 #include <vector>
 #include <memory>

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "openGL.hpp"
-#include "common\Platform.hpp"
+#include "common/platform.hpp"
 
 #include "glext.h"
 

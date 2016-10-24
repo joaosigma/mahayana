@@ -1,4 +1,4 @@
-#include "BAreas.hpp"
+#include "bareas.hpp"
 
 namespace HorseRadish
 {

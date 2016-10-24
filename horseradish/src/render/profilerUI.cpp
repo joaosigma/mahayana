@@ -1,4 +1,4 @@
-#include "ProfilerUI.hpp"
+#include "profilerUI.hpp"
 
 #include "../common/color.hpp"
 

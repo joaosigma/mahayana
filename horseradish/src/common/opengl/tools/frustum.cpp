@@ -1,6 +1,6 @@
 #include "frustum.hpp"
 
-#include "..\openGL.hpp"
+#include "../openGL.hpp"
 
 #include <limits>
 

@@ -3,10 +3,10 @@
 #include "runtime.hpp"
 #include "logger.hpp"
 
-#include "common/Timer.hpp"
-#include "common/Types.hpp"
-#include "common/AVL-tree.hpp"
-#include "common/FileSystem.hpp"
+#include "common/timer.hpp"
+#include "common/types.hpp"
+#include "common/avl-tree.hpp"
+#include "common/fileSystem.hpp"
 
 #include "platform/window.hpp"
 

@@ -1,4 +1,4 @@
-#include "Math.hpp"
+#include "math.hpp"
 
 union halfType{
 	unsigned short bits;

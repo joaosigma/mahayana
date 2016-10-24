@@ -1,9 +1,9 @@
 #pragma once
 
-#include "Vector.hpp"
-#include "Ray.hpp"
-#include "Plane.hpp"
-#include "Math.hpp"
+#include "vector.hpp"
+#include "ray.hpp"
+#include "plane.hpp"
+#include "math.hpp"
 
 #include <limits>
 

@@ -1,6 +1,6 @@
 #include "immediateMode.hpp"
 
-#include "common\Color.hpp"
+#include "common/color.hpp"
 
 #include <cstddef>
 

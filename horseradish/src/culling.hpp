@@ -1,7 +1,7 @@
 #pragma once
 
-#include "common\Vector.hpp"
-#include "common\opengl\tools\frustum.hpp"
+#include "common/vector.hpp"
+#include "common/opengl/tools/frustum.hpp"
 
 #include <array>
 #include <vector>

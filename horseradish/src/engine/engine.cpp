@@ -1,9 +1,9 @@
 #include "engine.hpp"
 
-#include "common\opengl\openGL.hpp"
-#include "..\build.hpp"
+#include "common/opengl/openGL.hpp"
+#include "../build.hpp"
 
-#include <libs\cppformat\format.h>
+#include <libs/cppformat/format.h>
 
 #include <cassert>
 

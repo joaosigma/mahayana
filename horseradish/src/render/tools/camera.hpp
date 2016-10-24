@@ -1,7 +1,7 @@
 #pragma once
 
-#include "common\Matrix.hpp"
-#include "common\Ray.hpp"
+#include "common/matrix.hpp"
+#include "common/ray.hpp"
 
 #include <memory>
 

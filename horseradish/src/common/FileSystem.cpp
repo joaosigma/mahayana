@@ -1,9 +1,9 @@
-#include "FileSystem.hpp"
+#include "fileSystem.hpp"
 
-#include "Math.hpp"
-#include "Hashing.hpp"
-#include "Sorting.hpp"
-#include "Types.hpp"
+#include "math.hpp"
+#include "hashing.hpp"
+#include "sorting.hpp"
+#include "types.hpp"
 #include "stringUtils.hpp"
 
 #include <algorithm>

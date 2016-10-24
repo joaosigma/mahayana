@@ -4,7 +4,7 @@
 #include "world.hpp"
 
 #include "tools/camera.hpp"
-#include "common/FileSystem.hpp"
+#include "common/fileSystem.hpp"
 #include "common/openGL/tools/viewport.hpp"
 #include "common/openGL/tools/immediateMode.hpp"
 

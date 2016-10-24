@@ -1,10 +1,10 @@
 #pragma once
 
 #include "mesh.hpp"
-#include "Math.hpp"
+#include "math.hpp"
 #include "vector.hpp"
 
-#include "libs\forsyth\forsythtriangleorderoptimizer.h"
+#include "libs/forsyth/forsythtriangleorderoptimizer.h"
 
 #include <vector>
 #include <limits>

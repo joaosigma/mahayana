@@ -4,7 +4,7 @@
 #include "openGL.hpp"
 #include "openGLext.hpp"
 
-#include "common\Math.hpp"
+#include "common/math.hpp"
 
 #include <array>
 #include <vector>

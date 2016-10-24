@@ -1,7 +1,7 @@
 #pragma once
 
 #include "logger.hpp"
-#include "common\stringUtils.hpp"
+#include "common/stringUtils.hpp"
 
 #include <libs\squirrel\squirrel.h>
 

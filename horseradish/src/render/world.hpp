@@ -1,12 +1,12 @@
 #pragma once
 
-#include "tools\camera.hpp"
+#include "tools/camera.hpp"
 
-#include "common\mesh.hpp"
-#include "common\FileSystem.hpp"
-#include "common\OpenGL\objects.hpp"
-#include "common\OpenGL\tools\frustum.hpp"
-#include "common\OpenGL\tools\viewport.hpp"
+#include "common/mesh.hpp"
+#include "common/fileSystem.hpp"
+#include "common/OpenGL/objects.hpp"
+#include "common/OpenGL/tools/frustum.hpp"
+#include "common/OpenGL/tools/viewport.hpp"
 
 #include <vector>
 

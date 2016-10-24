@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Vector.hpp"
-#include "Math.hpp"
+#include "vector.hpp"
+#include "math.hpp"
 
 #include <limits>
 

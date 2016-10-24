@@ -1,8 +1,8 @@
 #pragma once
 
-#include "..\engine\logger.hpp"
-#include "common\Vector.hpp"
-#include "common\opengl\objects.hpp"
+#include "../engine/logger.hpp"
+#include "common/vector.hpp"
+#include "common/opengl/objects.hpp"
 
 class WindowImpl;
 class OpenglContextImpl;

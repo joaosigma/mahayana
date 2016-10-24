@@ -1,10 +1,10 @@
 #pragma once
 
-#include "common\Platform.hpp"
-#include "common\Types.hpp"
-#include "common\Timer.hpp"
-#include "common\Image.hpp"
-#include "common\Primitives2D.hpp"
+#include "common/platform.hpp"
+#include "common/types.hpp"
+#include "common/timer.hpp"
+#include "common/image.hpp"
+#include "common/primitives2D.hpp"
 
 extern "C" {
 #include <libavcodec/avcodec.h>

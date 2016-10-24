@@ -10,7 +10,7 @@
 
 #include "engine/engine.hpp"
 
-#include "common/Primitives2D.hpp"
+#include "common/primitives2D.hpp"
 
 int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PWSTR lpCmdLine, int nCmdShow)
 {

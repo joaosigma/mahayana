@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Platform.hpp"
+#include "platform.hpp"
 
 #include <functional>
 

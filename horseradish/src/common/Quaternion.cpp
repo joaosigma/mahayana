@@ -1,6 +1,6 @@
-#include "Quaternion.hpp"
+#include "quaternion.hpp"
 
-#include "Math.hpp"
+#include "math.hpp"
 
 namespace HorseRadish
 {

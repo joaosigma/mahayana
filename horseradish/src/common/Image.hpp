@@ -1,8 +1,8 @@
 #pragma once
 
-#include "Color.hpp"
+#include "color.hpp"
 #include "imageFormats.hpp"
-#include "libs\stb\stb_image_resize.h"
+#include "libs/stb/stb_image_resize.h"
 
 #include <cassert>
 #include <type_traits>

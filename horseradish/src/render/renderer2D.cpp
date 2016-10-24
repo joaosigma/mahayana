@@ -1,6 +1,6 @@
 #include "renderer2D.hpp"
 
-#include "common/ImageFactory.hpp"
+#include "common/imageFactory.hpp"
 
 namespace HorseRadish { namespace Render
 {

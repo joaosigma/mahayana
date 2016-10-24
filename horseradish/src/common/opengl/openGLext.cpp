@@ -1,5 +1,5 @@
 #include "openGLext.hpp"
-#include "common\stringUtils.hpp"
+#include "common/stringUtils.hpp"
 
 #define GETADDR(var, name, type)  var = (type)wglProcAddressOpenGL(name);
 

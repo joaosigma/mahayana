@@ -1,11 +1,11 @@
 #include "runtime.hpp"
 
-#include "common\Stream.hpp"
-#include "common\stringUtils.hpp"
+#include "common/stream.hpp"
+#include "common/stringUtils.hpp"
 
-#include <libs\squirrel\sqstdblob.h>
-#include <libs\squirrel\sqstdmath.h>
-#include <libs\squirrel\sqstdstring.h>
+#include <libs/squirrel/sqstdblob.h>
+#include <libs/squirrel/sqstdmath.h>
+#include <libs/squirrel/sqstdstring.h>
 
 #include <cstdio>
 #include <cstdarg>

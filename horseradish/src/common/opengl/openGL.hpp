@@ -1,6 +1,6 @@
 #pragma once
 
-#include "common\Platform.hpp"
+#include "common/platform.hpp"
 
 #include "glcorearb.h"
 

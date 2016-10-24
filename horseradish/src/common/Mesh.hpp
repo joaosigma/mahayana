@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Vector.hpp"
-#include "BVolumes.hpp"
+#include "vector.hpp"
+#include "bvolumes.hpp"
 
 #include <limits>
 #include <memory>
