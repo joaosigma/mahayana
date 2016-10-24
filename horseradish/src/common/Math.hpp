@@ -34,7 +34,7 @@ namespace HorseRadish
 			static __m128 log(__m128 x);
 			static __m128 exp(__m128 x);
 
-			static void mad(float *values, const unsigned int numValues, const float mulVal, const float addVal);
+			static void mad(float *values, size_t numValues, float mulVal, float addVal);
 		};
 
 		static constexpr float constPi() noexcept
@@ -62,12 +62,12 @@ namespace HorseRadish
 			return 1.73205080756887729352f;
 		}
 
-		static constexpr float convDeg2Rad(const float degrees) noexcept
+		static constexpr float convDeg2Rad(float degrees) noexcept
 		{
 			return (degrees * 0.017453292519943295769f);
 		}
 
-		static constexpr float convRad2Deg(const float radians) noexcept
+		static constexpr float convRad2Deg(float radians) noexcept
 		{
 			return (radians * 57.29577951308232087679f);
 		}
@@ -108,10 +108,10 @@ namespace HorseRadish
 
 		static float				fClamp(const float val, const float min, const float max);
 
-		static float				htof(const unsigned short &val);
-		static unsigned short		ftoh(const float &val);
+		static float				htof(unsigned short val);
+		static unsigned short		ftoh(float val);
 
-		static float sampleWave(const float * const items, const int numItems, const float t);
+		static float sampleWave(const float * const items, size_t numItems, float t);
 	};
 
 	inline float Math::sqrt(const float &x)
@@ -308,6 +308,6 @@ namespace HorseRadish
 		return retVal;
 	}
 
-} //HorseRadish
+}
 
 #pragma warning( pop ) 

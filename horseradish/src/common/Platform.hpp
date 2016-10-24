@@ -9,14 +9,17 @@ namespace HorseRadish {
 	public:
 		class SingleInstance
 		{
-		private:
-			bool isAnotherRunning;
-			void *globalData;
+			bool mIsAnotherRunning;
+			void *mGlobalData;
+
 		public:
 			SingleInstance();
 			~SingleInstance();
 
-			bool IsAnotherRunning() const { return this->isAnotherRunning; };
+			bool isAnotherRunning() const
+			{
+				return mIsAnotherRunning;
+			};
 		};
 
 	public:
@@ -37,39 +40,39 @@ namespace HorseRadish {
 		static const unsigned int MegaByte;
 		static const unsigned int GigaByte;
 
-		static bool SetProcessPriority(const PriorityType &priorityType);
-		static bool SetThreadPriority(const PriorityType &priorityType);
+		static bool setProcessPriority(PriorityType priorityType);
+		static bool setThreadPriority(PriorityType priorityType);
 
-		static OperatingSystemType GetOS();
-		static bool IsOS(const OperatingSystemType &operatingSystemType);
+		static OperatingSystemType getOS();
+		static bool isOS(OperatingSystemType operatingSystemType);
 
-		static bool IsArch64();
+		static bool isArch64();
 
-		static bool CPUGetVendorID(std::string& outputValue);
-		static bool CPUGetProcessorName(std::string& outputValue);
-		static bool CPUCheckFeatures(const CPUFeature &featuresCheck);
+		static bool cpuGetVendorID(std::string& outputValue);
+		static bool cpuGetProcessorName(std::string& outputValue);
+		static bool cpuCheckFeatures(CPUFeature featuresCheck);
 
-		static bool GetSystemInfo(const SystemInfo &systemInfo, std::string& infoValue);
-		static bool GetSystemInfo(const SystemInfo &systemInfo, int &infoValue);
+		static bool systemInfo(SystemInfo systemInfo, std::string& infoValue);
+		static bool systemInfo(SystemInfo systemInfo, int &infoValue);
 
 		static bool spawnSelf();
 
-		static bool ClipboardGetStrings(std::function<bool(const std::string&)> funcCallback);
-		static bool ClipboardGetFiles(std::function<bool(const std::string&)> funcCallback);
+		static bool clipboardGetStrings(std::function<bool(const std::string&)> funcCallback);
+		static bool clipboardGetFiles(std::function<bool(const std::string&)> funcCallback);
 
-		static void AsmBufferClear(void* dest, size_t bytes);
-		static void AsmBufferCopy(void* dest, const void* src, size_t bytes);
-		static void AsmBufferCopyAligned(void* dest, const void* src, size_t multiple128Bytes);
-		static void AsmBufferSetUBYTE(void* dest, unsigned char val, size_t bytes);
-		static void AsmBufferSetUI32(void* dest, unsigned int val, size_t bytes);
-		static void AsmFloat2UByte(unsigned char *dest, const float *src, const unsigned int num, const float mulVal, const float addVal);
-		static void AsmUByte2Float(float *dest, const unsigned char *src, const unsigned int num, const float mulVal, const float addVal);
+		static void asmBufferClear(void* dest, size_t bytes);
+		static void asmBufferCopy(void* dest, const void* src, size_t bytes);
+		static void asmBufferCopyAligned(void* dest, const void* src, size_t multiple128Bytes);
+		static void asmBufferSetUBYTE(void* dest, unsigned char val, size_t bytes);
+		static void asmBufferSetUI32(void* dest, unsigned int val, size_t bytes);
+		static void asmFloat2UByte(unsigned char *dest, const float *src, size_t num, const float mulVal, const float addVal);
+		static void asmUByte2Float(float *dest, const unsigned char *src, size_t num, const float mulVal, const float addVal);
 
-		static bool StdInOutErrRedirect();
-		static void StdInOutErrClose();
-		static void StdErrClear();
-		static void StdOutClear();
-		static bool StdErrRead(void *outBuffer, const int outBufferSize, int &bytesWritten);
-		static bool StdOutRead(void *outBuffer, const int outBufferSize, int &bytesWritten);
+		static bool stdInOutErrRedirect();
+		static void stdInOutErrClose();
+		static void stdErrClear();
+		static void stdOutClear();
+		static bool stdErrRead(void *outBuffer, int outBufferSize, int &bytesWritten);
+		static bool stdOutRead(void *outBuffer, int outBufferSize, int &bytesWritten);
 	};
 }

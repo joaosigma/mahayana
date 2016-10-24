@@ -14,8 +14,8 @@ public:
 	enum class InfoType{ FreeVertexCount, MaxVertexCount };
 
 private:
-	static constexpr unsigned int MaxVertexCount = 400; //100 quads
-	static constexpr unsigned int MaxIndexCount = ((MaxVertexCount / 4) * 6) + 6;
+	static constexpr size_t MaxVertexCount = 400; //100 quads
+	static constexpr size_t MaxIndexCount = ((MaxVertexCount / 4) * 6) + 6;
 
 	struct VertexDataLayout
 	{
@@ -33,7 +33,7 @@ private:
 	struct
 	{
 		float uv[2];
-		int curVertex;
+		size_t curVertex;
 		GeometryType geomType;
 		unsigned char color[4];
 	} mState;
@@ -67,12 +67,12 @@ public:
 	void addPosition(const float &x, const float &y, const float &z);
 
 	void addQuad(const float &x, const float &y, const float &width, const float &height);
-	void addQuadTexCoords(const float &x, const float &y, const float &width, const float &height, const bool &normalizedTexCoords);
+	void addQuadTexCoords(const float &x, const float &y, const float &width, const float &height, bool normalizedTexCoords);
 	void addLine(const float &x1, const float &y1, const float &x2, const float &y2);
 	void addLineH(const float &x1, const float &x2, const float &y);
 	void addLineV(const float &x, const float &y1, const float &y2);
 
-	unsigned int getInfo(const InfoType infoType) const;
+	size_t info(const InfoType infoType) const;
 };
 
 } } }

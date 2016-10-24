@@ -78,9 +78,6 @@
     <ClCompile Include="..\..\src\common\BVolumes.cpp">
       <Filter>common</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\common\Color.cpp">
-      <Filter>common</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\common\Encoders.cpp">
       <Filter>common</Filter>
     </ClCompile>

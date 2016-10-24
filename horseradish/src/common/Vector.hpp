@@ -11,7 +11,7 @@
 
 namespace HorseRadish
 {
-	template<typename TDataType, unsigned int NComponents>
+	template<typename TDataType, size_t NComponents>
 	class Vector
 	{
 		TDataType mData[NComponents];
@@ -25,7 +25,7 @@ namespace HorseRadish
 		static TDataType calcDot(const Vector<TDataType, NComponents> &vec1, const Vector<TDataType, NComponents> &vec2)
 		{
 			TDataType sum();
-			for (unsigned int i = 0; i < NComponents; i++)
+			for (size_t i = 0; i < NComponents; i++)
 				sum += (vec1.mData[i] * vec2.mData[i]);
 
 			return sum;
@@ -35,25 +35,19 @@ namespace HorseRadish
 
 		Vector()
 		{
-			for (unsigned int i = 0; i < NComponents; i++)
+			for (size_t i = 0; i < NComponents; i++)
 				mData[i] = TDataType();
-		}
-
-		Vector(const Vector& v)
-		{
-			for (unsigned int i = 0; i < NComponents; i++)
-				mData[i] = v[i];
 		}
 
 		explicit Vector(const TDataType& scalar)
 		{
-			for (unsigned int i = 0; i < NComponents; i++)
+			for (size_t i = 0; i < NComponents; i++)
 				mData[i] = scalar;
 		}
 
 		explicit Vector(const TDataType* const values)
 		{
-			for (unsigned int i = 0; i < NComponents; i++)
+			for (size_t i = 0; i < NComponents; i++)
 				mData[i] = values[i];
 		}
 
@@ -79,101 +73,101 @@ namespace HorseRadish
 
 		Vector& operator=(const Vector& v)
 		{
-			for (unsigned int i = 0; i < NComponents; i++)
+			for (size_t i = 0; i < NComponents; i++)
 				mData[i] = v[i];
 			return *this;
 		}
 
 		Vector& operator=(const TDataType* values)
 		{
-			for (unsigned int i = 0; i < NComponents; i++)
+			for (size_t i = 0; i < NComponents; i++)
 				mData[i] = values[i];
 			return *this;
 		}
 
 		Vector& operator=(const TDataType& scalar)
 		{
-			for (unsigned int i = 0; i < NComponents; i++)
+			for (size_t i = 0; i < NComponents; i++)
 				mData[i] = scalar;
 			return *this;
 		}
 
 		void operator+=(const Vector& v)
 		{
-			for (unsigned int i = 0; i < NComponents; i++)
+			for (size_t i = 0; i < NComponents; i++)
 				mData[i] += v[i];
 		}
 
 		void operator-=(const Vector& v)
 		{
-			for (unsigned int i = 0; i < NComponents; i++)
+			for (size_t i = 0; i < NComponents; i++)
 				mData[i] -= v[i];
 		}
 
 		void operator*=(const Vector& v)
 		{
-			for (unsigned int i = 0; i < NComponents; i++)
+			for (size_t i = 0; i < NComponents; i++)
 				mData[i] *= v[i];
 		}
 
 		void operator/=(const Vector& v)
 		{
-			for (unsigned int i = 0; i < NComponents; i++)
+			for (size_t i = 0; i < NComponents; i++)
 				mData[i] /= v[i];
 		}
 
 		void operator+=(const TDataType* const values)
 		{
-			for (unsigned int i = 0; i < NComponents; i++)
+			for (size_t i = 0; i < NComponents; i++)
 				mData[i] += values[i];
 		}
 
 		void operator-=(const TDataType* const values)
 		{
-			for (unsigned int i = 0; i < NComponents; i++)
+			for (size_t i = 0; i < NComponents; i++)
 				mData[i] -= values[i];
 		}
 
 		void operator*=(const TDataType* const values)
 		{
-			for (unsigned int i = 0; i < NComponents; i++)
+			for (size_t i = 0; i < NComponents; i++)
 				mData[i] *= values[i];
 		}
 
 		void operator/=(const TDataType* const values)
 		{
-			for (unsigned int i = 0; i < NComponents; i++)
+			for (size_t i = 0; i < NComponents; i++)
 				mData[i] /= values[i];
 		}
 
 		void operator+=(const TDataType& scalar)
 		{
-			for (unsigned int i = 0; i < NComponents; i++)
+			for (size_t i = 0; i < NComponents; i++)
 				mData[i] += scalar;
 		}
 
 		void operator-=(const TDataType& scalar)
 		{
-			for (unsigned int i = 0; i < NComponents; i++)
+			for (size_t i = 0; i < NComponents; i++)
 				mData[i] -= scalar;
 		}
 
 		void operator*=(const TDataType& scalar)
 		{
-			for (unsigned int i = 0; i < NComponents; i++)
+			for (size_t i = 0; i < NComponents; i++)
 				mData[i] *= scalar;
 		}
 
 		void operator/=(const TDataType& scalar)
 		{
-			for (unsigned int i = 0; i < NComponents; i++)
+			for (size_t i = 0; i < NComponents; i++)
 				mData[i] /= scalar;
 		}
 
 		Vector operator+(const Vector& vec) const
 		{
 			Vector result;
-			for (unsigned int i = 0; i < NComponents; i++)
+			for (size_t i = 0; i < NComponents; i++)
 				result[i] = mData[i] + vec[i];
 
 			return result;
@@ -182,7 +176,7 @@ namespace HorseRadish
 		Vector operator-(const Vector& vec) const
 		{
 			Vector result;
-			for (unsigned int i = 0; i < NComponents; i++)
+			for (size_t i = 0; i < NComponents; i++)
 				result[i] = mData[i] - vec[i];
 
 			return result;
@@ -191,7 +185,7 @@ namespace HorseRadish
 		Vector operator*(const Vector& vec) const
 		{
 			Vector result;
-			for (unsigned int i = 0; i < NComponents; i++)
+			for (size_t i = 0; i < NComponents; i++)
 				result[i] = mData[i] * vec[i];
 
 			return result;
@@ -200,7 +194,7 @@ namespace HorseRadish
 		Vector operator/(const Vector& vec) const
 		{
 			Vector result;
-			for (unsigned int i = 0; i < NComponents; i++)
+			for (size_t i = 0; i < NComponents; i++)
 				result[i] = mData[i] / vec[i];
 
 			return result;
@@ -209,7 +203,7 @@ namespace HorseRadish
 		Vector operator+(const TDataType* const values) const
 		{
 			Vector result;
-			for (unsigned int i = 0; i < NComponents; i++)
+			for (size_t i = 0; i < NComponents; i++)
 				result[i] = mData[i] + values[i];
 
 			return result;
@@ -218,7 +212,7 @@ namespace HorseRadish
 		Vector operator-(const TDataType* const values) const
 		{
 			Vector result;
-			for (unsigned int i = 0; i < NComponents; i++)
+			for (size_t i = 0; i < NComponents; i++)
 				result[i] = mData[i] - values[i];
 
 			return result;
@@ -227,7 +221,7 @@ namespace HorseRadish
 		Vector operator*(const TDataType* const values) const
 		{
 			Vector result;
-			for (unsigned int i = 0; i < NComponents; i++)
+			for (size_t i = 0; i < NComponents; i++)
 				result[i] = mData[i] * values[i];
 
 			return result;
@@ -236,7 +230,7 @@ namespace HorseRadish
 		Vector operator/(const TDataType* const values) const
 		{
 			Vector result;
-			for (unsigned int i = 0; i < NComponents; i++)
+			for (size_t i = 0; i < NComponents; i++)
 				result[i] = mData[i] / values[i];
 
 			return result;
@@ -245,7 +239,7 @@ namespace HorseRadish
 		Vector operator+(const TDataType& scalar) const
 		{
 			Vector result;
-			for (unsigned int i = 0; i < NComponents; i++)
+			for (size_t i = 0; i < NComponents; i++)
 				result[i] = mData[i] + scalar;
 
 			return result;
@@ -254,7 +248,7 @@ namespace HorseRadish
 		Vector operator-(const TDataType& scalar) const
 		{
 			Vector result;
-			for (unsigned int i = 0; i < NComponents; i++)
+			for (size_t i = 0; i < NComponents; i++)
 				result[i] = mData[i] - scalar;
 
 			return result;
@@ -263,7 +257,7 @@ namespace HorseRadish
 		Vector operator*(const TDataType& scalar) const
 		{
 			Vector result;
-			for (unsigned int i = 0; i < NComponents; i++)
+			for (size_t i = 0; i < NComponents; i++)
 				result[i] = mData[i] * scalar;
 
 			return result;
@@ -272,7 +266,7 @@ namespace HorseRadish
 		Vector operator/(const TDataType& scalar) const
 		{
 			Vector result;
-			for (unsigned int i = 0; i < NComponents; i++)
+			for (size_t i = 0; i < NComponents; i++)
 				result[i] = mData[i] / scalar;
 
 			return result;
@@ -280,7 +274,7 @@ namespace HorseRadish
 
 		bool operator==(const Vector &vec) const
 		{
-			for (unsigned int i = 0; i < NComponents; i++)
+			for (size_t i = 0; i < NComponents; i++)
 			{
 				if (mData[i] != vec.mData[i])
 					return false;
@@ -291,7 +285,7 @@ namespace HorseRadish
 
 		bool operator==(const TDataType* const values) const
 		{
-			for (unsigned int i = 0; i < NComponents; i++)
+			for (size_t i = 0; i < NComponents; i++)
 			{
 				if (mData[i] != values[i])
 					return false;
@@ -302,7 +296,7 @@ namespace HorseRadish
 
 		Vector& set(const Vector &vec)
 		{
-			for (unsigned int i = 0; i < NComponents; i++)
+			for (size_t i = 0; i < NComponents; i++)
 				mData[i] = vec[i];
 
 			return *this;
@@ -310,7 +304,7 @@ namespace HorseRadish
 
 		Vector& set(const TDataType* const values)
 		{
-			for (unsigned int i = 0; i < NComponents; i++)
+			for (size_t i = 0; i < NComponents; i++)
 				mData[i] = values[i];
 
 			return *this;
@@ -318,7 +312,7 @@ namespace HorseRadish
 
 		Vector& set(const TDataType& scalar)
 		{
-			for (unsigned int i = 0; i < NComponents; i++)
+			for (size_t i = 0; i < NComponents; i++)
 				mData[i] = scalar;
 
 			return *this;
@@ -326,7 +320,7 @@ namespace HorseRadish
 
 		Vector& clamp(const TDataType& min, const TDataType& max)
 		{
-			for (unsigned int i = 0; i < NComponents; i++)
+			for (size_t i = 0; i < NComponents; i++)
 			{
 				mData[i] = (mData[i] < min) ? min : ((mData[i] > max) ? max : mData[i]);
 			}
@@ -336,7 +330,7 @@ namespace HorseRadish
 
 		void write(TDataType* const dest) const
 		{
-			for (unsigned int i = 0; i < NComponents; i++)
+			for (size_t i = 0; i < NComponents; i++)
 				dest[i] = mData[i];
 		}
 
@@ -450,11 +444,6 @@ namespace HorseRadish
 			_mm_storeu_ps(mData, _mm_setzero_ps());
 		}
 
-		Vector(const Vector &v)
-		{
-			_mm_storeu_ps(mData, _mm_loadu_ps(v.mData));
-		}
-
 		explicit Vector(const float scalar)
 		{
 			_mm_storeu_ps(mData, _mm_load_ps1(&scalar));
@@ -468,7 +457,7 @@ namespace HorseRadish
 			mData[3] = 0.0f;
 		}
 
-		explicit Vector(const float* const v)
+		explicit Vector(const float v[3])
 		{
 			mData[0] = v[0];
 			mData[1] = v[1];
@@ -507,7 +496,7 @@ namespace HorseRadish
 			return *this;
 		}
 
-		Vector& operator=(const float *v)
+		Vector& operator=(const float v[3])
 		{
 			std::memcpy(mData, v, sizeof(float) * 3);
 			return *this;
@@ -539,32 +528,32 @@ namespace HorseRadish
 			_mm_storeu_ps(mData, _mm_div_ps(_mm_loadu_ps(mData), _mm_loadu_ps(v.mData)));
 		}
 
-		void operator+=(const float * const p)
+		void operator+=(const float v[3])
 		{
-			mData[0] += p[0];
-			mData[1] += p[1];
-			mData[2] += p[2];
+			mData[0] += v[0];
+			mData[1] += v[1];
+			mData[2] += v[2];
 		}
 
-		void operator-=(const float * const p)
+		void operator-=(const float v[3])
 		{
-			mData[0] -= p[0];
-			mData[1] -= p[1];
-			mData[2] -= p[2];
+			mData[0] -= v[0];
+			mData[1] -= v[1];
+			mData[2] -= v[2];
 		}
 
-		void operator*=(const float * const p)
+		void operator*=(const float v[3])
 		{
-			mData[0] *= p[0];
-			mData[1] *= p[1];
-			mData[2] *= p[2];
+			mData[0] *= v[0];
+			mData[1] *= v[1];
+			mData[2] *= v[2];
 		}
 
-		void operator/=(const float * const p)
+		void operator/=(const float v[3])
 		{
-			mData[0] /= p[0];
-			mData[1] /= p[1];
-			mData[2] /= p[2];
+			mData[0] /= v[0];
+			mData[1] /= v[1];
+			mData[2] /= v[2];
 		}
 
 		void operator+=(const float &n)
@@ -612,22 +601,22 @@ namespace HorseRadish
 			return Vector(_mm_div_ps(_mm_loadu_ps(mData), _mm_loadu_ps(vec.mData)));
 		}
 
-		Vector operator+(const float * const vec) const
+		Vector operator+(const float vec[3]) const
 		{
 			return Vector(mData[0] + vec[0], mData[1] + vec[1], mData[2] + vec[2]);
 		}
 
-		Vector operator-(const float * const vec) const
+		Vector operator-(const float vec[3]) const
 		{
 			return Vector(mData[0] - vec[0], mData[1] - vec[1], mData[2] - vec[2]);
 		}
 
-		Vector operator*(const float * const vec) const
+		Vector operator*(const float vec[3]) const
 		{
 			return Vector(mData[0] * vec[0], mData[1] * vec[1], mData[2] * vec[2]);
 		}
 
-		Vector operator/(const float * const vec) const
+		Vector operator/(const float vec[3]) const
 		{
 			return Vector(mData[0] / vec[0], mData[1] / vec[1], mData[2] / vec[2]);
 		}
@@ -659,7 +648,7 @@ namespace HorseRadish
 			return false;
 		}
 
-		bool operator==(const float * const vec) const
+		bool operator==(const float vec[3]) const
 		{
 			if (Math::isZero(mData[0] - vec[0]) && Math::isZero(mData[1] - vec[1]) && Math::isZero(mData[2] - vec[2]))
 				return true;
@@ -672,9 +661,9 @@ namespace HorseRadish
 			return *this;
 		}
 
-		Vector& set(const float* const p)
+		Vector& set(const float vec[3])
 		{
-			std::memcpy(mData, p, sizeof(float) * 3);
+			std::memcpy(mData, vec, sizeof(float) * 3);
 			return *this;
 		}
 
@@ -692,7 +681,7 @@ namespace HorseRadish
 			return *this;
 		}
 
-		void write(float * const dest) const
+		void write(float dest[3]) const
 		{
 			std::memcpy(dest, mData, sizeof(float) * 3);
 		}
@@ -707,9 +696,9 @@ namespace HorseRadish
 			return Vector::calcDot(*this, vec);
 		}
 
-		float getDot(const float* const p) const
+		float getDot(const float vec[3]) const
 		{
-			return ((mData[0] * p[0]) + (mData[1] * p[1]) + (mData[2] * p[2]));
+			return ((mData[0] * vec[0]) + (mData[1] * vec[1]) + (mData[2] * vec[2]));
 		}
 
 		float getDot(const float x, const float y, const float z) const
@@ -737,9 +726,9 @@ namespace HorseRadish
 			return Vector::calcDistance(*this, Vector(x, y, z));
 		}
 
-		float getDistance(const float * const p) const
+		float getDistance(const float vec[3]) const
 		{
-			return Vector::calcDistance(*this, Vector(p));
+			return Vector::calcDistance(*this, Vector(vec));
 		}
 
 		bool isEqual(const Vector &vec, const float &precision) const
@@ -798,9 +787,9 @@ namespace HorseRadish
 			_mm_storeu_ps(mData, _mm_mul_ps(vec1, vec2));
 		}
 
-		void storeNormal(const float * const v1, const float * const v2, const float * const v3)
+		void storeNormal(const float vec1[3], const float vec2[3], const float vec3[3])
 		{
-			storeNormal(Vector(v1), Vector(v2), Vector(v3));
+			storeNormal(Vector(vec1), Vector(vec2), Vector(vec3));
 		}
 
 		Vector crossProduct(const Vector &vec) const
@@ -828,7 +817,7 @@ namespace HorseRadish
 			_mm_storeu_ps(mData, _mm_sub_ps(xa, xb));
 		}
 
-		void storeCrossProduct(const float * const p, const float * const q)
+		void storeCrossProduct(const float p[3], const float q[3])
 		{
 			storeCrossProduct(Vector(p), Vector(q));
 		}
@@ -842,7 +831,7 @@ namespace HorseRadish
 			_mm_storeu_ps(mData, tmp);
 		}
 
-		void storeInterpolate(const float* const from, const float* const to, const float &t)
+		void storeInterpolate(const float from[3], const float to[3], const float &t)
 		{
 			storeInterpolate(Vector(from), Vector(to), t);
 		}
@@ -947,21 +936,16 @@ namespace HorseRadish
 			_mm_storeu_ps(mData, _mm_setzero_ps());
 		}
 
-		Vector(const Vector3f &s)
+		explicit Vector(const Vector3f &s)
 		{
 			_mm_storeu_ps(mData, _mm_loadu_ps(s.data()));
 			mData[3] = 1.0f;
 		}
 
-		Vector(const Vector3f &s, const float vw)
+		explicit Vector(const Vector3f &s, const float vw)
 		{
 			_mm_storeu_ps(mData, _mm_loadu_ps(s.data()));
 			mData[3] = vw;
-		}
-
-		Vector(const Vector &s)
-		{
-			_mm_storeu_ps(mData, _mm_loadu_ps(s.mData));
 		}
 
 		explicit Vector(const float scalar)
@@ -977,9 +961,9 @@ namespace HorseRadish
 			mData[3] = vw;
 		}
 
-		explicit Vector(const float * const v)
+		explicit Vector(const float vec[4])
 		{
-			_mm_storeu_ps(mData, _mm_loadu_ps(v));
+			_mm_storeu_ps(mData, _mm_loadu_ps(vec));
 		}
 
 		explicit Vector(const __m128 vecDat)
@@ -1013,9 +997,9 @@ namespace HorseRadish
 			return *this;
 		}
 
-		Vector& operator=(const float* const values)
+		Vector& operator=(const float vec[4])
 		{
-			_mm_storeu_ps(mData, _mm_loadu_ps(values));
+			_mm_storeu_ps(mData, _mm_loadu_ps(vec));
 			return *this;
 		}
 
@@ -1083,9 +1067,9 @@ namespace HorseRadish
 			return *this;
 		}
 
-		Vector& set(const float *s)
+		Vector& set(const float vec[4])
 		{
-			_mm_storeu_ps(mData, _mm_loadu_ps(s));
+			_mm_storeu_ps(mData, _mm_loadu_ps(vec));
 			return *this;
 		}
 
@@ -1162,7 +1146,7 @@ namespace HorseRadish
 			_mm_storeu_ps(mData, tmp);
 		}
 
-		void storeInterpolate(const float* const from, const float* const to, const float &t)
+		void storeInterpolate(const float from[4], const float to[4], const float &t)
 		{
 			__m128 tmp;
 

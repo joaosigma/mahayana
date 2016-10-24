@@ -5,69 +5,41 @@
 
 namespace HorseRadish
 {
-	BBox::BBox(const Vector3f * const points, const unsigned int numVec)
+	BBox::BBox(const Vector3f * const points, size_t numVec)
 	{
-		minPt.set(std::numeric_limits<float>::infinity());
-		maxPt.set(-std::numeric_limits<float>::infinity());
+		mMinPt.set(std::numeric_limits<float>::infinity());
+		mMaxPt.set(-std::numeric_limits<float>::infinity());
 
-		Merge(points, numVec);
+		merge(points, numVec);
 	}
 
-	BBox::BBox(const BBox * const bboxes, const unsigned int numBBox)
+	BBox::BBox(const BBox * const bboxes, size_t numBBox)
 	{
-		minPt.set(std::numeric_limits<float>::infinity());
-		maxPt.set(-std::numeric_limits<float>::infinity());
+		mMinPt.set(std::numeric_limits<float>::infinity());
+		mMaxPt.set(-std::numeric_limits<float>::infinity());
 
-		for (unsigned int i = 0; i < numBBox; i++)
+		for (size_t i = 0; i < numBBox; i++)
 		{
-			Merge(bboxes[i].maxPt);
-			Merge(bboxes[i].minPt);
+			merge(bboxes[i].mMaxPt);
+			merge(bboxes[i].mMinPt);
 		}
 	}
 
-	BBox& BBox::operator=(const BBox& bbox)
+	float BBox::radius(void) const
 	{
-		minPt.set(bbox.minPt);
-		maxPt.set(bbox.maxPt);
-		return *this;
+		auto center = this->center();
+		return center.getDistance(mMinPt);
 	}
 
-	void BBox::operator+=(const BBox& bbox)
+	float BBox::radiusMinimum(void) const
 	{
-		Merge(bbox.minPt);
-		Merge(bbox.maxPt);
+		auto center = this->center();
+
+		float minDist = std::abs(mMinPt[0] - center[0]);
+		minDist = std::fmin(minDist, std::abs(mMinPt[1] - center[1]));
+		return std::fmin(minDist, std::abs(mMinPt[2] - center[2]));
 	}
-
-	void BBox::operator+=(const Vector3f& pt)
-	{
-		Merge(pt);
-	}
-
-	float BBox::GetRadius(void) const
-	{
-		Vector3f center;
-
-		GetCenter(center);
-		return center.getDistance(minPt);
-	}
-
-	float BBox::GetRadiusMinimum(void) const
-	{
-		Vector3f center;
-		float minDist;
-
-		GetCenter(center);
-
-		minDist = std::abs(minPt[0] - center[0]);
-		minDist = std::fmin(minDist, std::abs(minPt[1] - center[1]));
-		return std::fmin(minDist, std::abs(minPt[2] - center[2]));
-	}
-
-	float BBox::GetVolume(void) const
-	{
-		return ((maxPt[0] - minPt[0]) * (maxPt[1] - minPt[1]) * (maxPt[2] - minPt[2]));
-	}
-
+	
 	/*
 
 	2---------------6
@@ -86,23 +58,23 @@ namespace HorseRadish
 	       \|			   \|
 	        1---------------5
 	*/
-	void BBox::GetCorners(Vector3f points[8]) const
+	void BBox::corners(Vector3f points[8]) const
 	{
-		points[0].set(minPt[0], minPt[1], minPt[2]);
-		points[1].set(minPt[0], minPt[1], maxPt[2]);
-		points[2].set(minPt[0], maxPt[1], minPt[2]);
-		points[3].set(minPt[0], maxPt[1], maxPt[2]);
-		points[4].set(maxPt[0], minPt[1], minPt[2]);
-		points[5].set(maxPt[0], minPt[1], maxPt[2]);
-		points[6].set(maxPt[0], maxPt[1], minPt[2]);
-		points[7].set(maxPt[0], maxPt[1], maxPt[2]);
+		points[0].set(mMinPt[0], mMinPt[1], mMinPt[2]);
+		points[1].set(mMinPt[0], mMinPt[1], mMaxPt[2]);
+		points[2].set(mMinPt[0], mMaxPt[1], mMinPt[2]);
+		points[3].set(mMinPt[0], mMaxPt[1], mMaxPt[2]);
+		points[4].set(mMaxPt[0], mMinPt[1], mMinPt[2]);
+		points[5].set(mMaxPt[0], mMinPt[1], mMaxPt[2]);
+		points[6].set(mMaxPt[0], mMaxPt[1], mMinPt[2]);
+		points[7].set(mMaxPt[0], mMaxPt[1], mMaxPt[2]);
 	}
 
-	void BBox::GetGeom(Vector3f points[36]) const
+	void BBox::geom(Vector3f points[36]) const
 	{
 		Vector3f corners[8];
 
-		GetCorners(corners);
+		this->corners(corners);
 
 		//front
 		points[0 * 6 + 0] = corners[1];	points[0 * 6 + 1] = corners[7];	points[0 * 6 + 2] = corners[3];
@@ -124,35 +96,28 @@ namespace HorseRadish
 		points[5 * 6 + 3] = corners[3];	points[5 * 6 + 4] = corners[7];	points[5 * 6 + 5] = corners[6];
 	}
 
-	void BBox::GetBoundingSphere(Vector3f &center, float &radius) const
+	void BBox::boundingSphere(Vector3f &center, float &radius) const
 	{
-		GetCenter(center);
-		radius = center.getDistance(minPt);
+		this->center(center);
+		radius = center.getDistance(mMinPt);
 	}
 
-	void BBox::GetBoundingSphere(BSphere &bsphere) const
+	BSphere BBox::boundingSphere() const
 	{
-		Vector3f center;
-
-		GetCenter(center);
-		bsphere.SetCenter(center);
-
-		bsphere.SetRadius(center.getDistance(minPt));
+		auto center = this->center();
+		return BSphere(center, center.getDistance(mMinPt));
 	}
 
-	float BBox::GetPlaneDistance(const Plane &plane) const
+	float BBox::planeDistance(const Plane &plane) const
 	{
-		Vector3f center, planeNormal;
-		float d1, d2;
+		auto center = this->center();
 
-		GetCenter(center);
+		float d1 = plane.getDotCoord(center);
+		Vector3f planeNormal = plane.normal();
 
-		d1 = plane.GetDotCoord(center);
-		plane.GetNormal(planeNormal);
-
-		d2 = std::abs((maxPt[0] - center[0]) * planeNormal[0]);
-		d2 += std::abs((maxPt[1] - center[1]) * planeNormal[1]);
-		d2 += std::abs((maxPt[2] - center[2]) * planeNormal[2]);
+		float d2 = std::abs((mMaxPt[0] - center[0]) * planeNormal[0]);
+		d2 += std::abs((mMaxPt[1] - center[1]) * planeNormal[1]);
+		d2 += std::abs((mMaxPt[2] - center[2]) * planeNormal[2]);
 
 		if ((d1 - d2) > 0.0f)
 			return (d1 - d2);
@@ -161,13 +126,11 @@ namespace HorseRadish
 		return 0.0f;
 	}
 
-	Vector3f BBox::GetMainAxis() const
+	Vector3f BBox::mainAxis() const
 	{
-		float tamX, tamY, tamZ;
-
-		tamX = maxPt[0] - minPt[0];
-		tamY = maxPt[1] - minPt[1];
-		tamZ = maxPt[2] - minPt[2];
+		float tamX = mMaxPt[0] - mMinPt[0];
+		float tamY = mMaxPt[1] - mMinPt[1];
+		float tamZ = mMaxPt[2] - mMinPt[2];
 
 		if (tamX > tamY && tamX > tamZ)
 			return Vector3f(1.0f, 0.0f, 0.0f);
@@ -182,35 +145,36 @@ namespace HorseRadish
 			return Vector3f(1.0f, 1.0f, 0.0);
 		if (Math::isZero(tamX - tamZ))
 			return Vector3f(1.0f, 0.0f, 1.0);
+
 		return Vector3f(0.0f, 1.0f, 1.0);
 	}
 
-	void BBox::Merge(const Vector3f &pt)
+	void BBox::merge(const Vector3f &pt)
 	{
 		__m128 vecData;
 
 		vecData = _mm_loadu_ps(pt.data());
-		_mm_storeu_ps(minPt.data(), _mm_min_ps(_mm_loadu_ps(minPt.data()), vecData));
-		_mm_storeu_ps(maxPt.data(), _mm_max_ps(_mm_loadu_ps(maxPt.data()), vecData));
+		_mm_storeu_ps(mMinPt.data(), _mm_min_ps(_mm_loadu_ps(mMinPt.data()), vecData));
+		_mm_storeu_ps(mMaxPt.data(), _mm_max_ps(_mm_loadu_ps(mMaxPt.data()), vecData));
 	}
 
-	void BBox::Merge(const float * const pt)
+	void BBox::merge(const float * const pt)
 	{
-		minPt[0] = std::fmin(minPt[0], pt[0]);
-		minPt[1] = std::fmin(minPt[1], pt[1]);
-		minPt[2] = std::fmin(minPt[2], pt[2]);
-		maxPt[0] = std::fmax(maxPt[0], pt[0]);
-		maxPt[1] = std::fmax(maxPt[1], pt[1]);
-		maxPt[2] = std::fmax(maxPt[2], pt[2]);
+		mMinPt[0] = std::fmin(mMinPt[0], pt[0]);
+		mMinPt[1] = std::fmin(mMinPt[1], pt[1]);
+		mMinPt[2] = std::fmin(mMinPt[2], pt[2]);
+		mMaxPt[0] = std::fmax(mMaxPt[0], pt[0]);
+		mMaxPt[1] = std::fmax(mMaxPt[1], pt[1]);
+		mMaxPt[2] = std::fmax(mMaxPt[2], pt[2]);
 	}
 
-	void BBox::Merge(const Vector3f * const pts, const int numPts)
+	void BBox::merge(const Vector3f * const pts, size_t numPts)
 	{
 		__m128 vec1, vec2, finalMin, finalMax;
-		int i, j;
+		size_t i, j;
 
-		finalMin = _mm_loadu_ps(minPt.data());
-		finalMax = _mm_loadu_ps(maxPt.data());
+		finalMin = _mm_loadu_ps(mMinPt.data());
+		finalMax = _mm_loadu_ps(mMaxPt.data());
 
 		for (i = numPts, j = 0; i >= 2; i -= 2, j += 2)
 		{
@@ -229,20 +193,20 @@ namespace HorseRadish
 			finalMax = _mm_max_ps(finalMax, vec1);
 		}
 
-		_mm_storeu_ps(minPt.data(), finalMin);
-		_mm_storeu_ps(maxPt.data(), finalMax);
+		_mm_storeu_ps(mMinPt.data(), finalMin);
+		_mm_storeu_ps(mMaxPt.data(), finalMax);
 	}
 
-	void BBox::Merge(const float &x, const float &y, const float &z)
+	void BBox::merge(const float &x, const float &y, const float &z)
 	{
 		__m128 vecData;
 
 		vecData = _mm_set_ps(0.0f, z, y, x);
-		_mm_storeu_ps(minPt.data(), _mm_min_ps(_mm_loadu_ps(minPt.data()), vecData));
-		_mm_storeu_ps(maxPt.data(), _mm_max_ps(_mm_loadu_ps(maxPt.data()), vecData));
+		_mm_storeu_ps(mMinPt.data(), _mm_min_ps(_mm_loadu_ps(mMinPt.data()), vecData));
+		_mm_storeu_ps(mMaxPt.data(), _mm_max_ps(_mm_loadu_ps(mMaxPt.data()), vecData));
 	}
 
-	void BBox::MergeSphere(const Vector3f &sphereCenter, const float sphereRadius)
+	void BBox::mergeSphere(const Vector3f &sphereCenter, const float sphereRadius)
 	{
 		__m128 smin, smax, aux, finalMin, finalMax;
 
@@ -251,21 +215,20 @@ namespace HorseRadish
 		smin = _mm_sub_ps(smin, aux);
 		smax = _mm_add_ps(smax, aux);
 
-		finalMin = _mm_loadu_ps(minPt.data());
-		finalMax = _mm_loadu_ps(maxPt.data());
+		finalMin = _mm_loadu_ps(mMinPt.data());
+		finalMax = _mm_loadu_ps(mMaxPt.data());
 		finalMin = _mm_min_ps(finalMin, smin);
 		finalMax = _mm_max_ps(finalMax, smin);
-		_mm_storeu_ps(minPt.data(), _mm_min_ps(finalMin, smax));
-		_mm_storeu_ps(maxPt.data(), _mm_max_ps(finalMax, smax));
+		_mm_storeu_ps(mMinPt.data(), _mm_min_ps(finalMin, smax));
+		_mm_storeu_ps(mMaxPt.data(), _mm_max_ps(finalMax, smax));
 	}
 
-	void BBox::MergeSphere(const BSphere &bsphere)
+	void BBox::mergeSphere(const BSphere &bsphere)
 	{
-		Vector3f pts[8], scenter;
-		float sradius;
+		Vector3f pts[8];
 
-		bsphere.GetCenter(scenter);
-		sradius = bsphere.GetRadius();
+		auto scenter = bsphere.center();
+		float sradius = bsphere.radius();
 
 		pts[0].set(scenter[0] - sradius, scenter[1] + sradius, scenter[2] + sradius);
 		pts[1].set(scenter[0] - sradius, scenter[1] - sradius, scenter[2] + sradius);
@@ -277,10 +240,10 @@ namespace HorseRadish
 		pts[6].set(scenter[0] + sradius, scenter[1] + sradius, scenter[2] - sradius);
 		pts[7].set(scenter[0] + sradius, scenter[1] - sradius, scenter[2] - sradius);
 
-		Merge(pts, 8);
+		merge(pts, 8);
 	}
 
-	void BBox::MergeBox(const Vector3f &boxCenter, const float boxWidth, const float boxHeight, const float boxDepth)
+	void BBox::mergeBox(const Vector3f &boxCenter, const float boxWidth, const float boxHeight, const float boxDepth)
 	{
 		Vector3f pts[8];
 
@@ -294,47 +257,15 @@ namespace HorseRadish
 		pts[6].set(boxCenter[0] + boxWidth, boxCenter[1] + boxHeight, boxCenter[2] - boxDepth);
 		pts[7].set(boxCenter[0] + boxWidth, boxCenter[1] - boxHeight, boxCenter[2] - boxDepth);
 
-		Merge(pts, 8);
+		merge(pts, 8);
 	}
 
-	void BBox::Translate(const Vector3f &translation)
-	{
-		minPt += translation;
-		maxPt += translation;
-	}
-
-	void BBox::Translate(BBox& bbox, const Vector3f &translation) const
-	{
-		bbox.minPt = minPt;
-		bbox.maxPt = maxPt;
-		bbox.minPt += translation;
-		bbox.maxPt += translation;
-	}
-
-	void BBox::Expand(const float amount)
-	{
-		minPt -= amount;
-		maxPt += amount;
-	}
-
-	bool BBox::ContainsPoint(const Vector3f &point) const
-	{
-		if (point[0]<minPt[0] || point[1]<minPt[1] || point[2]<minPt[2] || point[0]>maxPt[0] || point[1]>maxPt[1] || point[2]>maxPt[2])
-			return false;
-		return true;
-	}
-
-	bool BBox::Intersects(const BBox &bbox) const
-	{
-		return !((bbox.maxPt[0] < minPt[0]) || (bbox.maxPt[1] < minPt[1]) || (bbox.maxPt[2] < minPt[2]) || (bbox.minPt[0] > maxPt[0]) || (bbox.minPt[1] > maxPt[1]) || (bbox.minPt[2] > maxPt[2]));
-	}
-
-	bool BBox::Intersects(const Vector3f &lineStart, const Vector3f &lineEnd) const
+	bool BBox::intersects(const Vector3f &lineStart, const Vector3f &lineEnd) const
 	{
 		float ld[3];
 
-		auto center = (this->minPt + this->maxPt) * 0.5f;
-		auto extents = this->maxPt - center;
+		auto center = (mMinPt + mMaxPt) * 0.5f;
+		auto extents = mMaxPt - center;
 		auto lineDir = (lineEnd - lineStart) * 0.5f;
 		auto lineCenter = lineStart + lineDir;
 		auto dir = lineCenter - center;
@@ -362,32 +293,30 @@ namespace HorseRadish
 		return true;
 	}
 
-	bool BBox::Intersects(const Ray &ray, float * const rayHitDistance) const
+	bool BBox::intersects(const Ray &ray, float * const rayHitDistance) const
 	{
-		int ax0, ax1, ax2, side, inside;
-		float f, scale;
+		int side;
 		Vector3f hit;
 
 		//helper
-		auto rayOrigin = ray.GetOrigin();
-		auto rayDir = ray.GetDirection();
+		auto rayOrigin = ray.origin();
+		auto rayDir = ray.direction();
 
 		//by omission
 		if (rayHitDistance != nullptr)
 			*rayHitDistance = 0.0f;
 
-		ax0 = -1;
-		inside = 0;
-		scale = 0.0f;
-		for (int i = 0; i < 3; i++)
+		int ax0 = -1;
+		int inside = 0;
+		float scale = 0.0f;
+		for (size_t i = 0; i < 3; i++)
 		{
-			if (rayOrigin[i] < this->minPt[i]) {
+			if (rayOrigin[i] < mMinPt[i])
 				side = 0;
-			}
-			else if (rayOrigin[i] > this->maxPt[i]) {
+			else if (rayOrigin[i] > mMaxPt[i])
 				side = 1;
-			}
-			else {
+			else
+			{
 				inside++;
 				continue;
 			}
@@ -397,7 +326,7 @@ namespace HorseRadish
 
 			assert((side == 0) || (side == 1));
 
-			f = (rayOrigin[i] - ((side == 0) ? this->minPt : this->maxPt)[i]);
+			float f = (rayOrigin[i] - ((side == 0) ? mMinPt : mMaxPt)[i]);
 			if ((ax0 < 0) || (std::abs(f) > std::abs(scale * rayDir[i])))
 			{
 				scale = -(f / rayDir[i]);
@@ -411,28 +340,28 @@ namespace HorseRadish
 		if (rayHitDistance != nullptr)
 			*rayHitDistance = scale;
 
-		ax1 = (ax0 + 1) % 3;
-		ax2 = (ax0 + 2) % 3;
+		int ax1 = (ax0 + 1) % 3;
+		int ax2 = (ax0 + 2) % 3;
 		hit[ax1] = rayOrigin[ax1] + scale * rayDir[ax1];
 		hit[ax2] = rayOrigin[ax2] + scale * rayDir[ax2];
 
-		return ((hit[ax1] >= this->minPt[ax1]) && (hit[ax1] <= this->maxPt[ax1]) && (hit[ax2] >= this->minPt[ax2]) && (hit[ax2] <= this->maxPt[ax2]));
+		return ((hit[ax1] >= mMinPt[ax1]) && (hit[ax1] <= mMaxPt[ax1]) && (hit[ax2] >= mMinPt[ax2]) && (hit[ax2] <= mMaxPt[ax2]));
 	}
 
-	BBox::Position BBox::Classify(const BBox &bbox)
+	BBox::Position BBox::classify(const BBox &bbox)
 	{
-		if ((bbox.minPt[0] > maxPt[0]) || (bbox.maxPt[0] < minPt[0]))
+		if ((bbox.mMinPt[0] > mMaxPt[0]) || (bbox.mMaxPt[0] < mMinPt[0]))
 			return Position::Outside;
-		if ((bbox.minPt[1] > maxPt[1]) || (bbox.maxPt[1] < minPt[1]))
+		if ((bbox.mMinPt[1] > mMaxPt[1]) || (bbox.mMaxPt[1] < mMinPt[1]))
 			return Position::Outside;
-		if ((bbox.minPt[2] > maxPt[2]) || (bbox.maxPt[2] < minPt[2]))
+		if ((bbox.mMinPt[2] > mMaxPt[2]) || (bbox.mMaxPt[2] < mMinPt[2]))
 			return Position::Outside;
 
-		if ((bbox.minPt[0] > minPt[0]) && (bbox.maxPt[0] < maxPt[0]))
+		if ((bbox.mMinPt[0] > mMinPt[0]) && (bbox.mMaxPt[0] < mMaxPt[0]))
 		{
-			if ((bbox.minPt[1] > minPt[1]) && (bbox.maxPt[1] < maxPt[1]))
+			if ((bbox.mMinPt[1] > mMinPt[1]) && (bbox.mMaxPt[1] < mMaxPt[1]))
 			{
-				if ((bbox.minPt[2] > minPt[2]) && (bbox.maxPt[2] < maxPt[2]))
+				if ((bbox.mMinPt[2] > mMinPt[2]) && (bbox.mMaxPt[2] < mMaxPt[2]))
 					return Position::Inside;
 			}
 		}
@@ -442,127 +371,65 @@ namespace HorseRadish
 
 	float BSphere::calcDist(const float &px, const float &py, const float &pz) const
 	{
-		float d1 = x - px;
-		float d2 = y - py;
-		float d3 = z - pz;
+		float d1 = mCenter[0] - px;
+		float d2 = mCenter[1] - py;
+		float d3 = mCenter[2] - pz;
 		return sqrtf(d1*d1 + d2*d2 + d3*d3);
 	}
 
 	float BSphere::calcDist(const float * const vec) const
 	{
-		float d1 = x - vec[0];
-		float d2 = y - vec[1];
-		float d3 = z - vec[2];
+		float d1 = mCenter[0] - vec[0];
+		float d2 = mCenter[1] - vec[1];
+		float d3 = mCenter[2] - vec[2];
 		return sqrtf(d1*d1 + d2*d2 + d3*d3);
 	}
 
 	float BSphere::calcDist(const BSphere &bsphere) const
 	{
-		float d1 = x - bsphere.x;
-		float d2 = y - bsphere.y;
-		float d3 = z - bsphere.z;
+		float d1 = mCenter[0] - bsphere.mCenter[0];
+		float d2 = mCenter[1] - bsphere.mCenter[1];
+		float d3 = mCenter[2] - bsphere.mCenter[2];
 		return sqrtf(d1*d1 + d2*d2 + d3*d3);
 	}
 
 	float BSphere::calcDist(const Vector3f &vec) const
 	{
-		float d1 = x - vec[0];
-		float d2 = y - vec[1];
-		float d3 = z - vec[2];
+		float d1 = mCenter[0] - vec[0];
+		float d2 = mCenter[1] - vec[1];
+		float d3 = mCenter[2] - vec[2];
 		return sqrtf(d1*d1 + d2*d2 + d3*d3);
 	}
 
-	BSphere& BSphere::operator=(const BSphere& bsphere)
+	bool BSphere::containsPoint(const Vector3f &point) const
 	{
-		x = bsphere.x;
-		y = bsphere.y;
-		z = bsphere.z;
-		radius = bsphere.radius;
-		return *this;
+		return (calcDist(point) < mRadius);
 	}
 
-	void BSphere::operator+=(const BSphere& bsphere)
+	bool BSphere::containsPoint(const float &px, const float &py, const float &pz) const
 	{
-		Merge(bsphere);
+		return (calcDist(px, py, pz) < mRadius);
 	}
 
-	void BSphere::Merge(const Vector3f &pt)
+	bool BSphere::intersects(const BSphere &bsphere) const
 	{
-		radius = std::fmax(radius, calcDist(pt));
+		auto radiusSum = bsphere.mRadius + mRadius;
+
+		auto vecDiff = Vector3f(bsphere.mCenter[0], bsphere.mCenter[1], bsphere.mCenter[2]) - Vector3f(mCenter[0], mCenter[1], mCenter[2]);
+
+		return (vecDiff.getDot() <= (radiusSum * radiusSum));
 	}
 
-	void BSphere::Merge(const float * const pt)
+	bool BSphere::intersects(const Vector3f &lineStart, const Vector3f &lineEnd) const
 	{
-		radius = std::fmax(radius, calcDist(pt));
-	}
+		auto origin = Vector3f(mCenter[0], mCenter[1], mCenter[2]);
 
-	void BSphere::Merge(const Vector3f * const pts, const int numPts)
-	{
-		for (int i = 0; i < numPts; i++)
-			this->radius = std::fmax(this->radius, calcDist(pts[i]));
-	}
-
-	void BSphere::Merge(const float &x, const float &y, const float &z)
-	{
-		radius = std::fmax(radius, calcDist(x, y, z));
-	}
-
-	void BSphere::Merge(const BSphere &sphere)
-	{
-		radius = std::fmax(radius, calcDist(sphere) + sphere.radius);
-	}
-
-	void BSphere::Merge(const BBox &bbox)
-	{
-		BSphere boxSphere;
-
-		bbox.GetBoundingSphere(boxSphere);
-		radius = std::fmax(radius, calcDist(boxSphere) + boxSphere.radius);
-	}
-
-	void BSphere::Expand(const float &amount)
-	{
-		this->radius += amount;
-	}
-
-	void BSphere::Contract(const float &amount)
-	{
-		this->radius -= amount;
-	}
-
-	bool BSphere::ContainsPoint(const Vector3f &point) const
-	{
-		if (calcDist(point) < radius)
-			return true;
-		return false;
-	}
-
-	bool BSphere::ContainsPoint(const float &px, const float &py, const float &pz) const
-	{
-		if (calcDist(px, py, pz) < radius)
-			return true;
-		return false;
-	}
-
-	bool BSphere::Intersects(const BSphere &bsphere) const
-	{
-		auto radiusSum = bsphere.radius + this->radius;
-
-		auto vecDiff = Vector3f(bsphere.x, bsphere.y, bsphere.z) - Vector3f(this->x, this->y, this->z);
-
-		return !(vecDiff.getDot() > (radiusSum * radiusSum));
-	}
-
-	bool BSphere::Intersects(const Vector3f &lineStart, const Vector3f &lineEnd) const
-	{
-		auto origem = Vector3f(this->x, this->y, this->z);
-
-		auto s = lineStart - origem;
-		auto e = lineEnd - origem;
+		auto s = lineStart - origin;
+		auto e = lineEnd - origin;
 		auto r = e - s;
 
 		auto a = -s.getDot(r);
-		auto radiusSquared = this->radius * this->radius;
+		auto radiusSquared = mRadius * mRadius;
 
 		if (a <= 0.0f)
 			return (s.getDot() < radiusSquared);
@@ -574,31 +441,31 @@ namespace HorseRadish
 		return (r.getDot() < radiusSquared);
 	}
 
-	bool BSphere::Intersects(const Ray &ray) const
+	bool BSphere::intersects(const Ray &ray) const
 	{
-		auto rayDir = ray.GetDirection();
+		auto rayDir = ray.direction();
 
-		auto p = ray.GetOrigin() - Vector3f(this->x, this->y, this->z);
+		auto p = ray.origin() - Vector3f(mCenter[0], mCenter[1], mCenter[2]);
 		auto a = rayDir.getDot();
 		auto b = rayDir.getDot(p);
-		auto c = p.getDot() - (this->radius * this->radius);
+		auto c = p.getDot() - (mRadius * mRadius);
 		auto d = (b * b) - (c * a);
 
 		return !(d < 0.0f);
 	}
 
-	bool BSphere::Intersects(const Ray &ray, float &rayHitDistance1, float &rayHitDistance2) const
+	bool BSphere::intersects(const Ray &ray, float &rayHitDistance1, float &rayHitDistance2) const
 	{
 		//by omission
 		rayHitDistance1 = rayHitDistance2 = 0.0f;
 
 		//helper
-		auto rayDir = ray.GetDirection();
+		auto rayDir = ray.direction();
 
-		auto p = ray.GetOrigin() - Vector3f(this->x, this->y, this->z);
+		auto p = ray.origin() - Vector3f(mCenter[0], mCenter[1], mCenter[2]);
 		auto a = rayDir.getDot();
 		auto b = rayDir.getDot(p);
-		auto c = p.getDot() - (this->radius * this->radius);
+		auto c = p.getDot() - (mRadius * mRadius);
 		auto d = (b * b) - (c * a);
 
 		if (d < 0.0f)
@@ -614,40 +481,40 @@ namespace HorseRadish
 		return true;
 	}
 
-	BSphere::Position BSphere::ClassifyBSphere(const BSphere &bsphere)
+	BSphere::Position BSphere::classifyBSphere(const BSphere &bsphere)
 	{
 		float centerDist = calcDist(bsphere);
 
-		if ((centerDist + bsphere.radius) < radius)
+		if ((centerDist + bsphere.mRadius) < mRadius)
 			return BSphere::Position::Inside;
-		if (centerDist - bsphere.radius > radius)
+		if (centerDist - bsphere.mRadius > mRadius)
 			return BSphere::Position::Outside;
+
 		return BSphere::Position::Intersect;
 	}
 
-	BSphere::Position BSphere::ClassifyBBox(const BBox &bbox)
+	BSphere::Position BSphere::classifyBBox(const BBox &bbox)
 	{
 		Vector3f pontos[8];
 		unsigned char numIn, numOut;
 
-		bbox.GetCorners(pontos);
+		bbox.corners(pontos);
 		numIn = numOut = 0;
 
-		for (int i = 0; i < 4; i++){
-			calcDist(pontos[i]) < radius ? numIn++ : numOut++;
-		}
+		for (size_t i = 0; i < 4; i++)
+			(calcDist(pontos[i]) < mRadius) ? numIn++ : numOut++;
 
 		if (numIn != 0 && numOut != 0)
 			return BSphere::Position::Intersect;
 
-		for (int i = 4; i < 8; i++){
-			calcDist(pontos[i]) < radius ? numIn++ : numOut++;
-		}
+		for (size_t i = 4; i < 8; i++)
+			(calcDist(pontos[i]) < mRadius) ? numIn++ : numOut++;
 
 		if (numIn != 0 && numOut != 0)
 			return BSphere::Position::Intersect;
 		if (numIn == 0)
 			return BSphere::Position::Outside;
+
 		return BSphere::Position::Inside;
 	}
 

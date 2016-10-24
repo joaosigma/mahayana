@@ -21,7 +21,7 @@ bool SCULLING::addPortal2Area(AREA * const area, PORTAL * const portal)
 
 int SCULLING::recurseGetArea(const BNODE * const tree, const HorseRadish::Vector3f &ponto) const
 {
-	if (tree->plano.ClassifyPoint(ponto) == HorseRadish::Plane::Position::BEHIND)
+	if (tree->plano.classifyPoint(ponto) == HorseRadish::Plane::Position::BEHIND)
 	{
 		if (tree->flag & BSP_NEG_OPAQUE)
 			return -1;
@@ -77,7 +77,7 @@ void SCULLING::recurseAreaPortal(const AREA * const area, const PORTAL * const p
 		getDataFromArea(moveArea, output, outputCount, outputTypeCount);
 
 		//novoNear.setFromPoints(area->portals[curPortal]->pontos[0],area->portals[curPortal]->pontos[1],area->portals[curPortal]->pontos[2]);
-		newFrustum.setFrustum(frustum);
+		newFrustum = *frustum;
 		/*newFrustum.setIndividualPlane(SFRUSTUM::PLANE_NEAR,novoNear);
 		if (newFrustum.dotNormals(SFRUSTUM::PLANE_NEAR,SFRUSTUM::PLANE_FAR)>0.0f)
 		{
@@ -118,7 +118,7 @@ void SCULLING::recurseAreaPortalDebug(const AREA * const area, const PORTAL * co
 			moveArea = curPortal->pos;
 
 		//novoNear.setFromPoints(area->portals[curPortal]->pontos[0],area->portals[curPortal]->pontos[1],area->portals[curPortal]->pontos[2]);
-		newFrustum.setFrustum(frustum);
+		newFrustum = *frustum;
 		/*newFrustum.setIndividualPlane(SFRUSTUM::PLANE_NEAR,novoNear);
 		if (newFrustum.dotNormals(SFRUSTUM::PLANE_NEAR,SFRUSTUM::PLANE_FAR)>0.0f)
 		{
@@ -296,7 +296,7 @@ void SCULLING::areaGetBBox(const unsigned int areaIndex, HorseRadish::BBox * con
 {
 	if (areaIndex >= this->areas.size() || bbox == nullptr)
 		return;
-	bbox->Set(&areas[areaIndex].bbox);
+	*bbox = areas[areaIndex].bbox;
 }
 
 void SCULLING::transverse(const HorseRadish::OpenGL::Tools::Frustum * const frustum, void*** const output, unsigned int * const outputCount, const int outputTypeCount) const
@@ -343,7 +343,7 @@ int SCULLING::getArea(const HorseRadish::Vector3f &point, const bool useBSPTree)
 	const AREA *areaWalker = this->areas.data();
 	for (int i = 0; i < this->areas.size(); i++, areaWalker++)
 	{
-		if (areaWalker->bbox.ContainsPoint(point))
+		if (areaWalker->bbox.containsPoint(point))
 			return i;
 	}
 
@@ -360,7 +360,7 @@ int SCULLING::getAreaClosest(const HorseRadish::Vector3f &point) const
 	const AREA *areaWalker = this->areas.data();
 	for (int i = 0; i < this->areas.size(); i++, areaWalker++)
 	{
-		areaWalker->bbox.GetCenter(pontoBBox);
+		pontoBBox = areaWalker->bbox.center();
 		if (pontoBBox.getDistance(point) < closestDist)
 		{
 			closestDist = pontoBBox.getDistance(point);

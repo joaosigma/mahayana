@@ -152,7 +152,7 @@ void ProfilerUI::drawStats(const HorseRadish::Primitives2D::Rectangle<float>& vi
 		auto color = retrieveColor(statGraph);
 
 		glImmediateMode.beginDraw(HorseRadish::OpenGL::Tools::ImmediateMode::GeometryType::LineStrip);
-		glImmediateMode.setColorF(color.r, color.g, color.b);
+		glImmediateMode.setColorF(color[0], color[1], color[2]);
 		
 		float posX = graphRect.x + graphRect.width;
 		for (unsigned int i = 0; i < numSamples; i++)
@@ -184,7 +184,7 @@ void ProfilerUI::drawStats(const HorseRadish::Primitives2D::Rectangle<float>& vi
 		else
 			msg = fmt::format("{0:.2f}", curSample.value);
 
-		guiFont.setColor(color.r, color.g, color.b);
+		guiFont.setColor(color[0], color[1], color[2]);
 		guiFont.write(graphRect.x + graphRect.width + 5.0f, curSample.posY - (guiFont.getMaxHeight() * 0.5f), msg);
 
 		msg = fmt::format("{0}: {1}", HorseRadish::Engine::Profiler::translateStatId(curSample.statId), msg);
@@ -235,13 +235,13 @@ void ProfilerUI::draw(const HorseRadish::OpenGL::Tools::Viewport& viewport) cons
 
 	if (mShowInfo)
 	{
-		HorseRadish::Primitives2D::Rectangle<float> viewRect(0.0f, 0.0f, viewport.getWidth(), viewport.getHeight());
+		HorseRadish::Primitives2D::Rectangle<float> viewRect(0.0f, 0.0f, viewport.width(), viewport.height());
 		drawInfo(viewRect, transformMatrix);
 	}
 
 	//if (mShowStats)
 	{
-		HorseRadish::Primitives2D::Rectangle<float> viewRect(20.0f, 20.0f, viewport.getWidth() - 40.0f, (viewport.getHeight() * 0.5f) - 40.0f);
+		HorseRadish::Primitives2D::Rectangle<float> viewRect(20.0f, 20.0f, viewport.width() - 40.0f, (viewport.height() * 0.5f) - 40.0f);
 
 		drawStatsBackground(viewRect, transformMatrix, 0.8f);
 		drawStats(viewRect, transformMatrix);

@@ -173,7 +173,6 @@
   <ItemGroup>
     <ClCompile Include="..\..\src\common\BAreas.cpp" />
     <ClCompile Include="..\..\src\common\BVolumes.cpp" />
-    <ClCompile Include="..\..\src\common\Color.cpp" />
     <ClCompile Include="..\..\src\common\Encoders.cpp" />
     <ClCompile Include="..\..\src\common\FileSystem.cpp" />
     <ClCompile Include="..\..\src\common\Hashing.cpp" />

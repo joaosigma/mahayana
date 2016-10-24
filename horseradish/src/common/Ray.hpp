@@ -14,68 +14,63 @@ namespace HorseRadish
 			: mOrigin(0.0f), mDirection(0.0f), mLength(0.0f)
 		{ }
 
-		explicit Ray(const Vector3f &nOrigin, const Vector3f &nDirection)
+		explicit Ray(const Vector3f& origin, const Vector3f& direction)
 		{
-			mOrigin = nOrigin;
+			mOrigin = origin;
 			
-			mDirection = nDirection;
+			mDirection = direction;
 			mDirection.normalize();
 
-			mLength = nDirection.getMagnitude();
+			mLength = direction.getMagnitude();
 		}
 
-		const Vector3f& GetOrigin() const
+		const Vector3f& origin() const
 		{
 			return mOrigin;
 		}
 
-		const Vector3f& GetDirection() const
+		const Vector3f& direction() const
 		{
 			return mDirection;
 		}
 
-		float GetLength() const
+		float length() const
 		{
 			return mLength;
 		}
 
-		void GetPointOn(const float &t, Vector3f &write) const
-		{
-			write = mOrigin + (mDirection * t);
-		}
-
-		Vector3f GetPointOn(const float &t) const
+		Vector3f pointOn(float t) const
 		{
 			return (mOrigin + (mDirection * t));
 		}
 
-		float GetDotOrigin(const float &x, const float &y, const float &z) const
+		float getDotOrigin(float x, float y, float z) const
 		{
 			return mOrigin.getDot(x, y, z);
 		}
 
-		float GetDotOrigin(const Vector3f &vec) const
+		float getDotOrigin(const Vector3f& vec) const
 		{
 			return mOrigin.getDot(vec);
 		}
 
-		float GetDotDirection(const float &x, const float &y, const float &z) const
+		float getDotDirection(float x, float y, float z) const
 		{
 			mDirection.getDot(x, y, z);
 		}
 
-		float GetDotDirection(const Vector3f &vec) const
+		float getDotDirection(const Vector3f& vec) const
 		{
 			return vec.getDot(mDirection);
 		}
 
-		void setOrigin(const float &x, const float &y, const float &z);
-		void setOrigin(const Vector3f &nOrigin);
-		void setDirection(const float &x, const float &y, const float &z);
-		void setDirection(const Vector3f &nDirection);
-		void setLength(const float &nLength);
-		void setSizedDirection(const float &x, const float &y, const float &z);
-		void setSizedDirection(const Vector3f &nSizedDirection);
+		void setOrigin(float x, float y, float z);
+		void setOrigin(const Vector3f& origin);
+		void setDirection(float x, float y, float z);
+		void setDirection(const Vector3f& direction);
+		void setLength(float length);
+		void setSizedDirection(float x, float y, float z);
+		void setSizedDirection(const Vector3f& sizedDirection);
 
 		void negateDir()
 		{

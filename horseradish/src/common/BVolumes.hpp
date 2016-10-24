@@ -14,79 +14,181 @@ namespace HorseRadish
 
 	class BBox
 	{
-		Vector3f minPt, maxPt;
+		Vector3f mMinPt, mMaxPt;
 
 	public:
-		enum class Position{
-			Inside, Outside, Intersect
-		};
+		enum class Position { Inside, Outside, Intersect };
 
-		BBox() : minPt(std::numeric_limits<float>::infinity()), maxPt(-std::numeric_limits<float>::infinity()) { }
-		BBox(const BBox& bbox) : minPt(bbox.minPt), maxPt(bbox.maxPt) { }
-		explicit BBox(const Vector3f * const points, const unsigned int numVec);
-		explicit BBox(const BBox * const bboxes, const unsigned int numBBox);
-		~BBox(){ return; }
+		BBox()
+			: mMinPt(std::numeric_limits<float>::infinity())
+			, mMaxPt(-std::numeric_limits<float>::infinity())
+		{ }
 
-		BBox& operator=(const BBox& bbox);
-		void operator+=(const BBox& bbox);
-		void operator+=(const Vector3f& pt);
+		BBox(const BBox& bbox)
+			: mMinPt(bbox.mMinPt)
+			, mMaxPt(bbox.mMaxPt)
+		{ }
 
-		void GetMin(Vector3f &point) const { point.set(minPt); }
-		void GetMax(Vector3f &point) const { point.set(maxPt); }
-		void GetMin(float * const point) const { minPt.write(point); }
-		void GetMax(float * const point) const { maxPt.write(point); }
-		void GetMinMax(Vector3f &min, Vector3f &max) const { min.set(minPt); max.set(maxPt); }
-		void GetMinMax(float * const min, float * const max) const { minPt.write(min); maxPt.write(max); }
-		void GetCenter(Vector3f &point) const { point.set((minPt[0] + maxPt[0])*0.5f, (minPt[1] + maxPt[1])*0.5f, (minPt[2] + maxPt[2])*0.5f); }
-		void GetCenter(float * const point) const { point[0] = (minPt[0] + maxPt[0])*0.5f; point[1] = (minPt[1] + maxPt[1])*0.5f; point[2] = (minPt[2] + maxPt[2])*0.5f; }
-		void GetDims(Vector3f &point) const { point.set(maxPt[0] - minPt[0], maxPt[1] - minPt[1], maxPt[2] - minPt[2]); }
-		void GetDims(float * const point) const { point[0] = maxPt[0] - minPt[0]; point[1] = maxPt[1] - minPt[1]; point[2] = maxPt[2] - minPt[2]; }
-		float GetRadius(void) const;
-		float GetRadiusMinimum(void) const;
-		float GetVolume(void) const;
-		void GetCorners(Vector3f points[8]) const;
-		void GetGeom(Vector3f points[36]) const;
-		void GetBoundingSphere(Vector3f &center, float &radius) const;
-		void GetBoundingSphere(BSphere &bsphere) const;
-		float GetPlaneDistance(const Plane &plane) const;
-		const float* GetMin() const { return minPt.data(); }
-		const float* GetMax() const { return maxPt.data(); }
-		Vector3f GetMainAxis() const;
+		explicit BBox(const Vector3f * const points, size_t numVec);
+		explicit BBox(const BBox * const bboxes, size_t numBBox);
 
-		void Merge(const Vector3f &pt);
-		void Merge(const float * const pt);
-		void Merge(const Vector3f * const pts, const int numPts);
-		void Merge(const float &x, const float &y, const float &z);
-		void MergeSphere(const Vector3f &sphereCenter, const float sphereRadius);
-		void MergeSphere(const BSphere &bsphere);
-		void MergeBox(const Vector3f &boxCenter, const float boxWidth, const float boxHeight, const float boxDepth);
+		BBox& operator=(const BBox& bbox)
+		{
+			mMinPt.set(bbox.mMinPt);
+			mMaxPt.set(bbox.mMaxPt);
+			return *this;
+		}
 
-		void Set(const BBox * const bbox) { minPt.set(bbox->minPt); maxPt.set(bbox->maxPt); }
-		void Set(const float &value) { minPt.set(value); maxPt.set(value); }
-		void Set(const float &minValue, const float &maxValue) { minPt.set(minValue); maxPt.set(maxValue); }
-		void SetMin(const Vector3f &min) { minPt.set(min); }
-		void SetMax(const Vector3f &max) { maxPt.set(max); }
-		void SetMinMax(const float * const min, const float * const max) { minPt.set(min); maxPt.set(max); }
-		void SetMinMax(const Vector3f &min, const Vector3f &max) { minPt.set(min); maxPt.set(max); }
+		void operator+=(const BBox& bbox)
+		{
+			merge(bbox.mMinPt);
+			merge(bbox.mMaxPt);
+		}
 
-		void Reset(){ minPt[0] = minPt[1] = minPt[2] = std::numeric_limits<float>::infinity(); maxPt[0] = maxPt[1] = maxPt[2] = -std::numeric_limits<float>::infinity(); }
+		void operator+=(const Vector3f& pt)
+		{
+			merge(pt);
+		}
 
-		void Translate(const Vector3f &translation);
-		void Translate(BBox& bbox, const Vector3f &translation) const;
-		void Expand(const float amount);
+		Vector3f min() const
+		{
+			return mMinPt;
+		}
 
-		bool ContainsPoint(const Vector3f &point) const;
+		Vector3f max() const
+		{
+			return mMaxPt;
+		}
 
-		bool Intersects(const BBox &bbox) const;
-		bool Intersects(const Vector3f &lineStart, const Vector3f &lineEnd) const;
-		bool Intersects(const Ray &ray, float * const rayHitDistance = nullptr) const;
+		void min(Vector3f &point) const
+		{
+			point.set(mMinPt);
+		}
 
-		Position Classify(const BBox &bbox);
+		void max(Vector3f &point) const
+		{
+			point.set(mMaxPt);
+		}
+
+		void min(float * const point) const
+		{
+			mMinPt.write(point);
+		}
+
+		void max(float * const point) const
+		{
+			mMaxPt.write(point);
+		}
+
+		void minMax(Vector3f &min, Vector3f &max) const
+		{
+			min.set(mMinPt);
+			max.set(mMaxPt);
+		}
+
+		void minMax(float * const min, float * const max) const
+		{
+			mMinPt.write(min);
+			mMaxPt.write(max);
+		}
+
+		Vector3f center() const
+		{
+			return ((mMinPt + mMaxPt) * 0.5f);
+		}
+
+		void center(Vector3f &point) const
+		{
+			point = (mMinPt + mMaxPt) * 0.5f;
+		}
+
+		void dims(Vector3f &point) const
+		{
+			point = mMaxPt - mMinPt;
+		}
+
+		float radius(void) const;
+		float radiusMinimum(void) const;
+		
+		float volume(void) const
+		{
+			return ((mMaxPt[0] - mMinPt[0]) * (mMaxPt[1] - mMinPt[1]) * (mMaxPt[2] - mMinPt[2]));
+		}
+
+		void corners(Vector3f points[8]) const;
+		void geom(Vector3f points[36]) const;
+		void boundingSphere(Vector3f &center, float &radius) const;
+		BSphere boundingSphere() const;
+		float planeDistance(const Plane &plane) const;
+		Vector3f mainAxis() const;
+
+		void merge(const Vector3f &pt);
+		void merge(const float * const pt);
+		void merge(const Vector3f * const pts, size_t numPts);
+		void merge(const float &x, const float &y, const float &z);
+		void mergeSphere(const Vector3f &sphereCenter, const float sphereRadius);
+		void mergeSphere(const BSphere &bsphere);
+		void mergeBox(const Vector3f &boxCenter, const float boxWidth, const float boxHeight, const float boxDepth);
+
+		void setMin(const Vector3f &min)
+		{
+			mMinPt.set(min);
+		}
+
+		void setMax(const Vector3f &max)
+		{
+			mMaxPt.set(max);
+		}
+
+		void setMinMax(const float * const min, const float * const max)
+		{
+			mMinPt.set(min);
+			mMaxPt.set(max);
+		}
+
+		void setMinMax(const Vector3f &min, const Vector3f &max)
+		{
+			mMinPt.set(min);
+			mMaxPt.set(max);
+		}
+
+		void reset()
+		{
+			mMinPt[0] = mMinPt[1] = mMinPt[2] = std::numeric_limits<float>::infinity();
+			mMaxPt[0] = mMaxPt[1] = mMaxPt[2] = -std::numeric_limits<float>::infinity();
+		}
+
+		void translate(const Vector3f &translation)
+		{
+			mMinPt += translation;
+			mMaxPt += translation;
+		}
+
+		void expand(const float amount)
+		{
+			mMinPt -= amount;
+			mMaxPt += amount;
+		}
+
+		bool containsPoint(const Vector3f &point) const
+		{
+			return (point[0] >= mMinPt[0]) && (point[1] >= mMinPt[1]) && (point[2] >= mMinPt[2]) && (point[0] <= mMaxPt[0]) && (point[1] <= mMaxPt[1]) && (point[2] <= mMaxPt[2]);
+		}
+
+		bool intersects(const BBox &bbox) const
+		{
+			return (bbox.mMaxPt[0] >= mMinPt[0]) && (bbox.mMaxPt[1] >= mMinPt[1]) && (bbox.mMaxPt[2] >= mMinPt[2]) && (bbox.mMinPt[0] <= mMaxPt[0]) && (bbox.mMinPt[1] <= mMaxPt[1]) && (bbox.mMinPt[2] <= mMaxPt[2]);
+		}
+
+		bool intersects(const Vector3f &lineStart, const Vector3f &lineEnd) const;
+		bool intersects(const Ray &ray, float * const rayHitDistance = nullptr) const;
+
+		Position classify(const BBox &bbox);
 	};
 
 	class BSphere
 	{
-		float x, y, z, radius;
+		float mCenter[3], mRadius;
 
 		float calcDist(const float &px, const float &py, const float &pz) const;
 		float calcDist(const float * const vec) const;
@@ -94,51 +196,159 @@ namespace HorseRadish
 		float calcDist(const Vector3f &vec) const;
 
 	public:
-		enum class Position{
-			Inside, Outside, Intersect
-		};
+		enum class Position { Inside, Outside, Intersect };
 
-		BSphere() : x(0), y(0), z(0), radius(std::numeric_limits<float>::infinity()) { }
-		BSphere(const BSphere& bsphere) : x(bsphere.x), y(bsphere.y), z(bsphere.z), radius(bsphere.radius) { }
-		~BSphere() {}
+		BSphere()
+			: mCenter{ 0.0f, 0.0f, 0.0f }
+			, mRadius(std::numeric_limits<float>::infinity())
+		{ }
 
-		BSphere& operator=(const BSphere& bsphere);
-		void operator+=(const BSphere& bsphere);
+		BSphere(const BSphere& bsphere)
+			: mCenter{ bsphere.mCenter[0], bsphere.mCenter[1], bsphere.mCenter[2] }
+			, mRadius(bsphere.mRadius)
+		{ }
+		
+		explicit BSphere(const Vector3f& center, float radius)
+			: mCenter{ center[0], center[1], center[2] }
+			, mRadius(radius)
+		{ }
 
-		float GetRadius() const { return radius; }
-		void GetCenter(Vector3f &center) const { center.set(x, y, z); }
-		void GetCenter(float * const center) const { center[0] = x; center[1] = y; center[2] = z; }
+		BSphere& operator=(const BSphere& bsphere)
+		{
+			mCenter[0] = bsphere.mCenter[0];
+			mCenter[1] = bsphere.mCenter[1];
+			mCenter[2] = bsphere.mCenter[2];
+			mRadius = bsphere.mRadius;
+			return *this;
+		}
 
-		void Merge(const Vector3f &pt);
-		void Merge(const float * const pt);
-		void Merge(const Vector3f * const pts, const int numPts);
-		void Merge(const float &x, const float &y, const float &z);
-		void Merge(const BSphere &sphere);
-		void Merge(const BBox &bbox);
+		void operator+=(const BSphere& bsphere)
+		{
+			merge(bsphere);
+		}
 
-		void Expand(const float &amount);
-		void Contract(const float &amount);
+		float radius() const
+		{
+			return mRadius;
+		}
 
-		void Set(const float &newx, const float &newy, const float &newz, const float &newradius) { x = newx; y = newy; z = newz; radius = newradius; }
-		void Set(const Vector3f &center, const float &newradius) { x = center[0]; y = center[1]; z = center[2]; radius = newradius; }
-		void Set(const BBox &bbox) { bbox.GetBoundingSphere(*this); }
-		void SetCenter(const float &newx, const float &newy, const float &newz) { x = newx; y = newy; z = newz; }
-		void SetCenter(const Vector3f &center) { x = center[0]; y = center[1]; z = center[2]; }
-		void SetRadius(const float &newradius) { radius = newradius; }
-		void Reset(){ x = y = z = 0.0f; radius = std::numeric_limits<float>::infinity(); }
-		void Translate(const Vector3f &translation) { x += translation[0]; y += translation[1]; z += translation[2]; }
-		void Translate(BSphere& bsphereDest, const Vector3f &translation) const { bsphereDest.x = x + translation[0]; bsphereDest.y = y + translation[1]; bsphereDest.z = z + translation[2]; bsphereDest.radius = radius; }
+		Vector3f center() const
+		{
+			return Vector3f(mCenter[0], mCenter[1], mCenter[2]);
+		}
 
-		bool ContainsPoint(const Vector3f &point) const;
-		bool ContainsPoint(const float &x, const float &y, const float &z) const;
+		void center(Vector3f &center) const
+		{
+			center.set(mCenter[0], mCenter[1], mCenter[2]);
+		}
 
-		bool Intersects(const BSphere &bsphere) const;
-		bool Intersects(const Vector3f &lineStart, const Vector3f &lineEnd) const;
-		bool Intersects(const Ray &ray) const;
-		bool Intersects(const Ray &ray, float &rayHitDistance1, float &rayHitDistance2) const;
+		void center(float * const center) const
+		{
+			center[0] = mCenter[0];
+			center[1] = mCenter[1];
+			center[2] = mCenter[2];
+		}
 
-		Position ClassifyBSphere(const BSphere &bsphere);
-		Position ClassifyBBox(const BBox &bbox);
+		void merge(const Vector3f &pt)
+		{
+			mRadius = std::fmax(mRadius, calcDist(pt));
+		}
+
+		void merge(const float * const pt)
+		{
+			mRadius = std::fmax(mRadius, calcDist(pt));
+		}
+
+		void merge(const Vector3f * const pts, size_t numPts)
+		{
+			for (size_t i = 0; i < numPts; i++)
+				mRadius = std::fmax(mRadius, calcDist(pts[i]));
+		}
+
+		void merge(const float &x, const float &y, const float &z)
+		{
+			mRadius = std::fmax(mRadius, calcDist(x, y, z));
+		}
+
+		void merge(const BSphere &sphere)
+		{
+			mRadius = std::fmax(mRadius, calcDist(sphere) + sphere.mRadius);
+		}
+
+		void merge(const BBox &bbox)
+		{
+			auto boxSphere = bbox.boundingSphere();
+			mRadius = std::fmax(mRadius, calcDist(boxSphere) + boxSphere.mRadius);
+		}
+		
+		void expand(const float &amount)
+		{
+			mRadius += amount;
+		}
+
+		void set(float x, float y, float z, const float &radius)
+		{
+			mCenter[0] = x;
+			mCenter[1] = y;
+			mCenter[2] = z;
+			mRadius = radius;
+		}
+
+		void set(const Vector3f &center, float radius)
+		{
+			mCenter[0] = center[0];
+			mCenter[1] = center[1];
+			mCenter[2] = center[2];
+			mRadius = radius;
+		}
+
+		void set(const BBox &bbox)
+		{
+			*this = bbox.boundingSphere();
+		}
+
+		void setCenter(float x, float y, float z)
+		{
+			mCenter[0] = x;
+			mCenter[1] = y;
+			mCenter[2] = z;
+		}
+
+		void setCenter(const Vector3f &center)
+		{
+			mCenter[0] = center[0];
+			mCenter[1] = center[1];
+			mCenter[2] = center[2];
+		}
+
+		void setRadius(float radius)
+		{
+			mRadius = radius;
+		}
+
+		void reset()
+		{
+			mCenter[0] = mCenter[1] = mCenter[2] = 0.0f;
+			mRadius = std::numeric_limits<float>::infinity();
+		}
+
+		void translate(const Vector3f &translation)
+		{
+			mCenter[0] += translation[0];
+			mCenter[1] += translation[1];
+			mCenter[2] += translation[2];
+		}
+
+		bool containsPoint(const Vector3f &point) const;
+		bool containsPoint(const float &x, const float &y, const float &z) const;
+
+		bool intersects(const BSphere &bsphere) const;
+		bool intersects(const Vector3f &lineStart, const Vector3f &lineEnd) const;
+		bool intersects(const Ray &ray) const;
+		bool intersects(const Ray &ray, float &rayHitDistance1, float &rayHitDistance2) const;
+
+		Position classifyBSphere(const BSphere &bsphere);
+		Position classifyBBox(const BBox &bbox);
 	};
 
 } //HorseRadish

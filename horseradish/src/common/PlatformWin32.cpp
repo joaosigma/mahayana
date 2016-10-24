@@ -74,20 +74,20 @@ namespace HorseRadish
 
 	Platform::SingleInstance::SingleInstance()
 	{
-		this->globalData = CreateMutex(NULL, FALSE, L"HorseRadish global mutex");
-		this->isAnotherRunning = (GetLastError() == ERROR_ALREADY_EXISTS);
+		mGlobalData = CreateMutex(NULL, FALSE, L"HorseRadish global mutex");
+		mIsAnotherRunning = (GetLastError() == ERROR_ALREADY_EXISTS);
 	}
 
 	Platform::SingleInstance::~SingleInstance()
 	{
-		if (this->globalData != nullptr)
-			CloseHandle(static_cast<HANDLE>(this->globalData));
+		if (mGlobalData)
+			CloseHandle(static_cast<HANDLE>(mGlobalData));
 
-		this->globalData = nullptr;
-		this->isAnotherRunning = false;
+		mGlobalData = nullptr;
+		mIsAnotherRunning = false;
 	}
 
-	bool Platform::SetProcessPriority(const PriorityType &priorityType)
+	bool Platform::setProcessPriority(PriorityType priorityType)
 	{
 		switch (priorityType)
 		{
@@ -107,7 +107,7 @@ namespace HorseRadish
 		return false;
 	}
 
-	bool Platform::SetThreadPriority(const PriorityType &priorityType)
+	bool Platform::setThreadPriority(PriorityType priorityType)
 	{
 		switch (priorityType)
 		{
@@ -127,17 +127,17 @@ namespace HorseRadish
 		return false;
 	}
 
-	Platform::OperatingSystemType Platform::GetOS()
+	Platform::OperatingSystemType Platform::getOS()
 	{
 		return OperatingSystemType::Windows;
 	}
 
-	bool Platform::IsOS(const OperatingSystemType &operatingSystemType)
+	bool Platform::isOS(OperatingSystemType operatingSystemType)
 	{
 		return (operatingSystemType == OperatingSystemType::Windows);
 	}
 
-	bool Platform::IsArch64()
+	bool Platform::isArch64()
 	{
 #if defined(_WIN64)
 		return true;
@@ -146,7 +146,7 @@ namespace HorseRadish
 #endif
 	}
 
-	bool Platform::CPUGetVendorID(std::string& outputValue)
+	bool Platform::cpuGetVendorID(std::string& outputValue)
 	{
 		int cpuInfo[4];
 		char cpuString[128];
@@ -163,7 +163,7 @@ namespace HorseRadish
 		return true;
 	}
 
-	bool Platform::CPUGetProcessorName(std::string& outputValue)
+	bool Platform::cpuGetProcessorName(std::string& outputValue)
 	{
 		int cpuInfo[4];
 		char cpuString[128];
@@ -201,7 +201,7 @@ namespace HorseRadish
 		return true;
 	}
 
-	bool Platform::CPUCheckFeatures(const CPUFeature &featuresCheck)
+	bool Platform::cpuCheckFeatures(CPUFeature featuresCheck)
 	{
 		int cpuInfo[4];
 
@@ -235,7 +235,7 @@ namespace HorseRadish
 		return true;
 	}
 
-	bool Platform::GetSystemInfo(const SystemInfo &systemInfo, std::string& infoValue)
+	bool Platform::systemInfo(SystemInfo systemInfo, std::string& infoValue)
 	{
 		TCHAR bufferAux[32767];
 		DWORD bufferAuxCharCount;
@@ -245,8 +245,8 @@ namespace HorseRadish
 
 		if (systemInfo == Platform::SystemInfo::ExecutableFullPath)
 		{
-			auto resultado = GetModuleFileName(0, bufferAux, bufferAuxCharCount);
-			if ((resultado == 0) || (resultado > bufferAuxCharCount))
+			auto result = GetModuleFileName(0, bufferAux, bufferAuxCharCount);
+			if ((result == 0) || (result > bufferAuxCharCount))
 				return false;
 
 			infoValue = HorseRadish::StringUtils::conv2UTF8(bufferAux);
@@ -255,8 +255,8 @@ namespace HorseRadish
 
 		if (systemInfo == Platform::SystemInfo::CurrentFolder)
 		{
-			auto resultado = GetCurrentDirectory(bufferAuxCharCount, bufferAux);
-			if ((resultado == 0) || (resultado > bufferAuxCharCount))
+			auto result = GetCurrentDirectory(bufferAuxCharCount, bufferAux);
+			if ((result == 0) || (result > bufferAuxCharCount))
 				return false;
 
 			infoValue = HorseRadish::StringUtils::conv2UTF8(bufferAux);
@@ -265,8 +265,8 @@ namespace HorseRadish
 
 		if (systemInfo == Platform::SystemInfo::SystemFolder)
 		{
-			auto resultado = GetSystemDirectory(bufferAux, bufferAuxCharCount);
-			if ((resultado == 0) || (resultado > bufferAuxCharCount))
+			auto result = GetSystemDirectory(bufferAux, bufferAuxCharCount);
+			if ((result == 0) || (result > bufferAuxCharCount))
 				return false;
 
 			infoValue = HorseRadish::StringUtils::conv2UTF8(bufferAux);
@@ -323,14 +323,13 @@ namespace HorseRadish
 		return false;
 	}
 
-	bool Platform::GetSystemInfo(const SystemInfo &systemInfo, int &infoValue)
+	bool Platform::systemInfo(SystemInfo systemInfo, int &infoValue)
 	{
 		infoValue = -1;
 
 		if ((systemInfo == SystemInfo::MemoryTotal) || (systemInfo == SystemInfo::MemoryFree))
 		{
 			MEMORYSTATUS memoryStatus;
-
 			GlobalMemoryStatus(&memoryStatus);
 
 			if (systemInfo == SystemInfo::MemoryTotal)
@@ -411,7 +410,7 @@ namespace HorseRadish
 		return true;
 	}
 
-	bool Platform::ClipboardGetStrings(std::function<bool(const std::string&)> funcCallback)
+	bool Platform::clipboardGetStrings(std::function<bool(const std::string&)> funcCallback)
 	{
 		if (funcCallback == nullptr)
 			return false;
@@ -433,7 +432,6 @@ namespace HorseRadish
 
 		auto clipDataUTF8 = HorseRadish::StringUtils::conv2UTF8(static_cast<const wchar_t*>(clipData));
 
-
 		funcCallback(clipDataUTF8);
 
 		/*
@@ -449,11 +447,9 @@ namespace HorseRadish
 		return true;
 	}
 
-	bool Platform::ClipboardGetFiles(std::function<bool(const std::string&)> funcCallback)
+	bool Platform::clipboardGetFiles(std::function<bool(const std::string&)> funcCallback)
 	{
-		wchar_t fileBufferWChar[512];
-
-		if (funcCallback == nullptr)
+		if (!funcCallback)
 			return false;
 
 		if (OpenClipboard(nullptr) == FALSE)
@@ -475,6 +471,7 @@ namespace HorseRadish
 		if (numFiles <= 0)
 			return false;
 
+		wchar_t fileBufferWChar[512];
 		for (unsigned int i = 0; i < numFiles; i++)
 		{
 			if (DragQueryFile(clipData, i, fileBufferWChar, sizeof(fileBufferWChar) / sizeof(wchar_t)) == 0)
@@ -488,7 +485,7 @@ namespace HorseRadish
 		return true;
 	}
 
-	void Platform::AsmBufferClear(void* dest, size_t bytes)
+	void Platform::asmBufferClear(void* dest, size_t bytes)
 	{
 
 #ifdef _M_X64
@@ -553,7 +550,7 @@ namespace HorseRadish
 
 	}
 
-	void Platform::AsmBufferCopy(void* dest, const void* src, size_t bytes)
+	void Platform::asmBufferCopy(void* dest, const void* src, size_t bytes)
 	{
 
 #ifdef _M_X64
@@ -872,7 +869,7 @@ namespace HorseRadish
 
 	}
 
-	void Platform::AsmBufferCopyAligned(void* dest, const void* src, size_t multiple128Bytes)
+	void Platform::asmBufferCopyAligned(void* dest, const void* src, size_t multiple128Bytes)
 	{
 
 #ifdef _M_X64
@@ -923,7 +920,7 @@ namespace HorseRadish
 
 	}
 
-	void Platform::AsmBufferSetUBYTE(void* dest, unsigned char val, size_t bytes)
+	void Platform::asmBufferSetUBYTE(void* dest, unsigned char val, size_t bytes)
 	{
 
 #ifdef _M_X64
@@ -993,7 +990,7 @@ namespace HorseRadish
 
 	}
 
-	void Platform::AsmBufferSetUI32(void* dest, unsigned int val, size_t bytes)
+	void Platform::asmBufferSetUI32(void* dest, unsigned int val, size_t bytes)
 	{
 
 #ifdef _M_X64
@@ -1108,7 +1105,7 @@ namespace HorseRadish
 
 	}
 
-	void Platform::AsmFloat2UByte(unsigned char *dest, const float *src, const unsigned int num, const float mulVal, const float addVal)
+	void Platform::asmFloat2UByte(unsigned char *dest, const float *src, size_t num, const float mulVal, const float addVal)
 	{
 
 #ifdef _M_X64
@@ -1373,7 +1370,7 @@ namespace HorseRadish
 
 	}
 
-	void Platform::AsmUByte2Float(float *dest, const unsigned char *src, const unsigned int num, const float mulVal, const float addVal)
+	void Platform::asmUByte2Float(float *dest, const unsigned char *src, size_t num, const float mulVal, const float addVal)
 	{
 
 #ifdef _M_X64
@@ -1610,12 +1607,12 @@ namespace HorseRadish
 
 	}
 
-	bool Platform::StdInOutErrRedirect()
+	bool Platform::stdInOutErrRedirect()
 	{
 		if (redirectData.redirected)
 			return true;
 
-		Platform::StdInOutErrClose();
+		Platform::stdInOutErrClose();
 
 		if (CreatePipe(&redirectData.pipeIn.read, &redirectData.pipeIn.write, nullptr, 0) == 0)
 			return false;
@@ -1645,7 +1642,7 @@ namespace HorseRadish
 		return false;
 	}
 
-	void Platform::StdInOutErrClose()
+	void Platform::stdInOutErrClose()
 	{
 		if (redirectData.osHandlePipeIn != -1)
 			_close(redirectData.osHandlePipeIn);
@@ -1667,7 +1664,7 @@ namespace HorseRadish
 		redirectData.osHandlePipeErr = -1;
 	}
 
-	void Platform::StdErrClear()
+	void Platform::stdErrClear()
 	{
 		if (!redirectData.redirected)
 			return;
@@ -1675,7 +1672,7 @@ namespace HorseRadish
 		pipeClear(redirectData.pipeErr.read);
 	}
 
-	void Platform::StdOutClear()
+	void Platform::stdOutClear()
 	{
 		if (!redirectData.redirected)
 			return;
@@ -1683,11 +1680,11 @@ namespace HorseRadish
 		pipeClear(redirectData.pipeOut.read);
 	}
 
-	bool Platform::StdErrRead(void *outBuffer, const int outBufferSize, int &bytesWritten)
+	bool Platform::stdErrRead(void *outBuffer, int outBufferSize, int &bytesWritten)
 	{
 		bytesWritten = 0;
 
-		if (!redirectData.redirected || outBuffer == nullptr || outBufferSize <= 0)
+		if (!redirectData.redirected || !outBuffer || outBufferSize <= 0)
 			return false;
 
 		bytesWritten = pipeRead(redirectData.pipeErr.read, outBuffer, outBufferSize);
@@ -1698,11 +1695,11 @@ namespace HorseRadish
 		return false;
 	}
 
-	bool Platform::StdOutRead(void *outBuffer, const int outBufferSize, int &bytesWritten)
+	bool Platform::stdOutRead(void *outBuffer, int outBufferSize, int &bytesWritten)
 	{
 		bytesWritten = 0;
 
-		if (!redirectData.redirected || outBuffer == nullptr || outBufferSize <= 0)
+		if (!redirectData.redirected || !outBuffer || outBufferSize <= 0)
 			return false;
 
 		bytesWritten = pipeRead(redirectData.pipeOut.read, outBuffer, outBufferSize);

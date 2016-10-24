@@ -2,280 +2,303 @@
 
 #include "Math.hpp"
 
-namespace HorseRadish
-{
-	namespace Primitives2D
+namespace HorseRadish { namespace Primitives2D {
+
+	template <typename T>
+	struct Rectangle
 	{
-		template <typename T>
-		struct Rectangle{
-			T x, y, width, height;
+		static_assert(std::is_arithmetic<T>::value, "Data type must be arithmetic (e.g.: float, unsigned char, etc.)");
 
-			inline Rectangle()
-			{
-				x = y = width = height = 0;
-			}
-			inline Rectangle(const Rectangle &r)
-			{
-				x = r.x; y = r.y; width = r.width; height = r.height;
-			}
-			explicit inline Rectangle(const T &x, const T &y, const T &width, const T &height)
-			{
-				this->x = x; this->y = y; this->width = width; this->height = height;
-			}
+		T x = {}, y = {}, width = {}, height = {};
 
-			inline ~Rectangle()
-			{
-				return;
-			}
+		Rectangle()
+		{ }
 
-			inline operator T *(void)
-			{
-				return &x;
-			}
-			inline operator const T *(void) const
-			{
-				return &x;
-			}
+		Rectangle(const Rectangle &r)
+			: x(r.x), y(r.y), width(r.width), height(r.height)
+		{}
 
-			inline Rectangle& operator=(const Rectangle &r)
-			{
-				x = r.x; y = r.y; width = r.width; height = r.height;
-				return *this;
-			}
+		explicit Rectangle(const T &x, const T &y, const T &width, const T &height)
+			: x(x), y(y), width(width), height(height)
+		{ }
 
-			inline void operator+=(const Rectangle &r)
-			{
-				x += r.x; y += r.y; width += r.width; height += r.height;
-			}
-			inline void operator-=(const Rectangle &r)
-			{
-				x -= r.x; y -= r.y; width -= r.width; height -= r.height;
-			}
+		Rectangle& operator=(const Rectangle &r)
+		{
+			x = r.x;
+			y = r.y;
+			width = r.width;
+			height = r.height;
+			return *this;
+		}
 
-			inline Rectangle operator+(const Rectangle &r) const
-			{
-				return Rectangle(x + r.x, y + r.y, width + r.width, height + r.height);
-			}
-			inline Rectangle operator-(const Rectangle &r) const
-			{
-				return Rectangle(x - r.x, y - r.y, width - r.width, height - r.height);
-			}
+		void operator+=(const Rectangle &r)
+		{
+			x += r.x;
+			y += r.y;
+			width += r.width;
+			height += r.height;
+		}
 
-			inline void Reset()
-			{
-				x = y = width = height = 0;
-			}
-			inline void Set(const Rectangle &r)
-			{
-				x = r.x; y = r.y; width = r.width; height = r.height;
-			}
-			inline void Set(const Rectangle * const r)
-			{
-				x = r->x; y = r->y; width = r->width; height = r->height;
-			}
-			inline void Set(const T &x, const T &y, const T &width, const T &height)
-			{
-				this->x = x; this->y = y; this->width = width; this->height = height;
-			}
+		void operator-=(const Rectangle &r)
+		{
+			x -= r.x;
+			y -= r.y;
+			width -= r.width;
+			height -= r.height;
+		}
 
-			void Move(const T &amount)
-			{
-				x += amount; y += amount;
-			}
-			void Move(const T &x, const T &y)
-			{
-				this->x += x; this->y += y;
-			}
-			void Grow(const T &amount)
-			{
-				width += amount; height += amount;
-			}
-			void Grow(const T &width, const T &height)
-			{
-				this->width += width; this->height += height;
-			}
+		Rectangle operator+(const Rectangle &r) const
+		{
+			return Rectangle(x + r.x, y + r.y, width + r.width, height + r.height);
+		}
 
-			T GetArea() const
-			{
-				return (width * height);
-			}
+		Rectangle operator-(const Rectangle &r) const
+		{
+			return Rectangle(x - r.x, y - r.y, width - r.width, height - r.height);
+		}
 
-			template<typename TNew>
-			Rectangle<TNew> convert() const
-			{
-				return Rectangle<TNew>(static_cast<TNew>(x), static_cast<TNew>(y), static_cast<TNew>(width), static_cast<TNew>(height));
-			}
-		};
+		void reset()
+		{
+			x = y = width = height = {};
+		}
+		
+		void reset(const T &x, const T &y, const T &width, const T &height)
+		{
+			this->x = x;
+			this->y = y;
+			this->width = width;
+			this->height = height;
+		}
 
-		template <typename T>
-		struct Size{
-			T width, height;
+		void move(const T &amount)
+		{
+			x += amount;
+			y += amount;
+		}
 
-			inline Size()
-			{
-				width = height = 0;
-			}
-			inline Size(const Size &s)
-			{
-				width = s.width; height = s.height;
-			}
-			explicit inline Size(const T &width, const T &height)
-			{
-				this->width = width; this->height = height;
-			}
+		void move(const T &x, const T &y)
+		{
+			this->x += x;
+			this->y += y;
+		}
 
-			inline ~Size()
-			{
-				return;
-			}
+		void grow(const T &amount)
+		{
+			width += amount;
+			height += amount;
+		}
 
-			inline operator T *(void)
-			{
-				return &x;
-			}
-			inline operator const T *(void) const
-			{
-				return &x;
-			}
+		void grow(const T &width, const T &height)
+		{
+			this->width += width;
+			this->height += height;
+		}
 
-			inline Size& operator=(const Size &s)
-			{
-				width = s.width; height = s.height;
-				return *this;
-			}
+		T area() const
+		{
+			return (width * height);
+		}
 
-			inline void operator+=(const Size &s)
-			{
-				width += s.width; height += s.height;
-			}
-			inline void operator-=(const Size &s)
-			{
-				width -= s.width; height -= s.height;
-			}
+		template<typename TNew>
+		Rectangle<TNew> convert() const
+		{
+			return Rectangle<TNew>(static_cast<TNew>(x), static_cast<TNew>(y), static_cast<TNew>(width), static_cast<TNew>(height));
+		}
+	};
 
-			inline Size operator+(const Size &s) const
-			{
-				return Size(width + s.width, height + s.height);
-			}
-			inline Size operator-(const Size &s) const
-			{
-				return Size(width - s.width, height - s.height);
-			}
+	template <typename T>
+	struct Size
+	{
+		static_assert(std::is_arithmetic<T>::value, "Data type must be arithmetic (e.g.: float, unsigned char, etc.)");
 
-			inline void Reset()
-			{
-				width = height = 0;
-			}
-			inline void Set(const Size &s)
-			{
-				width = s.width; height = s.height;
-			}
-			inline void Set(const Size * const s)
-			{
-				width = s->width; height = s->height;
-			}
-			inline void Set(const T &width, const T &height)
-			{
-				this->width = width; this->height = height;
-			}
+		T width = {}, height = {};
 
-			void Grow(const T &amount)
-			{
-				width += amount; height += amount;
-			}
-			void Grow(const T &width, const T &height)
-			{
-				this->width += width; this->height += height;
-			}
+		Size()
+		{ }
 
-			T GetArea() const
-			{
-				return (width * height);
-			}
-		};
+		Size(const Size &s)
+			: width(s.width)
+			, height(s.height)
+		{ }
 
-		template <typename T>
-		struct Point{
-			T x, y;
+		explicit Size(const T &width, const T &height)
+			: width(width)
+			, height(height)
+		{ }
 
-			inline Point()
-			{
-				x = y = 0;
-			}
-			inline Point(const Point &p)
-			{
-				x = p.x; y = p.y;
-			}
-			explicit inline Point(const T &x, const T &y)
-			{
-				this->x = x; this->y = y;
-			}
+		Size& operator=(const Size &s)
+		{
+			width = s.width;
+			height = s.height;
+			return *this;
+		}
 
-			inline ~Point()
-			{
-				return;
-			}
+		void operator+=(const Size &s)
+		{
+			width += s.width;
+			height += s.height;
+		}
 
-			inline operator T *(void)
-			{
-				return &x;
-			}
-			inline operator const T *(void) const
-			{
-				return &x;
-			}
+		void operator-=(const Size &s)
+		{
+			width -= s.width;
+			height -= s.height;
+		}
 
-			inline Point& operator=(const Point &p)
-			{
-				x = p.x; y = p.y;
-				return *this;
-			}
+		Size operator+(const Size &s) const
+		{
+			return Size(width + s.width, height + s.height);
+		}
 
-			inline void operator+=(const Point &p)
-			{
-				x += p.x; y += p.y;
-			}
-			inline void operator-=(const Point &p)
-			{
-				x -= p.x; y -= p.y;
-			}
+		Size operator-(const Size &s) const
+		{
+			return Size(width - s.width, height - s.height);
+		}
 
-			inline Point operator+(const Point &p) const
-			{
-				return Point(x + p.x, y + p.y);
-			}
-			inline Point operator-(const Point &p) const
-			{
-				return Point(x - p.x, y - p.y);
-			}
+		void operator+=(const T &amount)
+		{
+			width += amount;
+			height += amount;
+		}
 
-			inline void Reset()
-			{
-				x = y = 0;
-			}
-			inline void Set(const Point &p)
-			{
-				x = p.x; y = p.y;
-			}
-			inline void Set(const Point * const p)
-			{
-				x = p->x; y = p->y;
-			}
-			inline void Set(const T &x, const T &y)
-			{
-				this->x = x; this->y = y;
-			}
+		void operator-=(const T &amount)
+		{
+			width -= amount;
+			height -= amount;
+		}
 
-			void Move(const T &amount)
-			{
-				x += amount; y += amount;
-			}
-			void Move(const T &x, const T &y)
-			{
-				this->x += x; this->y += y;
-			}
-		};
+		Size operator+(const T &amount) const
+		{
+			return Size(width + amount, height + amount);
+		}
 
-	} //Primitives2D
-} //HorseRadish
+		Size operator-(const T &amount) const
+		{
+			return Size(width - amount, height - amount);
+		}
+
+		void reset()
+		{
+			width = height = {};
+		}
+
+		void reset(const T &width, const T &height)
+		{
+			this->width = width;
+			this->height = height;
+		}
+
+		void grow(const T &amount)
+		{
+			width += amount;
+			height += amount;
+		}
+
+		void grow(const T &width, const T &height)
+		{
+			this->width += width;
+			this->height += height;
+		}
+
+		T area() const
+		{
+			return (width * height);
+		}
+	};
+
+	template <typename T>
+	struct Point
+	{
+		static_assert(std::is_arithmetic<T>::value, "Data type must be arithmetic (e.g.: float, unsigned char, etc.)");
+
+		T x = {}, y = {};
+
+		Point()
+		{ }
+
+		Point(const Point &p)
+			: x(p.x)
+			, y(p.y)
+		{ }
+
+		explicit Point(const T &x, const T &y)
+			: x(x)
+			, y(y)
+		{ }
+
+		Point& operator=(const Point &p)
+		{
+			x = p.x;
+			y = p.y;
+			return *this;
+		}
+
+		void operator+=(const Point &p)
+		{
+			x += p.x;
+			y += p.y;
+		}
+
+		void operator-=(const Point &p)
+		{
+			x -= p.x;
+			y -= p.y;
+		}
+
+		Point operator+(const Point &p) const
+		{
+			return Point(x + p.x, y + p.y);
+		}
+
+		Point operator-(const Point &p) const
+		{
+			return Point(x - p.x, y - p.y);
+		}
+
+		void operator+=(const T &amount)
+		{
+			x += amount;
+			y += amount;
+		}
+
+		void operator-=(const T &amount)
+		{
+			x -= amount;
+			y -= amount;
+		}
+
+		Point operator+(const T &amount) const
+		{
+			return Point(x + amount, y + amount);
+		}
+
+		Point operator-(const T &amount) const
+		{
+			return Point(x - amount, y - amount);
+		}
+
+		void reset()
+		{
+			x = y = {};
+		}
+		
+		void reset(const T &x, const T &y)
+		{
+			this->x = x;
+			this->y = y;
+		}
+
+		void move(const T &amount)
+		{
+			x += amount;
+			y += amount;
+		}
+
+		void move(const T &x, const T &y)
+		{
+			this->x += x;
+			this->y += y;
+		}
+	};
+} }
 

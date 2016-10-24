@@ -15,13 +15,13 @@ namespace HorseRadish
 			HorseRadish::Matrix matrixModelView;
 
 			HorseRadish::Matrix matrixTransformacao = hrViewport.getProjection(HorseRadish::OpenGL::Tools::Viewport::ProjectionType::Proj3D);
-			matrixModelView.set(hrCamera.getModelView());
+			matrixModelView.set(hrCamera.modelView());
 			matrixTransformacao *= matrixModelView;
 
 			vbos.vaoMesh.bind();
 			fbos.fboDeferredGBuffer.bind();
 
-			HorseRadish::OpenGL::glViewport(0, 0, hrViewport.getWidth(), hrViewport.getHeight());
+			HorseRadish::OpenGL::glViewport(0, 0, hrViewport.width(), hrViewport.height());
 
 			GLenum mrt[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3 };
 			HorseRadish::OpenGL::glDrawBuffers(4, mrt);
@@ -40,7 +40,7 @@ namespace HorseRadish
 			HorseRadish::OpenGL::glUseProgram(0);
 			HorseRadish::OpenGL::glProgramUniformMatrix4fv(this->shaders.deferred.vertex.getId(), this->shaders.deferred.vertex.getUniformLocation("matView"), 1, false, matrixModelView.data());
 			HorseRadish::OpenGL::glProgramUniformMatrix4fv(this->shaders.deferred.vertex.getId(), this->shaders.deferred.vertex.getUniformLocation("matTrans"), 1, false, matrixTransformacao.data());
-			HorseRadish::OpenGL::glProgramUniform1f(this->shaders.deferred.fragment.getId(), this->shaders.deferred.fragment.getUniformLocation("farClipPlane"), hrViewport.getZFar());
+			HorseRadish::OpenGL::glProgramUniform1f(this->shaders.deferred.fragment.getId(), this->shaders.deferred.fragment.getUniformLocation("farClipPlane"), hrViewport.zfar());
 			HorseRadish::OpenGL::glBindProgramPipeline(this->shaders.deferred.pipeline.getId());
 
 			this->samplers.samplerNormals.bind(1);
@@ -71,8 +71,8 @@ namespace HorseRadish
 
 		void RendererDeferred::renderFinal(const Tools::Camera& hrCamera, const HorseRadish::OpenGL::Tools::Viewport& hrViewport)
 		{
-			auto winX = hrViewport.getWidth();
-			auto winY = hrViewport.getHeight();
+			auto winX = hrViewport.width();
+			auto winY = hrViewport.height();
 
 			HorseRadish::OpenGL::glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
@@ -185,7 +185,7 @@ namespace HorseRadish
 			if (texFilePath.empty())
 				return;
 
-			auto fileStream = fileSystem.FileRead(texFilePath.c_str());
+			auto fileStream = fileSystem.fileRead(texFilePath.c_str());
 			if (!fileStream)
 				return;
 		
@@ -229,7 +229,7 @@ namespace HorseRadish
 			if (texFilePath.empty())
 				return;
 
-			auto fileStream = fileSystem.FileRead(texFilePath.c_str());
+			auto fileStream = fileSystem.fileRead(texFilePath.c_str());
 			if (!fileStream)
 				return;
 
@@ -287,10 +287,10 @@ namespace HorseRadish
 			this->renderHeight = renderHeight;
 			this->fileSystem = fileSystem;
 
-			pathShaders.Set(HorseRadish::IO::Path::KnownPath::CurrentFolder);
-			pathShaders.Combine("shaders");
+			pathShaders.set(HorseRadish::IO::Path::KnownPath::CurrentFolder);
+			pathShaders.combine("shaders");
 
-			this->shadersWatchFolderID = this->fileSystem->WatchChangeCreate(pathShaders.str().c_str(), false, HorseRadish::IO::FileSystem::FileLastWrite);
+			this->shadersWatchFolderID = this->fileSystem->watchChangeCreate(pathShaders.str().c_str(), false, HorseRadish::IO::FileSystem::FileLastWrite);
 
 			//FBOs
 			fbos.texDeferredAlbedo.init(HorseRadish::OpenGL::Objects::Texture::Type::TexRectangle, HorseRadish::OpenGL::Objects::Texture::StorageType::RGBA_16F, renderWidth, renderHeight);
@@ -359,7 +359,7 @@ namespace HorseRadish
 
 		void RendererDeferred::Render(const Tools::Camera& hrCamera, const HorseRadish::OpenGL::Tools::Viewport& hrViewport)
 		{
-			if (this->fileSystem->WatchChanged(this->shadersWatchFolderID) == true)
+			if (this->fileSystem->watchChanged(this->shadersWatchFolderID) == true)
 				this->fileSystem = this->fileSystem;
 
 			renderGBuffer(hrCamera, hrViewport);

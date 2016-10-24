@@ -10,11 +10,11 @@ class Viewport
 public:
 	enum class ProjectionType { Proj3D, Proj3DInf, Proj2D };
 
-	static HorseRadish::Matrix genMatrix2DProj(const int width, const int height);
+	static HorseRadish::Matrix genMatrix2DProj(size_t width, size_t height);
 
 private:
 	float mFov, mZNear, mZFar;
-	unsigned int mWidth, mHeight;
+	size_t mWidth, mHeight;
 	struct {
 		HorseRadish::Matrix mp2D, mp3D, mp3DInfinite;
 	} mMatrices;
@@ -23,23 +23,33 @@ private:
 
 public:
 	Viewport() = delete;
-	explicit Viewport(const unsigned int width, const unsigned int height);
-	explicit Viewport(const float fov, const unsigned int width, const unsigned int height);
-	explicit Viewport(const float fov, const unsigned int width, const unsigned int height, const float zNear, const float zFar);
+
+	explicit Viewport(const size_t width, const size_t height)
+		: Viewport(90.0f, width, height)
+	{ }
+
+	explicit Viewport(const float fov, const size_t width, const size_t height)
+		: Viewport(fov, width, height, 1.0f, 1000.0f)
+	{ }
+
+	explicit Viewport(const float fov, const size_t width, const size_t height, const float zNear, const float zFar)
+		: mFov(fov), mZNear(zNear), mZFar(zFar), mWidth(width ? width : 1), mHeight(height ? height : 1)
+	{
+		calcMatrices();
+	}
 
 	const HorseRadish::Matrix& getProjection(ProjectionType projectionType) const;
 	
-	float getFOV() const { return mFov; }
-	float getZNear() const { return mZNear; }
-	float getZFar() const { return mZFar; }
+	float fov() const { return mFov; }
+	float znear() const { return mZNear; }
+	float zfar() const { return mZFar; }
 
-	unsigned int getWidth() const { return mWidth; }
-	unsigned int getHeight() const { return mHeight; }
+	size_t width() const { return mWidth; }
+	size_t height() const { return mHeight; }
 
-	void getPointOnZNear(float * const center) const;
-	void getPointOnZNear(HorseRadish::Vector3f& center) const;
+	void pointOnZNear(HorseRadish::Vector3f& center) const;
 
-	void projectPoint(ProjectionType projType, const HorseRadish::Matrix& modelView, HorseRadish::Vector3f * const listPoints, const int numPoints) const;
+	void projectPoint(ProjectionType projType, const HorseRadish::Matrix& modelView, HorseRadish::Vector3f * const listPoints, size_t numPoints) const;
 };
 
 } } }

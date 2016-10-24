@@ -623,7 +623,7 @@ public:
 			return false;
 
 		float maxAnisoLevel;
-		if (!mCtx.isExtPresent(Context::ExtFilterAnisotropic) || !mCtx.getInfo(Context::InformationType::MaxAnisotropicLevel, maxAnisoLevel))
+		if (!mCtx.isExtPresent(Context::ExtFilterAnisotropic) || !mCtx.info(Context::InformationType::MaxAnisotropicLevel, maxAnisoLevel))
 			return false;
 
 		HorseRadish::OpenGL::glSamplerParameterf(mId, GL_TEXTURE_MAX_ANISOTROPY_EXT, HorseRadish::Math::fClamp(anisotropyLevel, 1.0f, maxAnisoLevel));

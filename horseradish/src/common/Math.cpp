@@ -19,7 +19,7 @@ union ieee_single {
 
 namespace HorseRadish
 {
-	float Math::htof(const unsigned short &val)
+	float Math::htof(unsigned short val)
 	{
 		halfType h;
 		ieee_single sng;
@@ -66,7 +66,7 @@ namespace HorseRadish
 		return sng.f;
 	}
 
-	unsigned short Math::ftoh(const float &val)
+	unsigned short Math::ftoh(float val)
 	{
 		ieee_single f;
 		f.f = val;
@@ -153,7 +153,7 @@ namespace HorseRadish
 		return h.bits;
 	}
 
-	float Math::sampleWave(const float * const items, const int numItems, const float t)
+	float Math::sampleWave(const float * const items, size_t numItems, float t)
 	{
 		float normalized, start;
 		int readStart;
@@ -521,15 +521,15 @@ namespace HorseRadish
 		return y;
 	}
 
-	void Math::SIMD::mad(float *values, const unsigned int numValues, const float mulVal, const float addVal)
+	void Math::SIMD::mad(float *values, size_t numValues, float mulVal, float addVal)
 	{
-		int remain, leftOver;
 		__m128 do1, do2, do3, do4, mulReg, addReg;
-
-		auto walker = values;
-		remain = reinterpret_cast<uintptr_t>(values) % 16;
+		
 		mulReg = _mm_load_ps1(&mulVal);
 		addReg = _mm_load_ps1(&addVal);
+
+		auto walker = values;
+		auto remain = reinterpret_cast<uintptr_t>(values) % 16;
 
 		if (remain == 4 || remain == 8 || remain == 12 || remain == 0)
 		{
@@ -544,7 +544,7 @@ namespace HorseRadish
 				}
 			}
 
-			leftOver = numValues;
+			auto leftOver = numValues;
 			for (; leftOver >= 16; leftOver -= 16, walker += 16)
 			{
 				do1 = _mm_load_ps(walker + 0);
@@ -569,7 +569,7 @@ namespace HorseRadish
 			return;
 		}
 
-		leftOver = numValues;
+		auto leftOver = numValues;
 		for (; leftOver >= 16; leftOver -= 16, walker += 16)
 		{
 			do1 = _mm_loadu_ps(walker + 0);

@@ -4,101 +4,78 @@
 
 namespace HorseRadish
 {
-	Plane::Plane(const Plane &plane)
-	{
-		a = plane.a;
-		b = plane.b;
-		c = plane.c;
-		d = plane.d;
-	}
-
-	Plane::Plane(const float nx, const float ny, const float nz, const float nd)
-	{
-		a = nx; b = ny; c = nz;
-		d = nd;
-	}
-
-	Plane::Plane(const Vector3f &nN, const float nd)
-	{
-		a = nN[0];
-		b = nN[1];
-		c = nN[2];
-		d = nd;
-	}
-
-	void Plane::SetFromPoints(const Vector3f &p0, const Vector3f &p1, const Vector3f &p2)
+	void Plane::setFromPoints(const Vector3f &p0, const Vector3f &p1, const Vector3f &p2)
 	{
 		Vector3f normal;
 
 		normal.storeNormal(p0, p1, p2);
-		a = normal[0];
-		b = normal[1];
-		c = normal[2];
-		d = -normal.getDot(p0);
+		mA = normal[0];
+		mB = normal[1];
+		mC = normal[2];
+		mD = -normal.getDot(p0);
 	}
 
-	void Plane::SetFromPoints(const float *p0, const float *p1, const float *p2)
+	void Plane::setFromPoints(const float *p0, const float *p1, const float *p2)
 	{
 		Vector3f normal;
 
 		normal.storeNormal(p0, p1, p2);
-		a = normal[0];
-		b = normal[1];
-		c = normal[2];
-		d = -normal.getDot(p0);
+		mA = normal[0];
+		mB = normal[1];
+		mC = normal[2];
+		mD = -normal.getDot(p0);
 	}
 
-	void Plane::Lerp(const Plane &p2, const float factor, Plane &result)
+	Plane Plane::lerp(const Plane &p2, float factor) const
 	{
-		result.a = a*factor;
-		result.b = b*factor;
-		result.c = c*factor;
+		Plane result;
+		result.mA = mA*factor;
+		result.mB = mB*factor;
+		result.mC = mC*factor;
 
-		Vector3f vecAux(p2.a, p2.b, p2.c);
+		Vector3f vecAux(p2.mA, p2.mB, p2.mC);
 		vecAux *= (1.0f - factor);
 
-		result.a += vecAux[0];
-		result.b += vecAux[1];
-		result.c += vecAux[2];
-		result.NormalizeNormal();
+		result.mA += vecAux[0];
+		result.mB += vecAux[1];
+		result.mC += vecAux[2];
+		result.normalizeNormal();
 
-		result.d = d*factor + p2.d*(1.0f - factor);
+		result.mD = (mD * factor) + (p2.mD * (1.0f - factor));
+
+		return result;
 	}
 
-	void Plane::Normalize()
+	void Plane::normalize()
 	{
-		float sizeInv;
-
-		sizeInv = 1.0f / sqrtf(a*a + b*b + c*c);
-		a *= sizeInv;
-		b *= sizeInv;
-		c *= sizeInv;
-		d *= sizeInv;
+		float sizeInv = 1.0f / sqrtf(mA*mA + mB*mB + mC*mC);
+		mA *= sizeInv;
+		mB *= sizeInv;
+		mC *= sizeInv;
+		mD *= sizeInv;
 	}
 
-	void Plane::NormalizeNormal()
+	void Plane::normalizeNormal()
 	{
-		float sizeInv;
-
-		sizeInv = 1.0f / sqrtf(a*a + b*b + c*c);
-		a *= sizeInv;
-		b *= sizeInv;
-		c *= sizeInv;
+		float sizeInv = 1.0f / sqrtf(mA*mA + mB*mB + mC*mC);
+		mA *= sizeInv;
+		mB *= sizeInv;
+		mC *= sizeInv;
 	}
 
-	bool Plane::TestIntersectRay(const Vector3f &origin, const Vector3f &dir) const
+	bool Plane::testIntersectRay(const Vector3f &origin, const Vector3f &dir) const
 	{
 		Vector3f result;
-		return TestIntersectRay(origin, dir, result);
+		return testIntersectRay(origin, dir, result);
 	}
 
-	bool Plane::TestIntersectRay(const Vector3f &origin, const Vector3f &dir, Vector3f& result) const
+	bool Plane::testIntersectRay(const Vector3f &origin, const Vector3f &dir, Vector3f& result) const
 	{
-		float dot = dir.getDot(a, b, c);
+		float dot = dir.getDot(mA, mB, mC);
 		if (Math::isZero(dot))
 			return false;
 
-		float t = -(origin.getDot(a, b, c) + d) / dot;
+		float t = -(origin.getDot(mA, mB, mC) + mD) / dot;
 		if (t < 0.0f)
 			return false;
 
@@ -109,21 +86,20 @@ namespace HorseRadish
 		return true;
 	}
 
-	bool Plane::TestIntersectLine(const Vector3f &p1, const Vector3f &p2) const
+	bool Plane::testIntersectLine(const Vector3f &p1, const Vector3f &p2) const
 	{
 		Vector3f result;
-		return TestIntersectLine(p1, p2, result);
+		return testIntersectLine(p1, p2, result);
 	}
 
-	bool Plane::TestIntersectLine(const Vector3f &p1, const Vector3f &p2, Vector3f& result) const
+	bool Plane::testIntersectLine(const Vector3f &p1, const Vector3f &p2, Vector3f& result) const
 	{
 		auto dir = p2 - p1;
-
-		float dot = dir.getDot(a, b, c);
+		float dot = dir.getDot(mA, mB, mC);
 		if (Math::isZero(dot))
 			return false;
 
-		float t = -(p1.getDot(a, b, c) + d) / dot;
+		float t = -(p1.getDot(mA, mB, mC) + mD) / dot;
 
 		result[0] = p1[0] + (dir[0] * t);
 		result[1] = p1[1] + (dir[1] * t);
@@ -132,21 +108,20 @@ namespace HorseRadish
 		return true;
 	}
 
-	bool Plane::TestIntersectLineSegment(const Vector3f &p1, const Vector3f &p2) const
+	bool Plane::testIntersectLineSegment(const Vector3f &p1, const Vector3f &p2) const
 	{
 		Vector3f result;
-		return TestIntersectLineSegment(p1, p2, result);
+		return testIntersectLineSegment(p1, p2, result);
 	}
 
-	bool Plane::TestIntersectLineSegment(const Vector3f &p1, const Vector3f &p2, Vector3f& result) const
+	bool Plane::testIntersectLineSegment(const Vector3f &p1, const Vector3f &p2, Vector3f& result) const
 	{
 		auto dir = p2 - p1;
-
-		float dot = dir.getDot(a, b, c);
+		float dot = dir.getDot(mA, mB, mC);
 		if (Math::isZero(dot))
 			return false;
 
-		float t = -(p1.getDot(a, b, c) + d) / dot;
+		float t = -(p1.getDot(mA, mB, mC) + mD) / dot;
 		if (t<0.0f || t>1.0f)
 			return false;
 
@@ -157,20 +132,20 @@ namespace HorseRadish
 		return true;
 	}
 
-	bool Plane::TestIntersectPlanes(const Plane &p2, const Plane &p3) const
+	bool Plane::testIntersectPlanes(const Plane &p2, const Plane &p3) const
 	{
 		Vector3f result;
-		return TestIntersectPlanes(p2, p3, result);
+		return testIntersectPlanes(p2, p3, result);
 	}
 
-	bool Plane::TestIntersectPlanes(const Plane &p2, const Plane &p3, Vector3f& result) const
+	bool Plane::testIntersectPlanes(const Plane &p2, const Plane &p3, Vector3f& result) const
 	{
 		float denominator;
 		Vector3f pNormal, p2Normal, p3Normal, tmp1, tmp2, tmp3;
 
-		pNormal.set(a, b, c);
-		p2Normal.set(p2.a, p2.b, p2.c);
-		p3Normal.set(p3.a, p3.b, p3.c);
+		pNormal.set(mA, mB, mC);
+		p2Normal.set(p2.mA, p2.mB, p2.mC);
+		p3Normal.set(p3.mA, p3.mB, p3.mC);
 		tmp1.storeCrossProduct(p2Normal, p3Normal);
 		denominator = pNormal.getDot(tmp1);
 
@@ -180,9 +155,9 @@ namespace HorseRadish
 		tmp1.storeCrossProduct(p2Normal, p3Normal);
 		tmp2.storeCrossProduct(p3Normal, pNormal);
 		tmp3.storeCrossProduct(pNormal, p2Normal);
-		tmp1 *= d;
-		tmp2 *= p2.d;
-		tmp3 *= p3.d;
+		tmp1 *= mD;
+		tmp2 *= p2.mD;
+		tmp3 *= p3.mD;
 
 		result = tmp1 + tmp2 + tmp3;
 		result /= (-denominator);
@@ -190,10 +165,10 @@ namespace HorseRadish
 		return true;
 	}
 
-	bool Plane::TestIntersectSweptSphere(const float &sphereRadius, const Vector3f &spherePrevPos, const Vector3f &sphereCurPos, Vector3f * const hitPoint, float * const hitTime) const
+	bool Plane::testIntersectSweptSphere(float sphereRadius, const Vector3f &spherePrevPos, const Vector3f &sphereCurPos, Vector3f * const hitPoint, float * const hitTime) const
 	{
-		float d0 = GetDotCoord(spherePrevPos);
-		float d1 = GetDotCoord(sphereCurPos);
+		float d0 = getDotCoord(spherePrevPos);
+		float d1 = getDotCoord(sphereCurPos);
 
 		if (std::abs(d0) <= sphereRadius)
 		{
@@ -217,29 +192,25 @@ namespace HorseRadish
 		return false;
 	}
 
-	Plane::Position Plane::ClassifyPoint(const Vector3f &point) const
+	Plane::Position Plane::classifyPoint(const Vector3f &point) const
 	{
-		float calcDot = point.getDot(a, b, c) + d;
+		float calcDot = point.getDot(mA, mB, mC) + mD;
 
 		if (Math::isZero(calcDot))
 			return Plane::Position::COPLANAR;
 		if (calcDot > 0.0f)
 			return Plane::Position::FRONT;
+
 		return Plane::Position::BEHIND;
 	}
 
-	Plane::Position Plane::ClassifyTri(const Vector3f &p1, const Vector3f &p2, const Vector3f &p3) const
+	Plane::Position Plane::classifyTri(const Vector3f &p1, const Vector3f &p2, const Vector3f &p3) const
 	{
-		Position c1, c2, c3;
+		Position c1 = classifyPoint(p1);
+		Position c2 = classifyPoint(p2);
+		Position c3 = classifyPoint(p3);
 
-		c1 = ClassifyPoint(p1);
-		c2 = ClassifyPoint(p2);
-		c3 = ClassifyPoint(p3);
-
-		if (c1 == c2 && c2 == c3)
-			return c1;
-
-		return Position::INTERSECT;
+		return (((c1 == c2) && (c2 == c3)) ? c1 : Position::INTERSECT);
 	}
 
 } //HorseRadish

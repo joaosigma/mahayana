@@ -42,18 +42,6 @@ bool Context::initContext()
 	return true;
 }
 
-Context::Context()
-	: mExtsAvailable(0)
-{
-	memset(&mInfo, 0, sizeof(Context::Info));
-}
-
-Context::~Context()
-{
-	mExtsAvailable = 0;
-	memset(&mInfo, 0, sizeof(Context::Info));
-}
-
 bool Context::isExtPresent(Context::Extensions extension) const
 {
 	return ((mExtsAvailable & extension) == extension);
@@ -66,7 +54,7 @@ bool Context::isExtPresent(const char * const extensionName) const
 
 void Context::dispatchDebugMessages() const
 {
-	int numMsgsLogged;
+	GLint numMsgsLogged;
 
 	HorseRadish::OpenGL::glGetIntegerv(GL_DEBUG_LOGGED_MESSAGES_ARB, &numMsgsLogged);
 	if (numMsgsLogged <= 0)
@@ -94,7 +82,7 @@ void Context::dispatchDebugMessages() const
 	}
 }
 
-bool Context::getInfo(const InformationType &informationType, int &infoValue) const
+bool Context::info(const InformationType &informationType, int &infoValue) const
 {
 	switch (informationType)
 	{
@@ -122,7 +110,7 @@ bool Context::getInfo(const InformationType &informationType, int &infoValue) co
 	return false;
 }
 
-bool Context::getInfo(const InformationType &informationType, float &infoValue) const
+bool Context::info(const InformationType &informationType, float &infoValue) const
 {
 	switch (informationType)
 	{
@@ -135,7 +123,7 @@ bool Context::getInfo(const InformationType &informationType, float &infoValue) 
 	return false;
 }
 
-bool Context::getInfo(const InformationType &informationType, std::string &infoValue) const
+bool Context::info(const InformationType &informationType, std::string &infoValue) const
 {
 	switch (informationType)
 	{

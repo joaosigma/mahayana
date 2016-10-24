@@ -35,24 +35,24 @@ namespace HorseRadish { namespace Engine {
 
 		//mount current and previous directory
 		auto currentFolder = HorseRadish::IO::Path(HorseRadish::IO::Path::KnownPath::CurrentFolder);
-		mFileSystem->MountPath(currentFolder, nullptr);
-		currentFolder.RemoveLastComponent();
-		mFileSystem->MountPath(currentFolder, nullptr);
+		mFileSystem->mountPath(currentFolder, nullptr);
+		currentFolder.removeLastComponent();
+		mFileSystem->mountPath(currentFolder, nullptr);
 
 		//mount main game resource directory
-		mFileSystem->MountPath(HorseRadish::IO::Path("d:/jogos/doom3/base/"), nullptr);
+		mFileSystem->mountPath(HorseRadish::IO::Path("d:/jogos/doom3/base/"), nullptr);
 		mLoggerRuntimeCtx->info("${olive}->${default}Path set to: \"d:/jogos/doom3/base/\"");
 
 		size_t totalFich = 0;
 		size_t totalPacks = 0;
 
 		//for every pack/zip/7zip file
-		HorseRadish::IO::FileSystem::FindFiles("d:/jogos/doom3/base/pak*.pk4", true, [&](const HorseRadish::IO::Path &filePath, const HorseRadish::hUInt64 &fileSize)
+		HorseRadish::IO::FileSystem::findFiles("d:/jogos/doom3/base/pak*.pk4", true, [&](const HorseRadish::IO::Path &filePath, const HorseRadish::hUInt64 &fileSize)
 		{
 			size_t numFilesZip;
 
 			//mount the zip file as a directoty
-			if (mFileSystem->MountZip(filePath, nullptr, &numFilesZip))
+			if (mFileSystem->mountZip(filePath, nullptr, &numFilesZip))
 			{
 				totalPacks += 1;
 				totalFich += numFilesZip;
@@ -234,33 +234,33 @@ namespace HorseRadish { namespace Engine {
 		//misc info
 		mLoggerRuntimeCtx->info("${olive}->${default}System information:");
 
-		if (HorseRadish::Platform::CPUGetVendorID(auxInfo))
+		if (HorseRadish::Platform::cpuGetVendorID(auxInfo))
 			mLoggerRuntimeCtx->info("   CPU vendor ID: {0}", auxInfo);
-		if (HorseRadish::Platform::CPUGetProcessorName(auxInfo))
+		if (HorseRadish::Platform::cpuGetProcessorName(auxInfo))
 			mLoggerRuntimeCtx->info("   CPU processor name: {0}", auxInfo);
 
 		
-		HorseRadish::Platform::GetSystemInfo(HorseRadish::Platform::SystemInfo::MemoryTotal, memTotal);
+		HorseRadish::Platform::systemInfo(HorseRadish::Platform::SystemInfo::MemoryTotal, memTotal);
  		mLoggerRuntimeCtx->info("   Total physical memory: {0}", HorseRadish::StringUtils::formatSize(memTotal));
 
-		HorseRadish::Platform::GetSystemInfo(HorseRadish::Platform::SystemInfo::MemoryFree, memFree);
+		HorseRadish::Platform::systemInfo(HorseRadish::Platform::SystemInfo::MemoryFree, memFree);
 		mLoggerRuntimeCtx->info("   Free physical memory: {0}", HorseRadish::StringUtils::formatSize(memFree));
 
-		HorseRadish::Platform::GetSystemInfo(HorseRadish::Platform::SystemInfo::DisplayWidth, displayWidth);
-		HorseRadish::Platform::GetSystemInfo(HorseRadish::Platform::SystemInfo::DisplayHeight, displayHeight);
-		HorseRadish::Platform::GetSystemInfo(HorseRadish::Platform::SystemInfo::DisplayColorBits, displayColorBits);
-		HorseRadish::Platform::GetSystemInfo(HorseRadish::Platform::SystemInfo::DisplayFrequency, displayFrequency);
+		HorseRadish::Platform::systemInfo(HorseRadish::Platform::SystemInfo::DisplayWidth, displayWidth);
+		HorseRadish::Platform::systemInfo(HorseRadish::Platform::SystemInfo::DisplayHeight, displayHeight);
+		HorseRadish::Platform::systemInfo(HorseRadish::Platform::SystemInfo::DisplayColorBits, displayColorBits);
+		HorseRadish::Platform::systemInfo(HorseRadish::Platform::SystemInfo::DisplayFrequency, displayFrequency);
 		mLoggerRuntimeCtx->info("   Desktop resolution: {0}x{1}x{2}@{3}", displayWidth, displayHeight, displayColorBits, displayFrequency);
 
-		HorseRadish::Platform::GetSystemInfo(HorseRadish::Platform::SystemInfo::OperatingSystemName, auxInfo);
+		HorseRadish::Platform::systemInfo(HorseRadish::Platform::SystemInfo::OperatingSystemName, auxInfo);
 		mLoggerRuntimeCtx->info("   Operating system: {0}", auxInfo);
 
-		mLoggerRuntimeCtx->info(HorseRadish::Platform::IsArch64() ? "   Build type: x86 64bit" : "   Build type: x86 32bit");
+		mLoggerRuntimeCtx->info(HorseRadish::Platform::isArch64() ? "   Build type: x86 64bit" : "   Build type: x86 32bit");
 
-		HorseRadish::Platform::GetSystemInfo(HorseRadish::Platform::SystemInfo::MachineName, auxInfo);
+		HorseRadish::Platform::systemInfo(HorseRadish::Platform::SystemInfo::MachineName, auxInfo);
 		mLoggerRuntimeCtx->info("   Machine name: {0}", auxInfo);
 
-		HorseRadish::Platform::GetSystemInfo(HorseRadish::Platform::SystemInfo::CurrentUsername, auxInfo);
+		HorseRadish::Platform::systemInfo(HorseRadish::Platform::SystemInfo::CurrentUsername, auxInfo);
 		mLoggerRuntimeCtx->info("   User name: {0}", auxInfo);
 
 		//test UTF8
@@ -306,9 +306,9 @@ namespace HorseRadish { namespace Engine {
 		{
 			std::string strAux;
 
-			if (HorseRadish::Platform::CPUGetVendorID(strAux))
+			if (HorseRadish::Platform::cpuGetVendorID(strAux))
 				var<std::string>("sys.info.cpuVendor", strAux);
-			if (HorseRadish::Platform::CPUGetProcessorName(strAux))
+			if (HorseRadish::Platform::cpuGetProcessorName(strAux))
 				var<std::string>("sys.info.cpuName", strAux);
 			var<std::string>("sys.info.build", fmt::format("Horseradish v1.0.0 (alpha build {0})", HorseRadish::Build::BuildNumber));
 		}

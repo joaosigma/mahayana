@@ -8,31 +8,31 @@ namespace HorseRadish { namespace OpenGL { namespace Tools {
 
 void Frustum::extractPlanes(const HorseRadish::Vector4f &col1, const HorseRadish::Vector4f &col2, const HorseRadish::Vector4f &col3, const HorseRadish::Vector4f &col4)
 {
-	mPlanes[PlaneLeft].Set(col4[0] + col1[0], col4[1] + col1[1], col4[2] + col1[2], col4[3] + col1[3]);
-	mPlanes[PlaneRight].Set(col4[0] - col1[0], col4[1] - col1[1], col4[2] - col1[2], col4[3] - col1[3]);
+	mPlanes[PlaneLeft].set(col4[0] + col1[0], col4[1] + col1[1], col4[2] + col1[2], col4[3] + col1[3]);
+	mPlanes[PlaneRight].set(col4[0] - col1[0], col4[1] - col1[1], col4[2] - col1[2], col4[3] - col1[3]);
 
-	mPlanes[PlaneTop].Set(col4[0] - col2[0], col4[1] - col2[1], col4[2] - col2[2], col4[3] - col2[3]);
-	mPlanes[PlaneBottom].Set(col4[0] + col2[0], col4[1] + col2[1], col4[2] + col2[2], col4[3] + col2[3]);
+	mPlanes[PlaneTop].set(col4[0] - col2[0], col4[1] - col2[1], col4[2] - col2[2], col4[3] - col2[3]);
+	mPlanes[PlaneBottom].set(col4[0] + col2[0], col4[1] + col2[1], col4[2] + col2[2], col4[3] + col2[3]);
 
-	mPlanes[PlaneLeft].Normalize();
-	mPlanes[PlaneRight].Normalize();
-	mPlanes[PlaneBottom].Normalize();
-	mPlanes[PlaneTop].Normalize();
+	mPlanes[PlaneLeft].normalize();
+	mPlanes[PlaneRight].normalize();
+	mPlanes[PlaneBottom].normalize();
+	mPlanes[PlaneTop].normalize();
 
-	mPlanes[PlaneNear].Set(col4[0] + col3[0], col4[1] + col3[1], col4[2] + col3[2], 0.0f);
-	mPlanes[PlaneFar].Set(col4[0] - col3[0], col4[1] - col3[1], col4[2] - col3[2], 0.0f);
-	mPlanes[PlaneNear].NormalizeNormal();
-	mPlanes[PlaneFar].NormalizeNormal();
-	mPlanes[PlaneNear].SetD(-(mPlanes[PlaneNear].GetDotNormal(mPosition) + mZNear));
-	mPlanes[PlaneFar].SetD(-(mPlanes[PlaneNear].GetDotNormal(mPosition) - mZFar));
+	mPlanes[PlaneNear].set(col4[0] + col3[0], col4[1] + col3[1], col4[2] + col3[2], 0.0f);
+	mPlanes[PlaneFar].set(col4[0] - col3[0], col4[1] - col3[1], col4[2] - col3[2], 0.0f);
+	mPlanes[PlaneNear].normalizeNormal();
+	mPlanes[PlaneFar].normalizeNormal();
+	mPlanes[PlaneNear].setD(-(mPlanes[PlaneNear].getDotNormal(mPosition) + mZNear));
+	mPlanes[PlaneFar].setD(-(mPlanes[PlaneNear].getDotNormal(mPosition) - mZFar));
 }
 
 bool Frustum::sweptSpherePlaneIntersect(float &t0, float &t1, const HorseRadish::Plane &plane, const HorseRadish::Vector3f &sphereCenter, const float &sphereRadius, const HorseRadish::Vector3f &sweepDir) const
 {
 	float b_dot_n, d_dot_n, tmp0, tmp1;
 
-	b_dot_n = plane.GetDistance(sphereCenter);
-	d_dot_n = plane.GetDotNormal(sweepDir);
+	b_dot_n = plane.distance(sphereCenter);
+	d_dot_n = plane.getDotNormal(sweepDir);
 
 	if (HorseRadish::Math::isZero(d_dot_n))
 	{
@@ -78,15 +78,15 @@ void Frustum::getCorners(HorseRadish::Vector3f points[8]) const
 	if (points == nullptr)
 		return;
 
-	mPlanes[PlaneNear].TestIntersectPlanes(mPlanes[PlaneLeft], mPlanes[PlaneBottom], points[0]);
-	mPlanes[PlaneNear].TestIntersectPlanes(mPlanes[PlaneRight], mPlanes[PlaneBottom], points[1]);
-	mPlanes[PlaneNear].TestIntersectPlanes(mPlanes[PlaneRight], mPlanes[PlaneTop], points[2]);
-	mPlanes[PlaneNear].TestIntersectPlanes(mPlanes[PlaneLeft], mPlanes[PlaneTop], points[3]);
+	mPlanes[PlaneNear].testIntersectPlanes(mPlanes[PlaneLeft], mPlanes[PlaneBottom], points[0]);
+	mPlanes[PlaneNear].testIntersectPlanes(mPlanes[PlaneRight], mPlanes[PlaneBottom], points[1]);
+	mPlanes[PlaneNear].testIntersectPlanes(mPlanes[PlaneRight], mPlanes[PlaneTop], points[2]);
+	mPlanes[PlaneNear].testIntersectPlanes(mPlanes[PlaneLeft], mPlanes[PlaneTop], points[3]);
 
-	mPlanes[PlaneFar].TestIntersectPlanes(mPlanes[PlaneLeft], mPlanes[PlaneBottom], points[4]);
-	mPlanes[PlaneFar].TestIntersectPlanes(mPlanes[PlaneRight], mPlanes[PlaneBottom], points[5]);
-	mPlanes[PlaneFar].TestIntersectPlanes(mPlanes[PlaneRight], mPlanes[PlaneTop], points[6]);
-	mPlanes[PlaneFar].TestIntersectPlanes(mPlanes[PlaneLeft], mPlanes[PlaneTop], points[7]);
+	mPlanes[PlaneFar].testIntersectPlanes(mPlanes[PlaneLeft], mPlanes[PlaneBottom], points[4]);
+	mPlanes[PlaneFar].testIntersectPlanes(mPlanes[PlaneRight], mPlanes[PlaneBottom], points[5]);
+	mPlanes[PlaneFar].testIntersectPlanes(mPlanes[PlaneRight], mPlanes[PlaneTop], points[6]);
+	mPlanes[PlaneFar].testIntersectPlanes(mPlanes[PlaneLeft], mPlanes[PlaneTop], points[7]);
 }
 
 Frustum::IntersectionType Frustum::classifyFrustum(const Frustum &frustum) const
@@ -97,7 +97,7 @@ Frustum::IntersectionType Frustum::classifyFrustum(const Frustum &frustum) const
 	{
 		auto inside = false;
 		auto outside = false;
-		for (auto i = 0; i < 8; i++)
+		for (size_t i = 0; i < 8; i++)
 		{
 			auto resultado = testPoint(corners[i]);
 			inside |= resultado;
@@ -111,16 +111,16 @@ Frustum::IntersectionType Frustum::classifyFrustum(const Frustum &frustum) const
 			return IntersectionType::FrustumIntersect;
 	}
 
-	for (auto i = 0; i < 6; i++)
+	for (size_t i = 0; i < 6; i++)
 	{
-		if (mPlanes[i].ClassifyPoint(corners[0]) != HorseRadish::Plane::Position::BEHIND)	continue;
-		if (mPlanes[i].ClassifyPoint(corners[1]) != HorseRadish::Plane::Position::BEHIND)	continue;
-		if (mPlanes[i].ClassifyPoint(corners[2]) != HorseRadish::Plane::Position::BEHIND)	continue;
-		if (mPlanes[i].ClassifyPoint(corners[3]) != HorseRadish::Plane::Position::BEHIND)	continue;
-		if (mPlanes[i].ClassifyPoint(corners[4]) != HorseRadish::Plane::Position::BEHIND)	continue;
-		if (mPlanes[i].ClassifyPoint(corners[5]) != HorseRadish::Plane::Position::BEHIND)	continue;
-		if (mPlanes[i].ClassifyPoint(corners[6]) != HorseRadish::Plane::Position::BEHIND)	continue;
-		if (mPlanes[i].ClassifyPoint(corners[7]) != HorseRadish::Plane::Position::BEHIND)	continue;
+		if (mPlanes[i].classifyPoint(corners[0]) != HorseRadish::Plane::Position::BEHIND)	continue;
+		if (mPlanes[i].classifyPoint(corners[1]) != HorseRadish::Plane::Position::BEHIND)	continue;
+		if (mPlanes[i].classifyPoint(corners[2]) != HorseRadish::Plane::Position::BEHIND)	continue;
+		if (mPlanes[i].classifyPoint(corners[3]) != HorseRadish::Plane::Position::BEHIND)	continue;
+		if (mPlanes[i].classifyPoint(corners[4]) != HorseRadish::Plane::Position::BEHIND)	continue;
+		if (mPlanes[i].classifyPoint(corners[5]) != HorseRadish::Plane::Position::BEHIND)	continue;
+		if (mPlanes[i].classifyPoint(corners[6]) != HorseRadish::Plane::Position::BEHIND)	continue;
+		if (mPlanes[i].classifyPoint(corners[7]) != HorseRadish::Plane::Position::BEHIND)	continue;
 
 		return IntersectionType::FullOutside;
 	}
@@ -129,16 +129,16 @@ Frustum::IntersectionType Frustum::classifyFrustum(const Frustum &frustum) const
 
 	getCorners(corners);
 
-	for (int i = 0; i < 6; i++)
+	for (size_t i = 0; i < 6; i++)
 	{
-		if (frustum.mPlanes[i].ClassifyPoint(corners[0]) != HorseRadish::Plane::Position::BEHIND)	continue;
-		if (frustum.mPlanes[i].ClassifyPoint(corners[1]) != HorseRadish::Plane::Position::BEHIND)	continue;
-		if (frustum.mPlanes[i].ClassifyPoint(corners[2]) != HorseRadish::Plane::Position::BEHIND)	continue;
-		if (frustum.mPlanes[i].ClassifyPoint(corners[3]) != HorseRadish::Plane::Position::BEHIND)	continue;
-		if (frustum.mPlanes[i].ClassifyPoint(corners[4]) != HorseRadish::Plane::Position::BEHIND)	continue;
-		if (frustum.mPlanes[i].ClassifyPoint(corners[5]) != HorseRadish::Plane::Position::BEHIND)	continue;
-		if (frustum.mPlanes[i].ClassifyPoint(corners[6]) != HorseRadish::Plane::Position::BEHIND)	continue;
-		if (frustum.mPlanes[i].ClassifyPoint(corners[7]) != HorseRadish::Plane::Position::BEHIND)	continue;
+		if (frustum.mPlanes[i].classifyPoint(corners[0]) != HorseRadish::Plane::Position::BEHIND)	continue;
+		if (frustum.mPlanes[i].classifyPoint(corners[1]) != HorseRadish::Plane::Position::BEHIND)	continue;
+		if (frustum.mPlanes[i].classifyPoint(corners[2]) != HorseRadish::Plane::Position::BEHIND)	continue;
+		if (frustum.mPlanes[i].classifyPoint(corners[3]) != HorseRadish::Plane::Position::BEHIND)	continue;
+		if (frustum.mPlanes[i].classifyPoint(corners[4]) != HorseRadish::Plane::Position::BEHIND)	continue;
+		if (frustum.mPlanes[i].classifyPoint(corners[5]) != HorseRadish::Plane::Position::BEHIND)	continue;
+		if (frustum.mPlanes[i].classifyPoint(corners[6]) != HorseRadish::Plane::Position::BEHIND)	continue;
+		if (frustum.mPlanes[i].classifyPoint(corners[7]) != HorseRadish::Plane::Position::BEHIND)	continue;
 
 		return IntersectionType::FullOutside;
 	}
@@ -148,20 +148,26 @@ Frustum::IntersectionType Frustum::classifyFrustum(const Frustum &frustum) const
 
 float Frustum::dotNormals(const PlaneIndex planeA, const PlaneIndex planeB) const
 {
-	if (planeA < 0 || planeA>5 || planeB < 0 || planeB>5)
+	if ((planeA > 5) || (planeB > 5))
 		return 0.0f;
 
-	HorseRadish::Vector3f normalB;
-	mPlanes[planeB].GetNormal(normalB);
-	return mPlanes[planeA].GetDotNormal(normalB);
+	HorseRadish::Vector3f normalB = mPlanes[planeB].normal();
+	return mPlanes[planeA].getDotNormal(normalB);
 }
 
-void Frustum::calculateFrustum(const float * const transformation)
+void Frustum::calculateFrustum(const HorseRadish::Matrix& transformation)
 {
-	HorseRadish::Matrix matTrans;
+	HorseRadish::Vector4f col1 = transformation.getColumn(0);
+	HorseRadish::Vector4f col2 = transformation.getColumn(1);
+	HorseRadish::Vector4f col3 = transformation.getColumn(2);
+	HorseRadish::Vector4f col4 = transformation.getColumn(3);
 
-	matTrans.set(transformation);
+	extractPlanes(col1, col2, col3, col4);
+}
 
+void Frustum::calculateFrustum(const HorseRadish::Matrix& projection, const HorseRadish::Matrix& modelview)
+{
+	auto matTrans = projection * modelview;
 	HorseRadish::Vector4f col1 = matTrans.getColumn(0);
 	HorseRadish::Vector4f col2 = matTrans.getColumn(1);
 	HorseRadish::Vector4f col3 = matTrans.getColumn(2);
@@ -170,32 +176,13 @@ void Frustum::calculateFrustum(const float * const transformation)
 	extractPlanes(col1, col2, col3, col4);
 }
 
-void Frustum::calculateFrustum(const float * const matProjection, const float * const matModelview)
+void Frustum::calculateFrustum(const HorseRadish::Matrix& modelView, const HorseRadish::Matrix& projection, const HorseRadish::Vector3f &pos, float zNear, float zFar)
 {
-	HorseRadish::Matrix matTrans;
+	mPosition = pos;
+	mZNear = zNear;
+	mZFar = zFar;
 
-	matTrans.set(matProjection);
-	matTrans *= matModelview;
-
-	HorseRadish::Vector4f col1 = matTrans.getColumn(0);
-	HorseRadish::Vector4f col2 = matTrans.getColumn(1);
-	HorseRadish::Vector4f col3 = matTrans.getColumn(2);
-	HorseRadish::Vector4f col4 = matTrans.getColumn(3);
-
-	extractPlanes(col1, col2, col3, col4);
-}
-
-void Frustum::calculateFrustum(const float * const modelViewMatrix, const float * const projectionMatrix, const HorseRadish::Vector3f &pos, const float zNear, const float zFar)
-{
-	HorseRadish::Matrix fClip;
-
-	fClip.set(projectionMatrix);
-	fClip *= HorseRadish::Matrix(modelViewMatrix);
-
-	this->mPosition = pos;
-	this->mZNear = zNear;
-	this->mZFar = zFar;
-
+	auto fClip = projection * modelView;
 	HorseRadish::Vector4f col1 = fClip.getColumn(0);
 	HorseRadish::Vector4f col2 = fClip.getColumn(1);
 	HorseRadish::Vector4f col3 = fClip.getColumn(2);
@@ -206,53 +193,34 @@ void Frustum::calculateFrustum(const float * const modelViewMatrix, const float 
 
 void Frustum::setIndividualPlane(const PlaneIndex planeIndex, const HorseRadish::Plane &plane)
 {
-	if (planeIndex < 0 || planeIndex>5)
+	if (planeIndex > 5)
 		return;
 	mPlanes[planeIndex] = plane;
 }
 
-void Frustum::setFrustum(const Frustum *const frustum)
-{
-	mPlanes[0] = frustum->mPlanes[0];
-	mPlanes[1] = frustum->mPlanes[1];
-	mPlanes[2] = frustum->mPlanes[2];
-	mPlanes[3] = frustum->mPlanes[3];
-	mPlanes[4] = frustum->mPlanes[4];
-	mPlanes[5] = frustum->mPlanes[5];
-}
-
 void Frustum::setFrustum(const HorseRadish::Vector3f &bboxMin, const HorseRadish::Vector3f &bboxMax)
 {
-	mPlanes[PlaneLeft].Set(1.0f, 0.0f, 0.0f, -bboxMin[0]);
-	mPlanes[PlaneRight].Set(-1.0f, 0.0f, 0.0f, bboxMax[0]);
-	mPlanes[PlaneTop].Set(0.0f, -1.0f, 0.0f, bboxMax[1]);
-	mPlanes[PlaneBottom].Set(0.0f, 1.0f, 0.0f, -bboxMin[1]);
-	mPlanes[PlaneNear].Set(0.0f, 0.0f, -1.0f, bboxMax[2]);
-	mPlanes[PlaneFar].Set(0.0f, 0.0f, 1.0f, -bboxMin[2]);
+	mPlanes[PlaneLeft].set(1.0f, 0.0f, 0.0f, -bboxMin[0]);
+	mPlanes[PlaneRight].set(-1.0f, 0.0f, 0.0f, bboxMax[0]);
+	mPlanes[PlaneTop].set(0.0f, -1.0f, 0.0f, bboxMax[1]);
+	mPlanes[PlaneBottom].set(0.0f, 1.0f, 0.0f, -bboxMin[1]);
+	mPlanes[PlaneNear].set(0.0f, 0.0f, -1.0f, bboxMax[2]);
+	mPlanes[PlaneFar].set(0.0f, 0.0f, 1.0f, -bboxMin[2]);
 }
 
 void Frustum::setFrustum(const HorseRadish::Vector3f &center, const float radius)
 {
-	mPlanes[PlaneLeft].Set(1.0f, 0.0f, 0.0f, -(center[0] - radius));
-	mPlanes[PlaneRight].Set(-1.0f, 0.0f, 0.0f, center[0] + radius);
-	mPlanes[PlaneTop].Set(0.0f, -1.0f, 0.0f, center[1] + radius);
-	mPlanes[PlaneBottom].Set(0.0f, 1.0f, 0.0f, -(center[1] - radius));
-	mPlanes[PlaneNear].Set(0.0f, 0.0f, -1.0f, center[2] + radius);
-	mPlanes[PlaneFar].Set(0.0f, 0.0f, 1.0f, -(center[2] - radius));
+	mPlanes[PlaneLeft].set(1.0f, 0.0f, 0.0f, -(center[0] - radius));
+	mPlanes[PlaneRight].set(-1.0f, 0.0f, 0.0f, center[0] + radius);
+	mPlanes[PlaneTop].set(0.0f, -1.0f, 0.0f, center[1] + radius);
+	mPlanes[PlaneBottom].set(0.0f, 1.0f, 0.0f, -(center[1] - radius));
+	mPlanes[PlaneNear].set(0.0f, 0.0f, -1.0f, center[2] + radius);
+	mPlanes[PlaneFar].set(0.0f, 0.0f, 1.0f, -(center[2] - radius));
 }
 
 void Frustum::setFrustum(const HorseRadish::BBox &bbox)
 {
-	HorseRadish::Vector3f minP, maxP;
-
-	bbox.GetMax(maxP);
-	bbox.GetMin(minP);
-	setFrustum(minP, maxP);
-}
-
-Frustum::Frustum()
-	: mZNear(0.0f), mZFar(0.0f)
-{
+	setFrustum(bbox.min(), bbox.max());
 }
 
 bool Frustum::testCube(const HorseRadish::Vector3f &point, const float &size) const
@@ -270,21 +238,21 @@ bool Frustum::testCube(const HorseRadish::Vector3f &point, const float &size) co
 
 	for (int iCurPlane = 0; iCurPlane < 6; iCurPlane++)
 	{
-		if (mPlanes[iCurPlane].GetDistance(pCubo[0]) > 0.0f)
+		if (mPlanes[iCurPlane].distance(pCubo[0]) > 0.0f)
 			continue;
-		if (mPlanes[iCurPlane].GetDistance(pCubo[1]) > 0.0f)
+		if (mPlanes[iCurPlane].distance(pCubo[1]) > 0.0f)
 			continue;
-		if (mPlanes[iCurPlane].GetDistance(pCubo[2]) > 0.0f)
+		if (mPlanes[iCurPlane].distance(pCubo[2]) > 0.0f)
 			continue;
-		if (mPlanes[iCurPlane].GetDistance(pCubo[3]) > 0.0f)
+		if (mPlanes[iCurPlane].distance(pCubo[3]) > 0.0f)
 			continue;
-		if (mPlanes[iCurPlane].GetDistance(pCubo[4]) > 0.0f)
+		if (mPlanes[iCurPlane].distance(pCubo[4]) > 0.0f)
 			continue;
-		if (mPlanes[iCurPlane].GetDistance(pCubo[5]) > 0.0f)
+		if (mPlanes[iCurPlane].distance(pCubo[5]) > 0.0f)
 			continue;
-		if (mPlanes[iCurPlane].GetDistance(pCubo[6]) > 0.0f)
+		if (mPlanes[iCurPlane].distance(pCubo[6]) > 0.0f)
 			continue;
-		if (mPlanes[iCurPlane].GetDistance(pCubo[7]) > 0.0f)
+		if (mPlanes[iCurPlane].distance(pCubo[7]) > 0.0f)
 			continue;
 
 		return false;
@@ -309,21 +277,21 @@ bool Frustum::testBox(const HorseRadish::Vector3f &min, const HorseRadish::Vecto
 
 	for (auto iPlane = 0; iPlane < 6; iPlane++)
 	{
-		if (mPlanes[iPlane].GetDistance(pBox[0]) > 0.0f)
+		if (mPlanes[iPlane].distance(pBox[0]) > 0.0f)
 			continue;
-		if (mPlanes[iPlane].GetDistance(pBox[1]) > 0.0f)
+		if (mPlanes[iPlane].distance(pBox[1]) > 0.0f)
 			continue;
-		if (mPlanes[iPlane].GetDistance(pBox[2]) > 0.0f)
+		if (mPlanes[iPlane].distance(pBox[2]) > 0.0f)
 			continue;
-		if (mPlanes[iPlane].GetDistance(pBox[3]) > 0.0f)
+		if (mPlanes[iPlane].distance(pBox[3]) > 0.0f)
 			continue;
-		if (mPlanes[iPlane].GetDistance(pBox[4]) > 0.0f)
+		if (mPlanes[iPlane].distance(pBox[4]) > 0.0f)
 			continue;
-		if (mPlanes[iPlane].GetDistance(pBox[5]) > 0.0f)
+		if (mPlanes[iPlane].distance(pBox[5]) > 0.0f)
 			continue;
-		if (mPlanes[iPlane].GetDistance(pBox[6]) > 0.0f)
+		if (mPlanes[iPlane].distance(pBox[6]) > 0.0f)
 			continue;
-		if (mPlanes[iPlane].GetDistance(pBox[7]) > 0.0f)
+		if (mPlanes[iPlane].distance(pBox[7]) > 0.0f)
 			continue;
 
 		return false;
@@ -334,18 +302,14 @@ bool Frustum::testBox(const HorseRadish::Vector3f &min, const HorseRadish::Vecto
 
 bool Frustum::testBox(const HorseRadish::BBox &bbox) const
 {
-	HorseRadish::Vector3f minP, maxP;
-
-	bbox.GetMax(maxP);
-	bbox.GetMin(minP);
-	return (testBox(minP, maxP));
+	return testBox(bbox.min(), bbox.max());
 }
 
 bool Frustum::testSphere(const HorseRadish::Vector3f &center, const float &radius) const
 {
 	for (auto iPlane = 0; iPlane < 6; iPlane++)
 	{
-		if (mPlanes[iPlane].GetDistance(center) <= -radius)
+		if (mPlanes[iPlane].distance(center) <= -radius)
 			return false;
 	}
 	
@@ -354,45 +318,40 @@ bool Frustum::testSphere(const HorseRadish::Vector3f &center, const float &radiu
 
 bool Frustum::testSphere(const HorseRadish::BSphere &bsphere) const
 {
-	HorseRadish::Vector3f ponto;
-
-	bsphere.GetCenter(ponto);
-
-	return testSphere(ponto, bsphere.GetRadius());
+	return testSphere(bsphere.center(), bsphere.radius());
 }
 
 bool Frustum::testSphereBox(const HorseRadish::BSphere &bsphere, const HorseRadish::BBox &bbox) const
 {
-	if (testSphere(bsphere) == false)
+	if (!testSphere(bsphere))
 		return false;
 	return testBox(bbox);
 }
 
 bool Frustum::testPoint(const HorseRadish::Vector3f &point) const
 {
-	for (auto iPlane = 0; iPlane < 6; iPlane++)
+	for (size_t iPlane = 0; iPlane < 6; iPlane++)
 	{
-		if (mPlanes[iPlane].GetDistance(point) <= 0.0f)
+		if (mPlanes[iPlane].distance(point) <= 0.0f)
 			return false;
 	}
 
 	return true;
 }
 
-bool Frustum::testPolygon(const HorseRadish::Vector3f * const points, const int numPoints) const
+bool Frustum::testPolygon(const HorseRadish::Vector3f * const points, size_t numPoints) const
 {
-	for (int iPlane = 0; iPlane < 6; iPlane++)
+	for (size_t iPlane = 0; iPlane < 6; iPlane++)
 	{
-		int j;
+		size_t j;
 		for (j = 0; j < numPoints; j++)
 		{
-			if (mPlanes[iPlane].GetDistance(points[j]) > 0.0f)
+			if (mPlanes[iPlane].distance(points[j]) > 0.0f)
 				break;
 		}
 
-		if (j != numPoints)
-			continue;
-		return false;
+		if (j == numPoints)
+			return false;
 	}
 
 	return true;
@@ -402,13 +361,13 @@ bool Frustum::testSquare(const HorseRadish::Vector3f points[4]) const
 {
 	for (int iPlane = 0; iPlane < 6; iPlane++)
 	{
-		if (mPlanes[iPlane].GetDistance(points[0]) > 0.0f)
+		if (mPlanes[iPlane].distance(points[0]) > 0.0f)
 			continue;
-		if (mPlanes[iPlane].GetDistance(points[1]) > 0.0f)
+		if (mPlanes[iPlane].distance(points[1]) > 0.0f)
 			continue;
-		if (mPlanes[iPlane].GetDistance(points[2]) > 0.0f)
+		if (mPlanes[iPlane].distance(points[2]) > 0.0f)
 			continue;
-		if (mPlanes[iPlane].GetDistance(points[3]) > 0.0f)
+		if (mPlanes[iPlane].distance(points[3]) > 0.0f)
 			continue;
 
 		return false;
@@ -421,11 +380,11 @@ bool Frustum::testTri(const HorseRadish::Vector3f points[3]) const
 {
 	for (int iPlane = 0; iPlane < 6; iPlane++)
 	{
-		if (mPlanes[iPlane].GetDistance(points[0]) > 0.0f)
+		if (mPlanes[iPlane].distance(points[0]) > 0.0f)
 			continue;
-		if (mPlanes[iPlane].GetDistance(points[1]) > 0.0f)
+		if (mPlanes[iPlane].distance(points[1]) > 0.0f)
 			continue;
-		if (mPlanes[iPlane].GetDistance(points[2]) > 0.0f)
+		if (mPlanes[iPlane].distance(points[2]) > 0.0f)
 			continue;
 
 		return false;
@@ -436,14 +395,13 @@ bool Frustum::testTri(const HorseRadish::Vector3f points[3]) const
 
 bool Frustum::testSweptSphere(const HorseRadish::Vector3f &sphereCenter, const float &sphereRadius, const HorseRadish::Vector3f &sweepDir) const
 {
-	float displacements[12], a, b;
+	float displacements[12];
 	HorseRadish::Vector3f auxCenter;
 
-	int cnt = 0;
-	bool inFrustum = false;
-
-	for (int iPlane = 0; iPlane < 6; iPlane++)
+	size_t cnt = 0;
+	for (size_t iPlane = 0; iPlane < 6; iPlane++)
 	{
+		float a, b;
 		if (sweptSpherePlaneIntersect(a, b, mPlanes[iPlane], sphereCenter, sphereRadius, sweepDir))
 		{
 			if (a >= 0.f)
@@ -453,11 +411,12 @@ bool Frustum::testSweptSphere(const HorseRadish::Vector3f &sphereCenter, const f
 		}
 	}
 
-	for (int i = 0; i < cnt; i++)
+	bool inFrustum = false;
+	for (size_t i = 0; i < cnt; i++)
 	{
-		auxCenter[0] = sweepDir[0] * displacements[i] + sphereCenter[0];
-		auxCenter[1] = sweepDir[1] * displacements[i] + sphereCenter[1];
-		auxCenter[2] = sweepDir[2] * displacements[i] + sphereCenter[2];
+		auxCenter[0] = (sweepDir[0] * displacements[i]) + sphereCenter[0];
+		auxCenter[1] = (sweepDir[1] * displacements[i]) + sphereCenter[1];
+		auxCenter[2] = (sweepDir[2] * displacements[i]) + sphereCenter[2];
 
 		inFrustum |= testSphere(auxCenter, sphereRadius * 1.1f);
 	}

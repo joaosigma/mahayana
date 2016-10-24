@@ -14,11 +14,6 @@ namespace HorseRadish
 			std::memset(mData, 0, sizeof(float) * 4);
 		}
 
-		explicit Quaternion(Quaternion const &quat)
-		{
-			std::memcpy(mData, quat.mData, sizeof(float) * 4);
-		}
-
 		explicit Quaternion(const float qx, const float qy, const float qz, const float qw)
 		{
 			mData[0] = qx;
@@ -58,10 +53,10 @@ namespace HorseRadish
 		void setFromVectors(const Vector3f &v1, const Vector3f &v2);
 		void setIdentity();
 
-		void scaleAngle(const float &scale);
+		void scaleAngle(float scale);
 		void invert();
 		void normalize();
-		void mulEulerAngles(const float &angX, const float &angY, const float &angZ);
+		void mulEulerAngles(float angX, float angY, float angZ);
 		void expandW();
 		void expandWNormalize();
 

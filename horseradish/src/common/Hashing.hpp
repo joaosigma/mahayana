@@ -23,23 +23,23 @@ namespace HorseRadish
 		static const unsigned long crctable32[256];
 
 		static void initMD5(DataMD5 * const dataMD5);
-		static void updateMD5(DataMD5 * const dataMD5, const unsigned char *buffer, unsigned int bufferSize);
+		static void updateMD5(DataMD5 * const dataMD5, const unsigned char *buffer, size_t bufferSize);
 		static void transformMD5(unsigned int state[4], unsigned int const in[16]);
 		static void finishMD5(DataMD5 * const dataMD5, unsigned char digest[16]);
 
 		static void transformSHA1(unsigned int state[5], const unsigned char buffer[64]);
 		static void initSHA1(DataSHA1 * const context);
-		static void updateSHA1(DataSHA1 * const context, const unsigned char* data, unsigned int len);
+		static void updateSHA1(DataSHA1 * const context, const unsigned char* data, size_t len);
 		static void finishSHA1(unsigned char digest[20], DataSHA1 * const context);
 
 	public:
-		static unsigned char CalculateCRC8(const void * const buffer, unsigned int bufferSize);
-		static unsigned short CalculateCRC16(const void * const buffer, unsigned int bufferSize);
-		static unsigned long CalculateCRC32(const void * const buffer, unsigned int bufferSize);
-		static void CalculateMD5(const void * const buffer, const unsigned int bufferSize, hData128 * const hash);
-		static void CalculateSHA1(const void * const buffer, const unsigned int bufferSize, hData160 * const hash);
-		static unsigned long CalculateMD5Short(const void * const buffer, const unsigned int bufferSize);
-		static unsigned int SuperFastHash(const void * const buffer, unsigned int bufferSize);
+		static unsigned char calculateCRC8(const void * const buffer, size_t bufferSize);
+		static unsigned short calculateCRC16(const void * const buffer, size_t bufferSize);
+		static unsigned long calculateCRC32(const void * const buffer, size_t bufferSize);
+		static void calculateMD5(const void * const buffer, size_t bufferSize, hData128 * const hash);
+		static void calculateSHA1(const void * const buffer, size_t bufferSize, hData160 * const hash);
+		static unsigned long calculateMD5Short(const void * const buffer, size_t bufferSize);
+		static unsigned int superFastHash(const void * const buffer, size_t bufferSize);
 	};
 
 } //HorseRadish

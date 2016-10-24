@@ -8,61 +8,61 @@ namespace HorseRadish
 		mtwister.seed(rd());
 	}
 
-	int Random::NextInteger()
+	int Random::nextInteger()
 	{
 		std::uniform_int_distribution<> dist;
 		return dist(mtwister);
 	}
 
-	int Random::NextInteger(int max)
+	int Random::nextInteger(int max)
 	{
 		std::uniform_int_distribution<> dist(0, max);
 		return dist(mtwister);
 	}
 
-	int Random::NextInteger(int min, int max)
+	int Random::nextInteger(int min, int max)
 	{
 		std::uniform_int_distribution<> dist(min, max);
 		return dist(mtwister);
 	}
 
-	double Random::NextDouble()
+	double Random::nextDouble()
 	{
 		std::uniform_real_distribution<> dist;
 		return dist(mtwister);
 	}
 
-	double Random::NextDouble(double max)
+	double Random::nextDouble(double max)
 	{
 		std::uniform_real_distribution<> dist(0.0, max);
 		return dist(mtwister);
 	}
 
-	double Random::NextDouble(double min, double max)
+	double Random::nextDouble(double min, double max)
 	{
 		std::uniform_real_distribution<> dist(min, max);
 		return dist(mtwister);
 	}
 
-	double Random::GetDistributionNormal(const double mean, const double standardDeviation)
+	double Random::distributionNormal(double mean, double standardDeviation)
 	{
 		std::normal_distribution<> dist(mean, standardDeviation);
 		return dist(mtwister);
 	}
 
-	bool Random::GetDistributionBernoulli(const double pSuccess)
+	bool Random::distributionBernoulli(double pSuccess)
 	{
 		std::bernoulli_distribution dist(pSuccess);
 		return dist(mtwister);
 	}
 
-	int Random::GetDistributionPoisson(const double mean)
+	int Random::distributionPoisson(double mean)
 	{
 		std::poisson_distribution<> dist(mean);
 		return dist(mtwister);
 	}
 
-	int Random::GetDistributionBinomial(const int nDraw, const double pChange)
+	int Random::distributionBinomial(int nDraw, double pChange)
 	{
 		std::binomial_distribution<> dist(nDraw, pChange);
 		return dist(mtwister);

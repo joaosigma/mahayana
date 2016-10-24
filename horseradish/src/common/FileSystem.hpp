@@ -19,8 +19,8 @@ namespace HorseRadish
 		class FileSystem
 		{
 		public:
-			enum MountType { MountTypePath, MountTypeZIP };
-			enum ChangeType { FileName = (1 << 0), FileSize = (1 << 1), FileLastWrite = (1 << 2) };
+			enum class MountType { Path, ZIP };
+			enum ChangeType : size_t { FileName = (1 << 0), FileSize = (1 << 1), FileLastWrite = (1 << 2) };
 
 			static const int FolderNameLength;
 			static const int FileNameLength;
@@ -30,11 +30,16 @@ namespace HorseRadish
 			class WatchChangeData
 			{
 			public:
-				int changeID;
-				HANDLE changeHandle;
+				int changeID = 0;
+				HANDLE changeHandle = nullptr;
 
-				WatchChangeData() : changeID(0), changeHandle(nullptr) { }
-				WatchChangeData(int changeID, HANDLE changeHandle) : changeID(changeID), changeHandle(changeHandle) { }
+				WatchChangeData()
+				{ }
+
+				WatchChangeData(int changeID, HANDLE changeHandle)
+					: changeID(changeID)
+					, changeHandle(changeHandle)
+				{ }
 			};
 
 			class MountData
@@ -46,10 +51,10 @@ namespace HorseRadish
 				MountData(const char* const mountPoint);
 				virtual ~MountData();
 
-				virtual FileSystem::MountType GetMountType() const = 0;
-				virtual void FilesEnumerate() = 0;
-				virtual std::unique_ptr<Streams::Stream> FileRead(const char* const filePath) = 0;
-				virtual bool FileExists(const char* const filePath) = 0;
+				virtual FileSystem::MountType mountType() const = 0;
+				virtual void filesEnumerate() = 0;
+				virtual std::unique_ptr<Streams::Stream> fileRead(const char* const filePath) = 0;
+				virtual bool fileExists(const char* const filePath) = 0;
 			};
 
 			class MountDataPath : public MountData
@@ -60,11 +65,11 @@ namespace HorseRadish
 				MountDataPath(const char* const baseFolder, const char* const mountPoint);
 				~MountDataPath();
 
-				FileSystem::MountType GetMountType() const;
+				FileSystem::MountType mountType() const;
 
-				void FilesEnumerate();
-				std::unique_ptr<Streams::Stream> FileRead(const char* const filePath);
-				bool FileExists(const char* const filePath);
+				void filesEnumerate();
+				std::unique_ptr<Streams::Stream> fileRead(const char* const filePath);
+				bool fileExists(const char* const filePath);
 			};
 
 			class MountDataZip : public MountData
@@ -73,7 +78,7 @@ namespace HorseRadish
 				struct ZipEntry
 				{
 					unz_file_pos filePos;
-					int fileSize;
+					size_t fileSize;
 				};
 				unzFile mZipFile;
 				HorseRadish::IO::Path mZipPath;
@@ -83,36 +88,36 @@ namespace HorseRadish
 				MountDataZip(const char* const zipPath, const char* const mountPoint);
 				~MountDataZip();
 
-				FileSystem::MountType GetMountType() const;
-				size_t GetNumberFiles() const;
+				FileSystem::MountType mountType() const;
+				size_t numberFiles() const;
 
-				void FilesEnumerate();
-				std::unique_ptr<Streams::Stream> FileRead(const char* const filePath);
-				bool FileExists(const char* const filePath);
+				void filesEnumerate();
+				std::unique_ptr<Streams::Stream> fileRead(const char* const filePath);
+				bool fileExists(const char* const filePath);
 			};
 
-			unsigned int mMaxNumMounts;
+			size_t mMaxNumMounts = 0;
 			std::vector<std::unique_ptr<MountData>> mListMounts;
 			std::vector<WatchChangeData> mListWatchChange;
 
 		public:
-			FileSystem(unsigned int maxNumMounts);
+			FileSystem(size_t maxNumMounts);
 			~FileSystem();
 
-			static void FindFiles(const std::string& baseFolderAndFilter, const bool returnFilesFullPath, std::function<void(const HorseRadish::IO::Path &filePath, const HorseRadish::hUInt64 &fileSize)> actionFileFound);
-			static bool FileExists(const char* const filePath);
+			static void findFiles(const std::string& baseFolderAndFilter, const bool returnFilesFullPath, std::function<void(const HorseRadish::IO::Path &filePath, const HorseRadish::hUInt64 &fileSize)> actionFileFound);
+			static bool fileExists(const char* const filePath);
 
-			bool MountPath(const HorseRadish::IO::Path &baseFolder, const char* const mountPoint);
-			bool MountZip(const HorseRadish::IO::Path &zipPath, const char* const mountPoint, size_t* const numFilesZip = nullptr);
+			bool mountPath(const HorseRadish::IO::Path &baseFolder, const char* const mountPoint);
+			bool mountZip(const HorseRadish::IO::Path &zipPath, const char* const mountPoint, size_t* const numFilesZip = nullptr);
 
-			std::unique_ptr<Streams::Stream> FileRead(const char * const filePath);
-			std::unique_ptr<Streams::Stream> FileRead(const char * const filePath, const MountType mountType);
+			std::unique_ptr<Streams::Stream> fileRead(const char * const filePath);
+			std::unique_ptr<Streams::Stream> fileRead(const char * const filePath, MountType mountType);
 
 			std::string readFileAsString(const char* const filePath);
 
-			int WatchChangeCreate(const char* const baseFolder, bool includeSubFolders, const ChangeType changeType);
-			void WatchChangeDelete(const int watchChangeID);
-			bool WatchChanged(const int watchChangeID);
+			int watchChangeCreate(const char* const baseFolder, bool includeSubFolders, ChangeType changeType);
+			void watchChangeDelete(const int watchChangeID);
+			bool watchChanged(const int watchChangeID);
 		};
 
 	} //IO

@@ -4,7 +4,6 @@
 
 namespace HorseRadish
 {
-
 	void Quaternion::operator+=(const Quaternion &quat)
 	{
 		_mm_storeu_ps(mData, _mm_add_ps(_mm_loadu_ps(mData), _mm_loadu_ps(quat.mData)));
@@ -21,10 +20,10 @@ namespace HorseRadish
 		float qY = mData[1];
 		float qZ = mData[2];
 
-		mData[0] = mData[3] * quat.mData[0] + qX*quat.mData[3] + qY*quat.mData[2] - qZ*quat.mData[1];
-		mData[1] = mData[3] * quat.mData[1] - qX*quat.mData[2] + qY*quat.mData[3] + qZ*quat.mData[0];
-		mData[2] = mData[3] * quat.mData[2] + qX*quat.mData[1] - qY*quat.mData[0] + qZ*quat.mData[3];
-		mData[3] = mData[3] * quat.mData[3] - qX*quat.mData[0] - qY*quat.mData[1] - qZ*quat.mData[2];
+		mData[0] = (mData[3] * quat.mData[0]) + (qX * quat.mData[3]) + (qY * quat.mData[2]) - (qZ * quat.mData[1]);
+		mData[1] = (mData[3] * quat.mData[1]) - (qX * quat.mData[2]) + (qY * quat.mData[3]) + (qZ * quat.mData[0]);
+		mData[2] = (mData[3] * quat.mData[2]) + (qX * quat.mData[1]) - (qY * quat.mData[0]) + (qZ * quat.mData[3]);
+		mData[3] = (mData[3] * quat.mData[3]) - (qX * quat.mData[0]) - (qY * quat.mData[1]) - (qZ * quat.mData[2]);
 	}
 
 	void Quaternion::operator*=(const float &scalar)
@@ -133,9 +132,7 @@ namespace HorseRadish
 
 	void Quaternion::setFromMatrix4x4(const float * const matrix)
 	{
-		float s;
-
-		s = matrix[0] + matrix[5] + matrix[10];
+		float s = matrix[0] + matrix[5] + matrix[10];
 		if (s > 0.0f)
 		{
 			s = Math::sqrt(s + 1.0f);
@@ -201,10 +198,9 @@ namespace HorseRadish
 
 	void Quaternion::setSLerp(const Quaternion &from, const Quaternion &to, const float &t)
 	{
-		float dot, c, s;
-		Quaternion qAux;
+		float c, s;
 
-		dot = from.getDot(to);
+		float dot = from.getDot(to);
 		if (dot > 0.99999f)
 		{
 			mData[0] = from.mData[0] + (to.mData[0] + from.mData[0]) * t;
@@ -218,6 +214,7 @@ namespace HorseRadish
 		dot = Math::fClamp(dot, -1.0f, 1.0f);
 		Math::sinCos(acosf(dot)*t, s, c);
 
+		Quaternion qAux;
 		qAux.mData[0] = to.mData[0] - from.mData[0] * dot;
 		qAux.mData[1] = to.mData[1] - from.mData[1] * dot;
 		qAux.mData[2] = to.mData[2] - from.mData[2] * dot;
@@ -297,7 +294,7 @@ namespace HorseRadish
 		std::memcpy(mData, quat.mData, sizeof(float) * 4);
 	}
 
-	void Quaternion::scaleAngle(const float &scale)
+	void Quaternion::scaleAngle(float scale)
 	{
 		mData[3] *= scale;
 	}
@@ -316,7 +313,7 @@ namespace HorseRadish
 		_mm_storeu_ps(mData, _mm_mul_ps(vecTmp, vecMag));
 	}
 
-	void Quaternion::mulEulerAngles(const float &angX, const float &angY, const float &angZ)
+	void Quaternion::mulEulerAngles(float angX, float angY, float angZ)
 	{
 		float auxX, auxY, auxZ, auxW;
 		float degX, degY, degZ;
@@ -476,8 +473,6 @@ namespace HorseRadish
 
 	void Quaternion::getAxisAngle(Vector3f &vec, float * const ang) const
 	{
-		float auxX, auxY, auxZ;
-
 		float len = mData[0] * mData[0] + mData[1] * mData[1] + mData[2] * mData[2];
 		if (len == 0.0f)
 		{

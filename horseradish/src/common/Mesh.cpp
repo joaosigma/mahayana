@@ -581,9 +581,8 @@ void Mesh::centerMass(const Vector3f& center)
 {
 	auto bbox = getBoundingBox();
 
-	Vector3f minP, maxP;
-	bbox.GetMin(minP);
-	bbox.GetMax(maxP);
+	Vector3f minP = bbox.min();
+	Vector3f maxP = bbox.max();
 
 	auto distance = maxP - minP;
 	distance[0] = std::abs(distance[0])*0.5f;
@@ -605,9 +604,8 @@ void Mesh::confine(float maxAxis)
 {
 	auto bbox = getBoundingBox();
 
-	Vector3f minP, maxP;
-	bbox.GetMin(minP);
-	bbox.GetMax(maxP);
+	Vector3f minP = bbox.min();
+	Vector3f maxP = bbox.max();
 
 	auto distance = maxP - minP;
 	distance[0] = std::abs(distance[0]);
@@ -632,9 +630,8 @@ void Mesh::confine(const Vector3f& center, float maxAxis)
 {
 	auto bbox = getBoundingBox();
 
-	Vector3f minP, maxP;
-	bbox.GetMin(minP);
-	bbox.GetMax(maxP);
+	Vector3f minP = bbox.min();
+	Vector3f maxP = bbox.max();
 
 	auto distance = maxP - minP;
 	distance[0] = std::abs(distance[0]);

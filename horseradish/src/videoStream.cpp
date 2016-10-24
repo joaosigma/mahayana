@@ -443,7 +443,7 @@ void VideoStream::GetVideoRect(const int winWidth, const int winHeight, const bo
 {
 	int videoWidth, videoHeight;
 
-	rect.Reset();
+	rect.reset();
 
 	if (this->videoInfo.codecContext == nullptr)
 		return;
@@ -488,7 +488,7 @@ void VideoStream::GetVideoRectCenter(const float scale, const int winWidth, cons
 {
 	int videoWidth, videoHeight;
 
-	rect.Reset();
+	rect.reset();
 
 	if (this->videoInfo.codecContext == nullptr)
 		return;

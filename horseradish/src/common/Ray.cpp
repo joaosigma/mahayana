@@ -4,50 +4,50 @@
 
 namespace HorseRadish
 {
-	void Ray::setOrigin(const float &x, const float &y, const float &z)
+	void Ray::setOrigin(float x, float y, float z)
 	{
 		mOrigin[0] = x;
 		mOrigin[1] = y;
 		mOrigin[2] = z;
 	}
 
-	void Ray::setOrigin(const Vector3f &nOrigin)
+	void Ray::setOrigin(const Vector3f& origin)
 	{
-		mOrigin = nOrigin;
+		mOrigin = origin;
 	}
 
-	void Ray::setDirection(const float &x, const float &y, const float &z)
+	void Ray::setDirection(float x, float y, float z)
 	{
 		mDirection[0] = x;
 		mDirection[1] = y;
 		mDirection[2] = z;
 	}
 
-	void Ray::setDirection(const Vector3f &nDirection)
+	void Ray::setDirection(const Vector3f& direction)
 	{
-		mDirection[0] = nDirection[0];
-		mDirection[1] = nDirection[1];
-		mDirection[2] = nDirection[2];
+		mDirection[0] = direction[0];
+		mDirection[1] = direction[1];
+		mDirection[2] = direction[2];
 	}
 
-	void Ray::setLength(const float &nLength)
+	void Ray::setLength(float length)
 	{
-		mLength = std::abs(nLength);
+		mLength = std::abs(length);
 	}
 
-	void Ray::setSizedDirection(const float &x, const float &y, const float &z)
+	void Ray::setSizedDirection(float x, float y, float z)
 	{
 		mDirection.set(x, y, z);
 		mLength = mDirection.getMagnitude();
 		mDirection.normalize();
 	}
 
-	void Ray::setSizedDirection(const Vector3f &nSizedDirection)
+	void Ray::setSizedDirection(const Vector3f& sizedDirection)
 	{
-		mDirection = nSizedDirection;
+		mDirection = sizedDirection;
 		mDirection.normalize();
 
-		mLength = nSizedDirection.getMagnitude();
+		mLength = sizedDirection.getMagnitude();
 	}
 
 } //HorseRadish

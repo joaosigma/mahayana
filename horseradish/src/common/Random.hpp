@@ -12,18 +12,18 @@ namespace HorseRadish
 	public:
 		Random();
 
-		int NextInteger();
-		int NextInteger(int max);
-		int NextInteger(int min, int max);
+		int nextInteger();
+		int nextInteger(int max);
+		int nextInteger(int min, int max);
 
-		double NextDouble();
-		double NextDouble(double max);
-		double NextDouble(double min, double max);
+		double nextDouble();
+		double nextDouble(double max);
+		double nextDouble(double min, double max);
 
-		double GetDistributionNormal(const double mean, const double standardDeviation);
-		bool GetDistributionBernoulli(const double pSuccess);
-		int GetDistributionPoisson(const double mean);
-		int GetDistributionBinomial(const int nDraw, const double pChange);
+		double distributionNormal(double mean, double standardDeviation);
+		bool distributionBernoulli(double pSuccess);
+		int distributionPoisson(double mean);
+		int distributionBinomial(int nDraw, double pChange);
 	};
 
 } //HorseRadish

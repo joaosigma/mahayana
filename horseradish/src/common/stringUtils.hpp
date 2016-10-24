@@ -26,21 +26,16 @@ namespace HorseRadish
 
 			public:
 				utf8Iterator(const std::string& str)
-				{
-					mStrIt = mStrItNext = str.begin();
-					mStrItEnd = str.end();
-				}
+					: mStrIt(str.begin()), mStrItNext(str.begin()), mStrItEnd(str.end())
+				{ }
 
 				utf8Iterator(std::string::const_iterator itBegin, std::string::const_iterator itEnd)
-					: mStrIt(itBegin), mStrItEnd(itEnd)
+					: mStrIt(itBegin), mStrItNext(itBegin), mStrItEnd(itEnd)
 				{ }
 
 				utf8Iterator(const utf8Iterator& it)
-				{
-					mStrIt = it.mStrIt;
-					mStrItEnd = it.mStrItEnd;
-					mStrItNext = it.mStrItNext;
-				}
+					: mStrIt(it.mStrIt), mStrItNext(it.mStrItNext), mStrItEnd(it.mStrItEnd)
+				{ }
 
 				bool operator==(const utf8Iterator& other)
 				{

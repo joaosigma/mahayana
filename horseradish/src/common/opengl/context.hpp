@@ -15,28 +15,30 @@ public:
 private:
 	struct Info{
 		std::string version, vendor, renderer, glslVersion;
-		int versionMajor, versionMinor;
-		int maxDrawBuffers, maxColorAttachments, maxTextureSize, maxTexture3DSize, maxTextureCubemapSize, maxTextureRectSize;
-		float maxAnisotropy;
+		int versionMajor = 0, versionMinor = 0;
+		int maxDrawBuffers = 0, maxColorAttachments = 0, maxTextureSize = 0, maxTexture3DSize = 0, maxTextureCubemapSize = 0, maxTextureRectSize = 0;
+		float maxAnisotropy = 0.0f;
 	} mInfo;
 
-	int mExtsAvailable;
+	int mExtsAvailable = 0;
 
 protected:
-	Context();
+	Context()
+	{ }
 
 	bool initContext();
 
 public:
-	virtual ~Context();
+	virtual ~Context()
+	{ }
 
 	bool isExtPresent(Extensions extension) const;
 	bool isExtPresent(const char * const extensionName) const;
 	void dispatchDebugMessages() const;
 
-	bool getInfo(const InformationType &informationType, int &infoValue) const;
-	bool getInfo(const InformationType &informationType, float &infoValue) const;
-	bool getInfo(const InformationType &informationType, std::string &infoValue) const;
+	bool info(const InformationType &informationType, int &infoValue) const;
+	bool info(const InformationType &informationType, float &infoValue) const;
+	bool info(const InformationType &informationType, std::string &infoValue) const;
 };
 
 } } }

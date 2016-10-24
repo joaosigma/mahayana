@@ -2,7 +2,7 @@
 
 namespace HorseRadish { namespace OpenGL { namespace Tools {
 
-HorseRadish::Matrix Viewport::genMatrix2DProj(const int width, const int height)
+HorseRadish::Matrix Viewport::genMatrix2DProj(size_t width, size_t height)
 {
 	Viewport viewport(90.0f, width, height);
 	return viewport.mMatrices.mp2D;
@@ -47,22 +47,6 @@ void Viewport::calcMatrices()
 	mMatrices.mp2D[13] = -1.0f;
 }
 
-Viewport::Viewport(const unsigned int width, const unsigned int height)
-	: Viewport(90.0f, width, height)
-{
-}
-
-Viewport::Viewport(const float fov, const unsigned int width, const unsigned int height)
-	: Viewport(fov, width, height, 1.0f, 1000.0f)
-{
-}
-
-Viewport::Viewport(const float fov, const unsigned int width, const unsigned int height, const float zNear, const float zFar)
-	: mFov(fov), mZNear(zNear), mZFar(zFar), mWidth(width ? width : 1), mHeight(height ? height : 1)
-{
-	calcMatrices();
-}
-
 const HorseRadish::Matrix& Viewport::getProjection(ProjectionType projectionType) const
 {
 	switch (projectionType)
@@ -76,21 +60,14 @@ const HorseRadish::Matrix& Viewport::getProjection(ProjectionType projectionType
 	return mMatrices.mp3D;
 }
 
-void Viewport::getPointOnZNear(float * const center) const
-{
-	center[1] = mZNear * tan(mFov * 0.5f);
-	center[0] = (center[1]) * static_cast<float>(mWidth) / static_cast<float>(mHeight);
-	center[2] = mZNear;
-}
-
-void Viewport::getPointOnZNear(HorseRadish::Vector3f& center) const
+void Viewport::pointOnZNear(HorseRadish::Vector3f& center) const
 {
 	center[0] = mZNear * tan(mFov * 0.5f);
 	center[1] = (center[1]) * static_cast<float>(mWidth) / static_cast<float>(mHeight);
 	center[2] = mZNear;
 }
 
-void Viewport::projectPoint(ProjectionType projType, const HorseRadish::Matrix& modelView, HorseRadish::Vector3f * const listPoints, const int numPoints) const
+void Viewport::projectPoint(ProjectionType projType, const HorseRadish::Matrix& modelView, HorseRadish::Vector3f * const listPoints, size_t numPoints) const
 {
 	if (listPoints == nullptr || numPoints <= 0)
 		return;
@@ -112,12 +89,12 @@ void Viewport::projectPoint(ProjectionType projType, const HorseRadish::Matrix& 
 	}
 	transMat *= modelView;
 
-	float winX = static_cast<float>(mWidth);
-	float winY = static_cast<float>(mHeight);
+	auto winX = static_cast<float>(mWidth);
+	auto winY = static_cast<float>(mHeight);
 
-	float depthRange[2] = {0.0f, 1.0f}; //unless changeed with glDepthRange
+	float depthRange[2] = { 0.0f, 1.0f }; //unless changed with glDepthRange
 
-	for (int i = 0; i < numPoints; i++)
+	for (size_t i = 0; i < numPoints; i++)
 	{
 		HorseRadish::Vector4f result(listPoints[i], 1.0f);
 		transMat.transform(result);

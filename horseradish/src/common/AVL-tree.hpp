@@ -10,19 +10,18 @@ namespace HorseRadish
 	class AVLTree
 	{
 		struct Node {
-			int height;
+			int height = -1;
 			TKey key;
-			Node *bMiddle, *bLeft, *bRight, *bRoot;
+			Node *bMiddle = nullptr, *bLeft = nullptr, *bRight = nullptr, *bRoot = nullptr;
 
 			TValue value;
-			bool valueSet;
+			bool valueSet = false;
 
 			Node()
-				: height(-1), bMiddle(nullptr), bLeft(nullptr), bRight(nullptr), bRoot(nullptr), valueSet(false)
 			{ }
 
 			Node(Node * const bRoot, int height)
-				: height(height), bMiddle(nullptr), bLeft(nullptr), bRight(nullptr), bRoot(bRoot), valueSet(false)
+				: height(height), bRoot(bRoot)
 			{ }
 
 			bool isBalanced() const
@@ -48,18 +47,19 @@ namespace HorseRadish
 				height = HorseRadish::Math::iMax(bLeft ? bLeft->height : -1, bRight ? bRight->height : -1) + 1;
 			}
 		};
-		Node *mainTree;
+
+		Node *mMainTree = nullptr;
 
 		void avlRotateLL(Node * const tree)
 		{
-			//o meu pai passa a ter o meu filho (tenho de ver onde estou no meu pai)
+			//my parent gets my son
 			if (tree->bRoot)
 			{
-				//isto não pode acontecer se eu vim de um meio (quebro a string se muda-se de sitio)
+				//should not proceed if match
 				if (tree->bRoot->bMiddle == tree)
 					return;
 
-				//posso mudar
+				//exchange
 				if (tree->bRoot->bLeft == tree)
 					tree->bRoot->bLeft = tree->bLeft;
 				else
@@ -67,38 +67,38 @@ namespace HorseRadish
 			}
 			else
 			{
-				this->mainTree = tree->bLeft;
+				mMainTree = tree->bLeft;
 			}
 
-			//não esquecer que o filho tem um ponteiro para o pai, logo, tem de actualizar isso tambem
+			//dont' forget: the son points to the father also, so we must update it too
 			tree->bLeft->bRoot = tree->bRoot;
 
-			//mas eu deixo de ter um filho à esquerda (que é o meu filho que agora perdi), mas ganho os deles
+			//I no longer have a son on my left (which I lost), but I earn his
 			auto novoRoot = tree->bLeft;
 			tree->bLeft = novoRoot->bRight;
 			if (novoRoot->bRight)
 				novoRoot->bRight->bRoot = tree;
 
-			//como eu agora vou passar a ser filho do meu filho sei que tenho um valor maior que o dele, logo
-			//tenho de ser o seu filho da direita, logo o meu pai também passa a ser ele
+			//since I'll become the son of my son, I know that I'll have a bigger value,
+			//so I'll be on its right (and he's now my father)
 			novoRoot->bRight = tree;
 			tree->bRoot = novoRoot;
 
-			//recalculo o meu peso e o mesmo para o meu antigo filho
+			//recalculate my weight and also my formers son
 			tree->updateWeight();
 			novoRoot->updateWeight();
 		}
 
 		void avlRotateRR(Node * const tree)
 		{
-			//o meu pai passa a ter o meu filho (tenho de ver onde estou no meu pai)
+			//my parent gets my son
 			if (tree->bRoot)
 			{
-				//isto não pode acontecer se eu vim de um meio (quebro a string se muda-se de sitio)
+				//should not proceed if match
 				if (tree->bRoot->bMiddle == tree)
 					return;
 
-				//posso mudar
+				//exchange
 				if (tree->bRoot->bLeft == tree)
 					tree->bRoot->bLeft = tree->bRight;
 				else
@@ -106,42 +106,42 @@ namespace HorseRadish
 			}
 			else
 			{
-				this->mainTree = tree->bRight;
+				mMainTree = tree->bRight;
 			}
 
-			//não esquecer que o filho tem um ponteiro para o pai, logo, tem de actualizar isso tambem
+			//dont' forget: the son points to the father also, so we must update it too
 			tree->bRight->bRoot = tree->bRoot;
 
-			//mas eu deixo de ter um filho à esquerda (que é o meu filho que agora perdi), mas ganho os deles
+			//I no longer have a son on my left (which I lost), but I earn his
 			auto novoRoot = tree->bRight;
 			tree->bRight = novoRoot->bLeft;
 			if (novoRoot->bLeft)
 				novoRoot->bLeft->bRoot = tree;
 
-			//como eu agora vou passar a ser filho do meu filho sei que tenho um valor maior que o dele, logo
-			//tenho de ser o seu filho da direita, logo o meu pai também passa a ser ele
+			//since I'll become the son of my son, I know that I'll have a smaller value,
+			//so I'll be on its left (and he's now my father)
 			novoRoot->bLeft = tree;
 			tree->bRoot = novoRoot;
 
-			//recalculo o meu peso e o mesmo para o meu antigo filho
+			//recalculate my weight and also my formers son
 			tree->updateWeight();
 			novoRoot->updateWeight();
 		}
 
 		void avlRotateLR(Node * const tree)
 		{
-			//qual o novo root
+			//check out the new root
 			auto novoRoot = tree->bLeft->bRight;
 			novoRoot->bRoot = tree->bRoot;
 
-			//o meu pai passa a ter o meu neto (tenho de ver onde estou no meu pai)
+			//my parent gets my son
 			if (tree->bRoot)
 			{
-				//isto não pode acontecer se eu vim de um meio (quebro a string se muda-se de sitio)
+				//should not proceed if match
 				if (tree->bRoot->bMiddle == tree)
 					return;
 
-				//posso mudar
+				//exchange
 				if (tree->bRoot->bLeft == tree)
 					tree->bRoot->bLeft = novoRoot;
 				else
@@ -149,26 +149,26 @@ namespace HorseRadish
 			}
 			else
 			{
-				this->mainTree = novoRoot;
+				mMainTree = novoRoot;
 			}
 
-			//guardo os lados do novo root
+			//store both sides of the new root
 			auto lRoot = novoRoot->bLeft;
 			auto rRoot = novoRoot->bRight;
 
-			//os novos filhos do root
+			//adjust roots new sons
 			novoRoot->bLeft = tree->bLeft;
 			novoRoot->bRight = tree;
 			tree->bRoot = novoRoot;
 			tree->bLeft->bRoot = novoRoot;
 
-			//arranjos os outros dois
+			//adjust roots new grandsons
 			novoRoot->bLeft->bRight = lRoot;
 			novoRoot->bRight->bLeft = rRoot;
 			if (lRoot)	lRoot->bRoot = novoRoot->bLeft;
 			if (rRoot)	rRoot->bRoot = novoRoot->bRight;
 
-			//recalculo o meu peso e o mesmo para o meu antigo filho
+			//recalculate my weight and also my formers son
 			novoRoot->updateWeight();
 			novoRoot->bLeft->updateWeight();
 			novoRoot->bRight->updateWeight();
@@ -176,18 +176,18 @@ namespace HorseRadish
 
 		void avlRotateRL(Node * const tree)
 		{
-			//qual o novo root
+			//check out the new root
 			auto novoRoot = tree->bRight->bLeft;
 			novoRoot->bRoot = tree->bRoot;
 
-			//o meu pai passa a ter o meu filho (tenho de ver onde estou no meu pai)
+			//my parent gets my son
 			if (tree->bRoot)
 			{
-				//isto não pode acontecer se eu vim de um meio (quebro a string se muda-se de sitio)
+				//should not proceed if match
 				if (tree->bRoot->bMiddle == tree)
 					return;
 
-				//posso mudar
+				//exchange
 				if (tree->bRoot->bLeft == tree)
 					tree->bRoot->bLeft = novoRoot;
 				else
@@ -195,26 +195,26 @@ namespace HorseRadish
 			}
 			else
 			{
-				this->mainTree = novoRoot;
+				mMainTree = novoRoot;
 			}
 
-			//guardo os lados do novo root
+			//store both sides of the new root
 			auto lRoot = novoRoot->bLeft;
 			auto rRoot = novoRoot->bRight;
 
-			//os novos filhos do root
+			//adjust roots new sons
 			novoRoot->bLeft = tree;
 			novoRoot->bRight = tree->bRight;
 			tree->bRoot = novoRoot;
 			tree->bRight->bRoot = novoRoot;
 
-			//arranjos os outros dois
+			//adjust roots new grandsons
 			novoRoot->bLeft->bRight = lRoot;
 			novoRoot->bRight->bLeft = rRoot;
 			if (lRoot)	lRoot->bRoot = novoRoot->bLeft;
 			if (rRoot)	rRoot->bRoot = novoRoot->bRight;
 
-			//recalculo o meu peso e o mesmo para o meu antigo filho
+			//recalculate my weight and also my formers son
 			novoRoot->updateWeight();
 			novoRoot->bLeft->updateWeight();
 			novoRoot->bRight->updateWeight();
@@ -265,7 +265,7 @@ namespace HorseRadish
 				treeAddData(node->bRight, string, data);
 			}
 
-			//because we may have added stuff to the left or right of the tree, we should check if the tree is balances
+			//because we may have added stuff to the left or right of the tree, we should check if the tree is balanced
 			/*node->updateWeight();
 			if (node->isBalanced())
 				return;
@@ -287,28 +287,18 @@ namespace HorseRadish
 		}
 
 	public:
-		AVLTree()
-			: mainTree(nullptr)
-		{
-		}
-
-		~AVLTree()
-		{
-			this->mainTree = nullptr;
-		}
-
 		void addData(const char * const string, const TValue &data)
 		{
 			if (string == nullptr || *string == '\0')
 				return;
 
-			if (this->mainTree == nullptr)
+			if (mMainTree == nullptr)
 			{
-				this->mainTree = new Node(nullptr, 0);
-				this->mainTree->key = *string;
+				mMainTree = new Node(nullptr, 0);
+				mMainTree->key = *string;
 			}
 
-			treeAddData(this->mainTree, string, data);
+			treeAddData(mMainTree, string, data);
 		}
 
 		bool hasData(const char *what) const
@@ -355,12 +345,12 @@ namespace HorseRadish
 				return findFunc(node->bLeft, string);
 			};
 
-			return findFunc(this->mainTree, what);
+			return findFunc(mMainTree, what);
 		}
 
-		int findAll(const char * const what, const std::function<void(const TValue&)> actionFoundData = nullptr) const
+		size_t findAll(const char * const what, const std::function<void(const TValue&)> actionFoundData = nullptr) const
 		{
-			int count;
+			size_t count;
 
 			std::function<void(const Node * const, const char * const)> findAllFunc = [&](const Node * const node, const char * const string)
 			{
@@ -403,14 +393,14 @@ namespace HorseRadish
 			};
 
 			count = 0;
-			findAllFunc(this->mainTree, what);
+			findAllFunc(mMainTree, what);
 
 			return count;
 		}
 
-		int findAll(const std::function<void(const TValue&)> actionFoundData = nullptr) const
+		size_t findAll(const std::function<void(const TValue&)> actionFoundData = nullptr) const
 		{
-			int count;
+			size_t count;
 
 			std::function<void(const Node * const)> findAllFunc = [&](const Node * const node)
 			{
@@ -430,14 +420,14 @@ namespace HorseRadish
 			};
 
 			count = 0;
-			findAllFunc(this->mainTree);
+			findAllFunc(mMainTree);
 
 			return count;
 		}
 
-		int findAllWithKeys(const std::function<void(const std::string&, const TValue&)> actionFoundData = nullptr) const
+		size_t findAllWithKeys(const std::function<void(const std::string&, const TValue&)> actionFoundData = nullptr) const
 		{
-			int count;
+			size_t count;
 			std::string curKey;
 
 			std::function<void(const Node * const)> findAllFunc = [&](const Node * const node)
@@ -466,7 +456,7 @@ namespace HorseRadish
 			};
 
 			count = 0;
-			findAllFunc(this->mainTree);
+			findAllFunc(mMainTree);
 
 			return count;
 		}
@@ -534,7 +524,7 @@ namespace HorseRadish
 					nextBestKeyMatchFunc(node->bMiddle, string + 1);
 			};
 
-			nextBestKeyMatchFunc(this->mainTree, what);
+			nextBestKeyMatchFunc(mMainTree, what);
 			*dest = '\0';
 		}
 	};

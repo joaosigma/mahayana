@@ -22,19 +22,19 @@ namespace HorseRadish
 		return -1;
 	}
 
-	std::string Encoders::EncodeBase64(const void * const buffer, unsigned int bufferSize)
+	std::string Encoders::encodeBase64(const void * const buffer, size_t bufferSize)
 	{
 		std::string stringOut;
 
-		Encoders::EncodeBase64(buffer, bufferSize, stringOut);
+		Encoders::encodeBase64(buffer, bufferSize, stringOut);
 		return stringOut;
 	}
 
-	void Encoders::EncodeBase64(const void * const buffer, unsigned int bufferSize, std::string &stringOut)
+	void Encoders::encodeBase64(const void * const buffer, size_t bufferSize, std::string &stringOut)
 	{
 		stringOut.reserve(stringOut.size() + (4 * (bufferSize + 3) / 3 + 2));
 
-		int i = 0;
+		size_t i = 0;
 		unsigned char char_array_3[3];
 		unsigned char char_array_4[4];
 
@@ -60,7 +60,7 @@ namespace HorseRadish
 
 		if (i)
 		{
-			for (int j = i; j < 3; j++)
+			for (size_t j = i; j < 3; j++)
 				char_array_3[j] = '\0';
 
 			char_array_4[0] = (char_array_3[0] & 0xfc) >> 2;
@@ -68,7 +68,7 @@ namespace HorseRadish
 			char_array_4[2] = ((char_array_3[1] & 0x0f) << 2) + ((char_array_3[2] & 0xc0) >> 6);
 			char_array_4[3] = char_array_3[2] & 0x3f;
 
-			for (int j = 0; (j < i + 1); j++)
+			for (size_t j = 0; (j < i + 1); j++)
 				stringOut += Encoders::base64Chars[char_array_4[j]];
 
 			while ((i++ < 3))
@@ -76,9 +76,9 @@ namespace HorseRadish
 		}
 	}
 
-	void Encoders::EncodeBase64(const void * const buffer, unsigned int bufferSize, HorseRadish::Streams::Stream &streamOut)
+	void Encoders::encodeBase64(const void * const buffer, size_t bufferSize, HorseRadish::Streams::Stream &streamOut)
 	{
-		int i = 0;
+		size_t i = 0;
 		unsigned char char_array_3[3];
 		unsigned char char_array_4[4];
 
@@ -104,7 +104,7 @@ namespace HorseRadish
 
 		if (i)
 		{
-			for (int j = i; j < 3; j++)
+			for (size_t j = i; j < 3; j++)
 				char_array_3[j] = '\0';
 
 			char_array_4[0] = (char_array_3[0] & 0xfc) >> 2;
@@ -112,7 +112,7 @@ namespace HorseRadish
 			char_array_4[2] = ((char_array_3[1] & 0x0f) << 2) + ((char_array_3[2] & 0xc0) >> 6);
 			char_array_4[3] = char_array_3[2] & 0x3f;
 
-			for (int j = 0; (j < i + 1); j++)
+			for (size_t j = 0; (j < i + 1); j++)
 				streamOut.write(Encoders::base64Chars + char_array_4[j], sizeof(char));
 
 			char endChar = '=';
@@ -121,21 +121,21 @@ namespace HorseRadish
 		}
 	}
 
-	unsigned int Encoders::DecodeBase64RequiredSize(unsigned int numBase64Chars)
+	size_t Encoders::decodeBase64RequiredSize(size_t numBase64Chars)
 	{
 		//base64 takes 137% of the original size, so we must divide by 1.37 or simply multiply by 0.73 which can be approximated by 3/4
 		return (3 * numBase64Chars / 4);
 	}
 
-	unsigned int Encoders::DecodeBase64(const std::string &dataBase64, void* bufferOut)
+	size_t Encoders::decodeBase64(const std::string &dataBase64, void* bufferOut)
 	{
 		if (dataBase64.empty())
 			return 0;
 
-		int in_len = dataBase64.size();
-		int i = 0;
-		int in_ = 0;
-		int bytesWritten = 0;
+		size_t in_len = dataBase64.size();
+		size_t i = 0;
+		size_t in_ = 0;
+		size_t bytesWritten = 0;
 		unsigned char char_array_4[4], char_array_3[3];
 
 		while (in_len-- && (dataBase64[in_] != '=') && Encoders::isBase64Char(dataBase64[in_]))
@@ -163,7 +163,7 @@ namespace HorseRadish
 
 		if (i)
 		{
-			for (int j = i; j < 4; j++)
+			for (size_t j = i; j < 4; j++)
 				char_array_4[j] = 0;
 
 			char_array_4[0] = Encoders::findBase64Char(char_array_4[0]);
@@ -175,7 +175,7 @@ namespace HorseRadish
 			char_array_3[1] = ((char_array_4[1] & 0xf) << 4) + ((char_array_4[2] & 0x3c) >> 2);
 			char_array_3[2] = ((char_array_4[2] & 0x3) << 6) + char_array_4[3];
 
-			for (int j = 0; (j < i - 1); j++)
+			for (size_t j = 0; (j < i - 1); j++)
 			{
 				memcpy(bufferOut, char_array_3 + j, sizeof(unsigned char));
 				bufferOut = reinterpret_cast<unsigned char*>(bufferOut);
@@ -186,17 +186,17 @@ namespace HorseRadish
 		return bytesWritten;
 	}
 
-	unsigned int Encoders::DecodeBase64(const std::string &dataBase64, std::vector<unsigned char> &bufferOut)
+	size_t Encoders::decodeBase64(const std::string &dataBase64, std::vector<unsigned char> &bufferOut)
 	{
 		if (dataBase64.empty())
 			return 0;
 
-		bufferOut.reserve(bufferOut.capacity() + Encoders::DecodeBase64RequiredSize(dataBase64.size()));
+		bufferOut.reserve(bufferOut.capacity() + Encoders::decodeBase64RequiredSize(dataBase64.size()));
 
-		int in_len = dataBase64.size();
-		int i = 0;
-		int in_ = 0;
-		int bytesWritten = 0;
+		size_t in_len = dataBase64.size();
+		size_t i = 0;
+		size_t in_ = 0;
+		size_t bytesWritten = 0;
 		unsigned char char_array_4[4], char_array_3[3];
 
 		while (in_len-- && (dataBase64[in_] != '=') && Encoders::isBase64Char(dataBase64[in_]))
@@ -225,7 +225,7 @@ namespace HorseRadish
 
 		if (i)
 		{
-			for (int j = i; j < 4; j++)
+			for (size_t j = i; j < 4; j++)
 				char_array_4[j] = 0;
 
 			char_array_4[0] = Encoders::findBase64Char(char_array_4[0]);
@@ -237,7 +237,7 @@ namespace HorseRadish
 			char_array_3[1] = ((char_array_4[1] & 0xf) << 4) + ((char_array_4[2] & 0x3c) >> 2);
 			char_array_3[2] = ((char_array_4[2] & 0x3) << 6) + char_array_4[3];
 
-			for (int j = 0; (j < i - 1); j++)
+			for (size_t j = 0; (j < i - 1); j++)
 			{
 				bufferOut.push_back(char_array_3[0]);
 				bytesWritten++;
@@ -247,15 +247,15 @@ namespace HorseRadish
 		return bytesWritten;
 	}
 
-	unsigned int Encoders::DecodeBase64(const std::string &dataBase64, HorseRadish::Streams::Stream &streamOut)
+	size_t Encoders::decodeBase64(const std::string &dataBase64, HorseRadish::Streams::Stream &streamOut)
 	{
 		if (dataBase64.empty())
 			return 0;
 
-		int in_len = dataBase64.size();
-		int i = 0;
-		int in_ = 0;
-		int bytesWritten = 0;
+		size_t in_len = dataBase64.size();
+		size_t i = 0;
+		size_t in_ = 0;
+		size_t bytesWritten = 0;
 		unsigned char char_array_4[4], char_array_3[3];
 
 		while (in_len-- && (dataBase64[in_] != '=') && Encoders::isBase64Char(dataBase64[in_]))
@@ -282,7 +282,7 @@ namespace HorseRadish
 
 		if (i)
 		{
-			for (int j = i; j < 4; j++)
+			for (size_t j = i; j < 4; j++)
 				char_array_4[j] = 0;
 
 			char_array_4[0] = Encoders::findBase64Char(char_array_4[0]);
@@ -304,22 +304,22 @@ namespace HorseRadish
 		return bytesWritten;
 	}
 
-	std::string Encoders::EncodeHex(const void * const buffer, unsigned int bufferSize, bool toUppercase)
+	std::string Encoders::encodeHex(const void * const buffer, size_t bufferSize, bool toUppercase)
 	{
 		std::string stringOut;
 
-		Encoders::EncodeHex(buffer, bufferSize, toUppercase, stringOut);
+		Encoders::encodeHex(buffer, bufferSize, toUppercase, stringOut);
 		return stringOut;
 	}
 
-	void Encoders::EncodeHex(const void * const buffer, unsigned int bufferSize, bool toUppercase, std::string &stringOut)
+	void Encoders::encodeHex(const void * const buffer, size_t bufferSize, bool toUppercase, std::string &stringOut)
 	{
 		stringOut.reserve(stringOut.size() + ((bufferSize * 2) + 1));
 
 		auto bufferHex = toUppercase ? Encoders::hexEncodeLookupUpper : Encoders::hexEncodeLookupLower;
 		auto bufferWalker = reinterpret_cast<const unsigned char*>(buffer);
 
-		for (unsigned int i = 0; i < bufferSize; i++, bufferWalker++)
+		for (size_t i = 0; i < bufferSize; i++, bufferWalker++)
 		{
 			auto hexPair = bufferHex + ((*bufferWalker) * 2);
 
@@ -328,12 +328,12 @@ namespace HorseRadish
 		}
 	}
 
-	void Encoders::EncodeHex(const void * const buffer, unsigned int bufferSize, bool toUppercase, HorseRadish::Streams::Stream &streamOut)
+	void Encoders::encodeHex(const void * const buffer, size_t bufferSize, bool toUppercase, HorseRadish::Streams::Stream &streamOut)
 	{
 		auto bufferHex = toUppercase ? Encoders::hexEncodeLookupUpper : Encoders::hexEncodeLookupLower;
 		auto bufferWalker = reinterpret_cast<const unsigned char*>(buffer);
 
-		for (unsigned int i = 0; i < bufferSize; i++, bufferWalker++)
+		for (size_t i = 0; i < bufferSize; i++, bufferWalker++)
 		{
 			auto hexPair = bufferHex + ((*bufferWalker) * 2);
 
@@ -341,7 +341,7 @@ namespace HorseRadish
 		}
 	}
 
-	void Encoders::EncodeHexByte(const unsigned char valByte, char * const outHex)
+	void Encoders::encodeHexByte(const unsigned char valByte, char * const outHex)
 	{
 		auto hexPair = Encoders::hexEncodeLookupUpper + (valByte * 2);
 		
@@ -349,21 +349,21 @@ namespace HorseRadish
 		outHex[1] = hexPair[1];
 	}
 
-	unsigned int Encoders::DecodeHexRequiredSize(unsigned int numHexChars)
+	size_t Encoders::decodeHexRequiredSize(size_t numHexChars)
 	{
 		return (numHexChars / 2);
 	}
 
-	unsigned int Encoders::DecodeHex(const std::string &dataHex, HorseRadish::Streams::Stream &streamOut)
+	size_t Encoders::decodeHex(const std::string &dataHex, HorseRadish::Streams::Stream &streamOut)
 	{
 		if (dataHex.empty() || ((dataHex.size() % 2) != 0))
 			return 0;
 
-		int inSize = dataHex.size();
-		int bytesWritten = 0;
+		size_t inSize = dataHex.size();
+		size_t bytesWritten = 0;
 		auto *inWalker = reinterpret_cast<const unsigned char *>(dataHex.c_str());
 
-		for (int i = 0; i < inSize; i += 2)
+		for (size_t i = 0; i < inSize; i += 2)
 		{
 			int valHex = Encoders::hexDecodeLookup[*inWalker++] << 4;
 			valHex |= Encoders::hexDecodeLookup[*inWalker++];
@@ -375,12 +375,10 @@ namespace HorseRadish
 		return bytesWritten;
 	}
 
-	unsigned char Encoders::DecodeHexByte(const char * const dataHex)
+	unsigned char Encoders::decodeHexByte(const char * const dataHex)
 	{
 		return ((Encoders::hexDecodeLookup[dataHex[0]] << 4) | Encoders::hexDecodeLookup[dataHex[1]]);
 	}
-
-	const char Encoders::base64Chars[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
 	const unsigned char Encoders::hexEncodeLookupLower[] = {
 		"000102030405060708090a0b0c0d0e0f"

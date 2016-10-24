@@ -8,10 +8,10 @@ namespace HorseRadish { namespace OpenGL { namespace Tools {
 
 void ImmediateMode::draw(bool keepLeftovers)
 {
-	if (checkStateDraw() == false)
+	if (!checkStateDraw())
 		return;
 
-	int numElements = 0;
+	size_t numElements = 0;
 
 	if (mState.geomType == GeometryType::Quads)
 	{
@@ -20,18 +20,21 @@ void ImmediateMode::draw(bool keepLeftovers)
 		{
 			auto newIndexWriter = mBufferIndices.data() + (numElements * 6 - 6);
 
-			for (int curQuad = mState.curVertex - 4; curQuad >= 0; curQuad -= 4)
+			for (size_t curQuad = mState.curVertex - 4; curQuad >= 0; curQuad -= 4)
 			{
-				unsigned short index1 = mBufferIndices[curQuad + 0];
-				unsigned short index2 = mBufferIndices[curQuad + 1];
-				unsigned short index3 = mBufferIndices[curQuad + 2];
-				unsigned short index4 = mBufferIndices[curQuad + 3];
+				auto index1 = mBufferIndices[curQuad + 0];
+				auto index2 = mBufferIndices[curQuad + 1];
+				auto index3 = mBufferIndices[curQuad + 2];
+				auto index4 = mBufferIndices[curQuad + 3];
 
 				newIndexWriter[0] = newIndexWriter[3] = index1;
 				newIndexWriter[1] = index2;
 				newIndexWriter[2] = newIndexWriter[4] = index3;
 				newIndexWriter[5] = index4;
 				newIndexWriter -= 6;
+
+				if (curQuad < 4) //because curQuad is unsigned
+					break;
 			}
 
 			mGl.fence.wait();
@@ -106,7 +109,7 @@ void ImmediateMode::draw(bool keepLeftovers)
 	if (numLeftOvers <= 0)
 		return;
 
-	for (int i = 0; i < numLeftOvers; i++)
+	for (size_t i = 0; i < numLeftOvers; i++)
 	{
 		mBufferData[i] = mBufferData[numElements + i];
 		mBufferIndices[i] = i;
@@ -291,7 +294,7 @@ void ImmediateMode::addPosition(const float &x, const float &y, const float &z)
 	vertexData.color[2] = mState.color[2];
 	vertexData.color[3] = mState.color[3];
 
-	mBufferIndices[mState.curVertex] = mState.curVertex;
+	mBufferIndices[mState.curVertex] = static_cast<unsigned short>(mState.curVertex);
 
 	mState.curVertex++;
 }
@@ -301,13 +304,13 @@ void ImmediateMode::addQuad(const float &x, const float &y, const float &width, 
 	if (mState.geomType != GeometryType::Quads)
 		return;
 
-	this->addPosition(x, y);
-	this->addPosition(x + width, y);
-	this->addPosition(x + width, y + height);
-	this->addPosition(x, y + height);
+	addPosition(x, y);
+	addPosition(x + width, y);
+	addPosition(x + width, y + height);
+	addPosition(x, y + height);
 }
 
-void ImmediateMode::addQuadTexCoords(const float &x, const float &y, const float &width, const float &height, const bool &normalizedTexCoords)
+void ImmediateMode::addQuadTexCoords(const float &x, const float &y, const float &width, const float &height, bool normalizedTexCoords)
 {
 	if (mState.geomType != GeometryType::Quads)
 		return;
@@ -316,25 +319,31 @@ void ImmediateMode::addQuadTexCoords(const float &x, const float &y, const float
 	{
 		mState.uv[0] = 0.0f;
 		mState.uv[1] = 0.0f;
-		this->addPosition(x, y);
+		addPosition(x, y);
+		
 		mState.uv[0] = 1.0f;
-		this->addPosition(x + width, y);
+		addPosition(x + width, y);
+		
 		mState.uv[1] = 1.0f;
-		this->addPosition(x + width, y + height);
+		addPosition(x + width, y + height);
+		
 		mState.uv[0] = 0.0f;
-		this->addPosition(x, y + height);
+		addPosition(x, y + height);
 	}
 	else
 	{
 		mState.uv[0] = x;
 		mState.uv[1] = y;
-		this->addPosition(x, y);
+		addPosition(x, y);
+		
 		mState.uv[0] = x + width;
-		this->addPosition(x + width, y);
+		addPosition(x + width, y);
+		
 		mState.uv[1] = y + height;
-		this->addPosition(x + width, y + height);
+		addPosition(x + width, y + height);
+		
 		mState.uv[0] = x;
-		this->addPosition(x, y + height);
+		addPosition(x, y + height);
 	}
 }
 
@@ -343,8 +352,8 @@ void ImmediateMode::addLine(const float &x1, const float &y1, const float &x2, c
 	if (mState.geomType != GeometryType::Lines)
 		return;
 
-	this->addPosition(x1, y1);
-	this->addPosition(x2, y2);
+	addPosition(x1, y1);
+	addPosition(x2, y2);
 }
 
 void ImmediateMode::addLineH(const float &x1, const float &x2, const float &y)
@@ -352,8 +361,8 @@ void ImmediateMode::addLineH(const float &x1, const float &x2, const float &y)
 	if (mState.geomType != GeometryType::Lines)
 		return;
 
-	this->addPosition(x1, y);
-	this->addPosition(x2, y);
+	addPosition(x1, y);
+	addPosition(x2, y);
 }
 
 void ImmediateMode::addLineV(const float &x, const float &y1, const float &y2)
@@ -361,11 +370,11 @@ void ImmediateMode::addLineV(const float &x, const float &y1, const float &y2)
 	if (mState.geomType != GeometryType::Lines)
 		return;
 
-	this->addPosition(x, y1);
-	this->addPosition(x, y2);
+	addPosition(x, y1);
+	addPosition(x, y2);
 }
 
-unsigned int ImmediateMode::getInfo(const InfoType infoType) const
+size_t ImmediateMode::info(const InfoType infoType) const
 {
 	switch (infoType)
 	{

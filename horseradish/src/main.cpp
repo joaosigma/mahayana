@@ -10,6 +10,8 @@
 
 #include "engine/engine.hpp"
 
+#include "common/Primitives2D.hpp"
+
 int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PWSTR lpCmdLine, int nCmdShow)
 {
 	UNREFERENCED_PARAMETER(hInstPrev); 
@@ -21,20 +23,20 @@ int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PWSTR lpCmdLine, int n
 
 	//minimal checks
 	{
-		if (HorseRadish::Platform::CPUCheckFeatures((HorseRadish::Platform::CPUFeature)(HorseRadish::Platform::SSE | HorseRadish::Platform::SSE2 | HorseRadish::Platform::CMov)) == false)
+		if (HorseRadish::Platform::cpuCheckFeatures((HorseRadish::Platform::CPUFeature)(HorseRadish::Platform::SSE | HorseRadish::Platform::SSE2 | HorseRadish::Platform::CMov)) == false)
 		{
 			Window::MsgBoxWarn("The CPU doesn't have the minimum required features.\nThe application cannot proceed.");
 			return 0;
 		}
 
 		int isCleanBoot;
-		if (!HorseRadish::Platform::GetSystemInfo(HorseRadish::Platform::SystemInfo::CleanBoot, isCleanBoot) || !isCleanBoot)
+		if (!HorseRadish::Platform::systemInfo(HorseRadish::Platform::SystemInfo::CleanBoot, isCleanBoot) || !isCleanBoot)
 		{
 			Window::MsgBoxWarn("The OS did not boot normally!\nFor security reasons the application will now exit.");
 			return 0;
 		}
 
-		if (HorseRadish::Platform::SingleInstance().IsAnotherRunning() == true)
+		if (HorseRadish::Platform::SingleInstance().isAnotherRunning() == true)
 		{
 			Window::MsgBoxError("Another instance of this application is already running.");
 			return 0;

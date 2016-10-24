@@ -44,7 +44,7 @@ namespace HorseRadish
 		dataMD5->bits[1] = 0;
 	}
 
-	void Hashing::updateMD5(DataMD5 * const dataMD5, const unsigned char *buffer, unsigned int bufferSize)
+	void Hashing::updateMD5(DataMD5 * const dataMD5, const unsigned char *buffer, size_t bufferSize)
 	{
 		unsigned int t;
 
@@ -385,7 +385,7 @@ namespace HorseRadish
 		context->count[0] = context->count[1] = 0;
 	}
 
-	void Hashing::updateSHA1(DataSHA1 * const context, const unsigned char* data, unsigned int len)
+	void Hashing::updateSHA1(DataSHA1 * const context, const unsigned char* data, size_t len)
 	{
 		unsigned int i;
 		unsigned int j;
@@ -454,7 +454,7 @@ namespace HorseRadish
 		memset(&finalcount, '\0', sizeof(finalcount));
 	}
 
-	unsigned char Hashing::CalculateCRC8(const void * const buffer, unsigned int bufferSize)
+	unsigned char Hashing::calculateCRC8(const void * const buffer, size_t bufferSize)
 	{
 		if ((buffer == nullptr) || (bufferSize == 0))
 			return 0;
@@ -469,7 +469,7 @@ namespace HorseRadish
 		return crc;
 	}
 
-	unsigned short Hashing::CalculateCRC16(const void * const buffer, unsigned int bufferSize)
+	unsigned short Hashing::calculateCRC16(const void * const buffer, size_t bufferSize)
 	{
 		if ((buffer == nullptr) || (bufferSize == 0))
 			return 0;
@@ -484,7 +484,7 @@ namespace HorseRadish
 		return crc;
 	}
 
-	unsigned long Hashing::CalculateCRC32(const void * const buffer, unsigned int bufferSize)
+	unsigned long Hashing::calculateCRC32(const void * const buffer, size_t bufferSize)
 	{
 		if ((buffer == nullptr) || (bufferSize == 0))
 			return 0;
@@ -499,7 +499,7 @@ namespace HorseRadish
 		return crc;
 	}
 
-	void Hashing::CalculateMD5(const void * const buffer, const unsigned int bufferSize, hData128 * const hash)
+	void Hashing::calculateMD5(const void * const buffer, size_t bufferSize, hData128 * const hash)
 	{
 		Hashing::DataMD5 dataMD5;
 
@@ -511,7 +511,7 @@ namespace HorseRadish
 		Hashing::finishMD5(&dataMD5, hash->ui8);
 	}
 
-	void Hashing::CalculateSHA1(const void * const buffer, const unsigned int bufferSize, hData160 * const hash)
+	void Hashing::calculateSHA1(const void * const buffer, size_t bufferSize, hData160 * const hash)
 	{
 		Hashing::DataSHA1 dataSHA1;
 
@@ -523,7 +523,7 @@ namespace HorseRadish
 		Hashing::finishSHA1(hash->ui8, &dataSHA1);
 	}
 
-	unsigned long Hashing::CalculateMD5Short(const void * const buffer, const unsigned int bufferSize)
+	unsigned long Hashing::calculateMD5Short(const void * const buffer, size_t bufferSize)
 	{
 		Hashing::DataMD5 dataMD5;
 		unsigned long digest[4];
@@ -538,7 +538,7 @@ namespace HorseRadish
 		return (digest[0] ^ digest[1] ^ digest[2] ^ digest[3]);
 	}
 
-	unsigned int Hashing::SuperFastHash(const void * const buffer, unsigned int bufferSize)
+	unsigned int Hashing::superFastHash(const void * const buffer, size_t bufferSize)
 	{
 		hUInt32 hash, tmp;
 		int rem;

@@ -51,11 +51,11 @@ namespace HorseRadish
 
 		//driver info
 		ctx.info("${olive}->${default}OpenGL driver info:");
-		glContext.getInfo(HorseRadish::OpenGL::Objects::Context::InformationType::Version, infoValueString);
+		glContext.info(HorseRadish::OpenGL::Objects::Context::InformationType::Version, infoValueString);
 		ctx.info("   OpenGL version: " + infoValueString);
-		glContext.getInfo(HorseRadish::OpenGL::Objects::Context::InformationType::Vendor, infoValueString);
+		glContext.info(HorseRadish::OpenGL::Objects::Context::InformationType::Vendor, infoValueString);
 		ctx.info("   OpenGL vendor: " + infoValueString);
-		glContext.getInfo(HorseRadish::OpenGL::Objects::Context::InformationType::Renderer, infoValueString);
+		glContext.info(HorseRadish::OpenGL::Objects::Context::InformationType::Renderer, infoValueString);
 		ctx.info("   OpenGL renderer: " + infoValueString);
 
 		//extensions available
@@ -67,22 +67,22 @@ namespace HorseRadish
 		//other stuff
 		ctx.info("${olive}->${default}OpenGL extended information:");
 
-		glContext.getInfo(HorseRadish::OpenGL::Objects::Context::InformationType::GLSLVersion, infoValueString);
+		glContext.info(HorseRadish::OpenGL::Objects::Context::InformationType::GLSLVersion, infoValueString);
 		ctx.info("   GLSL version: " + infoValueString);
 
-		glContext.getInfo(HorseRadish::OpenGL::Objects::Context::InformationType::MaxDrawBuffers, infoValueInt);
+		glContext.info(HorseRadish::OpenGL::Objects::Context::InformationType::MaxDrawBuffers, infoValueInt);
 		ctx.info("   Maximum number of draw buffers: {0}", infoValueInt);
 
-		glContext.getInfo(HorseRadish::OpenGL::Objects::Context::InformationType::MaxColorAttachments, infoValueInt);
+		glContext.info(HorseRadish::OpenGL::Objects::Context::InformationType::MaxColorAttachments, infoValueInt);
 		ctx.info("   Maximum number of color attachments in FBOs: {0}", infoValueInt);
 
-		glContext.getInfo(HorseRadish::OpenGL::Objects::Context::InformationType::MaxTextureSize, infoValueInt);
+		glContext.info(HorseRadish::OpenGL::Objects::Context::InformationType::MaxTextureSize, infoValueInt);
 		ctx.info("   Maximum 1D/2D texture size: {0}x{0}", infoValueInt);
-		glContext.getInfo(HorseRadish::OpenGL::Objects::Context::InformationType::MaxTexture3DSize, infoValueInt);
+		glContext.info(HorseRadish::OpenGL::Objects::Context::InformationType::MaxTexture3DSize, infoValueInt);
 		ctx.info("   Maximum 3D texture size: {0}x{0}x{0}", infoValueInt);
-		glContext.getInfo(HorseRadish::OpenGL::Objects::Context::InformationType::MaxTextureCubemapSize, infoValueInt);
+		glContext.info(HorseRadish::OpenGL::Objects::Context::InformationType::MaxTextureCubemapSize, infoValueInt);
 		ctx.info("   Maximum cubemap texture size: {0}x{0}", infoValueInt);
-		glContext.getInfo(HorseRadish::OpenGL::Objects::Context::InformationType::MaxTextureRectSize, infoValueInt);
+		glContext.info(HorseRadish::OpenGL::Objects::Context::InformationType::MaxTextureRectSize, infoValueInt);
 		ctx.info("   Maximum rectangle texture size: {0}x{0}", infoValueInt);
 	}
 
@@ -257,12 +257,12 @@ namespace HorseRadish
 			openGLWriteInfo(*mLogger, *glContext);
 
 			//a camera
-			auto camera = std::make_unique<HorseRadish::Render::Tools::Camera>();
+			HorseRadish::Render::Tools::CameraFPS camera;
 
 			//coloco alguns valores por defeito na camera
-			camera->setPos(0.0f, 0.0f, 1.0f);
-			camera->setTarget(0.0f, 0.0f, 0.0f);
-			camera->setSensitivity(HorseRadish::Render::Tools::Camera::CameraInput::Keyboard, 10.0f);
+			camera.setPos(0.0f, 0.0f, 1.0f);
+			camera.setTarget(0.0f, 0.0f, 0.0f);
+			camera.setMovementScale(HorseRadish::Render::Tools::CameraFPS::CameraInput::Keyboard, 10.0f);
 						
 			auto viewportRender = std::make_unique<HorseRadish::OpenGL::Tools::Viewport>(90.0f, var<int>("renderer.dims.width"), var<int>("renderer.dims.height"), 1.0f, 500.0f);
 			auto viewportDisplay = std::make_unique<HorseRadish::OpenGL::Tools::Viewport>(90.0f, var<int>("display.dims.width"), var<int>("display.dims.height"), 1.0f, 500.0f);
@@ -345,8 +345,8 @@ namespace HorseRadish
 					//desenho a cena normalmente
 					//renderData->RenderFrame(*camera, viewport);
 
-					HorseRadish::OpenGL::glViewport(0, 0, viewportRender->getWidth(), viewportRender->getHeight());
-					rendererDeferred->Render(*camera, *viewportRender);
+					HorseRadish::OpenGL::glViewport(0, 0, viewportRender->width(), viewportRender->height());
+					rendererDeferred->Render(camera, *viewportRender);
 
 					if (Profiler::isSupported())
 						renderGlQueryGroup.queriesEnd();
@@ -385,7 +385,7 @@ namespace HorseRadish
 						HorseRadish::OpenGL::glEnable(GL_BLEND);
 						HorseRadish::OpenGL::glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-						HorseRadish::OpenGL::glViewport(0, 0, viewportDisplay->getWidth(), viewportDisplay->getHeight());
+						HorseRadish::OpenGL::glViewport(0, 0, viewportDisplay->width(), viewportDisplay->height());
 
 						if (profilerUI && profilerUI->isVisible())
 							profilerUI->draw(*viewportDisplay);
@@ -397,35 +397,35 @@ namespace HorseRadish
 					}
 
 					//se houver uma camera e a consola não estiver a consumir input
-					if ((camera != nullptr) && (!rendererConsole || !rendererConsole->isVisible()))
+					if (!rendererConsole || !rendererConsole->isVisible())
 					{
-						HorseRadish::Render::Tools::Camera::CameraAction cameraActions;
+						HorseRadish::Render::Tools::CameraFPS::CameraAction cameraActions;
 
 						//tiro as coisas como estão agora
 						mWindow->rawInputSnapshot();
 
 						//por omissão
-						cameraActions = HorseRadish::Render::Tools::Camera::None;
+						cameraActions = HorseRadish::Render::Tools::CameraFPS::None;
 
 						//preciso de saber o que ando a fazer
 						if (mWindow->rawInputGetKeyStatus(Window::VirtualKeys::Up) || mWindow->rawInputGetKeyStatus('W'))
-							cameraActions = (HorseRadish::Render::Tools::Camera::CameraAction)(cameraActions | HorseRadish::Render::Tools::Camera::Forward);
+							cameraActions = (HorseRadish::Render::Tools::CameraFPS::CameraAction)(cameraActions | HorseRadish::Render::Tools::CameraFPS::Forward);
 						if (mWindow->rawInputGetKeyStatus(Window::VirtualKeys::Down) || mWindow->rawInputGetKeyStatus('S'))
-							cameraActions = (HorseRadish::Render::Tools::Camera::CameraAction)(cameraActions | HorseRadish::Render::Tools::Camera::Backward);
+							cameraActions = (HorseRadish::Render::Tools::CameraFPS::CameraAction)(cameraActions | HorseRadish::Render::Tools::CameraFPS::Backward);
 						if (mWindow->rawInputGetKeyStatus(Window::VirtualKeys::Left) || mWindow->rawInputGetKeyStatus('A'))
-							cameraActions = (HorseRadish::Render::Tools::Camera::CameraAction)(cameraActions | HorseRadish::Render::Tools::Camera::StrifeLeft);
+							cameraActions = (HorseRadish::Render::Tools::CameraFPS::CameraAction)(cameraActions | HorseRadish::Render::Tools::CameraFPS::StrifeLeft);
 						if (mWindow->rawInputGetKeyStatus(Window::VirtualKeys::Right) || mWindow->rawInputGetKeyStatus('D'))
-							cameraActions = (HorseRadish::Render::Tools::Camera::CameraAction)(cameraActions | HorseRadish::Render::Tools::Camera::StrifeRight);
+							cameraActions = (HorseRadish::Render::Tools::CameraFPS::CameraAction)(cameraActions | HorseRadish::Render::Tools::CameraFPS::StrifeRight);
 						if (mWindow->rawInputGetKeyStatus(Window::VirtualKeys::Space))
-							cameraActions = (HorseRadish::Render::Tools::Camera::CameraAction)(cameraActions | HorseRadish::Render::Tools::Camera::Up);
+							cameraActions = (HorseRadish::Render::Tools::CameraFPS::CameraAction)(cameraActions | HorseRadish::Render::Tools::CameraFPS::Up);
 						if (mWindow->rawInputGetKeyStatus(Window::VirtualKeys::Control))
-							cameraActions = (HorseRadish::Render::Tools::Camera::CameraAction)(cameraActions | HorseRadish::Render::Tools::Camera::Down);
+							cameraActions = (HorseRadish::Render::Tools::CameraFPS::CameraAction)(cameraActions | HorseRadish::Render::Tools::CameraFPS::Down);
 						if (mWindow->rawInputGetKeyStatus(Window::VirtualKeys::Shift))
-							cameraActions = (HorseRadish::Render::Tools::Camera::CameraAction)(cameraActions | HorseRadish::Render::Tools::Camera::Run);
+							cameraActions = (HorseRadish::Render::Tools::CameraFPS::CameraAction)(cameraActions | HorseRadish::Render::Tools::CameraFPS::Run);
 
 						//posso actualizar a camera
 						auto mousePosition = mWindow->rawInputGetMouseStatus();
-						camera->commitInput(cameraActions, mousePosition[0], mousePosition[1], true, lastDeltaTimeS);
+						camera.commitInput(cameraActions, mousePosition[0], mousePosition[1], true, lastDeltaTimeS);
 					}
 
 					mWindow->processMessages([&](const Window::Message &msg)
@@ -453,7 +453,7 @@ namespace HorseRadish
 					}
 
 					//mando o renderer preparar a próxima frame
-					renderData->PrepareNextFrame(*camera, *viewportRender);
+					renderData->PrepareNextFrame(camera, *viewportRender);
 					stage->processStep();
 
 					if (rendererConsole)
@@ -498,7 +498,6 @@ namespace HorseRadish
 			renderData->Cleanup();
 			renderData.reset();
 
-			camera.reset();
 			viewportDisplay.reset();
 			viewportRender.reset();
 

@@ -308,7 +308,7 @@ namespace HorseRadish { namespace Render {
 
 		mRenderData.imode.beginDraw(HorseRadish::OpenGL::Tools::ImmediateMode::GeometryType::Quads);
 			mRenderData.imode.setColorF(1.0f, 1.0f, 1.0f, 1.0f);
-			mRenderData.imode.addQuadTexCoords(0.0f, 0.0f, static_cast<float>(viewport.getWidth()), static_cast<float>(viewport.getHeight()), false);
+			mRenderData.imode.addQuadTexCoords(0.0f, 0.0f, static_cast<float>(viewport.width()), static_cast<float>(viewport.height()), false);
 		mRenderData.imode.endDraw();
 	}
 

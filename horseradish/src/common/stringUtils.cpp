@@ -88,7 +88,7 @@ namespace HorseRadish
 
 	std::wstring StringUtils::conv2UTF16(const char* const strUTF8)
 	{
-		if (strUTF8 == nullptr)
+		if (!strUTF8)
 			return std::wstring();
 
 		return std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t>().from_bytes(strUTF8);

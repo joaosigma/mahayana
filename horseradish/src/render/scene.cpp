@@ -53,7 +53,7 @@ namespace HorseRadish {	namespace Render {
 		mRenderData.progPipeline.setStage(mRenderData.progVertex);
 		mRenderData.progPipeline.setStage(mRenderData.progFragment);
 
-		mRenderData.windowSize.Set(glRenderWidth, glRenderHeight);
+		mRenderData.windowSize.reset(glRenderWidth, glRenderHeight);
 		mRenderData.proj2D = HorseRadish::OpenGL::Tools::Viewport::genMatrix2DProj(mRenderData.windowSize.width, mRenderData.windowSize.height);
 	}
 

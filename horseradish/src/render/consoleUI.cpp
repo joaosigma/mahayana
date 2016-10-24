@@ -87,13 +87,13 @@ void ConsoleUI::processMsgPrompt(const Window::Message &msg)
 		{
 			std::string strUTF8;
 
-			if (HorseRadish::Platform::ClipboardGetStrings([&](const std::string& curString) -> bool
+			if (HorseRadish::Platform::clipboardGetStrings([&](const std::string& curString) -> bool
 			{
 				strUTF8 = curString;
 				return false;
 			}) == false)
 			{
-				HorseRadish::Platform::ClipboardGetFiles([&](const std::string& curString) -> bool
+				HorseRadish::Platform::clipboardGetFiles([&](const std::string& curString) -> bool
 				{
 					strUTF8 = curString;
 					return false;
@@ -337,8 +337,8 @@ ConsoleUI::ConsoleUI(const HorseRadish::Engine::Logger& logger, HorseRadish::Ren
 {
 	mPrompt.maxHistorySize = maxPromptHistory;
 
-	mViewRect.Set(30.0f, 30.0f, mRenderer.mRenderWidth - 60.0f, mRenderer.mRenderHeight - 60.0f);
-	mTextRect.Set(mViewRect.x + 9.0f, mViewRect.y + 9.0f, mViewRect.width - 18.0f, mViewRect.height - 18.0f);
+	mViewRect.reset(30.0f, 30.0f, mRenderer.mRenderWidth - 60.0f, mRenderer.mRenderHeight - 60.0f);
+	mTextRect.reset(mViewRect.x + 9.0f, mViewRect.y + 9.0f, mViewRect.width - 18.0f, mViewRect.height - 18.0f);
 }
 
 void ConsoleUI::draw(const HorseRadish::OpenGL::Tools::Viewport& viewport) const
