@@ -1,4 +1,5 @@
 ﻿#include "openGL.hpp"
+
 #include "common/stringUtils.hpp"
 
 static HINSTANCE openGLModule;
@@ -783,11 +784,8 @@ bool loadGLFunctions(HINSTANCE nativeOpenGLModule, PFNWGLGETPROCADDRESSPROC wglP
 	return true;
 }
 
-namespace HorseRadish
+namespace HorseRadish { namespace OpenGL
 {
-	namespace OpenGL
-	{
-
 #ifdef GL_VERSION_1_0
 		PFNGLCULLFACEPROC glCullFace;
 		PFNGLFRONTFACEPROC glFrontFace;

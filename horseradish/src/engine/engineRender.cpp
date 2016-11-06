@@ -2,17 +2,15 @@
 
 #include "profiler.hpp"
 
-#include "common/opengl/openGL.hpp"
-#include "common/opengl/tools/viewport.hpp"
+#include "../common/opengl/openGL.hpp"
+#include "../common/opengl/tools/viewport.hpp"
 
-#include "render/stage.hpp"
-#include "render/world.hpp"
-#include "render/consoleUI.hpp"
-#include "render/profilerUI.hpp"
-#include "render/rendererDeferred.hpp"
-#include "render/renderer2D.hpp"
-
-#include "../videoStream.hpp"
+#include "../render/stage.hpp"
+#include "../render/world.hpp"
+#include "../render/consoleUI.hpp"
+#include "../render/profilerUI.hpp"
+#include "../render/rendererDeferred.hpp"
+#include "../render/renderer2D.hpp"
 
 #include <libs/cppformat/format.h>
 
@@ -177,19 +175,24 @@ namespace HorseRadish
 		void Engine::renderLoop()
 		{
 			HorseRadish::Timer timerFrame;
+			std::unique_ptr<Profiler> profiler;
+			std::unique_ptr<Render::Stage> stage;
 			std::unique_ptr<HorseRadish::Render::RendererDeferred> rendererDeferred;
 			std::unique_ptr<HorseRadish::Render::Renderer2D> renderer2D;
 			std::unique_ptr<HorseRadish::Render::World> renderData;
-			std::unique_ptr<OpenglContext> glContext;
-			std::unique_ptr<HorseRadish::Render::ConsoleUI> rendererConsole;
+			std::unique_ptr<platform::OpenglContext> glContext;
+			std::unique_ptr<HorseRadish::Render::ConsoleUI> consoleUI;
 			std::unique_ptr<HorseRadish::Render::ProfilerUI> profilerUI;
 
 			mLoggerRenderCtx->info(" ");
 			mLoggerRenderCtx->info("${olive}->${default}Render thread initialized.");
 
-			auto profiler = std::make_unique<Profiler>();
+			auto isDevMove = var<bool>("sys.developer");
+
+			//start a profile if enabled
 			if (Profiler::isSupported())
 			{
+				profiler = std::make_unique<Profiler>();
 				profiler->enableStat(Profiler::StatId::FrameTotal, Profiler::StatId::FrameDraw, Profiler::StatId::FrameGPU, Profiler::StatId::FrameLogic);
 
 				profiler->enableStat(Profiler::StatId::GPUTimeElapsed, Profiler::StatId::GPUSamples,
@@ -201,10 +204,10 @@ namespace HorseRadish
 			{
 				int glMajorVersion, glMinorVersion;
 
-				glContext = std::make_unique<OpenglContext>(*mWindow, "OpenGL32.dll", 4, 5, var<bool>("renderer.glDebug"), true);
+				glContext = std::make_unique<platform::OpenglContext>(*mWindow, "OpenGL32.dll", 4, 5, var<bool>("renderer.glDebug"), true);
 				if (!glContext->isValid())
 				{
-					std::string errorMsg = glContext->getErrorMsg();
+					auto errorMsg = glContext->getErrorMsg();
 					if (errorMsg.empty())
 						exit(ExitAction::Nothing, "Unable to create OpenGL context");
 					else
@@ -228,61 +231,53 @@ namespace HorseRadish
 				}
 
 				openglInitialize();
+				glContext->swapBuffers(); //to force a black screen
+				glContext->setSwapInterval(var<int>("renderer.winSwapInterval"));
 
 				mLoggerRenderCtx->info("${olive}->${default}OpenGL system initialized.");
+				openGLWriteInfo(*mLogger, *glContext);
+
+				if (var<bool>("renderer.glDebug"))
+				{
+					HorseRadish::OpenGL::glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
+					HorseRadish::OpenGL::glDebugMessageCallback(openglDebugMessagesCallback, mLogger.get());
+					HorseRadish::OpenGL::glEnable(GL_DEBUG_OUTPUT);
+					HorseRadish::OpenGL::glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+
+					glContext->dispatchDebugMessages();
+				}
 			}
 
-			if (var<bool>("renderer.glDebug"))
+			//start everything related to the renderers (worl, deferred renderer, etc.)
 			{
-				/*HorseRadish::OpenGL::glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
-				HorseRadish::OpenGL::glDebugMessageCallback(openglDebugMessagesCallback, mLogger.get());
-				HorseRadish::OpenGL::glEnable(GL_DEBUG_OUTPUT);
-				HorseRadish::OpenGL::glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+				size_t displayWidth = var<int>("renderer.dims.width");
+				size_t displayHeight = var<int>("renderer.dims.height");
 
-				glContext->dispatchDebugMessages();*/
-			}
+				renderData = std::make_unique<HorseRadish::Render::World>();
 
-			glContext->swapBuffers();
+				renderer2D = std::make_unique<HorseRadish::Render::Renderer2D>(*glContext);
+				renderer2D->initialize(displayWidth, displayHeight,
+										mFileSystem.get(), var<std::string>("sys.console.text.font").c_str(),
+										var<int>("sys.console.text.size"));
 
-			//inicio agora o renderer (fbos, vbos, shaders, etc)
-			renderData = std::make_unique<HorseRadish::Render::World>();
+				rendererDeferred = std::make_unique<HorseRadish::Render::RendererDeferred>(*glContext, *mFileSystem, *renderData, displayWidth, displayHeight);
 
-			renderer2D = std::make_unique<HorseRadish::Render::Renderer2D>(*glContext);
-			renderer2D->initialize(var<int>("display.dims.width"), var<int>("display.dims.height"), mFileSystem.get(), var<std::string>("sys.console.text.font").c_str(), var<int>("sys.console.text.size"));
-
-			rendererDeferred = std::make_unique<HorseRadish::Render::RendererDeferred>(*glContext, *renderData);
-			rendererDeferred->Initialize(var<int>("display.dims.width"), var<int>("display.dims.height"), mFileSystem.get());
-
-			//escrevo alguma informação acerda do GL
-			openGLWriteInfo(*mLogger, *glContext);
-
-			//a camera
-			HorseRadish::Render::Tools::CameraFPS camera;
-
-			//coloco alguns valores por defeito na camera
-			camera.setPos(0.0f, 0.0f, 1.0f);
-			camera.setTarget(0.0f, 0.0f, 0.0f);
-			camera.setMovementScale(HorseRadish::Render::Tools::CameraFPS::CameraInput::Keyboard, 10.0f);
-						
-			auto viewportRender = std::make_unique<HorseRadish::OpenGL::Tools::Viewport>(90.0f, var<int>("renderer.dims.width"), var<int>("renderer.dims.height"), 1.0f, 500.0f);
-			auto viewportDisplay = std::make_unique<HorseRadish::OpenGL::Tools::Viewport>(90.0f, var<int>("display.dims.width"), var<int>("display.dims.height"), 1.0f, 500.0f);
-			
-			glContext->setSwapInterval(var<int>("renderer.winSwapInterval"));
-
-			if (Profiler::isSupported())
-				profilerUI = std::make_unique<HorseRadish::Render::ProfilerUI>(*profiler, *renderer2D);
-
-			if (var<bool>("sys.developer"))
-			{
-				rendererConsole = std::make_unique<HorseRadish::Render::ConsoleUI>(*mLogger, *renderer2D, 20);
-				rendererConsole->setVisible(true);
-
-				if (profilerUI)
-					profilerUI->setInfoState(true);
+				stage = std::make_unique<Render::Stage>(*mRuntime, *mLoggerRuntimeCtx, *mFileSystem, *glContext, displayWidth, displayHeight);
 			}
 			
-			std::shared_ptr<Render::Stage> stage = std::make_shared<Render::Stage>(*mRuntime, *mLoggerRuntimeCtx, *mFileSystem, *glContext, var<int>("display.dims.width"), var<int>("display.dims.height"));
+			//start other render (misc) related stuff
+			{
+				if (Profiler::isSupported())
+				{
+					profilerUI = std::make_unique<HorseRadish::Render::ProfilerUI>(*profiler, *renderer2D);
+					profilerUI->setInfoState(isDevMove);
+				}
 
+				if (isDevMove)
+					consoleUI = std::make_unique<HorseRadish::Render::ConsoleUI>(*mLogger, *renderer2D, 20);
+			}
+			
+			//initialization finished
 			mLoggerRenderCtx->info(" ");
 			mLoggerRenderCtx->info("${#FF9B00}Aplic${#FF8800}ation ${#FF8000}ready ${#FF6A00}to ${#FF6300}go...");
 			mLoggerRenderCtx->info("   type \"help\" to print information regarding this console (or optionally for a command or variable)");
@@ -291,35 +286,42 @@ namespace HorseRadish
 			mLoggerRenderCtx->info("===============================================");
 			mLoggerRenderCtx->info(" ");
 
-			//***************
-			//**********
-			{
-				
-				//HorseRadish::Streams::FileStream readStream("c:/Users/Sigma/Desktop/doom3.json", true, false);
-				HorseRadish::Streams::FileStream readStream("c:/Users/Sigma/Desktop/test_scene.json", true, false);
-				//HorseRadish::Streams::FileStream readStream("c:/Users/Sigma/Desktop/volund.json", true, false);
-
-				renderData->Cleanup();
-				if (!renderData->ImportJSON(HorseRadish::Streams::StreamReader(readStream)))
-					renderData->Cleanup();
-
-				//renderData->importObj("C:\\Users\\Sigma\\Desktop\\", "volund.obj");
-
-				renderData->LoadData(mFileSystem.get());
-
-				rendererDeferred->LoadWorld(*mFileSystem);
-				
-				/*HorseRadish::Streams::FileStream writeStream("c:/Users/Sigma/Desktop/volund2.json", false, true);
-				renderData->ExportJSON(HorseRadish::Streams::StreamWriter(writeStream));*/
-			}
-			//**********
-			//***************
-
 			mRuntime->callVoidMethod("events.ready");
 
 			HorseRadish::OpenGL::glEnable(GL_FRAMEBUFFER_SRGB);
 
+			//!!!!!!!!!!!!!!!! dev
 			{
+
+				//HorseRadish::Streams::FileStream readStream("c:/Users/Sigma/Desktop/doom3.json", true, false);
+				HorseRadish::Streams::FileStream readStream("c:/Users/Sigma/Desktop/test_scene.json", true, false);
+				//HorseRadish::Streams::FileStream readStream("c:/Users/Sigma/Desktop/volund.json", true, false);
+
+				renderData->cleanup();
+				if (!renderData->importJSON(HorseRadish::Streams::StreamReader(readStream)))
+					renderData->cleanup();
+
+				//renderData->importObj("C:\\Users\\Sigma\\Desktop\\", "volund.obj");
+
+				renderData->loadData(*mFileSystem);
+
+				rendererDeferred->loadWorld();
+
+				/*HorseRadish::Streams::FileStream writeStream("c:/Users/Sigma/Desktop/volund2.json", false, true);
+				renderData->ExportJSON(HorseRadish::Streams::StreamWriter(writeStream));*/
+			}
+
+			//we are about to enter the main render loop
+			{
+				//a camera
+				HorseRadish::Render::Tools::CameraFPS camera;
+				camera.setPos(0.0f, 0.0f, 1.0f);
+				camera.setTarget(0.0f, 0.0f, 0.0f);
+				camera.setMovementScale(HorseRadish::Render::Tools::CameraFPS::CameraInput::Keyboard, 10.0f);
+
+				HorseRadish::OpenGL::Tools::Viewport viewportRender(90.0f, var<int>("renderer.dims.width"), var<int>("renderer.dims.height"), 1.0f, 500.0f);
+				HorseRadish::OpenGL::glViewport(0, 0, viewportRender.width(), viewportRender.height());
+
 				HorseRadish::OpenGL::Objects::Query::Group<8> renderGlQueryGroup = {
 					HorseRadish::OpenGL::Objects::Query::Type::TimeElapsed, HorseRadish::OpenGL::Objects::Query::Type::SamplesPassed,
 					HorseRadish::OpenGL::Objects::Query::Type::VerticesSubmitted, HorseRadish::OpenGL::Objects::Query::Type::PrimitivesSubmitted,
@@ -334,7 +336,11 @@ namespace HorseRadish
 					timerFrame.reStart();
 					profiler->nextSample();
 
-					//caso nao desenhe nada
+					//--------------------
+					//Start frame rendering requests to queue stuff on the GPU
+					//--------------------
+
+					//in case nothing is drawn
 					HorseRadish::OpenGL::glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 					HorseRadish::OpenGL::glDepthMask(GL_TRUE);
 					HorseRadish::OpenGL::glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -342,101 +348,75 @@ namespace HorseRadish
 					if (Profiler::isSupported())
 						renderGlQueryGroup.queriesBegin();
 
-					//desenho a cena normalmente
-					//renderData->RenderFrame(*camera, viewport);
-
-					HorseRadish::OpenGL::glViewport(0, 0, viewportRender->width(), viewportRender->height());
-					rendererDeferred->Render(camera, *viewportRender);
+					//draw main, deferred scene
+					rendererDeferred->render(camera, viewportRender);
+					rendererDeferred->renderComposite(viewportRender);
 
 					if (Profiler::isSupported())
 						renderGlQueryGroup.queriesEnd();
 
-					//desenho algum debug se existir
-					//renderData->RenderDebug(gbMainConsole, camera, viewport);
-
-					//finalmente (e porque isto foi tudo pra um FBO) faço o render final seguido de algum debug se existir
-					//renderData->RenderComposite(gbMainConsole, camera, viewport);
-					//renderData->RenderDebugComposite(gbMainConsole, camera, viewport);
-
-					{
-						stage->drawScenes();
-
-						HorseRadish::OpenGL::glDisable(GL_BLEND);
-
-						stage->drawComposite(*viewportDisplay);
-					}
+					//draw stage
+					stage->drawScenes();
+					stage->drawComposite(viewportRender);
 
 					if (Profiler::isSupported())
 						profiler->addSample(Profiler::StatId::FrameDraw, timerFrame.getTimeIntMS());
 
-					if (var<int>("sys.screenshot") > 0)
-					{
-						var("sys.screenshot", var<int>("sys.screenshot") - 1); //several screenshots can be taken
-						
-						HorseRadish::Streams::FileStream fileStream("screenshot.bmp", false, true);
-
-						HorseRadish::OpenGL::glFinish();
-						//glContext->TakeScreenshot(fileStream); //should come from the framebuffers
-					}
-
 					//draw console and/or profiler
-					if ((profilerUI && profilerUI->isVisible()) || (rendererConsole && rendererConsole->isVisible()))
+					if ((profilerUI && profilerUI->isVisible()) || (consoleUI && consoleUI->isVisible()))
 					{
 						HorseRadish::OpenGL::glEnable(GL_BLEND);
 						HorseRadish::OpenGL::glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-						HorseRadish::OpenGL::glViewport(0, 0, viewportDisplay->width(), viewportDisplay->height());
-
 						if (profilerUI && profilerUI->isVisible())
-							profilerUI->draw(*viewportDisplay);
+							profilerUI->draw(viewportRender); //sys.profiler.draw
 
-						if (rendererConsole && rendererConsole->isVisible())
-							rendererConsole->draw(*viewportDisplay);
+						if (consoleUI && consoleUI->isVisible())
+							consoleUI->draw(viewportRender);
 
 						HorseRadish::OpenGL::glDisable(GL_BLEND);
 					}
 
-					//se houver uma camera e a consola não estiver a consumir input
-					if (!rendererConsole || !rendererConsole->isVisible())
+					//--------------------
+					//Frame rendering request is finished
+					//While the GPU is working, we process any input and/or simulations as required
+					//--------------------
+
+					//process input
+					if (!consoleUI || !consoleUI->isVisible())
 					{
-						HorseRadish::Render::Tools::CameraFPS::CameraAction cameraActions;
-
-						//tiro as coisas como estão agora
 						mWindow->rawInputSnapshot();
+						auto mousePosition = mWindow->rawInputGetMouseStatus();
 
-						//por omissão
-						cameraActions = HorseRadish::Render::Tools::CameraFPS::None;
-
-						//preciso de saber o que ando a fazer
-						if (mWindow->rawInputGetKeyStatus(Window::VirtualKeys::Up) || mWindow->rawInputGetKeyStatus('W'))
+						HorseRadish::Render::Tools::CameraFPS::CameraAction cameraActions = HorseRadish::Render::Tools::CameraFPS::None;
+						if (mWindow->rawInputGetKeyStatus(platform::Window::VirtualKeys::Up) || mWindow->rawInputGetKeyStatus('W'))
 							cameraActions = (HorseRadish::Render::Tools::CameraFPS::CameraAction)(cameraActions | HorseRadish::Render::Tools::CameraFPS::Forward);
-						if (mWindow->rawInputGetKeyStatus(Window::VirtualKeys::Down) || mWindow->rawInputGetKeyStatus('S'))
+						if (mWindow->rawInputGetKeyStatus(platform::Window::VirtualKeys::Down) || mWindow->rawInputGetKeyStatus('S'))
 							cameraActions = (HorseRadish::Render::Tools::CameraFPS::CameraAction)(cameraActions | HorseRadish::Render::Tools::CameraFPS::Backward);
-						if (mWindow->rawInputGetKeyStatus(Window::VirtualKeys::Left) || mWindow->rawInputGetKeyStatus('A'))
+						if (mWindow->rawInputGetKeyStatus(platform::Window::VirtualKeys::Left) || mWindow->rawInputGetKeyStatus('A'))
 							cameraActions = (HorseRadish::Render::Tools::CameraFPS::CameraAction)(cameraActions | HorseRadish::Render::Tools::CameraFPS::StrifeLeft);
-						if (mWindow->rawInputGetKeyStatus(Window::VirtualKeys::Right) || mWindow->rawInputGetKeyStatus('D'))
+						if (mWindow->rawInputGetKeyStatus(platform::Window::VirtualKeys::Right) || mWindow->rawInputGetKeyStatus('D'))
 							cameraActions = (HorseRadish::Render::Tools::CameraFPS::CameraAction)(cameraActions | HorseRadish::Render::Tools::CameraFPS::StrifeRight);
-						if (mWindow->rawInputGetKeyStatus(Window::VirtualKeys::Space))
+						if (mWindow->rawInputGetKeyStatus(platform::Window::VirtualKeys::Space))
 							cameraActions = (HorseRadish::Render::Tools::CameraFPS::CameraAction)(cameraActions | HorseRadish::Render::Tools::CameraFPS::Up);
-						if (mWindow->rawInputGetKeyStatus(Window::VirtualKeys::Control))
+						if (mWindow->rawInputGetKeyStatus(platform::Window::VirtualKeys::Control))
 							cameraActions = (HorseRadish::Render::Tools::CameraFPS::CameraAction)(cameraActions | HorseRadish::Render::Tools::CameraFPS::Down);
-						if (mWindow->rawInputGetKeyStatus(Window::VirtualKeys::Shift))
+						if (mWindow->rawInputGetKeyStatus(platform::Window::VirtualKeys::Shift))
 							cameraActions = (HorseRadish::Render::Tools::CameraFPS::CameraAction)(cameraActions | HorseRadish::Render::Tools::CameraFPS::Run);
 
-						//posso actualizar a camera
-						auto mousePosition = mWindow->rawInputGetMouseStatus();
 						camera.commitInput(cameraActions, mousePosition[0], mousePosition[1], true, lastDeltaTimeS);
 					}
 
-					mWindow->processMessages([&](const Window::Message &msg)
+					//process window messages
+					mWindow->processMessages([&](const platform::Window::Message &msg)
 					{
-						if (msg.isType(Window::Message::MessageType::CharacterKey))
+						if (msg.isType(platform::Window::Message::MessageType::CharacterKey))
 							mRuntime->callVoidMethod("events.onKeyPress", msg.getParam());
 
 						stage->processMessage(msg);
 
-						if (rendererConsole)
-							rendererConsole->processMsg(msg, [&](const char * const newInput) { mRuntime->runScript(newInput); });
+						if (consoleUI)
+							consoleUI->processMsg(msg, [&](const char * const newInput) { mRuntime->runScript(newInput); });
 
 					}, true);
 
@@ -452,23 +432,37 @@ namespace HorseRadish
 						profiler->addSample(Profiler::StatId::GPUClipOutputPrimitives, static_cast<int64_t>(renderGlQueryGroup.getResultI64<7>()));
 					}
 
-					//mando o renderer preparar a próxima frame
-					renderData->PrepareNextFrame(camera, *viewportRender);
+					//process step in the render data, stage and console
+					renderData->prepareNextFrame(camera, viewportRender);
 					stage->processStep();
 
-					if (rendererConsole)
-						rendererConsole->processStep();
+					if (consoleUI)
+						consoleUI->processStep();
 					
+					if (profilerUI)
+						profilerUI->processStats();
+
 					if (Profiler::isSupported())
 						profiler->addSample(Profiler::StatId::FrameGPU, timerFrame.getTimeIntMS());
 
-					if (profilerUI)
-						profilerUI->processStats();
-					
+					//--------------------
+					//Simulations are finished, we can swap GPU buffers and move on
+					//--------------------
+
 					glContext->swapBuffers();
 
+					//if we must take a screenshot
+					if (var<int>("sys.screenshot") > 0)
+					{
+						var<int>("sys.screenshot", var<int>("sys.screenshot") - 1); //several screenshots can be taken
+
+						HorseRadish::Streams::FileStream fileStream("screenshot.bmp", false, true);
+
+						//rendererDeferred //blit from the final framebuffer
+					}
+
 					//only limit FPS if not developing
-					if (!var<bool>("sys.developer"))
+					if (!isDevMove)
 					{
 						auto frameTotalTimeMS = timerFrame.getTimeMS();
 						if (frameTotalTimeMS < 16.5) //cap to 60fps
@@ -490,16 +484,12 @@ namespace HorseRadish
 			profilerUI.reset();
 			profiler.reset();
 
-			rendererConsole.reset();
+			consoleUI.reset();
 
 			rendererDeferred.reset();
 			renderer2D.reset();
 
-			renderData->Cleanup();
 			renderData.reset();
-
-			viewportDisplay.reset();
-			viewportRender.reset();
 
 			glContext.reset();
 		}

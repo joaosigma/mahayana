@@ -67,6 +67,9 @@
     <Filter Include="libs\tinyobjloader">
       <UniqueIdentifier>{a042a721-d846-4835-89c5-a84f69c965eb}</UniqueIdentifier>
     </Filter>
+    <Filter Include="misc">
+      <UniqueIdentifier>{264a2c64-4db2-4911-b556-cc320774e9a5}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\common\opengl\openGLext.cpp">
@@ -135,9 +138,7 @@
     <ClCompile Include="..\..\src\render\world.cpp">
       <Filter>render</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\culling.cpp" />
     <ClCompile Include="..\..\src\main.cpp" />
-    <ClCompile Include="..\..\src\videoStream.cpp" />
     <ClCompile Include="..\..\src\libs\lodepng\lodepng.cpp">
       <Filter>libs\lodepng</Filter>
     </ClCompile>
@@ -327,9 +328,6 @@
     <ClCompile Include="..\..\src\common\plane.cpp">
       <Filter>common</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\common\platformWin32.cpp">
-      <Filter>common</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\common\quaternion.cpp">
       <Filter>common</Filter>
     </ClCompile>
@@ -338,6 +336,12 @@
     </ClCompile>
     <ClCompile Include="..\..\src\common\ray.cpp">
       <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\misc\videoStream.cpp">
+      <Filter>misc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\platform\platformWin32.cpp">
+      <Filter>platform</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -405,8 +409,6 @@
       <Filter>render</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\build.hpp" />
-    <ClInclude Include="..\..\src\culling.hpp" />
-    <ClInclude Include="..\..\src\videoStream.hpp" />
     <ClInclude Include="..\..\src\libs\lodepng\lodepng.h">
       <Filter>libs\lodepng</Filter>
     </ClInclude>
@@ -722,12 +724,6 @@
     <ClInclude Include="..\..\src\common\plane.hpp">
       <Filter>common</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\common\platform.hpp">
-      <Filter>common</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\common\primitives2D.hpp">
-      <Filter>common</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\common\quaternion.hpp">
       <Filter>common</Filter>
     </ClInclude>
@@ -739,6 +735,15 @@
     </ClInclude>
     <ClInclude Include="..\..\src\common\avl-tree.hpp">
       <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\misc\videoStream.hpp">
+      <Filter>misc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\common\primitives2D.hpp">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\platform\platform.hpp">
+      <Filter>platform</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

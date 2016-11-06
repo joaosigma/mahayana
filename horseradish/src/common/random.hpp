@@ -25,5 +25,4 @@ namespace HorseRadish
 		int distributionPoisson(double mean);
 		int distributionBinomial(int nDraw, double pChange);
 	};
-
-} //HorseRadish
+}

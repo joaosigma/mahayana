@@ -67,5 +67,4 @@ namespace HorseRadish
 		std::binomial_distribution<> dist(nDraw, pChange);
 		return dist(mtwister);
 	}
-
-} //HorseRadish
+}

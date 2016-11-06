@@ -49,5 +49,4 @@ namespace HorseRadish
 
 		mLength = sizedDirection.getMagnitude();
 	}
-
-} //HorseRadish
+}

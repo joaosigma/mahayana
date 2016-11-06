@@ -5,7 +5,7 @@
 static
 void evalPointListCatmullRom(const HorseRadish::Vector3f * const pList, const int pNum, float nrmTime, HorseRadish::Vector3f& pWrite)
 {
-	if (pList == nullptr || pNum < 4)
+	if (!pList || pNum < 4)
 		return;
 
 	float tPos = HorseRadish::Math::fClamp(nrmTime, 0.0f, 1.0f);
@@ -22,7 +22,7 @@ void evalPointListCatmullRom(const HorseRadish::Vector3f * const pList, const in
 static
 void evalPointListHermite(const HorseRadish::Vector3f * const pList, const int pNum, float nrmTime, HorseRadish::Vector3f& pWrite)
 {
-	if (pList == nullptr || pNum < 4)
+	if (!pList || pNum < 4)
 		return;
 
 	float tPos = HorseRadish::Math::fClamp(nrmTime, 0.0f, 1.0f);
@@ -236,12 +236,12 @@ void CameraPath::pathClear(CameraComponent componentsBitField)
 
 void CameraPath::pathAdd(CameraComponent component, float x, float y, float z)
 {
-	if ((component == Position) && (mPointsPos != nullptr) && (mNumPos < CameraPath::MaxNumPoints))
+	if ((component == Position) && !mPointsPos && (mNumPos < CameraPath::MaxNumPoints))
 	{
 		mPointsPos[mNumPos].set(x, y, z);
 		mNumPos++;
 	}
-	else if ((component == Target) && (mPointsTarget != nullptr) && (mNumTarget < CameraPath::MaxNumPoints))
+	else if ((component == Target) && !mPointsTarget && (mNumTarget < CameraPath::MaxNumPoints))
 	{
 		mPointsTarget[mNumTarget].set(x, y, z);
 		mNumTarget++;
@@ -250,12 +250,12 @@ void CameraPath::pathAdd(CameraComponent component, float x, float y, float z)
 
 void CameraPath::pathAdd(CameraComponent component, const HorseRadish::Vector3f &vec)
 {
-	if ((component == Position) && (mPointsPos != nullptr) && (mNumPos < CameraPath::MaxNumPoints))
+	if ((component == Position) && !mPointsPos && (mNumPos < CameraPath::MaxNumPoints))
 	{
 		mPointsPos[mNumPos].set(vec);
 		mNumPos++;
 	}
-	else if ((component == Target) && (mPointsTarget != nullptr) && (mNumTarget < CameraPath::MaxNumPoints))
+	else if ((component == Target) && !mPointsTarget && (mNumTarget < CameraPath::MaxNumPoints))
 	{
 		mPointsTarget[mNumTarget].set(vec);
 		mNumTarget++;

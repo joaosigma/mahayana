@@ -8,8 +8,8 @@
 #include <locale>
 #include <memory>
 
-namespace HorseRadish { namespace Render {
-
+namespace HorseRadish { namespace Render
+{
 	class Stage::SceneRuntimeProxy : public Engine::Runtime::ClassProxy
 	{
 	private:
@@ -121,9 +121,9 @@ namespace HorseRadish { namespace Render {
 			this->invokeVoidMethod("events.onMessage", msg, payload);
 		}
 
-		void rtInvokeMessage(const Window::Message& msg)
+		void rtInvokeMessage(const platform::Window::Message& msg)
 		{
-			if (msg.isType(Window::Message::MessageType::CharacterKey))
+			if (msg.isType(platform::Window::Message::MessageType::CharacterKey))
 				this->invokeVoidMethod("events.onKeyPress", msg.getParam());
 		}
 	};
@@ -267,9 +267,7 @@ namespace HorseRadish { namespace Render {
 	}
 
 	Stage::~Stage()
-	{
-		std::memset(&mRenderData, 0, sizeof(RenderData));
-	}
+	{ }
 
 	void Stage::drawScenes()
 	{
@@ -300,7 +298,6 @@ namespace HorseRadish { namespace Render {
 
 		mScenesDrawned = false;
 
-		HorseRadish::OpenGL::glUseProgram(0);
 		HorseRadish::OpenGL::glBindProgramPipeline(mRenderData.progPipeline.getId());
 
 		mRenderData.sampler.bind(0);
@@ -354,7 +351,7 @@ namespace HorseRadish { namespace Render {
 		mTempScenes.clear();
 	}
 
-	void Stage::processMessage(const Window::Message& msg)
+	void Stage::processMessage(const platform::Window::Message& msg)
 	{
 		for (auto& sceneIt : mRuntimeScenes)
 		{

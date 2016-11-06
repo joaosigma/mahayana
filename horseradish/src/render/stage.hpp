@@ -8,8 +8,8 @@
 
 #include "platform/window.hpp"
 
-namespace HorseRadish {	namespace Render {
-
+namespace HorseRadish {	namespace Render
+{
 	class Stage
 	{
 		class SceneRuntimeProxy;
@@ -50,7 +50,6 @@ namespace HorseRadish {	namespace Render {
 		void drawScenes();
 		void drawComposite(const HorseRadish::OpenGL::Tools::Viewport& viewport);
 		void processStep();
-		void processMessage(const Window::Message& msg);
+		void processMessage(const platform::Window::Message& msg);
 	};
-
 } }

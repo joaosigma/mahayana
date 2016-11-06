@@ -18,7 +18,6 @@ namespace HorseRadish
 	class Math
 	{
 	public:
-
 		class SIMD
 		{
 		public:
@@ -307,7 +306,6 @@ namespace HorseRadish
 		_mm_store_ss(&retVal, _mm_min_ss(_mm_max_ss(_mm_load_ss(&val), _mm_load_ss(&min)), _mm_load_ss(&max)));
 		return retVal;
 	}
-
 }
 
 #pragma warning( pop ) 

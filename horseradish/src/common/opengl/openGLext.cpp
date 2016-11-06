@@ -1,4 +1,5 @@
 #include "openGLext.hpp"
+
 #include "common/stringUtils.hpp"
 
 #define GETADDR(var, name, type)  var = (type)wglProcAddressOpenGL(name);
@@ -91,136 +92,127 @@ void loadGLExtFunctions(PFNWGLGETPROCADDRESSPROC wglProcAddressOpenGL)
 	GETADDR(glProgramPathFragmentInputGenNV, "glProgramPathFragmentInputGenNV", PFNGLPROGRAMPATHFRAGMENTINPUTGENNVPROC);
 	GETADDR(glGetProgramResourcefvNV, "glGetProgramResourcefvNV", PFNGLGETPROGRAMRESOURCEFVNVPROC);
 #endif
-
 }
 
-namespace HorseRadish
+namespace HorseRadish { namespace OpenGL { namespace Extensions
 {
-	namespace OpenGL
-	{
-		namespace Extensions
-		{
-
 #ifdef GL_EXT_direct_state_access
-			PFNGLMATRIXLOADFEXTPROC glMatrixLoadfEXT;
-			PFNGLMATRIXLOADDEXTPROC glMatrixLoaddEXT;
-			PFNGLMATRIXMULTFEXTPROC glMatrixMultfEXT;
-			PFNGLMATRIXMULTDEXTPROC glMatrixMultdEXT;
-			PFNGLMATRIXLOADIDENTITYEXTPROC glMatrixLoadIdentityEXT;
-			PFNGLMATRIXROTATEFEXTPROC glMatrixRotatefEXT;
-			PFNGLMATRIXROTATEDEXTPROC glMatrixRotatedEXT;
-			PFNGLMATRIXSCALEFEXTPROC glMatrixScalefEXT;
-			PFNGLMATRIXSCALEDEXTPROC glMatrixScaledEXT;
-			PFNGLMATRIXTRANSLATEFEXTPROC glMatrixTranslatefEXT;
-			PFNGLMATRIXTRANSLATEDEXTPROC glMatrixTranslatedEXT;
-			PFNGLMATRIXFRUSTUMEXTPROC glMatrixFrustumEXT;
-			PFNGLMATRIXORTHOEXTPROC glMatrixOrthoEXT;
-			PFNGLMATRIXPOPEXTPROC glMatrixPopEXT;
-			PFNGLMATRIXPUSHEXTPROC glMatrixPushEXT;
-			PFNGLMATRIXLOADTRANSPOSEFEXTPROC glMatrixLoadTransposefEXT;
-			PFNGLMATRIXLOADTRANSPOSEDEXTPROC glMatrixLoadTransposedEXT;
-			PFNGLMATRIXMULTTRANSPOSEFEXTPROC glMatrixMultTransposefEXT;
-			PFNGLMATRIXMULTTRANSPOSEDEXTPROC glMatrixMultTransposedEXT;
+	PFNGLMATRIXLOADFEXTPROC glMatrixLoadfEXT;
+	PFNGLMATRIXLOADDEXTPROC glMatrixLoaddEXT;
+	PFNGLMATRIXMULTFEXTPROC glMatrixMultfEXT;
+	PFNGLMATRIXMULTDEXTPROC glMatrixMultdEXT;
+	PFNGLMATRIXLOADIDENTITYEXTPROC glMatrixLoadIdentityEXT;
+	PFNGLMATRIXROTATEFEXTPROC glMatrixRotatefEXT;
+	PFNGLMATRIXROTATEDEXTPROC glMatrixRotatedEXT;
+	PFNGLMATRIXSCALEFEXTPROC glMatrixScalefEXT;
+	PFNGLMATRIXSCALEDEXTPROC glMatrixScaledEXT;
+	PFNGLMATRIXTRANSLATEFEXTPROC glMatrixTranslatefEXT;
+	PFNGLMATRIXTRANSLATEDEXTPROC glMatrixTranslatedEXT;
+	PFNGLMATRIXFRUSTUMEXTPROC glMatrixFrustumEXT;
+	PFNGLMATRIXORTHOEXTPROC glMatrixOrthoEXT;
+	PFNGLMATRIXPOPEXTPROC glMatrixPopEXT;
+	PFNGLMATRIXPUSHEXTPROC glMatrixPushEXT;
+	PFNGLMATRIXLOADTRANSPOSEFEXTPROC glMatrixLoadTransposefEXT;
+	PFNGLMATRIXLOADTRANSPOSEDEXTPROC glMatrixLoadTransposedEXT;
+	PFNGLMATRIXMULTTRANSPOSEFEXTPROC glMatrixMultTransposefEXT;
+	PFNGLMATRIXMULTTRANSPOSEDEXTPROC glMatrixMultTransposedEXT;
 #endif
 
 #ifdef GL_NV_path_rendering
-			PFNGLGENPATHSNVPROC glGenPathsNV;
-			PFNGLDELETEPATHSNVPROC glDeletePathsNV;
-			PFNGLISPATHNVPROC glIsPathNV;
-			PFNGLPATHCOMMANDSNVPROC glPathCommandsNV;
-			PFNGLPATHCOORDSNVPROC glPathCoordsNV;
-			PFNGLPATHSUBCOMMANDSNVPROC glPathSubCommandsNV;
-			PFNGLPATHSUBCOORDSNVPROC glPathSubCoordsNV;
-			PFNGLPATHSTRINGNVPROC glPathStringNV;
-			PFNGLPATHGLYPHSNVPROC glPathGlyphsNV;
-			PFNGLPATHGLYPHRANGENVPROC glPathGlyphRangeNV;
-			PFNGLWEIGHTPATHSNVPROC glWeightPathsNV;
-			PFNGLCOPYPATHNVPROC glCopyPathNV;
-			PFNGLINTERPOLATEPATHSNVPROC glInterpolatePathsNV;
-			PFNGLTRANSFORMPATHNVPROC glTransformPathNV;
-			PFNGLPATHPARAMETERIVNVPROC glPathParameterivNV;
-			PFNGLPATHPARAMETERINVPROC glPathParameteriNV;
-			PFNGLPATHPARAMETERFVNVPROC glPathParameterfvNV;
-			PFNGLPATHPARAMETERFNVPROC glPathParameterfNV;
-			PFNGLPATHDASHARRAYNVPROC glPathDashArrayNV;
-			PFNGLPATHSTENCILFUNCNVPROC glPathStencilFuncNV;
-			PFNGLPATHSTENCILDEPTHOFFSETNVPROC glPathStencilDepthOffsetNV;
-			PFNGLSTENCILFILLPATHNVPROC glStencilFillPathNV;
-			PFNGLSTENCILSTROKEPATHNVPROC glStencilStrokePathNV;
-			PFNGLSTENCILFILLPATHINSTANCEDNVPROC glStencilFillPathInstancedNV;
-			PFNGLSTENCILSTROKEPATHINSTANCEDNVPROC glStencilStrokePathInstancedNV;
-			PFNGLPATHCOVERDEPTHFUNCNVPROC glPathCoverDepthFuncNV;
-			PFNGLCOVERFILLPATHNVPROC glCoverFillPathNV;
-			PFNGLCOVERSTROKEPATHNVPROC glCoverStrokePathNV;
-			PFNGLCOVERFILLPATHINSTANCEDNVPROC glCoverFillPathInstancedNV;
-			PFNGLCOVERSTROKEPATHINSTANCEDNVPROC glCoverStrokePathInstancedNV;
-			PFNGLGETPATHPARAMETERIVNVPROC glGetPathParameterivNV;
-			PFNGLGETPATHPARAMETERFVNVPROC glGetPathParameterfvNV;
-			PFNGLGETPATHCOMMANDSNVPROC glGetPathCommandsNV;
-			PFNGLGETPATHCOORDSNVPROC glGetPathCoordsNV;
-			PFNGLGETPATHDASHARRAYNVPROC glGetPathDashArrayNV;
-			PFNGLGETPATHMETRICSNVPROC glGetPathMetricsNV;
-			PFNGLGETPATHMETRICRANGENVPROC glGetPathMetricRangeNV;
-			PFNGLGETPATHSPACINGNVPROC glGetPathSpacingNV;
-			PFNGLISPOINTINFILLPATHNVPROC glIsPointInFillPathNV;
-			PFNGLISPOINTINSTROKEPATHNVPROC glIsPointInStrokePathNV;
-			PFNGLGETPATHLENGTHNVPROC glGetPathLengthNV;
-			PFNGLPOINTALONGPATHNVPROC glPointAlongPathNV;
-			PFNGLMATRIXLOAD3X2FNVPROC glMatrixLoad3x2fNV;
-			PFNGLMATRIXLOAD3X3FNVPROC glMatrixLoad3x3fNV;
-			PFNGLMATRIXLOADTRANSPOSE3X3FNVPROC glMatrixLoadTranspose3x3fNV;
-			PFNGLMATRIXMULT3X2FNVPROC glMatrixMult3x2fNV;
-			PFNGLMATRIXMULT3X3FNVPROC glMatrixMult3x3fNV;
-			PFNGLMATRIXMULTTRANSPOSE3X3FNVPROC glMatrixMultTranspose3x3fNV;
-			PFNGLSTENCILTHENCOVERFILLPATHNVPROC glStencilThenCoverFillPathNV;
-			PFNGLSTENCILTHENCOVERSTROKEPATHNVPROC glStencilThenCoverStrokePathNV;
-			PFNGLSTENCILTHENCOVERFILLPATHINSTANCEDNVPROC glStencilThenCoverFillPathInstancedNV;
-			PFNGLSTENCILTHENCOVERSTROKEPATHINSTANCEDNVPROC glStencilThenCoverStrokePathInstancedNV;
-			PFNGLPATHGLYPHINDEXRANGENVPROC glPathGlyphIndexRangeNV;
-			PFNGLPATHGLYPHINDEXARRAYNVPROC glPathGlyphIndexArrayNV;
-			PFNGLPATHMEMORYGLYPHINDEXARRAYNVPROC glPathMemoryGlyphIndexArrayNV;
-			PFNGLPROGRAMPATHFRAGMENTINPUTGENNVPROC glProgramPathFragmentInputGenNV;
-			PFNGLGETPROGRAMRESOURCEFVNVPROC glGetProgramResourcefvNV;
+	PFNGLGENPATHSNVPROC glGenPathsNV;
+	PFNGLDELETEPATHSNVPROC glDeletePathsNV;
+	PFNGLISPATHNVPROC glIsPathNV;
+	PFNGLPATHCOMMANDSNVPROC glPathCommandsNV;
+	PFNGLPATHCOORDSNVPROC glPathCoordsNV;
+	PFNGLPATHSUBCOMMANDSNVPROC glPathSubCommandsNV;
+	PFNGLPATHSUBCOORDSNVPROC glPathSubCoordsNV;
+	PFNGLPATHSTRINGNVPROC glPathStringNV;
+	PFNGLPATHGLYPHSNVPROC glPathGlyphsNV;
+	PFNGLPATHGLYPHRANGENVPROC glPathGlyphRangeNV;
+	PFNGLWEIGHTPATHSNVPROC glWeightPathsNV;
+	PFNGLCOPYPATHNVPROC glCopyPathNV;
+	PFNGLINTERPOLATEPATHSNVPROC glInterpolatePathsNV;
+	PFNGLTRANSFORMPATHNVPROC glTransformPathNV;
+	PFNGLPATHPARAMETERIVNVPROC glPathParameterivNV;
+	PFNGLPATHPARAMETERINVPROC glPathParameteriNV;
+	PFNGLPATHPARAMETERFVNVPROC glPathParameterfvNV;
+	PFNGLPATHPARAMETERFNVPROC glPathParameterfNV;
+	PFNGLPATHDASHARRAYNVPROC glPathDashArrayNV;
+	PFNGLPATHSTENCILFUNCNVPROC glPathStencilFuncNV;
+	PFNGLPATHSTENCILDEPTHOFFSETNVPROC glPathStencilDepthOffsetNV;
+	PFNGLSTENCILFILLPATHNVPROC glStencilFillPathNV;
+	PFNGLSTENCILSTROKEPATHNVPROC glStencilStrokePathNV;
+	PFNGLSTENCILFILLPATHINSTANCEDNVPROC glStencilFillPathInstancedNV;
+	PFNGLSTENCILSTROKEPATHINSTANCEDNVPROC glStencilStrokePathInstancedNV;
+	PFNGLPATHCOVERDEPTHFUNCNVPROC glPathCoverDepthFuncNV;
+	PFNGLCOVERFILLPATHNVPROC glCoverFillPathNV;
+	PFNGLCOVERSTROKEPATHNVPROC glCoverStrokePathNV;
+	PFNGLCOVERFILLPATHINSTANCEDNVPROC glCoverFillPathInstancedNV;
+	PFNGLCOVERSTROKEPATHINSTANCEDNVPROC glCoverStrokePathInstancedNV;
+	PFNGLGETPATHPARAMETERIVNVPROC glGetPathParameterivNV;
+	PFNGLGETPATHPARAMETERFVNVPROC glGetPathParameterfvNV;
+	PFNGLGETPATHCOMMANDSNVPROC glGetPathCommandsNV;
+	PFNGLGETPATHCOORDSNVPROC glGetPathCoordsNV;
+	PFNGLGETPATHDASHARRAYNVPROC glGetPathDashArrayNV;
+	PFNGLGETPATHMETRICSNVPROC glGetPathMetricsNV;
+	PFNGLGETPATHMETRICRANGENVPROC glGetPathMetricRangeNV;
+	PFNGLGETPATHSPACINGNVPROC glGetPathSpacingNV;
+	PFNGLISPOINTINFILLPATHNVPROC glIsPointInFillPathNV;
+	PFNGLISPOINTINSTROKEPATHNVPROC glIsPointInStrokePathNV;
+	PFNGLGETPATHLENGTHNVPROC glGetPathLengthNV;
+	PFNGLPOINTALONGPATHNVPROC glPointAlongPathNV;
+	PFNGLMATRIXLOAD3X2FNVPROC glMatrixLoad3x2fNV;
+	PFNGLMATRIXLOAD3X3FNVPROC glMatrixLoad3x3fNV;
+	PFNGLMATRIXLOADTRANSPOSE3X3FNVPROC glMatrixLoadTranspose3x3fNV;
+	PFNGLMATRIXMULT3X2FNVPROC glMatrixMult3x2fNV;
+	PFNGLMATRIXMULT3X3FNVPROC glMatrixMult3x3fNV;
+	PFNGLMATRIXMULTTRANSPOSE3X3FNVPROC glMatrixMultTranspose3x3fNV;
+	PFNGLSTENCILTHENCOVERFILLPATHNVPROC glStencilThenCoverFillPathNV;
+	PFNGLSTENCILTHENCOVERSTROKEPATHNVPROC glStencilThenCoverStrokePathNV;
+	PFNGLSTENCILTHENCOVERFILLPATHINSTANCEDNVPROC glStencilThenCoverFillPathInstancedNV;
+	PFNGLSTENCILTHENCOVERSTROKEPATHINSTANCEDNVPROC glStencilThenCoverStrokePathInstancedNV;
+	PFNGLPATHGLYPHINDEXRANGENVPROC glPathGlyphIndexRangeNV;
+	PFNGLPATHGLYPHINDEXARRAYNVPROC glPathGlyphIndexArrayNV;
+	PFNGLPATHMEMORYGLYPHINDEXARRAYNVPROC glPathMemoryGlyphIndexArrayNV;
+	PFNGLPROGRAMPATHFRAGMENTINPUTGENNVPROC glProgramPathFragmentInputGenNV;
+	PFNGLGETPROGRAMRESOURCEFVNVPROC glGetProgramResourcefvNV;
 #endif
 
-			void ExtensionsLoad(const char* const openGLModuleName)
-			{
-				if (openGLModuleName == nullptr)
-					return;
+	void ExtensionsLoad(const char* const openGLModuleName)
+	{
+		if (openGLModuleName == nullptr)
+			return;
 
-				auto openGLModuleNameWChar = HorseRadish::StringUtils::conv2UTF16(openGLModuleName);
+		auto openGLModuleNameWChar = HorseRadish::StringUtils::conv2UTF16(openGLModuleName);
 
-				auto ptrWGlGetProcAddress = (PFNWGLGETPROCADDRESSPROC)GetProcAddress(GetModuleHandle(openGLModuleNameWChar.c_str()), "wglGetProcAddress");
-				if (ptrWGlGetProcAddress == nullptr)
-					return;
+		auto ptrWGlGetProcAddress = (PFNWGLGETPROCADDRESSPROC)GetProcAddress(GetModuleHandle(openGLModuleNameWChar.c_str()), "wglGetProcAddress");
+		if (ptrWGlGetProcAddress == nullptr)
+			return;
 
-				loadGLExtFunctions(ptrWGlGetProcAddress);
-			}
+		loadGLExtFunctions(ptrWGlGetProcAddress);
+	}
 
-			bool ExtensionExists(const char * const extensionName)
-			{
-				int numExtensions;
+	bool ExtensionExists(const char * const extensionName)
+	{
+		int numExtensions;
 
-				if (extensionName == nullptr || *extensionName == '\0')
-					return false;
+		if (extensionName == nullptr || *extensionName == '\0')
+			return false;
 
-				OpenGL::glGetIntegerv(GL_NUM_EXTENSIONS, &numExtensions);
-				if (numExtensions <= 0)
-					return false;
+		OpenGL::glGetIntegerv(GL_NUM_EXTENSIONS, &numExtensions);
+		if (numExtensions <= 0)
+			return false;
 
-				for (int curIndex = 0; curIndex < numExtensions; curIndex++)
-				{
-					auto curExt = reinterpret_cast<const char*>(OpenGL::glGetStringi(GL_EXTENSIONS, curIndex));
-					if ((curExt == nullptr) || (*curExt == '\0'))
-						continue;
+		for (int curIndex = 0; curIndex < numExtensions; curIndex++)
+		{
+			auto curExt = reinterpret_cast<const char*>(OpenGL::glGetStringi(GL_EXTENSIONS, curIndex));
+			if ((curExt == nullptr) || (*curExt == '\0'))
+				continue;
 
-					if (stricmp(curExt, extensionName) == 0)
-						return true;
-				}
+			if (stricmp(curExt, extensionName) == 0)
+				return true;
+		}
 
-				return false;
-			}
-
-		} //Extensions
-	} //OpenGL
-} //HorseRadish
+		return false;
+	}
+} }  }

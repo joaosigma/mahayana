@@ -303,7 +303,7 @@ namespace HorseRadish
 		auto rayDir = ray.direction();
 
 		//by omission
-		if (rayHitDistance != nullptr)
+		if (rayHitDistance)
 			*rayHitDistance = 0.0f;
 
 		int ax0 = -1;
@@ -337,7 +337,7 @@ namespace HorseRadish
 		if (ax0 < 0)
 			return (inside == 3);
 
-		if (rayHitDistance != nullptr)
+		if (rayHitDistance)
 			*rayHitDistance = scale;
 
 		int ax1 = (ax0 + 1) % 3;
@@ -517,5 +517,4 @@ namespace HorseRadish
 
 		return BSphere::Position::Inside;
 	}
-
-} //HorseRadish
+}

@@ -2,69 +2,68 @@
 
 #include <string>
 
-namespace HorseRadish {	namespace IO {
-
-class Path
+namespace HorseRadish {	namespace IO
 {
-public:
-	enum class KnownPath { SystemFolder, CurrentFolder };
-
-private:
-	std::string mPath;
-
-private:
-	void cleanPath();
-
-public:
-	Path()
-	{ }
-
-	explicit Path(const char* const path)
-		: mPath(path)
+	class Path
 	{
-		cleanPath();
-	}
+	public:
+		enum class KnownPath { SystemFolder, CurrentFolder };
 
-	explicit Path(const std::string& path)
-		: mPath(path)
-	{
-		cleanPath();
-	}
+	private:
+		std::string mPath;
 
-	explicit Path(const KnownPath &knownPath)
-	{
-		set(knownPath);
-	}
+	private:
+		void cleanPath();
 
-	Path& operator+=(const Path& path);
-	Path& operator+=(const char* const path);
-	Path& operator+=(const std::string& path);
+	public:
+		Path()
+		{ }
 
-	bool isEmpty() const
-	{
-		return mPath.empty();
-	}
+		explicit Path(const char* const path)
+			: mPath(path)
+		{
+			cleanPath();
+		}
 
-	const std::string& str() const
-	{
-		return mPath;
-	}
+		explicit Path(const std::string& path)
+			: mPath(path)
+		{
+			cleanPath();
+		}
 
-	void clear();
+		explicit Path(const KnownPath &knownPath)
+		{
+			set(knownPath);
+		}
 
-	void set(const std::string& path);
-	void set(const char* const path);
-	void set(const Path &path1, const Path &path2);
-	void set(const KnownPath &knownPath);
+		Path& operator+=(const Path& path);
+		Path& operator+=(const char* const path);
+		Path& operator+=(const std::string& path);
 
-	void combine(const Path &pathToAppend);
-	void combine(const char* const pathToAppend);
-	void combine(const std::string& pathToAppend);
+		bool isEmpty() const
+		{
+			return mPath.empty();
+		}
 
-	void removeLastComponent();
-	void removeComponents(size_t numComponents = 0);
+		const std::string& str() const
+		{
+			return mPath;
+		}
 
-	void removeFile();
-};
+		void clear();
 
+		void set(const std::string& path);
+		void set(const char* const path);
+		void set(const Path &path1, const Path &path2);
+		void set(const KnownPath &knownPath);
+
+		void combine(const Path &pathToAppend);
+		void combine(const char* const pathToAppend);
+		void combine(const std::string& pathToAppend);
+
+		void removeLastComponent();
+		void removeComponents(size_t numComponents = 0);
+
+		void removeFile();
+	};
 } }

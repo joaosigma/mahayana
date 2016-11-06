@@ -2,8 +2,8 @@
 
 #include "math.hpp"
 
-namespace HorseRadish { namespace Primitives2D {
-
+namespace HorseRadish { namespace Primitives2D
+{
 	template <typename T>
 	struct Rectangle
 	{
@@ -121,7 +121,7 @@ namespace HorseRadish { namespace Primitives2D {
 			, height(s.height)
 		{ }
 
-		explicit Size(const T &width, const T &height)
+		Size(const T &width, const T &height)
 			: width(width)
 			, height(height)
 		{ }
@@ -301,4 +301,3 @@ namespace HorseRadish { namespace Primitives2D {
 		}
 	};
 } }
-

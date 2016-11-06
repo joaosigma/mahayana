@@ -132,7 +132,31 @@ namespace HorseRadish
 		if (dataBase64.empty())
 			return 0;
 
-		size_t in_len = dataBase64.size();
+		return Encoders::decodeBase64(dataBase64.data(), dataBase64.size(),  bufferOut);
+	}
+
+	size_t Encoders::decodeBase64(const std::string &dataBase64, std::vector<unsigned char> &bufferOut)
+	{
+		if (dataBase64.empty())
+			return 0;
+
+		return Encoders::decodeBase64(dataBase64.data(), dataBase64.size(), bufferOut);
+	}
+
+	size_t Encoders::decodeBase64(const std::string &dataBase64, HorseRadish::Streams::Stream &streamOut)
+	{
+		if (dataBase64.empty())
+			return 0;
+
+		return Encoders::decodeBase64(dataBase64.data(), dataBase64.size(), streamOut);
+	}
+
+	size_t Encoders::decodeBase64(const char* const dataBase64, size_t dataSize, void* bufferOut)
+	{
+		if (!dataBase64 || dataSize == 0)
+			return 0;
+
+		size_t in_len = dataSize;
 		size_t i = 0;
 		size_t in_ = 0;
 		size_t bytesWritten = 0;
@@ -154,7 +178,7 @@ namespace HorseRadish
 				char_array_3[2] = ((char_array_4[2] & 0x3) << 6) + char_array_4[3];
 
 				memcpy(bufferOut, char_array_3, sizeof(unsigned char) * 3);
-				bufferOut = reinterpret_cast<unsigned char*>(bufferOut)+3;
+				bufferOut = reinterpret_cast<unsigned char*>(bufferOut) + 3;
 				bytesWritten += 3;
 
 				i = 0;
@@ -186,14 +210,14 @@ namespace HorseRadish
 		return bytesWritten;
 	}
 
-	size_t Encoders::decodeBase64(const std::string &dataBase64, std::vector<unsigned char> &bufferOut)
+	size_t Encoders::decodeBase64(const char* const dataBase64, size_t dataSize, std::vector<unsigned char> &bufferOut)
 	{
-		if (dataBase64.empty())
+		if (!dataBase64 || dataSize == 0)
 			return 0;
 
-		bufferOut.reserve(bufferOut.capacity() + Encoders::decodeBase64RequiredSize(dataBase64.size()));
+		bufferOut.reserve(bufferOut.capacity() + Encoders::decodeBase64RequiredSize(dataSize));
 
-		size_t in_len = dataBase64.size();
+		size_t in_len = dataSize;
 		size_t i = 0;
 		size_t in_ = 0;
 		size_t bytesWritten = 0;
@@ -247,12 +271,12 @@ namespace HorseRadish
 		return bytesWritten;
 	}
 
-	size_t Encoders::decodeBase64(const std::string &dataBase64, HorseRadish::Streams::Stream &streamOut)
+	size_t Encoders::decodeBase64(const char* const dataBase64, size_t dataSize, HorseRadish::Streams::Stream &streamOut)
 	{
-		if (dataBase64.empty())
+		if (!dataBase64 || dataSize == 0)
 			return 0;
 
-		size_t in_len = dataBase64.size();
+		size_t in_len = dataSize;
 		size_t i = 0;
 		size_t in_ = 0;
 		size_t bytesWritten = 0;
@@ -294,7 +318,7 @@ namespace HorseRadish
 			char_array_3[1] = ((char_array_4[1] & 0xf) << 4) + ((char_array_4[2] & 0x3c) >> 2);
 			char_array_3[2] = ((char_array_4[2] & 0x3) << 6) + char_array_4[3];
 
-			for (int j = 0; (j < i - 1); j++)
+			for (size_t j = 0; (j < i - 1); j++)
 			{
 				streamOut.write(char_array_3 + j, sizeof(unsigned char));
 				bytesWritten++;
@@ -429,5 +453,4 @@ namespace HorseRadish
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // TUVWXYZ[/]^_` (gap)
 		10, 11, 12, 13, 14, 15          // abcdef 
 	};
-
-} //HorseRadish
+}

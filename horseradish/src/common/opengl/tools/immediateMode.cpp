@@ -4,387 +4,386 @@
 
 #include <cstddef>
 
-namespace HorseRadish { namespace OpenGL { namespace Tools {
-
-void ImmediateMode::draw(bool keepLeftovers)
+namespace HorseRadish { namespace OpenGL { namespace Tools
 {
-	if (!checkStateDraw())
-		return;
-
-	size_t numElements = 0;
-
-	if (mState.geomType == GeometryType::Quads)
+	void ImmediateMode::draw(bool keepLeftovers)
 	{
-		numElements = mState.curVertex / 4;
-		if (numElements > 0)
-		{
-			auto newIndexWriter = mBufferIndices.data() + (numElements * 6 - 6);
+		if (!checkStateDraw())
+			return;
 
-			for (size_t curQuad = mState.curVertex - 4; curQuad >= 0; curQuad -= 4)
+		size_t numElements = 0;
+
+		if (mState.geomType == GeometryType::Quads)
+		{
+			numElements = mState.curVertex / 4;
+			if (numElements > 0)
 			{
-				auto index1 = mBufferIndices[curQuad + 0];
-				auto index2 = mBufferIndices[curQuad + 1];
-				auto index3 = mBufferIndices[curQuad + 2];
-				auto index4 = mBufferIndices[curQuad + 3];
+				auto newIndexWriter = mBufferIndices.data() + (numElements * 6 - 6);
 
-				newIndexWriter[0] = newIndexWriter[3] = index1;
-				newIndexWriter[1] = index2;
-				newIndexWriter[2] = newIndexWriter[4] = index3;
-				newIndexWriter[5] = index4;
-				newIndexWriter -= 6;
+				for (size_t curQuad = mState.curVertex - 4; curQuad >= 0; curQuad -= 4)
+				{
+					auto index1 = mBufferIndices[curQuad + 0];
+					auto index2 = mBufferIndices[curQuad + 1];
+					auto index3 = mBufferIndices[curQuad + 2];
+					auto index4 = mBufferIndices[curQuad + 3];
 
-				if (curQuad < 4) //because curQuad is unsigned
-					break;
+					newIndexWriter[0] = newIndexWriter[3] = index1;
+					newIndexWriter[1] = index2;
+					newIndexWriter[2] = newIndexWriter[4] = index3;
+					newIndexWriter[5] = index4;
+					newIndexWriter -= 6;
+
+					if (curQuad < 4) //because curQuad is unsigned
+						break;
+				}
+
+				mGl.fence.wait();
+					mGl.vertexArray.bind();
+					mGl.arrayBuffer.writeData(mBufferData.data(), numElements * 4 * sizeof(VertexDataLayout), 0);
+					mGl.elementArrayBuffer.writeData(mBufferIndices.data(), numElements * 6 * sizeof(unsigned short), 0);
+
+					HorseRadish::OpenGL::glDrawRangeElements(GL_TRIANGLES, 0, numElements * 4, numElements * 6, GL_UNSIGNED_SHORT, (void*)0);
+				mGl.fence.place();
 			}
-
-			mGl.fence.wait();
-				mGl.vertexArray.bind();
-				mGl.arrayBuffer.writeData(mBufferData.data(), numElements * 4 * sizeof(VertexDataLayout), 0);
-				mGl.elementArrayBuffer.writeData(mBufferIndices.data(), numElements * 6 * sizeof(unsigned short), 0);
-
-				HorseRadish::OpenGL::glDrawRangeElements(GL_TRIANGLES, 0, numElements * 4, numElements * 6, GL_UNSIGNED_SHORT, (void*)0);
-			mGl.fence.place();
 		}
-	}
-	else if (mState.geomType == GeometryType::Tris)
-	{
-		numElements = mState.curVertex / 3;
-		if (numElements > 0)
+		else if (mState.geomType == GeometryType::Tris)
 		{
-			mGl.fence.wait();
-				mGl.vertexArray.bind();
-				mGl.arrayBuffer.writeData(mBufferData.data(), numElements * 3 * sizeof(VertexDataLayout), 0);
-				mGl.elementArrayBuffer.writeData(mBufferIndices.data(), numElements * 3 * sizeof(unsigned short), 0);
+			numElements = mState.curVertex / 3;
+			if (numElements > 0)
+			{
+				mGl.fence.wait();
+					mGl.vertexArray.bind();
+					mGl.arrayBuffer.writeData(mBufferData.data(), numElements * 3 * sizeof(VertexDataLayout), 0);
+					mGl.elementArrayBuffer.writeData(mBufferIndices.data(), numElements * 3 * sizeof(unsigned short), 0);
 
-				HorseRadish::OpenGL::glDrawRangeElements(GL_TRIANGLES, 0, numElements * 3, numElements * 3, GL_UNSIGNED_SHORT, (void*)0);
-			mGl.fence.place();
+					HorseRadish::OpenGL::glDrawRangeElements(GL_TRIANGLES, 0, numElements * 3, numElements * 3, GL_UNSIGNED_SHORT, (void*)0);
+				mGl.fence.place();
+			}
 		}
-	}
-	else if (mState.geomType == GeometryType::Lines)
-	{
-		numElements = mState.curVertex / 2;
-		if (numElements > 0)
+		else if (mState.geomType == GeometryType::Lines)
 		{
-			mGl.fence.wait();
-				mGl.vertexArray.bind();
-				mGl.arrayBuffer.writeData(mBufferData.data(), numElements * 2 * sizeof(VertexDataLayout), 0);
-				mGl.elementArrayBuffer.writeData(mBufferIndices.data(), numElements * 2 * sizeof(unsigned short), 0);
+			numElements = mState.curVertex / 2;
+			if (numElements > 0)
+			{
+				mGl.fence.wait();
+					mGl.vertexArray.bind();
+					mGl.arrayBuffer.writeData(mBufferData.data(), numElements * 2 * sizeof(VertexDataLayout), 0);
+					mGl.elementArrayBuffer.writeData(mBufferIndices.data(), numElements * 2 * sizeof(unsigned short), 0);
 
-				HorseRadish::OpenGL::glDrawRangeElements(GL_LINES, 0, numElements * 2, numElements * 2, GL_UNSIGNED_SHORT, (void*)0);
-			mGl.fence.place();
+					HorseRadish::OpenGL::glDrawRangeElements(GL_LINES, 0, numElements * 2, numElements * 2, GL_UNSIGNED_SHORT, (void*)0);
+				mGl.fence.place();
+			}
 		}
-	}
-	else if (mState.geomType == GeometryType::LineStrip)
-	{
-		if (mState.curVertex >= 2)
+		else if (mState.geomType == GeometryType::LineStrip)
 		{
-			mGl.fence.wait();
-				mGl.vertexArray.bind();
-				mGl.arrayBuffer.writeData(mBufferData.data(), mState.curVertex * sizeof(VertexDataLayout), 0);
-				mGl.elementArrayBuffer.writeData(mBufferIndices.data(), mState.curVertex * sizeof(unsigned short), 0);
+			if (mState.curVertex >= 2)
+			{
+				mGl.fence.wait();
+					mGl.vertexArray.bind();
+					mGl.arrayBuffer.writeData(mBufferData.data(), mState.curVertex * sizeof(VertexDataLayout), 0);
+					mGl.elementArrayBuffer.writeData(mBufferIndices.data(), mState.curVertex * sizeof(unsigned short), 0);
 
-				HorseRadish::OpenGL::glDrawRangeElements(GL_LINE_STRIP, 0, mState.curVertex, mState.curVertex, GL_UNSIGNED_SHORT, (void*)0);
-			mGl.fence.place();
+					HorseRadish::OpenGL::glDrawRangeElements(GL_LINE_STRIP, 0, mState.curVertex, mState.curVertex, GL_UNSIGNED_SHORT, (void*)0);
+				mGl.fence.place();
+			}
 		}
+
+		if (!keepLeftovers)
+		{
+			mState.curVertex = 0;
+			return;
+		}
+
+		if (mState.geomType == GeometryType::LineStrip)
+		{
+			mBufferData[0] = mBufferData[mState.curVertex - 1];
+			mBufferIndices[0] = 0;
+			mState.curVertex = 1;
+			return;
+		}
+
+		if (numElements == 0)
+			return;
+
+		auto numLeftOvers = mState.curVertex - numElements;
+		if (numLeftOvers <= 0)
+			return;
+
+		for (size_t i = 0; i < numLeftOvers; i++)
+		{
+			mBufferData[i] = mBufferData[numElements + i];
+			mBufferIndices[i] = i;
+		}
+
+		mState.curVertex = numLeftOvers;
 	}
 
-	if (!keepLeftovers)
+	void ImmediateMode::resetState()
 	{
 		mState.curVertex = 0;
-		return;
+		mState.geomType = GeometryType::None;
+		mState.uv[0] = mState.uv[1] = 0.0f;
+		mState.color[0] = mState.color[1] = mState.color[2] = 0;
+		mState.color[3] = 255;
 	}
 
-	if (mState.geomType == GeometryType::LineStrip)
+	bool ImmediateMode::checkStateDraw() const
 	{
-		mBufferData[0] = mBufferData[mState.curVertex - 1];
-		mBufferIndices[0] = 0;
-		mState.curVertex = 1;
-		return;
-	}
+		if ((mState.geomType == GeometryType::None) || (mState.curVertex <= 0))
+			return false;
 
-	if (numElements == 0)
-		return;
+		if ((mState.geomType == GeometryType::Quads) && (mState.curVertex >= 4))
+			return true;
 
-	auto numLeftOvers = mState.curVertex - numElements;
-	if (numLeftOvers <= 0)
-		return;
+		if ((mState.geomType == GeometryType::Tris) && (mState.curVertex >= 3))
+			return true;
 
-	for (size_t i = 0; i < numLeftOvers; i++)
-	{
-		mBufferData[i] = mBufferData[numElements + i];
-		mBufferIndices[i] = i;
-	}
+		if (((mState.geomType == GeometryType::Lines) || (mState.geomType == GeometryType::LineStrip)) && (mState.curVertex >= 2))
+			return true;
 
-	mState.curVertex = numLeftOvers;
-}
-
-void ImmediateMode::resetState()
-{
-	mState.curVertex = 0;
-	mState.geomType = GeometryType::None;
-	mState.uv[0] = mState.uv[1] = 0.0f;
-	mState.color[0] = mState.color[1] = mState.color[2] = 0;
-	mState.color[3] = 255;
-}
-
-bool ImmediateMode::checkStateDraw() const
-{
-	if ((mState.geomType == GeometryType::None) || (mState.curVertex <= 0))
 		return false;
+	}
 
-	if ((mState.geomType == GeometryType::Quads) && (mState.curVertex >= 4))
-		return true;
-
-	if ((mState.geomType == GeometryType::Tris) && (mState.curVertex >= 3))
-		return true;
-
-	if (((mState.geomType == GeometryType::Lines) || (mState.geomType == GeometryType::LineStrip)) && (mState.curVertex >= 2))
-		return true;
-
-	return false;
-}
-
-ImmediateMode::ImmediateMode()
-{
-	resetState();
-
-	mGl.arrayBuffer.init(HorseRadish::OpenGL::Objects::Buffer::Type::ArrayBuffer, ImmediateMode::MaxVertexCount * sizeof(VertexDataLayout), HorseRadish::OpenGL::Objects::Buffer::UsageType::PersistentOnlyWrite);
-	mGl.elementArrayBuffer.init(HorseRadish::OpenGL::Objects::Buffer::Type::ElementArrayBuffer, sizeof(unsigned short) * ImmediateMode::MaxIndexCount, HorseRadish::OpenGL::Objects::Buffer::UsageType::PersistentOnlyWrite);
-
-	mGl.vertexArray.init();
-
-	HorseRadish::OpenGL::glEnableVertexArrayAttrib(mGl.vertexArray.getId(), 0);
-	HorseRadish::OpenGL::glEnableVertexArrayAttrib(mGl.vertexArray.getId(), 1);
-	HorseRadish::OpenGL::glEnableVertexArrayAttrib(mGl.vertexArray.getId(), 4);
-
-	HorseRadish::OpenGL::glVertexArrayAttribBinding(mGl.vertexArray.getId(), 0, 0);
-	HorseRadish::OpenGL::glVertexArrayAttribFormat(mGl.vertexArray.getId(), 0, 3, GL_FLOAT, false, offsetof(VertexDataLayout, pos));
-
-	HorseRadish::OpenGL::glVertexArrayAttribBinding(mGl.vertexArray.getId(), 1, 0);
-	HorseRadish::OpenGL::glVertexArrayAttribFormat(mGl.vertexArray.getId(), 1, 2, GL_FLOAT, false, offsetof(VertexDataLayout, uv));
-
-	HorseRadish::OpenGL::glVertexArrayAttribBinding(mGl.vertexArray.getId(), 4, 0);
-	HorseRadish::OpenGL::glVertexArrayAttribFormat(mGl.vertexArray.getId(), 4, 4, GL_UNSIGNED_BYTE, true, offsetof(VertexDataLayout, color));
-
-	HorseRadish::OpenGL::glVertexArrayElementBuffer(mGl.vertexArray.getId(), mGl.elementArrayBuffer.getId());
-	HorseRadish::OpenGL::glVertexArrayVertexBuffer(mGl.vertexArray.getId(), 0, mGl.arrayBuffer.getId(), 0, sizeof(VertexDataLayout));
-}
-
-ImmediateMode::~ImmediateMode()
-{
-	resetState();
-
-	mGl.arrayBuffer.reset();
-	mGl.elementArrayBuffer.reset();
-	mGl.vertexArray.reset();
-}
-
-void ImmediateMode::beginDraw(const GeometryType geometryType)
-{
-	resetState();
-
-	if (geometryType == GeometryType::None)
-		return;
-
-	mState.geomType = geometryType;
-}
-
-void ImmediateMode::endDraw()
-{
-	draw(false);
-	resetState();
-}
-
-void ImmediateMode::setTexCoord(const float &u, const float &v)
-{
-	mState.uv[0] = u;
-	mState.uv[1] = v;
-}
-
-void ImmediateMode::setColor(const unsigned char &r, const unsigned char &g, const unsigned char &b)
-{
-	mState.color[0] = r;
-	mState.color[1] = g;
-	mState.color[2] = b;
-	mState.color[3] = 255;
-}
-
-void ImmediateMode::setColor(const unsigned char &r, const unsigned char &g, const unsigned char &b, const unsigned char &a)
-{
-	mState.color[0] = r;
-	mState.color[1] = g;
-	mState.color[2] = b;
-	mState.color[3] = a;
-}
-
-void ImmediateMode::setColorF(const float &rgb)
-{
-	mState.color[0] = Color::convertColor(rgb);
-	mState.color[1] = mState.color[0];
-	mState.color[2] = mState.color[0];
-	mState.color[3] = 255;
-}
-
-void ImmediateMode::setColorF(const float &rgb, const float &a)
-{
-	mState.color[0] = Color::convertColor(rgb);
-	mState.color[1] = mState.color[0];
-	mState.color[2] = mState.color[0];
-	mState.color[3] = Color::convertColor(a);
-}
-
-void ImmediateMode::setColorF(const float &r, const float &g, const float &b)
-{
-	mState.color[0] = Color::convertColor(r);
-	mState.color[1] = Color::convertColor(g);
-	mState.color[2] = Color::convertColor(b);
-	mState.color[3] = 255;
-}
-
-void ImmediateMode::setColorF(const float &r, const float &g, const float &b, const float &a)
-{
-	mState.color[0] = Color::convertColor(r);
-	mState.color[1] = Color::convertColor(g);
-	mState.color[2] = Color::convertColor(b);
-	mState.color[3] = Color::convertColor(a);
-}
-
-void ImmediateMode::setColorRGB(const unsigned char * const values)
-{
-	mState.color[0] = values[0];
-	mState.color[1] = values[1];
-	mState.color[2] = values[2];
-	mState.color[3] = 255;
-}
-
-void ImmediateMode::setColorRGB(const float * const values)
-{
-	mState.color[0] = HorseRadish::Color::convertColor(values[0]);
-	mState.color[1] = HorseRadish::Color::convertColor(values[1]);
-	mState.color[2] = HorseRadish::Color::convertColor(values[2]);
-	mState.color[3] = 255;
-}
-
-void ImmediateMode::addPosition(const float &x)
-{
-	addPosition(x, 0.0f, 0.0f);
-}
-
-void ImmediateMode::addPosition(const float &x, const float &y)
-{
-	addPosition(x, y, 0.0f);
-}
-
-void ImmediateMode::addPosition(const float &x, const float &y, const float &z)
-{
-	if (mState.geomType == GeometryType::None)
-		return;
-
-	if (mState.curVertex >= ImmediateMode::MaxVertexCount)
-		draw(true);
-
-	auto& vertexData = mBufferData[mState.curVertex];
-	vertexData.pos[0] = x;
-	vertexData.pos[1] = y;
-	vertexData.pos[2] = z;
-	vertexData.uv[0] = mState.uv[0];
-	vertexData.uv[1] = mState.uv[1];
-	vertexData.color[0] = mState.color[0];
-	vertexData.color[1] = mState.color[1];
-	vertexData.color[2] = mState.color[2];
-	vertexData.color[3] = mState.color[3];
-
-	mBufferIndices[mState.curVertex] = static_cast<unsigned short>(mState.curVertex);
-
-	mState.curVertex++;
-}
-
-void ImmediateMode::addQuad(const float &x, const float &y, const float &width, const float &height)
-{
-	if (mState.geomType != GeometryType::Quads)
-		return;
-
-	addPosition(x, y);
-	addPosition(x + width, y);
-	addPosition(x + width, y + height);
-	addPosition(x, y + height);
-}
-
-void ImmediateMode::addQuadTexCoords(const float &x, const float &y, const float &width, const float &height, bool normalizedTexCoords)
-{
-	if (mState.geomType != GeometryType::Quads)
-		return;
-
-	if (normalizedTexCoords == true)
+	ImmediateMode::ImmediateMode()
 	{
-		mState.uv[0] = 0.0f;
-		mState.uv[1] = 0.0f;
+		resetState();
+
+		mGl.arrayBuffer.init(HorseRadish::OpenGL::Objects::Buffer::Type::ArrayBuffer, ImmediateMode::MaxVertexCount * sizeof(VertexDataLayout), HorseRadish::OpenGL::Objects::Buffer::UsageType::PersistentOnlyWrite);
+		mGl.elementArrayBuffer.init(HorseRadish::OpenGL::Objects::Buffer::Type::ElementArrayBuffer, sizeof(unsigned short) * ImmediateMode::MaxIndexCount, HorseRadish::OpenGL::Objects::Buffer::UsageType::PersistentOnlyWrite);
+
+		mGl.vertexArray.init();
+
+		HorseRadish::OpenGL::glEnableVertexArrayAttrib(mGl.vertexArray.getId(), 0);
+		HorseRadish::OpenGL::glEnableVertexArrayAttrib(mGl.vertexArray.getId(), 1);
+		HorseRadish::OpenGL::glEnableVertexArrayAttrib(mGl.vertexArray.getId(), 4);
+
+		HorseRadish::OpenGL::glVertexArrayAttribBinding(mGl.vertexArray.getId(), 0, 0);
+		HorseRadish::OpenGL::glVertexArrayAttribFormat(mGl.vertexArray.getId(), 0, 3, GL_FLOAT, false, offsetof(VertexDataLayout, pos));
+
+		HorseRadish::OpenGL::glVertexArrayAttribBinding(mGl.vertexArray.getId(), 1, 0);
+		HorseRadish::OpenGL::glVertexArrayAttribFormat(mGl.vertexArray.getId(), 1, 2, GL_FLOAT, false, offsetof(VertexDataLayout, uv));
+
+		HorseRadish::OpenGL::glVertexArrayAttribBinding(mGl.vertexArray.getId(), 4, 0);
+		HorseRadish::OpenGL::glVertexArrayAttribFormat(mGl.vertexArray.getId(), 4, 4, GL_UNSIGNED_BYTE, true, offsetof(VertexDataLayout, color));
+
+		HorseRadish::OpenGL::glVertexArrayElementBuffer(mGl.vertexArray.getId(), mGl.elementArrayBuffer.getId());
+		HorseRadish::OpenGL::glVertexArrayVertexBuffer(mGl.vertexArray.getId(), 0, mGl.arrayBuffer.getId(), 0, sizeof(VertexDataLayout));
+	}
+
+	ImmediateMode::~ImmediateMode()
+	{
+		resetState();
+
+		mGl.arrayBuffer.reset();
+		mGl.elementArrayBuffer.reset();
+		mGl.vertexArray.reset();
+	}
+
+	void ImmediateMode::beginDraw(const GeometryType geometryType)
+	{
+		resetState();
+
+		if (geometryType == GeometryType::None)
+			return;
+
+		mState.geomType = geometryType;
+	}
+
+	void ImmediateMode::endDraw()
+	{
+		draw(false);
+		resetState();
+	}
+
+	void ImmediateMode::setTexCoord(const float &u, const float &v)
+	{
+		mState.uv[0] = u;
+		mState.uv[1] = v;
+	}
+
+	void ImmediateMode::setColor(const unsigned char &r, const unsigned char &g, const unsigned char &b)
+	{
+		mState.color[0] = r;
+		mState.color[1] = g;
+		mState.color[2] = b;
+		mState.color[3] = 255;
+	}
+
+	void ImmediateMode::setColor(const unsigned char &r, const unsigned char &g, const unsigned char &b, const unsigned char &a)
+	{
+		mState.color[0] = r;
+		mState.color[1] = g;
+		mState.color[2] = b;
+		mState.color[3] = a;
+	}
+
+	void ImmediateMode::setColorF(const float &rgb)
+	{
+		mState.color[0] = Color::convertColor(rgb);
+		mState.color[1] = mState.color[0];
+		mState.color[2] = mState.color[0];
+		mState.color[3] = 255;
+	}
+
+	void ImmediateMode::setColorF(const float &rgb, const float &a)
+	{
+		mState.color[0] = Color::convertColor(rgb);
+		mState.color[1] = mState.color[0];
+		mState.color[2] = mState.color[0];
+		mState.color[3] = Color::convertColor(a);
+	}
+
+	void ImmediateMode::setColorF(const float &r, const float &g, const float &b)
+	{
+		mState.color[0] = Color::convertColor(r);
+		mState.color[1] = Color::convertColor(g);
+		mState.color[2] = Color::convertColor(b);
+		mState.color[3] = 255;
+	}
+
+	void ImmediateMode::setColorF(const float &r, const float &g, const float &b, const float &a)
+	{
+		mState.color[0] = Color::convertColor(r);
+		mState.color[1] = Color::convertColor(g);
+		mState.color[2] = Color::convertColor(b);
+		mState.color[3] = Color::convertColor(a);
+	}
+
+	void ImmediateMode::setColorRGB(const unsigned char * const values)
+	{
+		mState.color[0] = values[0];
+		mState.color[1] = values[1];
+		mState.color[2] = values[2];
+		mState.color[3] = 255;
+	}
+
+	void ImmediateMode::setColorRGB(const float * const values)
+	{
+		mState.color[0] = HorseRadish::Color::convertColor(values[0]);
+		mState.color[1] = HorseRadish::Color::convertColor(values[1]);
+		mState.color[2] = HorseRadish::Color::convertColor(values[2]);
+		mState.color[3] = 255;
+	}
+
+	void ImmediateMode::addPosition(const float &x)
+	{
+		addPosition(x, 0.0f, 0.0f);
+	}
+
+	void ImmediateMode::addPosition(const float &x, const float &y)
+	{
+		addPosition(x, y, 0.0f);
+	}
+
+	void ImmediateMode::addPosition(const float &x, const float &y, const float &z)
+	{
+		if (mState.geomType == GeometryType::None)
+			return;
+
+		if (mState.curVertex >= ImmediateMode::MaxVertexCount)
+			draw(true);
+
+		auto& vertexData = mBufferData[mState.curVertex];
+		vertexData.pos[0] = x;
+		vertexData.pos[1] = y;
+		vertexData.pos[2] = z;
+		vertexData.uv[0] = mState.uv[0];
+		vertexData.uv[1] = mState.uv[1];
+		vertexData.color[0] = mState.color[0];
+		vertexData.color[1] = mState.color[1];
+		vertexData.color[2] = mState.color[2];
+		vertexData.color[3] = mState.color[3];
+
+		mBufferIndices[mState.curVertex] = static_cast<unsigned short>(mState.curVertex);
+
+		mState.curVertex++;
+	}
+
+	void ImmediateMode::addQuad(const float &x, const float &y, const float &width, const float &height)
+	{
+		if (mState.geomType != GeometryType::Quads)
+			return;
+
 		addPosition(x, y);
-		
-		mState.uv[0] = 1.0f;
 		addPosition(x + width, y);
-		
-		mState.uv[1] = 1.0f;
 		addPosition(x + width, y + height);
-		
-		mState.uv[0] = 0.0f;
 		addPosition(x, y + height);
 	}
-	else
+
+	void ImmediateMode::addQuadTexCoords(const float &x, const float &y, const float &width, const float &height, bool normalizedTexCoords)
 	{
-		mState.uv[0] = x;
-		mState.uv[1] = y;
-		addPosition(x, y);
-		
-		mState.uv[0] = x + width;
-		addPosition(x + width, y);
-		
-		mState.uv[1] = y + height;
-		addPosition(x + width, y + height);
-		
-		mState.uv[0] = x;
-		addPosition(x, y + height);
-	}
-}
+		if (mState.geomType != GeometryType::Quads)
+			return;
 
-void ImmediateMode::addLine(const float &x1, const float &y1, const float &x2, const float &y2)
-{
-	if (mState.geomType != GeometryType::Lines)
-		return;
-
-	addPosition(x1, y1);
-	addPosition(x2, y2);
-}
-
-void ImmediateMode::addLineH(const float &x1, const float &x2, const float &y)
-{
-	if (mState.geomType != GeometryType::Lines)
-		return;
-
-	addPosition(x1, y);
-	addPosition(x2, y);
-}
-
-void ImmediateMode::addLineV(const float &x, const float &y1, const float &y2)
-{
-	if (mState.geomType != GeometryType::Lines)
-		return;
-
-	addPosition(x, y1);
-	addPosition(x, y2);
-}
-
-size_t ImmediateMode::info(const InfoType infoType) const
-{
-	switch (infoType)
-	{
-	case InfoType::FreeVertexCount:
-		return (ImmediateMode::MaxVertexCount - mState.curVertex);
-	case InfoType::MaxVertexCount:
-		return (ImmediateMode::MaxVertexCount);
+		if (normalizedTexCoords)
+		{
+			mState.uv[0] = 0.0f;
+			mState.uv[1] = 0.0f;
+			addPosition(x, y);
+			
+			mState.uv[0] = 1.0f;
+			addPosition(x + width, y);
+			
+			mState.uv[1] = 1.0f;
+			addPosition(x + width, y + height);
+			
+			mState.uv[0] = 0.0f;
+			addPosition(x, y + height);
+		}
+		else
+		{
+			mState.uv[0] = x;
+			mState.uv[1] = y;
+			addPosition(x, y);
+			
+			mState.uv[0] = x + width;
+			addPosition(x + width, y);
+			
+			mState.uv[1] = y + height;
+			addPosition(x + width, y + height);
+			
+			mState.uv[0] = x;
+			addPosition(x, y + height);
+		}
 	}
 
-	return 0;
-}
+	void ImmediateMode::addLine(const float &x1, const float &y1, const float &x2, const float &y2)
+	{
+		if (mState.geomType != GeometryType::Lines)
+			return;
 
+		addPosition(x1, y1);
+		addPosition(x2, y2);
+	}
+
+	void ImmediateMode::addLineH(const float &x1, const float &x2, const float &y)
+	{
+		if (mState.geomType != GeometryType::Lines)
+			return;
+
+		addPosition(x1, y);
+		addPosition(x2, y);
+	}
+
+	void ImmediateMode::addLineV(const float &x, const float &y1, const float &y2)
+	{
+		if (mState.geomType != GeometryType::Lines)
+			return;
+
+		addPosition(x, y1);
+		addPosition(x, y2);
+	}
+
+	size_t ImmediateMode::info(const InfoType infoType) const
+	{
+		switch (infoType)
+		{
+		case InfoType::FreeVertexCount:
+			return (ImmediateMode::MaxVertexCount - mState.curVertex);
+		case InfoType::MaxVertexCount:
+			return (ImmediateMode::MaxVertexCount);
+		}
+
+		return 0;
+	}
 } } }

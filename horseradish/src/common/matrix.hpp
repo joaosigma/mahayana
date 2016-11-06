@@ -231,5 +231,4 @@ namespace HorseRadish
 		void setRotation(float angleDeg, float x, float y, float z);
 		void setRotationFromTo(const Vector3f &from, const Vector3f &to);
 	};
-
-} //HorseRadish
+}

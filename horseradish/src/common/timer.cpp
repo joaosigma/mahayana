@@ -136,5 +136,4 @@ namespace HorseRadish
 	{
 		mTimepoint += std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::duration<double, std::chrono::milliseconds::period>(miliseconds));
 	}
-
-} //HorseRadish
+}

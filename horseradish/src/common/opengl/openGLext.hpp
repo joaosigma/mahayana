@@ -1,12 +1,11 @@
 #pragma once
 
 #include "openGL.hpp"
-#include "common/platform.hpp"
 
 #include "glext.h"
 
-namespace HorseRadish { namespace OpenGL { namespace Extensions {
-
+namespace HorseRadish { namespace OpenGL { namespace Extensions
+{
 	void ExtensionsLoad(const char* const openGLModuleName);
 	bool ExtensionExists(const char * const extension);
 

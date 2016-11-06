@@ -591,5 +591,4 @@ namespace HorseRadish
 		for (; leftOver > 0; leftOver--, walker++)
 			*walker = (*walker)*mulVal + addVal;
 	}
-
-} //HorseRadish
+}

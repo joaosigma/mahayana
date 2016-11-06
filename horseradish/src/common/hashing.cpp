@@ -2,6 +2,8 @@
 
 #include "types.hpp"
 
+#include <cstring>
+
 /*
    MD5 Message Digest Algorithm. (RFC1321)
 
@@ -63,11 +65,11 @@ namespace HorseRadish
 			t = 64 - t;
 			if (bufferSize < t)
 			{
-				memcpy(p, buffer, bufferSize);
+				std::memcpy(p, buffer, bufferSize);
 				return;
 			}
 
-			memcpy(p, buffer, t);
+			std::memcpy(p, buffer, t);
 			transformMD5(dataMD5->state, (unsigned int *)dataMD5->in);
 			buffer += t;
 			bufferSize -= t;
@@ -76,14 +78,14 @@ namespace HorseRadish
 		/* Process data in 64-byte chunks */
 		while (bufferSize >= 64)
 		{
-			memcpy(dataMD5->in, buffer, 64);
+			std::memcpy(dataMD5->in, buffer, 64);
 			transformMD5(dataMD5->state, (unsigned int *)dataMD5->in);
 			buffer += 64;
 			bufferSize -= 64;
 		}
 
 		/* Handle any remaining bytes of data. */
-		memcpy(dataMD5->in, buffer, bufferSize);
+		std::memcpy(dataMD5->in, buffer, bufferSize);
 	}
 
 	void Hashing::transformMD5(unsigned int state[4], unsigned int const in[16])
@@ -189,16 +191,16 @@ namespace HorseRadish
 		if (count < 8)
 		{
 			/* Two lots of padding:  Pad the first block to 64 bytes */
-			memset(p, 0, count);
+			std::memset(p, 0, count);
 			transformMD5(dataMD5->state, (unsigned int *)dataMD5->in);
 
 			/* Now fill the next block with 56 bytes */
-			memset(dataMD5->in, 0, 56);
+			std::memset(dataMD5->in, 0, 56);
 		}
 		else
 		{
 			/* Pad block to 56 bytes */
-			memset(p, 0, count - 8);
+			std::memset(p, 0, count - 8);
 		}
 
 		/* Append length in bits and transform */
@@ -206,8 +208,8 @@ namespace HorseRadish
 		((unsigned int *)dataMD5->in)[15] = dataMD5->bits[1];
 
 		transformMD5(dataMD5->state, (unsigned int *)dataMD5->in);
-		memcpy(digest, dataMD5->state, 16);
-		memset(dataMD5, 0, sizeof(dataMD5));        /* In case it's sensitive */
+		std::memcpy(digest, dataMD5->state, 16);
+		std::memset(dataMD5, 0, sizeof(dataMD5));        /* In case it's sensitive */
 	}
 
 
@@ -325,7 +327,7 @@ namespace HorseRadish
 
 #ifdef SHA1HANDSOFF
 		CHAR64LONG16 block[1];  /* use array to appear as a pointer */
-		memcpy(block, buffer, 64);
+		std::memcpy(block, buffer, 64);
 #else
 		/* The following had better never be used because it causes the
 			* pointer-to-const buffer to be cast into a pointer to non-const.
@@ -371,7 +373,7 @@ namespace HorseRadish
 		/* Wipe variables */
 		a = b = c = d = e = 0;
 #ifdef SHA1HANDSOFF
-		memset(block, '\0', sizeof(block));
+		std::memset(block, '\0', sizeof(block));
 #endif
 	}
 
@@ -397,7 +399,7 @@ namespace HorseRadish
 		j = (j >> 3) & 63;
 		if ((j + len) > 63)
 		{
-			memcpy(&context->buffer[j], data, (i = 64 - j));
+			std::memcpy(&context->buffer[j], data, (i = 64 - j));
 			Hashing::transformSHA1(context->state, context->buffer);
 			for (; i + 63 < len; i += 64)
 				Hashing::transformSHA1(context->state, &data[i]);
@@ -406,7 +408,7 @@ namespace HorseRadish
 		else
 			i = 0;
 
-		memcpy(&context->buffer[j], &data[i], len - i);
+		std::memcpy(&context->buffer[j], &data[i], len - i);
 	}
 
 	void Hashing::finishSHA1(unsigned char digest[20], DataSHA1 * const context)
@@ -450,13 +452,13 @@ namespace HorseRadish
 			digest[i] = (unsigned char)((context->state[i >> 2] >> ((3 - (i & 3)) * 8)) & 255);
 
 		/* Wipe variables */
-		memset(context, '\0', sizeof(*context));
-		memset(&finalcount, '\0', sizeof(finalcount));
+		std::memset(context, '\0', sizeof(*context));
+		std::memset(&finalcount, '\0', sizeof(finalcount));
 	}
 
 	unsigned char Hashing::calculateCRC8(const void * const buffer, size_t bufferSize)
 	{
-		if ((buffer == nullptr) || (bufferSize == 0))
+		if (!buffer || (bufferSize == 0))
 			return 0;
 
 		unsigned char crc = 0x0000;
@@ -471,7 +473,7 @@ namespace HorseRadish
 
 	unsigned short Hashing::calculateCRC16(const void * const buffer, size_t bufferSize)
 	{
-		if ((buffer == nullptr) || (bufferSize == 0))
+		if (!buffer || (bufferSize == 0))
 			return 0;
 
 		unsigned short crc = 0xFFFF;
@@ -486,7 +488,7 @@ namespace HorseRadish
 
 	unsigned long Hashing::calculateCRC32(const void * const buffer, size_t bufferSize)
 	{
-		if ((buffer == nullptr) || (bufferSize == 0))
+		if (!buffer || (bufferSize == 0))
 			return 0;
 
 		unsigned long crc = 0xffffffffL;
@@ -503,7 +505,7 @@ namespace HorseRadish
 	{
 		Hashing::DataMD5 dataMD5;
 
-		if ((hash == nullptr) || (buffer == nullptr) || (bufferSize == 0))
+		if (!hash || !buffer || (bufferSize == 0))
 			return;
 
 		Hashing::initMD5(&dataMD5);
@@ -515,7 +517,7 @@ namespace HorseRadish
 	{
 		Hashing::DataSHA1 dataSHA1;
 
-		if ((hash == nullptr) || (buffer == nullptr) || (bufferSize == 0))
+		if (!hash || !buffer || (bufferSize == 0))
 			return;
 
 		Hashing::initSHA1(&dataSHA1);
@@ -528,7 +530,7 @@ namespace HorseRadish
 		Hashing::DataMD5 dataMD5;
 		unsigned long digest[4];
 
-		if ((buffer == nullptr) || (bufferSize == 0))
+		if (!buffer || (bufferSize == 0))
 			return 0;
 
 		Hashing::initMD5(&dataMD5);
@@ -543,7 +545,7 @@ namespace HorseRadish
 		hUInt32 hash, tmp;
 		int rem;
 
-		if ((buffer == nullptr) || (bufferSize <= 0))
+		if (!buffer || (bufferSize <= 0))
 			return 0;
 
 		hash = bufferSize;
@@ -661,5 +663,4 @@ namespace HorseRadish
 		0xbdbdf21cL, 0xcabac28aL, 0x53b39330L, 0x24b4a3a6L, 0xbad03605L, 0xcdd70693L, 0x54de5729L, 0x23d967bfL,
 		0xb3667a2eL, 0xc4614ab8L, 0x5d681b02L, 0x2a6f2b94L, 0xb40bbe37L, 0xc30c8ea1L, 0x5a05df1bL, 0x2d02ef8dL
 	};
-
-} //HorseRadish
+}

@@ -1,7 +1,5 @@
 #pragma once
 
-#include "platform.hpp"
-
 #include "types.hpp"
 
 namespace HorseRadish
@@ -17,5 +15,4 @@ namespace HorseRadish
 		static void radixSort(int *baseArray, int *tempArray, size_t numElements);
 		static void radixQueue(float *baseArray, float *tempArray, int *orderOut, int *orderTemp, size_t numElements);
 	};
-
-} //HorseRadish
+}

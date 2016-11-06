@@ -1,7 +1,6 @@
 #include "font.hpp"
 
 #include "common/image.hpp"
-#include "common/platform.hpp"
 #include "common/opengl/openGLext.hpp"
 
 #include "libs/sdf/sdf.h"
@@ -97,7 +96,7 @@ bool Font::initFont(const char * const fontFilePath)
 	mFontInfo.maxHeight = static_cast<float>(ftFace->size->metrics.height >> 6) * downScale;
 	mFontInfo.baseHeight = -1.0f * static_cast<float>(ftFace->size->metrics.descender >> 6) * downScale;
 
-	if (createCharData() == false)
+	if (!createCharData())
 	{
 		FT_Done_Face(ftFace);
 		FT_Done_FreeType(ftLibrary);
@@ -388,7 +387,7 @@ void Font::internalWrite(const float &px, const float &py, const std::string& st
 
 float Font::getCharKerning(const CharacterData& leftCharData, unsigned short leftCharUnicodeID, unsigned short rightCharUnicodeID) const
 {
-	if ((leftCharData.kernData == nullptr) || (rightCharUnicodeID <= 0))
+	if (!leftCharData.kernData || (rightCharUnicodeID <= 0))
 		return 0.0f;
 
 	for (const KerningData *curKerning = leftCharData.kernData; true; curKerning++)
@@ -409,7 +408,7 @@ Font::Font(const size_t fontSize, const char * const fontFilePath, unsigned int 
 	mFontInfo.size = fontSize;
 	mState.stateColor.set(1.0f, 1.0f, 1.0f, 1.0f);
 	
-	if (fontSize <= 2 || fontFilePath == nullptr)
+	if (!fontFilePath || (fontSize <= 2))
 		return;
 
 	mGlUniformSampler = HorseRadish::OpenGL::glGetUniformLocation(glFragmentProgramID, "texTextSampler");
@@ -455,7 +454,7 @@ Font::Font(const size_t fontSize, const char * const fontFilePath, unsigned int 
 	mGl.sampler.setWrap(HorseRadish::OpenGL::Objects::Sampler::WrapType::ClampBorder);
 	mGl.sampler.setBorderColor(0.0f, 0.0f, 0.0f, 0.0f);
 	
-	if (initFont(fontFilePath) == false)
+	if (!initFont(fontFilePath))
 		return;
 
 	mValid = true;
@@ -688,10 +687,9 @@ void Font::paintBegin(const float * const tranformationMatrix, float scale)
 	mGl.vertexArray.bind();
 
 	HorseRadish::OpenGL::glProgramUniform1i(mGlFragmentProgramID, mGlUniformSampler, 0);
-	if (tranformationMatrix != nullptr)
+	if (tranformationMatrix)
 		HorseRadish::OpenGL::glProgramUniformMatrix4fv(mGlVertexProgramID, mGlUniformMatrix, 1, false, tranformationMatrix);
 
-	HorseRadish::OpenGL::glUseProgram(0);
 	HorseRadish::OpenGL::glBindProgramPipeline(mGlProgramPipelineID);
 
 	mState.scale = scale;

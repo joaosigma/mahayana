@@ -350,5 +350,4 @@ namespace HorseRadish
 		Position classifyBSphere(const BSphere &bsphere);
 		Position classifyBBox(const BBox &bbox);
 	};
-
-} //HorseRadish
+}

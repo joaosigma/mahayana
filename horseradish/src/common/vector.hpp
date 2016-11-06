@@ -1164,5 +1164,4 @@ namespace HorseRadish
 			_mm_storeu_ps(mData, tmp);
 		}
 	};
-
-} //HorseRadish
+}

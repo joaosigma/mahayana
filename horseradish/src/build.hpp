@@ -1,10 +1,3 @@
 #pragma once
 
-namespace HorseRadish
-{
-	namespace Build
-	{
-		//the application build number
-		const int BuildNumber = 1000;
-	}
-}
+const constexpr size_t BuildNumber = 1000; //the application build number

@@ -14,8 +14,8 @@
 #include <memory>
 #include <string>
 
-namespace HorseRadish { namespace Engine {
-
+namespace HorseRadish { namespace Engine
+{
 	class Engine final
 	{
 	public:
@@ -273,7 +273,7 @@ namespace HorseRadish { namespace Engine {
 		std::shared_ptr<Logger::Context> mLoggerRenderCtx;
 		std::shared_ptr<Logger::Context> mLoggerRuntimeCtx;
 
-		std::shared_ptr<Window> mWindow;
+		std::shared_ptr<platform::Window> mWindow;
 		std::shared_ptr<Runtime> mRuntime;
 		std::shared_ptr<IO::FileSystem> mFileSystem;
 
@@ -284,7 +284,7 @@ namespace HorseRadish { namespace Engine {
 
 		void renderLoop();
 
-		void runtimeFuncVarCreate(const std::string &funcName, Runtime::FunctionReturnContext &ctx);
+		void runtimeFuncVarRegister(const std::string &funcName, Runtime::FunctionReturnContext &ctx);
 		void runtimeFuncVarGet(const std::string &funcName, Runtime::FunctionReturnContext &ctx);
 		void runtimeFuncVarSet(const std::string &funcName, Runtime::FunctionReturnContext &ctx);
 		void runtimeFuncVarList(const std::string &funcName, Runtime::FunctionReturnContext &ctx);

@@ -1,12 +1,14 @@
 #include "sorting.hpp"
 
+#include <cstring>
+
 namespace HorseRadish
 {
 	void Sorting::radixByte0(size_t howMuch, const int * const HRESTRICT source, int * const HRESTRICT dest)
 	{
 		size_t count[256], index[256], i;
 
-		memset(count, 0, sizeof(count));
+		std::memset(count, 0, sizeof(count));
 		for (i = 0; i < howMuch; i++)
 			count[((source[i]) >> (0)) & 0xff]++;
 		index[0] = 0;
@@ -20,7 +22,7 @@ namespace HorseRadish
 	{
 		size_t count[256], index[256], i;
 
-		memset(count, 0, sizeof(count));
+		std::memset(count, 0, sizeof(count));
 		for (i = 0; i < howMuch; i++)
 			count[((source[i]) >> (8)) & 0xff]++;
 		index[0] = 0;
@@ -34,7 +36,7 @@ namespace HorseRadish
 	{
 		size_t count[256], index[256], i;
 
-		memset(count, 0, sizeof(count));
+		std::memset(count, 0, sizeof(count));
 		for (i = 0; i < howMuch; i++)
 			count[((source[i]) >> (16)) & 0xff]++;
 		index[0] = 0;
@@ -48,7 +50,7 @@ namespace HorseRadish
 	{
 		size_t count[256], index[256], i;
 
-		memset(count, 0, sizeof(count));
+		std::memset(count, 0, sizeof(count));
 		for (i = 0; i < howMuch; i++)
 			count[((source[i]) >> (24)) & 0xff]++;
 		index[0] = 0;
@@ -60,7 +62,7 @@ namespace HorseRadish
 
 	void Sorting::radixSort(int *baseArray, int *tempArray, size_t numElements)
 	{
-		if (baseArray == nullptr || tempArray == nullptr || numElements <= 1)
+		if (!baseArray || !tempArray || numElements <= 1)
 			return;
 
 		radixByte0(numElements, baseArray, tempArray);
@@ -76,12 +78,12 @@ namespace HorseRadish
 		unsigned char *c;
 		size_t i, counter[256], offset[256];
 
-		if (baseArray == nullptr || tempArray == nullptr || numElements <= 1)
+		if (!baseArray || !tempArray || numElements <= 1)
 			return;
 
 		for (size_t p = 0; p < 4; ++p)
 		{
-			memset(counter, 0, sizeof(int) * 256);
+			std::memset(counter, 0, sizeof(int) * 256);
 
 			for (i = 0; i < numElements; i++)
 			{
@@ -110,5 +112,4 @@ namespace HorseRadish
 			orderTemp = tmpi;
 		}
 	}
-
-} //HorseRadish
+}

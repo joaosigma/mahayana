@@ -1,21 +1,24 @@
 #pragma once
 
-#include "engine/logger.hpp"
-#include "engine/runtime.hpp"
-#include "common/timer.hpp"
-#include "common/matrix.hpp"
-#include "common/fileSystem.hpp"
-#include "common/primitives2D.hpp"
-#include "common/opengl/tools/immediateMode.hpp"
-#include "common/opengl/objects.hpp"
+#include "../engine/logger.hpp"
+#include "../engine/runtime.hpp"
+#include "../common/timer.hpp"
+#include "../common/matrix.hpp"
+#include "../common/fileSystem.hpp"
+#include "../common/primitives2D.hpp"
+#include "../common/opengl/tools/immediateMode.hpp"
+#include "../common/opengl/objects.hpp"
 
 #include <chrono>
 #include <string>
 
-class VideoStream;
+namespace HorseRadish {	namespace Misc
+{
+	class VideoStream;
+}}
 
-namespace HorseRadish {	namespace Render {
-
+namespace HorseRadish {	namespace Render
+{
 	class Scene
 	{
 		friend class Stage;
@@ -27,16 +30,16 @@ namespace HorseRadish {	namespace Render {
 		HorseRadish::OpenGL::Objects::Context& mGlCtx;
 
 		struct VideoData {
-			bool streamEnded;
+			bool streamEnded = false;
 			Timer frameTimer;
-			VideoStream *stream;
-			HorseRadish::hInt64 frameLastID;
-			std::chrono::milliseconds waitDuration;
-			HorseRadish::Primitives2D::Size<int> frameSize;
+			std::unique_ptr<Misc::VideoStream> stream;
+			HorseRadish::hInt64 frameLastID = -1;
+			std::chrono::milliseconds waitDuration = std::chrono::milliseconds::zero();
+			HorseRadish::Primitives2D::Size<size_t> frameSize;
 		} mVideoData;
 		struct RenderData {
-			bool fading;
-			float fadingAlpha;
+			bool fading = false;
+			float fadingAlpha = 1.0f;
 			HorseRadish::Matrix proj2D;
 			HorseRadish::Primitives2D::Size<int> windowSize;
 			HorseRadish::OpenGL::Tools::ImmediateMode imode;
@@ -51,7 +54,7 @@ namespace HorseRadish {	namespace Render {
 		
 
 	public:
-		Scene(Engine::Runtime& runtime, Engine::Logger::Context& logger, HorseRadish::IO::FileSystem& fileSystem, HorseRadish::OpenGL::Objects::Context &glCtx, const std::string& name, const std::string& filePath, unsigned int glRenderWidth, unsigned int glRenderHeight);
+		Scene(Engine::Runtime& runtime, Engine::Logger::Context& logger, HorseRadish::IO::FileSystem& fileSystem, HorseRadish::OpenGL::Objects::Context &glCtx, const std::string& name, const std::string& filePath, size_t renderWidth, size_t renderHeight);
 		~Scene();
 
 		Scene(const Scene&) = delete;
@@ -66,5 +69,4 @@ namespace HorseRadish {	namespace Render {
 			return mName;
 		}
 	};
-
 } }

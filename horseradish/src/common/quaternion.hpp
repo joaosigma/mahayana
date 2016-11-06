@@ -74,5 +74,4 @@ namespace HorseRadish
 		void rotateVector3(const float * const vec, float * const dest) const;
 		void rotateVector3(const float &vx, const float &vy, const float &vz, Vector3f &dest) const;
 	};
-
-} //HorseRadish
+}

@@ -3,7 +3,7 @@
 #include "types.hpp"
 #include "math.hpp"
 #include "path.hpp"
-#include "platform.hpp"
+#include "../platform/platform.hpp"
 
 #include <memory>
 #include <type_traits>
@@ -40,7 +40,8 @@ namespace HorseRadish { namespace Streams
 		virtual size_t write(const void* const inBuffer, size_t numBytes) = 0;
 		virtual bool seek(SeekOrigin seekOrigin, int offset) = 0;
 			 
-		virtual std::unique_ptr<MemoryViewStream> readEntireContent() const = 0;
+		virtual bool cloneAllContent(MemoryViewStream &memView) const = 0;
+		virtual bool cloneAllContent(std::shared_ptr<unsigned char>& buffer, size_t& bufferSize, std::function<std::shared_ptr<unsigned char>(size_t)> allocatorFunc = nullptr) const = 0;
 	};
 
 	class MemoryStream final : public Stream
@@ -51,7 +52,7 @@ namespace HorseRadish { namespace Streams
 		bool mIsClosed = false;
 
 	public:
-		MemoryStream(size_t reserveSize = 1024)
+		explicit MemoryStream(size_t reserveSize = 1024)
 		{
 			mDataSize = (reserveSize < 1024) ? 1024 : reserveSize;
 			mData = realloc(mData, mDataSize);
@@ -102,9 +103,10 @@ namespace HorseRadish { namespace Streams
 		size_t write(const void* const inBuffer, size_t numBytes) override;
 		bool seek(SeekOrigin seekOrigin, int offset) override;
 
-		std::unique_ptr<MemoryViewStream> readEntireContent() const override;
+		bool cloneAllContent(MemoryViewStream &memView) const override;
+		bool cloneAllContent(std::shared_ptr<unsigned char>& buffer, size_t& bufferSize, std::function<std::shared_ptr<unsigned char>(size_t)> allocatorFunc = nullptr) const override;
 
-		const void* getData() const;
+		const void* data() const;
 		std::string toStr() const;
 	};
 
@@ -168,9 +170,10 @@ namespace HorseRadish { namespace Streams
 		size_t write(const void* const inBuffer, size_t numBytes) override;
 		bool seek(SeekOrigin seekOrigin, int offset) override;
 
-		std::unique_ptr<MemoryViewStream> readEntireContent() const override;
+		bool cloneAllContent(MemoryViewStream &memView) const override;
+		bool cloneAllContent(std::shared_ptr<unsigned char>& buffer, size_t& bufferSize, std::function<std::shared_ptr<unsigned char>(size_t)> allocatorFunc = nullptr) const override;
 
-		const void* getData() const;
+		const void* data() const;
 		std::string toStr() const;
 	};
 
@@ -235,12 +238,14 @@ namespace HorseRadish { namespace Streams
 		size_t write(const void* const inBuffer, size_t numBytes) override;
 		bool seek(SeekOrigin seekOrigin, int offset) override;
 
-		std::unique_ptr<MemoryViewStream> readEntireContent() const override;
+		bool cloneAllContent(MemoryViewStream &memView) const override;
+		bool cloneAllContent(std::shared_ptr<unsigned char>& buffer, size_t& bufferSize, std::function<std::shared_ptr<unsigned char>(size_t)> allocatorFunc = nullptr) const override;
 	};
 
 	class StreamReader
 	{
 		Stream &mStream;
+
 	public:
 
 		StreamReader(Stream &stream)
@@ -295,6 +300,7 @@ namespace HorseRadish { namespace Streams
 	class StreamWriter
 	{
 		Stream &mStream;
+
 	public:
 
 		StreamWriter(Stream &stream)
@@ -325,7 +331,7 @@ namespace HorseRadish { namespace Streams
 
 		size_t writeString(const char* const str, bool includeTerminator = false)
 		{
-			if (!mStream.canWrite() || (str == nullptr))
+			if (!str || !mStream.canWrite())
 				return 0;
 
 			auto strLen = strlen(str);
@@ -368,7 +374,7 @@ namespace HorseRadish { namespace Streams
 
 		bool write(const char* const string, bool writeLine = false)
 		{
-			if ((string == nullptr) || (string[0] == '\0'))
+			if (!string || (string[0] == '\0'))
 				return 0;
 
 			return write(string, strlen(string), writeLine);
@@ -376,21 +382,20 @@ namespace HorseRadish { namespace Streams
 
 		bool write(const char* const string, size_t bytesToWrite, bool writeLine = false)
 		{
-			if (!mStream.canWrite() || (string == nullptr) || (bytesToWrite <= 0))
+			if (!string || (bytesToWrite <= 0) || !mStream.canWrite())
 				return 0;
 
 			auto success = (mStream.write(string, bytesToWrite) == bytesToWrite);
 
 			if (success && writeLine)
-				success &= (mStream.write(HorseRadish::Platform::NewLine, HorseRadish::Platform::NewLineSize) == HorseRadish::Platform::NewLineSize);
+				success &= (mStream.write(HorseRadish::platform::Platform::NewLine, HorseRadish::platform::Platform::NewLineSize) == HorseRadish::platform::Platform::NewLineSize);
 
 			return success;
 		}
 
 		void writeLine()
 		{
-			mStream.write(HorseRadish::Platform::NewLine, HorseRadish::Platform::NewLineSize);
+			mStream.write(HorseRadish::platform::Platform::NewLine, HorseRadish::platform::Platform::NewLineSize);
 		}
 	};
-
 } }

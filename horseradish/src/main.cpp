@@ -5,7 +5,7 @@
 	#include <crtdbg.h>
 #endif
 
-#include "common/platform.hpp"
+#include "platform/platform.hpp"
 #include "common/stringUtils.hpp"
 
 #include "engine/engine.hpp"
@@ -23,22 +23,22 @@ int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PWSTR lpCmdLine, int n
 
 	//minimal checks
 	{
-		if (HorseRadish::Platform::cpuCheckFeatures((HorseRadish::Platform::CPUFeature)(HorseRadish::Platform::SSE | HorseRadish::Platform::SSE2 | HorseRadish::Platform::CMov)) == false)
+		if (!HorseRadish::platform::Platform::cpuCheckFeatures((HorseRadish::platform::Platform::CPUFeature)(HorseRadish::platform::Platform::SSE | HorseRadish::platform::Platform::SSE2 | HorseRadish::platform::Platform::CMov)))
 		{
-			Window::MsgBoxWarn("The CPU doesn't have the minimum required features.\nThe application cannot proceed.");
+			HorseRadish::platform::Window::MsgBoxWarn("The CPU doesn't have the minimum required features.\nThe application cannot proceed.");
 			return 0;
 		}
 
 		int isCleanBoot;
-		if (!HorseRadish::Platform::systemInfo(HorseRadish::Platform::SystemInfo::CleanBoot, isCleanBoot) || !isCleanBoot)
+		if (!HorseRadish::platform::Platform::systemInfo(HorseRadish::platform::Platform::SystemInfo::CleanBoot, isCleanBoot) || !isCleanBoot)
 		{
-			Window::MsgBoxWarn("The OS did not boot normally!\nFor security reasons the application will now exit.");
+			HorseRadish::platform::Window::MsgBoxWarn("The OS did not boot normally!\nFor security reasons the application will now exit.");
 			return 0;
 		}
 
-		if (HorseRadish::Platform::SingleInstance().isAnotherRunning() == true)
+		if (HorseRadish::platform::Platform::SingleInstance().isAnotherRunning())
 		{
-			Window::MsgBoxError("Another instance of this application is already running.");
+			HorseRadish::platform::Window::MsgBoxError("Another instance of this application is already running.");
 			return 0;
 		}
 	}
@@ -64,18 +64,18 @@ int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PWSTR lpCmdLine, int n
 
 	if (!success)
 	{
-		Window::MsgBoxError("Unable to start engine (invalid state call)");
+		HorseRadish::platform::Window::MsgBoxError("Unable to start engine (invalid state call)");
 		return 0;
 	}
 
 	auto engineError = engine.getErrorDesc();
 	if (!engineError.empty())
-		Window::MsgBoxError(engineError.c_str());
+		HorseRadish::platform::Window::MsgBoxError(engineError.c_str());
 
 	switch (engine.getExitAction())
 	{
 	case HorseRadish::Engine::Engine::ExitAction::Restart:
-		HorseRadish::Platform::spawnSelf();
+		HorseRadish::platform::Platform::spawnSelf();
 		break;
 	default:
 		break;

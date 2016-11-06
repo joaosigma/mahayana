@@ -7,8 +7,8 @@
 
 #include <cassert>
 
-namespace HorseRadish { namespace Engine {
-
+namespace HorseRadish { namespace Engine
+{
 	void Engine::exit(ExitAction exitAction, const char * const errorDesc)
 	{
 		std::lock_guard<std::mutex> lock(mSyncLock);
@@ -47,7 +47,7 @@ namespace HorseRadish { namespace Engine {
 		size_t totalPacks = 0;
 
 		//for every pack/zip/7zip file
-		HorseRadish::IO::FileSystem::findFiles("d:/jogos/doom3/base/pak*.pk4", true, [&](const HorseRadish::IO::Path &filePath, const HorseRadish::hUInt64 &fileSize)
+		/*HorseRadish::IO::FileSystem::findFiles("d:/jogos/doom3/base/pak*.pk4", true, [&](const HorseRadish::IO::Path &filePath, const HorseRadish::hUInt64 &fileSize)
 		{
 			size_t numFilesZip;
 
@@ -57,12 +57,12 @@ namespace HorseRadish { namespace Engine {
 				totalPacks += 1;
 				totalFich += numFilesZip;
 			}
-		});
+		});*/
 
 		mLoggerRuntimeCtx->info("   loaded {0} archives with a total of {1} files", totalPacks, totalFich);
 	}
 
-	void Engine::runtimeFuncVarCreate(const std::string &funcName, Runtime::FunctionReturnContext &ctx)
+	void Engine::runtimeFuncVarRegister(const std::string &funcName, Runtime::FunctionReturnContext &ctx)
 	{
 		if (ctx.getNumParams() != 3 && ctx.getNumParams() != 4)
 		{
@@ -234,33 +234,33 @@ namespace HorseRadish { namespace Engine {
 		//misc info
 		mLoggerRuntimeCtx->info("${olive}->${default}System information:");
 
-		if (HorseRadish::Platform::cpuGetVendorID(auxInfo))
+		if (HorseRadish::platform::Platform::cpuGetVendorID(auxInfo))
 			mLoggerRuntimeCtx->info("   CPU vendor ID: {0}", auxInfo);
-		if (HorseRadish::Platform::cpuGetProcessorName(auxInfo))
+		if (HorseRadish::platform::Platform::cpuGetProcessorName(auxInfo))
 			mLoggerRuntimeCtx->info("   CPU processor name: {0}", auxInfo);
 
 		
-		HorseRadish::Platform::systemInfo(HorseRadish::Platform::SystemInfo::MemoryTotal, memTotal);
+		HorseRadish::platform::Platform::systemInfo(HorseRadish::platform::Platform::SystemInfo::MemoryTotal, memTotal);
  		mLoggerRuntimeCtx->info("   Total physical memory: {0}", HorseRadish::StringUtils::formatSize(memTotal));
 
-		HorseRadish::Platform::systemInfo(HorseRadish::Platform::SystemInfo::MemoryFree, memFree);
+		HorseRadish::platform::Platform::systemInfo(HorseRadish::platform::Platform::SystemInfo::MemoryFree, memFree);
 		mLoggerRuntimeCtx->info("   Free physical memory: {0}", HorseRadish::StringUtils::formatSize(memFree));
 
-		HorseRadish::Platform::systemInfo(HorseRadish::Platform::SystemInfo::DisplayWidth, displayWidth);
-		HorseRadish::Platform::systemInfo(HorseRadish::Platform::SystemInfo::DisplayHeight, displayHeight);
-		HorseRadish::Platform::systemInfo(HorseRadish::Platform::SystemInfo::DisplayColorBits, displayColorBits);
-		HorseRadish::Platform::systemInfo(HorseRadish::Platform::SystemInfo::DisplayFrequency, displayFrequency);
+		HorseRadish::platform::Platform::systemInfo(HorseRadish::platform::Platform::SystemInfo::DisplayWidth, displayWidth);
+		HorseRadish::platform::Platform::systemInfo(HorseRadish::platform::Platform::SystemInfo::DisplayHeight, displayHeight);
+		HorseRadish::platform::Platform::systemInfo(HorseRadish::platform::Platform::SystemInfo::DisplayColorBits, displayColorBits);
+		HorseRadish::platform::Platform::systemInfo(HorseRadish::platform::Platform::SystemInfo::DisplayFrequency, displayFrequency);
 		mLoggerRuntimeCtx->info("   Desktop resolution: {0}x{1}x{2}@{3}", displayWidth, displayHeight, displayColorBits, displayFrequency);
 
-		HorseRadish::Platform::systemInfo(HorseRadish::Platform::SystemInfo::OperatingSystemName, auxInfo);
+		HorseRadish::platform::Platform::systemInfo(HorseRadish::platform::Platform::SystemInfo::OperatingSystemName, auxInfo);
 		mLoggerRuntimeCtx->info("   Operating system: {0}", auxInfo);
 
-		mLoggerRuntimeCtx->info(HorseRadish::Platform::isArch64() ? "   Build type: x86 64bit" : "   Build type: x86 32bit");
+		mLoggerRuntimeCtx->info(HorseRadish::platform::Platform::isArch64() ? "   Build type: x86 64bit" : "   Build type: x86 32bit");
 
-		HorseRadish::Platform::systemInfo(HorseRadish::Platform::SystemInfo::MachineName, auxInfo);
+		HorseRadish::platform::Platform::systemInfo(HorseRadish::platform::Platform::SystemInfo::MachineName, auxInfo);
 		mLoggerRuntimeCtx->info("   Machine name: {0}", auxInfo);
 
-		HorseRadish::Platform::systemInfo(HorseRadish::Platform::SystemInfo::CurrentUsername, auxInfo);
+		HorseRadish::platform::Platform::systemInfo(HorseRadish::platform::Platform::SystemInfo::CurrentUsername, auxInfo);
 		mLoggerRuntimeCtx->info("   User name: {0}", auxInfo);
 
 		//test UTF8
@@ -284,7 +284,7 @@ namespace HorseRadish { namespace Engine {
 		//initiate runtime
 		mRuntime = std::make_shared<Runtime>(*mLoggerRuntimeCtx);
 
-		mRuntime->registerFunc("runtime.varCreate", std::bind(&Engine::runtimeFuncVarCreate, this, std::placeholders::_1, std::placeholders::_2));
+		mRuntime->registerFunc("runtime.varCreate", std::bind(&Engine::runtimeFuncVarRegister, this, std::placeholders::_1, std::placeholders::_2));
 		mRuntime->registerFunc("runtime.varGet", std::bind(&Engine::runtimeFuncVarGet, this, std::placeholders::_1, std::placeholders::_2));
 		mRuntime->registerFunc("runtime.varSet", std::bind(&Engine::runtimeFuncVarSet, this, std::placeholders::_1, std::placeholders::_2));
 		mRuntime->registerFunc("runtime.varList", std::bind(&Engine::runtimeFuncVarList, this, std::placeholders::_1, std::placeholders::_2));
@@ -306,11 +306,11 @@ namespace HorseRadish { namespace Engine {
 		{
 			std::string strAux;
 
-			if (HorseRadish::Platform::cpuGetVendorID(strAux))
+			if (HorseRadish::platform::Platform::cpuGetVendorID(strAux))
 				var<std::string>("sys.info.cpuVendor", strAux);
-			if (HorseRadish::Platform::cpuGetProcessorName(strAux))
+			if (HorseRadish::platform::Platform::cpuGetProcessorName(strAux))
 				var<std::string>("sys.info.cpuName", strAux);
-			var<std::string>("sys.info.build", fmt::format("Horseradish v1.0.0 (alpha build {0})", HorseRadish::Build::BuildNumber));
+			var<std::string>("sys.info.build", fmt::format("Horseradish v1.0.0 (alpha build {0})", BuildNumber));
 		}
 
 		//first entries
@@ -447,7 +447,7 @@ namespace HorseRadish { namespace Engine {
 		{
 			mRuntime->runScriptFile("../engine.initd.nut");
 
-			if (HorseRadish::OpenGL::OpenGLLoadLibrary("OpenGL32.dll") == false)
+			if (!HorseRadish::OpenGL::OpenGLLoadLibrary("OpenGL32.dll"))
 			{
 				exit(ExitAction::Nothing, "Unable to load OpenGL driver");
 				return false;
@@ -459,9 +459,9 @@ namespace HorseRadish { namespace Engine {
 			initFileSystem();
 			mLoggerRuntimeCtx->info("");
 
-			mWindow = std::make_shared<Window>(*mLogger);
+			mWindow = std::make_shared<platform::Window>(*mLogger);
 
-			auto windowStyle = Window::WindowStyle::StyleWindow;
+			auto windowStyle = platform::Window::WindowStyle::StyleWindow;
 			bool onSecondary = false;
 			size_t targetWidth = var<int>("renderer.dims.width");
 			size_t targetHeight = var<int>("renderer.dims.height");
@@ -530,4 +530,3 @@ namespace HorseRadish { namespace Engine {
 		return ((mCurState == State::StoppedError) ? mErrorDesc : std::string());
 	}
 } }
-

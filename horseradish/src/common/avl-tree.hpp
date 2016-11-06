@@ -1,7 +1,5 @@
 #pragma once
 
-#include "platform.hpp"
-
 #include <functional>
 
 namespace HorseRadish
@@ -34,9 +32,9 @@ namespace HorseRadish
 
 			bool isLeftHeavier() const
 			{
-				if (bRight == nullptr)
+				if (!bRight)
 					return true;
-				if (bLeft == nullptr)
+				if (!bLeft)
 					return false;
 
 				return (bLeft->height > bRight->height);
@@ -233,7 +231,7 @@ namespace HorseRadish
 			//we found the key we are looking for, just go down the middle
 			if (node->key == *string)
 			{
-				if (node->bMiddle == nullptr)
+				if (!node->bMiddle)
 				{
 					node->bMiddle = new Node(node, 0);
 					node->bMiddle->key = *(string + 1);
@@ -246,7 +244,7 @@ namespace HorseRadish
 			//decide if we should go left or right
 			if (*string < node->key)
 			{
-				if (node->bLeft == nullptr)
+				if (!node->bLeft)
 				{
 					node->bLeft = new Node(node, 0);
 					node->bLeft->key = *string;
@@ -256,7 +254,7 @@ namespace HorseRadish
 			}
 			else
 			{
-				if (node->bRight == nullptr)
+				if (!node->bRight)
 				{
 					node->bRight = new Node(node, 0);
 					node->bRight->key = *string;
@@ -289,10 +287,10 @@ namespace HorseRadish
 	public:
 		void addData(const char * const string, const TValue &data)
 		{
-			if (string == nullptr || *string == '\0')
+			if (!string || *string == '\0')
 				return;
 
-			if (mMainTree == nullptr)
+			if (!mMainTree)
 			{
 				mMainTree = new Node(nullptr, 0);
 				mMainTree->key = *string;
@@ -318,12 +316,12 @@ namespace HorseRadish
 
 		bool findData(const char * const what, TValue &value) const
 		{
-			if (what == nullptr || *what == '\0')
+			if (!what || *what == '\0')
 				return false;
 
 			std::function<bool(const Node * const, const char * const)> findFunc = [&](const Node * const node, const char * const string)
 			{
-				if (node == nullptr)
+				if (!node)
 					return false;
 
 				if (node->key == (*string))
@@ -528,5 +526,4 @@ namespace HorseRadish
 			*dest = '\0';
 		}
 	};
-
-} //HorseRadish
+}

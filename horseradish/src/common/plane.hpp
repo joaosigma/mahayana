@@ -137,5 +137,4 @@ namespace HorseRadish
 		Position classifyPoint(const Vector3f &point) const;
 		Position classifyTri(const Vector3f &p1, const Vector3f &p2, const Vector3f &p3) const;
 	};
-
-} //HorseRadish
+}

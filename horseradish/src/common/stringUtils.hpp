@@ -130,7 +130,7 @@ namespace HorseRadish
 			return end;
 		}
 
-		static unsigned int unicodeUTF8Size(const unsigned int unicodeChar)
+		static size_t unicodeUTF8Size(const unsigned int unicodeChar)
 		{
 			if (unicodeChar < 0x80)
 				return 1;
@@ -143,7 +143,7 @@ namespace HorseRadish
 			return 0;
 		}
 
-		static unsigned int unicodeUTF8(const unsigned int unicodeChar, char* const outBuffer)
+		static size_t unicodeUTF8(const unsigned int unicodeChar, char* const outBuffer)
 		{
 			if (unicodeChar < 0x80)
 			{
@@ -195,8 +195,8 @@ namespace HorseRadish
 
 		static bool endsWith(const std::string& str, const std::string& ending);
 
-		static void closeAt(std::string& str, unsigned int pos);
-		static std::string closeAtCopy(const std::string& str, unsigned int pos);
+		static void closeAt(std::string& str, size_t pos);
+		static std::string closeAtCopy(const std::string& str, size_t pos);
 
 		static void trim(std::string& str);
 		static std::string trimCopy(const std::string& str);
@@ -207,12 +207,12 @@ namespace HorseRadish
 		static void replace(std::string& str, const std::string& replaceOldStr, const std::string& replaceNewStr);
 		static std::string replaceCopy(const std::string& str, const std::string& replaceOldStr, const std::string& replaceNewStr);
 
-		static unsigned int getUnicodeAt(const std::string& str, const unsigned int strIndex);
+		static unsigned int getUnicodeAt(const std::string& str, size_t strIndex);
 
 		static void reverse(std::string& str);
 		static std::string reverseCopy(const std::string& str);
 
 		static std::string formatDuration(std::chrono::milliseconds duration);
-		static std::string formatSize(unsigned int bytes);
+		static std::string formatSize(size_t bytes);
 	};
 }

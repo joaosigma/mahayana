@@ -1,6 +1,5 @@
 #pragma once
 
-#include "platform.hpp"
 #include "types.hpp"
 
 namespace HorseRadish
@@ -41,5 +40,4 @@ namespace HorseRadish
 		static unsigned long calculateMD5Short(const void * const buffer, size_t bufferSize);
 		static unsigned int superFastHash(const void * const buffer, size_t bufferSize);
 	};
-
-} //HorseRadish
+}

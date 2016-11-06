@@ -1,13 +1,9 @@
 #include "renderer2D.hpp"
 
-#include "common/imageFactory.hpp"
+#include "../common/imageFactory.hpp"
 
 namespace HorseRadish { namespace Render
 {
-	Renderer2D::Renderer2D(const HorseRadish::OpenGL::Objects::Context& glContext)
-		: Renderer(glContext)
-	{ }
-
 	void Renderer2D::initialize(size_t renderWidth, size_t renderHeight, HorseRadish::IO::FileSystem * const fileSystem, const char* const textFont, size_t  textSize)
 	{
 		mRenderWidth = renderWidth;
@@ -29,5 +25,4 @@ namespace HorseRadish { namespace Render
 
 		mGui.font = std::make_unique<Tools::Font>(textSize, textFont, mShaders.text.progVertex.getId(), mShaders.text.progFragment.getId(), mShaders.text.progPipeline.getId());
 	}
-
 } }

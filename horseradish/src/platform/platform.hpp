@@ -2,8 +2,8 @@
 
 #include <functional>
 
-namespace HorseRadish {
-
+namespace HorseRadish { namespace platform
+{
 	class Platform
 	{
 	public:
@@ -36,10 +36,6 @@ namespace HorseRadish {
 		static const unsigned int DirectorySeparatorChar;
 		static const unsigned int VolumeSeparatorChar;
 
-		static const unsigned int KiloByte;
-		static const unsigned int MegaByte;
-		static const unsigned int GigaByte;
-
 		static bool setProcessPriority(PriorityType priorityType);
 		static bool setThreadPriority(PriorityType priorityType);
 
@@ -60,14 +56,6 @@ namespace HorseRadish {
 		static bool clipboardGetStrings(std::function<bool(const std::string&)> funcCallback);
 		static bool clipboardGetFiles(std::function<bool(const std::string&)> funcCallback);
 
-		static void asmBufferClear(void* dest, size_t bytes);
-		static void asmBufferCopy(void* dest, const void* src, size_t bytes);
-		static void asmBufferCopyAligned(void* dest, const void* src, size_t multiple128Bytes);
-		static void asmBufferSetUBYTE(void* dest, unsigned char val, size_t bytes);
-		static void asmBufferSetUI32(void* dest, unsigned int val, size_t bytes);
-		static void asmFloat2UByte(unsigned char *dest, const float *src, size_t num, const float mulVal, const float addVal);
-		static void asmUByte2Float(float *dest, const unsigned char *src, size_t num, const float mulVal, const float addVal);
-
 		static bool stdInOutErrRedirect();
 		static void stdInOutErrClose();
 		static void stdErrClear();
@@ -75,4 +63,4 @@ namespace HorseRadish {
 		static bool stdErrRead(void *outBuffer, int outBufferSize, int &bytesWritten);
 		static bool stdOutRead(void *outBuffer, int outBufferSize, int &bytesWritten);
 	};
-}
+} }

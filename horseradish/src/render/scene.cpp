@@ -1,41 +1,30 @@
-#include "render/scene.hpp"
+#include "scene.hpp"
 
-#include "common/opengl/openGL.hpp"
-#include "common/opengl/tools/viewport.hpp"
+#include "../common/opengl/openGL.hpp"
+#include "../common/opengl/tools/viewport.hpp"
 
-#include "../videoStream.hpp"
+#include "../misc/videoStream.hpp"
 
-
-namespace HorseRadish {	namespace Render {
-
-	Scene::Scene(Engine::Runtime& runtime, Engine::Logger::Context& logger, HorseRadish::IO::FileSystem& fileSystem, HorseRadish::OpenGL::Objects::Context &glCtx, const std::string& name, const std::string& filePath, unsigned int glRenderWidth, unsigned int glRenderHeight)
+namespace HorseRadish {	namespace Render
+{
+	Scene::Scene(Engine::Runtime& runtime, Engine::Logger::Context& logger, HorseRadish::IO::FileSystem& fileSystem, HorseRadish::OpenGL::Objects::Context &glCtx, const std::string& name, const std::string& filePath, size_t renderWidth, size_t renderHeight)
 		: mName(name), mFilePath(filePath)
 		, mRuntime(runtime), mLogger(logger), mGlCtx(glCtx)
 	{
-		mVideoData.streamEnded = false;
-		mVideoData.stream = nullptr;
-		mVideoData.frameLastID = -1;
-		mVideoData.waitDuration = std::chrono::milliseconds::zero();
+		Misc::VideoStream::Initialize();
 
-		VideoStream::Initialize();
-		mVideoData.stream = new VideoStream(3, PixelFormat::PIX_FMT_BGR24, mFilePath.c_str());
-		if ((mVideoData.stream == nullptr) || (mVideoData.stream->IsValid() == false))
+		mVideoData.stream = std::make_unique<Misc::VideoStream>(3, PixelFormat::PIX_FMT_BGR24, mFilePath.c_str());
+		if (!mVideoData.stream->isValid())
 		{
-			if (mVideoData.stream != nullptr)
-				delete mVideoData.stream;
-
-			mVideoData.stream = nullptr;
+			mVideoData.stream.reset();
 			return;
 		}
 
-		mVideoData.stream->GetVideoDims(mVideoData.frameSize.width, mVideoData.frameSize.height);
-
-		mRenderData.fading = false;
-		mRenderData.fadingAlpha = 1.0f;
+		mVideoData.stream->getVideoDims(mVideoData.frameSize.width, mVideoData.frameSize.height);
 
 		mRenderData.texVideo.init(HorseRadish::OpenGL::Objects::Texture::Type::TexRectangle, HorseRadish::OpenGL::Objects::Texture::StorageType::RGBA_8, mVideoData.frameSize.width, mVideoData.frameSize.height);
 
-		mRenderData.bufferPBO.init(HorseRadish::OpenGL::Objects::Buffer::Type::PixelUnpackBuffer, mVideoData.stream->GetVideoFrameDataSize(), HorseRadish::OpenGL::Objects::Buffer::UsageType::OnlyWrite);
+		mRenderData.bufferPBO.init(HorseRadish::OpenGL::Objects::Buffer::Type::PixelUnpackBuffer, mVideoData.stream->getVideoFrameDataSize(), HorseRadish::OpenGL::Objects::Buffer::UsageType::OnlyWrite);
 
 		mRenderData.sampler.init(HorseRadish::OpenGL::Objects::Sampler::FilterType::Linear, HorseRadish::OpenGL::Objects::Sampler::FilterType::Linear, HorseRadish::OpenGL::Objects::Sampler::WrapType::ClampEdge);
 
@@ -44,7 +33,7 @@ namespace HorseRadish {	namespace Render {
 		//std::string infoLog = mRenderData.progVertex.getInfoLog();
 		//infoLog += mRenderData.progFragment.getInfoLog();
 
-		auto matrixProj2D = HorseRadish::OpenGL::Tools::Viewport::genMatrix2DProj(glRenderWidth, glRenderHeight);
+		auto matrixProj2D = HorseRadish::OpenGL::Tools::Viewport::genMatrix2DProj(renderWidth, renderHeight);
 
 		HorseRadish::OpenGL::glProgramUniform1i(mRenderData.progFragment.getId(), mRenderData.progFragment.getUniformLocation("texSampler"), 0);
 		HorseRadish::OpenGL::glProgramUniformMatrix4fv(mRenderData.progVertex.getId(), mRenderData.progVertex.getUniformLocation("transformationMatrix"), 1, false, matrixProj2D.data());
@@ -53,15 +42,12 @@ namespace HorseRadish {	namespace Render {
 		mRenderData.progPipeline.setStage(mRenderData.progVertex);
 		mRenderData.progPipeline.setStage(mRenderData.progFragment);
 
-		mRenderData.windowSize.reset(glRenderWidth, glRenderHeight);
+		mRenderData.windowSize.reset(renderWidth, renderHeight);
 		mRenderData.proj2D = HorseRadish::OpenGL::Tools::Viewport::genMatrix2DProj(mRenderData.windowSize.width, mRenderData.windowSize.height);
 	}
 
 	Scene::~Scene()
-	{
-		if (mVideoData.stream)
-			delete mVideoData.stream;
-	}
+	{ }
 
 	bool Scene::processDraw()
 	{
@@ -74,7 +60,7 @@ namespace HorseRadish {	namespace Render {
 			HorseRadish::hInt64 frameID;
 			double frameDurationS;
 
-			auto frameData = mVideoData.stream->GetFrame(frameIsAhead, frameID, frameDurationS);
+			auto frameData = mVideoData.stream->getFrame(frameIsAhead, frameID, frameDurationS);
 			if (!frameData && !frameIsAhead)
 			{
 				mVideoData.streamEnded = true;
@@ -83,7 +69,7 @@ namespace HorseRadish {	namespace Render {
 
 			if (frameData && (frameID != mVideoData.frameLastID))
 			{
-				mRenderData.bufferPBO.writeData(frameData, mVideoData.stream->GetVideoFrameDataSize(), 0);
+				mRenderData.bufferPBO.writeData(frameData, mVideoData.stream->getVideoFrameDataSize(), 0);
 
 				mRenderData.bufferPBO.bind();
 				mRenderData.texVideo.uploadData(0, 0, 0, mVideoData.frameSize.width, mVideoData.frameSize.height, HorseRadish::OpenGL::Objects::Texture::DataFormat::BGR, HorseRadish::OpenGL::Objects::Texture::DataType::UBYTE, nullptr);
@@ -98,13 +84,11 @@ namespace HorseRadish {	namespace Render {
 
 		if (mRenderData.fading || (mVideoData.frameLastID >= 0))
 		{
-			HorseRadish::Primitives2D::Rectangle<int> viewRect;
-			mVideoData.stream->GetVideoRect(mRenderData.windowSize.width, mRenderData.windowSize.height, true, viewRect);
+			auto viewRect = mVideoData.stream->getVideoRect(mRenderData.windowSize.width, mRenderData.windowSize.height, true);
 
 			HorseRadish::OpenGL::glEnable(GL_BLEND);
 			HorseRadish::OpenGL::glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-			HorseRadish::OpenGL::glUseProgram(0);
 			HorseRadish::OpenGL::glBindProgramPipeline(mRenderData.progPipeline.getId());
 
 			mRenderData.sampler.bind(0);
@@ -159,16 +143,13 @@ namespace HorseRadish {	namespace Render {
 		if (mVideoData.streamEnded)
 		{
 			mVideoData.streamEnded = false;
-
-			if (mVideoData.stream)
-				delete mVideoData.stream;
-			mVideoData.stream = nullptr;
+			mVideoData.stream.reset();
 
 			cbMessages("finished", "");
 			return;
 		}
 
 		if (mVideoData.stream)
-			mVideoData.stream->Process();
+			mVideoData.stream->process();
 	}
 } }

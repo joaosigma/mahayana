@@ -33,6 +33,9 @@ namespace HorseRadish
 		static size_t decodeBase64(const std::string &dataBase64, void* bufferOut);
 		static size_t decodeBase64(const std::string &dataBase64, std::vector<unsigned char> &bufferOut);
 		static size_t decodeBase64(const std::string &dataBase64, HorseRadish::Streams::Stream &streamOut);
+		static size_t decodeBase64(const char* const dataBase64, size_t dataSize, void* bufferOut);
+		static size_t decodeBase64(const char* const dataBase64, size_t dataSize, std::vector<unsigned char> &bufferOut);
+		static size_t decodeBase64(const char* const dataBase64, size_t dataSize, HorseRadish::Streams::Stream &streamOut);
 
 		static std::string encodeHex(const void * const buffer, size_t bufferSize, bool toUppercase);
 		static void encodeHex(const void * const buffer, size_t bufferSize, bool toUppercase, std::string &stringOut);
@@ -43,5 +46,4 @@ namespace HorseRadish
 		static size_t decodeHex(const std::string &dataHex, HorseRadish::Streams::Stream &streamOut);
 		static unsigned char decodeHexByte(const char * const dataHex);
 	};
-
-} //HorseRadish
+}

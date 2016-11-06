@@ -592,5 +592,4 @@ namespace HorseRadish
 	{
 		rotateVector3(Vector3f(vx, vy, vz), dest);
 	}
-
-} //HorseRadish
+}

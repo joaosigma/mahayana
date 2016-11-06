@@ -1,11 +1,9 @@
 #pragma once
 
-#include "common/platform.hpp"
-
 #include "glcorearb.h"
 
-namespace HorseRadish { namespace OpenGL {
-
+namespace HorseRadish { namespace OpenGL
+{
 	bool OpenGLLoadLibrary(const char* const glLibName);
 	bool OpenGLUnloadLibrary(void);
 	bool OpenGLGetProcs(void);

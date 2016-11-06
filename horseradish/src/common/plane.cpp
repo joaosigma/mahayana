@@ -212,5 +212,4 @@ namespace HorseRadish
 
 		return (((c1 == c2) && (c2 == c3)) ? c1 : Position::INTERSECT);
 	}
-
-} //HorseRadish
+}

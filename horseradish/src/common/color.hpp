@@ -233,7 +233,7 @@ namespace HorseRadish
 			_mm_storeu_ps(valF, valFinal);
 		}
 
-		static Color parseColorFromHTML(const char *hexColor, bool gammaCorrect = true)
+		static Color parseFromHTML(const char *hexColor, bool gammaCorrect = true)
 		{
 			if (*hexColor == '#')
 				hexColor++;
@@ -495,7 +495,7 @@ namespace HorseRadish
 			float auxCb = cb - 0.5f;
 			float auxCr = cr - 0.5f;
 
-			if (fullRange == true)
+			if (fullRange)
 			{
 				mRGBA[0] = y + (auxCr * 1.400f);
 				mRGBA[1] = y - ((auxCb * 0.343f) + (auxCr * 0.711f));
@@ -817,5 +817,4 @@ namespace HorseRadish
 			_mm_storeu_ps(mRGBA, tmp);
 		}
 	};
-
-} //HorseRadish
+}

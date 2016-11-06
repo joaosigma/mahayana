@@ -19,7 +19,7 @@ namespace HorseRadish
 
 	void StringUtils::conv2UTF8(const wchar_t* const strUTF16, std::string& strUTF8)
 	{
-		if (strUTF16 == nullptr)
+		if (!strUTF16)
 			return;
 
 		strUTF8.append(std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t>().to_bytes(strUTF16));
@@ -113,12 +113,12 @@ namespace HorseRadish
 		return (str.size() >= ending.size()) && equal(ending.rbegin(), ending.rend(), str.rbegin());
 	}
 
-	void StringUtils::closeAt(std::string& str, unsigned int pos)
+	void StringUtils::closeAt(std::string& str, size_t pos)
 	{
 		str = StringUtils::closeAtCopy(str, pos);
 	}
 
-	std::string StringUtils::closeAtCopy(const std::string& str, unsigned int pos)
+	std::string StringUtils::closeAtCopy(const std::string& str, size_t pos)
 	{
 		if (pos == 0)
 			return std::string();
@@ -194,7 +194,7 @@ namespace HorseRadish
 		return newStr;
 	}
 
-	unsigned int StringUtils::getUnicodeAt(const std::string& str, const unsigned int strIndex)
+	unsigned int StringUtils::getUnicodeAt(const std::string& str, size_t strIndex)
 	{
 		if (str.empty())
 			return 0;
@@ -257,7 +257,7 @@ namespace HorseRadish
 		return fmt::format("{0:.3f} days", remaining);
 	}
 
-	std::string StringUtils::formatSize(unsigned int bytes)
+	std::string StringUtils::formatSize(size_t bytes)
 	{
 		if (bytes < 1024)
 			return fmt::format("{0} bytes", bytes);

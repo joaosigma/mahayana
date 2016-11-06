@@ -36,5 +36,4 @@ namespace HorseRadish
 		void addMS(const hInt64 miliseconds);
 		void addMS(const double miliseconds);
 	};
-
-} //HorseRadish
+}

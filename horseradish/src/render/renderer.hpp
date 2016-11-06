@@ -1,9 +1,9 @@
 #pragma once
 
-#include "common/openGL/context.hpp"
+#include "../common/openGL/context.hpp"
 
-namespace HorseRadish { namespace Render {
-
+namespace HorseRadish { namespace Render
+{
 	class Renderer
 	{
 	protected:
@@ -17,5 +17,4 @@ namespace HorseRadish { namespace Render {
 		virtual ~Renderer()
 		{ }
 	};
-
 } }

@@ -10,8 +10,8 @@
 #include <type_traits>
 #include <unordered_map>
 
-namespace HorseRadish { namespace Engine {
-
+namespace HorseRadish { namespace Engine
+{
 	class Runtime
 	{
 	public:
@@ -418,5 +418,4 @@ namespace HorseRadish { namespace Engine {
 
 	template <class T>
 	std::unordered_map<std::string, typename HorseRadish::Engine::Runtime::NativeClass<T>::RegisteredClassFuncType> HorseRadish::Engine::Runtime::NativeClass<T>::sFuncMap;
-
 } }

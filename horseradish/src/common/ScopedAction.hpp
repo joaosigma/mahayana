@@ -22,5 +22,4 @@ namespace HorseRadish
 				funcCallback();
 		}
 	};
-
 }

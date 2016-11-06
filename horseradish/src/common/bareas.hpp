@@ -230,5 +230,4 @@ namespace HorseRadish
 			return (y >= mMinY && y <= mMaxY);
 		}
 	};
-
-} //HorseRadish
+}

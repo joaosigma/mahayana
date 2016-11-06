@@ -2366,5 +2366,4 @@ namespace HorseRadish
 		m[5] = hvyz + v[0];
 		m[8] = e + hvz * v[2];
 	}
-
-} //HorseRadish
+}

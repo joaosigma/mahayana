@@ -77,5 +77,4 @@ namespace HorseRadish
 			mDirection *= -1.0f;
 		}
 	};
-
-} //HorseRadish
+}
