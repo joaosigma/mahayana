@@ -11,7 +11,7 @@
 #include <unordered_map>
 #include <unordered_set>
 
-namespace HorseRadish { namespace Engine
+namespace hr { namespace engine
 {
 #ifdef HR_PROFILLING
 
@@ -112,7 +112,7 @@ namespace HorseRadish { namespace Engine
 			};
 
 			size_t mNumSamples = 0;
-			HorseRadish::Streams::FileStream mStream;
+			hr::streams::FileStream mStream;
 			std::array<SampleInfo, Recorder::BufferSize> mBuffer;
 
 			void dumpBuffer();
@@ -166,7 +166,7 @@ namespace HorseRadish { namespace Engine
 
 		mutable std::mutex mMutex;
 
-		HorseRadish::Timer mTimer;
+		hr::Timer mTimer;
 		std::unique_ptr<Recorder> mRecorder;
 		std::atomic<unsigned int> mSampleId = 0;
 		std::unordered_set<StatGroup> mStatGroups;

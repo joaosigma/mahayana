@@ -6,7 +6,7 @@
 #define HFUNC_RESTRICT __declspec(restrict)
 #define HALIGN_16BYTES __declspec(align(16))
 
-namespace HorseRadish
+namespace hr
 {
 	typedef size_t hSize;
 	typedef ptrdiff_t hPrtDiff;

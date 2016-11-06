@@ -7,7 +7,7 @@
 
 #include <Windowsx.h>
 
-namespace HorseRadish { namespace platform
+namespace hr { namespace platform
 {
 
 	static
@@ -116,7 +116,7 @@ namespace HorseRadish { namespace platform
 
 			if ((messageID == WM_CHAR) || (messageID == WM_KEYDOWN))
 			{
-				HorseRadish::hSplitUInt32 flags(0);
+				hr::hSplitUInt32 flags(0);
 
 				flags.piecesShort.short0 = (lParam & 0xFFFF);
 				flags.piecesShort.short1 |= ((GetKeyState(VK_CONTROL) & 0x8000) != 0) ? static_cast<unsigned int>(Window::Message::MessageFlags::ControlKey) : 0;
@@ -129,7 +129,7 @@ namespace HorseRadish { namespace platform
 			}			
 			else if (messageID == WM_MOUSEWHEEL)
 			{
-				HorseRadish::hSplitUInt32 flags(0), params(0);
+				hr::hSplitUInt32 flags(0), params(0);
 
 				flags.piecesShort.short0 = static_cast<signed short>(GET_WHEEL_DELTA_WPARAM(wParam) / 120);
 				flags.piecesShort.short1 |= ((GET_KEYSTATE_WPARAM(wParam) & MK_CONTROL) != 0) ? static_cast<unsigned int>(Window::Message::MessageFlags::ControlKey) : 0;
@@ -154,7 +154,7 @@ namespace HorseRadish { namespace platform
 		{
 			if ((window->mDisplayInfo.resizeWidth != window->mDisplayInfo.width) || (window->mDisplayInfo.resizeHeight != window->mDisplayInfo.height))
 			{
-				HorseRadish::hSplitUInt32 params(0);
+				hr::hSplitUInt32 params(0);
 				params.piecesShort.short0 = window->mDisplayInfo.resizeWidth;
 				params.piecesShort.short1 = window->mDisplayInfo.resizeHeight;
 
@@ -170,17 +170,17 @@ namespace HorseRadish { namespace platform
 		return DefWindowProc(hWnd, messageID, wParam, lParam);
 	}
 
-	HorseRadish::hInt32 WindowImpl::translateVirtualKeyCode(LPARAM nativeKeyCode)
+	hr::hInt32 WindowImpl::translateVirtualKeyCode(LPARAM nativeKeyCode)
 	{
 		Window::VirtualKeys virtuakKey;
 
 		if ((nativeKeyCode >= 0x30) && (nativeKeyCode <= 0x39))
-			return static_cast<HorseRadish::hInt32>(nativeKeyCode); //0-9
+			return static_cast<hr::hInt32>(nativeKeyCode); //0-9
 		if ((nativeKeyCode >= 0x41) && (nativeKeyCode <= 0x5A))
-			return static_cast<HorseRadish::hInt32>(nativeKeyCode); //A-Z
+			return static_cast<hr::hInt32>(nativeKeyCode); //A-Z
 
 		if ((nativeKeyCode >= 0x70) && (nativeKeyCode <= 0x7B))
-			return (static_cast<HorseRadish::hInt32>(Window::VirtualKeys::F1) + (nativeKeyCode - 0x70)); //F1-F12
+			return (static_cast<hr::hInt32>(Window::VirtualKeys::F1) + (nativeKeyCode - 0x70)); //F1-F12
 
 		switch (nativeKeyCode)
 		{
@@ -226,7 +226,7 @@ namespace HorseRadish { namespace platform
 				virtuakKey = Window::VirtualKeys::Invalid; break;
 		}
 
-		return static_cast<HorseRadish::hInt32>(virtuakKey);
+		return static_cast<hr::hInt32>(virtuakKey);
 	}
 
 	void WindowImpl::processRawInput(const RAWINPUT &inputData)
@@ -253,12 +253,12 @@ namespace HorseRadish { namespace platform
 		}
 	}
 
-	WindowImpl::WindowImpl(HorseRadish::Engine::Logger &logger)
+	WindowImpl::WindowImpl(hr::engine::Logger &logger)
 		: mLogger(logger)
 	{
 		memset(&mOriginalDeviceMode, 0, sizeof(DEVMODE));
 
-		mRawInput.mouseAccum = mRawInput.mouseSnapshot = HorseRadish::Vector3f(0.0f);
+		mRawInput.mouseAccum = mRawInput.mouseSnapshot = hr::Vector3f(0.0f);
 		mRawInput.keysSnapshot.fill(false);
 		mRawInput.keysRealtime.fill(false);
 	}
@@ -291,7 +291,7 @@ namespace HorseRadish { namespace platform
 			return false;
 		}
 
-		mClassName = HorseRadish::StringUtils::conv2UTF16("HorseRadish graphics engine...");
+		mClassName = hr::StringUtils::conv2UTF16("HorseRadish graphics engine...");
 		mHModule = GetModuleHandle(NULL); //safe since this is not a DLL
 
 		{
@@ -333,7 +333,7 @@ namespace HorseRadish { namespace platform
 			DWORD dwExStyle = 0;
 			DWORD dwStyle = WS_POPUP | WS_VISIBLE;
 
-			auto windowTitleWChar = HorseRadish::StringUtils::conv2UTF16(windowTitle);
+			auto windowTitleWChar = hr::StringUtils::conv2UTF16(windowTitle);
 
 			mHWnd = CreateWindowEx(dwExStyle, mClassName.c_str(), windowTitleWChar.c_str(), dwStyle,
 				0, 0, mOriginalDeviceMode.dmPelsWidth, mOriginalDeviceMode.dmPelsHeight,
@@ -357,7 +357,7 @@ namespace HorseRadish { namespace platform
 			DWORD dwExStyle = 0;
 			DWORD dwStyle = WS_POPUP | WS_VISIBLE;
 		
-			auto windowTitleWChar = HorseRadish::StringUtils::conv2UTF16(windowTitle);
+			auto windowTitleWChar = hr::StringUtils::conv2UTF16(windowTitle);
 
 			mHWnd = CreateWindowEx(dwExStyle, mClassName.c_str(), windowTitleWChar.c_str(), dwStyle,
 				monitorRect.left, monitorRect.top, monitorRect.right - monitorRect.left, monitorRect.bottom - monitorRect.top,
@@ -390,7 +390,7 @@ namespace HorseRadish { namespace platform
 			if (((windowRect.right - windowRect.left) * (windowRect.bottom - windowRect.top)) > ((monitorRect.right - monitorRect.left) * (monitorRect.bottom - monitorRect.top)))
 				windowRect = monitorRect;
 
-			auto windowTitleWChar = HorseRadish::StringUtils::conv2UTF16(windowTitle);
+			auto windowTitleWChar = hr::StringUtils::conv2UTF16(windowTitle);
 
 			mHWnd = CreateWindowEx(dwExStyle, mClassName.c_str(), windowTitleWChar.c_str(), dwStyle,
 				monitorRect.left, monitorRect.top, (windowRect.right - windowRect.left), (windowRect.bottom - windowRect.top),
@@ -423,7 +423,7 @@ namespace HorseRadish { namespace platform
 			rawInputDevice[1].hwndTarget = mHWnd;
 
 			if (RegisterRawInputDevices(rawInputDevice, 2, sizeof(rawInputDevice[0])) != TRUE)
-				mLogger.logError(HorseRadish::Engine::Logger::ModuleType::Graphics, "unable to register raw input devices");
+				mLogger.logError(hr::engine::Logger::ModuleType::Graphics, "unable to register raw input devices");
 		}
 
 		SetCursor(nullptr);
@@ -483,7 +483,7 @@ namespace HorseRadish { namespace platform
 		return WindowImpl::rawInputGetKeyStatus(static_cast<unsigned int>(vcode));
 	}
 
-	HorseRadish::Vector3f WindowImpl::rawInputGetMouseStatus()
+	hr::Vector3f WindowImpl::rawInputGetMouseStatus()
 	{
 		std::lock_guard<std::mutex> lock(mRawInput.lock);
 
@@ -504,7 +504,7 @@ namespace HorseRadish { namespace platform
 		{
 			if (returnCode == -1)
 			{
-				mLogger.logError(HorseRadish::Engine::Logger::ModuleType::Graphics, "Error in window message loop");
+				mLogger.logError(hr::engine::Logger::ModuleType::Graphics, "Error in window message loop");
 				continue;
 			}
 
@@ -516,7 +516,7 @@ namespace HorseRadish { namespace platform
 				if (mHWnd != nullptr)
 				{
 					if (DestroyWindow(mHWnd) == FALSE)
-						mLogger.logError(HorseRadish::Engine::Logger::ModuleType::Graphics, "Unable to delete window handle");
+						mLogger.logError(hr::engine::Logger::ModuleType::Graphics, "Unable to delete window handle");
 
 					mHWnd = nullptr;
 				}
@@ -530,7 +530,7 @@ namespace HorseRadish { namespace platform
 
 		//cleanup
 		if (UnregisterClass(mClassName.c_str(), mHModule) == FALSE)
-			mLogger.logError(HorseRadish::Engine::Logger::ModuleType::Graphics, "Unable to unregister window class");
+			mLogger.logError(hr::engine::Logger::ModuleType::Graphics, "Unable to unregister window class");
 
 		mIsInitialized = false;
 
@@ -551,42 +551,42 @@ namespace HorseRadish { namespace platform
 
 	void WindowImpl::MsgBoxInfo(const std::string& msg)
 	{
-		auto msgWChar = HorseRadish::StringUtils::conv2UTF16(msg);
+		auto msgWChar = hr::StringUtils::conv2UTF16(msg);
 
 		MessageBox(nullptr, msgWChar.c_str(), L"Info", MB_OK | MB_ICONINFORMATION);
 	}
 
 	void WindowImpl::MsgBoxInfo(const char * const msg)
 	{
-		auto msgWChar = HorseRadish::StringUtils::conv2UTF16(msg);
+		auto msgWChar = hr::StringUtils::conv2UTF16(msg);
 
 		MessageBox(nullptr, msgWChar.c_str(), L"Info", MB_OK | MB_ICONINFORMATION);
 	}
 
 	void WindowImpl::MsgBoxWarn(const std::string& msg)
 	{
-		auto msgWChar = HorseRadish::StringUtils::conv2UTF16(msg);
+		auto msgWChar = hr::StringUtils::conv2UTF16(msg);
 
 		MessageBox(nullptr, msgWChar.c_str(), L"Warning", MB_OK | MB_ICONWARNING);
 	}
 
 	void WindowImpl::MsgBoxWarn(const char * const msg)
 	{
-		auto msgWChar = HorseRadish::StringUtils::conv2UTF16(msg);
+		auto msgWChar = hr::StringUtils::conv2UTF16(msg);
 
 		MessageBox(nullptr, msgWChar.c_str(), L"Warning", MB_OK | MB_ICONWARNING);
 	}
 
 	void WindowImpl::MsgBoxError(const std::string& msg)
 	{
-		auto msgWChar = HorseRadish::StringUtils::conv2UTF16(msg);
+		auto msgWChar = hr::StringUtils::conv2UTF16(msg);
 
 		MessageBox(nullptr, msgWChar.c_str(), L"Error", MB_OK | MB_ICONERROR);
 	}
 
 	void WindowImpl::MsgBoxError(const char * const msg)
 	{
-		auto msgWChar = HorseRadish::StringUtils::conv2UTF16(msg);
+		auto msgWChar = hr::StringUtils::conv2UTF16(msg);
 	
 		MessageBox(nullptr, msgWChar.c_str(), L"Error", MB_OK | MB_ICONERROR);
 	}
@@ -680,7 +680,7 @@ namespace HorseRadish { namespace platform
 		}
 
 		{
-			auto openGLModuleNameWChar = HorseRadish::StringUtils::conv2UTF16(openGLModuleName);
+			auto openGLModuleNameWChar = hr::StringUtils::conv2UTF16(openGLModuleName);
 
 			openglModule = GetModuleHandle(openGLModuleNameWChar.c_str());
 			if (openglModule == nullptr)
@@ -780,10 +780,10 @@ namespace HorseRadish { namespace platform
 		if (mHRC != nullptr)
 		{
 			if (wglMakeCurrent(mHDC, nullptr) == FALSE)
-				mWindow.mLogger.logError(HorseRadish::Engine::Logger::ModuleType::Graphics, "Unable to release rendering context.");
+				mWindow.mLogger.logError(hr::engine::Logger::ModuleType::Graphics, "Unable to release rendering context.");
 
 			if (wglDeleteContext(mHRC) == FALSE)
-				mWindow.mLogger.logError(HorseRadish::Engine::Logger::ModuleType::Graphics, "Unable to delete rendering context.");
+				mWindow.mLogger.logError(hr::engine::Logger::ModuleType::Graphics, "Unable to delete rendering context.");
 
 			mHRC = nullptr;
 		}
@@ -791,7 +791,7 @@ namespace HorseRadish { namespace platform
 		if (mHDC != nullptr)
 		{
 			if (ReleaseDC(mWindow.mHWnd, mHDC) == 0)
-				mWindow.mLogger.logError(HorseRadish::Engine::Logger::ModuleType::Graphics, "Unable to release device context.");
+				mWindow.mLogger.logError(hr::engine::Logger::ModuleType::Graphics, "Unable to release device context.");
 
 			mHDC = nullptr;
 		}

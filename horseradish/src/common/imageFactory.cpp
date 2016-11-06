@@ -10,29 +10,29 @@
 static
 int stbIORead(void *user, char *data, int size)
 {
-	auto streamReader = static_cast<HorseRadish::Streams::StreamReader*>(user);
+	auto streamReader = static_cast<hr::streams::StreamReader*>(user);
 	return streamReader->read(data, size);
 }
 
 static
 void stbIOSkip(void *user, int n)
 {
-	auto streamReader = static_cast<HorseRadish::Streams::StreamReader*>(user);
+	auto streamReader = static_cast<hr::streams::StreamReader*>(user);
 	streamReader->skip(n);
 }
 
 static
 int stbIOEof(void *user)
 {
-	auto streamReader = static_cast<HorseRadish::Streams::StreamReader*>(user);
+	auto streamReader = static_cast<hr::streams::StreamReader*>(user);
 	return !streamReader->canRead();
 }
 
-namespace HorseRadish { namespace Imaging
+namespace hr { namespace imaging
 {
-	Image<unsigned char, ImageFormatRGB> Factory::readPNG(HorseRadish::Streams::StreamReader &streamReader)
+	Image<unsigned char, ImageFormatRGB> Factory::readPNG(hr::streams::StreamReader &streamReader)
 	{
-		HorseRadish::Streams::MemoryViewStream streamContent;
+		hr::streams::MemoryViewStream streamContent;
 		streamReader.stream().cloneAllContent(streamContent);
 
 		size_t outW = 0, outH = 0;
@@ -47,9 +47,9 @@ namespace HorseRadish { namespace Imaging
 		return Image<unsigned char, ImageFormatRGB>();
 	}
 
-	Image<unsigned char, ImageFormatRGBA> Factory::readPNGWithAlpha(HorseRadish::Streams::StreamReader &streamReader)
+	Image<unsigned char, ImageFormatRGBA> Factory::readPNGWithAlpha(hr::streams::StreamReader &streamReader)
 	{
-		HorseRadish::Streams::MemoryViewStream streamContent;
+		hr::streams::MemoryViewStream streamContent;
 		streamReader.stream().cloneAllContent(streamContent);
 
 		size_t outW = 0, outH = 0;
@@ -64,7 +64,7 @@ namespace HorseRadish { namespace Imaging
 		return Image<unsigned char, ImageFormatRGBA>();
 	}
 
-	bool Factory::savePNG(HorseRadish::Streams::StreamWriter &streamWriter, const ImageView<unsigned char, ImageFormatRGB>& imgView)
+	bool Factory::savePNG(hr::streams::StreamWriter &streamWriter, const ImageView<unsigned char, ImageFormatRGB>& imgView)
 	{
 		if (imgView.empty())
 			return false;
@@ -83,7 +83,7 @@ namespace HorseRadish { namespace Imaging
 		return true;
 	}
 
-	bool Factory::savePNG(HorseRadish::Streams::StreamWriter &streamWriter, const ImageView<unsigned char, ImageFormatRGBA>& imgView)
+	bool Factory::savePNG(hr::streams::StreamWriter &streamWriter, const ImageView<unsigned char, ImageFormatRGBA>& imgView)
 	{
 		if (imgView.empty())
 			return false;
@@ -102,7 +102,7 @@ namespace HorseRadish { namespace Imaging
 		return true;
 	}
 
-	Image<unsigned char, ImageFormatRGBA> Factory::readTGA(HorseRadish::Streams::StreamReader &streamReader)
+	Image<unsigned char, ImageFormatRGBA> Factory::readTGA(hr::streams::StreamReader &streamReader)
 	{
 		#pragma pack(1)
 		struct Tgaheader
@@ -296,7 +296,7 @@ namespace HorseRadish { namespace Imaging
 		return newImage;
 	}
 
-	Image<unsigned char, ImageFormatRGB> Factory::readJPG(HorseRadish::Streams::StreamReader &streamReader)
+	Image<unsigned char, ImageFormatRGB> Factory::readJPG(hr::streams::StreamReader &streamReader)
 	{
 		stbi_io_callbacks ioCbS;
 		ioCbS.read = stbIORead;
@@ -313,7 +313,7 @@ namespace HorseRadish { namespace Imaging
 		return Image<unsigned char, ImageFormatRGB>(std::unique_ptr<unsigned char[]>(imgData), imgWidth, imgHeight);
 	}
 
-	Image<float, ImageFormatRGB> Factory::readHDRI(HorseRadish::Streams::StreamReader &streamReader)
+	Image<float, ImageFormatRGB> Factory::readHDRI(hr::streams::StreamReader &streamReader)
 	{
 		stbi_io_callbacks ioCbS;
 		ioCbS.read = stbIORead;

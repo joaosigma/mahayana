@@ -1,6 +1,6 @@
 #include "encoders.hpp"
 
-namespace HorseRadish
+namespace hr
 {
 	bool Encoders::isBase64Char(const char caracter)
 	{
@@ -76,7 +76,7 @@ namespace HorseRadish
 		}
 	}
 
-	void Encoders::encodeBase64(const void * const buffer, size_t bufferSize, HorseRadish::Streams::Stream &streamOut)
+	void Encoders::encodeBase64(const void * const buffer, size_t bufferSize, hr::streams::Stream &streamOut)
 	{
 		size_t i = 0;
 		unsigned char char_array_3[3];
@@ -143,7 +143,7 @@ namespace HorseRadish
 		return Encoders::decodeBase64(dataBase64.data(), dataBase64.size(), bufferOut);
 	}
 
-	size_t Encoders::decodeBase64(const std::string &dataBase64, HorseRadish::Streams::Stream &streamOut)
+	size_t Encoders::decodeBase64(const std::string &dataBase64, hr::streams::Stream &streamOut)
 	{
 		if (dataBase64.empty())
 			return 0;
@@ -271,7 +271,7 @@ namespace HorseRadish
 		return bytesWritten;
 	}
 
-	size_t Encoders::decodeBase64(const char* const dataBase64, size_t dataSize, HorseRadish::Streams::Stream &streamOut)
+	size_t Encoders::decodeBase64(const char* const dataBase64, size_t dataSize, hr::streams::Stream &streamOut)
 	{
 		if (!dataBase64 || dataSize == 0)
 			return 0;
@@ -352,7 +352,7 @@ namespace HorseRadish
 		}
 	}
 
-	void Encoders::encodeHex(const void * const buffer, size_t bufferSize, bool toUppercase, HorseRadish::Streams::Stream &streamOut)
+	void Encoders::encodeHex(const void * const buffer, size_t bufferSize, bool toUppercase, hr::streams::Stream &streamOut)
 	{
 		auto bufferHex = toUppercase ? Encoders::hexEncodeLookupUpper : Encoders::hexEncodeLookupLower;
 		auto bufferWalker = reinterpret_cast<const unsigned char*>(buffer);
@@ -378,7 +378,7 @@ namespace HorseRadish
 		return (numHexChars / 2);
 	}
 
-	size_t Encoders::decodeHex(const std::string &dataHex, HorseRadish::Streams::Stream &streamOut)
+	size_t Encoders::decodeHex(const std::string &dataHex, hr::streams::Stream &streamOut)
 	{
 		if (dataHex.empty() || ((dataHex.size() % 2) != 0))
 			return 0;

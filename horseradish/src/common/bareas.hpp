@@ -5,7 +5,7 @@
 
 #include <limits>
 
-namespace HorseRadish
+namespace hr
 {
 	class BRect
 	{

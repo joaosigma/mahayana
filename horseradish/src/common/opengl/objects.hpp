@@ -11,7 +11,7 @@
 #include <cassert>
 #include <initializer_list>
 
-namespace HorseRadish { namespace OpenGL { namespace Objects
+namespace hr { namespace gl { namespace objects
 {
 	class ObjectGL
 	{
@@ -232,7 +232,7 @@ namespace HorseRadish { namespace OpenGL { namespace Objects
 	public:
 		static size_t calculateNumMipMaps(GLuint width)
 		{
-			return HorseRadish::Math::ftoi(HorseRadish::Math::floor(HorseRadish::Math::iLog2(width))) + 1;
+			return hr::Math::ftoi(hr::Math::floor(hr::Math::iLog2(width))) + 1;
 		}
 
 		static size_t calculateNumMipMaps(GLuint width, GLuint height)
@@ -647,7 +647,7 @@ namespace HorseRadish { namespace OpenGL { namespace Objects
 			if (!mCtx.isExtPresent(Context::ExtFilterAnisotropic) || !mCtx.info(Context::InformationType::MaxAnisotropicLevel, maxAnisoLevel))
 				return false;
 
-			HorseRadish::OpenGL::glSamplerParameterf(mId, GL_TEXTURE_MAX_ANISOTROPY_EXT, HorseRadish::Math::fClamp(anisotropyLevel, 1.0f, maxAnisoLevel));
+			hr::gl::glSamplerParameterf(mId, GL_TEXTURE_MAX_ANISOTROPY_EXT, hr::Math::fClamp(anisotropyLevel, 1.0f, maxAnisoLevel));
 			return true;
 		}
 
@@ -1409,7 +1409,7 @@ namespace HorseRadish { namespace OpenGL { namespace Objects
 			if (!isValid() || !textureToAttach.isRenderable() || (!textureToAttach.isType(Texture::Type::Tex2D) && !textureToAttach.isType(Texture::Type::TexRectangle)))
 				return *this;
 
-			HorseRadish::OpenGL::glNamedFramebufferTexture(mId, GL_COLOR_ATTACHMENT0 + attachUnit, textureToAttach.getId(), 0);
+			hr::gl::glNamedFramebufferTexture(mId, GL_COLOR_ATTACHMENT0 + attachUnit, textureToAttach.getId(), 0);
 
 			return *this;
 		}
@@ -1422,17 +1422,17 @@ namespace HorseRadish { namespace OpenGL { namespace Objects
 			switch (cubemapFace)
 			{
 			case Texture::CubemapFace::PosX:
-				HorseRadish::OpenGL::glNamedFramebufferTextureLayer(mId, GL_COLOR_ATTACHMENT0 + attachUnit, textureToAttach.getId(), 0, GL_TEXTURE_CUBE_MAP_POSITIVE_X);
+				hr::gl::glNamedFramebufferTextureLayer(mId, GL_COLOR_ATTACHMENT0 + attachUnit, textureToAttach.getId(), 0, GL_TEXTURE_CUBE_MAP_POSITIVE_X);
 			case Texture::CubemapFace::NegX:
-				HorseRadish::OpenGL::glNamedFramebufferTextureLayer(mId, GL_COLOR_ATTACHMENT0 + attachUnit, textureToAttach.getId(), 0, GL_TEXTURE_CUBE_MAP_NEGATIVE_X);
+				hr::gl::glNamedFramebufferTextureLayer(mId, GL_COLOR_ATTACHMENT0 + attachUnit, textureToAttach.getId(), 0, GL_TEXTURE_CUBE_MAP_NEGATIVE_X);
 			case Texture::CubemapFace::PosY:
-				HorseRadish::OpenGL::glNamedFramebufferTextureLayer(mId, GL_COLOR_ATTACHMENT0 + attachUnit, textureToAttach.getId(), 0, GL_TEXTURE_CUBE_MAP_POSITIVE_Y);
+				hr::gl::glNamedFramebufferTextureLayer(mId, GL_COLOR_ATTACHMENT0 + attachUnit, textureToAttach.getId(), 0, GL_TEXTURE_CUBE_MAP_POSITIVE_Y);
 			case Texture::CubemapFace::NegY:
-				HorseRadish::OpenGL::glNamedFramebufferTextureLayer(mId, GL_COLOR_ATTACHMENT0 + attachUnit, textureToAttach.getId(), 0, GL_TEXTURE_CUBE_MAP_NEGATIVE_Y);
+				hr::gl::glNamedFramebufferTextureLayer(mId, GL_COLOR_ATTACHMENT0 + attachUnit, textureToAttach.getId(), 0, GL_TEXTURE_CUBE_MAP_NEGATIVE_Y);
 			case Texture::CubemapFace::PosZ:
-				HorseRadish::OpenGL::glNamedFramebufferTextureLayer(mId, GL_COLOR_ATTACHMENT0 + attachUnit, textureToAttach.getId(), 0, GL_TEXTURE_CUBE_MAP_POSITIVE_Z);
+				hr::gl::glNamedFramebufferTextureLayer(mId, GL_COLOR_ATTACHMENT0 + attachUnit, textureToAttach.getId(), 0, GL_TEXTURE_CUBE_MAP_POSITIVE_Z);
 			case Texture::CubemapFace::NegZ:
-				HorseRadish::OpenGL::glNamedFramebufferTextureLayer(mId, GL_COLOR_ATTACHMENT0 + attachUnit, textureToAttach.getId(), 0, GL_TEXTURE_CUBE_MAP_NEGATIVE_Z);
+				hr::gl::glNamedFramebufferTextureLayer(mId, GL_COLOR_ATTACHMENT0 + attachUnit, textureToAttach.getId(), 0, GL_TEXTURE_CUBE_MAP_NEGATIVE_Z);
 			}
 			
 			return *this;
@@ -1443,7 +1443,7 @@ namespace HorseRadish { namespace OpenGL { namespace Objects
 			if (!isValid() || !textureToAttach.isRenderable() || (!textureToAttach.isType(Texture::Type::Tex2D) && !textureToAttach.isType(Texture::Type::TexRectangle)))
 				return *this;
 
-			HorseRadish::OpenGL::glNamedFramebufferTexture(mId, GL_DEPTH_ATTACHMENT, textureToAttach.getId(), 0);
+			hr::gl::glNamedFramebufferTexture(mId, GL_DEPTH_ATTACHMENT, textureToAttach.getId(), 0);
 
 			return *this;
 		}

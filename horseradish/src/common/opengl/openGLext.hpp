@@ -4,10 +4,10 @@
 
 #include "glext.h"
 
-namespace HorseRadish { namespace OpenGL { namespace Extensions
+namespace hr { namespace gl { namespace extensions
 {
-	void ExtensionsLoad(const char* const openGLModuleName);
-	bool ExtensionExists(const char * const extension);
+	void extensionsLoad(const char* const openGLModuleName);
+	bool extensionExists(const char * const extension);
 
 #ifdef GL_EXT_direct_state_access
 	GLAPI void (APIENTRYP glMatrixLoadfEXT) (GLenum mode, const GLfloat *m);

@@ -6,7 +6,7 @@
 #include <memory>
 #include <cstring>
 
-namespace HorseRadish { namespace Streams
+namespace hr { namespace streams
 {
 	void MemoryStream::close()
 	{
@@ -319,7 +319,7 @@ namespace HorseRadish { namespace Streams
 		if (!toRead && !toWrite)
 			return false;
 
-		auto filePathWChar = HorseRadish::StringUtils::conv2UTF16(filePath);
+		auto filePathWChar = hr::StringUtils::conv2UTF16(filePath);
 
 		if (toRead && toWrite)
 			mFileHandle = CreateFile(filePathWChar.c_str(), GENERIC_READ | GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
@@ -344,7 +344,7 @@ namespace HorseRadish { namespace Streams
 
 		HANDLE fileHandle;
 		{
-			auto filePathWChar = HorseRadish::StringUtils::conv2UTF16(filePath);
+			auto filePathWChar = hr::StringUtils::conv2UTF16(filePath);
 
 			fileHandle = CreateFile(filePathWChar.c_str(), GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
 			if (fileHandle == INVALID_HANDLE_VALUE)
@@ -378,7 +378,7 @@ namespace HorseRadish { namespace Streams
 			return std::string();
 
 		{
-			auto filePathWChar = HorseRadish::StringUtils::conv2UTF16(filePath);
+			auto filePathWChar = hr::StringUtils::conv2UTF16(filePath);
 
 			fileHandle = CreateFile(filePathWChar.c_str(), GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
 			if (fileHandle == INVALID_HANDLE_VALUE)
@@ -407,7 +407,7 @@ namespace HorseRadish { namespace Streams
 
 		HANDLE fileHandle;
 		{
-			auto filePathWChar = HorseRadish::StringUtils::conv2UTF16(filePath);
+			auto filePathWChar = hr::StringUtils::conv2UTF16(filePath);
 
 			fileHandle = CreateFile(filePathWChar.c_str(), GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
 			if (!fileHandle)

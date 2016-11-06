@@ -10,7 +10,7 @@
 
 #include <windows.h>
 
-namespace HorseRadish { namespace Streams
+namespace hr { namespace streams
 {
 	class MemoryStream;
 	class MemoryViewStream;
@@ -388,14 +388,14 @@ namespace HorseRadish { namespace Streams
 			auto success = (mStream.write(string, bytesToWrite) == bytesToWrite);
 
 			if (success && writeLine)
-				success &= (mStream.write(HorseRadish::platform::Platform::NewLine, HorseRadish::platform::Platform::NewLineSize) == HorseRadish::platform::Platform::NewLineSize);
+				success &= (mStream.write(hr::platform::Platform::NewLine, hr::platform::Platform::NewLineSize) == hr::platform::Platform::NewLineSize);
 
 			return success;
 		}
 
 		void writeLine()
 		{
-			mStream.write(HorseRadish::platform::Platform::NewLine, HorseRadish::platform::Platform::NewLineSize);
+			mStream.write(hr::platform::Platform::NewLine, hr::platform::Platform::NewLineSize);
 		}
 	};
 } }

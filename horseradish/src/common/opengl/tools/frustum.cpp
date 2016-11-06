@@ -4,9 +4,9 @@
 
 #include <limits>
 
-namespace HorseRadish { namespace OpenGL { namespace Tools
+namespace hr { namespace gl { namespace tools
 {
-	void Frustum::extractPlanes(const HorseRadish::Vector4f &col1, const HorseRadish::Vector4f &col2, const HorseRadish::Vector4f &col3, const HorseRadish::Vector4f &col4)
+	void Frustum::extractPlanes(const hr::Vector4f &col1, const hr::Vector4f &col2, const hr::Vector4f &col3, const hr::Vector4f &col4)
 	{
 		mPlanes[PlaneLeft].set(col4[0] + col1[0], col4[1] + col1[1], col4[2] + col1[2], col4[3] + col1[3]);
 		mPlanes[PlaneRight].set(col4[0] - col1[0], col4[1] - col1[1], col4[2] - col1[2], col4[3] - col1[3]);
@@ -27,14 +27,14 @@ namespace HorseRadish { namespace OpenGL { namespace Tools
 		mPlanes[PlaneFar].setD(-(mPlanes[PlaneNear].getDotNormal(mPosition) - mZFar));
 	}
 
-	bool Frustum::sweptSpherePlaneIntersect(float &t0, float &t1, const HorseRadish::Plane &plane, const HorseRadish::Vector3f &sphereCenter, const float &sphereRadius, const HorseRadish::Vector3f &sweepDir) const
+	bool Frustum::sweptSpherePlaneIntersect(float &t0, float &t1, const hr::Plane &plane, const hr::Vector3f &sphereCenter, const float &sphereRadius, const hr::Vector3f &sweepDir) const
 	{
 		float b_dot_n, d_dot_n, tmp0, tmp1;
 
 		b_dot_n = plane.distance(sphereCenter);
 		d_dot_n = plane.getDotNormal(sweepDir);
 
-		if (HorseRadish::Math::isZero(d_dot_n))
+		if (hr::Math::isZero(d_dot_n))
 		{
 			if (b_dot_n <= sphereRadius)
 			{
@@ -53,7 +53,7 @@ namespace HorseRadish { namespace OpenGL { namespace Tools
 		return true;
 	}
 
-	void Frustum::getCorners(HorseRadish::Vector3f points[8]) const
+	void Frustum::getCorners(hr::Vector3f points[8]) const
 	{
 	    /*
 
@@ -91,7 +91,7 @@ namespace HorseRadish { namespace OpenGL { namespace Tools
 
 	Frustum::IntersectionType Frustum::classifyFrustum(const Frustum &frustum) const
 	{
-		HorseRadish::Vector3f corners[8];
+		hr::Vector3f corners[8];
 		frustum.getCorners(corners);
 
 		{
@@ -113,14 +113,14 @@ namespace HorseRadish { namespace OpenGL { namespace Tools
 
 		for (size_t i = 0; i < 6; i++)
 		{
-			if (mPlanes[i].classifyPoint(corners[0]) != HorseRadish::Plane::Position::BEHIND)	continue;
-			if (mPlanes[i].classifyPoint(corners[1]) != HorseRadish::Plane::Position::BEHIND)	continue;
-			if (mPlanes[i].classifyPoint(corners[2]) != HorseRadish::Plane::Position::BEHIND)	continue;
-			if (mPlanes[i].classifyPoint(corners[3]) != HorseRadish::Plane::Position::BEHIND)	continue;
-			if (mPlanes[i].classifyPoint(corners[4]) != HorseRadish::Plane::Position::BEHIND)	continue;
-			if (mPlanes[i].classifyPoint(corners[5]) != HorseRadish::Plane::Position::BEHIND)	continue;
-			if (mPlanes[i].classifyPoint(corners[6]) != HorseRadish::Plane::Position::BEHIND)	continue;
-			if (mPlanes[i].classifyPoint(corners[7]) != HorseRadish::Plane::Position::BEHIND)	continue;
+			if (mPlanes[i].classifyPoint(corners[0]) != hr::Plane::Position::BEHIND)	continue;
+			if (mPlanes[i].classifyPoint(corners[1]) != hr::Plane::Position::BEHIND)	continue;
+			if (mPlanes[i].classifyPoint(corners[2]) != hr::Plane::Position::BEHIND)	continue;
+			if (mPlanes[i].classifyPoint(corners[3]) != hr::Plane::Position::BEHIND)	continue;
+			if (mPlanes[i].classifyPoint(corners[4]) != hr::Plane::Position::BEHIND)	continue;
+			if (mPlanes[i].classifyPoint(corners[5]) != hr::Plane::Position::BEHIND)	continue;
+			if (mPlanes[i].classifyPoint(corners[6]) != hr::Plane::Position::BEHIND)	continue;
+			if (mPlanes[i].classifyPoint(corners[7]) != hr::Plane::Position::BEHIND)	continue;
 
 			return IntersectionType::FullOutside;
 		}
@@ -131,14 +131,14 @@ namespace HorseRadish { namespace OpenGL { namespace Tools
 
 		for (size_t i = 0; i < 6; i++)
 		{
-			if (frustum.mPlanes[i].classifyPoint(corners[0]) != HorseRadish::Plane::Position::BEHIND)	continue;
-			if (frustum.mPlanes[i].classifyPoint(corners[1]) != HorseRadish::Plane::Position::BEHIND)	continue;
-			if (frustum.mPlanes[i].classifyPoint(corners[2]) != HorseRadish::Plane::Position::BEHIND)	continue;
-			if (frustum.mPlanes[i].classifyPoint(corners[3]) != HorseRadish::Plane::Position::BEHIND)	continue;
-			if (frustum.mPlanes[i].classifyPoint(corners[4]) != HorseRadish::Plane::Position::BEHIND)	continue;
-			if (frustum.mPlanes[i].classifyPoint(corners[5]) != HorseRadish::Plane::Position::BEHIND)	continue;
-			if (frustum.mPlanes[i].classifyPoint(corners[6]) != HorseRadish::Plane::Position::BEHIND)	continue;
-			if (frustum.mPlanes[i].classifyPoint(corners[7]) != HorseRadish::Plane::Position::BEHIND)	continue;
+			if (frustum.mPlanes[i].classifyPoint(corners[0]) != hr::Plane::Position::BEHIND)	continue;
+			if (frustum.mPlanes[i].classifyPoint(corners[1]) != hr::Plane::Position::BEHIND)	continue;
+			if (frustum.mPlanes[i].classifyPoint(corners[2]) != hr::Plane::Position::BEHIND)	continue;
+			if (frustum.mPlanes[i].classifyPoint(corners[3]) != hr::Plane::Position::BEHIND)	continue;
+			if (frustum.mPlanes[i].classifyPoint(corners[4]) != hr::Plane::Position::BEHIND)	continue;
+			if (frustum.mPlanes[i].classifyPoint(corners[5]) != hr::Plane::Position::BEHIND)	continue;
+			if (frustum.mPlanes[i].classifyPoint(corners[6]) != hr::Plane::Position::BEHIND)	continue;
+			if (frustum.mPlanes[i].classifyPoint(corners[7]) != hr::Plane::Position::BEHIND)	continue;
 
 			return IntersectionType::FullOutside;
 		}
@@ -151,54 +151,54 @@ namespace HorseRadish { namespace OpenGL { namespace Tools
 		if ((planeA > 5) || (planeB > 5))
 			return 0.0f;
 
-		HorseRadish::Vector3f normalB = mPlanes[planeB].normal();
+		hr::Vector3f normalB = mPlanes[planeB].normal();
 		return mPlanes[planeA].getDotNormal(normalB);
 	}
 
-	void Frustum::calculateFrustum(const HorseRadish::Matrix& transformation)
+	void Frustum::calculateFrustum(const hr::Matrix& transformation)
 	{
-		HorseRadish::Vector4f col1 = transformation.getColumn(0);
-		HorseRadish::Vector4f col2 = transformation.getColumn(1);
-		HorseRadish::Vector4f col3 = transformation.getColumn(2);
-		HorseRadish::Vector4f col4 = transformation.getColumn(3);
+		hr::Vector4f col1 = transformation.getColumn(0);
+		hr::Vector4f col2 = transformation.getColumn(1);
+		hr::Vector4f col3 = transformation.getColumn(2);
+		hr::Vector4f col4 = transformation.getColumn(3);
 
 		extractPlanes(col1, col2, col3, col4);
 	}
 
-	void Frustum::calculateFrustum(const HorseRadish::Matrix& projection, const HorseRadish::Matrix& modelview)
+	void Frustum::calculateFrustum(const hr::Matrix& projection, const hr::Matrix& modelview)
 	{
 		auto matTrans = projection * modelview;
-		HorseRadish::Vector4f col1 = matTrans.getColumn(0);
-		HorseRadish::Vector4f col2 = matTrans.getColumn(1);
-		HorseRadish::Vector4f col3 = matTrans.getColumn(2);
-		HorseRadish::Vector4f col4 = matTrans.getColumn(3);
+		hr::Vector4f col1 = matTrans.getColumn(0);
+		hr::Vector4f col2 = matTrans.getColumn(1);
+		hr::Vector4f col3 = matTrans.getColumn(2);
+		hr::Vector4f col4 = matTrans.getColumn(3);
 
 		extractPlanes(col1, col2, col3, col4);
 	}
 
-	void Frustum::calculateFrustum(const HorseRadish::Matrix& modelView, const HorseRadish::Matrix& projection, const HorseRadish::Vector3f &pos, float zNear, float zFar)
+	void Frustum::calculateFrustum(const hr::Matrix& modelView, const hr::Matrix& projection, const hr::Vector3f &pos, float zNear, float zFar)
 	{
 		mPosition = pos;
 		mZNear = zNear;
 		mZFar = zFar;
 
 		auto fClip = projection * modelView;
-		HorseRadish::Vector4f col1 = fClip.getColumn(0);
-		HorseRadish::Vector4f col2 = fClip.getColumn(1);
-		HorseRadish::Vector4f col3 = fClip.getColumn(2);
-		HorseRadish::Vector4f col4 = fClip.getColumn(3);
+		hr::Vector4f col1 = fClip.getColumn(0);
+		hr::Vector4f col2 = fClip.getColumn(1);
+		hr::Vector4f col3 = fClip.getColumn(2);
+		hr::Vector4f col4 = fClip.getColumn(3);
 
 		extractPlanes(col1, col2, col3, col4);
 	}
 
-	void Frustum::setIndividualPlane(const PlaneIndex planeIndex, const HorseRadish::Plane &plane)
+	void Frustum::setIndividualPlane(const PlaneIndex planeIndex, const hr::Plane &plane)
 	{
 		if (planeIndex > 5)
 			return;
 		mPlanes[planeIndex] = plane;
 	}
 
-	void Frustum::setFrustum(const HorseRadish::Vector3f &bboxMin, const HorseRadish::Vector3f &bboxMax)
+	void Frustum::setFrustum(const hr::Vector3f &bboxMin, const hr::Vector3f &bboxMax)
 	{
 		mPlanes[PlaneLeft].set(1.0f, 0.0f, 0.0f, -bboxMin[0]);
 		mPlanes[PlaneRight].set(-1.0f, 0.0f, 0.0f, bboxMax[0]);
@@ -208,7 +208,7 @@ namespace HorseRadish { namespace OpenGL { namespace Tools
 		mPlanes[PlaneFar].set(0.0f, 0.0f, 1.0f, -bboxMin[2]);
 	}
 
-	void Frustum::setFrustum(const HorseRadish::Vector3f &center, const float radius)
+	void Frustum::setFrustum(const hr::Vector3f &center, const float radius)
 	{
 		mPlanes[PlaneLeft].set(1.0f, 0.0f, 0.0f, -(center[0] - radius));
 		mPlanes[PlaneRight].set(-1.0f, 0.0f, 0.0f, center[0] + radius);
@@ -218,14 +218,14 @@ namespace HorseRadish { namespace OpenGL { namespace Tools
 		mPlanes[PlaneFar].set(0.0f, 0.0f, 1.0f, -(center[2] - radius));
 	}
 
-	void Frustum::setFrustum(const HorseRadish::BBox &bbox)
+	void Frustum::setFrustum(const hr::BBox &bbox)
 	{
 		setFrustum(bbox.min(), bbox.max());
 	}
 
-	bool Frustum::testCube(const HorseRadish::Vector3f &point, const float &size) const
+	bool Frustum::testCube(const hr::Vector3f &point, const float &size) const
 	{
-		HorseRadish::Vector3f pCubo[8];
+		hr::Vector3f pCubo[8];
 
 		pCubo[0].set(point);
 		pCubo[1].set(pCubo[0]);	pCubo[1][2] += size;
@@ -261,9 +261,9 @@ namespace HorseRadish { namespace OpenGL { namespace Tools
 		return true;
 	}
 
-	bool Frustum::testBox(const HorseRadish::Vector3f &min, const HorseRadish::Vector3f &max) const
+	bool Frustum::testBox(const hr::Vector3f &min, const hr::Vector3f &max) const
 	{
-		HorseRadish::Vector3f pBox[8];
+		hr::Vector3f pBox[8];
 
 		pBox[0].set(min);
 		pBox[1].set(min);	pBox[1][2] = max[2];
@@ -300,12 +300,12 @@ namespace HorseRadish { namespace OpenGL { namespace Tools
 		return true;
 	}
 
-	bool Frustum::testBox(const HorseRadish::BBox &bbox) const
+	bool Frustum::testBox(const hr::BBox &bbox) const
 	{
 		return testBox(bbox.min(), bbox.max());
 	}
 
-	bool Frustum::testSphere(const HorseRadish::Vector3f &center, const float &radius) const
+	bool Frustum::testSphere(const hr::Vector3f &center, const float &radius) const
 	{
 		for (auto iPlane = 0; iPlane < 6; iPlane++)
 		{
@@ -316,19 +316,19 @@ namespace HorseRadish { namespace OpenGL { namespace Tools
 		return true;
 	}
 
-	bool Frustum::testSphere(const HorseRadish::BSphere &bsphere) const
+	bool Frustum::testSphere(const hr::BSphere &bsphere) const
 	{
 		return testSphere(bsphere.center(), bsphere.radius());
 	}
 
-	bool Frustum::testSphereBox(const HorseRadish::BSphere &bsphere, const HorseRadish::BBox &bbox) const
+	bool Frustum::testSphereBox(const hr::BSphere &bsphere, const hr::BBox &bbox) const
 	{
 		if (!testSphere(bsphere))
 			return false;
 		return testBox(bbox);
 	}
 
-	bool Frustum::testPoint(const HorseRadish::Vector3f &point) const
+	bool Frustum::testPoint(const hr::Vector3f &point) const
 	{
 		for (size_t iPlane = 0; iPlane < 6; iPlane++)
 		{
@@ -339,7 +339,7 @@ namespace HorseRadish { namespace OpenGL { namespace Tools
 		return true;
 	}
 
-	bool Frustum::testPolygon(const HorseRadish::Vector3f * const points, size_t numPoints) const
+	bool Frustum::testPolygon(const hr::Vector3f * const points, size_t numPoints) const
 	{
 		for (size_t iPlane = 0; iPlane < 6; iPlane++)
 		{
@@ -357,7 +357,7 @@ namespace HorseRadish { namespace OpenGL { namespace Tools
 		return true;
 	}
 
-	bool Frustum::testSquare(const HorseRadish::Vector3f points[4]) const
+	bool Frustum::testSquare(const hr::Vector3f points[4]) const
 	{
 		for (int iPlane = 0; iPlane < 6; iPlane++)
 		{
@@ -376,7 +376,7 @@ namespace HorseRadish { namespace OpenGL { namespace Tools
 		return true;
 	}
 
-	bool Frustum::testTri(const HorseRadish::Vector3f points[3]) const
+	bool Frustum::testTri(const hr::Vector3f points[3]) const
 	{
 		for (int iPlane = 0; iPlane < 6; iPlane++)
 		{
@@ -393,10 +393,10 @@ namespace HorseRadish { namespace OpenGL { namespace Tools
 		return true;
 	}
 
-	bool Frustum::testSweptSphere(const HorseRadish::Vector3f &sphereCenter, const float &sphereRadius, const HorseRadish::Vector3f &sweepDir) const
+	bool Frustum::testSweptSphere(const hr::Vector3f &sphereCenter, const float &sphereRadius, const hr::Vector3f &sweepDir) const
 	{
 		float displacements[12];
-		HorseRadish::Vector3f auxCenter;
+		hr::Vector3f auxCenter;
 
 		size_t cnt = 0;
 		for (size_t iPlane = 0; iPlane < 6; iPlane++)

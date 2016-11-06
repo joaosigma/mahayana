@@ -10,13 +10,13 @@
 
 #include <vector>
 
-namespace HorseRadish { namespace Render
+namespace hr { namespace render
 {
 	class Concept
 	{
 	public:
 		std::string name;
-		HorseRadish::Geometry::Mesh mesh;
+		hr::geom::Mesh mesh;
 		std::string matDiffusePath, matNormalPath;
 
 		struct RenderData
@@ -25,7 +25,7 @@ namespace HorseRadish { namespace Render
 			unsigned int meshDrawIndirectOffset;
 			void *meshTriListOffset;
 
-			HorseRadish::OpenGL::Objects::Texture texDiffuse, texNormal;
+			hr::gl::objects::Texture texDiffuse, texNormal;
 
 			RenderData()
 				: meshVBOVertexOffset(0), meshDrawIndirectOffset(0), meshTriListOffset(nullptr)
@@ -41,7 +41,7 @@ namespace HorseRadish { namespace Render
 
 		Type type;
 		std::string conceptName;
-		HorseRadish::BBox bbox;
+		hr::BBox bbox;
 
 		//instance data: [{quat, translate}, ...]
 	};
@@ -62,12 +62,12 @@ namespace HorseRadish { namespace Render
 
 		void cleanup();
 
-		bool importJSON(HorseRadish::Streams::StreamReader &stream);
-		bool exportJSON(HorseRadish::Streams::StreamWriter &stream);
+		bool importJSON(hr::streams::StreamReader &stream);
+		bool exportJSON(hr::streams::StreamWriter &stream);
 
 		bool importObj(const std::string& basePath, const std::string& fileName);
 
-		void loadData(HorseRadish::IO::FileSystem& fileSystem);
-		void prepareNextFrame(const Tools::Camera& hrCamera, const HorseRadish::OpenGL::Tools::Viewport& hrViewport);
+		void loadData(hr::io::FileSystem& fileSystem);
+		void prepareNextFrame(const tools::Camera& hrCamera, const hr::gl::tools::Viewport& hrViewport);
 	};
 } }

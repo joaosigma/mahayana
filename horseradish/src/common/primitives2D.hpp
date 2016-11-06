@@ -2,7 +2,7 @@
 
 #include "math.hpp"
 
-namespace HorseRadish { namespace Primitives2D
+namespace hr
 {
 	template <typename T>
 	struct Rectangle
@@ -300,4 +300,4 @@ namespace HorseRadish { namespace Primitives2D
 			this->y += y;
 		}
 	};
-} }
+}

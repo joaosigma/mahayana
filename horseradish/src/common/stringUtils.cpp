@@ -5,7 +5,7 @@
 #include <memory>
 #include <codecvt>
 
-namespace HorseRadish
+namespace hr
 {
 	const unsigned __int32 StringUtils::utf8Wrapper::utf8Iterator::offsetsFromUTF8[6] = { 0x00000000UL, 0x00003080UL, 0x000E2080UL, 0x03C82080UL, 0xFA082080UL, 0x82082080UL };
 

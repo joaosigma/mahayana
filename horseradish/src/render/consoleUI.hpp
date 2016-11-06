@@ -8,7 +8,7 @@
 #include "../platform/window.hpp"
 #include "../engine/logger.hpp"
 
-namespace HorseRadish { namespace Render
+namespace hr { namespace render
 {
 	class ConsoleUI
 	{
@@ -19,7 +19,7 @@ namespace HorseRadish { namespace Render
 		struct {
 			int offset = 0;
 			bool isVisivel = false;
-			HorseRadish::Timer timer;
+			hr::Timer timer;
 		} mCursor;
 
 		struct {
@@ -31,20 +31,20 @@ namespace HorseRadish { namespace Render
 
 		bool mMainVisible = false;
 		std::deque<std::string> mAlerts;
-		HorseRadish::Render::Renderer2D& mRenderer;
-		const HorseRadish::Engine::Logger& mLogger;
-		HorseRadish::Primitives2D::Rectangle<float> mViewRect, mTextRect;
+		hr::render::Renderer2D& mRenderer;
+		const hr::engine::Logger& mLogger;
+		hr::Rectangle<float> mViewRect, mTextRect;
 		
 		void updateCursorOffset(int offset);
 		void processMsgPrompt(const platform::Window::Message &msg);
 
-		void drawContent(const HorseRadish::Matrix &transformMatrix) const;
-		void drawBackground(const HorseRadish::Matrix &transformMatrix, float bkgAlpha) const;
+		void drawContent(const hr::Matrix &transformMatrix) const;
+		void drawBackground(const hr::Matrix &transformMatrix, float bkgAlpha) const;
 
 	public:
-		ConsoleUI(const HorseRadish::Engine::Logger& logger, HorseRadish::Render::Renderer2D& renderer, size_t maxPromptHistory);
+		ConsoleUI(const hr::engine::Logger& logger, hr::render::Renderer2D& renderer, size_t maxPromptHistory);
 
-		void draw(const HorseRadish::OpenGL::Tools::Viewport& viewport) const;
+		void draw(const hr::gl::tools::Viewport& viewport) const;
 
 		bool isVisible() const;
 		void setVisible(bool visible);

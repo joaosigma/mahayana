@@ -9,7 +9,7 @@
 #include <vector>
 #include <unordered_map>
 
-namespace HorseRadish { namespace Render { namespace Tools {
+namespace hr { namespace render { namespace tools {
 
 class Font
 {
@@ -65,18 +65,18 @@ private:
 	
 	struct
 	{
-		HorseRadish::OpenGL::Objects::Texture texture;
-		HorseRadish::OpenGL::Objects::Sampler sampler;
-		HorseRadish::OpenGL::Objects::VertexArray vertexArray;
-		HorseRadish::OpenGL::Objects::Buffer arrayBuffer, elementArrayBuffer;
-		HorseRadish::OpenGL::Objects::FenceSync fence;
+		hr::gl::objects::Texture texture;
+		hr::gl::objects::Sampler sampler;
+		hr::gl::objects::VertexArray vertexArray;
+		hr::gl::objects::Buffer arrayBuffer, elementArrayBuffer;
+		hr::gl::objects::FenceSync fence;
 	} mGl;
 
 	struct
 	{
 		float scale = 1.0f;
 		bool paintStarted = false;
-		HorseRadish::Color stateColor;
+		hr::Color stateColor;
 
 		size_t numCharWritten = 0;
 		std::array<VertexDataLayout, Font::sMumMaxChar * 4> charData;

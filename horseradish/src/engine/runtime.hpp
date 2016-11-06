@@ -10,7 +10,7 @@
 #include <type_traits>
 #include <unordered_map>
 
-namespace HorseRadish { namespace Engine
+namespace hr { namespace engine
 {
 	class Runtime
 	{
@@ -143,7 +143,7 @@ namespace HorseRadish { namespace Engine
 
 				Runtime::parsePath(funcName, [&](const std::string& token, bool isLastToken) -> bool
 				{
-					auto tokenWChar = HorseRadish::StringUtils::conv2UTF16(token);
+					auto tokenWChar = hr::StringUtils::conv2UTF16(token);
 
 					if (isLastToken)
 					{
@@ -221,7 +221,7 @@ namespace HorseRadish { namespace Engine
 				auto pClass = new T(vm, instanceObj, ctx);
 
 				if (!ctx.mErrorThrown.empty())
-					return sq_throwerror(vm, HorseRadish::StringUtils::conv2UTF16(ctx.mErrorThrown).c_str());
+					return sq_throwerror(vm, hr::StringUtils::conv2UTF16(ctx.mErrorThrown).c_str());
 
 				sq_setinstanceup(vm, 1, pClass);
 				sq_setreleasehook(vm, 1, NativeClass<T>::vmDeleteClassInstance);
@@ -241,7 +241,7 @@ namespace HorseRadish { namespace Engine
 				if (!SQ_SUCCEEDED(sq_getstring(vm, -1, &funcName)))
 					return sq_throwerror(vm, _SC("Internal error - func name not found"));
 
-				auto utf8FuncName = HorseRadish::StringUtils::conv2UTF8(funcName);
+				auto utf8FuncName = hr::StringUtils::conv2UTF8(funcName);
 
 				auto funcTarget = NativeClass<T>::sFuncMap[utf8FuncName];
 				if (!funcTarget)
@@ -260,7 +260,7 @@ namespace HorseRadish { namespace Engine
 				if (ctx.mReturnValueSet)
 					sq_pop(vm, 1);
 
-				return sq_throwerror(vm, HorseRadish::StringUtils::conv2UTF16(ctx.mErrorThrown).c_str());
+				return sq_throwerror(vm, hr::StringUtils::conv2UTF16(ctx.mErrorThrown).c_str());
 			}
 
 		public:
@@ -271,7 +271,7 @@ namespace HorseRadish { namespace Engine
 			bool registerClassMethod(const char* const funcName, RegisteredClassFuncType funcCallback)
 			{
 				std::string funcNameStr(funcName);
-				std::wstring funcNameWChar = HorseRadish::StringUtils::conv2UTF16(funcNameStr);
+				std::wstring funcNameWChar = hr::StringUtils::conv2UTF16(funcNameStr);
 
 				sq_pushstring(mVM, funcNameWChar.c_str(), funcNameWChar.size());
 					sq_pushstring(mVM, funcNameWChar.c_str(), funcNameWChar.size()); //free var
@@ -285,7 +285,7 @@ namespace HorseRadish { namespace Engine
 
 			bool registerClassTable(const char* const tableName)
 			{
-				auto tableNameWChar = HorseRadish::StringUtils::conv2UTF16(tableName);
+				auto tableNameWChar = hr::StringUtils::conv2UTF16(tableName);
 
 				sq_pushstring(mVM, tableNameWChar.c_str(), tableNameWChar.size());
 				sq_newtable(mVM);
@@ -297,7 +297,7 @@ namespace HorseRadish { namespace Engine
 
 			bool registerClassVar(const char* const varName)
 			{
-				auto varNameWChar = HorseRadish::StringUtils::conv2UTF16(varName);
+				auto varNameWChar = hr::StringUtils::conv2UTF16(varName);
 
 				sq_pushstring(mVM, varNameWChar.c_str(), varNameWChar.size());
 				sq_pushnull(mVM);
@@ -417,5 +417,5 @@ namespace HorseRadish { namespace Engine
 	};
 
 	template <class T>
-	std::unordered_map<std::string, typename HorseRadish::Engine::Runtime::NativeClass<T>::RegisteredClassFuncType> HorseRadish::Engine::Runtime::NativeClass<T>::sFuncMap;
+	std::unordered_map<std::string, typename hr::engine::Runtime::NativeClass<T>::RegisteredClassFuncType> hr::engine::Runtime::NativeClass<T>::sFuncMap;
 } }

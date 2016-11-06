@@ -2,7 +2,7 @@
 
 #include <cstring>
 
-namespace HorseRadish
+namespace hr
 {
 	bool operator == (const hData128& a, const hData128& b)
 	{

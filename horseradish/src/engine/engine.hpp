@@ -14,7 +14,7 @@
 #include <memory>
 #include <string>
 
-namespace HorseRadish { namespace Engine
+namespace hr { namespace engine
 {
 	class Engine final
 	{
@@ -263,7 +263,7 @@ namespace HorseRadish { namespace Engine
 		bool mDevMode = false;
 		std::string mErrorDesc;
 		std::atomic<State> mCurState = State::Created;
-		HorseRadish::Timer mMainTimer;
+		hr::Timer mMainTimer;
 		int mExitCode = 0;
 		std::atomic<ExitAction> mExitAction = ExitAction::Nothing;
 		AVLTree<char, std::shared_ptr<IVariable>> mVars;
@@ -275,7 +275,7 @@ namespace HorseRadish { namespace Engine
 
 		std::shared_ptr<platform::Window> mWindow;
 		std::shared_ptr<Runtime> mRuntime;
-		std::shared_ptr<IO::FileSystem> mFileSystem;
+		std::shared_ptr<io::FileSystem> mFileSystem;
 
 	private:
 		void exit(ExitAction exitAction, const char * const errorDesc = nullptr);
@@ -322,16 +322,16 @@ namespace HorseRadish { namespace Engine
 	};
 } }
 
-template<> bool HorseRadish::Engine::Engine::var<bool>(const char* const name) const;
-template<> int32_t HorseRadish::Engine::Engine::var<int32_t>(const char* const name) const;
-template<> int64_t HorseRadish::Engine::Engine::var<int64_t>(const char* const name) const;
-template<> float HorseRadish::Engine::Engine::var<float>(const char* const name) const;
-template<> double HorseRadish::Engine::Engine::var<double>(const char* const name) const;
-template<> std::string HorseRadish::Engine::Engine::var<std::string>(const char* const name) const;
+template<> bool hr::engine::Engine::var<bool>(const char* const name) const;
+template<> int32_t hr::engine::Engine::var<int32_t>(const char* const name) const;
+template<> int64_t hr::engine::Engine::var<int64_t>(const char* const name) const;
+template<> float hr::engine::Engine::var<float>(const char* const name) const;
+template<> double hr::engine::Engine::var<double>(const char* const name) const;
+template<> std::string hr::engine::Engine::var<std::string>(const char* const name) const;
 
-template<> void HorseRadish::Engine::Engine::var<bool>(const char* const name, const bool& value);
-template<> void HorseRadish::Engine::Engine::var<int32_t>(const char* const name, const int32_t& value);
-template<> void HorseRadish::Engine::Engine::var<int64_t>(const char* const name, const int64_t& value);
-template<> void HorseRadish::Engine::Engine::var<float>(const char* const name, const float& value);
-template<> void HorseRadish::Engine::Engine::var<double>(const char* const name, const double& value);
-template<> void HorseRadish::Engine::Engine::var<std::string>(const char* const name, const std::string& value);
+template<> void hr::engine::Engine::var<bool>(const char* const name, const bool& value);
+template<> void hr::engine::Engine::var<int32_t>(const char* const name, const int32_t& value);
+template<> void hr::engine::Engine::var<int64_t>(const char* const name, const int64_t& value);
+template<> void hr::engine::Engine::var<float>(const char* const name, const float& value);
+template<> void hr::engine::Engine::var<double>(const char* const name, const double& value);
+template<> void hr::engine::Engine::var<std::string>(const char* const name, const std::string& value);

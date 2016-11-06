@@ -60,7 +60,7 @@ int pipeRead(HANDLE pipeHandle, void *outBuffer, const int outBufferSize)
 	return bytesRead;
 }
 
-namespace HorseRadish { namespace platform
+namespace hr { namespace platform
 {
 	const char* Platform::NewLine = "\r\n\0";
 	const int Platform::NewLineSize = 2;
@@ -192,7 +192,7 @@ namespace HorseRadish { namespace platform
 		memcpy(cpuString + 44, cpuInfo + 3, sizeof(int));
 
 		outputValue = cpuString;
-		HorseRadish::StringUtils::trim(outputValue);
+		hr::StringUtils::trim(outputValue);
 
 		return true;
 	}
@@ -245,7 +245,7 @@ namespace HorseRadish { namespace platform
 			if ((result == 0) || (result > bufferAuxCharCount))
 				return false;
 
-			infoValue = HorseRadish::StringUtils::conv2UTF8(bufferAux);
+			infoValue = hr::StringUtils::conv2UTF8(bufferAux);
 			return true;
 		}
 
@@ -255,7 +255,7 @@ namespace HorseRadish { namespace platform
 			if ((result == 0) || (result > bufferAuxCharCount))
 				return false;
 
-			infoValue = HorseRadish::StringUtils::conv2UTF8(bufferAux);
+			infoValue = hr::StringUtils::conv2UTF8(bufferAux);
 			return true;
 		}
 
@@ -265,7 +265,7 @@ namespace HorseRadish { namespace platform
 			if ((result == 0) || (result > bufferAuxCharCount))
 				return false;
 
-			infoValue = HorseRadish::StringUtils::conv2UTF8(bufferAux);
+			infoValue = hr::StringUtils::conv2UTF8(bufferAux);
 			return true;
 		}
 
@@ -274,7 +274,7 @@ namespace HorseRadish { namespace platform
 			if (GetComputerName(bufferAux, &bufferAuxCharCount) == FALSE)
 				return false;
 
-			infoValue = HorseRadish::StringUtils::conv2UTF8(bufferAux);
+			infoValue = hr::StringUtils::conv2UTF8(bufferAux);
 			return true;
 		}
 
@@ -283,7 +283,7 @@ namespace HorseRadish { namespace platform
 			if (GetUserName(bufferAux, &bufferAuxCharCount) == FALSE)
 				return false;
 
-			infoValue = HorseRadish::StringUtils::conv2UTF8(bufferAux);
+			infoValue = hr::StringUtils::conv2UTF8(bufferAux);
 			return true;
 		}
 
@@ -426,7 +426,7 @@ namespace HorseRadish { namespace platform
 		if (clipData == nullptr)
 			return false;
 
-		auto clipDataUTF8 = HorseRadish::StringUtils::conv2UTF8(static_cast<const wchar_t*>(clipData));
+		auto clipDataUTF8 = hr::StringUtils::conv2UTF8(static_cast<const wchar_t*>(clipData));
 
 		funcCallback(clipDataUTF8);
 
@@ -473,7 +473,7 @@ namespace HorseRadish { namespace platform
 			if (DragQueryFile(clipData, i, fileBufferWChar, sizeof(fileBufferWChar) / sizeof(wchar_t)) == 0)
 				continue;
 
-			auto curFileUTF8 = HorseRadish::StringUtils::conv2UTF8(fileBufferWChar);
+			auto curFileUTF8 = hr::StringUtils::conv2UTF8(fileBufferWChar);
 			if (!funcCallback(curFileUTF8))
 				break;
 		}

@@ -12,7 +12,7 @@
 #include <functional>
 #include <unordered_map>
 
-namespace HorseRadish { namespace IO
+namespace hr { namespace io
 {
 	class FileSystem
 	{
@@ -43,7 +43,7 @@ namespace HorseRadish { namespace IO
 		class MountData
 		{
 		protected:
-			HorseRadish::IO::Path mMountPoint;
+			hr::io::Path mMountPoint;
 
 		public:
 			MountData(const char* const mountPoint);
@@ -51,13 +51,13 @@ namespace HorseRadish { namespace IO
 
 			virtual FileSystem::MountType mountType() const = 0;
 			virtual void filesEnumerate() = 0;
-			virtual std::unique_ptr<Streams::Stream> fileRead(const char* const filePath) = 0;
+			virtual std::unique_ptr<streams::Stream> fileRead(const char* const filePath) = 0;
 			virtual bool fileExists(const char* const filePath) = 0;
 		};
 
 		class MountDataPath : public MountData
 		{
-			HorseRadish::IO::Path mBaseFolder;
+			hr::io::Path mBaseFolder;
 
 		public:
 			MountDataPath(const char* const baseFolder, const char* const mountPoint);
@@ -66,7 +66,7 @@ namespace HorseRadish { namespace IO
 			FileSystem::MountType mountType() const;
 
 			void filesEnumerate();
-			std::unique_ptr<Streams::Stream> fileRead(const char* const filePath);
+			std::unique_ptr<streams::Stream> fileRead(const char* const filePath);
 			bool fileExists(const char* const filePath);
 		};
 
@@ -79,7 +79,7 @@ namespace HorseRadish { namespace IO
 				size_t fileSize;
 			};
 			unzFile mZipFile;
-			HorseRadish::IO::Path mZipPath;
+			hr::io::Path mZipPath;
 			std::unordered_map<std::string, ZipEntry> mFileEntries;
 
 		public:
@@ -90,7 +90,7 @@ namespace HorseRadish { namespace IO
 			size_t numberFiles() const;
 
 			void filesEnumerate();
-			std::unique_ptr<Streams::Stream> fileRead(const char* const filePath);
+			std::unique_ptr<streams::Stream> fileRead(const char* const filePath);
 			bool fileExists(const char* const filePath);
 		};
 
@@ -102,14 +102,14 @@ namespace HorseRadish { namespace IO
 		FileSystem(size_t maxNumMounts);
 		~FileSystem();
 
-		static void findFiles(const std::string& baseFolderAndFilter, const bool returnFilesFullPath, std::function<void(const HorseRadish::IO::Path &filePath, const HorseRadish::hUInt64 &fileSize)> actionFileFound);
+		static void findFiles(const std::string& baseFolderAndFilter, const bool returnFilesFullPath, std::function<void(const hr::io::Path &filePath, const hr::hUInt64 &fileSize)> actionFileFound);
 		static bool fileExists(const char* const filePath);
 
-		bool mountPath(const HorseRadish::IO::Path &baseFolder, const char* const mountPoint);
-		bool mountZip(const HorseRadish::IO::Path &zipPath, const char* const mountPoint, size_t* const numFilesZip = nullptr);
+		bool mountPath(const hr::io::Path &baseFolder, const char* const mountPoint);
+		bool mountZip(const hr::io::Path &zipPath, const char* const mountPoint, size_t* const numFilesZip = nullptr);
 
-		std::unique_ptr<Streams::Stream> fileRead(const char * const filePath);
-		std::unique_ptr<Streams::Stream> fileRead(const char * const filePath, MountType mountType);
+		std::unique_ptr<streams::Stream> fileRead(const char * const filePath);
+		std::unique_ptr<streams::Stream> fileRead(const char * const filePath, MountType mountType);
 
 		std::string readFileAsString(const char* const filePath);
 

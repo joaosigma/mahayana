@@ -5,14 +5,14 @@
 
 #include <memory>
 
-namespace HorseRadish { namespace Render { namespace Tools {
+namespace hr { namespace render { namespace tools {
 			
 class Camera
 {
 protected:
-	HorseRadish::Matrix mModelView;
+	hr::Matrix mModelView;
 	struct {
-		HorseRadish::Vector3f pos, dir, up;
+		hr::Vector3f pos, dir, up;
 	} mAxis;
 	float mAbsFocus;
 	
@@ -26,7 +26,7 @@ protected:
 	}
 
 public:
-	void setPos(const HorseRadish::Vector3f &pos)
+	void setPos(const hr::Vector3f &pos)
 	{
 		mAxis.pos.set(pos);
 		mModelView.setGLModelView(mAxis.pos, getTarget(), mAxis.up);
@@ -38,7 +38,7 @@ public:
 		mModelView.setGLModelView(mAxis.pos, getTarget(), mAxis.up);
 	}
 
-	void setTarget(const HorseRadish::Vector3f &target)
+	void setTarget(const hr::Vector3f &target)
 	{
 		mAxis.dir = target - mAxis.pos;
 		mAxis.dir.normalize();
@@ -48,13 +48,13 @@ public:
 
 	void setTarget(float x, float y, float z)
 	{
-		mAxis.dir = HorseRadish::Vector3f(x, y, z) - mAxis.pos;
+		mAxis.dir = hr::Vector3f(x, y, z) - mAxis.pos;
 		mAxis.dir.normalize();
 		mAbsFocus = mAxis.pos.getDistance(x, y, z);
 		mModelView.setGLModelView(mAxis.pos, getTarget(), mAxis.up);
 	}
 
-	void setDir(const HorseRadish::Vector3f &direction)
+	void setDir(const hr::Vector3f &direction)
 	{
 		mAxis.dir.set(direction);
 		mAxis.dir.normalize();
@@ -73,27 +73,27 @@ public:
 		mAbsFocus = focus;
 	}
 
-	HorseRadish::Vector3f getPos() const
+	hr::Vector3f getPos() const
 	{
 		return mAxis.pos;
 	}
 
-	HorseRadish::Ray getRay() const
+	hr::Ray getRay() const
 	{
-		return HorseRadish::Ray(mAxis.pos, mAxis.dir);
+		return hr::Ray(mAxis.pos, mAxis.dir);
 	}
 
-	HorseRadish::Vector3f getTarget() const
+	hr::Vector3f getTarget() const
 	{
 		return ((mAxis.dir * mAbsFocus) + mAxis.pos);
 	}
 
-	HorseRadish::Vector3f getViewDir() const
+	hr::Vector3f getViewDir() const
 	{
 		return mAxis.dir;
 	}
 
-	HorseRadish::Vector3f getStrideDir() const
+	hr::Vector3f getStrideDir() const
 	{
 		auto auxVec = mAxis.dir;
 		auxVec[1] += 1.0f;
@@ -109,7 +109,7 @@ public:
 		return mAbsFocus;
 	}
 
-	const HorseRadish::Matrix& modelView() const
+	const hr::Matrix& modelView() const
 	{
 		return mModelView;
 	}
@@ -178,8 +178,8 @@ public:
 	CameraPath()
 		: Camera()
 	{
-		mPointsPos = std::unique_ptr<HorseRadish::Vector3f[]>(new HorseRadish::Vector3f[MaxNumPoints]);
-		mPointsTarget = std::unique_ptr<HorseRadish::Vector3f[]>(new HorseRadish::Vector3f[MaxNumPoints]);
+		mPointsPos = std::unique_ptr<hr::Vector3f[]>(new hr::Vector3f[MaxNumPoints]);
+		mPointsTarget = std::unique_ptr<hr::Vector3f[]>(new hr::Vector3f[MaxNumPoints]);
 	}
 
 	void commitCatmullRom(CameraComponent component, float normalizedTime);
@@ -187,7 +187,7 @@ public:
 
 	void pathClear(CameraComponent componentsBitField);
 	void pathAdd(CameraComponent component, float x, float y, float z);
-	void pathAdd(CameraComponent component, const HorseRadish::Vector3f &vec);
+	void pathAdd(CameraComponent component, const hr::Vector3f &vec);
 };
 
 } } }

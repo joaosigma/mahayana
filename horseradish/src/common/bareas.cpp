@@ -1,6 +1,6 @@
 #include "bareas.hpp"
 
-namespace HorseRadish
+namespace hr
 {
 	BRect::BRect(const Vector3f * const points, size_t numVec)
 	{

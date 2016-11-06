@@ -19,7 +19,7 @@ int ZCALLBACK zerror(voidpf opaque, voidpf stream)
 static
 voidpf ZCALLBACK zopen(voidpf opaque, const char* filename, int mode)
 {
-	auto fileStream = new HorseRadish::Streams::FileStream(filename, true, false);
+	auto fileStream = new hr::streams::FileStream(filename, true, false);
 	
 	return ((voidpf)fileStream);
 }
@@ -27,7 +27,7 @@ voidpf ZCALLBACK zopen(voidpf opaque, const char* filename, int mode)
 static
 uLong ZCALLBACK zread(voidpf opaque, voidpf stream, void* buf, uLong size)
 {
-	auto fileStream = reinterpret_cast<HorseRadish::Streams::FileStream*>(stream);
+	auto fileStream = reinterpret_cast<hr::streams::FileStream*>(stream);
 
 	return fileStream->read(buf,size);
 }
@@ -35,7 +35,7 @@ uLong ZCALLBACK zread(voidpf opaque, voidpf stream, void* buf, uLong size)
 static
 long ZCALLBACK ztell(voidpf opaque, voidpf stream)
 {
-	auto fileStream = reinterpret_cast<HorseRadish::Streams::FileStream*>(stream);
+	auto fileStream = reinterpret_cast<hr::streams::FileStream*>(stream);
 
 	return fileStream->position();
 }
@@ -43,14 +43,14 @@ long ZCALLBACK ztell(voidpf opaque, voidpf stream)
 static
 long ZCALLBACK zseek(voidpf opaque, voidpf stream, uLong offset, int origin)
 {
-	auto fileStream = reinterpret_cast<HorseRadish::Streams::FileStream*>(stream);
+	auto fileStream = reinterpret_cast<hr::streams::FileStream*>(stream);
 
 	if (origin == ZLIB_FILEFUNC_SEEK_CUR)
-		fileStream->seek(HorseRadish::Streams::Stream::SeekOrigin::Current, offset);
+		fileStream->seek(hr::streams::Stream::SeekOrigin::Current, offset);
 	else if (origin == ZLIB_FILEFUNC_SEEK_END)
-		fileStream->seek(HorseRadish::Streams::Stream::SeekOrigin::End, offset);
+		fileStream->seek(hr::streams::Stream::SeekOrigin::End, offset);
 	else if (origin == ZLIB_FILEFUNC_SEEK_SET)
-		fileStream->seek(HorseRadish::Streams::Stream::SeekOrigin::Begin, offset);
+		fileStream->seek(hr::streams::Stream::SeekOrigin::Begin, offset);
 	else
 		return 1;
 
@@ -60,7 +60,7 @@ long ZCALLBACK zseek(voidpf opaque, voidpf stream, uLong offset, int origin)
 static
 int ZCALLBACK zclose(voidpf opaque, voidpf stream)
 {
-	auto fileStream = reinterpret_cast<HorseRadish::Streams::FileStream*>(stream);
+	auto fileStream = reinterpret_cast<hr::streams::FileStream*>(stream);
 
 	fileStream->close();
 	delete fileStream;
@@ -84,7 +84,7 @@ void overloadZLibIO(zlib_filefunc_def * const zlibFileFunc)
 	zlibFileFunc->zwrite_file = zwrite;
 }
 
-namespace HorseRadish { namespace IO
+namespace hr { namespace io
 {
 	FileSystem::MountData::MountData(const char* const mountPoint)
 	{
@@ -115,15 +115,15 @@ namespace HorseRadish { namespace IO
 	{
 	}
 
-	std::unique_ptr<Streams::Stream> FileSystem::MountDataPath::fileRead(const char* const filePath)
+	std::unique_ptr<streams::Stream> FileSystem::MountDataPath::fileRead(const char* const filePath)
 	{
 		auto pathFinal = mBaseFolder;
 		pathFinal += filePath;
 
-		auto fileStream = std::unique_ptr<Streams::FileStream>(new Streams::FileStream(pathFinal.str(), true, false));
+		auto fileStream = std::unique_ptr<streams::FileStream>(new streams::FileStream(pathFinal.str(), true, false));
 
 		if (!fileStream->isValid())
-			std::unique_ptr<Streams::FileStream>();
+			std::unique_ptr<streams::FileStream>();
 
 		return std::move(fileStream);
 	}
@@ -203,10 +203,10 @@ namespace HorseRadish { namespace IO
 	{
 	}
 
-	std::unique_ptr<Streams::Stream> FileSystem::MountDataZip::fileRead(const char* const filePath)
+	std::unique_ptr<streams::Stream> FileSystem::MountDataZip::fileRead(const char* const filePath)
 	{
 		if (!filePath || (*filePath == '\0'))
-			return std::unique_ptr<Streams::Stream>();
+			return std::unique_ptr<streams::Stream>();
 
 		auto itFile = mFileEntries.find(filePath);
 		if (itFile == mFileEntries.end())
@@ -222,7 +222,7 @@ namespace HorseRadish { namespace IO
 
 		unzCloseCurrentFile(mZipFile);
 
-		auto memStream = std::unique_ptr<Streams::Stream>(new Streams::MemoryViewStream(fileData, itFile->second.fileSize));
+		auto memStream = std::unique_ptr<streams::Stream>(new streams::MemoryViewStream(fileData, itFile->second.fileSize));
 		return std::move(memStream);
 	}
 
@@ -255,17 +255,17 @@ namespace HorseRadish { namespace IO
 		mMaxNumMounts = 0;
 	}
 
-	void FileSystem::findFiles(const std::string& baseFolderAndFilter, const bool returnFilesFullPath, std::function<void(const HorseRadish::IO::Path &filePath, const HorseRadish::hUInt64 &fileSize)> actionFileFound)
+	void FileSystem::findFiles(const std::string& baseFolderAndFilter, const bool returnFilesFullPath, std::function<void(const hr::io::Path &filePath, const hr::hUInt64 &fileSize)> actionFileFound)
 	{
 		HANDLE handleFind;
 		WIN32_FIND_DATA findData;
-		HorseRadish::IO::Path basePath, fileFinalPath;
+		hr::io::Path basePath, fileFinalPath;
 
 		if (!actionFileFound || baseFolderAndFilter.empty())
 			return;
 
 		{
-			auto baseFolderAndFilterWChar = HorseRadish::StringUtils::conv2UTF16(baseFolderAndFilter);
+			auto baseFolderAndFilterWChar = hr::StringUtils::conv2UTF16(baseFolderAndFilter);
 
 			handleFind = FindFirstFile(baseFolderAndFilterWChar.c_str(), &findData);
 			if (handleFind == INVALID_HANDLE_VALUE)
@@ -280,9 +280,9 @@ namespace HorseRadish { namespace IO
 			if (findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
 				continue;
 
-			auto filePath = HorseRadish::StringUtils::conv2UTF8(findData.cFileName);
+			auto filePath = hr::StringUtils::conv2UTF8(findData.cFileName);
 
-			HorseRadish::hUInt64 fileSize = (findData.nFileSizeHigh * (MAXDWORD + 1)) + findData.nFileSizeLow;
+			hr::hUInt64 fileSize = (findData.nFileSizeHigh * (MAXDWORD + 1)) + findData.nFileSizeLow;
 
 			if (returnFilesFullPath)
 			{
@@ -310,7 +310,7 @@ namespace HorseRadish { namespace IO
 			return false;
 
 		{
-			auto filePathWChar = HorseRadish::StringUtils::conv2UTF16(filePath);
+			auto filePathWChar = hr::StringUtils::conv2UTF16(filePath);
 
 			fileAtributes = GetFileAttributes(filePathWChar.c_str());
 		}
@@ -324,7 +324,7 @@ namespace HorseRadish { namespace IO
 		return true;
 	}
 
-	bool FileSystem::mountPath(const HorseRadish::IO::Path &baseFolder, const char* const mountPoint)
+	bool FileSystem::mountPath(const hr::io::Path &baseFolder, const char* const mountPoint)
 	{
 		if (mListMounts.size() >= mMaxNumMounts)
 			return false;
@@ -333,7 +333,7 @@ namespace HorseRadish { namespace IO
 		return true;
 	}
 
-	bool FileSystem::mountZip(const HorseRadish::IO::Path &zipPath, const char* const mountPoint, size_t* const numFilesZip)
+	bool FileSystem::mountZip(const hr::io::Path &zipPath, const char* const mountPoint, size_t* const numFilesZip)
 	{
 		if (mListMounts.size() >= mMaxNumMounts)
 			return false;
@@ -346,10 +346,10 @@ namespace HorseRadish { namespace IO
 		return true;
 	}
 
-	std::unique_ptr<Streams::Stream> FileSystem::fileRead(const char * const filePath)
+	std::unique_ptr<streams::Stream> FileSystem::fileRead(const char * const filePath)
 	{
 		if (!filePath || (*filePath == '\0'))
-			return std::unique_ptr<Streams::Stream>();
+			return std::unique_ptr<streams::Stream>();
 
 		for (auto& curMount : mListMounts)
 		{
@@ -359,13 +359,13 @@ namespace HorseRadish { namespace IO
 			return curMount->fileRead(filePath);
 		}
 
-		return std::unique_ptr<Streams::Stream>();
+		return std::unique_ptr<streams::Stream>();
 	}
 
-	std::unique_ptr<Streams::Stream> FileSystem::fileRead(const char * const filePath, FileSystem::MountType mountType)
+	std::unique_ptr<streams::Stream> FileSystem::fileRead(const char * const filePath, FileSystem::MountType mountType)
 	{
 		if (!filePath || (*filePath == '\0'))
-			return std::unique_ptr<Streams::Stream>();
+			return std::unique_ptr<streams::Stream>();
 
 		for (auto& curMount : mListMounts)
 		{
@@ -378,7 +378,7 @@ namespace HorseRadish { namespace IO
 			return curMount->fileRead(filePath);
 		}
 
-		return std::unique_ptr<Streams::Stream>();
+		return std::unique_ptr<streams::Stream>();
 	}
 
 	std::string FileSystem::readFileAsString(const char * const filePath)
@@ -387,7 +387,7 @@ namespace HorseRadish { namespace IO
 		if (!fileStream)
 			return std::string();
 
-		HorseRadish::Streams::MemoryViewStream fileData;
+		hr::streams::MemoryViewStream fileData;
 		if (!fileStream->cloneAllContent(fileData))
 			return std::string();
 
@@ -402,7 +402,7 @@ namespace HorseRadish { namespace IO
 			return -1;
 
 		{
-			auto baseFolderWChar = HorseRadish::StringUtils::conv2UTF16(baseFolder);
+			auto baseFolderWChar = hr::StringUtils::conv2UTF16(baseFolder);
 
 			DWORD changeFlags = 0;
 			if (changeType & FileName)

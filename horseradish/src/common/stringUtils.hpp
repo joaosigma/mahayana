@@ -5,7 +5,7 @@
 #include <vector>
 #include <iterator>
 
-namespace HorseRadish
+namespace hr
 {
 	class StringUtils
 	{

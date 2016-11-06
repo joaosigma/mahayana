@@ -8,7 +8,7 @@
 #include <xmmintrin.h>
 #include <emmintrin.h>
 
-namespace HorseRadish
+namespace hr
 {
 	class Color
 	{

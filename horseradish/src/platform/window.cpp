@@ -2,9 +2,9 @@
 
 #include "windowImplWin32.hpp"
 
-namespace HorseRadish { namespace platform
+namespace hr { namespace platform
 {
-	Window::Window(HorseRadish::Engine::Logger &logger)
+	Window::Window(hr::engine::Logger &logger)
 		: mImpl(new WindowImpl(logger))
 	{ }
 
@@ -61,7 +61,7 @@ namespace HorseRadish { namespace platform
 		return mImpl->rawInputGetKeyStatus(vcode);
 	}
 
-	HorseRadish::Vector3f Window::rawInputGetMouseStatus()
+	hr::Vector3f Window::rawInputGetMouseStatus()
 	{
 		return mImpl->rawInputGetMouseStatus();
 	}

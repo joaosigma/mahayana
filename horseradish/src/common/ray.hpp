@@ -2,7 +2,7 @@
 
 #include "vector.hpp"
 
-namespace HorseRadish
+namespace hr
 {
 	class Ray
 	{

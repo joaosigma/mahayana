@@ -6,27 +6,27 @@
 #include "../common/openGL/tools/viewport.hpp"
 #include "../engine/profiler.hpp"
 
-namespace HorseRadish { namespace Render
+namespace hr { namespace render
 {
 	class ProfilerUI
 	{
 		bool mShowStats = false;
 		bool mShowInfo = false;
 		std::string mInfoStr;
-		HorseRadish::Timer mTimer;
-		HorseRadish::Render::Renderer2D& mRenderer;
-		const HorseRadish::Engine::Profiler& mProfiler;
+		hr::Timer mTimer;
+		hr::render::Renderer2D& mRenderer;
+		const hr::engine::Profiler& mProfiler;
 		
-		void drawInfo(const HorseRadish::Primitives2D::Rectangle<float>& viewRect, const HorseRadish::Matrix &transformMatrix) const;
-		void drawStats(const HorseRadish::Primitives2D::Rectangle<float>& viewRect, const HorseRadish::Matrix &transformMatrix) const;
-		void drawStatsBackground(const HorseRadish::Primitives2D::Rectangle<float>& viewRect, const HorseRadish::Matrix &transformMatrix, float bkgAlpha) const;
+		void drawInfo(const hr::Rectangle<float>& viewRect, const hr::Matrix &transformMatrix) const;
+		void drawStats(const hr::Rectangle<float>& viewRect, const hr::Matrix &transformMatrix) const;
+		void drawStatsBackground(const hr::Rectangle<float>& viewRect, const hr::Matrix &transformMatrix, float bkgAlpha) const;
 
 	public:
-		ProfilerUI(const HorseRadish::Engine::Profiler& profiler, HorseRadish::Render::Renderer2D& renderer)
+		ProfilerUI(const hr::engine::Profiler& profiler, hr::render::Renderer2D& renderer)
 			: mRenderer(renderer), mProfiler(profiler)
 		{ }
 
-		void draw(const HorseRadish::OpenGL::Tools::Viewport& viewport) const;
+		void draw(const hr::gl::tools::Viewport& viewport) const;
 
 		void processStats();
 

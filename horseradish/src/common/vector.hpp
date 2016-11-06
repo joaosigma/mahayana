@@ -9,7 +9,7 @@
 #include <smmintrin.h>
 #include <type_traits>
 
-namespace HorseRadish
+namespace hr
 {
 	template<typename TDataType, size_t NComponents>
 	class Vector

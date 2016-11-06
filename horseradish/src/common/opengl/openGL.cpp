@@ -13,7 +13,7 @@ typedef PROC (APIENTRY *PFNWGLGETPROCADDRESSPROC)(LPCSTR lpcstr);
 static
 bool loadGLFunctions(HINSTANCE nativeOpenGLModule, PFNWGLGETPROCADDRESSPROC wglProcAddressOpenGL)
 {
-	using namespace HorseRadish::OpenGL;
+	using namespace hr::gl;
 
 #ifdef GL_VERSION_1_0
 	GETADDR_NATIVE(glCullFace, "glCullFace", PFNGLCULLFACEPROC);
@@ -784,7 +784,7 @@ bool loadGLFunctions(HINSTANCE nativeOpenGLModule, PFNWGLGETPROCADDRESSPROC wglP
 	return true;
 }
 
-namespace HorseRadish { namespace OpenGL
+namespace hr { namespace gl
 {
 #ifdef GL_VERSION_1_0
 		PFNGLCULLFACEPROC glCullFace;
@@ -1557,7 +1557,7 @@ namespace HorseRadish { namespace OpenGL
 			if (openGLModule != nullptr)
 				return false;
 
-			auto openGLLibraryNameWChar = HorseRadish::StringUtils::conv2UTF16(glLibName);
+			auto openGLLibraryNameWChar = hr::StringUtils::conv2UTF16(glLibName);
 			
 			openGLModule = LoadLibrary(openGLLibraryNameWChar.c_str());
 			return (openGLModule != nullptr);

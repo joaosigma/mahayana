@@ -5,15 +5,15 @@
 
 #include "../misc/videoStream.hpp"
 
-namespace HorseRadish {	namespace Render
+namespace hr { namespace render
 {
-	Scene::Scene(Engine::Runtime& runtime, Engine::Logger::Context& logger, HorseRadish::IO::FileSystem& fileSystem, HorseRadish::OpenGL::Objects::Context &glCtx, const std::string& name, const std::string& filePath, size_t renderWidth, size_t renderHeight)
+	Scene::Scene(engine::Runtime& runtime, engine::Logger::Context& logger, hr::io::FileSystem& fileSystem, hr::gl::objects::Context &glCtx, const std::string& name, const std::string& filePath, size_t renderWidth, size_t renderHeight)
 		: mName(name), mFilePath(filePath)
 		, mRuntime(runtime), mLogger(logger), mGlCtx(glCtx)
 	{
-		Misc::VideoStream::Initialize();
+		misc::VideoStream::Initialize();
 
-		mVideoData.stream = std::make_unique<Misc::VideoStream>(3, PixelFormat::PIX_FMT_BGR24, mFilePath.c_str());
+		mVideoData.stream = std::make_unique<misc::VideoStream>(3, PixelFormat::PIX_FMT_BGR24, mFilePath.c_str());
 		if (!mVideoData.stream->isValid())
 		{
 			mVideoData.stream.reset();
@@ -22,28 +22,28 @@ namespace HorseRadish {	namespace Render
 
 		mVideoData.stream->getVideoDims(mVideoData.frameSize.width, mVideoData.frameSize.height);
 
-		mRenderData.texVideo.init(HorseRadish::OpenGL::Objects::Texture::Type::TexRectangle, HorseRadish::OpenGL::Objects::Texture::StorageType::RGBA_8, mVideoData.frameSize.width, mVideoData.frameSize.height);
+		mRenderData.texVideo.init(hr::gl::objects::Texture::Type::TexRectangle, hr::gl::objects::Texture::StorageType::RGBA_8, mVideoData.frameSize.width, mVideoData.frameSize.height);
 
-		mRenderData.bufferPBO.init(HorseRadish::OpenGL::Objects::Buffer::Type::PixelUnpackBuffer, mVideoData.stream->getVideoFrameDataSize(), HorseRadish::OpenGL::Objects::Buffer::UsageType::OnlyWrite);
+		mRenderData.bufferPBO.init(hr::gl::objects::Buffer::Type::PixelUnpackBuffer, mVideoData.stream->getVideoFrameDataSize(), hr::gl::objects::Buffer::UsageType::OnlyWrite);
 
-		mRenderData.sampler.init(HorseRadish::OpenGL::Objects::Sampler::FilterType::Linear, HorseRadish::OpenGL::Objects::Sampler::FilterType::Linear, HorseRadish::OpenGL::Objects::Sampler::WrapType::ClampEdge);
+		mRenderData.sampler.init(hr::gl::objects::Sampler::FilterType::Linear, hr::gl::objects::Sampler::FilterType::Linear, hr::gl::objects::Sampler::WrapType::ClampEdge);
 
-		mRenderData.progVertex.init(HorseRadish::OpenGL::Objects::ShaderProgram::Type::Vertex, fileSystem.readFileAsString("shaders/stage.vshader"));
-		mRenderData.progFragment.init(HorseRadish::OpenGL::Objects::ShaderProgram::Type::Fragment, fileSystem.readFileAsString("shaders/stage.fshader"));
+		mRenderData.progVertex.init(hr::gl::objects::ShaderProgram::Type::Vertex, fileSystem.readFileAsString("shaders/stage.vshader"));
+		mRenderData.progFragment.init(hr::gl::objects::ShaderProgram::Type::Fragment, fileSystem.readFileAsString("shaders/stage.fshader"));
 		//std::string infoLog = mRenderData.progVertex.getInfoLog();
 		//infoLog += mRenderData.progFragment.getInfoLog();
 
-		auto matrixProj2D = HorseRadish::OpenGL::Tools::Viewport::genMatrix2DProj(renderWidth, renderHeight);
+		auto matrixProj2D = hr::gl::tools::Viewport::genMatrix2DProj(renderWidth, renderHeight);
 
-		HorseRadish::OpenGL::glProgramUniform1i(mRenderData.progFragment.getId(), mRenderData.progFragment.getUniformLocation("texSampler"), 0);
-		HorseRadish::OpenGL::glProgramUniformMatrix4fv(mRenderData.progVertex.getId(), mRenderData.progVertex.getUniformLocation("transformationMatrix"), 1, false, matrixProj2D.data());
+		hr::gl::glProgramUniform1i(mRenderData.progFragment.getId(), mRenderData.progFragment.getUniformLocation("texSampler"), 0);
+		hr::gl::glProgramUniformMatrix4fv(mRenderData.progVertex.getId(), mRenderData.progVertex.getUniformLocation("transformationMatrix"), 1, false, matrixProj2D.data());
 
 		mRenderData.progPipeline.init();
 		mRenderData.progPipeline.setStage(mRenderData.progVertex);
 		mRenderData.progPipeline.setStage(mRenderData.progFragment);
 
 		mRenderData.windowSize.reset(renderWidth, renderHeight);
-		mRenderData.proj2D = HorseRadish::OpenGL::Tools::Viewport::genMatrix2DProj(mRenderData.windowSize.width, mRenderData.windowSize.height);
+		mRenderData.proj2D = hr::gl::tools::Viewport::genMatrix2DProj(mRenderData.windowSize.width, mRenderData.windowSize.height);
 	}
 
 	Scene::~Scene()
@@ -57,7 +57,7 @@ namespace HorseRadish {	namespace Render
 		if (std::chrono::milliseconds(mVideoData.frameTimer.getTimeIntMS()) >= mVideoData.waitDuration)
 		{
 			bool frameIsAhead;
-			HorseRadish::hInt64 frameID;
+			hr::hInt64 frameID;
 			double frameDurationS;
 
 			auto frameData = mVideoData.stream->getFrame(frameIsAhead, frameID, frameDurationS);
@@ -72,29 +72,29 @@ namespace HorseRadish {	namespace Render
 				mRenderData.bufferPBO.writeData(frameData, mVideoData.stream->getVideoFrameDataSize(), 0);
 
 				mRenderData.bufferPBO.bind();
-				mRenderData.texVideo.uploadData(0, 0, 0, mVideoData.frameSize.width, mVideoData.frameSize.height, HorseRadish::OpenGL::Objects::Texture::DataFormat::BGR, HorseRadish::OpenGL::Objects::Texture::DataType::UBYTE, nullptr);
+				mRenderData.texVideo.uploadData(0, 0, 0, mVideoData.frameSize.width, mVideoData.frameSize.height, hr::gl::objects::Texture::DataFormat::BGR, hr::gl::objects::Texture::DataType::UBYTE, nullptr);
 				mRenderData.bufferPBO.unbind();
 
 				mVideoData.frameLastID = frameID;
 			}
 
 			mVideoData.frameTimer.reStart();
-			mVideoData.waitDuration = std::chrono::milliseconds(HorseRadish::Math::ftoi(frameDurationS * 1000.0));
+			mVideoData.waitDuration = std::chrono::milliseconds(hr::Math::ftoi(frameDurationS * 1000.0));
 		}
 
 		if (mRenderData.fading || (mVideoData.frameLastID >= 0))
 		{
 			auto viewRect = mVideoData.stream->getVideoRect(mRenderData.windowSize.width, mRenderData.windowSize.height, true);
 
-			HorseRadish::OpenGL::glEnable(GL_BLEND);
-			HorseRadish::OpenGL::glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+			hr::gl::glEnable(GL_BLEND);
+			hr::gl::glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-			HorseRadish::OpenGL::glBindProgramPipeline(mRenderData.progPipeline.getId());
+			hr::gl::glBindProgramPipeline(mRenderData.progPipeline.getId());
 
 			mRenderData.sampler.bind(0);
 			mRenderData.texVideo.bind(0);
 
-			mRenderData.imode.beginDraw(HorseRadish::OpenGL::Tools::ImmediateMode::GeometryType::Quads);
+			mRenderData.imode.beginDraw(hr::gl::tools::ImmediateMode::GeometryType::Quads);
 			mRenderData.imode.setColorF(1.0f, 1.0f, 1.0f, mRenderData.fadingAlpha);
 
 			mRenderData.imode.setTexCoord(0.0f, mVideoData.frameSize.height);
@@ -110,8 +110,8 @@ namespace HorseRadish {	namespace Render
 			mRenderData.imode.addPosition(viewRect.x, viewRect.y + viewRect.height);
 			mRenderData.imode.endDraw();
 
-			HorseRadish::OpenGL::glDisable(GL_BLEND);
-			HorseRadish::OpenGL::glBindProgramPipeline(0);
+			hr::gl::glDisable(GL_BLEND);
+			hr::gl::glBindProgramPipeline(0);
 		}
 
 		return true;

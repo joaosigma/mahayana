@@ -7,7 +7,7 @@ extern "C" {
 //define this to reproduce the video as quickly as possible
 //#define VIDEO_IGNORE_TIMING
 
-namespace HorseRadish { namespace Misc
+namespace hr { namespace misc
 {
 	void VideoStream::processAVFrame()
 	{
@@ -315,7 +315,7 @@ namespace HorseRadish { namespace Misc
 		return true;
 	}
 
-	const void* VideoStream::getFrame(bool &clockIsBehind, HorseRadish::hInt64 &frameID, double &frameDurationS)
+	const void* VideoStream::getFrame(bool &clockIsBehind, hr::hInt64 &frameID, double &frameDurationS)
 	{
 		clockIsBehind = false;
 		frameID = -1;
@@ -366,7 +366,7 @@ namespace HorseRadish { namespace Misc
 		}
 	}
 
-	double VideoStream::getFrameDuration(const HorseRadish::hInt64 &frameID) const
+	double VideoStream::getFrameDuration(const hr::hInt64 &frameID) const
 	{
 		if (mVideoQueueActive <= 0)
 			return 0.0;
@@ -420,16 +420,16 @@ namespace HorseRadish { namespace Misc
 		}
 	}
 
-	HorseRadish::Primitives2D::Rectangle<int> VideoStream::getVideoRect(size_t winWidth, size_t winHeight, bool maintainAspectRatio) const
+	hr::Rectangle<int> VideoStream::getVideoRect(size_t winWidth, size_t winHeight, bool maintainAspectRatio) const
 	{
 		if (!mVideoInfo.codecContext)
-			return HorseRadish::Primitives2D::Rectangle<int>();
+			return hr::Rectangle<int>();
 
 		size_t videoWidth, videoHeight;
 		getVideoDims(videoWidth, videoHeight);
 
 		if (!maintainAspectRatio)
-			return HorseRadish::Primitives2D::Rectangle<int>(0, 0, winWidth, winHeight);
+			return hr::Rectangle<int>(0, 0, winWidth, winHeight);
 
 		auto videoScale = static_cast<float>(videoWidth) / static_cast<float>(videoHeight);
 		auto videoAspectRatio = getVideoFrameAspectRatio();
@@ -440,10 +440,10 @@ namespace HorseRadish { namespace Misc
 		{
 			auto videoNewWidth = static_cast<float>(winHeight) * videoScale;
 
-			return HorseRadish::Primitives2D::Rectangle<int>(
-				HorseRadish::Math::ftoi((static_cast<float>(winWidth) - videoNewWidth) * 0.5f),
+			return hr::Rectangle<int>(
+				hr::Math::ftoi((static_cast<float>(winWidth) - videoNewWidth) * 0.5f),
 				0,
-				HorseRadish::Math::ftoi(videoNewWidth),
+				hr::Math::ftoi(videoNewWidth),
 				winHeight
 				);
 		}
@@ -451,19 +451,19 @@ namespace HorseRadish { namespace Misc
 		{
 			auto videoNewHeight = static_cast<float>(winWidth) / videoScale;
 
-			return HorseRadish::Primitives2D::Rectangle<int>(
+			return hr::Rectangle<int>(
 				0,
-				HorseRadish::Math::ftoi((static_cast<float>(winHeight) - videoNewHeight) * 0.5f),
+				hr::Math::ftoi((static_cast<float>(winHeight) - videoNewHeight) * 0.5f),
 				winWidth,
-				HorseRadish::Math::ftoi(videoNewHeight)
+				hr::Math::ftoi(videoNewHeight)
 				);
 		}
 	}
 
-	HorseRadish::Primitives2D::Rectangle<int> VideoStream::getVideoRectCenter(float scale, size_t winWidth, size_t winHeight) const
+	hr::Rectangle<int> VideoStream::getVideoRectCenter(float scale, size_t winWidth, size_t winHeight) const
 	{
 		if (!mVideoInfo.codecContext)
-			return HorseRadish::Primitives2D::Rectangle<int>();
+			return hr::Rectangle<int>();
 
 		size_t videoWidth, videoHeight;
 		getVideoDims(videoWidth, videoHeight);
@@ -473,12 +473,12 @@ namespace HorseRadish { namespace Misc
 		if (videoAspectRatio > 0.0)
 			videoScale *= videoAspectRatio;
 
-		videoWidth = HorseRadish::Math::ftoi(static_cast<float>(videoWidth) * scale);
-		videoHeight = HorseRadish::Math::ftoi(static_cast<float>(videoWidth) / videoScale);
+		videoWidth = hr::Math::ftoi(static_cast<float>(videoWidth) * scale);
+		videoHeight = hr::Math::ftoi(static_cast<float>(videoWidth) / videoScale);
 
-		return HorseRadish::Primitives2D::Rectangle<int>(
-			HorseRadish::Math::ftoi(static_cast<float>(winWidth - videoWidth) * 0.5f),
-			HorseRadish::Math::ftoi(static_cast<float>(winHeight - videoHeight) * 0.5f),
+		return hr::Rectangle<int>(
+			hr::Math::ftoi(static_cast<float>(winWidth - videoWidth) * 0.5f),
+			hr::Math::ftoi(static_cast<float>(winHeight - videoHeight) * 0.5f),
 			videoWidth,
 			videoHeight
 		);

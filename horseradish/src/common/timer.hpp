@@ -4,7 +4,7 @@
 
 #include <chrono>
 
-namespace HorseRadish
+namespace hr
 {
 	class Timer
 	{

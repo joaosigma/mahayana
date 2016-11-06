@@ -2,7 +2,7 @@
 
 #include <cassert>
 
-namespace HorseRadish { namespace Engine
+namespace hr { namespace engine
 {
 #ifdef HR_PROFILLING
 
@@ -11,7 +11,7 @@ namespace HorseRadish { namespace Engine
 		if (mNumSamples == 0)
 			return;
 
-		HorseRadish::Streams::StreamWriter writer(mStream);
+		hr::streams::StreamWriter writer(mStream);
 
 		for (unsigned int curSample = 0; curSample < mNumSamples; curSample++)
 		{

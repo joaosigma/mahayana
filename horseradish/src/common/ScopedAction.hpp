@@ -2,7 +2,7 @@
 
 #include <functional>
 
-namespace HorseRadish
+namespace hr
 {
 	class ScopedAction
 	{

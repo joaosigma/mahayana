@@ -3,15 +3,15 @@
 #include "stringUtils.hpp"
 #include "../platform/platform.hpp"
 
-namespace HorseRadish { namespace IO
+namespace hr { namespace io
 {
 	void Path::cleanPath()
 	{
-		if (HorseRadish::platform::Platform::DirectorySeparatorChar != '/')
-			HorseRadish::StringUtils::replace(mPath, '/', HorseRadish::platform::Platform::DirectorySeparatorChar);
+		if (hr::platform::Platform::DirectorySeparatorChar != '/')
+			hr::StringUtils::replace(mPath, '/', hr::platform::Platform::DirectorySeparatorChar);
 				
-		HorseRadish::StringUtils::replace(mPath, "//", HorseRadish::StringUtils::conv2UTF8(HorseRadish::platform::Platform::DirectorySeparatorChar));
-		HorseRadish::StringUtils::trim(mPath);
+		hr::StringUtils::replace(mPath, "//", hr::StringUtils::conv2UTF8(hr::platform::Platform::DirectorySeparatorChar));
+		hr::StringUtils::trim(mPath);
 	}
 
 	Path& Path::operator+=(const Path& path)
@@ -64,7 +64,7 @@ namespace HorseRadish { namespace IO
 		if (knownPath == Path::KnownPath::SystemFolder)
 		{
 			std::string path;
-			HorseRadish::platform::Platform::systemInfo(HorseRadish::platform::Platform::SystemInfo::SystemFolder, path);
+			hr::platform::Platform::systemInfo(hr::platform::Platform::SystemInfo::SystemFolder, path);
 
 			mPath = path;
 			return;
@@ -73,7 +73,7 @@ namespace HorseRadish { namespace IO
 		if (knownPath == Path::KnownPath::CurrentFolder)
 		{
 			std::string path;
-			HorseRadish::platform::Platform::systemInfo(HorseRadish::platform::Platform::SystemInfo::CurrentFolder, path);
+			hr::platform::Platform::systemInfo(hr::platform::Platform::SystemInfo::CurrentFolder, path);
 
 			mPath = path;
 			return;
@@ -89,7 +89,7 @@ namespace HorseRadish { namespace IO
 
 		if (!mPath.empty())
 		{
-			auto separator = HorseRadish::StringUtils::conv2UTF8(HorseRadish::platform::Platform::DirectorySeparatorChar);
+			auto separator = hr::StringUtils::conv2UTF8(hr::platform::Platform::DirectorySeparatorChar);
 
 			auto pos = mPath.find_last_of(separator);
 			if ((pos != std::string::npos) && (pos != (mPath.size() - separator.size())))
@@ -97,7 +97,7 @@ namespace HorseRadish { namespace IO
 		}
 
 		mPath += pathToAppend.mPath;
-		HorseRadish::StringUtils::replace(mPath, "//", HorseRadish::StringUtils::conv2UTF8(HorseRadish::platform::Platform::DirectorySeparatorChar));
+		hr::StringUtils::replace(mPath, "//", hr::StringUtils::conv2UTF8(hr::platform::Platform::DirectorySeparatorChar));
 	}
 
 	void Path::combine(const char* const pathToAppend)
@@ -107,7 +107,7 @@ namespace HorseRadish { namespace IO
 
 		if (!mPath.empty())
 		{
-			auto separator = HorseRadish::StringUtils::conv2UTF8(HorseRadish::platform::Platform::DirectorySeparatorChar);
+			auto separator = hr::StringUtils::conv2UTF8(hr::platform::Platform::DirectorySeparatorChar);
 
 			auto pos = mPath.find_last_of(separator);
 			if ((pos != std::string::npos) && (pos != (mPath.size() - separator.size())))
@@ -134,12 +134,12 @@ namespace HorseRadish { namespace IO
 		if (numComponents <= 0)
 			return;
 
-		auto reversed = HorseRadish::StringUtils::reverseCopy(mPath);
+		auto reversed = hr::StringUtils::reverseCopy(mPath);
 
 		size_t charPos = 0, componentsRemoved = 0;
-		for (const auto& curChar : HorseRadish::StringUtils::utf8Wrapper(reversed))
+		for (const auto& curChar : hr::StringUtils::utf8Wrapper(reversed))
 		{
-			if (curChar == HorseRadish::platform::Platform::DirectorySeparatorChar)
+			if (curChar == hr::platform::Platform::DirectorySeparatorChar)
 			{
 				componentsRemoved++;
 				if (componentsRemoved >= numComponents)
@@ -155,12 +155,12 @@ namespace HorseRadish { namespace IO
 
 	void Path::removeFile()
 	{
-		auto reversed = HorseRadish::StringUtils::reverseCopy(mPath);
+		auto reversed = hr::StringUtils::reverseCopy(mPath);
 
 		size_t charPos = 0;
-		for (const auto& curChar : HorseRadish::StringUtils::utf8Wrapper(reversed))
+		for (const auto& curChar : hr::StringUtils::utf8Wrapper(reversed))
 		{
-			if (curChar == HorseRadish::platform::Platform::DirectorySeparatorChar)
+			if (curChar == hr::platform::Platform::DirectorySeparatorChar)
 				break;
 			charPos++;
 		}

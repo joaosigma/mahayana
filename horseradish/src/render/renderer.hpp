@@ -2,15 +2,15 @@
 
 #include "../common/openGL/context.hpp"
 
-namespace HorseRadish { namespace Render
+namespace hr { namespace render
 {
 	class Renderer
 	{
 	protected:
-		const HorseRadish::OpenGL::Objects::Context& mGlContext;
+		const hr::gl::objects::Context& mGlContext;
 
 	public:
-		Renderer(const HorseRadish::OpenGL::Objects::Context& glContext)
+		Renderer(const hr::gl::objects::Context& glContext)
 			: mGlContext(glContext)
 		{ }
 

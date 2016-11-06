@@ -7,7 +7,7 @@
 #include <memory>
 #include <cassert>
 
-namespace HorseRadish { namespace Geometry
+namespace hr { namespace geom
 {
 	class Mesh
 	{

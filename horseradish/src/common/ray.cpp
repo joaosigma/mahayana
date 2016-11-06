@@ -2,7 +2,7 @@
 
 #include "math.hpp"
 
-namespace HorseRadish
+namespace hr
 {
 	void Ray::setOrigin(float x, float y, float z)
 	{

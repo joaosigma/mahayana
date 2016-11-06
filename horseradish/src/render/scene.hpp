@@ -12,12 +12,12 @@
 #include <chrono>
 #include <string>
 
-namespace HorseRadish {	namespace Misc
+namespace hr { namespace misc
 {
 	class VideoStream;
 }}
 
-namespace HorseRadish {	namespace Render
+namespace hr { namespace render
 {
 	class Scene
 	{
@@ -25,36 +25,36 @@ namespace HorseRadish {	namespace Render
 
 		std::string mName;
 		std::string mFilePath;
-		Engine::Runtime& mRuntime;
-		Engine::Logger::Context& mLogger;
-		HorseRadish::OpenGL::Objects::Context& mGlCtx;
+		engine::Runtime& mRuntime;
+		engine::Logger::Context& mLogger;
+		hr::gl::objects::Context& mGlCtx;
 
 		struct VideoData {
 			bool streamEnded = false;
 			Timer frameTimer;
-			std::unique_ptr<Misc::VideoStream> stream;
-			HorseRadish::hInt64 frameLastID = -1;
+			std::unique_ptr<misc::VideoStream> stream;
+			hr::hInt64 frameLastID = -1;
 			std::chrono::milliseconds waitDuration = std::chrono::milliseconds::zero();
-			HorseRadish::Primitives2D::Size<size_t> frameSize;
+			hr::Size<size_t> frameSize;
 		} mVideoData;
 		struct RenderData {
 			bool fading = false;
 			float fadingAlpha = 1.0f;
-			HorseRadish::Matrix proj2D;
-			HorseRadish::Primitives2D::Size<int> windowSize;
-			HorseRadish::OpenGL::Tools::ImmediateMode imode;
-			HorseRadish::OpenGL::Objects::Texture texVideo;
+			hr::Matrix proj2D;
+			hr::Size<int> windowSize;
+			hr::gl::tools::ImmediateMode imode;
+			hr::gl::objects::Texture texVideo;
 			
-			HorseRadish::OpenGL::Objects::Buffer bufferPBO;
-			HorseRadish::OpenGL::Objects::Sampler sampler;
-			HorseRadish::OpenGL::Objects::ShaderProgram progVertex;
-			HorseRadish::OpenGL::Objects::ShaderProgram progFragment;
-			HorseRadish::OpenGL::Objects::ProgramPipeline progPipeline;
+			hr::gl::objects::Buffer bufferPBO;
+			hr::gl::objects::Sampler sampler;
+			hr::gl::objects::ShaderProgram progVertex;
+			hr::gl::objects::ShaderProgram progFragment;
+			hr::gl::objects::ProgramPipeline progPipeline;
 		} mRenderData;
 		
 
 	public:
-		Scene(Engine::Runtime& runtime, Engine::Logger::Context& logger, HorseRadish::IO::FileSystem& fileSystem, HorseRadish::OpenGL::Objects::Context &glCtx, const std::string& name, const std::string& filePath, size_t renderWidth, size_t renderHeight);
+		Scene(engine::Runtime& runtime, engine::Logger::Context& logger, hr::io::FileSystem& fileSystem, hr::gl::objects::Context &glCtx, const std::string& name, const std::string& filePath, size_t renderWidth, size_t renderHeight);
 		~Scene();
 
 		Scene(const Scene&) = delete;

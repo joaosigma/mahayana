@@ -2,7 +2,7 @@
 
 #include "math.hpp"
 
-namespace HorseRadish
+namespace hr
 {
 	void Plane::setFromPoints(const Vector3f &p0, const Vector3f &p1, const Vector3f &p2)
 	{

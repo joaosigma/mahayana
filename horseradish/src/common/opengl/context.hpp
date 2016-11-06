@@ -1,10 +1,8 @@
 #pragma once
-#ifndef HOPENGL_CONTEXT_
-#define HOPENGL_CONTEXT_
 
 #include <string>
 
-namespace HorseRadish { namespace OpenGL { namespace Objects
+namespace hr { namespace gl { namespace objects
 {
 	class Context
 	{
@@ -40,6 +38,5 @@ namespace HorseRadish { namespace OpenGL { namespace Objects
 		bool info(const InformationType &informationType, float &infoValue) const;
 		bool info(const InformationType &informationType, std::string &infoValue) const;
 	};
-} } }
 
-#endif
+} } }

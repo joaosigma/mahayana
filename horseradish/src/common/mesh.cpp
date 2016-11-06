@@ -9,7 +9,7 @@
 #include <vector>
 #include <limits>
 
-namespace HorseRadish { namespace Geometry
+namespace hr { namespace geom
 {
 	static const float ushortScaleFrom = 1.0f / static_cast<float>(std::numeric_limits<short>::max());
 	static const float ushortScaleTo = static_cast<float>(std::numeric_limits<short>::max());
@@ -243,7 +243,7 @@ namespace HorseRadish { namespace Geometry
 			{
 				float theta = static_cast<float>(j)* dtheta;
 
-				HorseRadish::Vector3f calc;
+				hr::Vector3f calc;
 				Math::sinCos(theta, calc[0], calc[2]);
 				calc[0] *= -sinRho;
 				calc[2] *= sinRho;
@@ -491,7 +491,7 @@ namespace HorseRadish { namespace Geometry
 
 			Vector3f hitPoint;
 			{
-				HorseRadish::Vector3f edge1, edge2, tvec, pvec, qvec;
+				hr::Vector3f edge1, edge2, tvec, pvec, qvec;
 				float det, u, v;
 
 				//find vectors for two edges sharing vert0
@@ -503,7 +503,7 @@ namespace HorseRadish { namespace Geometry
 
 				//check if ray is in the same plane as the tri
 				det = edge1.getDot(pvec);
-				if (HorseRadish::Math::isZero(det))
+				if (hr::Math::isZero(det))
 					continue;
 
 				//calculate distance from vert0 to ray origin

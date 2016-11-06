@@ -13,7 +13,7 @@
 #pragma warning( disable : 4800 )	//remove warning "forcing value to bool 'true' or 'false' (performance warning)"
 #pragma warning( disable : 4018 )	//remove warning "signed/unsigned mismatch"
 
-namespace HorseRadish
+namespace hr
 {
 	class Math
 	{

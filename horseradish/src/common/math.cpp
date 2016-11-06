@@ -17,7 +17,7 @@ union ieee_single {
 		}ieee;
 };
 
-namespace HorseRadish
+namespace hr
 {
 	float Math::htof(unsigned short val)
 	{

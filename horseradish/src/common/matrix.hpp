@@ -5,7 +5,7 @@
 #include "plane.hpp"
 #include "bvolumes.hpp"
 
-namespace HorseRadish
+namespace hr
 {
 	class Matrix
 	{

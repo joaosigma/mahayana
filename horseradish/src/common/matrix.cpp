@@ -6,7 +6,7 @@
 #include <immintrin.h>
 #include <xmmintrin.h>
 
-namespace HorseRadish
+namespace hr
 {
 	void Matrix::asmMat4x4Vec3(float *vecWrite, const float *vecRead, float wCompMul, size_t stride, const float *mat, size_t numVec)
 	{

@@ -9,7 +9,7 @@ typedef PROC(APIENTRY *PFNWGLGETPROCADDRESSPROC)(LPCSTR lpcstr);
 static
 void loadGLExtFunctions(PFNWGLGETPROCADDRESSPROC wglProcAddressOpenGL)
 {
-	using namespace HorseRadish::OpenGL::Extensions;
+	using namespace hr::gl::extensions;
 
 #ifdef GL_EXT_direct_state_access
 	GETADDR(glMatrixLoadfEXT, "glMatrixLoadfEXT", PFNGLMATRIXLOADFEXTPROC);
@@ -94,7 +94,7 @@ void loadGLExtFunctions(PFNWGLGETPROCADDRESSPROC wglProcAddressOpenGL)
 #endif
 }
 
-namespace HorseRadish { namespace OpenGL { namespace Extensions
+namespace hr { namespace gl { namespace extensions
 {
 #ifdef GL_EXT_direct_state_access
 	PFNGLMATRIXLOADFEXTPROC glMatrixLoadfEXT;
@@ -178,35 +178,34 @@ namespace HorseRadish { namespace OpenGL { namespace Extensions
 	PFNGLGETPROGRAMRESOURCEFVNVPROC glGetProgramResourcefvNV;
 #endif
 
-	void ExtensionsLoad(const char* const openGLModuleName)
+	void extensionsLoad(const char* const openGLModuleName)
 	{
-		if (openGLModuleName == nullptr)
+		if (!openGLModuleName)
 			return;
 
-		auto openGLModuleNameWChar = HorseRadish::StringUtils::conv2UTF16(openGLModuleName);
+		auto openGLModuleNameWChar = hr::StringUtils::conv2UTF16(openGLModuleName);
 
 		auto ptrWGlGetProcAddress = (PFNWGLGETPROCADDRESSPROC)GetProcAddress(GetModuleHandle(openGLModuleNameWChar.c_str()), "wglGetProcAddress");
-		if (ptrWGlGetProcAddress == nullptr)
+		if (!ptrWGlGetProcAddress)
 			return;
 
 		loadGLExtFunctions(ptrWGlGetProcAddress);
 	}
 
-	bool ExtensionExists(const char * const extensionName)
+	bool extensionExists(const char * const extensionName)
 	{
-		int numExtensions;
-
-		if (extensionName == nullptr || *extensionName == '\0')
+		if (!extensionName || *extensionName == '\0')
 			return false;
-
-		OpenGL::glGetIntegerv(GL_NUM_EXTENSIONS, &numExtensions);
+	
+		GLint numExtensions;
+		hr::gl::glGetIntegerv(GL_NUM_EXTENSIONS, &numExtensions);
 		if (numExtensions <= 0)
 			return false;
 
-		for (int curIndex = 0; curIndex < numExtensions; curIndex++)
+		for (GLint curIndex = 0; curIndex < numExtensions; curIndex++)
 		{
-			auto curExt = reinterpret_cast<const char*>(OpenGL::glGetStringi(GL_EXTENSIONS, curIndex));
-			if ((curExt == nullptr) || (*curExt == '\0'))
+			auto curExt = reinterpret_cast<const char*>(hr::gl::glGetStringi(GL_EXTENSIONS, curIndex));
+			if (!curExt || (*curExt == '\0'))
 				continue;
 
 			if (stricmp(curExt, extensionName) == 0)

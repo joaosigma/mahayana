@@ -2,7 +2,7 @@
 
 #include <functional>
 
-namespace HorseRadish
+namespace hr
 {
 	template <class TKey, class TValue>
 	class AVLTree
@@ -27,7 +27,7 @@ namespace HorseRadish
 				int l = bLeft ? bLeft->height : -1;
 				int r = bRight ? bRight->height : -1;
 
-				return (HorseRadish::Math::iAbs(l - r) < 2);
+				return (hr::Math::iAbs(l - r) < 2);
 			}
 
 			bool isLeftHeavier() const
@@ -42,7 +42,7 @@ namespace HorseRadish
 
 			void updateWeight()
 			{
-				height = HorseRadish::Math::iMax(bLeft ? bLeft->height : -1, bRight ? bRight->height : -1) + 1;
+				height = hr::Math::iMax(bLeft ? bLeft->height : -1, bRight ? bRight->height : -1) + 1;
 			}
 		};
 

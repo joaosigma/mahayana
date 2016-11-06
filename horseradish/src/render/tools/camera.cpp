@@ -3,45 +3,45 @@
 #include "common/quaternion.hpp"
 
 static
-void evalPointListCatmullRom(const HorseRadish::Vector3f * const pList, const int pNum, float nrmTime, HorseRadish::Vector3f& pWrite)
+void evalPointListCatmullRom(const hr::Vector3f * const pList, const int pNum, float nrmTime, hr::Vector3f& pWrite)
 {
 	if (!pList || pNum < 4)
 		return;
 
-	float tPos = HorseRadish::Math::fClamp(nrmTime, 0.0f, 1.0f);
+	float tPos = hr::Math::fClamp(nrmTime, 0.0f, 1.0f);
 	float step = (float)(pNum - 3);
 
-	int start = HorseRadish::Math::ftoi((tPos*step) - (fmod(tPos, 1.0f / step)*step));
+	int start = hr::Math::ftoi((tPos*step) - (fmod(tPos, 1.0f / step)*step));
 	start = std::min(std::max(start, 0), pNum - 4);
 
 	tPos = tPos*step - ((float)start);
 
-	pWrite = HorseRadish::Vector3f::evalSplineCatmullRom(pList[start + 0], pList[start + 1], pList[start + 2], pList[start + 3], tPos);
+	pWrite = hr::Vector3f::evalSplineCatmullRom(pList[start + 0], pList[start + 1], pList[start + 2], pList[start + 3], tPos);
 }
 
 static
-void evalPointListHermite(const HorseRadish::Vector3f * const pList, const int pNum, float nrmTime, HorseRadish::Vector3f& pWrite)
+void evalPointListHermite(const hr::Vector3f * const pList, const int pNum, float nrmTime, hr::Vector3f& pWrite)
 {
 	if (!pList || pNum < 4)
 		return;
 
-	float tPos = HorseRadish::Math::fClamp(nrmTime, 0.0f, 1.0f);
+	float tPos = hr::Math::fClamp(nrmTime, 0.0f, 1.0f);
 	float step = (float)(pNum - 3);
 
-	int start = HorseRadish::Math::ftoi((tPos*step) - (fmod(tPos, 1.0f / step)*step));
+	int start = hr::Math::ftoi((tPos*step) - (fmod(tPos, 1.0f / step)*step));
 	start = std::min(std::max(start, 0), pNum - 4);
 
 	tPos = tPos*step - ((float)start);
 
-	pWrite = HorseRadish::Vector3f::evalSplineHermite(pList[start + 0], pList[start + 1], pList[start + 2], pList[start + 3], tPos);
+	pWrite = hr::Vector3f::evalSplineHermite(pList[start + 0], pList[start + 1], pList[start + 2], pList[start + 3], tPos);
 }
 
-namespace HorseRadish { namespace Render { namespace Tools {
+namespace hr { namespace render { namespace tools {
 
 void CameraFPS::commitInput(CameraAction actionBitfield, float mouseDeltaX, float mouseDeltaY, bool updatePosition, float timeDeltaS)
 {
-	HorseRadish::Quaternion quat;
-	HorseRadish::Vector3f viewDir;
+	hr::Quaternion quat;
+	hr::Vector3f viewDir;
 
 	float angX = mouseDeltaX * mScale.mouse;
 	float angY = mouseDeltaY * mScale.mouse * (-1.0f);
@@ -112,8 +112,8 @@ float CameraFPS::getMovementScale(CameraInput input) const
 
 void CameraTarget::commitInput(CameraAction actionBitfield, float mouseDeltaX, float mouseDeltaY, float timeDeltaS)
 {
-	HorseRadish::Quaternion quat;
-	HorseRadish::Vector3f newDir;
+	hr::Quaternion quat;
+	hr::Vector3f newDir;
 
 	float angX = mouseDeltaX * mScale.mouse;
 	float angY = mouseDeltaY * mScale.mouse*(-1.0f);
@@ -133,7 +133,7 @@ void CameraTarget::commitInput(CameraAction actionBitfield, float mouseDeltaX, f
 	if ((actionBitfield & Down) && (mAbsFocus < mOnSphereMaxDist))
 		mAbsFocus += (mScale.keys * timeDeltaS * moveAmount);
 
-	mAbsFocus = HorseRadish::Math::fClamp(mAbsFocus, mOnSphereMinDist, mOnSphereMaxDist);
+	mAbsFocus = hr::Math::fClamp(mAbsFocus, mOnSphereMinDist, mOnSphereMaxDist);
 	mAxis.pos = curTarget - (newDir * mAbsFocus);
 
 	mModelView.setGLModelView(mAxis.pos, getTarget(), mAxis.up);
@@ -192,7 +192,7 @@ void CameraPath::commitCatmullRom(CameraComponent component, float normalizedTim
 {
 	if ((component & Position) && (mNumPos >= 4))
 	{
-		HorseRadish::Vector3f pos;
+		hr::Vector3f pos;
 		evalPointListCatmullRom(mPointsPos.get(), mNumPos, normalizedTime, pos);
 
 		setPos(pos);
@@ -200,7 +200,7 @@ void CameraPath::commitCatmullRom(CameraComponent component, float normalizedTim
 
 	if ((component & Target) && (mNumTarget >= 4))
 	{
-		HorseRadish::Vector3f target;
+		hr::Vector3f target;
 		evalPointListCatmullRom(mPointsTarget.get(), mNumTarget, normalizedTime, target);
 
 		setTarget(target);
@@ -211,7 +211,7 @@ void CameraPath::commitHermite(CameraComponent component, float normalizedTime)
 {
 	if ((component & Position) && (mNumPos >= 4))
 	{
-		HorseRadish::Vector3f pos;
+		hr::Vector3f pos;
 		evalPointListHermite(mPointsPos.get(), mNumPos, normalizedTime, pos);
 
 		setPos(pos);
@@ -219,7 +219,7 @@ void CameraPath::commitHermite(CameraComponent component, float normalizedTime)
 
 	if ((component & Target) && (mNumTarget >= 4))
 	{
-		HorseRadish::Vector3f target;
+		hr::Vector3f target;
 		evalPointListHermite(mPointsTarget.get(), mNumTarget, normalizedTime, target);
 
 		setTarget(target);
@@ -248,7 +248,7 @@ void CameraPath::pathAdd(CameraComponent component, float x, float y, float z)
 	}
 }
 
-void CameraPath::pathAdd(CameraComponent component, const HorseRadish::Vector3f &vec)
+void CameraPath::pathAdd(CameraComponent component, const hr::Vector3f &vec)
 {
 	if ((component == Position) && !mPointsPos && (mNumPos < CameraPath::MaxNumPoints))
 	{

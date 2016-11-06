@@ -3,20 +3,20 @@
 #include "common/vector.hpp"
 #include "common/matrix.hpp"
 
-namespace HorseRadish { namespace OpenGL { namespace Tools
+namespace hr { namespace gl { namespace tools
 {		
 	class Viewport
 	{
 	public:
 		enum class ProjectionType { Proj3D, Proj3DInf, Proj2D };
 
-		static HorseRadish::Matrix genMatrix2DProj(size_t width, size_t height);
+		static hr::Matrix genMatrix2DProj(size_t width, size_t height);
 
 	private:
 		float mFov, mZNear, mZFar;
 		size_t mWidth, mHeight;
 		struct {
-			HorseRadish::Matrix mp2D, mp3D, mp3DInfinite;
+			hr::Matrix mp2D, mp3D, mp3DInfinite;
 		} mMatrices;
 
 		void calcMatrices();
@@ -38,7 +38,7 @@ namespace HorseRadish { namespace OpenGL { namespace Tools
 			calcMatrices();
 		}
 
-		const HorseRadish::Matrix& getProjection(ProjectionType projectionType) const;
+		const hr::Matrix& getProjection(ProjectionType projectionType) const;
 		
 		float fov() const { return mFov; }
 		float znear() const { return mZNear; }
@@ -47,8 +47,8 @@ namespace HorseRadish { namespace OpenGL { namespace Tools
 		size_t width() const { return mWidth; }
 		size_t height() const { return mHeight; }
 
-		void pointOnZNear(HorseRadish::Vector3f& center) const;
+		void pointOnZNear(hr::Vector3f& center) const;
 
-		void projectPoint(ProjectionType projType, const HorseRadish::Matrix& modelView, HorseRadish::Vector3f * const listPoints, size_t numPoints) const;
+		void projectPoint(ProjectionType projType, const hr::Matrix& modelView, hr::Vector3f * const listPoints, size_t numPoints) const;
 	};
 } } }

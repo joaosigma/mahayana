@@ -34,7 +34,7 @@ will fill a supplied 16-byte array with the digest.
 
 #define SUPERFAST_GET16BITS(d) (*((const hUInt16 *) (d)))
 
-namespace HorseRadish
+namespace hr
 {
 	void Hashing::initMD5(DataMD5 * const dataMD5)
 	{

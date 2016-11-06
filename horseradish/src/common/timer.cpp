@@ -1,6 +1,6 @@
 #include "timer.hpp"
 
-namespace HorseRadish
+namespace hr
 {
 	Timer::Timer()
 	{

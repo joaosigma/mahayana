@@ -5,39 +5,39 @@
 
 #include <memory>
 
-namespace HorseRadish { namespace OpenGL { namespace Objects
+namespace hr { namespace gl { namespace objects
 {
 	bool Context::initContext()
 	{
-		if (!HorseRadish::OpenGL::OpenGLGetProcs())
+		if (!hr::gl::OpenGLGetProcs())
 			return false;
 
-		HorseRadish::OpenGL::Extensions::ExtensionsLoad("OpenGL32.dll");
+		hr::gl::extensions::extensionsLoad("OpenGL32.dll");
 
-		if (HorseRadish::OpenGL::Extensions::ExtensionExists("GL_EXT_texture_filter_anisotropic"))
+		if (hr::gl::extensions::extensionExists("GL_EXT_texture_filter_anisotropic"))
 			mExtsAvailable |= Context::ExtFilterAnisotropic;
-		if (HorseRadish::OpenGL::Extensions::ExtensionExists("GL_EXT_texture_compression_s3tc"))
+		if (hr::gl::extensions::extensionExists("GL_EXT_texture_compression_s3tc"))
 			mExtsAvailable |= Context::ExtCompressionS3;
-		if (HorseRadish::OpenGL::Extensions::ExtensionExists("GL_NV_texture_compression_vtc"))
+		if (hr::gl::extensions::extensionExists("GL_NV_texture_compression_vtc"))
 			mExtsAvailable |= Context::ExtCompressionVTC;
 
-		mInfo.glslVersion = reinterpret_cast<const char*>(HorseRadish::OpenGL::glGetString(GL_SHADING_LANGUAGE_VERSION));
-		mInfo.renderer = reinterpret_cast<const char*>(HorseRadish::OpenGL::glGetString(GL_RENDERER));
-		mInfo.vendor = reinterpret_cast<const char*>(HorseRadish::OpenGL::glGetString(GL_VENDOR));
-		mInfo.version = reinterpret_cast<const char*>(HorseRadish::OpenGL::glGetString(GL_VERSION));
+		mInfo.glslVersion = reinterpret_cast<const char*>(hr::gl::glGetString(GL_SHADING_LANGUAGE_VERSION));
+		mInfo.renderer = reinterpret_cast<const char*>(hr::gl::glGetString(GL_RENDERER));
+		mInfo.vendor = reinterpret_cast<const char*>(hr::gl::glGetString(GL_VENDOR));
+		mInfo.version = reinterpret_cast<const char*>(hr::gl::glGetString(GL_VERSION));
 
-		HorseRadish::OpenGL::glGetIntegerv(GL_MAX_DRAW_BUFFERS, &mInfo.maxDrawBuffers);
-		HorseRadish::OpenGL::glGetIntegerv(GL_MAX_COLOR_ATTACHMENTS, &mInfo.maxColorAttachments);
-		HorseRadish::OpenGL::glGetIntegerv(GL_MAX_TEXTURE_SIZE, &mInfo.maxTextureSize);
-		HorseRadish::OpenGL::glGetIntegerv(GL_MAX_3D_TEXTURE_SIZE, &mInfo.maxTexture3DSize);
-		HorseRadish::OpenGL::glGetIntegerv(GL_MAX_CUBE_MAP_TEXTURE_SIZE, &mInfo.maxTextureCubemapSize);
-		HorseRadish::OpenGL::glGetIntegerv(GL_MAX_RECTANGLE_TEXTURE_SIZE, &mInfo.maxTextureRectSize);
-		HorseRadish::OpenGL::glGetIntegerv(GL_MAJOR_VERSION, &mInfo.versionMajor);
-		HorseRadish::OpenGL::glGetIntegerv(GL_MINOR_VERSION, &mInfo.versionMinor);
+		hr::gl::glGetIntegerv(GL_MAX_DRAW_BUFFERS, &mInfo.maxDrawBuffers);
+		hr::gl::glGetIntegerv(GL_MAX_COLOR_ATTACHMENTS, &mInfo.maxColorAttachments);
+		hr::gl::glGetIntegerv(GL_MAX_TEXTURE_SIZE, &mInfo.maxTextureSize);
+		hr::gl::glGetIntegerv(GL_MAX_3D_TEXTURE_SIZE, &mInfo.maxTexture3DSize);
+		hr::gl::glGetIntegerv(GL_MAX_CUBE_MAP_TEXTURE_SIZE, &mInfo.maxTextureCubemapSize);
+		hr::gl::glGetIntegerv(GL_MAX_RECTANGLE_TEXTURE_SIZE, &mInfo.maxTextureRectSize);
+		hr::gl::glGetIntegerv(GL_MAJOR_VERSION, &mInfo.versionMajor);
+		hr::gl::glGetIntegerv(GL_MINOR_VERSION, &mInfo.versionMinor);
 		mInfo.maxAnisotropy = 0.0f;
 
 		if ((mExtsAvailable & Context::ExtFilterAnisotropic) != 0)
-			HorseRadish::OpenGL::glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &mInfo.maxAnisotropy);
+			hr::gl::glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &mInfo.maxAnisotropy);
 
 		return true;
 	}
@@ -49,14 +49,14 @@ namespace HorseRadish { namespace OpenGL { namespace Objects
 
 	bool Context::isExtPresent(const char * const extensionName) const
 	{
-		return HorseRadish::OpenGL::Extensions::ExtensionExists(extensionName);
+		return hr::gl::extensions::extensionExists(extensionName);
 	}
 
 	void Context::dispatchDebugMessages() const
 	{
 		GLint numMsgsLogged;
 
-		HorseRadish::OpenGL::glGetIntegerv(GL_DEBUG_LOGGED_MESSAGES_ARB, &numMsgsLogged);
+		hr::gl::glGetIntegerv(GL_DEBUG_LOGGED_MESSAGES_ARB, &numMsgsLogged);
 		if (numMsgsLogged <= 0)
 			return;
 
@@ -68,14 +68,14 @@ namespace HorseRadish { namespace OpenGL { namespace Objects
 			GLsizei listLengths[5];
 			GLenum listSources[5], listTypes[5], listIDs[5], listSeverities[5];
 
-			auto messagesRead = HorseRadish::OpenGL::glGetDebugMessageLog(5, messageLogSize, listSources, listTypes, listIDs, listSeverities, listLengths, messageLog.get());
+			auto messagesRead = hr::gl::glGetDebugMessageLog(5, messageLogSize, listSources, listTypes, listIDs, listSeverities, listLengths, messageLog.get());
 
 			numMsgsLogged -= messagesRead;
 
 			auto messageLogWalker = messageLog.get();
-			for (unsigned int i = 0; i < messagesRead; i++)
+			for (GLuint i = 0; i < messagesRead; i++)
 			{
-				HorseRadish::OpenGL::glDebugMessageInsert(listSources[i], listTypes[i], listIDs[i], listSeverities[i], listLengths[i], messageLogWalker);
+				hr::gl::glDebugMessageInsert(listSources[i], listTypes[i], listIDs[i], listSeverities[i], listLengths[i], messageLogWalker);
 
 				messageLogWalker += listLengths[i];
 			}

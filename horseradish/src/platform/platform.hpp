@@ -2,7 +2,7 @@
 
 #include <functional>
 
-namespace HorseRadish { namespace platform
+namespace hr { namespace platform
 {
 	class Platform
 	{

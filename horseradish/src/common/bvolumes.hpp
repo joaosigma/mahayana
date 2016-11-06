@@ -7,7 +7,7 @@
 
 #include <limits>
 
-namespace HorseRadish
+namespace hr
 {
 	class BBox;
 	class BSphere;

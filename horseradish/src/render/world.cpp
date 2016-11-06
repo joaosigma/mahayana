@@ -14,7 +14,7 @@
 
 #include <algorithm>
 
-namespace HorseRadish { namespace Render
+namespace hr { namespace render
 {
 	World::World()
 	{ }
@@ -32,7 +32,7 @@ namespace HorseRadish { namespace Render
 		mRenderData.objects.clear();
 	}
 
-	bool World::importJSON(HorseRadish::Streams::StreamReader &stream)
+	bool World::importJSON(hr::streams::StreamReader &stream)
 	{
 		std::shared_ptr<unsigned char> buffer;
 		size_t bufferSize;
@@ -63,13 +63,13 @@ namespace HorseRadish { namespace Render
 					size_t numVertices = jsonMesh["numVertices"].GetUint();
 					size_t numIndices = jsonMesh["numIndices"].GetUint();
 
-					HorseRadish::Geometry::Mesh newMesh(numVertices, numIndices);
+					hr::geom::Mesh newMesh(numVertices, numIndices);
 
 					{
 						auto& jsonVertexData = jsonMesh["vertexData"];
 
 						std::vector<unsigned char> dataBase64;
-						HorseRadish::Encoders::decodeBase64(jsonVertexData.GetString(), jsonVertexData.GetStringLength(), dataBase64);
+						hr::Encoders::decodeBase64(jsonVertexData.GetString(), jsonVertexData.GetStringLength(), dataBase64);
 
 						if (dataBase64.size() == newMesh.sizeVertices())
 						{
@@ -86,7 +86,7 @@ namespace HorseRadish { namespace Render
 						auto& jsonIndexData = jsonMesh["indexData"];
 
 						std::vector<unsigned char> dataBase64;
-						HorseRadish::Encoders::decodeBase64(jsonIndexData.GetString(), jsonIndexData.GetStringLength(), dataBase64);
+						hr::Encoders::decodeBase64(jsonIndexData.GetString(), jsonIndexData.GetStringLength(), dataBase64);
 
 						if (dataBase64.size() == newMesh.sizeIndices())
 						{
@@ -125,7 +125,7 @@ namespace HorseRadish { namespace Render
 				newObject.conceptName = (*itr)["concept"].GetString();
 
 				std::vector<unsigned char> dataBase64;
-				HorseRadish::Encoders::decodeBase64((*itr)["bbox"].GetString(), dataBase64);
+				hr::Encoders::decodeBase64((*itr)["bbox"].GetString(), dataBase64);
 
 				assert(dataBase64.size() == (sizeof(float) * 6));
 				newObject.bbox.setMinMax(reinterpret_cast<const float*>(dataBase64.data()), reinterpret_cast<const float*>(dataBase64.data()) + 3);
@@ -137,7 +137,7 @@ namespace HorseRadish { namespace Render
 		return true;
 	}
 
-	bool World::exportJSON(HorseRadish::Streams::StreamWriter &stream)
+	bool World::exportJSON(hr::streams::StreamWriter &stream)
 	{
 		rapidjson::StringBuffer s;
 		rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(s);
@@ -178,9 +178,9 @@ namespace HorseRadish { namespace Render
 					//auto compressedSize = LZ4_compress_HC(reinterpret_cast<const char*>(curGeom.mesh.dataVertices()), compressedBuffer.get(), curGeom.mesh.sizeVertices(), maxCompressedSize, 16);
 					//
 					//if ((compressedSize > 0) && (compressedSize < curGeom.mesh.sizeVertices()))
-					//	writer.String(HorseRadish::Encoders::EncodeBase64(compressedBuffer.get(), compressedSize).c_str());
+					//	writer.String(hr::Encoders::EncodeBase64(compressedBuffer.get(), compressedSize).c_str());
 					//else
-						writer.String(HorseRadish::Encoders::encodeBase64(concept.second.mesh.vertices(), concept.second.mesh.sizeVertices()).c_str());
+						writer.String(hr::Encoders::encodeBase64(concept.second.mesh.vertices(), concept.second.mesh.sizeVertices()).c_str());
 				}
 
 				writer.String("indexData");
@@ -192,9 +192,9 @@ namespace HorseRadish { namespace Render
 					//auto compressedSize = LZ4_compress_HC(reinterpret_cast<const char*>(curGeom.mesh.dataIndices()), compressedBuffer.get(), curGeom.mesh.sizeIndices(), maxCompressedSize, 16);
 					//
 					//if ((compressedSize > 0) && (compressedSize < curGeom.mesh.sizeIndices()))
-					//	writer.String(HorseRadish::Encoders::EncodeBase64(compressedBuffer.get(), compressedSize).c_str());
+					//	writer.String(hr::Encoders::EncodeBase64(compressedBuffer.get(), compressedSize).c_str());
 					//else
-						writer.String(HorseRadish::Encoders::encodeBase64(concept.second.mesh.indices(), concept.second.mesh.sizeIndices()).c_str());
+						writer.String(hr::Encoders::encodeBase64(concept.second.mesh.indices(), concept.second.mesh.sizeIndices()).c_str());
 				}
 
 			writer.EndObject();
@@ -231,7 +231,7 @@ namespace HorseRadish { namespace Render
 			curObject.bbox.max(bbox + 3);
 
 			writer.String("bbox");
-			writer.String(HorseRadish::Encoders::encodeBase64(bbox, sizeof(float) * 6).c_str());
+			writer.String(hr::Encoders::encodeBase64(bbox, sizeof(float) * 6).c_str());
 
 			writer.EndObject();
 		}
@@ -268,7 +268,7 @@ namespace HorseRadish { namespace Render
 			auto& concept = mConcepts[shape.name];
 			concept.name = shape.name;
 
-			HorseRadish::Geometry::Mesh newMesh(shape.mesh.positions.size() / 3, shape.mesh.indices.size());
+			hr::geom::Mesh newMesh(shape.mesh.positions.size() / 3, shape.mesh.indices.size());
 
 			for (unsigned int i = 0; i < newMesh.numVertices(); i++)
 			{
@@ -279,9 +279,9 @@ namespace HorseRadish { namespace Render
 				newMesh.vertices()[i].uv[0] = shape.mesh.texcoords[i * 2 + 0];
 				newMesh.vertices()[i].uv[1] = shape.mesh.texcoords[i * 2 + 1];
 
-				newMesh.vertices()[i].normal[0] = HorseRadish::Geometry::Mesh::pack(shape.mesh.positions[i * 3 + 0]);
-				newMesh.vertices()[i].normal[1] = HorseRadish::Geometry::Mesh::pack(shape.mesh.positions[i * 3 + 1]);
-				newMesh.vertices()[i].normal[2] = HorseRadish::Geometry::Mesh::pack(shape.mesh.positions[i * 3 + 2]);
+				newMesh.vertices()[i].normal[0] = hr::geom::Mesh::pack(shape.mesh.positions[i * 3 + 0]);
+				newMesh.vertices()[i].normal[1] = hr::geom::Mesh::pack(shape.mesh.positions[i * 3 + 1]);
+				newMesh.vertices()[i].normal[2] = hr::geom::Mesh::pack(shape.mesh.positions[i * 3 + 2]);
 			}
 
 			for (unsigned int i = 0; i < newMesh.numIndices(); i++)
@@ -302,20 +302,20 @@ namespace HorseRadish { namespace Render
 		return true;
 	}
 
-	void World::loadData(HorseRadish::IO::FileSystem& fileSystem)
+	void World::loadData(hr::io::FileSystem& fileSystem)
 	{
 		mRenderData.objects.reserve(mObjects.size());
 	}
 
-	void World::prepareNextFrame(const Tools::Camera& hrCamera, const HorseRadish::OpenGL::Tools::Viewport& hrViewport)
+	void World::prepareNextFrame(const tools::Camera& hrCamera, const hr::gl::tools::Viewport& hrViewport)
 	{
 		auto camPos = hrCamera.getPos();
 
-		HorseRadish::OpenGL::Tools::Frustum camFrustum;
+		hr::gl::tools::Frustum camFrustum;
 		camFrustum.setCamPosition(camPos);
 		camFrustum.setZNear(hrViewport.znear());
 		camFrustum.setZFar(hrViewport.zfar());
-		camFrustum.calculateFrustum(hrViewport.getProjection(HorseRadish::OpenGL::Tools::Viewport::ProjectionType::Proj3D), hrCamera.modelView());
+		camFrustum.calculateFrustum(hrViewport.getProjection(hr::gl::tools::Viewport::ProjectionType::Proj3D), hrCamera.modelView());
 
 		mRenderData.objects.clear();
 		for (auto& curObject : mObjects)

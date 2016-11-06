@@ -2,7 +2,7 @@
 
 #include "vector.hpp"
 
-namespace HorseRadish
+namespace hr
 {
 	HALIGN_16BYTES
 	class Plane

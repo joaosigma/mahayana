@@ -4,7 +4,7 @@
 
 #include <cstddef>
 
-namespace HorseRadish { namespace OpenGL { namespace Tools
+namespace hr { namespace gl { namespace tools
 {
 	void ImmediateMode::draw(bool keepLeftovers)
 	{
@@ -42,7 +42,7 @@ namespace HorseRadish { namespace OpenGL { namespace Tools
 					mGl.arrayBuffer.writeData(mBufferData.data(), numElements * 4 * sizeof(VertexDataLayout), 0);
 					mGl.elementArrayBuffer.writeData(mBufferIndices.data(), numElements * 6 * sizeof(unsigned short), 0);
 
-					HorseRadish::OpenGL::glDrawRangeElements(GL_TRIANGLES, 0, numElements * 4, numElements * 6, GL_UNSIGNED_SHORT, (void*)0);
+					hr::gl::glDrawRangeElements(GL_TRIANGLES, 0, numElements * 4, numElements * 6, GL_UNSIGNED_SHORT, (void*)0);
 				mGl.fence.place();
 			}
 		}
@@ -56,7 +56,7 @@ namespace HorseRadish { namespace OpenGL { namespace Tools
 					mGl.arrayBuffer.writeData(mBufferData.data(), numElements * 3 * sizeof(VertexDataLayout), 0);
 					mGl.elementArrayBuffer.writeData(mBufferIndices.data(), numElements * 3 * sizeof(unsigned short), 0);
 
-					HorseRadish::OpenGL::glDrawRangeElements(GL_TRIANGLES, 0, numElements * 3, numElements * 3, GL_UNSIGNED_SHORT, (void*)0);
+					hr::gl::glDrawRangeElements(GL_TRIANGLES, 0, numElements * 3, numElements * 3, GL_UNSIGNED_SHORT, (void*)0);
 				mGl.fence.place();
 			}
 		}
@@ -70,7 +70,7 @@ namespace HorseRadish { namespace OpenGL { namespace Tools
 					mGl.arrayBuffer.writeData(mBufferData.data(), numElements * 2 * sizeof(VertexDataLayout), 0);
 					mGl.elementArrayBuffer.writeData(mBufferIndices.data(), numElements * 2 * sizeof(unsigned short), 0);
 
-					HorseRadish::OpenGL::glDrawRangeElements(GL_LINES, 0, numElements * 2, numElements * 2, GL_UNSIGNED_SHORT, (void*)0);
+					hr::gl::glDrawRangeElements(GL_LINES, 0, numElements * 2, numElements * 2, GL_UNSIGNED_SHORT, (void*)0);
 				mGl.fence.place();
 			}
 		}
@@ -83,7 +83,7 @@ namespace HorseRadish { namespace OpenGL { namespace Tools
 					mGl.arrayBuffer.writeData(mBufferData.data(), mState.curVertex * sizeof(VertexDataLayout), 0);
 					mGl.elementArrayBuffer.writeData(mBufferIndices.data(), mState.curVertex * sizeof(unsigned short), 0);
 
-					HorseRadish::OpenGL::glDrawRangeElements(GL_LINE_STRIP, 0, mState.curVertex, mState.curVertex, GL_UNSIGNED_SHORT, (void*)0);
+					hr::gl::glDrawRangeElements(GL_LINE_STRIP, 0, mState.curVertex, mState.curVertex, GL_UNSIGNED_SHORT, (void*)0);
 				mGl.fence.place();
 			}
 		}
@@ -148,26 +148,26 @@ namespace HorseRadish { namespace OpenGL { namespace Tools
 	{
 		resetState();
 
-		mGl.arrayBuffer.init(HorseRadish::OpenGL::Objects::Buffer::Type::ArrayBuffer, ImmediateMode::MaxVertexCount * sizeof(VertexDataLayout), HorseRadish::OpenGL::Objects::Buffer::UsageType::PersistentOnlyWrite);
-		mGl.elementArrayBuffer.init(HorseRadish::OpenGL::Objects::Buffer::Type::ElementArrayBuffer, sizeof(unsigned short) * ImmediateMode::MaxIndexCount, HorseRadish::OpenGL::Objects::Buffer::UsageType::PersistentOnlyWrite);
+		mGl.arrayBuffer.init(hr::gl::objects::Buffer::Type::ArrayBuffer, ImmediateMode::MaxVertexCount * sizeof(VertexDataLayout), hr::gl::objects::Buffer::UsageType::PersistentOnlyWrite);
+		mGl.elementArrayBuffer.init(hr::gl::objects::Buffer::Type::ElementArrayBuffer, sizeof(unsigned short) * ImmediateMode::MaxIndexCount, hr::gl::objects::Buffer::UsageType::PersistentOnlyWrite);
 
 		mGl.vertexArray.init();
 
-		HorseRadish::OpenGL::glEnableVertexArrayAttrib(mGl.vertexArray.getId(), 0);
-		HorseRadish::OpenGL::glEnableVertexArrayAttrib(mGl.vertexArray.getId(), 1);
-		HorseRadish::OpenGL::glEnableVertexArrayAttrib(mGl.vertexArray.getId(), 4);
+		hr::gl::glEnableVertexArrayAttrib(mGl.vertexArray.getId(), 0);
+		hr::gl::glEnableVertexArrayAttrib(mGl.vertexArray.getId(), 1);
+		hr::gl::glEnableVertexArrayAttrib(mGl.vertexArray.getId(), 4);
 
-		HorseRadish::OpenGL::glVertexArrayAttribBinding(mGl.vertexArray.getId(), 0, 0);
-		HorseRadish::OpenGL::glVertexArrayAttribFormat(mGl.vertexArray.getId(), 0, 3, GL_FLOAT, false, offsetof(VertexDataLayout, pos));
+		hr::gl::glVertexArrayAttribBinding(mGl.vertexArray.getId(), 0, 0);
+		hr::gl::glVertexArrayAttribFormat(mGl.vertexArray.getId(), 0, 3, GL_FLOAT, false, offsetof(VertexDataLayout, pos));
 
-		HorseRadish::OpenGL::glVertexArrayAttribBinding(mGl.vertexArray.getId(), 1, 0);
-		HorseRadish::OpenGL::glVertexArrayAttribFormat(mGl.vertexArray.getId(), 1, 2, GL_FLOAT, false, offsetof(VertexDataLayout, uv));
+		hr::gl::glVertexArrayAttribBinding(mGl.vertexArray.getId(), 1, 0);
+		hr::gl::glVertexArrayAttribFormat(mGl.vertexArray.getId(), 1, 2, GL_FLOAT, false, offsetof(VertexDataLayout, uv));
 
-		HorseRadish::OpenGL::glVertexArrayAttribBinding(mGl.vertexArray.getId(), 4, 0);
-		HorseRadish::OpenGL::glVertexArrayAttribFormat(mGl.vertexArray.getId(), 4, 4, GL_UNSIGNED_BYTE, true, offsetof(VertexDataLayout, color));
+		hr::gl::glVertexArrayAttribBinding(mGl.vertexArray.getId(), 4, 0);
+		hr::gl::glVertexArrayAttribFormat(mGl.vertexArray.getId(), 4, 4, GL_UNSIGNED_BYTE, true, offsetof(VertexDataLayout, color));
 
-		HorseRadish::OpenGL::glVertexArrayElementBuffer(mGl.vertexArray.getId(), mGl.elementArrayBuffer.getId());
-		HorseRadish::OpenGL::glVertexArrayVertexBuffer(mGl.vertexArray.getId(), 0, mGl.arrayBuffer.getId(), 0, sizeof(VertexDataLayout));
+		hr::gl::glVertexArrayElementBuffer(mGl.vertexArray.getId(), mGl.elementArrayBuffer.getId());
+		hr::gl::glVertexArrayVertexBuffer(mGl.vertexArray.getId(), 0, mGl.arrayBuffer.getId(), 0, sizeof(VertexDataLayout));
 	}
 
 	ImmediateMode::~ImmediateMode()
@@ -259,9 +259,9 @@ namespace HorseRadish { namespace OpenGL { namespace Tools
 
 	void ImmediateMode::setColorRGB(const float * const values)
 	{
-		mState.color[0] = HorseRadish::Color::convertColor(values[0]);
-		mState.color[1] = HorseRadish::Color::convertColor(values[1]);
-		mState.color[2] = HorseRadish::Color::convertColor(values[2]);
+		mState.color[0] = hr::Color::convertColor(values[0]);
+		mState.color[1] = hr::Color::convertColor(values[1]);
+		mState.color[2] = hr::Color::convertColor(values[2]);
 		mState.color[3] = 255;
 	}
 

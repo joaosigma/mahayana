@@ -4,81 +4,81 @@
 
 #include <libs/cppformat/format.h>
 
-namespace HorseRadish { namespace Render
+namespace hr { namespace render
 {
-	std::array<HorseRadish::Engine::Profiler::StatId, 3> GraphStatIds = {
-		HorseRadish::Engine::Profiler::StatId::FrameTotal,
-		HorseRadish::Engine::Profiler::StatId::GPUSamples,
-		HorseRadish::Engine::Profiler::StatId::GPUPrimitivesSubmitted
+	std::array<hr::engine::Profiler::StatId, 3> GraphStatIds = {
+		hr::engine::Profiler::StatId::FrameTotal,
+		hr::engine::Profiler::StatId::GPUSamples,
+		hr::engine::Profiler::StatId::GPUPrimitivesSubmitted
 	};
 
 	static
-	HorseRadish::Color retrieveColor(HorseRadish::Engine::Profiler::StatId statId)
+	hr::Color retrieveColor(hr::engine::Profiler::StatId statId)
 	{
 		const unsigned char *targetColor;
 
 		switch (statId)
 		{
-		case HorseRadish::Engine::Profiler::StatId::FrameTotal:
-			targetColor = HorseRadish::Color::KnownColors::CadetBlue;
+		case hr::engine::Profiler::StatId::FrameTotal:
+			targetColor = hr::Color::KnownColors::CadetBlue;
 			break;
-		case HorseRadish::Engine::Profiler::StatId::FrameLogic:
-			targetColor = HorseRadish::Color::KnownColors::BurlyWood;
+		case hr::engine::Profiler::StatId::FrameLogic:
+			targetColor = hr::Color::KnownColors::BurlyWood;
 			break;
-		case HorseRadish::Engine::Profiler::StatId::FrameDraw:
-			targetColor = HorseRadish::Color::KnownColors::Firebrick;
+		case hr::engine::Profiler::StatId::FrameDraw:
+			targetColor = hr::Color::KnownColors::Firebrick;
 			break;
-		case HorseRadish::Engine::Profiler::StatId::FrameGPU:
-			targetColor = HorseRadish::Color::KnownColors::Coral;
+		case hr::engine::Profiler::StatId::FrameGPU:
+			targetColor = hr::Color::KnownColors::Coral;
 			break;
-		case HorseRadish::Engine::Profiler::StatId::GPUTimeElapsed:
-			targetColor = HorseRadish::Color::KnownColors::DarkSalmon;
+		case hr::engine::Profiler::StatId::GPUTimeElapsed:
+			targetColor = hr::Color::KnownColors::DarkSalmon;
 			break;
-		case HorseRadish::Engine::Profiler::StatId::GPUSamples:
-			targetColor = HorseRadish::Color::KnownColors::OliveDrab;
+		case hr::engine::Profiler::StatId::GPUSamples:
+			targetColor = hr::Color::KnownColors::OliveDrab;
 			break;
-		case HorseRadish::Engine::Profiler::StatId::GPUVerticesSubmitted:
-			targetColor = HorseRadish::Color::KnownColors::Wheat;
+		case hr::engine::Profiler::StatId::GPUVerticesSubmitted:
+			targetColor = hr::Color::KnownColors::Wheat;
 			break;
-		case HorseRadish::Engine::Profiler::StatId::GPUPrimitivesSubmitted:
-			targetColor = HorseRadish::Color::KnownColors::Sienna;
+		case hr::engine::Profiler::StatId::GPUPrimitivesSubmitted:
+			targetColor = hr::Color::KnownColors::Sienna;
 			break;
-		case HorseRadish::Engine::Profiler::StatId::GPUVertexShaderInvocations:
-			targetColor = HorseRadish::Color::KnownColors::PeachPuff;
+		case hr::engine::Profiler::StatId::GPUVertexShaderInvocations:
+			targetColor = hr::Color::KnownColors::PeachPuff;
 			break;
-		case HorseRadish::Engine::Profiler::StatId::GPUFragmentShaderInvocations:
-			targetColor = HorseRadish::Color::KnownColors::BlanchedAlmond;
+		case hr::engine::Profiler::StatId::GPUFragmentShaderInvocations:
+			targetColor = hr::Color::KnownColors::BlanchedAlmond;
 			break;
-		case HorseRadish::Engine::Profiler::StatId::GPUClipInputPrimitives:
-			targetColor = HorseRadish::Color::KnownColors::Cornsilk;
+		case hr::engine::Profiler::StatId::GPUClipInputPrimitives:
+			targetColor = hr::Color::KnownColors::Cornsilk;
 			break;
-		case HorseRadish::Engine::Profiler::StatId::GPUClipOutputPrimitives:
-			targetColor = HorseRadish::Color::KnownColors::MediumAquamarine;
+		case hr::engine::Profiler::StatId::GPUClipOutputPrimitives:
+			targetColor = hr::Color::KnownColors::MediumAquamarine;
 			break;
-		case HorseRadish::Engine::Profiler::StatId::MemTotal:
-			targetColor = HorseRadish::Color::KnownColors::Lavender;
+		case hr::engine::Profiler::StatId::MemTotal:
+			targetColor = hr::Color::KnownColors::Lavender;
 			break;
-		case HorseRadish::Engine::Profiler::StatId::MemScripts:
-			targetColor = HorseRadish::Color::KnownColors::Tan;
+		case hr::engine::Profiler::StatId::MemScripts:
+			targetColor = hr::Color::KnownColors::Tan;
 			break;
-		case HorseRadish::Engine::Profiler::StatId::MemObjects:
-			targetColor = HorseRadish::Color::KnownColors::Plum;
+		case hr::engine::Profiler::StatId::MemObjects:
+			targetColor = hr::Color::KnownColors::Plum;
 			break;
-		case HorseRadish::Engine::Profiler::StatId::MemAnimations:
-			targetColor = HorseRadish::Color::KnownColors::DodgerBlue;
+		case hr::engine::Profiler::StatId::MemAnimations:
+			targetColor = hr::Color::KnownColors::DodgerBlue;
 			break;
 		default:
-			targetColor = HorseRadish::Color::KnownColors::DarkMagenta;
+			targetColor = hr::Color::KnownColors::DarkMagenta;
 			break;
 		}
 
-		HorseRadish::Color color;
+		hr::Color color;
 		color.set(targetColor);
 
 		return color;
 	}
 
-	void ProfilerUI::drawInfo(const HorseRadish::Primitives2D::Rectangle<float>& viewRect, const HorseRadish::Matrix &transformMatrix) const
+	void ProfilerUI::drawInfo(const hr::Rectangle<float>& viewRect, const hr::Matrix &transformMatrix) const
 	{
 		if (mInfoStr.empty())
 			return;
@@ -89,10 +89,10 @@ namespace HorseRadish { namespace Render
 		float posX = viewRect.width - guiFont.getTextWidth(mInfoStr) - 10.0f;
 		float posY = viewRect.height - guiFont.getMaxHeight() - 15.0f;
 
-		HorseRadish::OpenGL::glBindProgramPipeline(mRenderer.mShaders.drawNoTex.progPipeline.getId());
-		HorseRadish::OpenGL::glProgramUniformMatrix4fv(mRenderer.mShaders.drawNoTex.progVertex.getId(), mRenderer.mShaders.drawNoTex.progVertex.getUniformLocation("transformationMatrix"), 1, false, transformMatrix.data());
+		hr::gl::glBindProgramPipeline(mRenderer.mShaders.drawNoTex.progPipeline.getId());
+		hr::gl::glProgramUniformMatrix4fv(mRenderer.mShaders.drawNoTex.progVertex.getId(), mRenderer.mShaders.drawNoTex.progVertex.getUniformLocation("transformationMatrix"), 1, false, transformMatrix.data());
 
-		glImmediateMode.beginDraw(HorseRadish::OpenGL::Tools::ImmediateMode::GeometryType::LineStrip);
+		glImmediateMode.beginDraw(hr::gl::tools::ImmediateMode::GeometryType::LineStrip);
 			glImmediateMode.setColor(128, 128, 128);
 			glImmediateMode.addPosition(viewRect.width, posY + guiFont.getMaxHeight() + 5.0f);
 			glImmediateMode.addPosition(posX - 5.0f, posY + guiFont.getMaxHeight() + 5.0f);
@@ -106,7 +106,7 @@ namespace HorseRadish { namespace Render
 		guiFont.paintEnd();
 	}
 
-	void ProfilerUI::drawStats(const HorseRadish::Primitives2D::Rectangle<float>& viewRect, const HorseRadish::Matrix &transformMatrix) const
+	void ProfilerUI::drawStats(const hr::Rectangle<float>& viewRect, const hr::Matrix &transformMatrix) const
 	{
 		if (GraphStatIds.empty())
 			return;
@@ -115,11 +115,11 @@ namespace HorseRadish { namespace Render
 		{
 			float posY;
 			double value;
-			HorseRadish::Engine::Profiler::StatId statId;
+			hr::engine::Profiler::StatId statId;
 		};
 
 		std::array<SampleLastValue, GraphStatIds.size()> samplePos;
-		std::array<double, HorseRadish::Engine::Profiler::QuantizationSamples> sampleValues;
+		std::array<double, hr::engine::Profiler::QuantizationSamples> sampleValues;
 
 		auto& glImmediateMode = mRenderer.mGlImmediateMode;
 		auto& guiFont = *mRenderer.mGui.font;
@@ -127,13 +127,13 @@ namespace HorseRadish { namespace Render
 		auto textPreviewHeight = guiFont.getMaxHeight();
 		auto textPreviewWidth = guiFont.getTextWidth("XXX.XX X") + 5.0f;
 
-		HorseRadish::Primitives2D::Rectangle<float> graphRect(viewRect.x + 10.0f, viewRect.y + 10.0f, viewRect.width - 20.0f - textPreviewWidth, viewRect.height - 20.0f);
+		hr::Rectangle<float> graphRect(viewRect.x + 10.0f, viewRect.y + 10.0f, viewRect.width - 20.0f - textPreviewWidth, viewRect.height - 20.0f);
 		graphRect.y += textPreviewHeight + 10.0f;
 		graphRect.height -= textPreviewHeight + 10.0f;
 		float deltaX = graphRect.width / sampleValues.size();
 
 		//graph
-		HorseRadish::OpenGL::glEnable(GL_LINE_SMOOTH);
+		hr::gl::glEnable(GL_LINE_SMOOTH);
 
 		unsigned int samplePosIndex = 0;
 		assert(GraphStatIds.size() == samplePos.size());
@@ -151,7 +151,7 @@ namespace HorseRadish { namespace Render
 
 			auto color = retrieveColor(statGraph);
 
-			glImmediateMode.beginDraw(HorseRadish::OpenGL::Tools::ImmediateMode::GeometryType::LineStrip);
+			glImmediateMode.beginDraw(hr::gl::tools::ImmediateMode::GeometryType::LineStrip);
 			glImmediateMode.setColorF(color[0], color[1], color[2]);
 			
 			float posX = graphRect.x + graphRect.width;
@@ -164,7 +164,7 @@ namespace HorseRadish { namespace Render
 			glImmediateMode.endDraw();
 		}
 
-		HorseRadish::OpenGL::glDisable(GL_LINE_SMOOTH);
+		hr::gl::glDisable(GL_LINE_SMOOTH);
 
 		// legend
 		guiFont.paintBegin(transformMatrix.data());
@@ -187,7 +187,7 @@ namespace HorseRadish { namespace Render
 			guiFont.setColor(color[0], color[1], color[2]);
 			guiFont.write(graphRect.x + graphRect.width + 5.0f, curSample.posY - (guiFont.getMaxHeight() * 0.5f), msg);
 
-			msg = fmt::format("{0}: {1}", HorseRadish::Engine::Profiler::translateStatId(curSample.statId), msg);
+			msg = fmt::format("{0}: {1}", hr::engine::Profiler::translateStatId(curSample.statId), msg);
 			guiFont.write(posX, graphRect.y + 5.0f - (textPreviewHeight + 10.0f), msg);
 
 			posX += 5.0f;
@@ -197,20 +197,20 @@ namespace HorseRadish { namespace Render
 		guiFont.paintEnd();
 	}
 
-	void ProfilerUI::drawStatsBackground(const HorseRadish::Primitives2D::Rectangle<float>& viewRect, const HorseRadish::Matrix &transformMatrix, float bkgAlpha) const
+	void ProfilerUI::drawStatsBackground(const hr::Rectangle<float>& viewRect, const hr::Matrix &transformMatrix, float bkgAlpha) const
 	{
-		HorseRadish::OpenGL::glBindProgramPipeline(mRenderer.mShaders.drawNoTex.progPipeline.getId());
-		HorseRadish::OpenGL::glProgramUniformMatrix4fv(mRenderer.mShaders.drawNoTex.progVertex.getId(), mRenderer.mShaders.drawNoTex.progVertex.getUniformLocation("transformationMatrix"), 1, false, transformMatrix.data());
+		hr::gl::glBindProgramPipeline(mRenderer.mShaders.drawNoTex.progPipeline.getId());
+		hr::gl::glProgramUniformMatrix4fv(mRenderer.mShaders.drawNoTex.progVertex.getId(), mRenderer.mShaders.drawNoTex.progVertex.getUniformLocation("transformationMatrix"), 1, false, transformMatrix.data());
 
 		auto& glImmediateMode = mRenderer.mGlImmediateMode;
 		auto& guiFont = *mRenderer.mGui.font;
 
-		glImmediateMode.beginDraw(HorseRadish::OpenGL::Tools::ImmediateMode::GeometryType::Quads);
-		glImmediateMode.setColor(0, 0, 0, HorseRadish::Color::convertColor(bkgAlpha));
+		glImmediateMode.beginDraw(hr::gl::tools::ImmediateMode::GeometryType::Quads);
+		glImmediateMode.setColor(0, 0, 0, hr::Color::convertColor(bkgAlpha));
 		glImmediateMode.addQuad(viewRect.x, viewRect.y, viewRect.width, viewRect.height);
 		glImmediateMode.endDraw();
 
-		glImmediateMode.beginDraw(HorseRadish::OpenGL::Tools::ImmediateMode::GeometryType::Lines);
+		glImmediateMode.beginDraw(hr::gl::tools::ImmediateMode::GeometryType::Lines);
 		glImmediateMode.setColor(128, 128, 128);
 		glImmediateMode.addLineV(viewRect.x, viewRect.y, viewRect.y + viewRect.height);
 		glImmediateMode.addLineH(viewRect.x, viewRect.x + viewRect.width, viewRect.y);
@@ -219,22 +219,22 @@ namespace HorseRadish { namespace Render
 		glImmediateMode.endDraw();
 	}
 
-	void ProfilerUI::draw(const HorseRadish::OpenGL::Tools::Viewport& viewport) const
+	void ProfilerUI::draw(const hr::gl::tools::Viewport& viewport) const
 	{
 		if (!isVisible())
 			return;
 
-		HorseRadish::Matrix transformMatrix = viewport.getProjection(HorseRadish::OpenGL::Tools::Viewport::ProjectionType::Proj2D);
+		hr::Matrix transformMatrix = viewport.getProjection(hr::gl::tools::Viewport::ProjectionType::Proj2D);
 
 		if (mShowInfo)
 		{
-			HorseRadish::Primitives2D::Rectangle<float> viewRect(0.0f, 0.0f, viewport.width(), viewport.height());
+			hr::Rectangle<float> viewRect(0.0f, 0.0f, viewport.width(), viewport.height());
 			drawInfo(viewRect, transformMatrix);
 		}
 
 		if (mShowStats)
 		{
-			HorseRadish::Primitives2D::Rectangle<float> viewRect(20.0f, 20.0f, viewport.width() - 40.0f, (viewport.height() * 0.5f) - 40.0f);
+			hr::Rectangle<float> viewRect(20.0f, 20.0f, viewport.width() - 40.0f, (viewport.height() * 0.5f) - 40.0f);
 
 			drawStatsBackground(viewRect, transformMatrix, 0.8f);
 			drawStats(viewRect, transformMatrix);
@@ -247,10 +247,10 @@ namespace HorseRadish { namespace Render
 		if (elapsedTime < 1000)
 			return;
 
-		double frameTotal = mProfiler.getLastQuantizedSamples(HorseRadish::Engine::Profiler::StatId::FrameTotal, std::chrono::milliseconds(1000));
-		double frameGPU = mProfiler.getLastQuantizedSamples(HorseRadish::Engine::Profiler::StatId::FrameGPU, std::chrono::milliseconds(1000));
-		double frameLogic = mProfiler.getLastQuantizedSamples(HorseRadish::Engine::Profiler::StatId::FrameLogic, std::chrono::milliseconds(1000));
-		double frameDraw = mProfiler.getLastQuantizedSamples(HorseRadish::Engine::Profiler::StatId::FrameDraw, std::chrono::milliseconds(1000));
+		double frameTotal = mProfiler.getLastQuantizedSamples(hr::engine::Profiler::StatId::FrameTotal, std::chrono::milliseconds(1000));
+		double frameGPU = mProfiler.getLastQuantizedSamples(hr::engine::Profiler::StatId::FrameGPU, std::chrono::milliseconds(1000));
+		double frameLogic = mProfiler.getLastQuantizedSamples(hr::engine::Profiler::StatId::FrameLogic, std::chrono::milliseconds(1000));
+		double frameDraw = mProfiler.getLastQuantizedSamples(hr::engine::Profiler::StatId::FrameDraw, std::chrono::milliseconds(1000));
 
 		auto fps = static_cast<unsigned int>(1000.0 / frameTotal);
 		auto gpuPercent = static_cast<unsigned int>((frameGPU / frameTotal) * 100.0);

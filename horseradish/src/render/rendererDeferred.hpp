@@ -8,7 +8,7 @@
 #include "../common/openGL/tools/viewport.hpp"
 #include "../common/openGL/tools/immediateMode.hpp"
 
-namespace HorseRadish { namespace Render
+namespace hr { namespace render
 {
 	class RendererDeferred : public Renderer
 	{
@@ -18,61 +18,61 @@ namespace HorseRadish { namespace Render
 	private:
 		struct VBOs{
 			unsigned int vboMeshSize, vboMeshIndexSize;
-			HorseRadish::OpenGL::Objects::Buffer vboMeshData, vboMeshIndexData, vboIndirectDraw;
-			HorseRadish::OpenGL::Objects::VertexArray vaoMesh;
+			hr::gl::objects::Buffer vboMeshData, vboMeshIndexData, vboIndirectDraw;
+			hr::gl::objects::VertexArray vaoMesh;
 
 			VBOs() : vboMeshSize(0), vboMeshIndexSize(0) { }
 		};
 
 		struct FBOs{
-			HorseRadish::OpenGL::Objects::Sampler samplerTexs;
-			HorseRadish::OpenGL::Objects::FrameBuffer fboDeferredGBuffer;
-			HorseRadish::OpenGL::Objects::Texture texDeferredZ, texDeferredAlbedo, texDeferredNormals, texDeferredMiscA, texDeferredMiscB;
+			hr::gl::objects::Sampler samplerTexs;
+			hr::gl::objects::FrameBuffer fboDeferredGBuffer;
+			hr::gl::objects::Texture texDeferredZ, texDeferredAlbedo, texDeferredNormals, texDeferredMiscA, texDeferredMiscB;
 		};
 
 		struct Shaders{
 			struct {
-				HorseRadish::OpenGL::Objects::ShaderProgram vertex;
-				HorseRadish::OpenGL::Objects::ShaderProgram fragment;
-				HorseRadish::OpenGL::Objects::ProgramPipeline pipeline;
+				hr::gl::objects::ShaderProgram vertex;
+				hr::gl::objects::ShaderProgram fragment;
+				hr::gl::objects::ProgramPipeline pipeline;
 			} deferred;
 
 			struct {
-				HorseRadish::OpenGL::Objects::ShaderProgram vertex;
-				HorseRadish::OpenGL::Objects::ShaderProgram fragment;
-				HorseRadish::OpenGL::Objects::ProgramPipeline pipeline;
+				hr::gl::objects::ShaderProgram vertex;
+				hr::gl::objects::ShaderProgram fragment;
+				hr::gl::objects::ProgramPipeline pipeline;
 			} postprocess;
 		};
 
 		struct Samplers{
-			HorseRadish::OpenGL::Objects::Sampler samplerAlbedo;
-			HorseRadish::OpenGL::Objects::Sampler samplerNormals;
+			hr::gl::objects::Sampler samplerAlbedo;
+			hr::gl::objects::Sampler samplerNormals;
 		};
 
-		HorseRadish::Render::World& mWorld;
+		hr::render::World& mWorld;
 		VBOs mVBOs;
 		FBOs mFBOs;
 		Shaders mShaders;
 		Samplers mSamplers;
-		HorseRadish::IO::FileSystem& mFileSystem;
-		HorseRadish::OpenGL::Tools::ImmediateMode mGlImmediateMode;
+		hr::io::FileSystem& mFileSystem;
+		hr::gl::tools::ImmediateMode mGlImmediateMode;
 		int mShadersWatchFolderID;
-		HorseRadish::OpenGL::Objects::Texture mTexDefaultAlbedo, mTexDefaultNormals;
+		hr::gl::objects::Texture mTexDefaultAlbedo, mTexDefaultNormals;
 
-		void renderGBuffer(const Tools::Camera& hrCamera, const HorseRadish::OpenGL::Tools::Viewport& hrViewport);
-		void renderFinal(const HorseRadish::OpenGL::Tools::Viewport& hrViewport);
+		void renderGBuffer(const tools::Camera& hrCamera, const hr::gl::tools::Viewport& hrViewport);
+		void renderFinal(const hr::gl::tools::Viewport& hrViewport);
 		void loadGeometry();
-		void loadDiffuse(const std::string& texFilePath, HorseRadish::OpenGL::Objects::Texture& targetTexture);
-		void loadNormal(const std::string& texFilePath, HorseRadish::OpenGL::Objects::Texture& targetTexture);
+		void loadDiffuse(const std::string& texFilePath, hr::gl::objects::Texture& targetTexture);
+		void loadNormal(const std::string& texFilePath, hr::gl::objects::Texture& targetTexture);
 		void loadTextures();
 
 	public:
-		RendererDeferred(const HorseRadish::OpenGL::Objects::Context& glContext, HorseRadish::IO::FileSystem& fileSystem, HorseRadish::Render::World& renderWorld, size_t renderWidth, size_t renderHeight);
+		RendererDeferred(const hr::gl::objects::Context& glContext, hr::io::FileSystem& fileSystem, hr::render::World& renderWorld, size_t renderWidth, size_t renderHeight);
 		~RendererDeferred();
 
 		void loadWorld();
 
-		void render(const Tools::Camera& hrCamera, const HorseRadish::OpenGL::Tools::Viewport& hrViewport);
-		void renderComposite(const HorseRadish::OpenGL::Tools::Viewport& hrViewport);
+		void render(const tools::Camera& hrCamera, const hr::gl::tools::Viewport& hrViewport);
+		void renderComposite(const hr::gl::tools::Viewport& hrViewport);
 	};
 } }

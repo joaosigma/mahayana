@@ -14,7 +14,7 @@
 #include <cwchar>
 #include <memory>
 
-namespace HorseRadish { namespace Engine
+namespace hr { namespace engine
 {
 	Runtime::FunctionContext::FunctionContext(HSQUIRRELVM &sqvm, bool hasFreeVar)
 		: mSqvm(sqvm)
@@ -94,7 +94,7 @@ namespace HorseRadish { namespace Engine
 		if (!SQ_SUCCEEDED(sq_getstring(mSqvm, paramIndex + 2, &sqVal)))
 			return false;
 
-		value = HorseRadish::StringUtils::conv2UTF8(sqVal);
+		value = hr::StringUtils::conv2UTF8(sqVal);
 		return true;
 	}
 
@@ -143,7 +143,7 @@ namespace HorseRadish { namespace Engine
 		if (mReturnValueSet || !mErrorThrown.empty())
 			return;
 
-		sq_pushstring(mSqvm, HorseRadish::StringUtils::conv2UTF16(value).c_str(), -1);
+		sq_pushstring(mSqvm, hr::StringUtils::conv2UTF16(value).c_str(), -1);
 		mReturnValueSet = true;
 	}
 
@@ -152,7 +152,7 @@ namespace HorseRadish { namespace Engine
 		if (mReturnValueSet || !mErrorThrown.empty())
 			return;
 
-		auto valueWChar = HorseRadish::StringUtils::conv2UTF16(value);
+		auto valueWChar = hr::StringUtils::conv2UTF16(value);
 
 		sq_pushstring(mSqvm, valueWChar.c_str(), valueWChar.size());
 		mReturnValueSet = true;
@@ -237,7 +237,7 @@ namespace HorseRadish { namespace Engine
 		int curIndex = 0;
 		for (const auto& value : values)
 		{
-			auto valueWChar = HorseRadish::StringUtils::conv2UTF16(value);
+			auto valueWChar = hr::StringUtils::conv2UTF16(value);
 
 			sq_pushinteger(mSqvm, curIndex);
 			sq_pushstring(mSqvm, valueWChar.c_str(), valueWChar.size());
@@ -264,7 +264,7 @@ namespace HorseRadish { namespace Engine
 		if (varName.empty())
 			return;
 
-		auto varNameWChar = HorseRadish::StringUtils::conv2UTF16(varName);
+		auto varNameWChar = hr::StringUtils::conv2UTF16(varName);
 
 		sq_pushobject(mVM, mVMInstance);
 		sq_pushstring(mVM, varNameWChar.c_str(), varNameWChar.size());
@@ -278,7 +278,7 @@ namespace HorseRadish { namespace Engine
 		if (varName.empty())
 			return;
 
-		auto varNameWChar = HorseRadish::StringUtils::conv2UTF16(varName);
+		auto varNameWChar = hr::StringUtils::conv2UTF16(varName);
 
 		sq_pushobject(mVM, mVMInstance);
 		sq_pushstring(mVM, varNameWChar.c_str(), varNameWChar.size());
@@ -292,7 +292,7 @@ namespace HorseRadish { namespace Engine
 		if (varName.empty())
 			return;
 
-		auto varNameWChar = HorseRadish::StringUtils::conv2UTF16(varName);
+		auto varNameWChar = hr::StringUtils::conv2UTF16(varName);
 
 		sq_pushobject(mVM, mVMInstance);
 		sq_pushstring(mVM, varNameWChar.c_str(), varNameWChar.size());
@@ -306,7 +306,7 @@ namespace HorseRadish { namespace Engine
 		if (varName.empty())
 			return;
 
-		auto varNameWChar = HorseRadish::StringUtils::conv2UTF16(varName);
+		auto varNameWChar = hr::StringUtils::conv2UTF16(varName);
 
 		sq_pushobject(mVM, mVMInstance);
 		sq_pushstring(mVM, varNameWChar.c_str(), varNameWChar.size());
@@ -320,8 +320,8 @@ namespace HorseRadish { namespace Engine
 		if (varName.empty())
 			return;
 
-		auto varNameWChar = HorseRadish::StringUtils::conv2UTF16(varName);
-		auto valueWChar = HorseRadish::StringUtils::conv2UTF16(value);
+		auto varNameWChar = hr::StringUtils::conv2UTF16(varName);
+		auto valueWChar = hr::StringUtils::conv2UTF16(value);
 
 		sq_pushobject(mVM, mVMInstance);
 		sq_pushstring(mVM, varNameWChar.c_str(), varNameWChar.size());
@@ -335,8 +335,8 @@ namespace HorseRadish { namespace Engine
 		if (varName.empty())
 			return;
 
-		auto varNameWChar = HorseRadish::StringUtils::conv2UTF16(varName);
-		auto valueWChar = HorseRadish::StringUtils::conv2UTF16(value);
+		auto varNameWChar = hr::StringUtils::conv2UTF16(varName);
+		auto valueWChar = hr::StringUtils::conv2UTF16(value);
 
 		sq_pushobject(mVM, mVMInstance);
 		sq_pushstring(mVM, varNameWChar.c_str(), varNameWChar.size());
@@ -386,7 +386,7 @@ namespace HorseRadish { namespace Engine
 
 		Runtime::parsePath(fullPath, [&](const std::string& token, bool isLastToken) -> bool
 		{
-			auto tokenWChar = HorseRadish::StringUtils::conv2UTF16(token);
+			auto tokenWChar = hr::StringUtils::conv2UTF16(token);
 
 			if (isLastToken)
 			{
@@ -438,8 +438,8 @@ namespace HorseRadish { namespace Engine
 			
 			runtime->mLogger.error("[{0}]: function [{1}()] {2}s line [{3}]",
 										stack_depth,
-										HorseRadish::StringUtils::conv2UTF8(func_name),
-										HorseRadish::StringUtils::conv2UTF8(source_file),
+										hr::StringUtils::conv2UTF8(func_name),
+										hr::StringUtils::conv2UTF8(source_file),
 										stack_info.line);
 
 			stack_depth++;
@@ -454,7 +454,7 @@ namespace HorseRadish { namespace Engine
 			if (SQ_SUCCEEDED(sq_getstring(vm, 2, &error_message)))
 			{
 				auto runtime = reinterpret_cast<Runtime*>(sq_getforeignptr(vm));
-				runtime->mLogger.error(HorseRadish::StringUtils::conv2UTF8(error_message));
+				runtime->mLogger.error(hr::StringUtils::conv2UTF8(error_message));
 			}
 
 			squirrelStackTrace(vm);
@@ -467,10 +467,10 @@ namespace HorseRadish { namespace Engine
 	{
 		auto runtime = reinterpret_cast<Runtime*>(sq_getforeignptr(vm));
 		runtime->mLogger.error("vm: '{0}' (Ln:{1} Col:{2}) : {3}.",
-									HorseRadish::StringUtils::conv2UTF8(file),
+									hr::StringUtils::conv2UTF8(file),
 									line,
 									column,
-									HorseRadish::StringUtils::conv2UTF8(description));
+									hr::StringUtils::conv2UTF8(description));
 	}
 
 	void Runtime::squirrelErrorFunction(HSQUIRRELVM vm, const SQChar *format, ...)
@@ -485,7 +485,7 @@ namespace HorseRadish { namespace Engine
 		}
 
 		auto runtime = reinterpret_cast<Runtime*>(sq_getforeignptr(vm));
-		runtime->mLogger.error(HorseRadish::StringUtils::conv2UTF8(buffer));
+		runtime->mLogger.error(hr::StringUtils::conv2UTF8(buffer));
 	}
 
 	void Runtime::squirrelPrintFunction(HSQUIRRELVM vm, const SQChar *format, ...)
@@ -500,7 +500,7 @@ namespace HorseRadish { namespace Engine
 		}
 
 		auto runtime = reinterpret_cast<Runtime*>(sq_getforeignptr(vm));
-		runtime->mLogger.info(HorseRadish::StringUtils::conv2UTF8(buffer));
+		runtime->mLogger.info(hr::StringUtils::conv2UTF8(buffer));
 	}
 
 	SQInteger Runtime::vmRegisteredFunc(HSQUIRRELVM sqvm)
@@ -511,7 +511,7 @@ namespace HorseRadish { namespace Engine
 		if (!SQ_SUCCEEDED(sq_getstring(sqvm, -1, &funcName)))
 			return sq_throwerror(sqvm, _SC("Internal error - func name not found"));
 
-		auto utf8FuncName = HorseRadish::StringUtils::conv2UTF8(funcName);
+		auto utf8FuncName = hr::StringUtils::conv2UTF8(funcName);
 
 		auto funcTarget = runtime->mFuncMap[utf8FuncName];
 		if (!funcTarget)
@@ -526,7 +526,7 @@ namespace HorseRadish { namespace Engine
 		if (ctx.mReturnValueSet)
 			sq_pop(sqvm, 1);
 
-		return sq_throwerror(sqvm, HorseRadish::StringUtils::conv2UTF16(ctx.mErrorThrown).c_str());
+		return sq_throwerror(sqvm, hr::StringUtils::conv2UTF16(ctx.mErrorThrown).c_str());
 	}
 
 	void Runtime::vmPrintLastError(HSQUIRRELVM sqvm)
@@ -536,7 +536,7 @@ namespace HorseRadish { namespace Engine
 		const SQChar *error;
 		sq_getlasterror(sqvm);
 		if (SQ_SUCCEEDED(sq_getstring(sqvm, -1, &error)))
-			runtime->mLogger.error(HorseRadish::StringUtils::conv2UTF8(error));
+			runtime->mLogger.error(hr::StringUtils::conv2UTF8(error));
 	}
 	
 	void Runtime::vmPushStackValue(HSQUIRRELVM sqvm, const int value)
@@ -556,13 +556,13 @@ namespace HorseRadish { namespace Engine
 
 	void Runtime::vmPushStackValue(HSQUIRRELVM sqvm, const char * const value)
 	{
-		auto valueWChar = HorseRadish::StringUtils::conv2UTF16(value);
+		auto valueWChar = hr::StringUtils::conv2UTF16(value);
 		sq_pushstring(sqvm, valueWChar.c_str(), valueWChar.size());
 	}
 
 	void Runtime::vmPushStackValue(HSQUIRRELVM sqvm, const std::string &value)
 	{
-		auto valueWChar = HorseRadish::StringUtils::conv2UTF16(value);
+		auto valueWChar = hr::StringUtils::conv2UTF16(value);
 		sq_pushstring(sqvm, valueWChar.c_str(), valueWChar.size());
 	}
 
@@ -608,7 +608,7 @@ namespace HorseRadish { namespace Engine
 		return Runtime::pushFullPathToStack(mVM, funcName, true, [&](const std::wstring& lastToken)
 		{
 			std::string fullFuncName = std::string(funcName);
-			std::wstring fullFuncNameWChar = HorseRadish::StringUtils::conv2UTF16(fullFuncName);
+			std::wstring fullFuncNameWChar = hr::StringUtils::conv2UTF16(fullFuncName);
 
 			sq_pushstring(mVM, lastToken.c_str(), lastToken.size());
 			sq_pushstring(mVM, fullFuncNameWChar.c_str(), fullFuncNameWChar.size()); //free var
@@ -633,7 +633,7 @@ namespace HorseRadish { namespace Engine
 		sq_pushroottable(mVM);
 
 		{
-			auto scriptWChar = HorseRadish::StringUtils::conv2UTF16(script);
+			auto scriptWChar = hr::StringUtils::conv2UTF16(script);
 
 			if (SQ_FAILED(sq_compilebuffer(mVM, scriptWChar.c_str(), scriptWChar.size(), _SC("main runtime"), SQTrue)))
 			{
@@ -658,8 +658,8 @@ namespace HorseRadish { namespace Engine
 		sq_pushroottable(mVM);
 
 		{
-			auto script = HorseRadish::Streams::FileStream::readEntireFileAsString(filePath);
-			auto scriptWChar = HorseRadish::StringUtils::conv2UTF16(script);
+			auto script = hr::streams::FileStream::readEntireFileAsString(filePath);
+			auto scriptWChar = hr::StringUtils::conv2UTF16(script);
 
 			if (SQ_FAILED(sq_compilebuffer(mVM, scriptWChar.c_str(), scriptWChar.size(), _SC("main runtime"), SQTrue)))
 			{

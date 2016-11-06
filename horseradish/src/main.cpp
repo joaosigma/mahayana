@@ -23,22 +23,22 @@ int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PWSTR lpCmdLine, int n
 
 	//minimal checks
 	{
-		if (!HorseRadish::platform::Platform::cpuCheckFeatures((HorseRadish::platform::Platform::CPUFeature)(HorseRadish::platform::Platform::SSE | HorseRadish::platform::Platform::SSE2 | HorseRadish::platform::Platform::CMov)))
+		if (!hr::platform::Platform::cpuCheckFeatures((hr::platform::Platform::CPUFeature)(hr::platform::Platform::SSE | hr::platform::Platform::SSE2 | hr::platform::Platform::CMov)))
 		{
-			HorseRadish::platform::Window::MsgBoxWarn("The CPU doesn't have the minimum required features.\nThe application cannot proceed.");
+			hr::platform::Window::MsgBoxWarn("The CPU doesn't have the minimum required features.\nThe application cannot proceed.");
 			return 0;
 		}
 
 		int isCleanBoot;
-		if (!HorseRadish::platform::Platform::systemInfo(HorseRadish::platform::Platform::SystemInfo::CleanBoot, isCleanBoot) || !isCleanBoot)
+		if (!hr::platform::Platform::systemInfo(hr::platform::Platform::SystemInfo::CleanBoot, isCleanBoot) || !isCleanBoot)
 		{
-			HorseRadish::platform::Window::MsgBoxWarn("The OS did not boot normally!\nFor security reasons the application will now exit.");
+			hr::platform::Window::MsgBoxWarn("The OS did not boot normally!\nFor security reasons the application will now exit.");
 			return 0;
 		}
 
-		if (HorseRadish::platform::Platform::SingleInstance().isAnotherRunning())
+		if (hr::platform::Platform::SingleInstance().isAnotherRunning())
 		{
-			HorseRadish::platform::Window::MsgBoxError("Another instance of this application is already running.");
+			hr::platform::Window::MsgBoxError("Another instance of this application is already running.");
 			return 0;
 		}
 	}
@@ -53,9 +53,9 @@ int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PWSTR lpCmdLine, int n
 	_clearfp(); //clear previous exceptions
 #endif
 
-	auto cmdLine = HorseRadish::StringUtils::conv2UTF8(lpCmdLine);
+	auto cmdLine = hr::StringUtils::conv2UTF8(lpCmdLine);
 	
-	HorseRadish::Engine::Engine engine(cmdLine);
+	hr::engine::Engine engine(cmdLine);
 	auto success = engine.mainLoop();
 
 #ifndef _M_X64
@@ -64,18 +64,18 @@ int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PWSTR lpCmdLine, int n
 
 	if (!success)
 	{
-		HorseRadish::platform::Window::MsgBoxError("Unable to start engine (invalid state call)");
+		hr::platform::Window::MsgBoxError("Unable to start engine (invalid state call)");
 		return 0;
 	}
 
 	auto engineError = engine.getErrorDesc();
 	if (!engineError.empty())
-		HorseRadish::platform::Window::MsgBoxError(engineError.c_str());
+		hr::platform::Window::MsgBoxError(engineError.c_str());
 
 	switch (engine.getExitAction())
 	{
-	case HorseRadish::Engine::Engine::ExitAction::Restart:
-		HorseRadish::platform::Platform::spawnSelf();
+	case hr::engine::Engine::ExitAction::Restart:
+		hr::platform::Platform::spawnSelf();
 		break;
 	default:
 		break;

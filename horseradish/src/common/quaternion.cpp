@@ -2,7 +2,7 @@
 
 #include "math.hpp"
 
-namespace HorseRadish
+namespace hr
 {
 	void Quaternion::operator+=(const Quaternion &quat)
 	{

@@ -1,8 +1,8 @@
 #include "viewport.hpp"
 
-namespace HorseRadish { namespace OpenGL { namespace Tools
+namespace hr { namespace gl { namespace tools
 {
-	HorseRadish::Matrix Viewport::genMatrix2DProj(size_t width, size_t height)
+	hr::Matrix Viewport::genMatrix2DProj(size_t width, size_t height)
 	{
 		Viewport viewport(90.0f, width, height);
 		return viewport.mMatrices.mp2D;
@@ -47,7 +47,7 @@ namespace HorseRadish { namespace OpenGL { namespace Tools
 		mMatrices.mp2D[13] = -1.0f;
 	}
 
-	const HorseRadish::Matrix& Viewport::getProjection(ProjectionType projectionType) const
+	const hr::Matrix& Viewport::getProjection(ProjectionType projectionType) const
 	{
 		switch (projectionType)
 		{
@@ -60,19 +60,19 @@ namespace HorseRadish { namespace OpenGL { namespace Tools
 		return mMatrices.mp3D;
 	}
 
-	void Viewport::pointOnZNear(HorseRadish::Vector3f& center) const
+	void Viewport::pointOnZNear(hr::Vector3f& center) const
 	{
 		center[0] = mZNear * tan(mFov * 0.5f);
 		center[1] = (center[1]) * static_cast<float>(mWidth) / static_cast<float>(mHeight);
 		center[2] = mZNear;
 	}
 
-	void Viewport::projectPoint(ProjectionType projType, const HorseRadish::Matrix& modelView, HorseRadish::Vector3f * const listPoints, size_t numPoints) const
+	void Viewport::projectPoint(ProjectionType projType, const hr::Matrix& modelView, hr::Vector3f * const listPoints, size_t numPoints) const
 	{
 		if (!listPoints || numPoints <= 0)
 			return;
 
-		HorseRadish::Matrix transMat;
+		hr::Matrix transMat;
 		switch (projType)
 		{
 			case ProjectionType::Proj2D:
@@ -96,7 +96,7 @@ namespace HorseRadish { namespace OpenGL { namespace Tools
 
 		for (size_t i = 0; i < numPoints; i++)
 		{
-			HorseRadish::Vector4f result(listPoints[i], 1.0f);
+			hr::Vector4f result(listPoints[i], 1.0f);
 			transMat.transform(result);
 
 			float rhw = 1.0f / result[3];

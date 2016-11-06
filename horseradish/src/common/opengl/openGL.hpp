@@ -2,7 +2,7 @@
 
 #include "glcorearb.h"
 
-namespace HorseRadish { namespace OpenGL
+namespace hr { namespace gl
 {
 	bool OpenGLLoadLibrary(const char* const glLibName);
 	bool OpenGLUnloadLibrary(void);

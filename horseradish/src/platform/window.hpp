@@ -4,7 +4,7 @@
 #include "../common/vector.hpp"
 #include "../common/opengl/objects.hpp"
 
-namespace HorseRadish { namespace platform
+namespace hr { namespace platform
 {
 	class WindowImpl;
 	class OpenglContextImpl;
@@ -41,11 +41,11 @@ namespace HorseRadish { namespace platform
 
 		private:
 			MessageType mType;
-			HorseRadish::hInt32 mParam;
-			HorseRadish::hSplitUInt32 mFlags;
+			hr::hInt32 mParam;
+			hr::hSplitUInt32 mFlags;
 
 		public:
-			Message(MessageType msgType, HorseRadish::hInt32 msgParam, HorseRadish::hSplitUInt32 msgFlags)
+			Message(MessageType msgType, hr::hInt32 msgParam, hr::hSplitUInt32 msgFlags)
 				: mType(msgType), mParam(msgParam), mFlags(msgFlags)
 			{ }
 
@@ -57,7 +57,7 @@ namespace HorseRadish { namespace platform
 				: Message(msgType, 0, 0)
 			{ }
 
-			Message(MessageType msgType, HorseRadish::hInt32 msgParam)
+			Message(MessageType msgType, hr::hInt32 msgParam)
 				: mType(msgType), mFlags(0), mParam(msgParam)
 			{ }
 
@@ -71,12 +71,12 @@ namespace HorseRadish { namespace platform
 				return (this->mType == msgType);
 			}
 
-			HorseRadish::hInt32 getParam() const
+			hr::hInt32 getParam() const
 			{
 				return mParam;
 			}
 
-			HorseRadish::hSplitUInt32 getFlags() const
+			hr::hSplitUInt32 getFlags() const
 			{
 				return mFlags;
 			}
@@ -86,7 +86,7 @@ namespace HorseRadish { namespace platform
 		std::unique_ptr<WindowImpl> mImpl;
 
 	public:
-		Window(HorseRadish::Engine::Logger &logger);
+		Window(hr::engine::Logger &logger);
 		~Window();
 
 		std::string getErrorMsg() const;
@@ -103,7 +103,7 @@ namespace HorseRadish { namespace platform
 		void rawInputSnapshot();
 		bool rawInputGetKeyStatus(const unsigned int &vcode);
 		bool rawInputGetKeyStatus(const Window::VirtualKeys &vcode);
-		HorseRadish::Vector3f rawInputGetMouseStatus();
+		hr::Vector3f rawInputGetMouseStatus();
 	
 		int messageLoop(std::function<void()> closingCb);
 		void processMessages(std::function<void(const Message&)> cb, const bool resetQueue);
@@ -116,7 +116,7 @@ namespace HorseRadish { namespace platform
 		static void MsgBoxError(const char * const msg);
 	};
 
-	class OpenglContext : public HorseRadish::OpenGL::Objects::Context
+	class OpenglContext : public hr::gl::objects::Context
 	{
 		bool mIsValid = false;
 		std::unique_ptr<OpenglContextImpl> mImpl;

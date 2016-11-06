@@ -2,7 +2,7 @@
 
 #include "types.hpp"
 
-namespace HorseRadish
+namespace hr
 {
 	class Sorting
 	{

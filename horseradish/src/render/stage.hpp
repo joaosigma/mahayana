@@ -8,7 +8,7 @@
 
 #include "platform/window.hpp"
 
-namespace HorseRadish {	namespace Render
+namespace hr { namespace render
 {
 	class Stage
 	{
@@ -16,39 +16,39 @@ namespace HorseRadish {	namespace Render
 
 	private:
 		bool mScenesDrawned = false;
-		Engine::Runtime& mRuntime;
-		Engine::Logger::Context& mLogger;
-		HorseRadish::IO::FileSystem& mFileSystem;
+		engine::Runtime& mRuntime;
+		engine::Logger::Context& mLogger;
+		hr::io::FileSystem& mFileSystem;
 		std::vector<SceneRuntimeProxy*> mTempScenes;
-		HorseRadish::OpenGL::Objects::Context &mGlCtx;
+		hr::gl::objects::Context &mGlCtx;
 		std::unordered_map<std::string, SceneRuntimeProxy*> mRuntimeScenes;
 
 		struct RenderData
 		{
-			HorseRadish::OpenGL::Objects::FrameBuffer fbo;
-			HorseRadish::OpenGL::Objects::Sampler sampler;
-			HorseRadish::OpenGL::Objects::ShaderProgram progVertex;
-			HorseRadish::OpenGL::Objects::ShaderProgram progFragment;
-			HorseRadish::OpenGL::Objects::ProgramPipeline progPipeline;
-			HorseRadish::OpenGL::Objects::Texture texColor;
+			hr::gl::objects::FrameBuffer fbo;
+			hr::gl::objects::Sampler sampler;
+			hr::gl::objects::ShaderProgram progVertex;
+			hr::gl::objects::ShaderProgram progFragment;
+			hr::gl::objects::ProgramPipeline progPipeline;
+			hr::gl::objects::Texture texColor;
 
-			HorseRadish::OpenGL::Tools::ImmediateMode imode;
+			hr::gl::tools::ImmediateMode imode;
 		} mRenderData;
 
-		void runtimeFuncSceneGet(const std::string &funcName, Engine::Runtime::FunctionReturnContext &ctx);
-		void runtimeFuncSceneCreate(const std::string &funcName, Engine::Runtime::FunctionReturnContext &ctx);
-		void runtimeFuncSceneDestroy(const std::string &funcName, Engine::Runtime::FunctionReturnContext &ctx);
-		void runtimeFuncSceneAddRemove(const std::string &funcName, Engine::Runtime::FunctionReturnContext &ctx);
+		void runtimeFuncSceneGet(const std::string &funcName, engine::Runtime::FunctionReturnContext &ctx);
+		void runtimeFuncSceneCreate(const std::string &funcName, engine::Runtime::FunctionReturnContext &ctx);
+		void runtimeFuncSceneDestroy(const std::string &funcName, engine::Runtime::FunctionReturnContext &ctx);
+		void runtimeFuncSceneAddRemove(const std::string &funcName, engine::Runtime::FunctionReturnContext &ctx);
 
 	public:
-		Stage(Engine::Runtime& runtime, Engine::Logger::Context& logger, HorseRadish::IO::FileSystem& fileSystem, HorseRadish::OpenGL::Objects::Context &glCtx, size_t renderWidth, size_t renderHeight);
+		Stage(engine::Runtime& runtime, engine::Logger::Context& logger, hr::io::FileSystem& fileSystem, hr::gl::objects::Context &glCtx, size_t renderWidth, size_t renderHeight);
 		~Stage();
 
 		Stage(const Stage&) = delete;
 		Stage& operator=(const Stage&) = delete;
 
 		void drawScenes();
-		void drawComposite(const HorseRadish::OpenGL::Tools::Viewport& viewport);
+		void drawComposite(const hr::gl::tools::Viewport& viewport);
 		void processStep();
 		void processMessage(const platform::Window::Message& msg);
 	};

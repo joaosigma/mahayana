@@ -2,7 +2,7 @@
 
 #include <random>
 
-namespace HorseRadish
+namespace hr
 {
 	class Random
 	{

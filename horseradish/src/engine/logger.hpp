@@ -12,7 +12,7 @@
 #include <atomic>
 #include <condition_variable>
 
-namespace HorseRadish { namespace Engine
+namespace hr { namespace engine
 {
 	class Logger
 	{
@@ -114,7 +114,7 @@ namespace HorseRadish { namespace Engine
 		std::thread *mThreadFlush = nullptr;
 		std::atomic<bool> mThreadFlushExit = {false};
 		std::condition_variable mThreadFlushCondition;
-		std::shared_ptr<HorseRadish::Streams::FileStream> mOutFileStream;
+		std::shared_ptr<hr::streams::FileStream> mOutFileStream;
 
 		void processAsyncBuffer();
 		void writeToFile(const EntryData& entry);
@@ -124,7 +124,7 @@ namespace HorseRadish { namespace Engine
 	public:
 		Logger(size_t asyncMaxEntries);
 		Logger(size_t asyncMaxEntries, size_t maxBufferedEntries);
-		Logger(size_t asyncMaxEntries, size_t maxBufferedEntries, const HorseRadish::IO::Path &filePath);
+		Logger(size_t asyncMaxEntries, size_t maxBufferedEntries, const hr::io::Path &filePath);
 		~Logger();
 
 		Logger(const Logger&) = delete;

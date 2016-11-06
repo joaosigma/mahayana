@@ -1,6 +1,6 @@
 #include "consoleUI.hpp"
 
-namespace HorseRadish { namespace Render
+namespace hr { namespace render
 {
 	static std::string PromptDefault = "console@main# "; //ASCII only
 	static const unsigned int PromptMaxSize = 1024;
@@ -87,13 +87,13 @@ namespace HorseRadish { namespace Render
 			{
 				std::string strUTF8;
 
-				if (!HorseRadish::platform::Platform::clipboardGetStrings([&](const std::string& curString) -> bool
+				if (!hr::platform::Platform::clipboardGetStrings([&](const std::string& curString) -> bool
 				{
 					strUTF8 = curString;
 					return false;
 				}))
 				{
-					HorseRadish::platform::Platform::clipboardGetFiles([&](const std::string& curString) -> bool
+					hr::platform::Platform::clipboardGetFiles([&](const std::string& curString) -> bool
 					{
 						strUTF8 = curString;
 						return false;
@@ -102,7 +102,7 @@ namespace HorseRadish { namespace Render
 
 				if (!strUTF8.empty() && ((mPrompt.promptUnicode.size() + strUTF8.size()) < PromptMaxSize))
 				{
-					HorseRadish::StringUtils::utf8Wrapper utf8Wrapper(strUTF8);
+					hr::StringUtils::utf8Wrapper utf8Wrapper(strUTF8);
 
 					mPrompt.promptUnicode.insert(mPrompt.promptUnicode.begin() + mCursor.offset, utf8Wrapper.begin(), utf8Wrapper.end());
 					updateCursorOffset(mCursor.offset + strUTF8.size());
@@ -129,7 +129,7 @@ namespace HorseRadish { namespace Render
 		}
 	}
 
-	void ConsoleUI::drawContent(const HorseRadish::Matrix &transformMatrix) const
+	void ConsoleUI::drawContent(const hr::Matrix &transformMatrix) const
 	{
 		if (!mRenderer.mGui.font)
 			return;
@@ -146,7 +146,7 @@ namespace HorseRadish { namespace Render
 			guiFont->setColor(1.0f, 1.0f, 1.0f);
 
 			std::string unicodeStr = PromptDefault;
-			HorseRadish::StringUtils::conv2UTF8(mPrompt.promptUnicode, unicodeStr);
+			hr::StringUtils::conv2UTF8(mPrompt.promptUnicode, unicodeStr);
 
 			auto finalLineY = curLineY;
 			guiFont->layout(unicodeStr, mTextRect.width, [&](unsigned int curLine, unsigned int unicodeCharOffset, unsigned int unicodeCharCount)
@@ -168,7 +168,7 @@ namespace HorseRadish { namespace Render
 					auto strLength = guiFont->getTextWidth(unicodeStr, unicodeCharOffset, cursorOffset - unicodeCharOffset);
 					guiFont->writeChar(mTextRect.x + strLength, lineY, '_');
 
-					auto cursorChar = HorseRadish::StringUtils::getUnicodeAt(unicodeStr, cursorOffset);
+					auto cursorChar = hr::StringUtils::getUnicodeAt(unicodeStr, cursorOffset);
 					if (cursorChar != '\0' && cursorChar != ' ')
 					{
 						guiFont->setColor(1.0f, 0.0f, 0.0f);
@@ -189,7 +189,7 @@ namespace HorseRadish { namespace Render
 		{
 			struct LogMsg
 			{
-				Engine::Logger::EntryType entryType;
+				engine::Logger::EntryType entryType;
 				bool isMsgFormatted;
 				std::string msg;
 			};
@@ -200,7 +200,7 @@ namespace HorseRadish { namespace Render
 				return;
 
 			logMsgs.reserve(maxLines);
-			mLogger.iterateBuffer([&](const Engine::Logger::EntryType entryType, const Engine::Logger::ModuleType moduleType, const bool isMsgFormatted, const std::string& msg)
+			mLogger.iterateBuffer([&](const engine::Logger::EntryType entryType, const engine::Logger::ModuleType moduleType, const bool isMsgFormatted, const std::string& msg)
 			{
 				logMsgs.push_back({ entryType, isMsgFormatted,  msg });
 
@@ -221,10 +221,10 @@ namespace HorseRadish { namespace Render
 
 				switch (logMsg.entryType)
 				{
-				case Engine::Logger::EntryType::Error:
+				case engine::Logger::EntryType::Error:
 					guiFont->setColor(1.0f, 0.0f, 0.0f, 1.0f);
 					break;
-				case Engine::Logger::EntryType::Warning:
+				case engine::Logger::EntryType::Warning:
 					guiFont->setColor(1.0f, 0.42f, 0.17f, 1.0f);
 					break;
 				default:
@@ -253,17 +253,17 @@ namespace HorseRadish { namespace Render
 				auto curX = mTextRect.x;
 
 				unsigned int lastChar = 0;
-				HorseRadish::StringUtils::utf8Wrapper textWrapper(logMsg.msg);
-				for (HorseRadish::StringUtils::utf8Wrapper::const_iterator it = textWrapper.begin(), itEnd = textWrapper.end(); it != itEnd; ++it)
+				hr::StringUtils::utf8Wrapper textWrapper(logMsg.msg);
+				for (hr::StringUtils::utf8Wrapper::const_iterator it = textWrapper.begin(), itEnd = textWrapper.end(); it != itEnd; ++it)
 				{
 					auto curChar = *it;
 
-					HorseRadish::StringUtils::utf8Wrapper::const_iterator itNext(it);
+					hr::StringUtils::utf8Wrapper::const_iterator itNext(it);
 					itNext++;
 
 					if ((curChar == '$') && (lastChar != '$'))
 					{
-						HorseRadish::StringUtils::utf8Wrapper::const_iterator itNext(it);
+						hr::StringUtils::utf8Wrapper::const_iterator itNext(it);
 						itNext++;
 
 						if ((*itNext == '{'))
@@ -277,7 +277,7 @@ namespace HorseRadish { namespace Render
 							for (; (*it != '}') && (it != itEnd); it++)
 								value += *it;
 
-							HorseRadish::StringUtils::trim(value);
+							hr::StringUtils::trim(value);
 							if (value.empty())
 								continue;
 
@@ -310,19 +310,19 @@ namespace HorseRadish { namespace Render
 		}
 	}
 
-	void ConsoleUI::drawBackground(const HorseRadish::Matrix &transformMatrix, float bkgAlpha) const
+	void ConsoleUI::drawBackground(const hr::Matrix &transformMatrix, float bkgAlpha) const
 	{
-		HorseRadish::OpenGL::glBindProgramPipeline(mRenderer.mShaders.drawNoTex.progPipeline.getId());
-		HorseRadish::OpenGL::glProgramUniformMatrix4fv(mRenderer.mShaders.drawNoTex.progVertex.getId(), mRenderer.mShaders.drawNoTex.progVertex.getUniformLocation("transformationMatrix"), 1, false, transformMatrix.data());
+		hr::gl::glBindProgramPipeline(mRenderer.mShaders.drawNoTex.progPipeline.getId());
+		hr::gl::glProgramUniformMatrix4fv(mRenderer.mShaders.drawNoTex.progVertex.getId(), mRenderer.mShaders.drawNoTex.progVertex.getUniformLocation("transformationMatrix"), 1, false, transformMatrix.data());
 
 		auto& glImmediateMode = mRenderer.mGlImmediateMode;
 
-		glImmediateMode.beginDraw(HorseRadish::OpenGL::Tools::ImmediateMode::GeometryType::Quads);
-			glImmediateMode.setColor(0, 0, 0, HorseRadish::Color::convertColor(bkgAlpha));
+		glImmediateMode.beginDraw(hr::gl::tools::ImmediateMode::GeometryType::Quads);
+			glImmediateMode.setColor(0, 0, 0, hr::Color::convertColor(bkgAlpha));
 			glImmediateMode.addQuad(mViewRect.x, mViewRect.y, mViewRect.width, mViewRect.height);
 		glImmediateMode.endDraw();
 
-		glImmediateMode.beginDraw(HorseRadish::OpenGL::Tools::ImmediateMode::GeometryType::Lines);
+		glImmediateMode.beginDraw(hr::gl::tools::ImmediateMode::GeometryType::Lines);
 			glImmediateMode.setColor(128, 128, 128);
 			glImmediateMode.addLineV(mViewRect.x, mViewRect.y, mViewRect.y + mViewRect.height);
 			glImmediateMode.addLineH(mViewRect.x, mViewRect.x + mViewRect.width, mViewRect.y);
@@ -331,7 +331,7 @@ namespace HorseRadish { namespace Render
 		glImmediateMode.endDraw();
 	}
 
-	ConsoleUI::ConsoleUI(const HorseRadish::Engine::Logger& logger, HorseRadish::Render::Renderer2D& renderer, size_t maxPromptHistory)
+	ConsoleUI::ConsoleUI(const hr::engine::Logger& logger, hr::render::Renderer2D& renderer, size_t maxPromptHistory)
 		: mRenderer(renderer), mLogger(logger)
 	{
 		mPrompt.maxHistorySize = maxPromptHistory;
@@ -340,12 +340,12 @@ namespace HorseRadish { namespace Render
 		mTextRect.reset(mViewRect.x + 9.0f, mViewRect.y + 9.0f, mViewRect.width - 18.0f, mViewRect.height - 18.0f);
 	}
 
-	void ConsoleUI::draw(const HorseRadish::OpenGL::Tools::Viewport& viewport) const
+	void ConsoleUI::draw(const hr::gl::tools::Viewport& viewport) const
 	{
 		if (!isVisible())
 			return;
 
-		HorseRadish::Matrix transformMatrix = viewport.getProjection(HorseRadish::OpenGL::Tools::Viewport::ProjectionType::Proj2D);
+		hr::Matrix transformMatrix = viewport.getProjection(hr::gl::tools::Viewport::ProjectionType::Proj2D);
 
 		drawBackground(transformMatrix, 0.8f);
 		drawContent(transformMatrix);
@@ -419,7 +419,7 @@ namespace HorseRadish { namespace Render
 							mPrompt.historyOffset = mPrompt.history.size() - 1;
 
 						mPrompt.promptUnicode.clear();
-						for (const auto& curUnicode : HorseRadish::StringUtils::utf8Wrapper(mPrompt.history[mPrompt.historyOffset]))
+						for (const auto& curUnicode : hr::StringUtils::utf8Wrapper(mPrompt.history[mPrompt.historyOffset]))
 							mPrompt.promptUnicode.push_back(curUnicode);
 
 						updateCursorOffset(mPrompt.promptUnicode.size());
@@ -434,7 +434,7 @@ namespace HorseRadish { namespace Render
 						mPrompt.historyOffset--;
 
 						mPrompt.promptUnicode.clear();
-						for (const auto& curUnicode : HorseRadish::StringUtils::utf8Wrapper(mPrompt.history[mPrompt.historyOffset]))
+						for (const auto& curUnicode : hr::StringUtils::utf8Wrapper(mPrompt.history[mPrompt.historyOffset]))
 							mPrompt.promptUnicode.push_back(curUnicode);
 
 						updateCursorOffset(mPrompt.promptUnicode.size());
@@ -448,7 +448,7 @@ namespace HorseRadish { namespace Render
 				if (mPrompt.promptUnicode.empty())
 					return;
 
-				auto promptStr = HorseRadish::StringUtils::conv2UTF8(mPrompt.promptUnicode);
+				auto promptStr = hr::StringUtils::conv2UTF8(mPrompt.promptUnicode);
 				mPrompt.promptUnicode.clear();
 				updateCursorOffset(0);
 

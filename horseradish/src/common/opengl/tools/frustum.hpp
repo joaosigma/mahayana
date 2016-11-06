@@ -4,7 +4,7 @@
 #include "common/matrix.hpp"
 #include "common/ray.hpp"
 
-namespace HorseRadish { namespace OpenGL { namespace Tools
+namespace hr { namespace gl { namespace tools
 {
 	class Frustum
 	{
@@ -13,12 +13,12 @@ namespace HorseRadish { namespace OpenGL { namespace Tools
 		enum PlaneIndex : size_t { PlaneLeft = 0, PlaneRight = 1, PlaneTop = 2, PlaneBottom = 3, PlaneNear = 4, PlaneFar = 5 };
 
 	private:
-		HorseRadish::Plane mPlanes[6];
-		HorseRadish::Vector3f mPosition;
+		hr::Plane mPlanes[6];
+		hr::Vector3f mPosition;
 		float mZNear = 0.0f, mZFar = 0.0f;
 
-		void extractPlanes(const HorseRadish::Vector4f &col1, const HorseRadish::Vector4f &col2, const HorseRadish::Vector4f &col3, const HorseRadish::Vector4f &col4);
-		bool sweptSpherePlaneIntersect(float &t0, float &t1, const HorseRadish::Plane &plane, const HorseRadish::Vector3f &sphereCenter, const float &sphereRadius, const HorseRadish::Vector3f &sweepDir) const;
+		void extractPlanes(const hr::Vector4f &col1, const hr::Vector4f &col2, const hr::Vector4f &col3, const hr::Vector4f &col4);
+		bool sweptSpherePlaneIntersect(float &t0, float &t1, const hr::Plane &plane, const hr::Vector3f &sphereCenter, const float &sphereRadius, const hr::Vector3f &sweepDir) const;
 
 	public:
 		Frustum()
@@ -35,17 +35,17 @@ namespace HorseRadish { namespace OpenGL { namespace Tools
 			return *this;
 		}
 
-		bool testCube(const HorseRadish::Vector3f &point, const float &size) const;
-		bool testBox(const HorseRadish::Vector3f &min, const HorseRadish::Vector3f &max) const;
-		bool testBox(const HorseRadish::BBox &bbox) const;
-		bool testSphere(const HorseRadish::Vector3f &center, const float &radius) const;
-		bool testSphere(const HorseRadish::BSphere &bsphere) const;
-		bool testSphereBox(const HorseRadish::BSphere &bsphere, const HorseRadish::BBox &bbox) const;
-		bool testPoint(const HorseRadish::Vector3f &point) const;
-		bool testPolygon(const HorseRadish::Vector3f * const points, size_t numPoints) const;
-		bool testSquare(const HorseRadish::Vector3f points[4]) const;
-		bool testTri(const HorseRadish::Vector3f points[3]) const;
-		bool testSweptSphere(const HorseRadish::Vector3f &sphereCenter, const float &sphereRadius, const HorseRadish::Vector3f &sweepDir) const;
+		bool testCube(const hr::Vector3f &point, const float &size) const;
+		bool testBox(const hr::Vector3f &min, const hr::Vector3f &max) const;
+		bool testBox(const hr::BBox &bbox) const;
+		bool testSphere(const hr::Vector3f &center, const float &radius) const;
+		bool testSphere(const hr::BSphere &bsphere) const;
+		bool testSphereBox(const hr::BSphere &bsphere, const hr::BBox &bbox) const;
+		bool testPoint(const hr::Vector3f &point) const;
+		bool testPolygon(const hr::Vector3f * const points, size_t numPoints) const;
+		bool testSquare(const hr::Vector3f points[4]) const;
+		bool testTri(const hr::Vector3f points[3]) const;
+		bool testSweptSphere(const hr::Vector3f &sphereCenter, const float &sphereRadius, const hr::Vector3f &sweepDir) const;
 
 		float getZNear(void) const
 		{
@@ -57,30 +57,30 @@ namespace HorseRadish { namespace OpenGL { namespace Tools
 			return mZFar;
 		}
 
-		const HorseRadish::Vector3f& getCamPosition(void) const
+		const hr::Vector3f& getCamPosition(void) const
 		{
 			return mPosition;
 		}
 
-		const HorseRadish::Plane& getPlane(const PlaneIndex planeIndex) const
+		const hr::Plane& getPlane(const PlaneIndex planeIndex) const
 		{
 			return mPlanes[planeIndex];
 		}
 
-		void getCorners(HorseRadish::Vector3f points[8]) const;
+		void getCorners(hr::Vector3f points[8]) const;
 
 		IntersectionType classifyFrustum(const Frustum &frustum) const;
 
 		float dotNormals(const PlaneIndex planeA, const PlaneIndex planeB) const;
 
-		void calculateFrustum(const HorseRadish::Matrix& transformation);
-		void calculateFrustum(const HorseRadish::Matrix& projection, const HorseRadish::Matrix& modelview);
-		void calculateFrustum(const HorseRadish::Matrix& modelView, const HorseRadish::Matrix& projection, const HorseRadish::Vector3f &pos, float zNear, float zFar);
+		void calculateFrustum(const hr::Matrix& transformation);
+		void calculateFrustum(const hr::Matrix& projection, const hr::Matrix& modelview);
+		void calculateFrustum(const hr::Matrix& modelView, const hr::Matrix& projection, const hr::Vector3f &pos, float zNear, float zFar);
 
-		void setIndividualPlane(const PlaneIndex planeIndex, const HorseRadish::Plane &plane);
-		void setFrustum(const HorseRadish::Vector3f &bboxMin, const HorseRadish::Vector3f &bboxMax);
-		void setFrustum(const HorseRadish::Vector3f &center, const float radius);
-		void setFrustum(const HorseRadish::BBox &bbox);
+		void setIndividualPlane(const PlaneIndex planeIndex, const hr::Plane &plane);
+		void setFrustum(const hr::Vector3f &bboxMin, const hr::Vector3f &bboxMax);
+		void setFrustum(const hr::Vector3f &center, const float radius);
+		void setFrustum(const hr::BBox &bbox);
 		
 		void setZNear(const float ZNear)
 		{
@@ -97,7 +97,7 @@ namespace HorseRadish { namespace OpenGL { namespace Tools
 			mPosition.set(x, y, z);
 		}
 
-		void setCamPosition(const HorseRadish::Vector3f &pos)
+		void setCamPosition(const hr::Vector3f &pos)
 		{
 			mPosition.set(pos);
 		}

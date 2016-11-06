@@ -16,7 +16,7 @@
 
 #include <windows.h>
 
-namespace HorseRadish { namespace platform
+namespace hr { namespace platform
 {
 	class WindowImpl
 	{
@@ -29,7 +29,7 @@ namespace HorseRadish { namespace platform
 		std::string mErrorMsg;
 		std::wstring mClassName;
 		DEVMODE mOriginalDeviceMode;
-		HorseRadish::Engine::Logger &mLogger;
+		hr::engine::Logger &mLogger;
 
 		struct {
 			size_t width = 0, height = 0;
@@ -38,7 +38,7 @@ namespace HorseRadish { namespace platform
 
 		struct {
 			std::mutex lock;
-			HorseRadish::Vector3f mouseSnapshot, mouseAccum;
+			hr::Vector3f mouseSnapshot, mouseAccum;
 			std::array<bool, 128> keysSnapshot, keysRealtime;
 		} mRawInput;
 
@@ -50,12 +50,12 @@ namespace HorseRadish { namespace platform
 	
 	private:
 		static LRESULT CALLBACK wndProc(HWND hWnd, UINT messageID, WPARAM wParam, LPARAM lParam);
-		static HorseRadish::hInt32 translateVirtualKeyCode(LPARAM nativeKeyCode);
+		static hr::hInt32 translateVirtualKeyCode(LPARAM nativeKeyCode);
 
 		void processRawInput(const RAWINPUT &inputData);
 	
 	public:
-		WindowImpl(HorseRadish::Engine::Logger &logger);
+		WindowImpl(hr::engine::Logger &logger);
 		~WindowImpl();
 
 		std::string getErrorMsg() const;
@@ -72,7 +72,7 @@ namespace HorseRadish { namespace platform
 		void rawInputSnapshot();
 		bool rawInputGetKeyStatus(const unsigned int &vcode);
 		bool rawInputGetKeyStatus(const Window::VirtualKeys &vcode);
-		HorseRadish::Vector3f rawInputGetMouseStatus();
+		hr::Vector3f rawInputGetMouseStatus();
 	
 		int messageLoop(std::function<void()> closingCb);
 		void processMessages(std::function<void(const Window::Message&)> cb, const bool resetQueue);

@@ -1,6 +1,6 @@
 #pragma once
 
-namespace HorseRadish { namespace Imaging
+namespace hr { namespace imaging
 {
 	template <class TFormat>
 	class ImageFormat

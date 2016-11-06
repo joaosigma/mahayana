@@ -7,7 +7,7 @@
 #include <cassert>
 #include <type_traits>
 
-namespace HorseRadish { namespace Imaging
+namespace hr { namespace imaging
 {
 	template<typename TDataType, typename TDataFormat>
 	class Image;
@@ -184,10 +184,10 @@ namespace HorseRadish { namespace Imaging
 			auto countBlock = (count / 4) * 4;
 
 			for (; curPos < countBlock; curPos += 4, walker += 4, dataOut += 4)
-				HorseRadish::Color::ConvertColor(dataOut, walker, true);
+				hr::Color::ConvertColor(dataOut, walker, true);
 
 			for (; curPos < count; curPos++, walker++, dataOut++)
-				*dataOut = HorseRadish::Color::ConvertColor(*walker);
+				*dataOut = hr::Color::ConvertColor(*walker);
 		}
 
 	public:
@@ -198,7 +198,7 @@ namespace HorseRadish { namespace Imaging
 		ImageView(ImageView&& imgView) = default;
 		ImageView& operator=(ImageView&& imgView) = default;
 
-		void getPixel(const size_t x, const size_t y, HorseRadish::Color &pixelValue) const
+		void getPixel(const size_t x, const size_t y, hr::Color &pixelValue) const
 		{
 			assert(mDataPtr);
 
@@ -270,10 +270,10 @@ namespace HorseRadish { namespace Imaging
 			auto countBlock = (count / 4) * 4;
 
 			for (; curPos < countBlock; curPos += 4, walker += 4, dataOut += 4)
-				HorseRadish::Color::ConvertColor(dataOut, walker, true);
+				hr::Color::ConvertColor(dataOut, walker, true);
 
 			for (; curPos < count; curPos++, walker++, dataOut++)
-				*dataOut = HorseRadish::Color::ConvertColor(*walker);
+				*dataOut = hr::Color::ConvertColor(*walker);
 		}
 
 	public:
@@ -284,7 +284,7 @@ namespace HorseRadish { namespace Imaging
 		ImageView(ImageView&& imgView) = default;
 		ImageView& operator=(ImageView&& imgView) = default;
 
-		void getPixel(const size_t x, const size_t y, HorseRadish::Color &pixelValue) const
+		void getPixel(const size_t x, const size_t y, hr::Color &pixelValue) const
 		{
 			assert(mDataPtr);
 
@@ -512,7 +512,7 @@ namespace HorseRadish { namespace Imaging
 			auto walkerPtr = mDataPtr;
 			auto imgArea = getArea();
 
-			HorseRadish::Color pixelValue;
+			hr::Color pixelValue;
 			unsigned char tmpPixel[4];
 
 			for (size_t curPos = 0; curPos < imgArea; curPos++)
@@ -560,10 +560,10 @@ namespace HorseRadish { namespace Imaging
 			}
 		}
 
-		void setPixel(const size_t x, const size_t y, HorseRadish::Color &pixelValue)
+		void setPixel(const size_t x, const size_t y, hr::Color &pixelValue)
 		{
 			unsigned char tmpPixel[4];
-			HorseRadish::Color::ConvertColor(HorseRadish::Color(r, g, b, a), tmpPixel, true);
+			hr::Color::ConvertColor(hr::Color(r, g, b, a), tmpPixel, true);
 
 			TDataFormat::writeRGBA(mDataPtr + getPos(x, y), tmpPixel);
 		}
@@ -573,7 +573,7 @@ namespace HorseRadish { namespace Imaging
 			TDataFormat::writeRGBA(mDataPtr + getPos(x, y), pixelValue);
 		}
 
-		void transform(std::function<bool(HorseRadish::Color&)> cb)
+		void transform(std::function<bool(hr::Color&)> cb)
 		{
 			if (empty() || !cb)
 				return;
@@ -582,7 +582,7 @@ namespace HorseRadish { namespace Imaging
 			auto imgArea = getArea();
 
 			unsigned char tmpPixel[4];
-			HorseRadish::Color pixelValue;
+			hr::Color pixelValue;
 
 			for (size_t curPos = 0; curPos < imgArea; curPos++)
 			{
@@ -651,7 +651,7 @@ namespace HorseRadish { namespace Imaging
 			}
 		}
 
-		void setPixel(const size_t x, const size_t y, HorseRadish::Color &pixelValue)
+		void setPixel(const size_t x, const size_t y, hr::Color &pixelValue)
 		{
 			TDataFormat::writeRGBA(mDataPtr + getPos(x, y), pixelValue);
 		}

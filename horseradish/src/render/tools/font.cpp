@@ -17,7 +17,7 @@
 const unsigned short validFontCharacters[] = {32,126, 192,255, 880,1008, 7936,8176, 1536,1791, 1040,1299};
 const wchar_t validAditionalFontCharacters[] = {L"¥§©®±µ€"};
 
-namespace HorseRadish { namespace Render { namespace Tools {
+namespace hr { namespace render { namespace tools {
 
 void Font::commitGL()
 {
@@ -28,7 +28,7 @@ void Font::commitGL()
 
 	mGl.fence.wait();
 		mGl.arrayBuffer.writeData(mState.charData.data(), sizeof(VertexDataLayout) * mState.numCharWritten * 4, 0);
-		HorseRadish::OpenGL::glDrawRangeElements(GL_TRIANGLES, 0, mState.numCharWritten * 4, mState.numCharWritten * 6, GL_UNSIGNED_SHORT, (void*)0);
+		hr::gl::glDrawRangeElements(GL_TRIANGLES, 0, mState.numCharWritten * 4, mState.numCharWritten * 6, GL_UNSIGNED_SHORT, (void*)0);
 	mGl.fence.place();
 
 	mState.numCharWritten = 0;
@@ -51,7 +51,7 @@ bool Font::createCharData()
 	for (size_t curPair = 0; curPair < numCharPairs; curPair++)
 		numNormalChars += validFontCharacters[curPair * 2 + 1] - validFontCharacters[curPair * 2 + 0] + 1;
 
-	auto strExtraChars = HorseRadish::StringUtils::conv2UTF8(validAditionalFontCharacters);
+	auto strExtraChars = hr::StringUtils::conv2UTF8(validAditionalFontCharacters);
 
 	mCharMap.reserve(numNormalChars + (sizeof(validAditionalFontCharacters) / sizeof(wchar_t)));
 
@@ -61,7 +61,7 @@ bool Font::createCharData()
 			mCharMap[curCharIndex];
 	}
 
-	for (const auto& curChar : HorseRadish::StringUtils::utf8Wrapper(strExtraChars))
+	for (const auto& curChar : hr::StringUtils::utf8Wrapper(strExtraChars))
 		mCharMap[curChar];
 
 	return true;
@@ -160,7 +160,7 @@ bool Font::initFont(const char * const fontFilePath)
 			totalArea += (glyphWidth + (Font::sBufferPadding * 2)) * (glyphHeight + (Font::sBufferPadding * 2));
 	}
 
-	texWidth = HorseRadish::Math::iProxPowerOfTwo(HorseRadish::Math::ftoi(HorseRadish::Math::sqrt(totalArea)));
+	texWidth = hr::Math::iProxPowerOfTwo(hr::Math::ftoi(hr::Math::sqrt(totalArea)));
 	texHeight = 0;
 
 	texLastWidth = 0;
@@ -199,7 +199,7 @@ bool Font::initFont(const char * const fontFilePath)
 			texMaxLineHeight = nextY;
 	}
 
-	texHeight = HorseRadish::Math::iProxPowerOfTwo(texMaxLineHeight + (texMaxLineHeight % 2));
+	texHeight = hr::Math::iProxPowerOfTwo(texMaxLineHeight + (texMaxLineHeight % 2));
 
 	{
 		auto invTexWidth = 1.0f / static_cast<float>(texWidth);
@@ -220,7 +220,7 @@ bool Font::initFont(const char * const fontFilePath)
 		}
 	}	
 
-	HorseRadish::Imaging::Image<unsigned char, HorseRadish::Imaging::ImageFormatR> imgFinal(texWidth, texHeight);
+	hr::imaging::Image<unsigned char, hr::imaging::ImageFormatR> imgFinal(texWidth, texHeight);
 	imgFinal.clear(0, 0, 0, 0);
 	
 	for (auto& glyphData : validGlyphs)
@@ -241,10 +241,10 @@ bool Font::initFont(const char * const fontFilePath)
 		FT_BitmapGlyph bitmapGlyph = (FT_BitmapGlyph)ftGlyph;
 
 
-		HorseRadish::Imaging::Image<unsigned char, HorseRadish::Imaging::ImageFormatR> imgAux(bitmapGlyph->bitmap.width + (Font::sBufferPadding * 2), bitmapGlyph->bitmap.rows + (Font::sBufferPadding * 2));
+		hr::imaging::Image<unsigned char, hr::imaging::ImageFormatR> imgAux(bitmapGlyph->bitmap.width + (Font::sBufferPadding * 2), bitmapGlyph->bitmap.rows + (Font::sBufferPadding * 2));
 		imgAux.clear(0, 0, 0, 0);
 
-		HorseRadish::Imaging::ImageView<unsigned char, HorseRadish::Imaging::ImageFormatR> imgGlyph(bitmapGlyph->bitmap.buffer, bitmapGlyph->bitmap.width, bitmapGlyph->bitmap.rows);
+		hr::imaging::ImageView<unsigned char, hr::imaging::ImageFormatR> imgGlyph(bitmapGlyph->bitmap.buffer, bitmapGlyph->bitmap.width, bitmapGlyph->bitmap.rows);
 
 		imgAux.setPixelRegion(imgGlyph, Font::sBufferPadding, Font::sBufferPadding, true);
 
@@ -305,8 +305,8 @@ bool Font::initFont(const char * const fontFilePath)
 		}
 	}
 
-	mGl.texture.init(HorseRadish::OpenGL::Objects::Texture::Type::Tex2D, HorseRadish::OpenGL::Objects::Texture::StorageType::R_8, imgFinal.width(), imgFinal.height());
-	mGl.texture.uploadData(0, 0, 0, imgFinal.width(), imgFinal.height(), HorseRadish::OpenGL::Objects::Texture::DataFormat::R, HorseRadish::OpenGL::Objects::Texture::DataType::UBYTE, imgFinal.data());
+	mGl.texture.init(hr::gl::objects::Texture::Type::Tex2D, hr::gl::objects::Texture::StorageType::R_8, imgFinal.width(), imgFinal.height());
+	mGl.texture.uploadData(0, 0, 0, imgFinal.width(), imgFinal.height(), hr::gl::objects::Texture::DataFormat::R, hr::gl::objects::Texture::DataType::UBYTE, imgFinal.data());
 
 	return true;
 }
@@ -411,8 +411,8 @@ Font::Font(const size_t fontSize, const char * const fontFilePath, unsigned int 
 	if (!fontFilePath || (fontSize <= 2))
 		return;
 
-	mGlUniformSampler = HorseRadish::OpenGL::glGetUniformLocation(glFragmentProgramID, "texTextSampler");
-	mGlUniformMatrix = HorseRadish::OpenGL::glGetUniformLocation(glVertexProgramID, "transformationMatrix");
+	mGlUniformSampler = hr::gl::glGetUniformLocation(glFragmentProgramID, "texTextSampler");
+	mGlUniformMatrix = hr::gl::glGetUniformLocation(glVertexProgramID, "transformationMatrix");
 
 	{
 		auto fontIndexArray = std::make_unique<unsigned short[]>(Font::sMumMaxChar * 6);
@@ -426,32 +426,32 @@ Font::Font(const size_t fontSize, const char * const fontFilePath, unsigned int 
 			fontIndexArray[i * 6 + 5] = curIndex + 3;
 		}
 
-		mGl.arrayBuffer.init(HorseRadish::OpenGL::Objects::Buffer::Type::ArrayBuffer, sizeof(Font::VertexDataLayout) * Font::sMumMaxChar * 4, HorseRadish::OpenGL::Objects::Buffer::UsageType::PersistentOnlyWrite);
-		mGl.elementArrayBuffer.init(HorseRadish::OpenGL::Objects::Buffer::Type::ElementArrayBuffer, fontIndexArray.get(), sizeof(unsigned short) * Font::sMumMaxChar * 6, HorseRadish::OpenGL::Objects::Buffer::UsageType::ServerStatic);
+		mGl.arrayBuffer.init(hr::gl::objects::Buffer::Type::ArrayBuffer, sizeof(Font::VertexDataLayout) * Font::sMumMaxChar * 4, hr::gl::objects::Buffer::UsageType::PersistentOnlyWrite);
+		mGl.elementArrayBuffer.init(hr::gl::objects::Buffer::Type::ElementArrayBuffer, fontIndexArray.get(), sizeof(unsigned short) * Font::sMumMaxChar * 6, hr::gl::objects::Buffer::UsageType::ServerStatic);
 	}
 
 	mGl.vertexArray.init();
 
-	HorseRadish::OpenGL::glEnableVertexArrayAttrib(mGl.vertexArray.getId(), 0);
-	HorseRadish::OpenGL::glEnableVertexArrayAttrib(mGl.vertexArray.getId(), 1);
-	HorseRadish::OpenGL::glEnableVertexArrayAttrib(mGl.vertexArray.getId(), 4);
+	hr::gl::glEnableVertexArrayAttrib(mGl.vertexArray.getId(), 0);
+	hr::gl::glEnableVertexArrayAttrib(mGl.vertexArray.getId(), 1);
+	hr::gl::glEnableVertexArrayAttrib(mGl.vertexArray.getId(), 4);
 
-	HorseRadish::OpenGL::glVertexArrayAttribBinding(mGl.vertexArray.getId(), 0, 0);
-	HorseRadish::OpenGL::glVertexArrayAttribFormat(mGl.vertexArray.getId(), 0, 2, GL_FLOAT, false, offsetof(Font::VertexDataLayout, pos));
+	hr::gl::glVertexArrayAttribBinding(mGl.vertexArray.getId(), 0, 0);
+	hr::gl::glVertexArrayAttribFormat(mGl.vertexArray.getId(), 0, 2, GL_FLOAT, false, offsetof(Font::VertexDataLayout, pos));
 
-	HorseRadish::OpenGL::glVertexArrayAttribBinding(mGl.vertexArray.getId(), 1, 0);
-	HorseRadish::OpenGL::glVertexArrayAttribFormat(mGl.vertexArray.getId(), 1, 2, GL_FLOAT, false, offsetof(Font::VertexDataLayout, uv));
+	hr::gl::glVertexArrayAttribBinding(mGl.vertexArray.getId(), 1, 0);
+	hr::gl::glVertexArrayAttribFormat(mGl.vertexArray.getId(), 1, 2, GL_FLOAT, false, offsetof(Font::VertexDataLayout, uv));
 
-	HorseRadish::OpenGL::glVertexArrayAttribBinding(mGl.vertexArray.getId(), 4, 0);
-	HorseRadish::OpenGL::glVertexArrayAttribFormat(mGl.vertexArray.getId(), 4, 4, GL_UNSIGNED_BYTE, true, offsetof(Font::VertexDataLayout, color));
+	hr::gl::glVertexArrayAttribBinding(mGl.vertexArray.getId(), 4, 0);
+	hr::gl::glVertexArrayAttribFormat(mGl.vertexArray.getId(), 4, 4, GL_UNSIGNED_BYTE, true, offsetof(Font::VertexDataLayout, color));
 
-	HorseRadish::OpenGL::glVertexArrayElementBuffer(mGl.vertexArray.getId(), mGl.elementArrayBuffer.getId());
-	HorseRadish::OpenGL::glVertexArrayVertexBuffer(mGl.vertexArray.getId(), 0, mGl.arrayBuffer.getId(), 0, sizeof(Font::VertexDataLayout));
+	hr::gl::glVertexArrayElementBuffer(mGl.vertexArray.getId(), mGl.elementArrayBuffer.getId());
+	hr::gl::glVertexArrayVertexBuffer(mGl.vertexArray.getId(), 0, mGl.arrayBuffer.getId(), 0, sizeof(Font::VertexDataLayout));
 
 	mGl.sampler.init();
-	mGl.sampler.setMinFilter(HorseRadish::OpenGL::Objects::Sampler::FilterType::Linear);
-	mGl.sampler.setMagFilter(HorseRadish::OpenGL::Objects::Sampler::FilterType::Linear);
-	mGl.sampler.setWrap(HorseRadish::OpenGL::Objects::Sampler::WrapType::ClampBorder);
+	mGl.sampler.setMinFilter(hr::gl::objects::Sampler::FilterType::Linear);
+	mGl.sampler.setMagFilter(hr::gl::objects::Sampler::FilterType::Linear);
+	mGl.sampler.setWrap(hr::gl::objects::Sampler::WrapType::ClampBorder);
 	mGl.sampler.setBorderColor(0.0f, 0.0f, 0.0f, 0.0f);
 	
 	if (!initFont(fontFilePath))
@@ -686,11 +686,11 @@ void Font::paintBegin(const float * const tranformationMatrix, float scale)
 	mGl.sampler.bind(0);
 	mGl.vertexArray.bind();
 
-	HorseRadish::OpenGL::glProgramUniform1i(mGlFragmentProgramID, mGlUniformSampler, 0);
+	hr::gl::glProgramUniform1i(mGlFragmentProgramID, mGlUniformSampler, 0);
 	if (tranformationMatrix)
-		HorseRadish::OpenGL::glProgramUniformMatrix4fv(mGlVertexProgramID, mGlUniformMatrix, 1, false, tranformationMatrix);
+		hr::gl::glProgramUniformMatrix4fv(mGlVertexProgramID, mGlUniformMatrix, 1, false, tranformationMatrix);
 
-	HorseRadish::OpenGL::glBindProgramPipeline(mGlProgramPipelineID);
+	hr::gl::glBindProgramPipeline(mGlProgramPipelineID);
 
 	mState.scale = scale;
 	mState.paintStarted = true;

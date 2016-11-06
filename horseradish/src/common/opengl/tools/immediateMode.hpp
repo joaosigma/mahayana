@@ -5,7 +5,7 @@
 #include <array>
 #include <memory>
 
-namespace HorseRadish { namespace OpenGL { namespace Tools
+namespace hr { namespace gl { namespace tools
 {
 	class ImmediateMode
 	{
@@ -25,9 +25,9 @@ namespace HorseRadish { namespace OpenGL { namespace Tools
 
 		struct
 		{
-			HorseRadish::OpenGL::Objects::FenceSync fence;
-			HorseRadish::OpenGL::Objects::VertexArray vertexArray;
-			HorseRadish::OpenGL::Objects::Buffer arrayBuffer, elementArrayBuffer;
+			hr::gl::objects::FenceSync fence;
+			hr::gl::objects::VertexArray vertexArray;
+			hr::gl::objects::Buffer arrayBuffer, elementArrayBuffer;
 		} mGl;
 
 		struct

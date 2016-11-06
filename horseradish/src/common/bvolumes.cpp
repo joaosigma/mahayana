@@ -3,7 +3,7 @@
 #include <cmath>
 #include <cassert>
 
-namespace HorseRadish
+namespace hr
 {
 	BBox::BBox(const Vector3f * const points, size_t numVec)
 	{

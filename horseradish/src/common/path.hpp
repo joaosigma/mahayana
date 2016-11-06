@@ -2,7 +2,7 @@
 
 #include <string>
 
-namespace HorseRadish {	namespace IO
+namespace hr { namespace io
 {
 	class Path
 	{

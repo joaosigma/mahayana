@@ -11,7 +11,7 @@ extern "C" {
 #include <libswscale/swscale.h>
 }
 
-namespace HorseRadish { namespace Misc
+namespace hr { namespace misc
 {
 	class VideoStream
 	{
@@ -19,7 +19,7 @@ namespace HorseRadish { namespace Misc
 		AVFormatContext *mFormatContext = nullptr;
 
 		struct TimerInfo{
-			HorseRadish::Timer timer;
+			hr::Timer timer;
 			double timestampS = 0.0;
 		}mTimerInfo;
 
@@ -63,8 +63,8 @@ namespace HorseRadish { namespace Misc
 		bool goToBeginning();
 		bool goToTime(double seconds);
 
-		const void* getFrame(bool &clockIsBehind, HorseRadish::hInt64 &frameID, double &frameDurationS);
-		double getFrameDuration(const HorseRadish::hInt64 &frameID)  const;
+		const void* getFrame(bool &clockIsBehind, hr::hInt64 &frameID, double &frameDurationS);
+		double getFrameDuration(const hr::hInt64 &frameID)  const;
 
 		bool isValid() const;
 		bool hasAudio() const;
@@ -73,8 +73,8 @@ namespace HorseRadish { namespace Misc
 		size_t getVideoFrameDataSize() const;
 		double getVideoFrameAspectRatio() const;
 		void getVideoDims(size_t &videoWidth, size_t &videoHeight) const;
-		HorseRadish::Primitives2D::Rectangle<int> getVideoRect(size_t winWidth, size_t winHeight, bool maintainAspectRatio) const;
-		HorseRadish::Primitives2D::Rectangle<int> getVideoRectCenter(float scale, size_t winWidth, size_t winHeight) const;
+		hr::Rectangle<int> getVideoRect(size_t winWidth, size_t winHeight, bool maintainAspectRatio) const;
+		hr::Rectangle<int> getVideoRectCenter(float scale, size_t winWidth, size_t winHeight) const;
 	};
 
 }}

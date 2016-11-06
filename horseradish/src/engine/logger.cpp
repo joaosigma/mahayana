@@ -4,7 +4,7 @@
 
 #include <ctime>
 
-namespace HorseRadish { namespace Engine
+namespace hr { namespace engine
 {
 	bool Logger::checkEntryData(const char * const entryData, bool &hasFormattedText, size_t &dataSize)
 	{
@@ -58,7 +58,7 @@ namespace HorseRadish { namespace Engine
 		if (!mOutFileStream)
 			return;
 
-		HorseRadish::Streams::StreamWriter streamWriter(*mOutFileStream);
+		hr::streams::StreamWriter streamWriter(*mOutFileStream);
 
 		switch (entry.moduleType)
 		{
@@ -151,7 +151,7 @@ namespace HorseRadish { namespace Engine
 				streamWriter.write(walker, walkerNext - walker);
 		}
 
-		streamWriter.write(HorseRadish::platform::Platform::NewLine, HorseRadish::platform::Platform::NewLineSize);
+		streamWriter.write(hr::platform::Platform::NewLine, hr::platform::Platform::NewLineSize);
 	}
 
 	void Logger::threadFlushFunc()
@@ -227,10 +227,10 @@ namespace HorseRadish { namespace Engine
 		mMaxBufferSize = maxBufferedEntries;
 	}
 
-	Logger::Logger(size_t asyncMaxEntries, size_t maxBufferedEntries, const HorseRadish::IO::Path &filePath)
+	Logger::Logger(size_t asyncMaxEntries, size_t maxBufferedEntries, const hr::io::Path &filePath)
 		: Logger(asyncMaxEntries, maxBufferedEntries)
 	{
-		mOutFileStream = std::shared_ptr<HorseRadish::Streams::FileStream>(new HorseRadish::Streams::FileStream(filePath.str(), false, true));
+		mOutFileStream = std::shared_ptr<hr::streams::FileStream>(new hr::streams::FileStream(filePath.str(), false, true));
 	}
 
 	Logger::~Logger()

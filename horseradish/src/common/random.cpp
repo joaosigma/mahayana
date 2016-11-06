@@ -1,6 +1,6 @@
 #include "random.hpp"
 
-namespace HorseRadish
+namespace hr
 {
 	Random::Random()
 	{

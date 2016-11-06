@@ -2,7 +2,7 @@
 
 #include <cstring>
 
-namespace HorseRadish
+namespace hr
 {
 	void Sorting::radixByte0(size_t howMuch, const int * const HRESTRICT source, int * const HRESTRICT dest)
 	{
