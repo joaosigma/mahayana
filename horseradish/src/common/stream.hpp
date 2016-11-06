@@ -129,7 +129,7 @@ namespace hr { namespace streams
 		{
 			mDataShared = data;
 			mData = data.get();
-			mDataBegin = reinterpret_cast<const unsigned char*>(mData) + dataOffset;
+			mDataBegin = mDataWalker = reinterpret_cast<const unsigned char*>(mData) + dataOffset;
 			mDataEnd = mDataBegin + dataSize;
 		}
 
