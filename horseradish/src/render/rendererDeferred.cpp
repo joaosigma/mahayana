@@ -43,7 +43,7 @@ namespace hr { namespace render
 		mVBOs.vboIndirectDraw.bind();
 		for (auto& curObject : mWorld.mRenderData.objects)
 		{			
-			auto& concept = mWorld.mConcepts[curObject->conceptName];
+			auto& concept = mWorld.mConcepts[curObject->conceptId];
 
 			if (concept.renderData.texNormal.isValid())
 				concept.renderData.texNormal.bind(1);

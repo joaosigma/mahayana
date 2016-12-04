@@ -36,6 +36,11 @@ namespace hr { namespace geom
 			out[i] = Mesh::unpack(in[i]);
 	}
 
+	size_t Mesh::maxVertexCount()
+	{
+		return static_cast<size_t>(std::numeric_limits<unsigned short>::max());
+	}
+
 	Mesh Mesh::genBox(float width, float height, float depth, size_t precision)
 	{
 		if (width <= 0.0f || height <= 0.0f || depth <= 0.0f || precision == 0)
@@ -326,7 +331,7 @@ namespace hr { namespace geom
 		: mNumVertices(numVertices), mNumIndices(numIndices)
 	{
 		assert((numVertices > 0) && (numIndices > 0));
-		assert(numVertices < (static_cast<size_t>(std::numeric_limits<unsigned short>::max()) * 2));
+		assert(numVertices < Mesh::maxVertexCount());
 		assert((numIndices % 3) == 0);
 
 		mData = std::unique_ptr<VertexData[]>(new VertexData[numVertices]);
@@ -337,7 +342,7 @@ namespace hr { namespace geom
 		: mData(std::move(vertices)), mNumVertices(numVertices), mIndices(std::move(indices)), mNumIndices(numIndices)
 	{
 		assert((numVertices > 0) && (numIndices > 0));
-		assert(numVertices < (static_cast<size_t>(std::numeric_limits<unsigned short>::max()) * 2));
+		assert(numVertices < Mesh::maxVertexCount());
 		assert((numIndices % 3) == 0);
 
 		assert(mData && mIndices);
@@ -678,18 +683,21 @@ namespace hr { namespace geom
 
 		for (size_t i = 0; i < mNumIndices; i += 3)
 		{
-			Vector3f faceNormal;
-			faceNormal.storeNormal(mData[i * 3 + 0].pos, mData[i * 3 + 1].pos, mData[i * 3 + 2].pos);
+			auto i1 = mIndices[i + 0];
+			auto i2 = mIndices[i + 1];
+			auto i3 = mIndices[i + 2];
 
-			normals[i * 3 + 0] += faceNormal;
-			normals[i * 3 + 1] += faceNormal;
-			normals[i * 3 + 2] += faceNormal;
+			Vector3f faceNormal;
+			faceNormal.storeNormal(mData[i1].pos, mData[i2].pos, mData[i3].pos);
+
+			normals[i1] += faceNormal;
+			normals[i2] += faceNormal;
+			normals[i3] += faceNormal;
 		}
 
 		for (size_t i = 0; i < mNumVertices; i++)
 		{
 			normals[i].normalize();
-
 			Mesh::pack(normals[i].data(), mData[i].normal, 3);
 		}
 	}

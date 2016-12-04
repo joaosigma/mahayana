@@ -140,7 +140,7 @@ namespace hr
 			mMaxPt.set(max);
 		}
 
-		void setMinMax(const float * const min, const float * const max)
+		void setMinMax(const float min[3], const float max[3])
 		{
 			mMinPt.set(min);
 			mMaxPt.set(max);

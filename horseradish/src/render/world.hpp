@@ -8,6 +8,7 @@
 #include "common/OpenGL/tools/frustum.hpp"
 #include "common/OpenGL/tools/viewport.hpp"
 
+#include <map>
 #include <vector>
 
 namespace hr { namespace render
@@ -15,20 +16,21 @@ namespace hr { namespace render
 	class Concept
 	{
 	public:
+		size_t id = 0;
 		std::string name;
 		hr::geom::Mesh mesh;
+		hr::BBox meshBBox;
 		std::string matDiffusePath, matNormalPath;
 
 		struct RenderData
 		{
-			int meshVBOVertexOffset;
-			unsigned int meshDrawIndirectOffset;
-			void *meshTriListOffset;
+			int meshVBOVertexOffset = 0;
+			unsigned int meshDrawIndirectOffset = 0;
+			void *meshTriListOffset = nullptr;
 
 			hr::gl::objects::Texture texDiffuse, texNormal;
 
 			RenderData()
-				: meshVBOVertexOffset(0), meshDrawIndirectOffset(0), meshTriListOffset(nullptr)
 			{ }
 
 		} renderData;
@@ -37,10 +39,10 @@ namespace hr { namespace render
 	class Object
 	{
 	public:
-		enum class Type { Static = 1, Instance = 2 };
+		enum class Type: unsigned int { Static = 1, Instance = 2 };
 
 		Type type;
-		std::string conceptName;
+		size_t conceptId;
 		hr::BBox bbox;
 
 		//instance data: [{quat, translate}, ...]
@@ -49,12 +51,15 @@ namespace hr { namespace render
 	class World
 	{
 	public:
-		std::unordered_map<std::string, Concept> mConcepts;
+		std::map<size_t, Concept> mConcepts;
 		std::vector<Object> mObjects;
 
 		struct RenderData{
 			std::vector<Object*> objects;
 		}mRenderData;
+
+	private:
+		size_t genId() const;
 
 	public:
 		World();
@@ -62,10 +67,16 @@ namespace hr { namespace render
 
 		void cleanup();
 
-		bool importJSON(hr::streams::StreamReader &stream);
-		bool exportJSON(hr::streams::StreamWriter &stream);
+		bool importAll(hr::streams::StreamReader &streamScene, hr::streams::StreamReader &streamGeom);
+		bool exportAll(hr::streams::StreamWriter &streamScene, hr::streams::StreamWriter &streamGeom);
 
 		bool importObj(const std::string& basePath, const std::string& fileName);
+
+		void optimizeConcept(size_t conceptId);
+		void optimizeConcepts();
+
+		std::vector<size_t> unusedConcepts() const;
+		void removeConcepts(const std::vector<size_t>& conceptIds);
 
 		void loadData(hr::io::FileSystem& fileSystem);
 		void prepareNextFrame(const tools::Camera& hrCamera, const hr::gl::tools::Viewport& hrViewport);
