@@ -177,7 +177,7 @@ namespace hr { namespace engine
 			return true;
 
 		bool hasFormattedText;
-		unsigned int entryDataSize;
+		size_t entryDataSize;
 		if (!Logger::checkEntryData(entryData, hasFormattedText, entryDataSize))
 			return false;
 

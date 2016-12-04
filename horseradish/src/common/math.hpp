@@ -147,7 +147,7 @@ namespace hr
 	{
 #ifdef _M_X64
 		__m128 sin, cos;
-		SIMD::sinCosR(_mm_load_ps1(&radians), &sin, &cos);
+		SIMD::sinCos(_mm_load_ps1(&radians), &sin, &cos);
 		s = sin.m128_f32[0];
 		c = cos.m128_f32[0];
 #else
@@ -167,7 +167,7 @@ namespace hr
 	{
 #ifdef _M_X64
 		__m128 sin, cos;
-		SIMD::sinCosR(_mm_load_ps1(&radians), &sin, &cos);
+		SIMD::sinCos(_mm_load_ps1(&radians), &sin, &cos);
 		s = sin.m128_f32[0] * scaleResult;
 		c = cos.m128_f32[0] * scaleResult;
 #else

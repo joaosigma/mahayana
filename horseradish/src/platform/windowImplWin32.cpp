@@ -9,7 +9,6 @@
 
 namespace hr { namespace platform
 {
-
 	static
 	bool retrieveMonitorArea(RECT& monitorArea, bool secondaryIfAvailable, bool fullArea)
 	{
@@ -73,11 +72,11 @@ namespace hr { namespace platform
 		{
 			CREATESTRUCT *pCreate = reinterpret_cast<CREATESTRUCT*>(lParam);
 
-			SetWindowLongPtr(hWnd, GWL_USERDATA, (LONG_PTR)pCreate->lpCreateParams);
+			SetWindowLongPtr(hWnd, GWLP_USERDATA, (LONG_PTR)pCreate->lpCreateParams);
 			return DefWindowProc(hWnd, messageID, wParam, lParam);
 		}
 
-		WindowImpl* window = reinterpret_cast<WindowImpl*>(GetWindowLongPtr(hWnd, GWL_USERDATA));
+		WindowImpl* window = reinterpret_cast<WindowImpl*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
 		if (!window)
 			return DefWindowProc(hWnd, messageID, wParam, lParam);
 
@@ -95,9 +94,8 @@ namespace hr { namespace platform
 
 		if (messageID == WM_INPUT)
 		{
-			BYTE bufferAux[40];
-
-			auto bufferSize = sizeof(bufferAux);
+			BYTE bufferAux[sizeof(RAWINPUT)];
+			UINT bufferSize = sizeof(RAWINPUT);
 			GetRawInputData((HRAWINPUT)lParam, RID_INPUT, bufferAux, &bufferSize, sizeof(RAWINPUTHEADER));
 
 			window->processRawInput(*(reinterpret_cast<RAWINPUT*>(bufferAux)));

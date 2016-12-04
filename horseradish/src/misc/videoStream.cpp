@@ -109,7 +109,7 @@ namespace hr { namespace misc
 		return frameFinal;
 	}
 
-	VideoStream::VideoStream(size_t maxFramesQueue, PixelFormat frameTargetPixelFormat, const char * const videoFilePath)
+	VideoStream::VideoStream(size_t maxFramesQueue, AVPixelFormat frameTargetPixelFormat, const char * const videoFilePath)
 	{
 		mVideoQueueMax = (maxFramesQueue < 2) ? 2 : maxFramesQueue;
 		mVideoQueue = new VideoFrame[mVideoQueueMax];
@@ -162,7 +162,7 @@ namespace hr { namespace misc
 				return;
 		}
 
-		mVideoInfo.videoFrameOriginal = avcodec_alloc_frame();
+		mVideoInfo.videoFrameOriginal = av_frame_alloc();
 		if (!mVideoInfo.videoFrameOriginal)
 			return;
 
@@ -177,7 +177,7 @@ namespace hr { namespace misc
 		{
 			auto targetFrame = mVideoQueue + i - skipQueue;
 
-			targetFrame->avFrame = avcodec_alloc_frame();
+			targetFrame->avFrame = av_frame_alloc();
 			if (!targetFrame->avFrame)
 			{
 				skipQueue++;
@@ -187,8 +187,7 @@ namespace hr { namespace misc
 			targetFrame->frameData = (uint8_t *)av_malloc(mVideoInfo.frameBufferSize * sizeof(uint8_t));
 			if (!targetFrame->frameData)
 			{
-				av_free(targetFrame->avFrame);
-				targetFrame->avFrame = nullptr;
+				av_frame_free(&targetFrame->avFrame);
 
 				skipQueue++;
 				continue;
@@ -205,7 +204,7 @@ namespace hr { namespace misc
 		for (size_t i = 0; i < mVideoQueueMax; i++)
 		{
 			av_free(mVideoQueue[i].frameData);
-			av_free(mVideoQueue[i].avFrame);
+			av_frame_free(&mVideoQueue[i].avFrame);
 		}
 
 		delete[] mVideoQueue;
@@ -214,7 +213,7 @@ namespace hr { namespace misc
 			sws_freeContext(mVideoInfo.pixelConvertContext);
 
 		if (mVideoInfo.videoFrameOriginal)
-			av_free(mVideoInfo.videoFrameOriginal);
+			av_frame_free(&mVideoInfo.videoFrameOriginal);
 
 		if (mAudioInfo.codecContext)
 			avcodec_close(mAudioInfo.codecContext);

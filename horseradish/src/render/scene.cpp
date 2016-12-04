@@ -13,7 +13,7 @@ namespace hr { namespace render
 	{
 		misc::VideoStream::Initialize();
 
-		mVideoData.stream = std::make_unique<misc::VideoStream>(3, PixelFormat::PIX_FMT_BGR24, mFilePath.c_str());
+		mVideoData.stream = std::make_unique<misc::VideoStream>(3, AVPixelFormat::AV_PIX_FMT_BGR24, mFilePath.c_str());
 		if (!mVideoData.stream->isValid())
 		{
 			mVideoData.stream.reset();

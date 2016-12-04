@@ -61,7 +61,11 @@ namespace hr { namespace engine
 		if (paramIndex < 0 || paramIndex >= mNumParams)
 			return false;
 
-		return SQ_SUCCEEDED(sq_getinteger(mSqvm, paramIndex + 2, &value));
+		SQInteger sqInt = 0; //in x64, SQInteger is not compatible with int
+		auto success = SQ_SUCCEEDED(sq_getinteger(mSqvm, paramIndex + 2, &sqInt));
+
+		value = sqInt;
+		return success;
 	}
 
 	bool Runtime::FunctionContext::getParamValue(const int paramIndex, bool &value) const

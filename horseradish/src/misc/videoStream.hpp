@@ -53,7 +53,7 @@ namespace hr { namespace misc
 		VideoFrame* getLatestFrame() const;
 
 	public:
-		explicit VideoStream(size_t maxFramesQueue, PixelFormat frameTargetPixelFormat, const char * const videoFilePath);
+		explicit VideoStream(size_t maxFramesQueue, AVPixelFormat frameTargetPixelFormat, const char * const videoFilePath);
 		~VideoStream();
 
 		static void Initialize();

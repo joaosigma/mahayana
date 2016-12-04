@@ -35,7 +35,7 @@ namespace hr { namespace imaging
 		hr::streams::MemoryViewStream streamContent;
 		streamReader.stream().cloneAllContent(streamContent);
 
-		size_t outW = 0, outH = 0;
+		unsigned int outW = 0, outH = 0;
 		unsigned char* outBuffer = nullptr;
 
 		if (lodepng_decode24(&outBuffer, &outW, &outH, static_cast<const unsigned char *>(streamContent.data()), streamContent.length()) != 0)
@@ -52,7 +52,7 @@ namespace hr { namespace imaging
 		hr::streams::MemoryViewStream streamContent;
 		streamReader.stream().cloneAllContent(streamContent);
 
-		size_t outW = 0, outH = 0;
+		unsigned int outW = 0, outH = 0;
 		unsigned char* outBuffer = nullptr;
 
 		if (lodepng_decode32(&outBuffer, &outW, &outH, static_cast<const unsigned char *>(streamContent.data()), streamContent.length()) != 0)
@@ -104,7 +104,7 @@ namespace hr { namespace imaging
 
 	Image<unsigned char, ImageFormatRGBA> Factory::readTGA(hr::streams::StreamReader &streamReader)
 	{
-		#pragma pack(1)
+		#pragma pack(push, 1)
 		struct Tgaheader
 		{
 			__int8	descriptionlen;
@@ -120,6 +120,7 @@ namespace hr { namespace imaging
 			__int8	bpp;
 			__int8	attrib;
 		};
+		#pragma pack(pop)
 
 		Tgaheader header;
 		streamReader.read(&header, sizeof(header));
