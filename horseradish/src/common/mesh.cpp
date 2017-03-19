@@ -423,6 +423,8 @@ namespace hr { namespace geom
 			auto vertexPtr = static_cast<VertexData*>(mData.get());
 
 			minPoint = maxPoint = _mm_loadu_ps(vertexPtr->pos);
+			vertexPtr++;
+
 			for (size_t i = 1; i < mNumVertices; i++, vertexPtr++)
 			{
 				curPoint = _mm_loadu_ps(vertexPtr->pos);

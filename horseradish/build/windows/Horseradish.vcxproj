@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
       <Configuration>Debug</Configuration>
@@ -29,26 +29,26 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v141</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v141</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v141</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v141</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
@@ -259,6 +259,7 @@
     <ClCompile Include="..\..\src\render\consoleUI.cpp" />
     <ClCompile Include="..\..\src\render\profilerUI.cpp" />
     <ClCompile Include="..\..\src\render\renderer2D.cpp" />
+    <ClCompile Include="..\..\src\render\rendererDebug.cpp" />
     <ClCompile Include="..\..\src\render\rendererDeferred.cpp" />
     <ClCompile Include="..\..\src\render\scene.cpp" />
     <ClCompile Include="..\..\src\render\stage.cpp" />
@@ -395,6 +396,7 @@
     <ClInclude Include="..\..\src\render\profilerUI.hpp" />
     <ClInclude Include="..\..\src\render\renderer.hpp" />
     <ClInclude Include="..\..\src\render\renderer2D.hpp" />
+    <ClInclude Include="..\..\src\render\rendererDebug.hpp" />
     <ClInclude Include="..\..\src\render\rendererDeferred.hpp" />
     <ClInclude Include="..\..\src\render\scene.hpp" />
     <ClInclude Include="..\..\src\render\stage.hpp" />

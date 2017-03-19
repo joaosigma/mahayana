@@ -42,7 +42,7 @@ namespace hr { namespace gl { namespace tools
 					mGl.arrayBuffer.writeData(mBufferData.data(), numElements * 4 * sizeof(VertexDataLayout), 0);
 					mGl.elementArrayBuffer.writeData(mBufferIndices.data(), numElements * 6 * sizeof(unsigned short), 0);
 
-					hr::gl::glDrawRangeElements(GL_TRIANGLES, 0, numElements * 4, numElements * 6, GL_UNSIGNED_SHORT, (void*)0);
+					hr::gl::glDrawRangeElements(GL_TRIANGLES, 0, (numElements * 4) - 1, numElements * 6, GL_UNSIGNED_SHORT, (void*)0);
 				mGl.fence.place();
 			}
 		}
@@ -56,7 +56,7 @@ namespace hr { namespace gl { namespace tools
 					mGl.arrayBuffer.writeData(mBufferData.data(), numElements * 3 * sizeof(VertexDataLayout), 0);
 					mGl.elementArrayBuffer.writeData(mBufferIndices.data(), numElements * 3 * sizeof(unsigned short), 0);
 
-					hr::gl::glDrawRangeElements(GL_TRIANGLES, 0, numElements * 3, numElements * 3, GL_UNSIGNED_SHORT, (void*)0);
+					hr::gl::glDrawRangeElements(GL_TRIANGLES, 0, (numElements * 3) - 1, numElements * 3, GL_UNSIGNED_SHORT, (void*)0);
 				mGl.fence.place();
 			}
 		}
@@ -70,7 +70,7 @@ namespace hr { namespace gl { namespace tools
 					mGl.arrayBuffer.writeData(mBufferData.data(), numElements * 2 * sizeof(VertexDataLayout), 0);
 					mGl.elementArrayBuffer.writeData(mBufferIndices.data(), numElements * 2 * sizeof(unsigned short), 0);
 
-					hr::gl::glDrawRangeElements(GL_LINES, 0, numElements * 2, numElements * 2, GL_UNSIGNED_SHORT, (void*)0);
+					hr::gl::glDrawRangeElements(GL_LINES, 0, (numElements * 2) - 1, numElements * 2, GL_UNSIGNED_SHORT, (void*)0);
 				mGl.fence.place();
 			}
 		}
@@ -83,7 +83,7 @@ namespace hr { namespace gl { namespace tools
 					mGl.arrayBuffer.writeData(mBufferData.data(), mState.curVertex * sizeof(VertexDataLayout), 0);
 					mGl.elementArrayBuffer.writeData(mBufferIndices.data(), mState.curVertex * sizeof(unsigned short), 0);
 
-					hr::gl::glDrawRangeElements(GL_LINE_STRIP, 0, mState.curVertex, mState.curVertex, GL_UNSIGNED_SHORT, (void*)0);
+					hr::gl::glDrawRangeElements(GL_LINE_STRIP, 0, mState.curVertex - 1, mState.curVertex, GL_UNSIGNED_SHORT, (void*)0);
 				mGl.fence.place();
 			}
 		}

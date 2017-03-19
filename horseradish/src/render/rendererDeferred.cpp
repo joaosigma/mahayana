@@ -1,5 +1,6 @@
 #include "rendererDeferred.hpp"
 
+#include "rendererDebug.hpp"
 #include "common/stringUtils.hpp"
 #include "common/imageFactory.hpp"
 
@@ -10,13 +11,13 @@ namespace hr { namespace render
 {
 	void RendererDeferred::renderGBuffer(const tools::Camera& hrCamera, const hr::gl::tools::Viewport& hrViewport)
 	{
-		hr::Matrix matrixModelView;
+		hr::Matrix matrixModelView, matrixTransform;
 
-		hr::Matrix matrixTransformacao = hrViewport.getProjection(hr::gl::tools::Viewport::ProjectionType::Proj3D);
 		matrixModelView.set(hrCamera.modelView());
-		matrixTransformacao *= matrixModelView;
+		matrixTransform = hrViewport.getProjection(hr::gl::tools::Viewport::ProjectionType::Proj3D);
+		matrixTransform *= matrixModelView;
 
-		mVBOs.vaoMesh.bind();
+		mWorld.mRenderData.vaoMesh.bind();
 		mFBOs.fboDeferredGBuffer.bind();
 
 		GLenum mrt[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3 };
@@ -33,14 +34,14 @@ namespace hr { namespace render
 		hr::gl::glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		hr::gl::glProgramUniformMatrix4fv(mShaders.deferred.vertex.getId(), mShaders.deferred.vertex.getUniformLocation("matView"), 1, false, matrixModelView.data());
-		hr::gl::glProgramUniformMatrix4fv(mShaders.deferred.vertex.getId(), mShaders.deferred.vertex.getUniformLocation("matTrans"), 1, false, matrixTransformacao.data());
+		hr::gl::glProgramUniformMatrix4fv(mShaders.deferred.vertex.getId(), mShaders.deferred.vertex.getUniformLocation("matTrans"), 1, false, matrixTransform.data());
 		hr::gl::glProgramUniform1f(mShaders.deferred.fragment.getId(), mShaders.deferred.fragment.getUniformLocation("farClipPlane"), hrViewport.zfar());
 		hr::gl::glBindProgramPipeline(mShaders.deferred.pipeline.getId());
 
 		mSamplers.samplerNormals.bind(1);
 		mSamplers.samplerAlbedo.bind(0);
 
-		mVBOs.vboIndirectDraw.bind();
+		mWorld.mRenderData.vboIndirectDraw.bind();
 		for (auto& curObject : mWorld.mRenderData.objects)
 		{			
 			auto& concept = mWorld.mConcepts[curObject->conceptId];
@@ -57,7 +58,7 @@ namespace hr { namespace render
 
 			hr::gl::glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_SHORT, reinterpret_cast<void*>(concept.renderData.meshDrawIndirectOffset), 1, 0);
 		}
-		mVBOs.vboIndirectDraw.unbind();
+		mWorld.mRenderData.vboIndirectDraw.unbind();
 	}
 
 	void RendererDeferred::renderFinal(const hr::gl::tools::Viewport& hrViewport)
@@ -93,18 +94,18 @@ namespace hr { namespace render
 
 	void RendererDeferred::loadGeometry()
 	{
-		mVBOs.vboMeshData.reset();
-		mVBOs.vboMeshIndexData.reset();
-		mVBOs.vboMeshSize = mVBOs.vboMeshIndexSize = 0;
+		mWorld.mRenderData.vboMeshData.reset();
+		mWorld.mRenderData.vboMeshIndexData.reset();
 
+		size_t vboMeshSize = 0, vboMeshIndexSize = 0;
 		for (const auto& concept : mWorld.mConcepts)
 		{
-			mVBOs.vboMeshSize += concept.second.mesh.sizeVertices();
-			mVBOs.vboMeshIndexSize += concept.second.mesh.sizeIndices();
+			vboMeshSize += sizeof(hr::geom::Mesh::VertexData) * concept.second.geom.numVertices;
+			vboMeshIndexSize += sizeof(unsigned short) * concept.second.geom.numIndices;
 		}
 
-		mVBOs.vboMeshData.init(gl::objects::Buffer::Type::ArrayBuffer, mVBOs.vboMeshSize, gl::objects::Buffer::UsageType::PersistentOnlyWrite);
-		mVBOs.vboMeshIndexData.init(gl::objects::Buffer::Type::ElementArrayBuffer, mVBOs.vboMeshIndexSize, gl::objects::Buffer::UsageType::PersistentOnlyWrite);
+		mWorld.mRenderData.vboMeshData.init(gl::objects::Buffer::Type::ArrayBuffer, vboMeshSize, gl::objects::Buffer::UsageType::PersistentOnlyWrite);
+		mWorld.mRenderData.vboMeshIndexData.init(gl::objects::Buffer::Type::ElementArrayBuffer, vboMeshIndexSize, gl::objects::Buffer::UsageType::PersistentOnlyWrite);
 
 		int baseVertexOffset = 0;
 		int poolVertex = 0, poolIndex = 0;
@@ -115,13 +116,28 @@ namespace hr { namespace render
 			concept.second.renderData.meshVBOVertexOffset = baseVertexOffset;
 			concept.second.renderData.meshTriListOffset = (void*)poolIndex;
 
-			mVBOs.vboMeshData.writeData(concept.second.mesh.vertices(), concept.second.mesh.sizeVertices(), poolVertex);
-			poolVertex += concept.second.mesh.sizeVertices();
+			auto sizeVertices = sizeof(hr::geom::Mesh::VertexData) * concept.second.geom.numVertices;
+			auto sizeIndices = sizeof(unsigned short) * concept.second.geom.numIndices;
 
-			baseVertexOffset += concept.second.mesh.numVertices();
+			mWorld.mRenderData.vboMeshData.writeData([this, &concept](void* const destBuffer, size_t requestedDataSize)
+			{
+				mWorld.mGeomFileStream.seek(hr::streams::Stream::SeekOrigin::Begin, concept.second.geom.fstreamVertexOffset);
+				auto bytesRead = mWorld.mGeomFileStream.read(destBuffer, requestedDataSize);
+				assert(bytesRead == requestedDataSize);
 
-			mVBOs.vboMeshIndexData.writeData(concept.second.mesh.indices(), concept.second.mesh.sizeIndices(), poolIndex);
-			poolIndex += concept.second.mesh.sizeIndices();
+			}, sizeVertices, poolVertex);
+			poolVertex += sizeVertices;
+
+			baseVertexOffset += concept.second.geom.numVertices;
+
+			mWorld.mRenderData.vboMeshIndexData.writeData([this, &concept, &sizeVertices](void* const destBuffer, size_t requestedDataSize)
+			{
+				mWorld.mGeomFileStream.seek(hr::streams::Stream::SeekOrigin::Begin, concept.second.geom.fstreamIndexOffset);
+				auto bytesRead = mWorld.mGeomFileStream.read(destBuffer, requestedDataSize);
+				assert(bytesRead == requestedDataSize);
+
+			}, sizeIndices, poolIndex);
+			poolIndex += sizeIndices;
 		}
 
 		{
@@ -133,7 +149,7 @@ namespace hr { namespace render
 				gl::objects::Buffer::DrawElementsIndirectCommand drawIndirect;
 				drawIndirect.baseInstance = 0;
 				drawIndirect.baseVertex = concept.second.renderData.meshVBOVertexOffset;
-				drawIndirect.count = concept.second.mesh.numIndices();
+				drawIndirect.count = concept.second.geom.numIndices;
 				drawIndirect.firstIndex = ((unsigned int)concept.second.renderData.meshTriListOffset) / sizeof(unsigned short);
 				drawIndirect.instanceCount = 1;
 
@@ -143,30 +159,30 @@ namespace hr { namespace render
 				numGeoms++;
 			}
 
-			mVBOs.vboIndirectDraw.reset();
-			mVBOs.vboIndirectDraw.init(gl::objects::Buffer::Type::DrawIndirect, drawCommands.get(), sizeof(gl::objects::Buffer::DrawElementsIndirectCommand) * numGeoms, gl::objects::Buffer::UsageType::ServerStatic);
+			mWorld.mRenderData.vboIndirectDraw.reset();
+			mWorld.mRenderData.vboIndirectDraw.init(gl::objects::Buffer::Type::DrawIndirect, drawCommands.get(), sizeof(gl::objects::Buffer::DrawElementsIndirectCommand) * numGeoms, gl::objects::Buffer::UsageType::ServerStatic);
 		}
 
-		mVBOs.vaoMesh.reset();
-		mVBOs.vaoMesh.init();
+		mWorld.mRenderData.vaoMesh.reset();
+		mWorld.mRenderData.vaoMesh.init();
 
-		hr::gl::glEnableVertexArrayAttrib(mVBOs.vaoMesh.getId(), 0);
-		hr::gl::glEnableVertexArrayAttrib(mVBOs.vaoMesh.getId(), 1);
-		hr::gl::glEnableVertexArrayAttrib(mVBOs.vaoMesh.getId(), 2);
-		hr::gl::glEnableVertexArrayAttrib(mVBOs.vaoMesh.getId(), 3);
+		hr::gl::glEnableVertexArrayAttrib(mWorld.mRenderData.vaoMesh.getId(), 0);
+		hr::gl::glEnableVertexArrayAttrib(mWorld.mRenderData.vaoMesh.getId(), 1);
+		hr::gl::glEnableVertexArrayAttrib(mWorld.mRenderData.vaoMesh.getId(), 2);
+		hr::gl::glEnableVertexArrayAttrib(mWorld.mRenderData.vaoMesh.getId(), 3);
 
-		hr::gl::glVertexArrayAttribBinding(mVBOs.vaoMesh.getId(), 0, 0);
-		hr::gl::glVertexArrayAttribBinding(mVBOs.vaoMesh.getId(), 1, 0);
-		hr::gl::glVertexArrayAttribBinding(mVBOs.vaoMesh.getId(), 2, 0);
-		hr::gl::glVertexArrayAttribBinding(mVBOs.vaoMesh.getId(), 3, 0);
+		hr::gl::glVertexArrayAttribBinding(mWorld.mRenderData.vaoMesh.getId(), 0, 0);
+		hr::gl::glVertexArrayAttribBinding(mWorld.mRenderData.vaoMesh.getId(), 1, 0);
+		hr::gl::glVertexArrayAttribBinding(mWorld.mRenderData.vaoMesh.getId(), 2, 0);
+		hr::gl::glVertexArrayAttribBinding(mWorld.mRenderData.vaoMesh.getId(), 3, 0);
 
-		hr::gl::glVertexArrayAttribFormat(mVBOs.vaoMesh.getId(), 0, 3, GL_FLOAT, false, offsetof(hr::geom::Mesh::VertexData, pos));
-		hr::gl::glVertexArrayAttribFormat(mVBOs.vaoMesh.getId(), 1, 2, GL_FLOAT, false, offsetof(hr::geom::Mesh::VertexData, uv));
-		hr::gl::glVertexArrayAttribFormat(mVBOs.vaoMesh.getId(), 2, 3, GL_UNSIGNED_SHORT, true, offsetof(hr::geom::Mesh::VertexData, normal));
-		hr::gl::glVertexArrayAttribFormat(mVBOs.vaoMesh.getId(), 3, 4, GL_UNSIGNED_SHORT, true, offsetof(hr::geom::Mesh::VertexData, tangent));
+		hr::gl::glVertexArrayAttribFormat(mWorld.mRenderData.vaoMesh.getId(), 0, 3, GL_FLOAT, false, offsetof(hr::geom::Mesh::VertexData, pos));
+		hr::gl::glVertexArrayAttribFormat(mWorld.mRenderData.vaoMesh.getId(), 1, 2, GL_FLOAT, false, offsetof(hr::geom::Mesh::VertexData, uv));
+		hr::gl::glVertexArrayAttribFormat(mWorld.mRenderData.vaoMesh.getId(), 2, 3, GL_UNSIGNED_SHORT, true, offsetof(hr::geom::Mesh::VertexData, normal));
+		hr::gl::glVertexArrayAttribFormat(mWorld.mRenderData.vaoMesh.getId(), 3, 4, GL_UNSIGNED_SHORT, true, offsetof(hr::geom::Mesh::VertexData, tangent));
 
-		hr::gl::glVertexArrayElementBuffer(mVBOs.vaoMesh.getId(), mVBOs.vboMeshIndexData.getId());
-		hr::gl::glVertexArrayVertexBuffer(mVBOs.vaoMesh.getId(), 0, mVBOs.vboMeshData.getId(), 0, sizeof(hr::geom::Mesh::VertexData));
+		hr::gl::glVertexArrayElementBuffer(mWorld.mRenderData.vaoMesh.getId(), mWorld.mRenderData.vboMeshIndexData.getId());
+		hr::gl::glVertexArrayVertexBuffer(mWorld.mRenderData.vaoMesh.getId(), 0, mWorld.mRenderData.vboMeshData.getId(), 0, sizeof(hr::geom::Mesh::VertexData));
 	}
 
 	void RendererDeferred::loadDiffuse(const std::string& texFilePath, hr::gl::objects::Texture& targetTexture)
@@ -256,7 +272,9 @@ namespace hr { namespace render
 	}
 
 	RendererDeferred::RendererDeferred(const hr::gl::objects::Context& glContext, hr::io::FileSystem& fileSystem, hr::render::World& renderWorld, size_t renderWidth, size_t renderHeight)
-		: Renderer(glContext), mWorld(renderWorld), mFileSystem(fileSystem)
+		: Renderer(glContext)
+		, mWorld(renderWorld)
+		, mFileSystem(fileSystem)
 	{
 		//this->texDefaultAlbedo = this->glObjectManager->Create2D(hr::io::Path("media\\defaultAlbedo.png"), hr::gl::objects::ObjectsManager::TargetType::RGBA32, 0);
 		//this->texDefaultNormals = this->glObjectManager->Create2D(hr::io::Path("media\\defaultNormals.png"), hr::gl::objects::ObjectsManager::TargetType::RGBA32, STEXTURE_NORMAL_MAP_MIPS);
@@ -330,6 +348,11 @@ namespace hr { namespace render
 		}
 
 		renderGBuffer(hrCamera, hrViewport);
+	}
+
+	void RendererDeferred::renderDebug(RendererDebug& rendererDebug, const tools::Camera& hrCamera, const hr::gl::tools::Viewport& hrViewport)
+	{
+		rendererDebug.render(hrCamera, hrViewport);
 	}
 
 	void RendererDeferred::renderComposite(const hr::gl::tools::Viewport& hrViewport)

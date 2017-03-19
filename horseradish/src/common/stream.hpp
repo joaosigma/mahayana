@@ -190,6 +190,9 @@ namespace hr { namespace streams
 		static bool streamDump(Stream& stream, const std::string& filePath);
 
 	public:
+		FileStream()
+		{ }
+
 		FileStream(const std::string& filePath, bool toRead, bool toWrite)
 		{
 			openFile(filePath, toRead, toWrite);

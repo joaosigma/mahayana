@@ -34,19 +34,14 @@ namespace hr { namespace render
 		std::uint32_t id;
 		std::uint32_t geomsOffset;
 		std::uint32_t size;
+		std::uint32_t numVertices;
+		std::uint32_t numIndices;
+		float bboxMin[3], bboxMax[3];
 	};
 	#pragma pack(pop)
 
-	size_t World::genId() const
-	{
-		size_t curId = 1;
-		while (mConcepts.find(curId) != mConcepts.end())
-			curId++;
-
-		return curId;
-	}
-
-	World::World()
+	World::World(bool editorMode)
+		: m_editorMode(editorMode)
 	{ }
 
 	World::~World()
@@ -62,8 +57,14 @@ namespace hr { namespace render
 		mRenderData.objects.clear();
 	}
 
-	bool World::importAll(hr::streams::StreamReader &streamScene, hr::streams::StreamReader &streamGeom)
+	bool World::importAll(const std::string& scenePath, const std::string& geomPath)
 	{
+		hr::streams::FileStream sceneFileStream(scenePath, true, false);
+		hr::streams::StreamReader streamScene(sceneFileStream);
+
+		mGeomFileStream = hr::streams::FileStream(geomPath, true, m_editorMode ? true : false);
+		hr::streams::StreamReader streamGeom(mGeomFileStream);
+
 		std::unordered_map<size_t, GeomChunkInfo> geomInfo;
 
 		//read geom info
@@ -74,7 +75,11 @@ namespace hr { namespace render
 			if (std::memcmp(geomHeader.fileSig, GeomFileSig.data(), sizeof(geomHeader.fileSig)) != 0)
 				return false;
 
+			geomsOffset = streamGeom.position();
+
 			geomInfo.rehash(geomHeader.numGeoms);
+			streamGeom.seek(hr::streams::Stream::SeekOrigin::End, -(sizeof(GeomChunkInfo) * geomHeader.numGeoms));
+
 			for (size_t curGeom = 0; curGeom < geomHeader.numGeoms; ++curGeom)
 			{
 				GeomChunkInfo chunkInfo;
@@ -82,8 +87,6 @@ namespace hr { namespace render
 
 				geomInfo[chunkInfo.id] = chunkInfo;
 			}
-
-			geomsOffset = streamGeom.position();
 		}
 
 		//read scene
@@ -113,30 +116,15 @@ namespace hr { namespace render
 					concept.id = conceptId;
 					concept.name = (*itr)["name"].GetString();
 
-					if ((*itr).HasMember("mesh"))
-					{
-						auto& jsonMesh = ((*itr).FindMember("mesh"))->value;
+					auto geomIt = geomInfo.find(concept.id);
+					if (geomIt == geomInfo.end())
+						continue;
 
-						size_t numVertices = jsonMesh["numVertices"].GetUint();
-						size_t numIndices = jsonMesh["numIndices"].GetUint();
-
-						hr::geom::Mesh newMesh(numVertices, numIndices);
-
-						auto geomIt = geomInfo.find(concept.id);
-						if (geomIt != geomInfo.end())
-						{
-							float bbox[6];
-							streamGeom.seek(hr::streams::Stream::SeekOrigin::Begin, geomsOffset + geomIt->second.geomsOffset);
-							streamGeom.read(newMesh.vertices(), newMesh.sizeVertices());
-							streamGeom.read(newMesh.indices(), newMesh.sizeIndices());
-							streamGeom.read(bbox, sizeof(float) * 6);
-
-							concept.meshBBox.setMinMax(bbox + 0, bbox + 3);
-						}
-
-						assert(newMesh.check());
-						concept.mesh = std::move(newMesh);
-					}
+					concept.geom.numVertices = geomIt->second.numVertices;
+					concept.geom.numIndices = geomIt->second.numIndices;
+					concept.geom.fstreamVertexOffset = geomsOffset + geomIt->second.geomsOffset;
+					concept.geom.fstreamIndexOffset = concept.geom.fstreamVertexOffset + (sizeof(hr::geom::Mesh::VertexData) * concept.geom.numVertices);
+					concept.geom.bbox.setMinMax(geomIt->second.bboxMin, geomIt->second.bboxMax);
 
 					if ((*itr).HasMember("material"))
 					{
@@ -161,7 +149,7 @@ namespace hr { namespace render
 					if (mConcepts.find(newObject.conceptId) == mConcepts.end())
 						continue;
 
-					newObject.bbox = mConcepts[newObject.conceptId].meshBBox;
+					newObject.bbox = mConcepts[newObject.conceptId].geom.bbox;
 					mObjects.push_back(newObject);
 				}
 			}
@@ -170,10 +158,49 @@ namespace hr { namespace render
 		return true;
 	}
 
-	bool World::exportAll(hr::streams::StreamWriter &streamScene, hr::streams::StreamWriter &streamGeom)
+	void World::loadData(hr::io::FileSystem& fileSystem)
+	{
+		mRenderData.objects.reserve(mObjects.size());
+	}
+
+	void World::prepareNextFrame(const tools::Camera& hrCamera, const hr::gl::tools::Viewport& hrViewport)
+	{
+		auto camPos = hrCamera.getPos();
+
+		hr::gl::tools::Frustum camFrustum;
+		camFrustum.setCamPosition(camPos);
+		camFrustum.setZNear(hrViewport.znear());
+		camFrustum.setZFar(hrViewport.zfar());
+		camFrustum.calculateFrustum(hrViewport.getProjection(hr::gl::tools::Viewport::ProjectionType::Proj3D), hrCamera.modelView());
+
+		mRenderData.objects.clear();
+		for (auto& curObject : mObjects)
+		{
+			if (!camFrustum.testBox(curObject.bbox))
+				continue;
+
+			mRenderData.objects.push_back(&curObject);
+		}
+
+		if (mRenderData.objects.empty())
+			return;
+	}
+
+	size_t WorldEditor::genId() const
+	{
+		size_t curId = 1;
+		while (mConcepts.find(curId) != mConcepts.end())
+			curId++;
+
+		return curId;
+	}
+
+	bool WorldEditor::exportAll(const std::string& scenePath, const std::string& geomPath)
 	{
 		//export scene file
 		{
+			hr::streams::FileStream streamScene(scenePath, false, true);
+
 			rapidjson::StringBuffer s;
 			rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(s);
 
@@ -198,22 +225,13 @@ namespace hr { namespace render
 				writer.String("name");
 				writer.String(concept.second.name.c_str());
 
-				writer.String("mesh");
-				writer.StartObject();
-					writer.String("numVertices");
-					writer.Uint(concept.second.mesh.numVertices());
-
-					writer.String("numIndices");
-					writer.Uint(concept.second.mesh.numIndices());
-				writer.EndObject();
-
 				writer.String("material");
 				writer.StartObject();
-					writer.String("diffusePath");
-					writer.String(concept.second.matDiffusePath.c_str());
+				writer.String("diffusePath");
+				writer.String(concept.second.matDiffusePath.c_str());
 
-					writer.String("normalPath");
-					writer.String(concept.second.matNormalPath.c_str());
+				writer.String("normalPath");
+				writer.String(concept.second.matNormalPath.c_str());
 				writer.EndObject();
 
 				writer.EndObject();
@@ -241,59 +259,15 @@ namespace hr { namespace render
 			streamScene.write(s.GetString(), s.GetSize());
 		}
 
-		//export geom file
+		//export geom file (it's just a copy of the already open geom file)
 		{
-			auto numGeoms = mConcepts.size();
-			auto geomInfos = std::unique_ptr<GeomChunkInfo[]>(new GeomChunkInfo[numGeoms]);
-
-			{
-				size_t curGeom = 0, fileOffset = 0;
-				for (auto& concept : mConcepts)
-				{
-					auto& geomInfo = geomInfos[curGeom++];
-
-					geomInfo.id = concept.second.id;
-					geomInfo.geomsOffset = fileOffset;
-					geomInfo.size = concept.second.mesh.sizeVertices() + concept.second.mesh.sizeIndices() + (sizeof(float) * 6); // vertices + indices + bbox
-
-					fileOffset += geomInfo.size;
-				}
-			}
-
-			{
-				GeomHeader geomHeader;
-				memcpy(geomHeader.fileSig, GeomFileSig.data(), sizeof(geomHeader.fileSig));
-				geomHeader.version = 1;
-				geomHeader.numGeoms = numGeoms;
-
-				streamGeom.write(&geomHeader, sizeof(GeomHeader));
-			}
-
-			streamGeom.write(geomInfos.get(), sizeof(GeomChunkInfo) * numGeoms);
-
-			for (auto& concept : mConcepts)
-			{
-				//TODO: seems that lz4 is corrupting the buffer
-
-				//auto maxCompressedSize = LZ4_compressBound(curGeom.mesh.sizeVertices());
-				//auto compressedBuffer = std::unique_ptr<char[]>(new char[maxCompressedSize]);
-				//auto compressedSize = LZ4_compress_HC(reinterpret_cast<const char*>(curGeom.mesh.dataVertices()), compressedBuffer.get(), curGeom.mesh.sizeVertices(), maxCompressedSize, 16);
-				//
-				//if ((compressedSize > 0) && (compressedSize < curGeom.mesh.sizeVertices()))
-				//	writer.String(hr::Encoders::EncodeBase64(compressedBuffer.get(), compressedSize).c_str());
-
-				streamGeom.write(concept.second.mesh.vertices(), concept.second.mesh.sizeVertices());
-				streamGeom.write(concept.second.mesh.indices(), concept.second.mesh.sizeIndices());
-
-				streamGeom.write(concept.second.meshBBox.min().data(), sizeof(float) * 3);
-				streamGeom.write(concept.second.meshBBox.max().data(), sizeof(float) * 3);
-			}
+			hr::streams::FileStream::streamDump(mGeomFileStream, geomPath);
 		}
 
 		return true;
 	}
 
-	bool World::importObj(const std::string& basePath, const std::string& fileName)
+	bool WorldEditor::importObj(const std::string& basePath, const std::string& fileName)
 	{
 		tinyobj::attrib_t objVertexAttribs;
 		std::vector<tinyobj::shape_t> objShapes;
@@ -423,8 +397,12 @@ namespace hr { namespace render
 					newMesh.genNormals();
 				newMesh.genTangents4();
 
-				std::swap(concept.mesh, newMesh);
-				concept.meshBBox = concept.mesh.getBoundingBox();
+				newMesh.optimizeIndices();
+
+				/*std::swap(concept.mesh, newMesh);
+				concept.geom.numVertices = concept.mesh.numVertices();
+				concept.geom.numIndices = concept.mesh.numIndices();
+				concept.geom.bbox = concept.mesh.getBoundingBox();*/
 			}
 
 			//process material
@@ -459,32 +437,14 @@ namespace hr { namespace render
 			Object newObject;
 			newObject.type = Object::Type::Static;
 			newObject.conceptId = concept.id;
-			newObject.bbox = concept.meshBBox;
+			newObject.bbox = concept.geom.bbox;
 			mObjects.push_back(newObject);
 		}
 
 		return true;
 	}
 
-	void World::optimizeConcept(size_t conceptId)
-	{
-		if (mConcepts.find(conceptId) == mConcepts.end())
-			return;
-
-		auto& concept = mConcepts[conceptId];
-		concept.mesh.optimizeIndices();
-	}
-
-	void World::optimizeConcepts()
-	{
-		std::vector<size_t> conceptIds;
-		std::transform(mConcepts.begin(), mConcepts.end(), std::back_inserter(conceptIds), [](const std::map<size_t, Concept>::value_type &keyValue) {return keyValue.first; });
-
-		for (const auto& conceptId : conceptIds)
-			optimizeConcept(conceptId);
-	}
-
-	std::vector<size_t> World::unusedConcepts() const
+	std::vector<size_t> WorldEditor::unusedConcepts() const
 	{
 		std::vector<size_t> conceptIds;
 
@@ -499,40 +459,12 @@ namespace hr { namespace render
 		return conceptIds;
 	}
 
-	void World::removeConcepts(const std::vector<size_t>& conceptIds)
+	void WorldEditor::removeConcepts(const std::vector<size_t>& conceptIds)
 	{
 		for (const auto& conceptId : conceptIds)
 		{
 			mConcepts.erase(conceptId);
 			std::remove_if(mObjects.begin(), mObjects.end(), [conceptId](const Object& object) { return (object.conceptId == conceptId); });
 		}
-	}
-
-	void World::loadData(hr::io::FileSystem& fileSystem)
-	{
-		mRenderData.objects.reserve(mObjects.size());
-	}
-
-	void World::prepareNextFrame(const tools::Camera& hrCamera, const hr::gl::tools::Viewport& hrViewport)
-	{
-		auto camPos = hrCamera.getPos();
-
-		hr::gl::tools::Frustum camFrustum;
-		camFrustum.setCamPosition(camPos);
-		camFrustum.setZNear(hrViewport.znear());
-		camFrustum.setZFar(hrViewport.zfar());
-		camFrustum.calculateFrustum(hrViewport.getProjection(hr::gl::tools::Viewport::ProjectionType::Proj3D), hrCamera.modelView());
-
-		mRenderData.objects.clear();
-		for (auto& curObject : mObjects)
-		{
-			if (!camFrustum.testBox(curObject.bbox))
-				continue;
-
-			mRenderData.objects.push_back(&curObject);
-		}
-
-		if (mRenderData.objects.empty())
-			return;
 	}
 } }

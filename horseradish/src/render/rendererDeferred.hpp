@@ -10,20 +10,15 @@
 
 namespace hr { namespace render
 {
-	class RendererDeferred : public Renderer
+	class RendererDebug;
+
+	class RendererDeferred
+		: public Renderer
 	{
 	public:
 		enum RenderTargetType { Albedo, Normals, MiscA, MiscB };
 
 	private:
-		struct VBOs{
-			unsigned int vboMeshSize, vboMeshIndexSize;
-			hr::gl::objects::Buffer vboMeshData, vboMeshIndexData, vboIndirectDraw;
-			hr::gl::objects::VertexArray vaoMesh;
-
-			VBOs() : vboMeshSize(0), vboMeshIndexSize(0) { }
-		};
-
 		struct FBOs{
 			hr::gl::objects::Sampler samplerTexs;
 			hr::gl::objects::FrameBuffer fboDeferredGBuffer;
@@ -50,7 +45,6 @@ namespace hr { namespace render
 		};
 
 		hr::render::World& mWorld;
-		VBOs mVBOs;
 		FBOs mFBOs;
 		Shaders mShaders;
 		Samplers mSamplers;
@@ -73,6 +67,7 @@ namespace hr { namespace render
 		void loadWorld();
 
 		void render(const tools::Camera& hrCamera, const hr::gl::tools::Viewport& hrViewport);
+		void renderDebug(RendererDebug& rendererDebug, const tools::Camera& hrCamera, const hr::gl::tools::Viewport& hrViewport);
 		void renderComposite(const hr::gl::tools::Viewport& hrViewport);
 	};
 } }

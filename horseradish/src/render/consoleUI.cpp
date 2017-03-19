@@ -104,7 +104,10 @@ namespace hr { namespace render
 				{
 					hr::StringUtils::utf8Wrapper utf8Wrapper(strUTF8);
 
-					mPrompt.promptUnicode.insert(mPrompt.promptUnicode.begin() + mCursor.offset, utf8Wrapper.begin(), utf8Wrapper.end());
+					auto curOffset = mCursor.offset;
+					for (const auto& unicodeChar : utf8Wrapper)
+						mPrompt.promptUnicode.insert(mPrompt.promptUnicode.begin() + (curOffset++), unicodeChar);
+
 					updateCursorOffset(mCursor.offset + strUTF8.size());
 				}
 

@@ -116,7 +116,6 @@ namespace hr
 		}
 
 		void corners(Vector3f points[8]) const;
-		void geom(Vector3f points[36]) const;
 		void boundingSphere(Vector3f &center, float &radius) const;
 		BSphere boundingSphere() const;
 		float planeDistance(const Plane &plane) const;

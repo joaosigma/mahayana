@@ -10,6 +10,7 @@
 #include "../render/consoleUI.hpp"
 #include "../render/profilerUI.hpp"
 #include "../render/rendererDeferred.hpp"
+#include "../render/rendererDebug.hpp"
 #include "../render/renderer2D.hpp"
 
 #include <libs/cppformat/format.h>
@@ -85,14 +86,10 @@ void openGLWriteInfo(hr::engine::Logger &logger, const hr::gl::objects::Context 
 static
 void CALLBACK openglDebugMessagesCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *message, void *userParam)
 {
-	const char *glSource, *glType, *glSeverity;
+	const char *glSource = "", *glType = "", *glSeverity = "";
 
 	auto logger = reinterpret_cast<hr::engine::Logger*>(userParam);
 
-	//por omissão
-	glSource = glType = glSeverity = "";
-
-	//escolho o source correcto
 	switch (source)
 	{
 	case GL_DEBUG_SOURCE_API_ARB:
@@ -118,7 +115,6 @@ void CALLBACK openglDebugMessagesCallback(GLenum source, GLenum type, GLuint id,
 		break;
 	}
 
-	//escolho o tipo correcto
 	switch (type)
 	{
 	case GL_DEBUG_TYPE_ERROR_ARB:
@@ -144,7 +140,6 @@ void CALLBACK openglDebugMessagesCallback(GLenum source, GLenum type, GLuint id,
 		break;
 	}
 
-	//escolho o grau correcto
 	auto entryType = hr::engine::Logger::EntryType::Info;
 	switch (severity)
 	{
@@ -163,7 +158,6 @@ void CALLBACK openglDebugMessagesCallback(GLenum source, GLenum type, GLuint id,
 		break;
 	}
 
-	//faço log do que preciso
 	logger->log(entryType, hr::engine::Logger::ModuleType::Graphics, "OpenGL [{0} - {1} - {2}]:", glSource, glType, glSeverity);
 	logger->log(entryType, hr::engine::Logger::ModuleType::Graphics, "     {0}", message);
 }
@@ -176,6 +170,7 @@ namespace hr { namespace engine
 		std::unique_ptr<Profiler> profiler;
 		std::unique_ptr<render::Stage> stage;
 		std::unique_ptr<hr::render::RendererDeferred> rendererDeferred;
+		std::unique_ptr<hr::render::RendererDebug> rendererDebug;
 		std::unique_ptr<hr::render::Renderer2D> renderer2D;
 		std::unique_ptr<hr::render::World> renderData;
 		std::unique_ptr<platform::OpenglContext> glContext;
@@ -187,7 +182,7 @@ namespace hr { namespace engine
 
 		auto isDevMove = var<bool>("sys.developer");
 
-		//start a profile if enabled
+		//start a profiler if enabled
 		if (Profiler::isSupported())
 		{
 			profiler = std::make_unique<Profiler>();
@@ -258,12 +253,14 @@ namespace hr { namespace engine
 									mFileSystem.get(), var<std::string>("sys.console.text.font").c_str(),
 									var<int>("sys.console.text.size"));
 
+			rendererDebug = std::make_unique<hr::render::RendererDebug>(*glContext, *mFileSystem, *renderer2D, *renderData);
+
 			rendererDeferred = std::make_unique<hr::render::RendererDeferred>(*glContext, *mFileSystem, *renderData, displayWidth, displayHeight);
 
 			stage = std::make_unique<render::Stage>(*mRuntime, *mLoggerRuntimeCtx, *mFileSystem, *glContext, displayWidth, displayHeight);
 		}
 			
-		//start other render (misc) related stuff
+		//start other renderers (misc) related stuff
 		{
 			if (Profiler::isSupported())
 			{
@@ -290,28 +287,36 @@ namespace hr { namespace engine
 
 		//!!!!!!!!!!!!!!!! dev
 		{
-
-			//hr::streams::FileStream readStream("c:/Users/Sigma/Desktop/doom3.json", true, false);
-			hr::streams::FileStream readStream("c:/Users/Sigma/Desktop/test_scene.json", true, false);
-			//hr::streams::FileStream readStream("c:/Users/Sigma/Desktop/volund.json", true, false);
-
-			renderData->cleanup();
-			if (!renderData->importJSON(hr::streams::StreamReader(readStream)))
+			//import
+			{
 				renderData->cleanup();
 
-			//renderData->importObj("C:\\Users\\Sigma\\Desktop\\", "volund.obj");
+				//auto success = renderData->importAll("c:/Users/Sigma/Desktop/test_scene.hscene", "c:/Users/Sigma/Desktop/test_scene.hgeom");
+				auto success = renderData->importAll("c:/Users/Sigma/Desktop/volund.hscene", "c:/Users/Sigma/Desktop/volund.hgeom");
+				//auto success = renderData->importAll("c:/Users/Sigma/Desktop/doom.hscene", "c:/Users/Sigma/Desktop/doom.hgeom");
+				//auto success = renderData->importAll("c:/Users/Sigma/Desktop/dabrovic-sponza.hscene", "c:/Users/Sigma/Desktop/dabrovic-sponza.hgeom");
+				//auto success = renderData->importAll("c:/Users/Sigma/Desktop/head.hscene", "c:/Users/Sigma/Desktop/head.hgeom");
+
+				if (!success)
+					renderData->cleanup();
+			}
+
+			//renderData->importObj("C:\\Users\\Sigma\\Desktop\\san-miguel\\", "san-miguel.obj");
 
 			renderData->loadData(*mFileSystem);
-
 			rendererDeferred->loadWorld();
 
-			/*hr::streams::FileStream writeStream("c:/Users/Sigma/Desktop/volund2.json", false, true);
-			renderData->ExportJSON(hr::streams::StreamWriter(writeStream));*/
+			//export
+			/*{
+				hr::streams::FileStream streamScene("c:/Users/Sigma/Desktop/head2.hscene", false, true);
+				hr::streams::FileStream streamGeom("c:/Users/Sigma/Desktop/head2.hgeom", false, true);
+				renderData->exportAll(hr::streams::StreamWriter(streamScene), hr::streams::StreamWriter(streamGeom));
+			}*/
 		}
 
 		//we are about to enter the main render loop
 		{
-			//a camera
+			//setup camera
 			hr::render::tools::CameraFPS camera;
 			camera.setPos(0.0f, 0.0f, 1.0f);
 			camera.setTarget(0.0f, 0.0f, 0.0f);
@@ -348,6 +353,7 @@ namespace hr { namespace engine
 
 				//draw main, deferred scene
 				rendererDeferred->render(camera, viewportRender);
+				rendererDeferred->renderDebug(*rendererDebug, camera, viewportRender);
 				rendererDeferred->renderComposite(viewportRender);
 
 				if (Profiler::isSupported())
@@ -485,6 +491,7 @@ namespace hr { namespace engine
 		consoleUI.reset();
 
 		rendererDeferred.reset();
+		rendererDebug.reset();
 		renderer2D.reset();
 
 		renderData.reset();

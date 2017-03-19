@@ -70,32 +70,6 @@ namespace hr
 		points[7].set(mMaxPt[0], mMaxPt[1], mMaxPt[2]);
 	}
 
-	void BBox::geom(Vector3f points[36]) const
-	{
-		Vector3f corners[8];
-
-		this->corners(corners);
-
-		//front
-		points[0 * 6 + 0] = corners[1];	points[0 * 6 + 1] = corners[7];	points[0 * 6 + 2] = corners[3];
-		points[0 * 6 + 3] = corners[1];	points[0 * 6 + 4] = corners[5];	points[0 * 6 + 5] = corners[7];
-		//right
-		points[1 * 6 + 0] = corners[5];	points[1 * 6 + 1] = corners[6];	points[1 * 6 + 2] = corners[7];
-		points[1 * 6 + 3] = corners[5];	points[1 * 6 + 4] = corners[4];	points[1 * 6 + 5] = corners[6];
-		//back
-		points[2 * 6 + 0] = corners[4];	points[2 * 6 + 1] = corners[2];	points[2 * 6 + 2] = corners[6];
-		points[2 * 6 + 3] = corners[4];	points[2 * 6 + 4] = corners[0];	points[2 * 6 + 5] = corners[2];
-		//left
-		points[3 * 6 + 0] = corners[0];	points[3 * 6 + 1] = corners[3];	points[3 * 6 + 2] = corners[2];
-		points[3 * 6 + 3] = corners[0];	points[3 * 6 + 4] = corners[1];	points[3 * 6 + 5] = corners[3];
-		//down
-		points[4 * 6 + 0] = corners[0];	points[4 * 6 + 1] = corners[5];	points[4 * 6 + 2] = corners[1];
-		points[4 * 6 + 3] = corners[0];	points[4 * 6 + 4] = corners[4];	points[4 * 6 + 5] = corners[5];
-		//up
-		points[5 * 6 + 0] = corners[3];	points[5 * 6 + 1] = corners[6];	points[5 * 6 + 2] = corners[2];
-		points[5 * 6 + 3] = corners[3];	points[5 * 6 + 4] = corners[7];	points[5 * 6 + 5] = corners[6];
-	}
-
 	void BBox::boundingSphere(Vector3f &center, float &radius) const
 	{
 		this->center(center);

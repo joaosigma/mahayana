@@ -9,6 +9,7 @@
 #include <array>
 #include <vector>
 #include <cassert>
+#include <functional>
 #include <initializer_list>
 
 namespace hr { namespace gl { namespace objects
@@ -992,6 +993,28 @@ namespace hr { namespace gl { namespace objects
 			{
 				auto mappedPtr = glMapNamedBufferRange(mId, bufferOffset, dataSize, GL_MAP_WRITE_BIT);
 				memcpy(mappedPtr, dataPtr, dataSize);
+				glUnmapNamedBuffer(mId);
+			}
+
+			return true;
+		}
+
+		bool writeData(std::function<void(void*, size_t)> writeOp, const size_t dataSize, const size_t bufferOffset) const
+		{
+			if (!writeOp || (dataSize <= 0) || !isValid())
+				return false;
+
+			if ((mUsageType != UsageType::OnlyWrite) && (mUsageType != UsageType::PersistentOnlyWrite))
+				return false;
+
+			if (mMappedPtr)
+			{
+				writeOp(reinterpret_cast<unsigned char*>(mMappedPtr) + bufferOffset, dataSize);
+			}
+			else
+			{
+				auto mappedPtr = glMapNamedBufferRange(mId, bufferOffset, dataSize, GL_MAP_WRITE_BIT);
+				writeOp(mappedPtr, dataSize);
 				glUnmapNamedBuffer(mId);
 			}
 
