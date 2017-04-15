@@ -40,7 +40,8 @@ namespace hr { namespace imaging
 		}
 	};
 
-	struct ImageFormatR : ImageFormat<ImageFormatR>
+	struct ImageFormatR
+		: ImageFormat<ImageFormatR>
 	{
 		static size_t size()
 		{
@@ -80,7 +81,8 @@ namespace hr { namespace imaging
 		}
 	};
 
-	struct ImageFormatRA : ImageFormat<ImageFormatR>
+	struct ImageFormatRA
+		: ImageFormat<ImageFormatR>
 	{
 		static size_t size()
 		{
@@ -121,7 +123,8 @@ namespace hr { namespace imaging
 		}
 	};
 
-	struct ImageFormatRGB : ImageFormat<ImageFormatRGB>
+	struct ImageFormatRGB
+		: ImageFormat<ImageFormatRGB>
 	{
 		static size_t size()
 		{
@@ -159,7 +162,8 @@ namespace hr { namespace imaging
 		}
 	};
 
-	struct ImageFormatRGBA : ImageFormat<ImageFormatRGBA>
+	struct ImageFormatRGBA
+		: ImageFormat<ImageFormatRGBA>
 	{
 		static size_t size()
 		{

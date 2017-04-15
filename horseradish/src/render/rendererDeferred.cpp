@@ -3,6 +3,7 @@
 #include "rendererDebug.hpp"
 #include "common/stringUtils.hpp"
 #include "common/imageFactory.hpp"
+#include "tools/texture.hpp"
 
 #include <cstddef>
 #include <algorithm>
@@ -185,29 +186,56 @@ namespace hr { namespace render
 		hr::gl::glVertexArrayVertexBuffer(mWorld.mRenderData.vaoMesh.getId(), 0, mWorld.mRenderData.vboMeshData.getId(), 0, sizeof(hr::geom::Mesh::VertexData));
 	}
 
-	void RendererDeferred::loadDiffuse(const std::string& texFilePath, hr::gl::objects::Texture& targetTexture)
+	void RendererDeferred::loadDiffuse(const std::string& texFilePath, hr::gl::objects::Texture& targetTexture, bool compress)
 	{
 		if (texFilePath.empty())
 			return;
 
+		auto compressedPath = "../" + texFilePath + ".hrctex";
+
+		//texture is compressed
+		if (mFileSystem.fileExists(compressedPath.c_str()))
+		{
+			auto fileStream = mFileSystem.fileRead(compressedPath.c_str());
+			if (!fileStream)
+				return;
+
+			tools::TextureTools::uploadCompressedDiffuse(hr::streams::StreamReader(*fileStream), targetTexture);
+			return;
+		}
+
+		//read source image		
 		auto fileStream = mFileSystem.fileRead(texFilePath.c_str());
 		if (!fileStream)
 			return;
-	
+
 		if (hr::StringUtils::endsWith(texFilePath, ".tga"))
 		{
-			hr::imaging::Image<unsigned char, hr::imaging::ImageFormatRGBA> targetImg;
-
-			targetImg = hr::imaging::Factory::readTGA(hr::streams::StreamReader(*fileStream));
-
+			auto targetImg = hr::imaging::Factory::readTGA(hr::streams::StreamReader(*fileStream));
 			if (targetImg.empty())
 				return;
 
-			targetImg.removeGamma();
+			if (!compress)
+			{
+				tools::TextureTools::uploadDiffuse(targetImg, targetTexture);
+				return;
+			}
 
-			targetTexture.init(hr::gl::objects::Texture::Type::Tex2D, hr::gl::objects::Texture::StorageType::RGBA_8, targetImg.width(), targetImg.height());
-			targetTexture.uploadData(0, 0, 0, targetImg.width(), targetImg.height(), hr::gl::objects::Texture::DataFormat::RGBA, hr::gl::objects::Texture::DataType::UBYTE, targetImg.data());
-			targetTexture.genMipmaps();
+			//compress and store
+			{
+				hr::streams::FileStream ctexFileStream(compressedPath, false, true);
+				hr::streams::StreamWriter stream(ctexFileStream);
+
+				tools::TextureTools::storeCompressedDiffuse(stream, targetImg);
+			}
+
+			//upload it
+			{
+				hr::streams::FileStream ctexFileStream(compressedPath, true, false);
+				hr::streams::StreamReader stream(ctexFileStream);
+
+				tools::TextureTools::uploadCompressedDiffuse(stream, targetTexture);
+			}
 		}
 		else
 		{
@@ -221,41 +249,83 @@ namespace hr { namespace render
 			if (targetImg.empty())
 				return;
 
-			targetImg.removeGamma();
+			if (!compress)
+			{
+				tools::TextureTools::uploadDiffuse(targetImg, targetTexture);
+				return;
+			}
 
-			targetTexture.init(hr::gl::objects::Texture::Type::Tex2D, hr::gl::objects::Texture::StorageType::RGB_8, targetImg.width(), targetImg.height());
-			targetTexture.uploadData(0, 0, 0, targetImg.width(), targetImg.height(), hr::gl::objects::Texture::DataFormat::RGB, hr::gl::objects::Texture::DataType::UBYTE, targetImg.data());
-			targetTexture.genMipmaps();
+			//compress and store
+			{
+				hr::streams::FileStream ctexFileStream(compressedPath, false, true);
+				hr::streams::StreamWriter stream(ctexFileStream);
+
+				tools::TextureTools::storeCompressedDiffuse(stream, targetImg);
+			}
+
+			//upload it
+			{
+				hr::streams::FileStream ctexFileStream(compressedPath, true, false);
+				hr::streams::StreamReader stream(ctexFileStream);
+
+				tools::TextureTools::uploadCompressedDiffuse(stream, targetTexture);
+			}
 		}
 	}
 
-	void RendererDeferred::loadNormal(const std::string& texFilePath, hr::gl::objects::Texture& targetTexture)
+	void RendererDeferred::loadNormal(const std::string& texFilePath, hr::gl::objects::Texture& targetTexture, bool compress)
 	{
 		if (texFilePath.empty())
 			return;
 
-		auto fileStream = mFileSystem.fileRead(texFilePath.c_str());
-		if (!fileStream)
-			return;
+		auto compressedPath = "../" + texFilePath + ".hrctex";
 
-		if (hr::StringUtils::endsWith(texFilePath, ".tga"))
+		//texture is compressed
+		if (mFileSystem.fileExists(compressedPath.c_str()))
 		{
-		}
-		else
-		{
-			hr::imaging::Image<unsigned char, hr::imaging::ImageFormatRGB> targetImg;
-
-			if (hr::StringUtils::endsWith(texFilePath, ".png"))
-				targetImg = hr::imaging::Factory::readPNG(hr::streams::StreamReader(*fileStream));
-			else if (hr::StringUtils::endsWith(texFilePath, ".jpg") || hr::StringUtils::endsWith(texFilePath, ".jpeg"))
-				targetImg = hr::imaging::Factory::readJPG(hr::streams::StreamReader(*fileStream));
-
-			if (targetImg.empty())
+			auto fileStream = mFileSystem.fileRead(compressedPath.c_str());
+			if (!fileStream)
 				return;
 
-			targetTexture.init(hr::gl::objects::Texture::Type::Tex2D, hr::gl::objects::Texture::StorageType::RGB_8, targetImg.width(), targetImg.height());
-			targetTexture.uploadData(0, 0, 0, targetImg.width(), targetImg.height(), hr::gl::objects::Texture::DataFormat::RGB, hr::gl::objects::Texture::DataType::UBYTE, targetImg.data());
-			targetTexture.genMipmaps();
+			tools::TextureTools::uploadCompressedNormal(hr::streams::StreamReader(*fileStream), targetTexture);
+			return;
+		}
+
+		//read source image		
+		auto fileStream = mFileSystem.fileRead(texFilePath.c_str());
+		if (!fileStream)
+			return;		
+
+		hr::imaging::Image<unsigned char, hr::imaging::ImageFormatRGB> targetImg;
+
+		if (hr::StringUtils::endsWith(texFilePath, ".jpg") || hr::StringUtils::endsWith(texFilePath, ".jpeg"))
+			targetImg = hr::imaging::Factory::readJPG(hr::streams::StreamReader(*fileStream));
+		else if (hr::StringUtils::endsWith(texFilePath, ".png"))
+			targetImg = hr::imaging::Factory::readPNG(hr::streams::StreamReader(*fileStream));
+
+		if (targetImg.empty())
+			return;
+
+		if (!compress)
+		{
+			tools::TextureTools::uploadNormal(targetImg, targetTexture);
+			return;
+		}
+
+		//compress and store
+		{
+			hr::streams::FileStream ctexFileStream(compressedPath, false, true);
+			hr::streams::StreamWriter stream(ctexFileStream);
+
+			tools::TextureTools::storeCompressedNormal(stream, targetImg);
+		}
+
+		//upload it
+		{
+			hr::streams::FileStream ctexFileStream(compressedPath, true, false);
+			hr::streams::StreamReader stream(ctexFileStream);
+
+			tools::TextureTools::uploadCompressedNormal(stream, targetTexture);
 		}
 	}
 
@@ -266,8 +336,8 @@ namespace hr { namespace render
 			concept.second.renderData.texDiffuse.reset();
 			concept.second.renderData.texNormal.reset();
 
-			loadDiffuse(concept.second.matDiffusePath, concept.second.renderData.texDiffuse);
-			loadNormal(concept.second.matNormalPath, concept.second.renderData.texNormal);
+			loadDiffuse(concept.second.matDiffusePath, concept.second.renderData.texDiffuse, true);
+			loadNormal(concept.second.matNormalPath, concept.second.renderData.texNormal, true);
 		}
 	}
 

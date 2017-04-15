@@ -70,6 +70,9 @@
     <Filter Include="misc">
       <UniqueIdentifier>{264a2c64-4db2-4911-b556-cc320774e9a5}</UniqueIdentifier>
     </Filter>
+    <Filter Include="libs\libsquish">
+      <UniqueIdentifier>{d673eda0-de2b-4d4d-8a54-b764bd6b6685}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\common\opengl\openGLext.cpp">
@@ -346,6 +349,39 @@
     <ClCompile Include="..\..\src\render\rendererDebug.cpp">
       <Filter>render</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\render\tools\texture.cpp">
+      <Filter>render\tools</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\libs\stb\stb_dxt.cpp">
+      <Filter>libs\stb</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\libs\libsquish\alpha.cpp">
+      <Filter>libs\libsquish</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\libs\libsquish\clusterfit.cpp">
+      <Filter>libs\libsquish</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\libs\libsquish\colourblock.cpp">
+      <Filter>libs\libsquish</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\libs\libsquish\colourfit.cpp">
+      <Filter>libs\libsquish</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\libs\libsquish\colourset.cpp">
+      <Filter>libs\libsquish</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\libs\libsquish\maths.cpp">
+      <Filter>libs\libsquish</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\libs\libsquish\rangefit.cpp">
+      <Filter>libs\libsquish</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\libs\libsquish\singlecolourfit.cpp">
+      <Filter>libs\libsquish</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\libs\libsquish\squish.cpp">
+      <Filter>libs\libsquish</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\common\opengl\objects.hpp">
@@ -539,12 +575,6 @@
       <Filter>libs\stb</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\libs\stb\stb_image_resize.h">
-      <Filter>libs\stb</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\libs\stb\stb_rect_pack.h">
-      <Filter>libs\stb</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\libs\stb\stb_truetype.h">
       <Filter>libs\stb</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\libs\sdf\sdf.h">
@@ -751,5 +781,55 @@
     <ClInclude Include="..\..\src\render\rendererDebug.hpp">
       <Filter>render</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\render\tools\texture.hpp">
+      <Filter>render\tools</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\libs\libsquish\alpha.h">
+      <Filter>libs\libsquish</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\libs\libsquish\clusterfit.h">
+      <Filter>libs\libsquish</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\libs\libsquish\colourblock.h">
+      <Filter>libs\libsquish</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\libs\libsquish\colourfit.h">
+      <Filter>libs\libsquish</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\libs\libsquish\colourset.h">
+      <Filter>libs\libsquish</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\libs\libsquish\config.h">
+      <Filter>libs\libsquish</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\libs\libsquish\maths.h">
+      <Filter>libs\libsquish</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\libs\libsquish\rangefit.h">
+      <Filter>libs\libsquish</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\libs\libsquish\simd.h">
+      <Filter>libs\libsquish</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\libs\libsquish\simd_float.h">
+      <Filter>libs\libsquish</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\libs\libsquish\simd_sse.h">
+      <Filter>libs\libsquish</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\libs\libsquish\simd_ve.h">
+      <Filter>libs\libsquish</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\libs\libsquish\singlecolourfit.h">
+      <Filter>libs\libsquish</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\libs\libsquish\squish.h">
+      <Filter>libs\libsquish</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\src\libs\libsquish\singlecolourlookup.inl">
+      <Filter>libs\libsquish</Filter>
+    </None>
   </ItemGroup>
 </Project>

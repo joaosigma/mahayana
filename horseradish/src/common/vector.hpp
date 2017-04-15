@@ -771,6 +771,14 @@ namespace hr
 			return *this;
 		}
 
+		Vector& mad(float opMul, float opAdd)
+		{
+			__m128 tmp = _mm_loadu_ps(mData);
+			_mm_storeu_ps(mData, _mm_add_ps(_mm_mul_ps(tmp, _mm_load_ps1(&opMul)), _mm_load_ps1(&opAdd)));
+
+			return *this;
+		}
+
 		void storeNormal(const Vector &v1, const Vector &v2, const Vector &v3)
 		{
 			__m128 vec1, vec2, tmp1, tmp2;

@@ -11,6 +11,8 @@ sandbox/
 *.sln.docstates
 *.VC.db
 *.VC.opendb
+slnx.sqlite
+VSWorkspaceState.json
 
 # Build results
 [Dd]ebug/

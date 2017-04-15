@@ -56,8 +56,8 @@ namespace hr { namespace render
 		void renderGBuffer(const tools::Camera& hrCamera, const hr::gl::tools::Viewport& hrViewport);
 		void renderFinal(const hr::gl::tools::Viewport& hrViewport);
 		void loadGeometry();
-		void loadDiffuse(const std::string& texFilePath, hr::gl::objects::Texture& targetTexture);
-		void loadNormal(const std::string& texFilePath, hr::gl::objects::Texture& targetTexture);
+		void loadDiffuse(const std::string& texFilePath, hr::gl::objects::Texture& targetTexture, bool compress);
+		void loadNormal(const std::string& texFilePath, hr::gl::objects::Texture& targetTexture, bool compress);
 		void loadTextures();
 
 	public:

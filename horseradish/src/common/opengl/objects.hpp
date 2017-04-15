@@ -50,7 +50,11 @@ namespace hr { namespace gl { namespace objects
 			RGB_8, RGB_16F, RGB_32F, RGB_8I, RGB_8UI, RGB_16I, RGB_16UI, RGB_32I, RGB_32UI,
 			RGBA_8, RGBA_16F, RGBA_32F, RGBA_8I, RGBA_8UI, RGBA_16I, RGBA_16UI, RGBA_32I, RGBA_32UI,
 			DEPTH_16, DEPTH_24, DEPTH_24_STENCIL_8,
-			COMPRESSED_X
+
+			COMPRESSED_BC1, COMPRESSED_SRGB_BC1, //RGB
+			COMPRESSED_BC3, COMPRESSED_SRGB_BC3, //RGBA
+			COMPRESSED_BC4, //Mono (grayscale)
+			COMPRESSED_BC5, //Dual (2xgrayscale)
 		};
 		enum class DataType { BYTE, UBYTE, SHORT, USHORT, INT, UINT, FLOAT };
 		enum class DataFormat { R, G, B, RG, RGB, RGBA, BGR, BGRA };
@@ -172,7 +176,17 @@ namespace hr { namespace gl { namespace objects
 			case StorageType::DEPTH_24_STENCIL_8:
 				return GL_DEPTH24_STENCIL8;
 
-			case StorageType::COMPRESSED_X:
+			case StorageType::COMPRESSED_BC1:
+				return GL_COMPRESSED_RGB_S3TC_DXT1_EXT;
+			case StorageType::COMPRESSED_SRGB_BC1:
+				return GL_COMPRESSED_SRGB_S3TC_DXT1_EXT;
+			case StorageType::COMPRESSED_BC3:
+				return GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
+			case StorageType::COMPRESSED_SRGB_BC3:
+				return GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT;
+			case StorageType::COMPRESSED_BC4:
+				return GL_COMPRESSED_RED_RGTC1;
+			case StorageType::COMPRESSED_BC5:
 				return GL_COMPRESSED_RG_RGTC2;
 			};
 
@@ -233,7 +247,7 @@ namespace hr { namespace gl { namespace objects
 	public:
 		static size_t calculateNumMipMaps(GLuint width)
 		{
-			return hr::Math::ftoi(hr::Math::floor(hr::Math::iLog2(width))) + 1;
+			return static_cast<size_t>(std::floor(std::log2(width))) + 1;
 		}
 
 		static size_t calculateNumMipMaps(GLuint width, GLuint height)
@@ -478,6 +492,11 @@ namespace hr { namespace gl { namespace objects
 
 			switch (mStorageType)
 			{
+			case GL_COMPRESSED_RGB_S3TC_DXT1_EXT:
+			case GL_COMPRESSED_SRGB_S3TC_DXT1_EXT:
+			case GL_COMPRESSED_RGBA_S3TC_DXT5_EXT:
+			case GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT:
+			case GL_COMPRESSED_RED_RGTC1:
 			case GL_COMPRESSED_RG_RGTC2:
 				return true;
 			};
@@ -562,7 +581,16 @@ namespace hr { namespace gl { namespace objects
 				return false;
 
 			auto internalStorageType = Texture::translate(storageType);
-			if (internalStorageType != mStorageType) //compress types must match
+
+			//compress types must match with the exception of SRGB types (only the internal type is SRGB)
+			auto isValid = (internalStorageType == mStorageType);
+			if (!isValid)
+			{
+				isValid = (mStorageType == GL_COMPRESSED_SRGB_S3TC_DXT1_EXT) && (internalStorageType == GL_COMPRESSED_RGB_S3TC_DXT1_EXT);
+				isValid |= (mStorageType == GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT) && (internalStorageType == GL_COMPRESSED_RGBA_S3TC_DXT5_EXT);
+			}
+
+			if (!isValid)
 				return false;
 
 			glCompressedTextureSubImage2D(mId, level, xOffset, yOffset, width, height, mStorageType, dataSize, data);

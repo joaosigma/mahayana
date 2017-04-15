@@ -71,7 +71,8 @@ namespace hr { namespace render
 		size_t geomsOffset = 0;
 		{
 			GeomHeader geomHeader;
-			streamGeom.read(&geomHeader, sizeof(GeomHeader));
+			if (streamGeom.read(&geomHeader, sizeof(GeomHeader)) != sizeof(GeomHeader))
+				return false;
 			if (std::memcmp(geomHeader.fileSig, GeomFileSig.data(), sizeof(geomHeader.fileSig)) != 0)
 				return false;
 
@@ -259,7 +260,7 @@ namespace hr { namespace render
 			streamScene.write(s.GetString(), s.GetSize());
 		}
 
-		//export geom file (it's just a copy of the already open geom file)
+		//export geom file (it's just a copy of the already opened geom file)
 		{
 			hr::streams::FileStream::streamDump(mGeomFileStream, geomPath);
 		}

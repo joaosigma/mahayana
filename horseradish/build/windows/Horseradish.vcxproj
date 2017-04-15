@@ -206,6 +206,15 @@
     <ClCompile Include="..\..\src\engine\runtime.cpp" />
     <ClCompile Include="..\..\src\libs\cppformat\format.cc" />
     <ClCompile Include="..\..\src\libs\forsyth\forsythtriangleorderoptimizer.cpp" />
+    <ClCompile Include="..\..\src\libs\libsquish\alpha.cpp" />
+    <ClCompile Include="..\..\src\libs\libsquish\clusterfit.cpp" />
+    <ClCompile Include="..\..\src\libs\libsquish\colourblock.cpp" />
+    <ClCompile Include="..\..\src\libs\libsquish\colourfit.cpp" />
+    <ClCompile Include="..\..\src\libs\libsquish\colourset.cpp" />
+    <ClCompile Include="..\..\src\libs\libsquish\maths.cpp" />
+    <ClCompile Include="..\..\src\libs\libsquish\rangefit.cpp" />
+    <ClCompile Include="..\..\src\libs\libsquish\singlecolourfit.cpp" />
+    <ClCompile Include="..\..\src\libs\libsquish\squish.cpp" />
     <ClCompile Include="..\..\src\libs\lodepng\lodepng.cpp" />
     <ClCompile Include="..\..\src\libs\lz4\lz4.c" />
     <ClCompile Include="..\..\src\libs\lz4\lz4hc.c" />
@@ -230,6 +239,7 @@
     <ClCompile Include="..\..\src\libs\squirrel\sqstdsystem.cpp" />
     <ClCompile Include="..\..\src\libs\squirrel\sqtable.cpp" />
     <ClCompile Include="..\..\src\libs\squirrel\sqvm.cpp" />
+    <ClCompile Include="..\..\src\libs\stb\stb_dxt.cpp" />
     <ClCompile Include="..\..\src\libs\stb\stb_image.cpp" />
     <ClCompile Include="..\..\src\libs\stb\stb_image_resize.cpp" />
     <ClCompile Include="..\..\src\libs\tinyobjloader\tiny_obj_loader.cc" />
@@ -265,6 +275,7 @@
     <ClCompile Include="..\..\src\render\stage.cpp" />
     <ClCompile Include="..\..\src\render\tools\camera.cpp" />
     <ClCompile Include="..\..\src\render\tools\font.cpp" />
+    <ClCompile Include="..\..\src\render\tools\texture.cpp" />
     <ClCompile Include="..\..\src\render\world.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -308,6 +319,20 @@
     <ClInclude Include="..\..\src\engine\runtime.hpp" />
     <ClInclude Include="..\..\src\libs\cppformat\format.h" />
     <ClInclude Include="..\..\src\libs\forsyth\forsythtriangleorderoptimizer.h" />
+    <ClInclude Include="..\..\src\libs\libsquish\alpha.h" />
+    <ClInclude Include="..\..\src\libs\libsquish\clusterfit.h" />
+    <ClInclude Include="..\..\src\libs\libsquish\colourblock.h" />
+    <ClInclude Include="..\..\src\libs\libsquish\colourfit.h" />
+    <ClInclude Include="..\..\src\libs\libsquish\colourset.h" />
+    <ClInclude Include="..\..\src\libs\libsquish\config.h" />
+    <ClInclude Include="..\..\src\libs\libsquish\maths.h" />
+    <ClInclude Include="..\..\src\libs\libsquish\rangefit.h" />
+    <ClInclude Include="..\..\src\libs\libsquish\simd.h" />
+    <ClInclude Include="..\..\src\libs\libsquish\simd_float.h" />
+    <ClInclude Include="..\..\src\libs\libsquish\simd_sse.h" />
+    <ClInclude Include="..\..\src\libs\libsquish\simd_ve.h" />
+    <ClInclude Include="..\..\src\libs\libsquish\singlecolourfit.h" />
+    <ClInclude Include="..\..\src\libs\libsquish\squish.h" />
     <ClInclude Include="..\..\src\libs\lodepng\lodepng.h" />
     <ClInclude Include="..\..\src\libs\lodepng\lodepngoptions.h" />
     <ClInclude Include="..\..\src\libs\lz4\lz4.h" />
@@ -370,8 +395,6 @@
     <ClInclude Include="..\..\src\libs\stb\stb_dxt.h" />
     <ClInclude Include="..\..\src\libs\stb\stb_image.h" />
     <ClInclude Include="..\..\src\libs\stb\stb_image_resize.h" />
-    <ClInclude Include="..\..\src\libs\stb\stb_rect_pack.h" />
-    <ClInclude Include="..\..\src\libs\stb\stb_truetype.h" />
     <ClInclude Include="..\..\src\libs\tinyobjloader\tiny_obj_loader.h" />
     <ClInclude Include="..\..\src\libs\zlib\crc32.h" />
     <ClInclude Include="..\..\src\libs\zlib\deflate.h" />
@@ -402,7 +425,11 @@
     <ClInclude Include="..\..\src\render\stage.hpp" />
     <ClInclude Include="..\..\src\render\tools\camera.hpp" />
     <ClInclude Include="..\..\src\render\tools\font.hpp" />
+    <ClInclude Include="..\..\src\render\tools\texture.hpp" />
     <ClInclude Include="..\..\src\render\world.hpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\src\libs\libsquish\singlecolourlookup.inl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

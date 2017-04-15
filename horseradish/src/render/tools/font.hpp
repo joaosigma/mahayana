@@ -9,125 +9,125 @@
 #include <vector>
 #include <unordered_map>
 
-namespace hr { namespace render { namespace tools {
-
-class Font
+namespace hr { namespace render { namespace tools
 {
-	struct VertexDataLayout
+	class Font
 	{
-		float pos[2], uv[2];
-		unsigned char color[4];
-	};
+		struct VertexDataLayout
+		{
+			float pos[2], uv[2];
+			unsigned char color[4];
+		};
 
-	struct KerningData
-	{
-		unsigned short char1 = 0, char2 = 0;
-		float offset = 0;
-	};
+		struct KerningData
+		{
+			unsigned short char1 = 0, char2 = 0;
+			float offset = 0;
+		};
 
-	struct CharacterData
-	{
-		bool skipDraw = false;
-		float advanceX = 0.0f;
-		struct {
-			float offsetX, offsetY, width, height;
-			float minUV[2], maxUV[2];
-		} rect;
-		const KerningData *kernData = nullptr;
-	};
+		struct CharacterData
+		{
+			bool skipDraw = false;
+			float advanceX = 0.0f;
+			struct {
+				float offsetX, offsetY, width, height;
+				float minUV[2], maxUV[2];
+			} rect;
+			const KerningData *kernData = nullptr;
+		};
 
-	struct UnicodeRange
-	{
-		int numCharsMax = -1;
-		size_t numCharsSkip = 0;
+		struct UnicodeRange
+		{
+			int numCharsMax = -1;
+			size_t numCharsSkip = 0;
 
-		UnicodeRange()
-		{ }
+			UnicodeRange()
+			{ }
 
-		UnicodeRange(int numCharsSkip)
-			: numCharsSkip(numCharsSkip)
-		{ }
+			UnicodeRange(int numCharsSkip)
+				: numCharsSkip(numCharsSkip)
+			{ }
 
-		UnicodeRange(unsigned int numCharsSkip, int numCharsMax)
-			: numCharsSkip(numCharsSkip), numCharsMax(numCharsMax)
-		{ }
-	};
+			UnicodeRange(unsigned int numCharsSkip, int numCharsMax)
+				: numCharsSkip(numCharsSkip), numCharsMax(numCharsMax)
+			{ }
+		};
 
-	static constexpr size_t sMumMaxChar = 256;
-	static constexpr unsigned short sBufferPadding = 5;
+		static constexpr size_t sMumMaxChar = 256;
+		static constexpr unsigned short sBufferPadding = 5;
 
-private:
-	bool mValid = false;
-	std::vector<KerningData> mKerningData;
-	std::unordered_map<unsigned short, CharacterData> mCharMap;
+	private:
+		bool mValid = false;
+		std::vector<KerningData> mKerningData;
+		std::unordered_map<unsigned short, CharacterData> mCharMap;
 	
-	unsigned int mGlVertexProgramID, mGlFragmentProgramID, mGlProgramPipelineID, mGlUniformSampler, mGlUniformMatrix;
+		unsigned int mGlVertexProgramID, mGlFragmentProgramID, mGlProgramPipelineID, mGlUniformSampler, mGlUniformMatrix;
 	
-	struct
-	{
-		hr::gl::objects::Texture texture;
-		hr::gl::objects::Sampler sampler;
-		hr::gl::objects::VertexArray vertexArray;
-		hr::gl::objects::Buffer arrayBuffer, elementArrayBuffer;
-		hr::gl::objects::FenceSync fence;
-	} mGl;
+		struct
+		{
+			hr::gl::objects::Texture texture;
+			hr::gl::objects::Sampler sampler;
+			hr::gl::objects::VertexArray vertexArray;
+			hr::gl::objects::Buffer arrayBuffer, elementArrayBuffer;
+			hr::gl::objects::FenceSync fence;
+		} mGl;
 
-	struct
-	{
-		float scale = 1.0f;
-		bool paintStarted = false;
-		hr::Color stateColor;
+		struct
+		{
+			float scale = 1.0f;
+			bool paintStarted = false;
+			hr::Color stateColor;
 
-		size_t numCharWritten = 0;
-		std::array<VertexDataLayout, Font::sMumMaxChar * 4> charData;
-	} mState;
+			size_t numCharWritten = 0;
+			std::array<VertexDataLayout, Font::sMumMaxChar * 4> charData;
+		} mState;
 
-	struct
-	{
-		size_t size = 0;
-		float maxHeight = 0.0f, baseHeight = 0.0f;
-	} mFontInfo;
+		struct
+		{
+			size_t size = 0;
+			float maxHeight = 0.0f, baseHeight = 0.0f;
+		} mFontInfo;
 
-	void commitGL();
-	bool createCharData();
-	float getCharKerning(const CharacterData& leftCharData, unsigned short leftCharUnicodeID, unsigned short rightCharUnicodeID) const;
-	bool initFont(const char * const fontFilePath);
-	void internalWrite(const float &px, const float &py, const std::string& str, UnicodeRange strRange);
+		void commitGL();
+		bool createCharData();
+		float getCharKerning(const CharacterData& leftCharData, unsigned short leftCharUnicodeID, unsigned short rightCharUnicodeID) const;
+		bool initFont(const char * const fontFilePath);
+		void internalWrite(const float &px, const float &py, const std::string& str, UnicodeRange strRange);
 
-public:
-	Font(const size_t fontSize, const char * const fontFilePath, unsigned int glVertexProgramID, unsigned int glFragmentProgramID, unsigned int glProgramPipelineID);
-	~Font();
+	public:
+		Font(const size_t fontSize, const char * const fontFilePath, unsigned int glVertexProgramID, unsigned int glFragmentProgramID, unsigned int glProgramPipelineID);
+		~Font();
 
-	void layout(const std::string& text, const float maxWidth, std::function<void(size_t curLine, size_t unicodeCharOffset, size_t unicodeCharCount)> writeCb) const;
+		void layout(const std::string& text, const float maxWidth, std::function<void(size_t curLine, size_t unicodeCharOffset, size_t unicodeCharCount)> writeCb) const;
 
-	void write(const std::string& text);
-	void write(const float &px, const float &py, const std::string& text);
-	void write(const float &px, const float &py, const std::string& text, const size_t numUnicodeCharsSkip);
-	void write(const float &px, const float &py, const std::string& text, const size_t numUnicodeCharsSkip, const size_t maxUnicodeCharsWrite);
+		void write(const std::string& text);
+		void write(const float &px, const float &py, const std::string& text);
+		void write(const float &px, const float &py, const std::string& text, const size_t numUnicodeCharsSkip);
+		void write(const float &px, const float &py, const std::string& text, const size_t numUnicodeCharsSkip, const size_t maxUnicodeCharsWrite);
 
-	float writeChar(const unsigned int &unicodeChar);
-	float writeChar(const float &px, const float &py, const unsigned int &unicodeChar);
+		float writeChar(const unsigned int &unicodeChar);
+		float writeChar(const float &px, const float &py, const unsigned int &unicodeChar);
 
-	void setColor(const float &r, const float &g, const float &b, const float &a);
-	void setColor(const float &r, const float &g, const float &b);
-	void setColor(const float * const color);
-	void setColor(const Color &color);
+		void setColor(const float &r, const float &g, const float &b, const float &a);
+		void setColor(const float &r, const float &g, const float &b);
+		void setColor(const float * const color);
+		void setColor(const Color &color);
 
-	bool isValid() const;
+		bool isValid() const;
 
-	float getMaxHeight() const;
-	float getCharWidth(const unsigned int &unicodeChar) const;
+		float getMaxHeight() const;
+		float getCharWidth(const unsigned int &unicodeChar) const;
 
-	size_t countUnicodeChars(const std::string& text, const float maxWidth) const;
-	size_t countUnicodeChars(const std::string& text, const size_t numUnicodeCharsSkip, const float maxWidth) const;
+		size_t countUnicodeChars(const std::string& text, const float maxWidth) const;
+		size_t countUnicodeChars(const std::string& text, const size_t numUnicodeCharsSkip, const float maxWidth) const;
 
-	float getTextWidth(const std::string& text) const;
-	float getTextWidth(const std::string&, const size_t numUnicodeCharsSkip, const size_t maxUnicodeCharsRead) const;
+		float getTextWidth(const std::string& text) const;
+		float getTextWidth(const std::string&, const size_t numUnicodeCharsSkip, const size_t maxUnicodeCharsRead) const;
 
-	void paintBegin(const float * const tranformationMatrix, float scale = 1.0f);
-	void paintEnd();
-	void paintFlush();
-};
+		void paintBegin(const float * const tranformationMatrix, float scale = 1.0f);
+		void paintEnd();
+		void paintFlush();
+	};
 
 } } }
 

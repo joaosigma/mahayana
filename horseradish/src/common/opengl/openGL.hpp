@@ -580,7 +580,7 @@ namespace hr { namespace gl
 	GLAPI void (APIENTRYP glVertexBindingDivisor) (GLuint bindingindex, GLuint divisor);
 	GLAPI void (APIENTRYP glDebugMessageControl) (GLenum source, GLenum type, GLenum severity, GLsizei count, const GLuint *ids, GLboolean enabled);
 	GLAPI void (APIENTRYP glDebugMessageInsert) (GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *buf);
-	GLAPI void (APIENTRYP glDebugMessageCallback) (GLDEBUGPROC callback, void *userParam);
+	GLAPI void (APIENTRYP glDebugMessageCallback) (GLDEBUGPROC callback, const void *userParam);
 	GLAPI GLuint (APIENTRYP glGetDebugMessageLog) (GLuint count, GLsizei bufSize, GLenum *sources, GLenum *types, GLuint *ids, GLenum *severities, GLsizei *lengths, GLchar *messageLog);
 	GLAPI void (APIENTRYP glPushDebugGroup) (GLenum source, GLuint id, GLsizei length, const GLchar *message);
 	GLAPI void (APIENTRYP glPopDebugGroup) (void);
@@ -638,7 +638,7 @@ namespace hr { namespace gl
 	GLAPI void (APIENTRYP glClearNamedFramebufferiv) (GLuint framebuffer, GLenum buffer, GLint drawbuffer, const GLint *value);
 	GLAPI void (APIENTRYP glClearNamedFramebufferuiv) (GLuint framebuffer, GLenum buffer, GLint drawbuffer, const GLuint *value);
 	GLAPI void (APIENTRYP glClearNamedFramebufferfv) (GLuint framebuffer, GLenum buffer, GLint drawbuffer, const GLfloat *value);
-	GLAPI void (APIENTRYP glClearNamedFramebufferfi) (GLuint framebuffer, GLenum buffer, const GLfloat depth, GLint stencil);
+	GLAPI void (APIENTRYP glClearNamedFramebufferfi) (GLuint framebuffer, GLenum buffer, GLint drawbuffer, GLfloat depth, GLint stencil);
 	GLAPI void (APIENTRYP glBlitNamedFramebuffer) (GLuint readFramebuffer, GLuint drawFramebuffer, GLint srcX0, GLint srcY0, GLint srcX1, GLint srcY1, GLint dstX0, GLint dstY0, GLint dstX1, GLint dstY1, GLbitfield mask, GLenum filter);
 	GLAPI GLenum (APIENTRYP glCheckNamedFramebufferStatus) (GLuint framebuffer, GLenum target);
 	GLAPI void (APIENTRYP glGetNamedFramebufferParameteriv) (GLuint framebuffer, GLenum pname, GLint *param);

@@ -84,11 +84,11 @@ void openGLWriteInfo(hr::engine::Logger &logger, const hr::gl::objects::Context 
 }
 
 static
-void CALLBACK openglDebugMessagesCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *message, void *userParam)
+void CALLBACK openglDebugMessagesCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *message, const void *userParam)
 {
 	const char *glSource = "", *glType = "", *glSeverity = "";
 
-	auto logger = reinterpret_cast<hr::engine::Logger*>(userParam);
+	auto logger = const_cast<hr::engine::Logger*>(reinterpret_cast<const hr::engine::Logger*>(userParam));
 
 	switch (source)
 	{
@@ -217,7 +217,7 @@ namespace hr { namespace engine
 				return;
 			}
 
-			if (!glContext->isExtPresent("GL_ARB_pipeline_statistics_query"))
+			if (!glContext->isExtPresent("GL_ARB_pipeline_statistics_query") || !glContext->isExtPresent("GL_EXT_texture_compression_s3tc"))
 			{
 				exit(ExitAction::Nothing, "Required extensions are not present");
 				return;
