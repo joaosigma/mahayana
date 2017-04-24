@@ -12,17 +12,17 @@ namespace hr { namespace render
 {
 	class RendererDebug;
 
-	class RendererDeferred
+	class RendererMain
 		: public Renderer
 	{
 	public:
 		enum RenderTargetType { Albedo, Normals, MiscA, MiscB };
 
 	private:
-		struct FBOs{
-			hr::gl::objects::Sampler samplerTexs;
-			hr::gl::objects::FrameBuffer fboDeferredGBuffer;
-			hr::gl::objects::Texture texDeferredZ, texDeferredAlbedo, texDeferredNormals, texDeferredMiscA, texDeferredMiscB;
+		struct FBOs {
+			hr::gl::objects::Sampler samplerTex;
+			hr::gl::objects::FrameBuffer fboZPass, fboForward;
+			hr::gl::objects::Texture texZ, texLighting, texNormals, texSpecular;
 		};
 
 		struct Shaders{
@@ -30,7 +30,7 @@ namespace hr { namespace render
 				hr::gl::objects::ShaderProgram vertex;
 				hr::gl::objects::ShaderProgram fragment;
 				hr::gl::objects::ProgramPipeline pipeline;
-			} deferred;
+			} forwardPassZ, forwardPassLighting;
 
 			struct {
 				hr::gl::objects::ShaderProgram vertex;
@@ -53,16 +53,19 @@ namespace hr { namespace render
 		int mShadersWatchFolderID;
 		hr::gl::objects::Texture mTexDefaultAlbedo, mTexDefaultNormals;
 
-		void renderGBuffer(const tools::Camera& hrCamera, const hr::gl::tools::Viewport& hrViewport);
-		void renderFinal(const hr::gl::tools::Viewport& hrViewport);
+		void passDepth(const tools::Camera& hrCamera, const hr::gl::tools::Viewport& hrViewport);
+		void passLighting(const tools::Camera& hrCamera, const hr::gl::tools::Viewport& hrViewport);
+
+		void compositePostProcessing(const hr::gl::tools::Viewport& hrViewport);
+
 		void loadGeometry();
 		void loadDiffuse(const std::string& texFilePath, hr::gl::objects::Texture& targetTexture, bool compress);
 		void loadNormal(const std::string& texFilePath, hr::gl::objects::Texture& targetTexture, bool compress);
 		void loadTextures();
 
 	public:
-		RendererDeferred(const hr::gl::objects::Context& glContext, hr::io::FileSystem& fileSystem, hr::render::World& renderWorld, size_t renderWidth, size_t renderHeight);
-		~RendererDeferred();
+		RendererMain(const hr::gl::objects::Context& glContext, hr::io::FileSystem& fileSystem, hr::render::World& renderWorld, size_t renderWidth, size_t renderHeight);
+		~RendererMain();
 
 		void loadWorld();
 

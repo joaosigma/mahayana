@@ -1455,6 +1455,12 @@ namespace hr { namespace gl { namespace objects
 			return Status::Unknown;
 		}
 
+		template<int NBuffers>
+		void drawBuffers(std::array<GLenum, NBuffers> buffers)
+		{
+			hr::gl::glNamedFramebufferDrawBuffers(mId, NBuffers, buffers.data());
+		}
+
 		const FrameBuffer& attachTColor(const Texture& textureToAttach, GLuint attachUnit) const
 		{
 			if (!isValid() || !textureToAttach.isRenderable() || (!textureToAttach.isType(Texture::Type::Tex2D) && !textureToAttach.isType(Texture::Type::TexRectangle)))

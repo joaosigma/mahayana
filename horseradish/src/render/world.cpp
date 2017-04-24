@@ -445,6 +445,62 @@ namespace hr { namespace render
 		return true;
 	}
 
+	void WorldEditor::recalcTangentSpace(const std::vector<size_t>& conceptIds)
+	{
+		if (conceptIds.empty())
+		{
+			for (const auto& concept : mConcepts)
+			{
+				auto& geom = concept.second.geom;
+
+				hr::geom::Mesh mesh(geom.numVertices, geom.numIndices);
+
+				mGeomFileStream.seek(hr::streams::Stream::SeekOrigin::Begin, geom.fstreamVertexOffset);
+				mGeomFileStream.read(mesh.vertices(), mesh.sizeVertices());
+
+				mGeomFileStream.seek(hr::streams::Stream::SeekOrigin::Begin, geom.fstreamIndexOffset);
+				mGeomFileStream.read(mesh.indices(), mesh.sizeIndices());
+
+				mesh.genNormals();
+				mesh.genTangents4();
+
+				mGeomFileStream.seek(hr::streams::Stream::SeekOrigin::Begin, geom.fstreamVertexOffset);
+				mGeomFileStream.write(mesh.vertices(), mesh.sizeVertices());
+
+				mGeomFileStream.seek(hr::streams::Stream::SeekOrigin::Begin, geom.fstreamIndexOffset);
+				mGeomFileStream.write(mesh.indices(), mesh.sizeIndices());
+			}
+
+			return;
+		}
+
+		for (const auto& conceptId : conceptIds)
+		{
+			auto it = mConcepts.find(conceptId);
+			if (it == mConcepts.end())
+				continue;
+
+			auto& geom = it->second.geom;
+
+			hr::geom::Mesh mesh(geom.numVertices, geom.numIndices);
+
+			mGeomFileStream.seek(hr::streams::Stream::SeekOrigin::Begin, geom.fstreamVertexOffset);
+			mGeomFileStream.read(mesh.vertices(), mesh.sizeVertices());
+
+			mGeomFileStream.seek(hr::streams::Stream::SeekOrigin::Begin, geom.fstreamIndexOffset);
+			mGeomFileStream.read(mesh.indices(), mesh.sizeIndices());
+			
+			mesh.genNormals();
+			mesh.genTangents4();
+
+			mGeomFileStream.seek(hr::streams::Stream::SeekOrigin::Begin, geom.fstreamVertexOffset);
+			mGeomFileStream.write(mesh.vertices(), mesh.sizeVertices());
+
+			mGeomFileStream.seek(hr::streams::Stream::SeekOrigin::Begin, geom.fstreamIndexOffset);
+			mGeomFileStream.write(mesh.indices(), mesh.sizeIndices());
+		}
+	}
+
 	std::vector<size_t> WorldEditor::unusedConcepts() const
 	{
 		std::vector<size_t> conceptIds;

@@ -1,4 +1,4 @@
-#include "rendererDeferred.hpp"
+#include "rendererMain.hpp"
 
 #include "rendererDebug.hpp"
 #include "common/stringUtils.hpp"
@@ -10,7 +10,7 @@
 
 namespace hr { namespace render
 {
-	void RendererDeferred::renderGBuffer(const tools::Camera& hrCamera, const hr::gl::tools::Viewport& hrViewport)
+	void RendererMain::passDepth(const tools::Camera& hrCamera, const hr::gl::tools::Viewport& hrViewport)
 	{
 		hr::Matrix matrixModelView, matrixTransform;
 
@@ -19,25 +19,53 @@ namespace hr { namespace render
 		matrixTransform *= matrixModelView;
 
 		mWorld.mRenderData.vaoMesh.bind();
-		mFBOs.fboDeferredGBuffer.bind();
-
-		GLenum mrt[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3 };
-		hr::gl::glDrawBuffers(4, mrt);
+		mFBOs.fboZPass.bind();
 
 		hr::gl::glEnable(GL_DEPTH_TEST);
+		hr::gl::glDisable(GL_SCISSOR_TEST);
+
 		hr::gl::glDepthMask(GL_TRUE);
 		hr::gl::glDepthFunc(GL_LEQUAL);
-
-		hr::gl::glDisable(GL_SCISSOR_TEST);
-		hr::gl::glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-		hr::gl::glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-
 		hr::gl::glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		hr::gl::glProgramUniformMatrix4fv(mShaders.deferred.vertex.getId(), mShaders.deferred.vertex.getUniformLocation("matView"), 1, false, matrixModelView.data());
-		hr::gl::glProgramUniformMatrix4fv(mShaders.deferred.vertex.getId(), mShaders.deferred.vertex.getUniformLocation("matTrans"), 1, false, matrixTransform.data());
-		hr::gl::glProgramUniform1f(mShaders.deferred.fragment.getId(), mShaders.deferred.fragment.getUniformLocation("farClipPlane"), hrViewport.zfar());
-		hr::gl::glBindProgramPipeline(mShaders.deferred.pipeline.getId());
+		hr::gl::glProgramUniformMatrix4fv(mShaders.forwardPassZ.vertex.getId(), mShaders.forwardPassZ.vertex.getUniformLocation("matTrans"), 1, false, matrixTransform.data());
+		hr::gl::glBindProgramPipeline(mShaders.forwardPassZ.pipeline.getId());
+
+		mWorld.mRenderData.vboIndirectDraw.bind();
+		for (auto& curObject : mWorld.mRenderData.objects)
+		{
+			auto& concept = mWorld.mConcepts[curObject->conceptId];
+
+			hr::gl::glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_SHORT, reinterpret_cast<void*>(concept.renderData.meshDrawIndirectOffset), 1, 0);
+		}
+		mWorld.mRenderData.vboIndirectDraw.unbind();
+	}
+
+	void RendererMain::passLighting(const tools::Camera& hrCamera, const hr::gl::tools::Viewport& hrViewport)
+	{
+		hr::Matrix matrixModelView, matrixTransform;
+
+		matrixModelView.set(hrCamera.modelView());
+		matrixTransform = hrViewport.getProjection(hr::gl::tools::Viewport::ProjectionType::Proj3D);
+		matrixTransform *= matrixModelView;
+
+		mWorld.mRenderData.vaoMesh.bind();
+		mFBOs.fboForward.bind();
+		mFBOs.fboForward.drawBuffers<3>({ GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2 });
+
+		hr::gl::glEnable(GL_DEPTH_TEST);
+		hr::gl::glDisable(GL_SCISSOR_TEST);
+
+		hr::gl::glDepthMask(GL_FALSE);
+		hr::gl::glDepthFunc(GL_EQUAL);
+		
+		hr::gl::glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+		hr::gl::glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+		hr::gl::glClear(GL_COLOR_BUFFER_BIT);
+
+		hr::gl::glProgramUniformMatrix4fv(mShaders.forwardPassLighting.vertex.getId(), mShaders.forwardPassLighting.vertex.getUniformLocation("matView"), 1, false, matrixModelView.data());
+		hr::gl::glProgramUniformMatrix4fv(mShaders.forwardPassLighting.vertex.getId(), mShaders.forwardPassLighting.vertex.getUniformLocation("matTrans"), 1, false, matrixTransform.data());
+		hr::gl::glBindProgramPipeline(mShaders.forwardPassLighting.pipeline.getId());
 
 		mSamplers.samplerNormals.bind(1);
 		mSamplers.samplerAlbedo.bind(0);
@@ -62,7 +90,7 @@ namespace hr { namespace render
 		mWorld.mRenderData.vboIndirectDraw.unbind();
 	}
 
-	void RendererDeferred::renderFinal(const hr::gl::tools::Viewport& hrViewport)
+	void RendererMain::compositePostProcessing(const hr::gl::tools::Viewport& hrViewport)
 	{
 		auto winX = hrViewport.width();
 		auto winY = hrViewport.height();
@@ -75,17 +103,15 @@ namespace hr { namespace render
 		hr::gl::glProgramUniformMatrix4fv(mShaders.postprocess.vertex.getId(), mShaders.postprocess.vertex.getUniformLocation("projectionMatrix"), 1, false, hrViewport.getProjection(hr::gl::tools::Viewport::ProjectionType::Proj2D).data());
 		hr::gl::glBindProgramPipeline(mShaders.postprocess.pipeline.getId());
 
-		mFBOs.samplerTexs.bind(4);
-		mFBOs.samplerTexs.bind(3);
-		mFBOs.samplerTexs.bind(2);
-		mFBOs.samplerTexs.bind(1);
-		mFBOs.samplerTexs.bind(0);
+		mFBOs.samplerTex.bind(3);
+		mFBOs.samplerTex.bind(2);
+		mFBOs.samplerTex.bind(1);
+		mFBOs.samplerTex.bind(0);
 
-		mFBOs.texDeferredZ.bind(4);
-		mFBOs.texDeferredMiscB.bind(3);
-		mFBOs.texDeferredMiscA.bind(2);
-		mFBOs.texDeferredNormals.bind(1);
-		mFBOs.texDeferredAlbedo.bind(0);
+		mFBOs.texZ.bind(3);
+		mFBOs.texSpecular.bind(2);
+		mFBOs.texNormals.bind(1);
+		mFBOs.texLighting.bind(0);
 
 		mGlImmediateMode.beginDraw(hr::gl::tools::ImmediateMode::GeometryType::Quads);
 			mGlImmediateMode.setColorF(1.0f);
@@ -93,7 +119,7 @@ namespace hr { namespace render
 		mGlImmediateMode.endDraw();
 	}
 
-	void RendererDeferred::loadGeometry()
+	void RendererMain::loadGeometry()
 	{
 		mWorld.mRenderData.vboMeshData.reset();
 		mWorld.mRenderData.vboMeshIndexData.reset();
@@ -179,14 +205,14 @@ namespace hr { namespace render
 
 		hr::gl::glVertexArrayAttribFormat(mWorld.mRenderData.vaoMesh.getId(), 0, 3, GL_FLOAT, false, offsetof(hr::geom::Mesh::VertexData, pos));
 		hr::gl::glVertexArrayAttribFormat(mWorld.mRenderData.vaoMesh.getId(), 1, 2, GL_FLOAT, false, offsetof(hr::geom::Mesh::VertexData, uv));
-		hr::gl::glVertexArrayAttribFormat(mWorld.mRenderData.vaoMesh.getId(), 2, 3, GL_UNSIGNED_SHORT, true, offsetof(hr::geom::Mesh::VertexData, normal));
-		hr::gl::glVertexArrayAttribFormat(mWorld.mRenderData.vaoMesh.getId(), 3, 4, GL_UNSIGNED_SHORT, true, offsetof(hr::geom::Mesh::VertexData, tangent));
+		hr::gl::glVertexArrayAttribFormat(mWorld.mRenderData.vaoMesh.getId(), 2, 3, GL_SHORT, true, offsetof(hr::geom::Mesh::VertexData, normal));
+		hr::gl::glVertexArrayAttribFormat(mWorld.mRenderData.vaoMesh.getId(), 3, 4, GL_SHORT, true, offsetof(hr::geom::Mesh::VertexData, tangent));
 
 		hr::gl::glVertexArrayElementBuffer(mWorld.mRenderData.vaoMesh.getId(), mWorld.mRenderData.vboMeshIndexData.getId());
 		hr::gl::glVertexArrayVertexBuffer(mWorld.mRenderData.vaoMesh.getId(), 0, mWorld.mRenderData.vboMeshData.getId(), 0, sizeof(hr::geom::Mesh::VertexData));
 	}
 
-	void RendererDeferred::loadDiffuse(const std::string& texFilePath, hr::gl::objects::Texture& targetTexture, bool compress)
+	void RendererMain::loadDiffuse(const std::string& texFilePath, hr::gl::objects::Texture& targetTexture, bool compress)
 	{
 		if (texFilePath.empty())
 			return;
@@ -273,7 +299,7 @@ namespace hr { namespace render
 		}
 	}
 
-	void RendererDeferred::loadNormal(const std::string& texFilePath, hr::gl::objects::Texture& targetTexture, bool compress)
+	void RendererMain::loadNormal(const std::string& texFilePath, hr::gl::objects::Texture& targetTexture, bool compress)
 	{
 		if (texFilePath.empty())
 			return;
@@ -329,7 +355,7 @@ namespace hr { namespace render
 		}
 	}
 
-	void RendererDeferred::loadTextures()
+	void RendererMain::loadTextures()
 	{
 		for (auto& concept : mWorld.mConcepts)
 		{
@@ -341,7 +367,7 @@ namespace hr { namespace render
 		}
 	}
 
-	RendererDeferred::RendererDeferred(const hr::gl::objects::Context& glContext, hr::io::FileSystem& fileSystem, hr::render::World& renderWorld, size_t renderWidth, size_t renderHeight)
+	RendererMain::RendererMain(const hr::gl::objects::Context& glContext, hr::io::FileSystem& fileSystem, hr::render::World& renderWorld, size_t renderWidth, size_t renderHeight)
 		: Renderer(glContext)
 		, mWorld(renderWorld)
 		, mFileSystem(fileSystem)
@@ -356,36 +382,47 @@ namespace hr { namespace render
 		mShadersWatchFolderID = mFileSystem.watchChangeCreate(pathShaders.str().c_str(), false, hr::io::FileSystem::FileLastWrite);
 
 		//FBOs
-		mFBOs.texDeferredAlbedo.init(hr::gl::objects::Texture::Type::TexRectangle, hr::gl::objects::Texture::StorageType::RGBA_16F, renderWidth, renderHeight);
-		mFBOs.texDeferredNormals.init(hr::gl::objects::Texture::Type::TexRectangle, hr::gl::objects::Texture::StorageType::RGBA_16F, renderWidth, renderHeight);
-		mFBOs.texDeferredMiscA.init(hr::gl::objects::Texture::Type::TexRectangle, hr::gl::objects::Texture::StorageType::RGBA_16F, renderWidth, renderHeight);
-		mFBOs.texDeferredMiscB.init(hr::gl::objects::Texture::Type::TexRectangle, hr::gl::objects::Texture::StorageType::RGBA_16F, renderWidth, renderHeight);
-		mFBOs.texDeferredZ.init(hr::gl::objects::Texture::Type::TexRectangle, hr::gl::objects::Texture::StorageType::DEPTH_24, renderWidth, renderHeight);
+		mFBOs.texLighting.init(hr::gl::objects::Texture::Type::TexRectangle, hr::gl::objects::Texture::StorageType::RGBA_16F, renderWidth, renderHeight);
+		mFBOs.texNormals.init(hr::gl::objects::Texture::Type::TexRectangle, hr::gl::objects::Texture::StorageType::RGBA_16F, renderWidth, renderHeight);
+		mFBOs.texSpecular.init(hr::gl::objects::Texture::Type::TexRectangle, hr::gl::objects::Texture::StorageType::RGBA_8, renderWidth, renderHeight);
+		mFBOs.texZ.init(hr::gl::objects::Texture::Type::TexRectangle, hr::gl::objects::Texture::StorageType::DEPTH_24, renderWidth, renderHeight);
 
-		mFBOs.fboDeferredGBuffer.reset();
-		mFBOs.fboDeferredGBuffer.init();
-		mFBOs.fboDeferredGBuffer.attachTColor(mFBOs.texDeferredAlbedo, 0)
-			.attachTColor(mFBOs.texDeferredNormals, 1)
-			.attachTColor(mFBOs.texDeferredMiscA, 2)
-			.attachTColor(mFBOs.texDeferredMiscB, 3)
-			.attachTDepth(mFBOs.texDeferredZ);
-		mFBOs.fboDeferredGBuffer.isStatusComplete();
+		mFBOs.fboZPass.reset();
+		mFBOs.fboZPass.init();
+		mFBOs.fboZPass
+			.attachTDepth(mFBOs.texZ);
+		mFBOs.fboZPass.isStatusComplete();
+
+		mFBOs.fboForward.reset();
+		mFBOs.fboForward.init();
+		mFBOs.fboForward
+			.attachTColor(mFBOs.texLighting, 0)
+			.attachTColor(mFBOs.texNormals, 1)
+			.attachTColor(mFBOs.texSpecular, 2)
+			.attachTDepth(mFBOs.texZ);
+		mFBOs.fboForward.isStatusComplete();
 
 		//samplers for the FBOs
-		mFBOs.samplerTexs.init();
-		mFBOs.samplerTexs.setMinFilter(hr::gl::objects::Sampler::FilterType::Point);
-		mFBOs.samplerTexs.setMagFilter(hr::gl::objects::Sampler::FilterType::Point);
-		mFBOs.samplerTexs.setWrap(hr::gl::objects::Sampler::WrapType::ClampEdge);
+		mFBOs.samplerTex.init();
+		mFBOs.samplerTex.setMinFilter(hr::gl::objects::Sampler::FilterType::Point);
+		mFBOs.samplerTex.setMagFilter(hr::gl::objects::Sampler::FilterType::Point);
+		mFBOs.samplerTex.setWrap(hr::gl::objects::Sampler::WrapType::ClampEdge);
 
 		//shaders
-		mShaders.deferred.vertex.init(hr::gl::objects::ShaderProgram::Type::Vertex, mFileSystem.readFileAsString("shaders/deferred_gbuffer.vshader"));
-		mShaders.deferred.fragment.init(hr::gl::objects::ShaderProgram::Type::Fragment, mFileSystem.readFileAsString("shaders/deferred_gbuffer.fshader"));
-		mShaders.deferred.pipeline.init();
-		mShaders.deferred.pipeline.setStage(mShaders.deferred.vertex);
-		mShaders.deferred.pipeline.setStage(mShaders.deferred.fragment);
+		mShaders.forwardPassZ.vertex.init(hr::gl::objects::ShaderProgram::Type::Vertex, mFileSystem.readFileAsString("shaders/rPassZ.vshader"));
+		mShaders.forwardPassZ.fragment.init(hr::gl::objects::ShaderProgram::Type::Fragment, mFileSystem.readFileAsString("shaders/rPassZ.fshader"));
+		mShaders.forwardPassZ.pipeline.init();
+		mShaders.forwardPassZ.pipeline.setStage(mShaders.forwardPassZ.vertex);
+		mShaders.forwardPassZ.pipeline.setStage(mShaders.forwardPassZ.fragment);
 
-		mShaders.postprocess.vertex.init(hr::gl::objects::ShaderProgram::Type::Vertex, mFileSystem.readFileAsString("shaders/ppSimpleColor.vshader"));
-		mShaders.postprocess.fragment.init(hr::gl::objects::ShaderProgram::Type::Fragment, mFileSystem.readFileAsString("shaders/ppSimpleColor.fshader"));
+		mShaders.forwardPassLighting.vertex.init(hr::gl::objects::ShaderProgram::Type::Vertex, mFileSystem.readFileAsString("shaders/rPassLighting.vshader"));
+		mShaders.forwardPassLighting.fragment.init(hr::gl::objects::ShaderProgram::Type::Fragment, mFileSystem.readFileAsString("shaders/rPassLighting.fshader"));
+		mShaders.forwardPassLighting.pipeline.init();
+		mShaders.forwardPassLighting.pipeline.setStage(mShaders.forwardPassLighting.vertex);
+		mShaders.forwardPassLighting.pipeline.setStage(mShaders.forwardPassLighting.fragment);
+
+		mShaders.postprocess.vertex.init(hr::gl::objects::ShaderProgram::Type::Vertex, mFileSystem.readFileAsString("shaders/rCompositePP.vshader"));
+		mShaders.postprocess.fragment.init(hr::gl::objects::ShaderProgram::Type::Fragment, mFileSystem.readFileAsString("shaders/rCompositePP.fshader"));
 		mShaders.postprocess.pipeline.init();
 		mShaders.postprocess.pipeline.setStage(mShaders.postprocess.vertex);
 		mShaders.postprocess.pipeline.setStage(mShaders.postprocess.fragment);
@@ -398,35 +435,36 @@ namespace hr { namespace render
 		mSamplers.samplerNormals.setAnisotropy(mGlContext, 8.0f);
 	}
 
-	RendererDeferred::~RendererDeferred()
+	RendererMain::~RendererMain()
 	{
 		mTexDefaultAlbedo.reset();
 		mTexDefaultNormals.reset();
 	}
 	
-	void RendererDeferred::loadWorld()
+	void RendererMain::loadWorld()
 	{
 		loadGeometry();
 		loadTextures();
 	}
 
-	void RendererDeferred::render(const tools::Camera& hrCamera, const hr::gl::tools::Viewport& hrViewport)
+	void RendererMain::render(const tools::Camera& hrCamera, const hr::gl::tools::Viewport& hrViewport)
 	{
 		if (mFileSystem.watchChanged(mShadersWatchFolderID))
 		{
 			//reload shaders
 		}
 
-		renderGBuffer(hrCamera, hrViewport);
+		passDepth(hrCamera, hrViewport);
+		passLighting(hrCamera, hrViewport);
 	}
 
-	void RendererDeferred::renderDebug(RendererDebug& rendererDebug, const tools::Camera& hrCamera, const hr::gl::tools::Viewport& hrViewport)
+	void RendererMain::renderDebug(RendererDebug& rendererDebug, const tools::Camera& hrCamera, const hr::gl::tools::Viewport& hrViewport)
 	{
 		rendererDebug.render(hrCamera, hrViewport);
 	}
 
-	void RendererDeferred::renderComposite(const hr::gl::tools::Viewport& hrViewport)
+	void RendererMain::renderComposite(const hr::gl::tools::Viewport& hrViewport)
 	{
-		renderFinal(hrViewport);
+		compositePostProcessing(hrViewport);
 	}
 } }

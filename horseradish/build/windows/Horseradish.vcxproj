@@ -218,6 +218,7 @@
     <ClCompile Include="..\..\src\libs\lodepng\lodepng.cpp" />
     <ClCompile Include="..\..\src\libs\lz4\lz4.c" />
     <ClCompile Include="..\..\src\libs\lz4\lz4hc.c" />
+    <ClCompile Include="..\..\src\libs\mikktspace\mikktspace.cpp" />
     <ClCompile Include="..\..\src\libs\sdf\sdf.cpp" />
     <ClCompile Include="..\..\src\libs\squirrel\sqapi.cpp" />
     <ClCompile Include="..\..\src\libs\squirrel\sqbaselib.cpp" />
@@ -270,7 +271,7 @@
     <ClCompile Include="..\..\src\render\profilerUI.cpp" />
     <ClCompile Include="..\..\src\render\renderer2D.cpp" />
     <ClCompile Include="..\..\src\render\rendererDebug.cpp" />
-    <ClCompile Include="..\..\src\render\rendererDeferred.cpp" />
+    <ClCompile Include="..\..\src\render\rendererMain.cpp" />
     <ClCompile Include="..\..\src\render\scene.cpp" />
     <ClCompile Include="..\..\src\render\stage.cpp" />
     <ClCompile Include="..\..\src\render\tools\camera.cpp" />
@@ -337,6 +338,7 @@
     <ClInclude Include="..\..\src\libs\lodepng\lodepngoptions.h" />
     <ClInclude Include="..\..\src\libs\lz4\lz4.h" />
     <ClInclude Include="..\..\src\libs\lz4\lz4hc.h" />
+    <ClInclude Include="..\..\src\libs\mikktspace\mikktspace.h" />
     <ClInclude Include="..\..\src\libs\rapidjson\allocators.h" />
     <ClInclude Include="..\..\src\libs\rapidjson\document.h" />
     <ClInclude Include="..\..\src\libs\rapidjson\encodedstream.h" />
@@ -420,7 +422,7 @@
     <ClInclude Include="..\..\src\render\renderer.hpp" />
     <ClInclude Include="..\..\src\render\renderer2D.hpp" />
     <ClInclude Include="..\..\src\render\rendererDebug.hpp" />
-    <ClInclude Include="..\..\src\render\rendererDeferred.hpp" />
+    <ClInclude Include="..\..\src\render\rendererMain.hpp" />
     <ClInclude Include="..\..\src\render\scene.hpp" />
     <ClInclude Include="..\..\src\render\stage.hpp" />
     <ClInclude Include="..\..\src\render\tools\camera.hpp" />

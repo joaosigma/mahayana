@@ -68,7 +68,7 @@ namespace hr { namespace render
 
 	public:
 		World(bool editorMode = false);
-		~World();
+		virtual ~World();
 
 		void cleanup();
 
@@ -84,9 +84,15 @@ namespace hr { namespace render
 		size_t genId() const;
 
 	public:
+		WorldEditor()
+			: World(true)
+		{ }
+
 		bool exportAll(const std::string& scenePath, const std::string& geomPath);
 
 		bool importObj(const std::string& basePath, const std::string& fileName);
+
+		void recalcTangentSpace(const std::vector<size_t>& conceptIds);
 
 		std::vector<size_t> unusedConcepts() const;
 		void removeConcepts(const std::vector<size_t>& conceptIds);

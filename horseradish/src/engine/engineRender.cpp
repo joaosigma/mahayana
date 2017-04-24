@@ -9,7 +9,7 @@
 #include "../render/world.hpp"
 #include "../render/consoleUI.hpp"
 #include "../render/profilerUI.hpp"
-#include "../render/rendererDeferred.hpp"
+#include "../render/rendererMain.hpp"
 #include "../render/rendererDebug.hpp"
 #include "../render/renderer2D.hpp"
 
@@ -169,7 +169,7 @@ namespace hr { namespace engine
 		hr::Timer timerFrame;
 		std::unique_ptr<Profiler> profiler;
 		std::unique_ptr<render::Stage> stage;
-		std::unique_ptr<hr::render::RendererDeferred> rendererDeferred;
+		std::unique_ptr<hr::render::RendererMain> rendererMain;
 		std::unique_ptr<hr::render::RendererDebug> rendererDebug;
 		std::unique_ptr<hr::render::Renderer2D> renderer2D;
 		std::unique_ptr<hr::render::World> renderData;
@@ -255,7 +255,7 @@ namespace hr { namespace engine
 
 			rendererDebug = std::make_unique<hr::render::RendererDebug>(*glContext, *mFileSystem, *renderer2D, *renderData);
 
-			rendererDeferred = std::make_unique<hr::render::RendererDeferred>(*glContext, *mFileSystem, *renderData, displayWidth, displayHeight);
+			rendererMain = std::make_unique<hr::render::RendererMain>(*glContext, *mFileSystem, *renderData, displayWidth, displayHeight);
 
 			stage = std::make_unique<render::Stage>(*mRuntime, *mLoggerRuntimeCtx, *mFileSystem, *glContext, displayWidth, displayHeight);
 		}
@@ -291,11 +291,13 @@ namespace hr { namespace engine
 			{
 				renderData->cleanup();
 
-				//auto success = renderData->importAll("c:/Users/Sigma/Desktop/test_scene.hscene", "c:/Users/Sigma/Desktop/test_scene.hgeom");
+				/*{
+					hr::render::WorldEditor editor;
+					editor.importAll("c:/Users/Sigma/Desktop/test_scene.hscene", "c:/Users/Sigma/Desktop/test_scene.hgeom");
+					editor.recalcTangentSpace({});
+				}*/
+
 				auto success = renderData->importAll("c:/Users/Sigma/Desktop/volund.hscene", "c:/Users/Sigma/Desktop/volund.hgeom");
-				//auto success = renderData->importAll("c:/Users/Sigma/Desktop/doom.hscene", "c:/Users/Sigma/Desktop/doom.hgeom");
-				//auto success = renderData->importAll("c:/Users/Sigma/Desktop/dabrovic-sponza.hscene", "c:/Users/Sigma/Desktop/dabrovic-sponza.hgeom");
-				//auto success = renderData->importAll("c:/Users/Sigma/Desktop/head.hscene", "c:/Users/Sigma/Desktop/head.hgeom");
 
 				if (!success)
 					renderData->cleanup();
@@ -304,7 +306,7 @@ namespace hr { namespace engine
 			//renderData->importObj("C:\\Users\\Sigma\\Desktop\\san-miguel\\", "san-miguel.obj");
 
 			renderData->loadData(*mFileSystem);
-			rendererDeferred->loadWorld();
+			rendererMain->loadWorld();
 
 			//export
 			/*{
@@ -352,9 +354,9 @@ namespace hr { namespace engine
 					renderGlQueryGroup.queriesBegin();
 
 				//draw main, deferred scene
-				rendererDeferred->render(camera, viewportRender);
-				rendererDeferred->renderDebug(*rendererDebug, camera, viewportRender);
-				rendererDeferred->renderComposite(viewportRender);
+				rendererMain->render(camera, viewportRender);
+				rendererMain->renderDebug(*rendererDebug, camera, viewportRender);
+				rendererMain->renderComposite(viewportRender);
 
 				if (Profiler::isSupported())
 					renderGlQueryGroup.queriesEnd();
@@ -462,7 +464,7 @@ namespace hr { namespace engine
 
 					hr::streams::FileStream fileStream("screenshot.bmp", false, true);
 
-					//rendererDeferred //blit from the final framebuffer
+					//rendererMain //blit from the final framebuffer
 				}
 
 				//only limit FPS if not developing
@@ -490,7 +492,7 @@ namespace hr { namespace engine
 
 		consoleUI.reset();
 
-		rendererDeferred.reset();
+		rendererMain.reset();
 		rendererDebug.reset();
 		renderer2D.reset();
 

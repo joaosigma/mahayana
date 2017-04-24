@@ -322,7 +322,7 @@ namespace hr { namespace streams
 		auto filePathWChar = hr::StringUtils::conv2UTF16(filePath);
 
 		if (toRead && toWrite)
-			mFileHandle = CreateFile(filePathWChar.c_str(), GENERIC_READ | GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
+			mFileHandle = CreateFile(filePathWChar.c_str(), GENERIC_READ | GENERIC_WRITE, 0, nullptr, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
 		else if (toRead)
 			mFileHandle = CreateFile(filePathWChar.c_str(), GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
 		else if (toWrite)

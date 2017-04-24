@@ -5,23 +5,24 @@
 #include "vector.hpp"
 
 #include "libs/forsyth/forsythtriangleorderoptimizer.h"
+#include "libs/mikktspace/mikktspace.h"
 
 #include <vector>
 #include <limits>
 
 namespace hr { namespace geom
 {
-	static const float ushortScaleFrom = 1.0f / static_cast<float>(std::numeric_limits<short>::max());
-	static const float ushortScaleTo = static_cast<float>(std::numeric_limits<short>::max());
+	static const float shortScaleFrom = 1.0f / static_cast<float>(std::numeric_limits<short>::max());
+	static const float shortScaleTo = static_cast<float>(std::numeric_limits<short>::max());
 
 	short Mesh::pack(const float value)
 	{
-		return static_cast<unsigned short>(value * ushortScaleTo);
+		return static_cast<short>(value * shortScaleTo);
 	}
 
 	float Mesh::unpack(const short value)
 	{
-		return (static_cast<float>(value) * ushortScaleFrom);
+		return (static_cast<float>(value) * shortScaleFrom);
 	}
 
 	void Mesh::pack(const float* const in, short* const out, size_t numValues)
@@ -706,65 +707,59 @@ namespace hr { namespace geom
 
 	void Mesh::genTangents4()
 	{
-		auto tan1 = std::unique_ptr<Vector3f[]>(new Vector3f[mNumVertices]);
-		auto tan2 = std::unique_ptr<Vector3f[]>(new Vector3f[mNumVertices]);
-
-		for (size_t i = 0; i < mNumVertices; i++)
+		SMikkTSpaceInterface inter;
+		inter.m_getNumFaces = [](const SMikkTSpaceContext * pContext) -> int
 		{
-			tan1[i].set(0.0f);
-			tan2[i].set(0.0f);
-		}
+			auto instance = reinterpret_cast<Mesh*>(pContext->m_pUserData);
+			return (instance->mNumIndices / 3);
+		};
 
-		for (size_t i = 0; i < mNumIndices; i += 3)
+		inter.m_getNumVerticesOfFace = [](const SMikkTSpaceContext * pContext, const int iFace)
 		{
-			auto i1 = mIndices[i + 0];
-			auto i2 = mIndices[i + 1];
-			auto i3 = mIndices[i + 2];
+			return 3;
+		};
 
-			auto& v1 = mData[i1];
-			auto& v2 = mData[i2];
-			auto& v3 = mData[i3];
-
-			float x1 = v2.pos[0] - v1.pos[0];
-			float x2 = v3.pos[0] - v1.pos[0];
-			float y1 = v2.pos[1] - v1.pos[1];
-			float y2 = v3.pos[1] - v1.pos[1];
-			float z1 = v2.pos[2] - v1.pos[2];
-			float z2 = v3.pos[2] - v1.pos[2];
-
-			float s1 = v2.uv[0] - v1.uv[0];
-			float s2 = v3.uv[0] - v1.uv[0];
-			float t1 = v2.uv[1] - v1.uv[1];
-			float t2 = v3.uv[1] - v1.uv[1];
-
-			float r = 1.0f / (s1 * t2 - s2 * t1);
-			Vector3f sdir((t2 * x1 - t1 * x2) * r, (t2 * y1 - t1 * y2) * r, (t2 * z1 - t1 * z2) * r);
-			Vector3f tdir((s1 * x2 - s2 * x1) * r, (s1 * y2 - s2 * y1) * r, (s1 * z2 - s2 * z1) * r);
-
-			tan1[i1] += sdir;
-			tan1[i2] += sdir;
-			tan1[i3] += sdir;
-
-			tan2[i1] += tdir;
-			tan2[i2] += tdir;
-			tan2[i3] += tdir;
-		}
-
-		for (size_t i = 0; i < mNumVertices; i++)
+		inter.m_getPosition = [](const SMikkTSpaceContext * pContext, float fvPosOut[], const int iFace, const int iVert)
 		{
-			Vector3f n(Mesh::unpack(mData[i].normal[0]), Mesh::unpack(mData[i].normal[1]), Mesh::unpack(mData[i].normal[2]));
-			const Vector3f& t1 = tan1[i];
-			const Vector3f& t2 = tan2[i];
+			auto instance = reinterpret_cast<Mesh*>(pContext->m_pUserData);
 
-			//Gram-Schmidt orthogonalize
-			Vector3f tangent = t1 - n * n.getDot(t1);
-			tangent.normalize();
+			assert(((iFace * 3) + iVert) < instance->mNumIndices);
+			auto vData = instance->mData.get() + instance->mIndices[(iFace * 3) + iVert];
+			memcpy(fvPosOut, vData->pos, sizeof(float) * 3);
+		};
 
-			//handedness
-			float w = (n.crossProduct(t1).getDot(t2) < 0.0f) ? -1.0f : 1.0f;
+		inter.m_getNormal = [](const SMikkTSpaceContext * pContext, float fvNormOut[], const int iFace, const int iVert)
+		{
+			auto instance = reinterpret_cast<Mesh*>(pContext->m_pUserData);
 
-			Mesh::pack(tangent.data(), mData[i].tangent, 3);
-			mData[i].tangent[3] = Mesh::pack(w);
-		}
+			assert(((iFace * 3) + iVert) < instance->mNumIndices);
+			auto vData = instance->mData.get() + instance->mIndices[(iFace * 3) + iVert];
+			Mesh::unpack(vData->normal, fvNormOut, 3);
+		};
+
+		inter.m_getTexCoord = [](const SMikkTSpaceContext * pContext, float fvTexcOut[], const int iFace, const int iVert)
+		{
+			auto instance = reinterpret_cast<Mesh*>(pContext->m_pUserData);
+
+			assert(((iFace * 3) + iVert) < instance->mNumIndices);
+			auto vData = instance->mData.get() + instance->mIndices[(iFace * 3) + iVert];
+			memcpy(fvTexcOut, vData->uv, sizeof(float) * 2);
+		};
+
+		inter.m_setTSpace = nullptr;
+		inter.m_setTSpaceBasic = [](const SMikkTSpaceContext * pContext, const float fvTangent[], const float fSign, const int iFace, const int iVert)
+		{
+			auto instance = reinterpret_cast<Mesh*>(pContext->m_pUserData);
+
+			assert(((iFace * 3) + iVert) < instance->mNumIndices);
+			auto vData = instance->mData.get() + instance->mIndices[(iFace * 3) + iVert];
+			Mesh::pack(fvTangent, vData->tangent, 3);
+			vData->tangent[3] = Mesh::pack(fSign);
+		};
+		
+		SMikkTSpaceContext ctx;
+		ctx.m_pInterface = &inter;
+		ctx.m_pUserData = this;
+		genTangSpaceDefault(&ctx);
 	}
 } }

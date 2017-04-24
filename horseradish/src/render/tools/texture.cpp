@@ -5,285 +5,275 @@
 
 namespace hr { namespace render { namespace tools
 {
-	#pragma pack(push, 1)
-	std::array<unsigned char, 6> CTextureFileSig = { 'h', 'r', 'c', 't', 'e', 'x' };
-
-	struct CTextureHeader
+	namespace
 	{
-		unsigned char fileSig[CTextureFileSig.size()];
-		unsigned char version;
-		std::uint32_t width;
-		std::uint32_t height;
-		std::uint16_t compression; //[1, 3, 4, 5] corresponding to [BC1, BC3, BC4, BC5]
-		std::uint16_t numLevels; //num mipmaps
-	};
+		#pragma pack(push, 1)
+		std::array<unsigned char, 6> CTextureFileSig = { 'h', 'r', 'c', 't', 'e', 'x' };
 
-	struct CTextureLevelInfo
-	{
-		std::uint16_t level;
-		std::uint32_t width;
-		std::uint32_t height;
-		std::uint32_t size;
-	};
-	#pragma pack(pop)
-
-	static
-	bool sampleR(const hr::imaging::ImageView<unsigned char, hr::imaging::ImageFormatRGBA>& image, size_t x, size_t y, unsigned char sample[1])
-	{
-		if ((x >= image.width()) || (y >= image.height()))
-			return false;
-
-		unsigned char sampleRGBA[4];
-		image.getPixel(x, y, sampleRGBA);
-
-		sample[0] = sampleRGBA[0];
-		return true;
-	}
-
-	static
-	bool sampleRG(const hr::imaging::ImageView<unsigned char, hr::imaging::ImageFormatRGBA>& image, size_t x, size_t y, unsigned char sample[2])
-	{
-		if ((x >= image.width()) || (y >= image.height()))
-			return false;
-
-		unsigned char sampleRGBA[4];
-		image.getPixel(x, y, sampleRGBA);
-
-		sample[0] = sampleRGBA[0];
-		sample[1] = sampleRGBA[1];
-		return true;
-	}
-
-	static
-	bool sampleRGBA(const hr::imaging::ImageView<unsigned char, hr::imaging::ImageFormatRGBA>& image, size_t x, size_t y, unsigned char sample[4])
-	{
-		if ((x >= image.width()) || (y >= image.height()))
-			return false;
-
-		image.getPixel(x, y, sample);
-		return true;
-	}
-
-	static
-	void sample4x4BlockR(const hr::imaging::ImageView<unsigned char, hr::imaging::ImageFormatRGBA>& image, size_t blockX, size_t blockY, unsigned char sample[16], int& pixelMask)
-	{
-		auto imageX = blockX * 4;
-		auto imageY = blockY * 4;
-
-		pixelMask |= sampleRG(image, imageX + 0, imageY + 0, sample + 0) ? (1 << 0) : 0;
-		pixelMask |= sampleRG(image, imageX + 1, imageY + 0, sample + 1) ? (1 << 1) : 0;
-		pixelMask |= sampleRG(image, imageX + 2, imageY + 0, sample + 2) ? (1 << 2) : 0;
-		pixelMask |= sampleRG(image, imageX + 3, imageY + 0, sample + 3) ? (1 << 3) : 0;
-
-		sample += 4;
-		pixelMask |= sampleRG(image, imageX + 0, imageY + 1, sample + 0) ? (1 << 4) : 0;
-		pixelMask |= sampleRG(image, imageX + 1, imageY + 1, sample + 1) ? (1 << 5) : 0;
-		pixelMask |= sampleRG(image, imageX + 2, imageY + 1, sample + 2) ? (1 << 6) : 0;
-		pixelMask |= sampleRG(image, imageX + 3, imageY + 1, sample + 3) ? (1 << 7) : 0;
-
-		sample += 4;
-		pixelMask |= sampleRG(image, imageX + 0, imageY + 2, sample + 0) ? (1 << 8) : 0;
-		pixelMask |= sampleRG(image, imageX + 1, imageY + 2, sample + 1) ? (1 << 9) : 0;
-		pixelMask |= sampleRG(image, imageX + 2, imageY + 2, sample + 2) ? (1 << 10) : 0;
-		pixelMask |= sampleRG(image, imageX + 3, imageY + 2, sample + 3) ? (1 << 11) : 0;
-
-		sample += 4;
-		pixelMask |= sampleRG(image, imageX + 0, imageY + 3, sample + 0) ? (1 << 12) : 0;
-		pixelMask |= sampleRG(image, imageX + 1, imageY + 3, sample + 1) ? (1 << 13) : 0;
-		pixelMask |= sampleRG(image, imageX + 2, imageY + 3, sample + 2) ? (1 << 14) : 0;
-		pixelMask |= sampleRG(image, imageX + 3, imageY + 3, sample + 3) ? (1 << 15) : 0;
-	}
-
-	static
-	void sample4x4BlockRG(const hr::imaging::ImageView<unsigned char, hr::imaging::ImageFormatRGBA>& image, size_t blockX, size_t blockY, unsigned char sample[32], int& pixelMask)
-	{
-		auto imageX = blockX * 4;
-		auto imageY = blockY * 4;
-
-		pixelMask |= sampleRG(image, imageX + 0, imageY + 0, sample + 0) ? (1 << 0) : 0;
-		pixelMask |= sampleRG(image, imageX + 1, imageY + 0, sample + 2) ? (1 << 1) : 0;
-		pixelMask |= sampleRG(image, imageX + 2, imageY + 0, sample + 4) ? (1 << 2) : 0;
-		pixelMask |= sampleRG(image, imageX + 3, imageY + 0, sample + 6) ? (1 << 3) : 0;
-
-		sample += 8;
-		pixelMask |= sampleRG(image, imageX + 0, imageY + 1, sample + 0) ? (1 << 4) : 0;
-		pixelMask |= sampleRG(image, imageX + 1, imageY + 1, sample + 2) ? (1 << 5) : 0;
-		pixelMask |= sampleRG(image, imageX + 2, imageY + 1, sample + 4) ? (1 << 6) : 0;
-		pixelMask |= sampleRG(image, imageX + 3, imageY + 1, sample + 6) ? (1 << 7) : 0;
-
-		sample += 8;
-		pixelMask |= sampleRG(image, imageX + 0, imageY + 2, sample + 0) ? (1 << 8) : 0;
-		pixelMask |= sampleRG(image, imageX + 1, imageY + 2, sample + 2) ? (1 << 9) : 0;
-		pixelMask |= sampleRG(image, imageX + 2, imageY + 2, sample + 4) ? (1 << 10) : 0;
-		pixelMask |= sampleRG(image, imageX + 3, imageY + 2, sample + 6) ? (1 << 11) : 0;
-
-		sample += 8;
-		pixelMask |= sampleRG(image, imageX + 0, imageY + 3, sample + 0) ? (1 << 12) : 0;
-		pixelMask |= sampleRG(image, imageX + 1, imageY + 3, sample + 2) ? (1 << 13) : 0;
-		pixelMask |= sampleRG(image, imageX + 2, imageY + 3, sample + 4) ? (1 << 14) : 0;
-		pixelMask |= sampleRG(image, imageX + 3, imageY + 3, sample + 6) ? (1 << 15) : 0;
-	}
-
-	static
-	void sample4x4BlockRGBA(const hr::imaging::ImageView<unsigned char, hr::imaging::ImageFormatRGBA>& image, size_t blockX, size_t blockY, unsigned char sample[64], int& pixelMask)
-	{
-		auto imageX = blockX * 4;
-		auto imageY = blockY * 4;
-
-		pixelMask |= sampleRGBA(image, imageX + 0, imageY + 0, sample + 0) ? (1 << 0) : 0;
-		pixelMask |= sampleRGBA(image, imageX + 1, imageY + 0, sample + 4) ? (1 << 1) : 0;
-		pixelMask |= sampleRGBA(image, imageX + 2, imageY + 0, sample + 8) ? (1 << 2) : 0;
-		pixelMask |= sampleRGBA(image, imageX + 3, imageY + 0, sample + 12) ? (1 << 3) : 0;
-
-		sample += 16;
-		pixelMask |= sampleRGBA(image, imageX + 0, imageY + 1, sample + 0) ? (1 << 4) : 0;
-		pixelMask |= sampleRGBA(image, imageX + 1, imageY + 1, sample + 4) ? (1 << 5) : 0;
-		pixelMask |= sampleRGBA(image, imageX + 2, imageY + 1, sample + 8) ? (1 << 6) : 0;
-		pixelMask |= sampleRGBA(image, imageX + 3, imageY + 1, sample + 12) ? (1 << 7) : 0;
-
-		sample += 16;
-		pixelMask |= sampleRGBA(image, imageX + 0, imageY + 2, sample + 0) ? (1 << 8) : 0;
-		pixelMask |= sampleRGBA(image, imageX + 1, imageY + 2, sample + 4) ? (1 << 9) : 0;
-		pixelMask |= sampleRGBA(image, imageX + 2, imageY + 2, sample + 8) ? (1 << 10) : 0;
-		pixelMask |= sampleRGBA(image, imageX + 3, imageY + 2, sample + 12) ? (1 << 11) : 0;
-
-		sample += 16;
-		pixelMask |= sampleRGBA(image, imageX + 0, imageY + 3, sample + 0) ? (1 << 12) : 0;
-		pixelMask |= sampleRGBA(image, imageX + 1, imageY + 3, sample + 4) ? (1 << 13) : 0;
-		pixelMask |= sampleRGBA(image, imageX + 2, imageY + 3, sample + 8) ? (1 << 14) : 0;
-		pixelMask |= sampleRGBA(image, imageX + 3, imageY + 3, sample + 12) ? (1 << 15) : 0;
-	}
-
-	struct CompressedBlock
-	{
-		size_t width = 0;
-		size_t height = 0;
-		size_t perPixelBytes = 0;
-	};
-
-	static
-	CompressedBlock compressInitBlockBC1(size_t imageWidth, size_t imageHeight)
-	{
-		CompressedBlock block;
-
-		block.width = imageWidth / 4 + (((imageWidth % 4) > 0) ? 1 : 0);
-		block.height = imageHeight / 4 + (((imageHeight % 4) > 0) ? 1 : 0);
-		block.perPixelBytes = 8;
-		return block;
-	}
-
-	static
-	CompressedBlock compressInitBlockBC3(size_t imageWidth, size_t imageHeight)
-	{
-		CompressedBlock block;
-
-		block.width = imageWidth / 4 + (((imageWidth % 4) > 0) ? 1 : 0);
-		block.height = imageHeight / 4 + (((imageHeight % 4) > 0) ? 1 : 0);
-		block.perPixelBytes = 16;
-		return block;
-	}
-
-	static
-	CompressedBlock compressInitBlockBC4(size_t imageWidth, size_t imageHeight)
-	{
-		CompressedBlock block;
-
-		block.width = imageWidth / 4 + (((imageWidth % 4) > 0) ? 1 : 0);
-		block.height = imageHeight / 4 + (((imageHeight % 4) > 0) ? 1 : 0);
-		block.perPixelBytes = 8;
-		return block;
-	}
-
-	static
-	CompressedBlock compressInitBlockBC5(size_t imageWidth, size_t imageHeight)
-	{
-		CompressedBlock block;
-
-		block.width = imageWidth / 4 + (((imageWidth % 4) > 0) ? 1 : 0);
-		block.height = imageHeight / 4 + (((imageHeight % 4) > 0) ? 1 : 0);
-		block.perPixelBytes = 16;
-		return block;
-	}
-
-	static
-	std::unique_ptr<unsigned char[]> compressImageBC1(const CompressedBlock& compressBlock, const hr::imaging::ImageView<unsigned char, hr::imaging::ImageFormatRGBA>& image)
-	{
-		assert(compressBlock.perPixelBytes == 8);
-		auto compressedImg = std::unique_ptr<unsigned char[]>(new unsigned char[compressBlock.width * compressBlock.height * compressBlock.perPixelBytes]);
-
-		int pixelMask;
-		std::array<unsigned char, 8> dstBlock;
-		std::array<unsigned char, 4 * 4 * 4> srcBlock; //4x4 RGBA
-
-		for (size_t y = 0; y < compressBlock.height; ++y)
+		struct CTextureHeader
 		{
-			for (size_t x = 0; x < compressBlock.width; ++x)
-			{
-				srcBlock.fill(0);
-				pixelMask = 0;
-				sample4x4BlockRGBA(image, x, y, srcBlock.data(), pixelMask);
+			unsigned char fileSig[CTextureFileSig.size()];
+			unsigned char version;
+			std::uint32_t width;
+			std::uint32_t height;
+			std::uint16_t compression; //[1, 3, 4, 5] corresponding to [BC1, BC3, BC4, BC5]
+			std::uint16_t numLevels; //num mipmaps
+		};
 
-				squish::CompressMasked(srcBlock.data(), pixelMask, dstBlock.data(), squish::kDxt1 | squish::kColourClusterFit, nullptr);
+		struct CTextureLevelInfo
+		{
+			std::uint16_t level;
+			std::uint32_t width;
+			std::uint32_t height;
+			std::uint32_t size;
+		};
+		#pragma pack(pop)
 
-				std::memcpy(compressedImg.get() + (y * compressBlock.width * compressBlock.perPixelBytes) + (x * compressBlock.perPixelBytes), dstBlock.data(), dstBlock.size());
-			}
+		bool sampleR(const hr::imaging::ImageView<unsigned char, hr::imaging::ImageFormatRGBA>& image, size_t x, size_t y, unsigned char sample[1])
+		{
+			if ((x >= image.width()) || (y >= image.height()))
+				return false;
+
+			unsigned char sampleRGBA[4];
+			image.getPixel(x, y, sampleRGBA);
+
+			sample[0] = sampleRGBA[0];
+			return true;
 		}
 
-		return compressedImg;
-	}
-
-	static
-	std::unique_ptr<unsigned char[]> compressImageBC3(const CompressedBlock& compressBlock, const hr::imaging::ImageView<unsigned char, hr::imaging::ImageFormatRGBA>& image)
-	{
-		assert(compressBlock.perPixelBytes == 16);
-		auto compressedImg = std::unique_ptr<unsigned char[]>(new unsigned char[compressBlock.width * compressBlock.height * compressBlock.perPixelBytes]);
-
-		int pixelMask;
-		std::array<unsigned char, 16> dstBlock;
-		std::array<unsigned char, 4 * 4 * 4> srcBlock; //4x4 RGBA
-
-		for (size_t y = 0; y < compressBlock.height; ++y)
+		bool sampleRG(const hr::imaging::ImageView<unsigned char, hr::imaging::ImageFormatRGBA>& image, size_t x, size_t y, unsigned char sample[2])
 		{
-			for (size_t x = 0; x < compressBlock.width; ++x)
-			{
-				srcBlock.fill(0);
-				pixelMask = 0;
-				sample4x4BlockRGBA(image, x, y, srcBlock.data(), pixelMask);
+			if ((x >= image.width()) || (y >= image.height()))
+				return false;
 
-				squish::CompressMasked(srcBlock.data(), pixelMask, dstBlock.data(), squish::kDxt5 | squish::kColourClusterFit, nullptr);
+			unsigned char sampleRGBA[4];
+			image.getPixel(x, y, sampleRGBA);
 
-				std::memcpy(compressedImg.get() + (y * compressBlock.width * compressBlock.perPixelBytes) + (x * compressBlock.perPixelBytes), dstBlock.data(), dstBlock.size());
-			}
+			sample[0] = sampleRGBA[0];
+			sample[1] = sampleRGBA[1];
+			return true;
 		}
 
-		return compressedImg;
-	}
-
-	static
-	std::unique_ptr<unsigned char[]> compressImageBC5(const CompressedBlock& compressBlock, const hr::imaging::ImageView<unsigned char, hr::imaging::ImageFormatRGBA>& image)
-	{
-		assert(compressBlock.perPixelBytes == 16);
-		auto compressedImg = std::unique_ptr<unsigned char[]>(new unsigned char[compressBlock.width * compressBlock.height * compressBlock.perPixelBytes]);
-
-		int pixelMask;
-		std::array<unsigned char, 16> dstBlock;
-		std::array<unsigned char, 4 * 4 * 2> srcBlock; //4x4 RG
-
-		for (size_t y = 0; y < compressBlock.height; ++y)
+		bool sampleRGBA(const hr::imaging::ImageView<unsigned char, hr::imaging::ImageFormatRGBA>& image, size_t x, size_t y, unsigned char sample[4])
 		{
-			for (size_t x = 0; x < compressBlock.width; ++x)
-			{
-				srcBlock.fill(0);
-				pixelMask = 0;
-				sample4x4BlockRG(image, x, y, srcBlock.data(), pixelMask);
+			if ((x >= image.width()) || (y >= image.height()))
+				return false;
 
-				stb_compress_bc5_block(dstBlock.data(), srcBlock.data());
-
-				std::memcpy(compressedImg.get() + (y * compressBlock.width * compressBlock.perPixelBytes) + (x * compressBlock.perPixelBytes), dstBlock.data(), dstBlock.size());
-			}
+			image.getPixel(x, y, sample);
+			return true;
 		}
 
-		return compressedImg;
+		void sample4x4BlockR(const hr::imaging::ImageView<unsigned char, hr::imaging::ImageFormatRGBA>& image, size_t blockX, size_t blockY, unsigned char sample[16], int& pixelMask)
+		{
+			auto imageX = blockX * 4;
+			auto imageY = blockY * 4;
+
+			pixelMask |= sampleRG(image, imageX + 0, imageY + 0, sample + 0) ? (1 << 0) : 0;
+			pixelMask |= sampleRG(image, imageX + 1, imageY + 0, sample + 1) ? (1 << 1) : 0;
+			pixelMask |= sampleRG(image, imageX + 2, imageY + 0, sample + 2) ? (1 << 2) : 0;
+			pixelMask |= sampleRG(image, imageX + 3, imageY + 0, sample + 3) ? (1 << 3) : 0;
+
+			sample += 4;
+			pixelMask |= sampleRG(image, imageX + 0, imageY + 1, sample + 0) ? (1 << 4) : 0;
+			pixelMask |= sampleRG(image, imageX + 1, imageY + 1, sample + 1) ? (1 << 5) : 0;
+			pixelMask |= sampleRG(image, imageX + 2, imageY + 1, sample + 2) ? (1 << 6) : 0;
+			pixelMask |= sampleRG(image, imageX + 3, imageY + 1, sample + 3) ? (1 << 7) : 0;
+
+			sample += 4;
+			pixelMask |= sampleRG(image, imageX + 0, imageY + 2, sample + 0) ? (1 << 8) : 0;
+			pixelMask |= sampleRG(image, imageX + 1, imageY + 2, sample + 1) ? (1 << 9) : 0;
+			pixelMask |= sampleRG(image, imageX + 2, imageY + 2, sample + 2) ? (1 << 10) : 0;
+			pixelMask |= sampleRG(image, imageX + 3, imageY + 2, sample + 3) ? (1 << 11) : 0;
+
+			sample += 4;
+			pixelMask |= sampleRG(image, imageX + 0, imageY + 3, sample + 0) ? (1 << 12) : 0;
+			pixelMask |= sampleRG(image, imageX + 1, imageY + 3, sample + 1) ? (1 << 13) : 0;
+			pixelMask |= sampleRG(image, imageX + 2, imageY + 3, sample + 2) ? (1 << 14) : 0;
+			pixelMask |= sampleRG(image, imageX + 3, imageY + 3, sample + 3) ? (1 << 15) : 0;
+		}
+
+		void sample4x4BlockRG(const hr::imaging::ImageView<unsigned char, hr::imaging::ImageFormatRGBA>& image, size_t blockX, size_t blockY, unsigned char sample[32], int& pixelMask)
+		{
+			auto imageX = blockX * 4;
+			auto imageY = blockY * 4;
+
+			pixelMask |= sampleRG(image, imageX + 0, imageY + 0, sample + 0) ? (1 << 0) : 0;
+			pixelMask |= sampleRG(image, imageX + 1, imageY + 0, sample + 2) ? (1 << 1) : 0;
+			pixelMask |= sampleRG(image, imageX + 2, imageY + 0, sample + 4) ? (1 << 2) : 0;
+			pixelMask |= sampleRG(image, imageX + 3, imageY + 0, sample + 6) ? (1 << 3) : 0;
+
+			sample += 8;
+			pixelMask |= sampleRG(image, imageX + 0, imageY + 1, sample + 0) ? (1 << 4) : 0;
+			pixelMask |= sampleRG(image, imageX + 1, imageY + 1, sample + 2) ? (1 << 5) : 0;
+			pixelMask |= sampleRG(image, imageX + 2, imageY + 1, sample + 4) ? (1 << 6) : 0;
+			pixelMask |= sampleRG(image, imageX + 3, imageY + 1, sample + 6) ? (1 << 7) : 0;
+
+			sample += 8;
+			pixelMask |= sampleRG(image, imageX + 0, imageY + 2, sample + 0) ? (1 << 8) : 0;
+			pixelMask |= sampleRG(image, imageX + 1, imageY + 2, sample + 2) ? (1 << 9) : 0;
+			pixelMask |= sampleRG(image, imageX + 2, imageY + 2, sample + 4) ? (1 << 10) : 0;
+			pixelMask |= sampleRG(image, imageX + 3, imageY + 2, sample + 6) ? (1 << 11) : 0;
+
+			sample += 8;
+			pixelMask |= sampleRG(image, imageX + 0, imageY + 3, sample + 0) ? (1 << 12) : 0;
+			pixelMask |= sampleRG(image, imageX + 1, imageY + 3, sample + 2) ? (1 << 13) : 0;
+			pixelMask |= sampleRG(image, imageX + 2, imageY + 3, sample + 4) ? (1 << 14) : 0;
+			pixelMask |= sampleRG(image, imageX + 3, imageY + 3, sample + 6) ? (1 << 15) : 0;
+		}
+
+		void sample4x4BlockRGBA(const hr::imaging::ImageView<unsigned char, hr::imaging::ImageFormatRGBA>& image, size_t blockX, size_t blockY, unsigned char sample[64], int& pixelMask)
+		{
+			auto imageX = blockX * 4;
+			auto imageY = blockY * 4;
+
+			pixelMask |= sampleRGBA(image, imageX + 0, imageY + 0, sample + 0) ? (1 << 0) : 0;
+			pixelMask |= sampleRGBA(image, imageX + 1, imageY + 0, sample + 4) ? (1 << 1) : 0;
+			pixelMask |= sampleRGBA(image, imageX + 2, imageY + 0, sample + 8) ? (1 << 2) : 0;
+			pixelMask |= sampleRGBA(image, imageX + 3, imageY + 0, sample + 12) ? (1 << 3) : 0;
+
+			sample += 16;
+			pixelMask |= sampleRGBA(image, imageX + 0, imageY + 1, sample + 0) ? (1 << 4) : 0;
+			pixelMask |= sampleRGBA(image, imageX + 1, imageY + 1, sample + 4) ? (1 << 5) : 0;
+			pixelMask |= sampleRGBA(image, imageX + 2, imageY + 1, sample + 8) ? (1 << 6) : 0;
+			pixelMask |= sampleRGBA(image, imageX + 3, imageY + 1, sample + 12) ? (1 << 7) : 0;
+
+			sample += 16;
+			pixelMask |= sampleRGBA(image, imageX + 0, imageY + 2, sample + 0) ? (1 << 8) : 0;
+			pixelMask |= sampleRGBA(image, imageX + 1, imageY + 2, sample + 4) ? (1 << 9) : 0;
+			pixelMask |= sampleRGBA(image, imageX + 2, imageY + 2, sample + 8) ? (1 << 10) : 0;
+			pixelMask |= sampleRGBA(image, imageX + 3, imageY + 2, sample + 12) ? (1 << 11) : 0;
+
+			sample += 16;
+			pixelMask |= sampleRGBA(image, imageX + 0, imageY + 3, sample + 0) ? (1 << 12) : 0;
+			pixelMask |= sampleRGBA(image, imageX + 1, imageY + 3, sample + 4) ? (1 << 13) : 0;
+			pixelMask |= sampleRGBA(image, imageX + 2, imageY + 3, sample + 8) ? (1 << 14) : 0;
+			pixelMask |= sampleRGBA(image, imageX + 3, imageY + 3, sample + 12) ? (1 << 15) : 0;
+		}
+
+		struct CompressedBlock
+		{
+			size_t width = 0;
+			size_t height = 0;
+			size_t perPixelBytes = 0;
+		};
+
+		CompressedBlock compressInitBlockBC1(size_t imageWidth, size_t imageHeight)
+		{
+			CompressedBlock block;
+
+			block.width = imageWidth / 4 + (((imageWidth % 4) > 0) ? 1 : 0);
+			block.height = imageHeight / 4 + (((imageHeight % 4) > 0) ? 1 : 0);
+			block.perPixelBytes = 8;
+			return block;
+		}
+
+		CompressedBlock compressInitBlockBC3(size_t imageWidth, size_t imageHeight)
+		{
+			CompressedBlock block;
+
+			block.width = imageWidth / 4 + (((imageWidth % 4) > 0) ? 1 : 0);
+			block.height = imageHeight / 4 + (((imageHeight % 4) > 0) ? 1 : 0);
+			block.perPixelBytes = 16;
+			return block;
+		}
+
+		CompressedBlock compressInitBlockBC4(size_t imageWidth, size_t imageHeight)
+		{
+			CompressedBlock block;
+
+			block.width = imageWidth / 4 + (((imageWidth % 4) > 0) ? 1 : 0);
+			block.height = imageHeight / 4 + (((imageHeight % 4) > 0) ? 1 : 0);
+			block.perPixelBytes = 8;
+			return block;
+		}
+
+		CompressedBlock compressInitBlockBC5(size_t imageWidth, size_t imageHeight)
+		{
+			CompressedBlock block;
+
+			block.width = imageWidth / 4 + (((imageWidth % 4) > 0) ? 1 : 0);
+			block.height = imageHeight / 4 + (((imageHeight % 4) > 0) ? 1 : 0);
+			block.perPixelBytes = 16;
+			return block;
+		}
+
+		std::unique_ptr<unsigned char[]> compressImageBC1(const CompressedBlock& compressBlock, const hr::imaging::ImageView<unsigned char, hr::imaging::ImageFormatRGBA>& image)
+		{
+			assert(compressBlock.perPixelBytes == 8);
+			auto compressedImg = std::unique_ptr<unsigned char[]>(new unsigned char[compressBlock.width * compressBlock.height * compressBlock.perPixelBytes]);
+
+			int pixelMask;
+			std::array<unsigned char, 8> dstBlock;
+			std::array<unsigned char, 4 * 4 * 4> srcBlock; //4x4 RGBA
+
+			for (size_t y = 0; y < compressBlock.height; ++y)
+			{
+				for (size_t x = 0; x < compressBlock.width; ++x)
+				{
+					srcBlock.fill(0);
+					pixelMask = 0;
+					sample4x4BlockRGBA(image, x, y, srcBlock.data(), pixelMask);
+
+					squish::CompressMasked(srcBlock.data(), pixelMask, dstBlock.data(), squish::kDxt1 | squish::kColourClusterFit, nullptr);
+
+					std::memcpy(compressedImg.get() + (y * compressBlock.width * compressBlock.perPixelBytes) + (x * compressBlock.perPixelBytes), dstBlock.data(), dstBlock.size());
+				}
+			}
+
+			return compressedImg;
+		}
+
+		std::unique_ptr<unsigned char[]> compressImageBC3(const CompressedBlock& compressBlock, const hr::imaging::ImageView<unsigned char, hr::imaging::ImageFormatRGBA>& image)
+		{
+			assert(compressBlock.perPixelBytes == 16);
+			auto compressedImg = std::unique_ptr<unsigned char[]>(new unsigned char[compressBlock.width * compressBlock.height * compressBlock.perPixelBytes]);
+
+			int pixelMask;
+			std::array<unsigned char, 16> dstBlock;
+			std::array<unsigned char, 4 * 4 * 4> srcBlock; //4x4 RGBA
+
+			for (size_t y = 0; y < compressBlock.height; ++y)
+			{
+				for (size_t x = 0; x < compressBlock.width; ++x)
+				{
+					srcBlock.fill(0);
+					pixelMask = 0;
+					sample4x4BlockRGBA(image, x, y, srcBlock.data(), pixelMask);
+
+					squish::CompressMasked(srcBlock.data(), pixelMask, dstBlock.data(), squish::kDxt5 | squish::kColourClusterFit, nullptr);
+
+					std::memcpy(compressedImg.get() + (y * compressBlock.width * compressBlock.perPixelBytes) + (x * compressBlock.perPixelBytes), dstBlock.data(), dstBlock.size());
+				}
+			}
+
+			return compressedImg;
+		}
+
+		std::unique_ptr<unsigned char[]> compressImageBC5(const CompressedBlock& compressBlock, const hr::imaging::ImageView<unsigned char, hr::imaging::ImageFormatRGBA>& image)
+		{
+			assert(compressBlock.perPixelBytes == 16);
+			auto compressedImg = std::unique_ptr<unsigned char[]>(new unsigned char[compressBlock.width * compressBlock.height * compressBlock.perPixelBytes]);
+
+			int pixelMask;
+			std::array<unsigned char, 16> dstBlock;
+			std::array<unsigned char, 4 * 4 * 2> srcBlock; //4x4 RG
+
+			for (size_t y = 0; y < compressBlock.height; ++y)
+			{
+				for (size_t x = 0; x < compressBlock.width; ++x)
+				{
+					srcBlock.fill(0);
+					pixelMask = 0;
+					sample4x4BlockRG(image, x, y, srcBlock.data(), pixelMask);
+
+					stb_compress_bc5_block(dstBlock.data(), srcBlock.data());
+
+					std::memcpy(compressedImg.get() + (y * compressBlock.width * compressBlock.perPixelBytes) + (x * compressBlock.perPixelBytes), dstBlock.data(), dstBlock.size());
+				}
+			}
+
+			return compressedImg;
+		}
 	}
 
 	bool TextureTools::uploadDiffuse(const hr::imaging::ImageView<unsigned char, hr::imaging::ImageFormatRGBA>& imageSrc, hr::gl::objects::Texture& textureDst)

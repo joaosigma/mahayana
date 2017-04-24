@@ -73,6 +73,9 @@
     <Filter Include="libs\libsquish">
       <UniqueIdentifier>{d673eda0-de2b-4d4d-8a54-b764bd6b6685}</UniqueIdentifier>
     </Filter>
+    <Filter Include="libs\mikktspace">
+      <UniqueIdentifier>{9927814a-6eac-4cbe-98f0-1ed6053a196b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\common\opengl\openGLext.cpp">
@@ -133,9 +136,6 @@
       <Filter>libs\zlib\minizip</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\render\renderer2D.cpp">
-      <Filter>render</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\render\rendererDeferred.cpp">
       <Filter>render</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\render\world.cpp">
@@ -382,6 +382,12 @@
     <ClCompile Include="..\..\src\libs\libsquish\squish.cpp">
       <Filter>libs\libsquish</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\render\rendererMain.cpp">
+      <Filter>render</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\libs\mikktspace\mikktspace.cpp">
+      <Filter>libs\mikktspace</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\common\opengl\objects.hpp">
@@ -439,9 +445,6 @@
       <Filter>render</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\render\renderer2D.hpp">
-      <Filter>render</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\render\rendererDeferred.hpp">
       <Filter>render</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\render\world.hpp">
@@ -825,6 +828,12 @@
     </ClInclude>
     <ClInclude Include="..\..\src\libs\libsquish\squish.h">
       <Filter>libs\libsquish</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\render\rendererMain.hpp">
+      <Filter>render</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\libs\mikktspace\mikktspace.h">
+      <Filter>libs\mikktspace</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
