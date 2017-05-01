@@ -188,9 +188,9 @@ namespace hr { namespace geom
 		return mesh;
 	}
 
-	Mesh Mesh::genSphere(const float radius, const int slices, const int stacks)
+	Mesh Mesh::genSphere(const int slices, const int stacks)
 	{
-		if (radius <= 0.0f || slices <= 2 || stacks <= 2)
+		if (slices <= 2 || stacks <= 2)
 			return Mesh();
 
 		Mesh mesh((stacks - 1)*slices + 2, (stacks - 2)*slices * 2 * 3 + slices * 2 * 3);
@@ -218,7 +218,7 @@ namespace hr { namespace geom
 				mesh.mData[index].uv[1] = 1.0f;
 
 				mesh.mData[index].normal[0] = Mesh::pack(0.0f);
-				mesh.mData[index].normal[1] = Mesh::pack(radius);
+				mesh.mData[index].normal[1] = Mesh::pack(1.0f);
 				mesh.mData[index].normal[2] = Mesh::pack(0.0f);
 
 				index++;
@@ -235,7 +235,7 @@ namespace hr { namespace geom
 				mesh.mData[index].uv[1] = 0.0f;
 
 				mesh.mData[index].normal[0] = Mesh::pack(0.0f);
-				mesh.mData[index].normal[1] = Mesh::pack(-radius);
+				mesh.mData[index].normal[1] = Mesh::pack(-1.0f);
 				mesh.mData[index].normal[2] = Mesh::pack(0.0f);
 
 				index++;
@@ -262,9 +262,9 @@ namespace hr { namespace geom
 				mesh.mData[index].uv[0] = s;
 				mesh.mData[index].uv[1] = t;
 
-				mesh.mData[index].normal[0] = Mesh::pack(calc[0] * radius);
-				mesh.mData[index].normal[1] = Mesh::pack(calc[1] * radius);
-				mesh.mData[index].normal[2] = Mesh::pack(calc[2] * radius);
+				mesh.mData[index].normal[0] = Mesh::pack(calc[0]);
+				mesh.mData[index].normal[1] = Mesh::pack(calc[1]);
+				mesh.mData[index].normal[2] = Mesh::pack(calc[2]);
 
 
 				index++;

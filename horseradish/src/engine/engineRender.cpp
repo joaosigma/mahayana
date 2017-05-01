@@ -246,7 +246,21 @@ namespace hr { namespace engine
 			size_t displayWidth = var<int>("renderer.dims.width");
 			size_t displayHeight = var<int>("renderer.dims.height");
 
-			renderData = std::make_unique<hr::render::World>();
+			//!!!!!!!!!!!!!!!! dev
+			{
+				/*{
+					hr::render::WorldEditor::createEmptyScene("c:/Users/Sigma/Desktop/sandstone2.hscene", "c:/Users/Sigma/Desktop/sandstone2.hgeom");
+
+					hr::render::WorldEditor editor("c:/Users/Sigma/Desktop/sandstone2.hscene", "c:/Users/Sigma/Desktop/sandstone2.hgeom");
+					editor.importObj(R"(C:\Users\Sigma\Desktop\Rock_Sandstone_plras_8K_3d_ms\)", "Aset_rock_sandstone_S_plras_LOD0.obj");
+				}*/
+
+				renderData = std::make_unique<hr::render::World>("c:/Users/Sigma/Desktop/spheres.hscene", "c:/Users/Sigma/Desktop/spheres.hgeom");
+				//renderData = std::make_unique<hr::render::World>("c:/Users/Sigma/Desktop/wood-log.hscene", "c:/Users/Sigma/Desktop/wood-log.hgeom");
+				//renderData = std::make_unique<hr::render::World>("c:/Users/Sigma/Desktop/sandstone1.hscene", "c:/Users/Sigma/Desktop/sandstone1.hgeom");
+				//renderData = std::make_unique<hr::render::World>("c:/Users/Sigma/Desktop/sandstone2.hscene", "c:/Users/Sigma/Desktop/sandstone2.hgeom");
+				//renderData = std::make_unique<hr::render::World>("c:/Users/Sigma/Desktop/volund.hscene", "c:/Users/Sigma/Desktop/volund.hgeom");				
+			}
 
 			renderer2D = std::make_unique<hr::render::Renderer2D>(*glContext);
 			renderer2D->initialize(displayWidth, displayHeight,
@@ -287,33 +301,8 @@ namespace hr { namespace engine
 
 		//!!!!!!!!!!!!!!!! dev
 		{
-			//import
-			{
-				renderData->cleanup();
-
-				/*{
-					hr::render::WorldEditor editor;
-					editor.importAll("c:/Users/Sigma/Desktop/test_scene.hscene", "c:/Users/Sigma/Desktop/test_scene.hgeom");
-					editor.recalcTangentSpace({});
-				}*/
-
-				auto success = renderData->importAll("c:/Users/Sigma/Desktop/volund.hscene", "c:/Users/Sigma/Desktop/volund.hgeom");
-
-				if (!success)
-					renderData->cleanup();
-			}
-
-			//renderData->importObj("C:\\Users\\Sigma\\Desktop\\san-miguel\\", "san-miguel.obj");
-
 			renderData->loadData(*mFileSystem);
 			rendererMain->loadWorld();
-
-			//export
-			/*{
-				hr::streams::FileStream streamScene("c:/Users/Sigma/Desktop/head2.hscene", false, true);
-				hr::streams::FileStream streamGeom("c:/Users/Sigma/Desktop/head2.hgeom", false, true);
-				renderData->exportAll(hr::streams::StreamWriter(streamScene), hr::streams::StreamWriter(streamGeom));
-			}*/
 		}
 
 		//we are about to enter the main render loop

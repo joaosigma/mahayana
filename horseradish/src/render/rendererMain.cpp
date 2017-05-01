@@ -115,7 +115,7 @@ namespace hr { namespace render
 
 		mGlImmediateMode.beginDraw(hr::gl::tools::ImmediateMode::GeometryType::Quads);
 			mGlImmediateMode.setColorF(1.0f);
-			mGlImmediateMode.addQuadTexCoords(0.0f, 0.0f, winX, winY, false);
+			mGlImmediateMode.addQuadTexCoords(0.0f, 0.0f, static_cast<float>(winX), static_cast<float>(winY), false);
 		mGlImmediateMode.endDraw();
 	}
 
@@ -372,9 +372,9 @@ namespace hr { namespace render
 		, mWorld(renderWorld)
 		, mFileSystem(fileSystem)
 	{
-		//this->texDefaultAlbedo = this->glObjectManager->Create2D(hr::io::Path("media\\defaultAlbedo.png"), hr::gl::objects::ObjectsManager::TargetType::RGBA32, 0);
-		//this->texDefaultNormals = this->glObjectManager->Create2D(hr::io::Path("media\\defaultNormals.png"), hr::gl::objects::ObjectsManager::TargetType::RGBA32, STEXTURE_NORMAL_MAP_MIPS);
-
+		loadDiffuse(R"(media\default_albedo.png)", mTexDefaultAlbedo, true);
+		loadNormal(R"(media\default_normal.png)", mTexDefaultNormals, true);
+	
 		hr::io::Path pathShaders;
 		pathShaders.set(hr::io::Path::KnownPath::CurrentFolder);
 		pathShaders.combine("shaders");

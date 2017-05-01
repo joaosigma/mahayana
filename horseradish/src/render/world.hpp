@@ -19,8 +19,8 @@ namespace hr { namespace render
 		size_t id = 0;
 		std::string name;
 		struct {
-			size_t numVertices, numIndices;
-			size_t fstreamVertexOffset, fstreamIndexOffset;
+			size_t numVertices = 0, numIndices = 0;
+			size_t fstreamVertexOffset = 0, fstreamIndexOffset = 0;
 			hr::BBox bbox;
 		} geom;
 		std::string matDiffusePath, matNormalPath;
@@ -67,34 +67,43 @@ namespace hr { namespace render
 		bool m_editorMode = false;
 
 	public:
-		World(bool editorMode = false);
+		World(const std::string& scenePath, const std::string& geomPath, bool editorMode = false);
 		virtual ~World();
 
-		void cleanup();
-
-		bool importAll(const std::string& scenePath, const std::string& geomPath);
-		
 		void loadData(hr::io::FileSystem& fileSystem);
 		void prepareNextFrame(const tools::Camera& hrCamera, const hr::gl::tools::Viewport& hrViewport);
+
+	private:
+		void cleanup();
+		bool loadWorld(const std::string& scenePath, const std::string& geomPath);
 	};
 
 	class WorldEditor
 		: public World
 	{
-		size_t genId() const;
+		struct
+		{
+			std::string scene, geom;
+		} m_paths;
 
 	public:
-		WorldEditor()
-			: World(true)
-		{ }
+		static void createEmptyScene(const std::string& scenePath, const std::string& geomPath);
 
-		bool exportAll(const std::string& scenePath, const std::string& geomPath);
+	public:
+		WorldEditor(const std::string& scenePath, const std::string& geomPath);
 
+		bool importMesh(const std::string& name, const hr::geom::Mesh& mesh);
 		bool importObj(const std::string& basePath, const std::string& fileName);
 
 		void recalcTangentSpace(const std::vector<size_t>& conceptIds);
 
 		std::vector<size_t> unusedConcepts() const;
 		void removeConcepts(const std::vector<size_t>& conceptIds);
+
+	private:
+		size_t genId() const;
+
+		void addMesh(size_t geomId, const hr::geom::Mesh& mesh);
+		void saveScene();
 	};
 } }

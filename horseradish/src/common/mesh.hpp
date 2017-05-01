@@ -31,7 +31,7 @@ namespace hr { namespace geom
 		static size_t maxVertexCount();
 
 		static Mesh genBox(float width, float height, float depth, size_t precision);
-		static Mesh genSphere(const float radius, const int slices, const int stacks);
+		static Mesh genSphere(const int slices, const int stacks);
 
 	private:
 		std::unique_ptr<VertexData[]> mData;

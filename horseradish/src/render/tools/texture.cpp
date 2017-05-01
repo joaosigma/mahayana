@@ -491,32 +491,68 @@ namespace hr { namespace render { namespace tools
 		streamOut.write(&ctexHeader, sizeof(CTextureHeader));
 
 		std::uint16_t curLevel = 0;
-		auto imageScaled = imageSrc.convert<float, hr::imaging::ImageFormatRGBA>();
 
-		while (true)
+		if (imageSrc.getArea() > (4096 * 4096)) //above this we have memory limitations because of converting to float
 		{
-			auto imageNormals = imageScaled.clone();
-			imageNormals.renormalizeNormals(true);
-			auto imageByte = imageNormals.convert<unsigned char, hr::imaging::ImageFormatRGBA>();
+			hr::imaging::Image<unsigned char, hr::imaging::ImageFormatRGBA> imageScaled;
+			while (true)
+			{
+				auto imageNormals = imageScaled.empty() ? imageSrc.clone() : imageScaled.clone();
+				imageNormals.renormalizeNormals(true);
 
-			auto compressBlock = compressInitBlockBC5(imageScaled.width(), imageScaled.height());
-			auto compressedImg = compressImageBC5(compressBlock, imageByte);
+				auto curWidth = imageScaled.empty() ? imageSrc.width() : imageScaled.width();
+				auto curHeight = imageScaled.empty() ? imageSrc.height() : imageScaled.height();
 
-			CTextureLevelInfo ctexLevelInfo;
-			ctexLevelInfo.level = curLevel;
-			ctexLevelInfo.width = imageScaled.width();
-			ctexLevelInfo.height = imageScaled.height();
-			ctexLevelInfo.size = compressBlock.width * compressBlock.height * compressBlock.perPixelBytes;
-			streamOut.write(&ctexLevelInfo, sizeof(CTextureLevelInfo));
+				auto compressBlock = compressInitBlockBC5(curWidth, curHeight);
+				auto compressedImg = compressImageBC5(compressBlock, imageNormals);
 
-			streamOut.write(compressedImg.get(), ctexLevelInfo.size);
+				CTextureLevelInfo ctexLevelInfo;
+				ctexLevelInfo.level = curLevel;
+				ctexLevelInfo.width = curWidth;
+				ctexLevelInfo.height = curHeight;
+				ctexLevelInfo.size = compressBlock.width * compressBlock.height * compressBlock.perPixelBytes;
+				streamOut.write(&ctexLevelInfo, sizeof(CTextureLevelInfo));
 
-			if (imageScaled.getArea() <= 1)
-				break;
+				streamOut.write(compressedImg.get(), ctexLevelInfo.size);
 
-			curLevel++;
-			imageScaled = imageScaled.resize(std::max<size_t>(1, imageScaled.width() >> 1), std::max<size_t>(1, imageScaled.height() >> 1));
-		};
+				if ((curWidth * curHeight) <= 1)
+					break;
+
+				curLevel++;
+				if (imageScaled.empty())
+					imageScaled = imageSrc.resize(std::max<size_t>(1, imageSrc.width() >> 1), std::max<size_t>(1, imageSrc.height() >> 1));
+				else
+					imageScaled = imageScaled.resize(std::max<size_t>(1, imageScaled.width() >> 1), std::max<size_t>(1, imageScaled.height() >> 1));
+			};
+		}
+		else
+		{
+			auto imageScaled = imageSrc.convert<float, hr::imaging::ImageFormatRGBA>();
+			while (true)
+			{
+				auto imageNormals = imageScaled.clone();
+				imageNormals.renormalizeNormals(true);
+				auto imageByte = imageNormals.convert<unsigned char, hr::imaging::ImageFormatRGBA>();
+
+				auto compressBlock = compressInitBlockBC5(imageScaled.width(), imageScaled.height());
+				auto compressedImg = compressImageBC5(compressBlock, imageByte);
+
+				CTextureLevelInfo ctexLevelInfo;
+				ctexLevelInfo.level = curLevel;
+				ctexLevelInfo.width = imageScaled.width();
+				ctexLevelInfo.height = imageScaled.height();
+				ctexLevelInfo.size = compressBlock.width * compressBlock.height * compressBlock.perPixelBytes;
+				streamOut.write(&ctexLevelInfo, sizeof(CTextureLevelInfo));
+
+				streamOut.write(compressedImg.get(), ctexLevelInfo.size);
+
+				if (imageScaled.getArea() <= 1)
+					break;
+
+				curLevel++;
+				imageScaled = imageScaled.resize(std::max<size_t>(1, imageScaled.width() >> 1), std::max<size_t>(1, imageScaled.height() >> 1));
+			};
+		}
 
 		assert((curLevel + 1) == ctexHeader.numLevels);
 		if ((curLevel + 1) != ctexHeader.numLevels)

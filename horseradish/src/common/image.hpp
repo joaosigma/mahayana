@@ -643,6 +643,38 @@ namespace hr { namespace imaging
 			TDataFormat::writeRGBA(mDataPtr + getPos(x, y), pixelValue);
 		}
 
+		void renormalizeNormals(bool expandPixels)
+		{
+			if (empty() || TDataFormat::size() < 3)
+				return;
+
+			auto walkerPtr = mDataPtr;
+			auto imgArea = getArea();
+
+			if (expandPixels)
+			{
+				for (size_t curPos = 0; curPos < imgArea; curPos++, walkerPtr += TDataFormat::size())
+				{
+					Vector3f vec;
+
+					hr::Color::convertColor(vec.data(), walkerPtr, false);
+					vec.mad(2.0f, -1.0f).normalize().mad(0.5f, 0.5f);
+					hr::Color::convertColor(walkerPtr, vec.data(), false);
+				}
+			}
+			else
+			{
+				for (size_t curPos = 0; curPos < imgArea; curPos++, walkerPtr += TDataFormat::size())
+				{
+					Vector3f vec;
+
+					hr::Color::convertColor(vec.data(), walkerPtr, false);
+					vec.normalize();
+					hr::Color::convertColor(walkerPtr, vec.data(), false);
+				}
+			}
+		}
+
 		void transform(std::function<bool(hr::Color&)> cb)
 		{
 			if (empty() || !cb)
