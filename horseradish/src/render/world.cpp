@@ -460,9 +460,12 @@ namespace hr { namespace render
 		return true;
 	}
 
-	void WorldEditor::recalcTangentSpace(const std::vector<size_t>& conceptIds)
+	void WorldEditor::processMesh(const std::vector<size_t>& conceptIds, std::function<void(hr::geom::Mesh&)> cb)
 	{
-		auto func = [this](Concept& concept)
+		if (!cb)
+			return;
+
+		auto func = [this, cb](Concept& concept)
 		{
 			hr::geom::Mesh mesh(concept.geom.numVertices, concept.geom.numIndices);
 
@@ -472,8 +475,14 @@ namespace hr { namespace render
 			mGeomFileStream.seek(hr::streams::Stream::SeekOrigin::Begin, concept.geom.fstreamIndexOffset);
 			mGeomFileStream.read(mesh.indices(), mesh.sizeIndices());
 
-			mesh.genNormals();
-			mesh.genTangents4();
+			{
+				auto numVertices = mesh.numVertices();
+				auto numIndices = mesh.numIndices();
+				cb(mesh);
+
+				if ((mesh.numVertices() != numVertices) || (mesh.numIndices() != numIndices))
+					return;
+			}
 
 			mGeomFileStream.seek(hr::streams::Stream::SeekOrigin::Begin, concept.geom.fstreamVertexOffset);
 			mGeomFileStream.write(mesh.vertices(), mesh.sizeVertices());

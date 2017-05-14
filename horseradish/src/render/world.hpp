@@ -95,7 +95,7 @@ namespace hr { namespace render
 		bool importMesh(const std::string& name, const hr::geom::Mesh& mesh);
 		bool importObj(const std::string& basePath, const std::string& fileName);
 
-		void recalcTangentSpace(const std::vector<size_t>& conceptIds);
+		void processMesh(const std::vector<size_t>& conceptIds, std::function<void(hr::geom::Mesh&)> cb);
 
 		std::vector<size_t> unusedConcepts() const;
 		void removeConcepts(const std::vector<size_t>& conceptIds);
