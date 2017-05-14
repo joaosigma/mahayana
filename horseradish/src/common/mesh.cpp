@@ -42,288 +42,255 @@ namespace hr { namespace geom
 		return static_cast<size_t>(std::numeric_limits<unsigned short>::max());
 	}
 
-	Mesh Mesh::genBox(float width, float height, float depth, size_t precision)
+	Mesh Mesh::genBox(size_t precision)
 	{
-		if (width <= 0.0f || height <= 0.0f || depth <= 0.0f || precision == 0)
-			return Mesh();
+		precision = (precision == 0) ? 1 : precision;
 
-		Mesh mesh((2 + precision - 1)*(precision + 1) * 6, precision*precision * 6 * 6);
+		Mesh mesh((precision + 1) * (precision + 1) * 6, precision * precision * 6 * 6);
 
-		for (size_t i = 0, index = 0, jump = 0, jump2 = 0; i < mesh.mNumVertices; i += 6)
+		auto indicesPtr = mesh.mIndices.get();
+		for (size_t faceIndex = 0; faceIndex < 6; ++faceIndex)
 		{
-			mesh.mIndices[i + 0] = static_cast<unsigned short>(index);
-			mesh.mIndices[i + 1] = static_cast<unsigned short>(index + 1);
-			mesh.mIndices[i + 2] = static_cast<unsigned short>(index + precision + 1);
+			size_t indexOffset = ((precision + 1) * (precision + 1)) * faceIndex;
 
-			mesh.mIndices[i + 3] = static_cast<unsigned short>(index + 1);
-			mesh.mIndices[i + 4] = static_cast<unsigned short>(index + precision + 2);
-			mesh.mIndices[i + 5] = static_cast<unsigned short>(index + precision + 1);
-
-			index++;
-			jump++;
-			if (jump == precision)
+			for (size_t y = 0; y < precision; y++)
 			{
-				index++;
-				jump = 0;
-				jump2++;
-				if (jump2 == precision)
+				for (size_t x = 0; x < precision; x++)
 				{
-					index += precision + 1;
-					jump2 = 0;
+					indicesPtr[0] = indexOffset + (x + 0) + ((y + 0) * (precision + 1));
+					indicesPtr[1] = indexOffset + (x + 1) + ((y + 1) * (precision + 1));
+					indicesPtr[2] = indexOffset + (x + 0) + ((y + 1) * (precision + 1));
+
+					indicesPtr[3] = indicesPtr[0];
+					indicesPtr[4] = indexOffset + (x + 1) + ((y + 0) * (precision + 1));
+					indicesPtr[5] = indicesPtr[1];
+
+					indicesPtr += 6;
 				}
 			}
 		}
 
-		float realWidth = width * 0.5f;
-		float realHeight = height * 0.5f;
-		float realDepth = depth * 0.5f;
-		float offsetW = width / static_cast<float>(precision);
-		float offsetH = height / static_cast<float>(precision);
-		float offsetD = depth / static_cast<float>(precision);
-		float offsetTex = 1.0f / static_cast<float>(precision);
-		auto curVertex = 0;
+		auto dataPtr = mesh.mData.get();
 
-		for (size_t i = 0; i < (precision + 1); i++)
+		auto posRes = 2.0f / static_cast<float>(precision);
+		auto uvRes = 1.0f / static_cast<float>(precision);
+
+		//left face
+		for (size_t y = 0; y <= precision; y++)
 		{
-			for (size_t j = 0; j < (2 + precision - 1); j++, curVertex++)
+			auto posY = static_cast<float>(y) * posRes - 1.0f;
+			auto uvV = static_cast<float>(y) * uvRes;
+
+			for (size_t x = 0; x <= precision; x++)
 			{
-				mesh.mData[curVertex].pos[0] = offsetW*((float)j) - realWidth;
-				mesh.mData[curVertex].pos[1] = offsetH*((float)i) - realHeight;
-				mesh.mData[curVertex].pos[2] = realDepth;
+				dataPtr->pos[0] = -1.0f;
+				dataPtr->pos[1] = posY;
+				dataPtr->pos[2] = static_cast<float>(x) * posRes - 1.0f;
 
-				mesh.mData[curVertex].uv[0] = offsetTex*((float)j);
-				mesh.mData[curVertex].uv[1] = offsetTex*((float)i);
+				dataPtr->uv[0] = static_cast<float>(x) * uvRes;
+				dataPtr->uv[1] = uvV;
 
-				mesh.mData[curVertex].normal[0] = Mesh::pack(0.0f);
-				mesh.mData[curVertex].normal[1] = Mesh::pack(0.0f);
-				mesh.mData[curVertex].normal[2] = Mesh::pack(1.0f);
+				dataPtr->normal[1] = dataPtr->normal[1] = Mesh::pack(0.0f);
+				dataPtr->normal[0] = Mesh::pack(-1.0f);
+
+				dataPtr++;
 			}
 		}
 
-		for (size_t i = 0; i < (precision + 1); i++)
+		//front face
+		for (size_t y = 0; y <= precision; y++)
 		{
-			for (size_t j = 0; j < (2 + precision - 1); j++, curVertex++)
+			auto posY = static_cast<float>(y) * posRes - 1.0f;
+			auto uvV = static_cast<float>(y) * uvRes;
+
+			for (size_t x = 0; x <= precision; x++)
 			{
-				mesh.mData[curVertex].pos[0] = realWidth;
-				mesh.mData[curVertex].pos[1] = offsetH*((float)i) - realHeight;
-				mesh.mData[curVertex].pos[2] = realDepth - offsetD*((float)j);
+				dataPtr->pos[0] = static_cast<float>(x) * posRes - 1.0f;
+				dataPtr->pos[1] = posY;
+				dataPtr->pos[2] = 1.0f;
+					
+				dataPtr->uv[0] = static_cast<float>(x) * uvRes;
+				dataPtr->uv[1] = uvV;
+					
+				dataPtr->normal[0] = dataPtr->normal[1] = Mesh::pack(0.0f);
+				dataPtr->normal[2] = Mesh::pack(1.0f);
 
-				mesh.mData[curVertex].uv[0] = offsetTex*((float)j);
-				mesh.mData[curVertex].uv[1] = offsetTex*((float)i);
-
-				mesh.mData[curVertex].normal[0] = Mesh::pack(1.0f);
-				mesh.mData[curVertex].normal[1] = Mesh::pack(0.0f);
-				mesh.mData[curVertex].normal[2] = Mesh::pack(0.0f);
+				dataPtr++;
 			}
 		}
 
-		for (size_t i = 0; i < (precision + 1); i++)
+		//left face
+		for (size_t y = 0; y <= precision; y++)
 		{
-			for (size_t j = 0; j < (2 + precision - 1); j++, curVertex++)
+			auto posY = static_cast<float>(y) * posRes - 1.0f;
+			auto uvV = static_cast<float>(y) * uvRes;
+
+			for (size_t x = 0; x <= precision; x++)
 			{
-				mesh.mData[curVertex].pos[0] = realWidth - offsetW*((float)j);
-				mesh.mData[curVertex].pos[1] = offsetH*((float)i) - realHeight;
-				mesh.mData[curVertex].pos[2] = -realDepth;
+				dataPtr->pos[0] = 1.0f;
+				dataPtr->pos[1] = posY;
+				dataPtr->pos[2] = -(static_cast<float>(x) * posRes - 1.0f);
 
-				mesh.mData[curVertex].uv[0] = offsetTex*((float)j);
-				mesh.mData[curVertex].uv[1] = offsetTex*((float)i);
+				dataPtr->uv[0] = static_cast<float>(x) * uvRes;
+				dataPtr->uv[1] = uvV;
 
-				mesh.mData[curVertex].normal[0] = Mesh::pack(0.0f);
-				mesh.mData[curVertex].normal[1] = Mesh::pack(0.0f);
-				mesh.mData[curVertex].normal[2] = Mesh::pack(-1.0f);
+				dataPtr->normal[1] = dataPtr->normal[1] = Mesh::pack(0.0f);
+				dataPtr->normal[0] = Mesh::pack(1.0f);
+
+				dataPtr++;
 			}
 		}
 
-		for (size_t i = 0; i < (precision + 1); i++)
+		//back face
+		for (size_t y = 0; y <= precision; y++)
 		{
-			for (size_t j = 0; j < (2 + precision - 1); j++, curVertex++)
+			auto posY = static_cast<float>(y) * posRes - 1.0f;
+			auto uvV = static_cast<float>(y) * uvRes;
+
+			for (size_t x = 0; x <= precision; x++)
 			{
-				mesh.mData[curVertex].pos[0] = -realWidth;
-				mesh.mData[curVertex].pos[1] = offsetH*((float)i) - realHeight;
-				mesh.mData[curVertex].pos[2] = offsetD*((float)j) - realDepth;
+				dataPtr->pos[0] = -(static_cast<float>(x) * posRes - 1.0f);
+				dataPtr->pos[1] = posY;
+				dataPtr->pos[2] = -1.0f;
 
-				mesh.mData[curVertex].uv[0] = offsetTex*((float)j);
-				mesh.mData[curVertex].uv[1] = offsetTex*((float)i);
+				dataPtr->uv[0] = static_cast<float>(x) * uvRes;
+				dataPtr->uv[1] = uvV;
 
-				mesh.mData[curVertex].normal[0] = Mesh::pack(-1.0f);
-				mesh.mData[curVertex].normal[1] = Mesh::pack(0.0f);
-				mesh.mData[curVertex].normal[2] = Mesh::pack(0.0f);
+				dataPtr->normal[0] = dataPtr->normal[1] = Mesh::pack(0.0f);
+				dataPtr->normal[2] = Mesh::pack(-1.0f);
+
+				dataPtr++;
 			}
 		}
 
-		for (size_t i = 0; i < (precision + 1); i++)
+		//top face
+		for (size_t y = 0; y <= precision; y++)
 		{
-			for (size_t j = 0; j < (2 + precision - 1); j++, curVertex++)
+			auto posZ = static_cast<float>(y) * posRes - 1.0f;
+			auto uvV = static_cast<float>(y) * uvRes;
+
+			for (size_t x = 0; x <= precision; x++)
 			{
-				mesh.mData[curVertex].pos[0] = offsetW*((float)j) - realWidth;
-				mesh.mData[curVertex].pos[1] = realHeight;
-				mesh.mData[curVertex].pos[2] = realDepth - offsetD*((float)i);
+				dataPtr->pos[0] = static_cast<float>(x) * posRes - 1.0f;
+				dataPtr->pos[1] = 1.0f;
+				dataPtr->pos[2] = -posZ;
 
-				mesh.mData[curVertex].uv[0] = offsetTex*((float)j);
-				mesh.mData[curVertex].uv[1] = offsetTex*((float)i);
+				dataPtr->uv[0] = static_cast<float>(x) * uvRes;
+				dataPtr->uv[1] = uvV;
 
-				mesh.mData[curVertex].normal[0] = Mesh::pack(0.0f);
-				mesh.mData[curVertex].normal[1] = Mesh::pack(1.0f);
-				mesh.mData[curVertex].normal[2] = Mesh::pack(0.0f);
+				dataPtr->normal[0] = dataPtr->normal[2] = Mesh::pack(0.0f);
+				dataPtr->normal[1] = Mesh::pack(1.0f);
+
+				dataPtr++;
 			}
 		}
 
-		for (size_t i = 0; i < (precision + 1); i++)
+		//bottom face
+		for (size_t y = 0; y <= precision; y++)
 		{
-			for (size_t j = 0; j < (2 + precision - 1); j++, curVertex++)
+			auto posZ = static_cast<float>(y) * posRes - 1.0f;
+			auto uvV = static_cast<float>(y) * uvRes;
+
+			for (size_t x = 0; x <= precision; x++)
 			{
-				mesh.mData[curVertex].pos[0] = offsetW*((float)j) - realWidth;
-				mesh.mData[curVertex].pos[1] = -realHeight;
-				mesh.mData[curVertex].pos[2] = offsetD*((float)i) - realDepth;
+				dataPtr->pos[0] = static_cast<float>(x) * posRes - 1.0f;
+				dataPtr->pos[1] = -1.0f;
+				dataPtr->pos[2] = posZ;
 
-				mesh.mData[curVertex].uv[0] = offsetTex*((float)j);
-				mesh.mData[curVertex].uv[1] = offsetTex*((float)i);
+				dataPtr->uv[0] = static_cast<float>(x) * uvRes;
+				dataPtr->uv[1] = uvV;
 
-				mesh.mData[curVertex].normal[0] = Mesh::pack(0.0f);
-				mesh.mData[curVertex].normal[1] = Mesh::pack(-1.0f);
-				mesh.mData[curVertex].normal[2] = Mesh::pack(0.0f);
+				dataPtr->normal[0] = dataPtr->normal[2] = Mesh::pack(0.0f);
+				dataPtr->normal[1] = Mesh::pack(-1.0f);
+
+				dataPtr++;
 			}
 		}
 
 		return mesh;
 	}
 
-	Mesh Mesh::genSphere(const int slices, const int stacks)
+	Mesh Mesh::genSphere(size_t sDiv, size_t tDiv)
 	{
-		if (slices <= 2 || stacks <= 2)
-			return Mesh();
+		sDiv = (sDiv < 4) ? 4 : sDiv;
+		tDiv = (tDiv < 4) ? 4 : tDiv;
 
-		Mesh mesh((stacks - 1)*slices + 2, (stacks - 2)*slices * 2 * 3 + slices * 2 * 3);
+		Mesh mesh(sDiv * tDiv, sDiv * tDiv * 6);
 
-		float ds = 1.0f / static_cast<float>(slices);
-		float dt = 1.0f / static_cast<float>(stacks);
-		float t = 1.0f;
-		float drho = Math::constPi() / static_cast<float>(stacks);
-		float dtheta = Math::constPiScaled(2.0f) / static_cast<float>(slices - 1);
-
-		auto pIndices = mesh.mIndices.get();
-
-		for (int i = 0, index = 0; i <= stacks; i++, t -= dt)
 		{
-			float rho = static_cast<float>(i)* drho;
-			float s = 0.0f;
+			const float stepR = 1.0f / static_cast<float>(sDiv - 1);
+			const float stepS = 1.0f / static_cast<float>(tDiv - 1);
 
-			if (i == 0)
+			auto dataPtr = mesh.mData.get();
+			for (size_t r = 0; r < sDiv; r++)
 			{
-				mesh.mData[index].pos[0] = 0.0f;
-				mesh.mData[index].pos[1] = 1.0f;
-				mesh.mData[index].pos[2] = 0.0f;
+				const float y = sin(Math::constPiScaled(-0.5f) + (Math::constPi() * static_cast<float>(r) * stepR));
+				const float v = static_cast<float>(r) * stepR;
 
-				mesh.mData[index].uv[0] = 0.5f;
-				mesh.mData[index].uv[1] = 1.0f;
+				const float sinAngZ = sin(Math::constPi() * static_cast<float>(r) * stepR);
 
-				mesh.mData[index].normal[0] = Mesh::pack(0.0f);
-				mesh.mData[index].normal[1] = Mesh::pack(1.0f);
-				mesh.mData[index].normal[2] = Mesh::pack(0.0f);
+				for (size_t s = 0; s < tDiv; s++)
+				{
+					const float angX = Math::constPiScaled(2.0f) * static_cast<float>(s) * stepS;				   
+					const float x = cos(angX) * sinAngZ;
+					const float z = sin(angX) * sinAngZ;
 
-				index++;
-				continue;
-			}
+					dataPtr->uv[0] = 1.0f - (static_cast<float>(s) * stepS);
+					dataPtr->uv[1] = v;
 
-			if (i == stacks)
-			{
-				mesh.mData[index].pos[0] = 0.0f;
-				mesh.mData[index].pos[1] = -1.0f;
-				mesh.mData[index].pos[2] = 0.0f;
+					dataPtr->pos[0] = x;
+					dataPtr->pos[1] = y;
+					dataPtr->pos[2] = z;
 
-				mesh.mData[index].uv[0] = 0.5f;
-				mesh.mData[index].uv[1] = 0.0f;
+					dataPtr->normal[0] = Mesh::pack(x);
+					dataPtr->normal[1] = Mesh::pack(y);
+					dataPtr->normal[2] = Mesh::pack(z);
 
-				mesh.mData[index].normal[0] = Mesh::pack(0.0f);
-				mesh.mData[index].normal[1] = Mesh::pack(-1.0f);
-				mesh.mData[index].normal[2] = Mesh::pack(0.0f);
-
-				index++;
-				continue;
-			}
-
-			float sinRho, cosRho;
-			Math::sinCos(rho, sinRho, cosRho);
-
-			for (int j = 0; j < slices; j++, s += ds)
-			{
-				float theta = static_cast<float>(j)* dtheta;
-
-				hr::Vector3f calc;
-				Math::sinCos(theta, calc[0], calc[2]);
-				calc[0] *= -sinRho;
-				calc[2] *= sinRho;
-				calc[1] = cosRho;
-
-				mesh.mData[index].pos[0] = calc[0];
-				mesh.mData[index].pos[1] = calc[1];
-				mesh.mData[index].pos[2] = calc[2];
-
-				mesh.mData[index].uv[0] = s;
-				mesh.mData[index].uv[1] = t;
-
-				mesh.mData[index].normal[0] = Mesh::pack(calc[0]);
-				mesh.mData[index].normal[1] = Mesh::pack(calc[1]);
-				mesh.mData[index].normal[2] = Mesh::pack(calc[2]);
-
-
-				index++;
+					dataPtr++;
+				}
 			}
 		}
 
-		int index = 1;
-		for (int j = 0; j < (slices - 1); j++, index++)
 		{
-			pIndices[0] = 0;
-			pIndices[1] = index + 1;
-			pIndices[2] = index;
-			pIndices += 3;
-		}
-		pIndices[0] = 0;
-		pIndices[1] = 1;
-		pIndices[2] = index;
-		pIndices += 3;
-
-		index = 1;
-		for (int i = 0; i < (stacks - 2); i++)
-		{
-			for (int j = 0; j < (slices - 1); j++, index++)
+			auto indicesPtr = mesh.mIndices.get();
+			for (size_t r = 0; r < (sDiv - 1); r++)
 			{
-				pIndices[0] = index;
-				pIndices[1] = index + slices + 1;
-				pIndices[2] = index + slices;
-				pIndices += 3;
+				for (size_t s = 0; s < (tDiv - 1); s++)
+				{
+					indicesPtr[0] = (r + 1) * tDiv + s;
+					indicesPtr[1] = r * tDiv + (s + 1);
+					indicesPtr[2] = r * tDiv + s;
 
-				pIndices[0] = index;
-				pIndices[1] = index + 1;
-				pIndices[2] = index + slices + 1;
-				pIndices += 3;
+					indicesPtr[3] = indicesPtr[0];
+					indicesPtr[4] = (r + 1) * tDiv + (s + 1);
+					indicesPtr[5] = indicesPtr[1];
+
+					indicesPtr += 6;
+				}
 			}
 
-			pIndices[0] = index;
-			pIndices[1] = (i*slices + 1) + slices;
-			pIndices[2] = index + slices;
-			pIndices += 3;
+			/*auto indicesPtr = mesh.mIndices.get();
+			for (size_t r = 0; r < sDiv; r++)
+			{
+				for (size_t s = 0; s < tDiv; s++)
+				{
+					auto left = r;
+					auto right = (r + 1) % sDiv;
+					auto top = s;
+					auto bottom = (s + 1) % tDiv;
 
-			pIndices[0] = index;
-			pIndices[1] = (i*slices + 1);
-			pIndices[2] = (i*slices + 1) + slices;
-			pIndices += 3;
+					indicesPtr[0] = left + top * sDiv;
+					indicesPtr[1] = left + bottom * sDiv;
+					indicesPtr[2] = right + top * sDiv;
 
-			index++;
+					indicesPtr[3] = right + top * sDiv;
+					indicesPtr[4] = left + bottom * sDiv;
+					indicesPtr[5] = right + bottom * sDiv;
+
+					indicesPtr += 6;
+				}
+			}*/
 		}
-
-		int last = (stacks - 1) * slices + 1;
-		for (int j = 0; j < (slices - 1); j++, index++)
-		{
-			pIndices[0] = index;
-			pIndices[1] = index + 1;
-			pIndices[2] = last;
-			pIndices += 3;
-		}
-		pIndices[0] = index;
-		pIndices[1] = (stacks - 2) * slices + 1;
-		pIndices[2] = last;
 
 		return mesh;
 	}
@@ -337,6 +304,9 @@ namespace hr { namespace geom
 
 		mData = std::unique_ptr<VertexData[]>(new VertexData[numVertices]);
 		mIndices = std::unique_ptr<unsigned short[]>(new unsigned short[numIndices]);
+
+		std::memset(mData.get(), 0, sizeof(VertexData) * numVertices);
+		std::memset(mIndices.get(), 0, sizeof(unsigned short) * numIndices);
 	}
 
 	Mesh::Mesh(std::unique_ptr<VertexData[]> vertices, size_t numVertices, std::unique_ptr<unsigned short[]> indices, size_t numIndices)
@@ -561,6 +531,28 @@ namespace hr { namespace geom
 		auto vertexPtr = static_cast<VertexData*>(mData.get());
 		for (size_t i = 0; i < mNumVertices; i++, vertexPtr++)
 			vertexPtr->uv[1] = 1.0f - vertexPtr->uv[1];
+	}
+
+	void Mesh::mirrorUV()
+	{
+		auto vertexPtr = static_cast<VertexData*>(mData.get());
+		for (size_t i = 0; i < mNumVertices; i++, vertexPtr++)
+			vertexPtr->uv[0] = 1.0f - vertexPtr->uv[0];
+	}
+
+	void Mesh::scaleUV(float scaleAmount)
+	{
+		scaleUV(scaleAmount, scaleAmount);
+	}
+
+	void Mesh::scaleUV(float scaleU, float scaleV)
+	{
+		auto vertexPtr = static_cast<VertexData*>(mData.get());
+		for (size_t i = 0; i < mNumVertices; i++, vertexPtr++)
+		{
+			vertexPtr->uv[0] *= scaleU;
+			vertexPtr->uv[1] *= scaleV;
+		}
 	}
 
 	void Mesh::scale(float scaleAmount)

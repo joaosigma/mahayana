@@ -17,7 +17,7 @@ namespace hr { namespace geom
 		{
 			float pos[3];
 			float uv[2];
-			short normal[4];
+			short normal[4]; //extra component at normal[3]
 			short tangent[4];
 		};
 		#pragma pack(pop)
@@ -30,8 +30,8 @@ namespace hr { namespace geom
 
 		static size_t maxVertexCount();
 
-		static Mesh genBox(float width, float height, float depth, size_t precision);
-		static Mesh genSphere(const int slices, const int stacks);
+		static Mesh genBox(size_t precision);
+		static Mesh genSphere(size_t sDiv, size_t tDiv);
 
 	private:
 		std::unique_ptr<VertexData[]> mData;
@@ -85,6 +85,10 @@ namespace hr { namespace geom
 		bool getRayIntersect(const Vector3f& rayOrigin, const Vector3f& rayDir, float& hitDistance) const;
 
 		void flipUV();
+		void mirrorUV();
+		void scaleUV(float scaleAmount);
+		void scaleUV(float scaleU, float scaleV);
+
 		void scale(float scaleAmount);
 		void translate(const Vector3f& translate);
 		void centerMass(const Vector3f& center);
