@@ -142,11 +142,6 @@ namespace hr
 		void setGLModelView(const Vector3f &pos, const Vector3f &target);
 		void setGLModelView(const Vector3f &pos, float angleDegX, float angleDegY, const Vector3f &up);
 		void setGLModelView(int cubemapFace, const Vector3f &centerCube);
-		void setGLProjection3D(float fovy, float aspect, float zNear, float zFar);
-		void setGLProjection3D(float fovy, float aspect, float zNear);
-		void setGLProjection2D(float width, float height);
-		void setGLProjectionOrtho(float left, float right, float bottom, float top, float zNear, float zFar);
-		void setGLProjectionOrtho(const BBox &bbox);
 	};
 
 	class Matrix3

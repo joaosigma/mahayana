@@ -8,7 +8,7 @@ namespace hr { namespace gl { namespace tools
 	class Viewport
 	{
 	public:
-		enum class ProjectionType { Proj3D, Proj3DInf, Proj2D };
+		enum class ProjectionType { Proj3D, Proj2D };
 
 		static hr::Matrix genMatrix2DProj(size_t width, size_t height);
 
@@ -16,7 +16,7 @@ namespace hr { namespace gl { namespace tools
 		float mFov, mZNear, mZFar;
 		size_t mWidth, mHeight;
 		struct {
-			hr::Matrix mp2D, mp3D, mp3DInfinite;
+			hr::Matrix mp2D, mp3D;
 		} mMatrices;
 
 		void calcMatrices();

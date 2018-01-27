@@ -4,6 +4,7 @@
 #include "world.hpp"
 
 #include "tools/camera.hpp"
+#include "../common/random.hpp"
 #include "../common/fileSystem.hpp"
 #include "../common/openGL/tools/viewport.hpp"
 #include "../common/openGL/tools/immediateMode.hpp"
@@ -30,7 +31,23 @@ namespace hr { namespace render
 				hr::gl::objects::ShaderProgram vertex;
 				hr::gl::objects::ShaderProgram fragment;
 				hr::gl::objects::ProgramPipeline pipeline;
-			} forwardPassZ, forwardPassLighting;
+			} forwardPassZ, forwardPassLighting, forwardPassSky;
+
+			struct UniformLayout {
+				float matTrans[4 * 4];
+				float matView[4 * 4];
+				uint32_t numLights;
+			};
+			static const constexpr size_t LightLayoutMaxElements = 256;
+			struct LightLayout {
+				float dir[4];
+				float diffuse[4];
+			};
+			struct {
+				hr::gl::objects::FenceSync fence;
+				hr::gl::objects::Buffer uniform;
+				hr::gl::objects::Buffer storage;
+			} forwardPassBuffers;
 
 			struct {
 				hr::gl::objects::ShaderProgram vertex;
@@ -40,6 +57,7 @@ namespace hr { namespace render
 		};
 
 		struct Samplers{
+			hr::gl::objects::Sampler samplerSky;
 			hr::gl::objects::Sampler samplerAlbedo;
 			hr::gl::objects::Sampler samplerNormals;
 		};
@@ -48,13 +66,16 @@ namespace hr { namespace render
 		FBOs mFBOs;
 		Shaders mShaders;
 		Samplers mSamplers;
+		hr::Random mRand;
 		hr::io::FileSystem& mFileSystem;
 		hr::gl::tools::ImmediateMode mGlImmediateMode;
 		int mShadersWatchFolderID;
+		hr::gl::objects::Texture mTexSky;
 		hr::gl::objects::Texture mTexDefaultAlbedo, mTexDefaultNormals;
 
 		void passDepth(const tools::Camera& hrCamera, const hr::gl::tools::Viewport& hrViewport);
 		void passLighting(const tools::Camera& hrCamera, const hr::gl::tools::Viewport& hrViewport);
+		void passSky(const tools::Camera& hrCamera, const hr::gl::tools::Viewport& hrViewport);
 
 		void compositePostProcessing(const hr::gl::tools::Viewport& hrViewport);
 

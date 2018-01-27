@@ -106,7 +106,12 @@ namespace hr { namespace render
 			hr::gl::glProgramUniformMatrix4fv(mShaders.geomDebug.vertex.getId(), mShaders.geomDebug.vertex.getUniformLocation("matTrans"), 1, false, matrixTransform.data());
 			hr::gl::glBindProgramPipeline(mShaders.geomDebug.pipeline.getId());
 
+			hr::gl::glDepthMask(GL_FALSE);
+			hr::gl::glDepthFunc(GL_GEQUAL);
+			
 			hr::gl::glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+
+			hr::gl::glEnable(GL_POLYGON_OFFSET_LINE);
 			hr::gl::glPolygonOffset(1.0f, 1.0f);
 
 			mWorld.mRenderData.vboIndirectDraw.bind();
@@ -118,6 +123,8 @@ namespace hr { namespace render
 			mWorld.mRenderData.vboIndirectDraw.unbind();
 
 			hr::gl::glPolygonOffset(0.0f, 0.0f);
+			hr::gl::glDisable(GL_POLYGON_OFFSET_LINE);
+			
 			hr::gl::glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 		}
 	}

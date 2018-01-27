@@ -322,6 +322,29 @@ namespace hr { namespace render { namespace tools
 		return true;
 	}
 
+	bool TextureTools::uploadDiffuse(const hr::imaging::ImageView<float, hr::imaging::ImageFormatRGB>& imageSrc, hr::gl::objects::Texture& textureDst)
+	{
+		if (imageSrc.empty())
+			return false;
+
+		textureDst.init(hr::gl::objects::Texture::Type::Tex2D, hr::gl::objects::Texture::StorageType::RGB_16F, imageSrc.width(), imageSrc.height());
+
+		size_t curLevel = 0;
+		auto imageScaled = imageSrc.clone();
+
+		while (true)
+		{
+			textureDst.uploadData(curLevel, 0, 0, imageScaled.width(), imageScaled.height(), hr::gl::objects::Texture::DataFormat::RGB, hr::gl::objects::Texture::DataType::FLOAT, imageScaled.data());
+			if (imageScaled.getArea() <= 1)
+				break;
+
+			curLevel++;
+			imageScaled = imageScaled.resize(std::max<size_t>(1, imageScaled.width() >> 1), std::max<size_t>(1, imageScaled.height() >> 1));
+		};
+
+		return true;
+	}
+
 	bool TextureTools::uploadCompressedDiffuse(hr::streams::StreamReader& streamIn, hr::gl::objects::Texture& textureDst)
 	{
 		CTextureHeader ctexHeader;

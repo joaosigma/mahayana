@@ -2,49 +2,49 @@
 
 namespace hr { namespace gl { namespace tools
 {
+	namespace
+	{
+		void funcProjection(hr::Matrix& mat, double fov, double aspectRatio, double near, double far)
+		{
+			double ymax = near * tan(fov * 0.00872664625997164788461845384); //0.008726646259971 = pi / 180.0 / 2.0
+			double ymin = -ymax;
+			double xmin = ymin * aspectRatio;
+			double xmax = ymax * aspectRatio;
+
+			mat.setZero();
+			mat[0] = static_cast<float>((2.0 * near) / (xmax - xmin));
+			mat[5] = static_cast<float>((2.0 * near) / (ymax - ymin));
+			mat[8] = static_cast<float>((xmax + xmin) / (xmax - xmin));
+			mat[9] = static_cast<float>((ymax + ymin) / (ymax - ymin));
+			mat[10] = -static_cast<float>((far + near) / (far - near));
+			mat[11] = -1.0f;
+			mat[14] = -static_cast<float>((2.0 * far * near) / (far - near));
+		};
+
+		void funcOrtho(hr::Matrix& mat, double left, double right, double bottom, double top, double near, double far)
+		{
+			mat.setZero();
+			mat[0] = static_cast<float>(2.0 / (right - left));
+			mat[5] = static_cast<float>(2.0 / (top - bottom));
+			mat[10] = static_cast<float>(-2.0 / (far - near));
+			mat[12] = static_cast<float>(-(right + left) / (right - left));
+			mat[13] = static_cast<float>(-(top + bottom) / (top - bottom));
+			mat[14] = static_cast<float>(-(far + near) / (far - near));
+			mat[15] = 1.0f;
+		};
+	}
+
 	hr::Matrix Viewport::genMatrix2DProj(size_t width, size_t height)
 	{
-		Viewport viewport(90.0f, width, height);
-		return viewport.mMatrices.mp2D;
+		hr::Matrix mat;
+		funcOrtho(mat, 0.0, width, 0.0, height, 1.0, -1.0);
+		return mat;
 	}
 
 	void Viewport::calcMatrices()
 	{
-		double n = static_cast<double>(mZNear);
-		double f = static_cast<double>(mZFar);
-		double ymax = n * tan(static_cast<double>(mFov)* 0.00872664625997164788461845384);
-		double ymin = -ymax;
-		double aspect = static_cast<double>(mWidth) / static_cast<double>(mHeight);
-		double xmin = ymin * aspect;
-		double xmax = ymax * aspect;
-
-		//3D
-		mMatrices.mp3D.setZero();
-		mMatrices.mp3D[0] = static_cast<float>((2.0 * n) / (xmax - xmin));
-		mMatrices.mp3D[5] = static_cast<float>((2.0 * n) / (ymax - ymin));
-		mMatrices.mp3D[8] = static_cast<float>((xmax + xmin) / (xmax - xmin));
-		mMatrices.mp3D[9] = static_cast<float>((ymax + ymin) / (ymax - ymin));
-		mMatrices.mp3D[10] = -static_cast<float>((f + n) / (f - n));
-		mMatrices.mp3D[11] = -1.0f;
-		mMatrices.mp3D[14] = -static_cast<float>((2.0 * f *n) / (f - n));
-
-		//3D infinite
-		mMatrices.mp3DInfinite.setZero();
-		mMatrices.mp3DInfinite[0] = static_cast<float>((2.0 * n) / (xmax - xmin));
-		mMatrices.mp3DInfinite[5] = static_cast<float>((2.0 * n) / (ymax - ymin));
-		mMatrices.mp3DInfinite[8] = static_cast<float>((xmax + xmin) / (xmax - xmin));
-		mMatrices.mp3DInfinite[9] = static_cast<float>((ymax + ymin) / (ymax - ymin));
-		mMatrices.mp3DInfinite[10] = -1.0f;
-		mMatrices.mp3DInfinite[11] = -1.0f;
-		mMatrices.mp3DInfinite[14] = -static_cast<float>(2.0 * n);
-
-		//2D
-		mMatrices.mp2D.setIdentity();
-		mMatrices.mp2D[0] = 2.0f / static_cast<float>(mWidth);
-		mMatrices.mp2D[5] = 2.0f / static_cast<float>(mHeight);
-		mMatrices.mp2D[10] = -1.0f;
-		mMatrices.mp2D[12] = -1.0f;
-		mMatrices.mp2D[13] = -1.0f;
+		funcProjection(mMatrices.mp3D, mFov, static_cast<double>(mWidth) / static_cast<double>(mHeight), mZNear, mZFar);
+		funcOrtho(mMatrices.mp2D, 0.0, mWidth, 0.0, mHeight, 1.0, -1.0);
 	}
 
 	const hr::Matrix& Viewport::getProjection(ProjectionType projectionType) const
@@ -53,8 +53,8 @@ namespace hr { namespace gl { namespace tools
 		{
 		case ProjectionType::Proj2D:
 			return mMatrices.mp2D;
-		case ProjectionType::Proj3DInf:
-			return mMatrices.mp3DInfinite;
+		default:
+			break;
 		};
 
 		return mMatrices.mp3D;
@@ -80,9 +80,6 @@ namespace hr { namespace gl { namespace tools
 				break;
 			case ProjectionType::Proj3D:
 				transMat = mMatrices.mp3D;
-				break;
-			case ProjectionType::Proj3DInf:
-				transMat = mMatrices.mp3DInfinite;
 				break;
 			default:
 				return;

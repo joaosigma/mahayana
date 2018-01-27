@@ -13,6 +13,7 @@ sandbox/
 *.VC.opendb
 slnx.sqlite
 VSWorkspaceState.json
+/.vs
 
 # Build results
 [Dd]ebug/

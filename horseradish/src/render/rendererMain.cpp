@@ -12,23 +12,15 @@ namespace hr { namespace render
 {
 	void RendererMain::passDepth(const tools::Camera& hrCamera, const hr::gl::tools::Viewport& hrViewport)
 	{
-		hr::Matrix matrixModelView, matrixTransform;
-
-		matrixModelView.set(hrCamera.modelView());
-		matrixTransform = hrViewport.getProjection(hr::gl::tools::Viewport::ProjectionType::Proj3D);
-		matrixTransform *= matrixModelView;
-
 		mWorld.mRenderData.vaoMesh.bind();
 		mFBOs.fboZPass.bind();
 
 		hr::gl::glEnable(GL_DEPTH_TEST);
-		hr::gl::glDisable(GL_SCISSOR_TEST);
-
 		hr::gl::glDepthMask(GL_TRUE);
 		hr::gl::glDepthFunc(GL_LEQUAL);
+
 		hr::gl::glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		hr::gl::glProgramUniformMatrix4fv(mShaders.forwardPassZ.vertex.getId(), mShaders.forwardPassZ.vertex.getUniformLocation("matTrans"), 1, false, matrixTransform.data());
 		hr::gl::glBindProgramPipeline(mShaders.forwardPassZ.pipeline.getId());
 
 		mWorld.mRenderData.vboIndirectDraw.bind();
@@ -43,28 +35,18 @@ namespace hr { namespace render
 
 	void RendererMain::passLighting(const tools::Camera& hrCamera, const hr::gl::tools::Viewport& hrViewport)
 	{
-		hr::Matrix matrixModelView, matrixTransform;
-
-		matrixModelView.set(hrCamera.modelView());
-		matrixTransform = hrViewport.getProjection(hr::gl::tools::Viewport::ProjectionType::Proj3D);
-		matrixTransform *= matrixModelView;
-
 		mWorld.mRenderData.vaoMesh.bind();
 		mFBOs.fboForward.bind();
 		mFBOs.fboForward.drawBuffers<3>({ GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2 });
 
 		hr::gl::glEnable(GL_DEPTH_TEST);
-		hr::gl::glDisable(GL_SCISSOR_TEST);
-
 		hr::gl::glDepthMask(GL_FALSE);
-		hr::gl::glDepthFunc(GL_EQUAL);
+		hr::gl::glDepthFunc(GL_EQUAL); //match against already written Z
 		
 		hr::gl::glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 		hr::gl::glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 		hr::gl::glClear(GL_COLOR_BUFFER_BIT);
 
-		hr::gl::glProgramUniformMatrix4fv(mShaders.forwardPassLighting.vertex.getId(), mShaders.forwardPassLighting.vertex.getUniformLocation("matView"), 1, false, matrixModelView.data());
-		hr::gl::glProgramUniformMatrix4fv(mShaders.forwardPassLighting.vertex.getId(), mShaders.forwardPassLighting.vertex.getUniformLocation("matTrans"), 1, false, matrixTransform.data());
 		hr::gl::glBindProgramPipeline(mShaders.forwardPassLighting.pipeline.getId());
 
 		mSamplers.samplerNormals.bind(1);
@@ -88,6 +70,46 @@ namespace hr { namespace render
 			hr::gl::glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_SHORT, reinterpret_cast<void*>(concept.renderData.meshDrawIndirectOffset), 1, 0);
 		}
 		mWorld.mRenderData.vboIndirectDraw.unbind();
+	}
+
+	void RendererMain::passSky(const tools::Camera& hrCamera, const hr::gl::tools::Viewport& hrViewport)
+	{
+		auto winX = hrViewport.width();
+		auto winY = hrViewport.height();
+
+		hr::gl::glEnable(GL_DEPTH_TEST);
+		hr::gl::glDepthMask(GL_FALSE);
+		hr::gl::glDepthFunc(GL_LEQUAL);
+
+		hr::Matrix matrixProjection;
+		hr::Matrix matrixModelView;
+		{
+			matrixModelView = hrCamera.modelView();
+			matrixProjection = hrViewport.getProjection(hr::gl::tools::Viewport::ProjectionType::Proj3D);
+		}
+
+		hr::gl::glProgramUniformMatrix4fv(mShaders.forwardPassSky.vertex.getId(), mShaders.forwardPassSky.vertex.getUniformLocation("modelviewMatrix"), 1, false, matrixModelView.data());
+		hr::gl::glProgramUniformMatrix4fv(mShaders.forwardPassSky.vertex.getId(), mShaders.forwardPassSky.vertex.getUniformLocation("projectionMatrix"), 1, false, matrixProjection.data());
+		hr::gl::glBindProgramPipeline(mShaders.forwardPassSky.pipeline.getId());
+
+		mSamplers.samplerSky.bind(0);
+		mTexSky.bind(0);
+
+		mGlImmediateMode.beginDraw(hr::gl::tools::ImmediateMode::GeometryType::Quads);
+			mGlImmediateMode.setColorF(1.0f);
+
+			mGlImmediateMode.setTexCoord(0.0f, 0.0f);
+			mGlImmediateMode.addPosition(-1.0f, -1.0f, 1.0f);
+			
+			mGlImmediateMode.setTexCoord(1.0f, 0.0f);
+			mGlImmediateMode.addPosition(1.0f, -1.0f, 1.0f);
+
+			mGlImmediateMode.setTexCoord(1.0f, 1.0f);
+			mGlImmediateMode.addPosition(1.0f, 1.0f, 1.0f);
+
+			mGlImmediateMode.setTexCoord(0.0f, 1.0f);
+			mGlImmediateMode.addPosition(-1.0f, 1.0f, 1.0f);
+		mGlImmediateMode.endDraw();
 	}
 
 	void RendererMain::compositePostProcessing(const hr::gl::tools::Viewport& hrViewport)
@@ -235,7 +257,19 @@ namespace hr { namespace render
 		if (!fileStream)
 			return;
 
-		if (hr::StringUtils::endsWith(texFilePath, ".tga"))
+		if (hr::StringUtils::endsWith(texFilePath, ".hdr"))
+		{
+			auto targetImg = hr::imaging::Factory::readHDRI(hr::streams::StreamReader(*fileStream));
+			if (targetImg.empty())
+				return;
+
+			if (!compress)
+			{
+				tools::TextureTools::uploadDiffuse(targetImg, targetTexture);
+				return;
+			}
+		}
+		else if (hr::StringUtils::endsWith(texFilePath, ".tga"))
 		{
 			auto targetImg = hr::imaging::Factory::readTGA(hr::streams::StreamReader(*fileStream));
 			if (targetImg.empty())
@@ -372,7 +406,8 @@ namespace hr { namespace render
 		, mWorld(renderWorld)
 		, mFileSystem(fileSystem)
 	{
-		loadDiffuse(R"(media\default_albedo.png)", mTexDefaultAlbedo, true);
+		loadDiffuse(R"(media\default_albedo.jpg)", mTexDefaultAlbedo, true);
+		loadDiffuse(R"(media\skies\archesPineTree.hdr)", mTexSky, false);
 		loadNormal(R"(media\default_normal.png)", mTexDefaultNormals, true);
 	
 		hr::io::Path pathShaders;
@@ -421,13 +456,29 @@ namespace hr { namespace render
 		mShaders.forwardPassLighting.pipeline.setStage(mShaders.forwardPassLighting.vertex);
 		mShaders.forwardPassLighting.pipeline.setStage(mShaders.forwardPassLighting.fragment);
 
+		mShaders.forwardPassSky.vertex.init(hr::gl::objects::ShaderProgram::Type::Vertex, mFileSystem.readFileAsString("shaders/rPassSky.vshader"));
+		mShaders.forwardPassSky.vertex.getInfoLog();
+		mShaders.forwardPassSky.fragment.init(hr::gl::objects::ShaderProgram::Type::Fragment, mFileSystem.readFileAsString("shaders/rPassSky.fshader"));
+		mShaders.forwardPassSky.fragment.getInfoLog();
+		mShaders.forwardPassSky.pipeline.init();
+		mShaders.forwardPassSky.pipeline.setStage(mShaders.forwardPassSky.vertex);
+		mShaders.forwardPassSky.pipeline.setStage(mShaders.forwardPassSky.fragment);
+
 		mShaders.postprocess.vertex.init(hr::gl::objects::ShaderProgram::Type::Vertex, mFileSystem.readFileAsString("shaders/rCompositePP.vshader"));
 		mShaders.postprocess.fragment.init(hr::gl::objects::ShaderProgram::Type::Fragment, mFileSystem.readFileAsString("shaders/rCompositePP.fshader"));
 		mShaders.postprocess.pipeline.init();
 		mShaders.postprocess.pipeline.setStage(mShaders.postprocess.vertex);
 		mShaders.postprocess.pipeline.setStage(mShaders.postprocess.fragment);
 
+		//buffers
+		mShaders.forwardPassBuffers.uniform.init(hr::gl::objects::Buffer::Type::UniformBuffer, sizeof(Shaders::UniformLayout), hr::gl::objects::Buffer::UsageType::PersistentOnlyWrite);
+		mShaders.forwardPassBuffers.storage.init(hr::gl::objects::Buffer::Type::ShaderStorage, sizeof(Shaders::LightLayout) * Shaders::LightLayoutMaxElements, hr::gl::objects::Buffer::UsageType::PersistentOnlyWrite);
+
 		//samplers
+		mSamplers.samplerSky.init(hr::gl::objects::Sampler::FilterType::Linear, hr::gl::objects::Sampler::FilterType::Linear);
+		mSamplers.samplerSky.setWrap(hr::gl::objects::Sampler::WrapType::Repeat);
+		mSamplers.samplerSky.setAnisotropy(mGlContext, 8.0f);
+		
 		mSamplers.samplerAlbedo.init(hr::gl::objects::Sampler::FilterType::Linear, hr::gl::objects::Sampler::FilterType::LinearMipPoint);
 		mSamplers.samplerAlbedo.setAnisotropy(mGlContext, 8.0f);
 
@@ -453,9 +504,58 @@ namespace hr { namespace render
 		{
 			//reload shaders
 		}
+				
+		mShaders.forwardPassBuffers.fence.wait();
 
-		passDepth(hrCamera, hrViewport);
-		passLighting(hrCamera, hrViewport);
+			//uniform buffer common to every pass is prepared/set here
+			uint32_t numLights = 3;
+			{
+				hr::Matrix matrixModelView, matrixTransform;
+
+				matrixModelView.set(hrCamera.modelView());
+				matrixTransform = hrViewport.getProjection(hr::gl::tools::Viewport::ProjectionType::Proj3D);
+				matrixTransform *= matrixModelView;
+
+				Shaders::UniformLayout uniformData;
+				matrixTransform.write(uniformData.matTrans);
+				matrixModelView.write(uniformData.matView);
+				uniformData.numLights = numLights;
+
+				mShaders.forwardPassBuffers.uniform.writeData(&uniformData, sizeof(Shaders::UniformLayout), 0);
+				hr::gl::glBindBufferBase(GL_UNIFORM_BUFFER, 1, mShaders.forwardPassBuffers.uniform.getId());
+			}
+
+			//shader storage buffer common to every pass is prepared/set here
+			{
+				static bool done = false;
+				if (!done)
+				{
+					done = true;
+
+					std::array<Shaders::LightLayout, Shaders::LightLayoutMaxElements> storageData;
+					for (uint32_t i = 0; i < numLights; i++)
+					{
+						Vector3f dir(mRand.nextDouble(-1.0, 1.0), mRand.nextDouble(0.0, 1.0), mRand.nextDouble(0.5, 1.0));
+						dir.normalize();
+						dir.write(storageData[i].dir);
+						storageData[i].dir[3] = 0.0f;
+						
+						Vector3f diffuse(mRand.nextDouble(0.5, 1.0), mRand.nextDouble(0.5, 1.0), mRand.nextDouble(0.5, 1.0));
+						diffuse.write(storageData[i].diffuse);
+						storageData[i].diffuse[3] = 1.0f;
+					}
+
+					mShaders.forwardPassBuffers.storage.writeData(storageData.data(), sizeof(Shaders::LightLayout) * numLights, 0);
+					hr::gl::glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, mShaders.forwardPassBuffers.storage.getId());
+				}
+			}
+
+			passDepth(hrCamera, hrViewport);
+			passLighting(hrCamera, hrViewport);
+
+		mShaders.forwardPassBuffers.fence.place();
+
+		passSky(hrCamera, hrViewport);
 	}
 
 	void RendererMain::renderDebug(RendererDebug& rendererDebug, const tools::Camera& hrCamera, const hr::gl::tools::Viewport& hrViewport)

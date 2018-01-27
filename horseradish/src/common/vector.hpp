@@ -1090,6 +1090,11 @@ namespace hr
 			return *this;
 		}
 
+		void write(float dest[4]) const
+		{
+			std::memcpy(dest, mData, sizeof(float) * 4);
+		}
+
 		float getMagnitude() const
 		{
 			return Vector::calcMagnitude(*this);

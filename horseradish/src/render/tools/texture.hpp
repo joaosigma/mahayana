@@ -14,6 +14,7 @@ namespace hr { namespace render { namespace tools
 
 		static bool uploadDiffuse(const hr::imaging::ImageView<unsigned char, hr::imaging::ImageFormatRGBA>& imageSrc, hr::gl::objects::Texture& textureDst);
 		static bool uploadDiffuse(const hr::imaging::ImageView<unsigned char, hr::imaging::ImageFormatRGB>& imageSrc, hr::gl::objects::Texture& textureDst);
+		static bool uploadDiffuse(const hr::imaging::ImageView<float, hr::imaging::ImageFormatRGB>& imageSrc, hr::gl::objects::Texture& textureDst);
 
 		static bool uploadCompressedDiffuse(hr::streams::StreamReader& streamIn, hr::gl::objects::Texture& textureDst);
 

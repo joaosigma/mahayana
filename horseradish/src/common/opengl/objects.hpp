@@ -846,7 +846,7 @@ namespace hr { namespace gl { namespace objects
 	class Buffer final : public ObjectGL
 	{
 	public:
-		enum class Type { ArrayBuffer, ElementArrayBuffer, PixelPackBuffer, PixelUnpackBuffer, TextureBuffer, UniformBuffer, DrawIndirect };
+		enum class Type { ArrayBuffer, ElementArrayBuffer, PixelPackBuffer, PixelUnpackBuffer, TextureBuffer, UniformBuffer, ShaderStorage, DrawIndirect };
 		enum class UsageType { ServerStatic, OnlyRead, OnlyWrite, PersistentOnlyRead, PersistentOnlyWrite};
 
 		struct DrawElementsIndirectCommand {
@@ -929,6 +929,9 @@ namespace hr { namespace gl { namespace objects
 				break;
 			case Type::UniformBuffer:
 				mType = GL_UNIFORM_BUFFER;
+				break;
+			case Type::ShaderStorage:
+				mType = GL_SHADER_STORAGE_BUFFER;
 				break;
 			case Type::DrawIndirect:
 				mType = GL_DRAW_INDIRECT_BUFFER;
