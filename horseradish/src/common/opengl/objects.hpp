@@ -19,23 +19,26 @@ namespace hr { namespace gl { namespace objects
 	protected:
 		GLuint mId = 0;
 
-		ObjectGL()
-		{ }
-
+		ObjectGL() = default;
 		ObjectGL(const ObjectGL&) = delete;
 		ObjectGL& operator=(const ObjectGL&) = delete;
 		ObjectGL(ObjectGL&&) = default;
 		ObjectGL& operator=(ObjectGL&&) = default;
 
 	public:
-		GLuint getId() const
+		GLuint id() const
 		{
 			return mId;
 		}
 
-		bool isValid() const
+		explicit operator bool() const noexcept
 		{
 			return (mId != 0);
+		}
+
+		bool isValid() const
+		{
+			return operator bool();
 		}
 	};
 
@@ -261,8 +264,7 @@ namespace hr { namespace gl { namespace objects
 		}
 
 	public:
-		Texture()
-		{ }
+		Texture() = default;
 
 		~Texture()
 		{
@@ -613,8 +615,7 @@ namespace hr { namespace gl { namespace objects
 		}
 
 	public:
-		Sampler()
-		{ }
+		Sampler() = default;
 
 		~Sampler()
 		{
@@ -864,8 +865,7 @@ namespace hr { namespace gl { namespace objects
 		UsageType mUsageType = UsageType::ServerStatic;
 		
 	public:
-		Buffer()
-		{ }
+		Buffer() = default;
 
 		~Buffer()
 		{
@@ -1136,8 +1136,7 @@ namespace hr { namespace gl { namespace objects
 		Type mType = Type::SamplesPassed;
 
 	public:
-		Query()
-		{ }
+		Query() = default;
 
 		~Query()
 		{
@@ -1289,8 +1288,7 @@ namespace hr { namespace gl { namespace objects
 		Type mType = Type::Timestamp;
 
 	public:
-		QueryCounter()
-		{ }
+		QueryCounter() = default;
 
 		~QueryCounter()
 		{
@@ -1356,8 +1354,7 @@ namespace hr { namespace gl { namespace objects
 	class VertexArray final : public ObjectGL
 	{
 	public:
-		VertexArray()
-		{ }
+		VertexArray() = default;
 
 		~VertexArray()
 		{
@@ -1402,8 +1399,7 @@ namespace hr { namespace gl { namespace objects
 		}
 
 	public:
-		FrameBuffer()
-		{ }
+		FrameBuffer() = default;
 
 		~FrameBuffer()
 		{
@@ -1469,7 +1465,7 @@ namespace hr { namespace gl { namespace objects
 			if (!isValid() || !textureToAttach.isRenderable() || (!textureToAttach.isType(Texture::Type::Tex2D) && !textureToAttach.isType(Texture::Type::TexRectangle)))
 				return *this;
 
-			hr::gl::glNamedFramebufferTexture(mId, GL_COLOR_ATTACHMENT0 + attachUnit, textureToAttach.getId(), 0);
+			hr::gl::glNamedFramebufferTexture(mId, GL_COLOR_ATTACHMENT0 + attachUnit, textureToAttach.id(), 0);
 
 			return *this;
 		}
@@ -1482,17 +1478,17 @@ namespace hr { namespace gl { namespace objects
 			switch (cubemapFace)
 			{
 			case Texture::CubemapFace::PosX:
-				hr::gl::glNamedFramebufferTextureLayer(mId, GL_COLOR_ATTACHMENT0 + attachUnit, textureToAttach.getId(), 0, GL_TEXTURE_CUBE_MAP_POSITIVE_X);
+				hr::gl::glNamedFramebufferTextureLayer(mId, GL_COLOR_ATTACHMENT0 + attachUnit, textureToAttach.id(), 0, GL_TEXTURE_CUBE_MAP_POSITIVE_X);
 			case Texture::CubemapFace::NegX:
-				hr::gl::glNamedFramebufferTextureLayer(mId, GL_COLOR_ATTACHMENT0 + attachUnit, textureToAttach.getId(), 0, GL_TEXTURE_CUBE_MAP_NEGATIVE_X);
+				hr::gl::glNamedFramebufferTextureLayer(mId, GL_COLOR_ATTACHMENT0 + attachUnit, textureToAttach.id(), 0, GL_TEXTURE_CUBE_MAP_NEGATIVE_X);
 			case Texture::CubemapFace::PosY:
-				hr::gl::glNamedFramebufferTextureLayer(mId, GL_COLOR_ATTACHMENT0 + attachUnit, textureToAttach.getId(), 0, GL_TEXTURE_CUBE_MAP_POSITIVE_Y);
+				hr::gl::glNamedFramebufferTextureLayer(mId, GL_COLOR_ATTACHMENT0 + attachUnit, textureToAttach.id(), 0, GL_TEXTURE_CUBE_MAP_POSITIVE_Y);
 			case Texture::CubemapFace::NegY:
-				hr::gl::glNamedFramebufferTextureLayer(mId, GL_COLOR_ATTACHMENT0 + attachUnit, textureToAttach.getId(), 0, GL_TEXTURE_CUBE_MAP_NEGATIVE_Y);
+				hr::gl::glNamedFramebufferTextureLayer(mId, GL_COLOR_ATTACHMENT0 + attachUnit, textureToAttach.id(), 0, GL_TEXTURE_CUBE_MAP_NEGATIVE_Y);
 			case Texture::CubemapFace::PosZ:
-				hr::gl::glNamedFramebufferTextureLayer(mId, GL_COLOR_ATTACHMENT0 + attachUnit, textureToAttach.getId(), 0, GL_TEXTURE_CUBE_MAP_POSITIVE_Z);
+				hr::gl::glNamedFramebufferTextureLayer(mId, GL_COLOR_ATTACHMENT0 + attachUnit, textureToAttach.id(), 0, GL_TEXTURE_CUBE_MAP_POSITIVE_Z);
 			case Texture::CubemapFace::NegZ:
-				hr::gl::glNamedFramebufferTextureLayer(mId, GL_COLOR_ATTACHMENT0 + attachUnit, textureToAttach.getId(), 0, GL_TEXTURE_CUBE_MAP_NEGATIVE_Z);
+				hr::gl::glNamedFramebufferTextureLayer(mId, GL_COLOR_ATTACHMENT0 + attachUnit, textureToAttach.id(), 0, GL_TEXTURE_CUBE_MAP_NEGATIVE_Z);
 			}
 			
 			return *this;
@@ -1503,7 +1499,7 @@ namespace hr { namespace gl { namespace objects
 			if (!isValid() || !textureToAttach.isRenderable() || (!textureToAttach.isType(Texture::Type::Tex2D) && !textureToAttach.isType(Texture::Type::TexRectangle)))
 				return *this;
 
-			hr::gl::glNamedFramebufferTexture(mId, GL_DEPTH_ATTACHMENT, textureToAttach.getId(), 0);
+			hr::gl::glNamedFramebufferTexture(mId, GL_DEPTH_ATTACHMENT, textureToAttach.id(), 0);
 
 			return *this;
 		}
@@ -1516,10 +1512,9 @@ namespace hr { namespace gl { namespace objects
 		GLenum mType = 0;
 
 	public:
-		enum class Type{ Vertex, Fragment };
+		enum class Type{ Vertex, Fragment, Compute };
 
-		ShaderProgram()
-		{ }
+		ShaderProgram() = default;
 
 		~ShaderProgram()
 		{
@@ -1552,6 +1547,13 @@ namespace hr { namespace gl { namespace objects
 			{
 				mType = GL_FRAGMENT_SHADER;
 				mId = glCreateShaderProgramv(GL_FRAGMENT_SHADER, 1, &sourceCode);
+
+				break;
+			}
+			case Type::Compute:
+			{
+				mType = GL_COMPUTE_SHADER;
+				mId = glCreateShaderProgramv(GL_COMPUTE_SHADER, 1, &sourceCode);
 
 				break;
 			}
@@ -1602,9 +1604,7 @@ namespace hr { namespace gl { namespace objects
 	class ProgramPipeline final : public ObjectGL
 	{
 	public:
-		ProgramPipeline()
-		{
-		}
+		ProgramPipeline() = default;
 
 		~ProgramPipeline()
 		{
@@ -1641,6 +1641,10 @@ namespace hr { namespace gl { namespace objects
 				break;
 			case GL_FRAGMENT_SHADER:
 				stageMask |= GL_FRAGMENT_SHADER_BIT;
+				break;
+			case GL_COMPUTE_SHADER:
+				stageMask |= GL_COMPUTE_SHADER_BIT;
+				break;
 			}
 			
 			if (stageMask != 0)
@@ -1672,8 +1676,7 @@ namespace hr { namespace gl { namespace objects
 		GLsync mSync = 0;
 
 	public:
-		FenceSync()
-		{ }
+		FenceSync() = default;
 
 		~FenceSync()
 		{

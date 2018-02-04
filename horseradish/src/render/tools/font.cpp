@@ -432,21 +432,21 @@ namespace hr { namespace render { namespace tools
 
 		mGl.vertexArray.init();
 
-		hr::gl::glEnableVertexArrayAttrib(mGl.vertexArray.getId(), 0);
-		hr::gl::glEnableVertexArrayAttrib(mGl.vertexArray.getId(), 1);
-		hr::gl::glEnableVertexArrayAttrib(mGl.vertexArray.getId(), 4);
+		hr::gl::glEnableVertexArrayAttrib(mGl.vertexArray.id(), 0);
+		hr::gl::glEnableVertexArrayAttrib(mGl.vertexArray.id(), 1);
+		hr::gl::glEnableVertexArrayAttrib(mGl.vertexArray.id(), 4);
 
-		hr::gl::glVertexArrayAttribBinding(mGl.vertexArray.getId(), 0, 0);
-		hr::gl::glVertexArrayAttribFormat(mGl.vertexArray.getId(), 0, 2, GL_FLOAT, false, offsetof(Font::VertexDataLayout, pos));
+		hr::gl::glVertexArrayAttribBinding(mGl.vertexArray.id(), 0, 0);
+		hr::gl::glVertexArrayAttribFormat(mGl.vertexArray.id(), 0, 2, GL_FLOAT, false, offsetof(Font::VertexDataLayout, pos));
 
-		hr::gl::glVertexArrayAttribBinding(mGl.vertexArray.getId(), 1, 0);
-		hr::gl::glVertexArrayAttribFormat(mGl.vertexArray.getId(), 1, 2, GL_FLOAT, false, offsetof(Font::VertexDataLayout, uv));
+		hr::gl::glVertexArrayAttribBinding(mGl.vertexArray.id(), 1, 0);
+		hr::gl::glVertexArrayAttribFormat(mGl.vertexArray.id(), 1, 2, GL_FLOAT, false, offsetof(Font::VertexDataLayout, uv));
 
-		hr::gl::glVertexArrayAttribBinding(mGl.vertexArray.getId(), 4, 0);
-		hr::gl::glVertexArrayAttribFormat(mGl.vertexArray.getId(), 4, 4, GL_UNSIGNED_BYTE, true, offsetof(Font::VertexDataLayout, color));
+		hr::gl::glVertexArrayAttribBinding(mGl.vertexArray.id(), 4, 0);
+		hr::gl::glVertexArrayAttribFormat(mGl.vertexArray.id(), 4, 4, GL_UNSIGNED_BYTE, true, offsetof(Font::VertexDataLayout, color));
 
-		hr::gl::glVertexArrayElementBuffer(mGl.vertexArray.getId(), mGl.elementArrayBuffer.getId());
-		hr::gl::glVertexArrayVertexBuffer(mGl.vertexArray.getId(), 0, mGl.arrayBuffer.getId(), 0, sizeof(Font::VertexDataLayout));
+		hr::gl::glVertexArrayElementBuffer(mGl.vertexArray.id(), mGl.elementArrayBuffer.id());
+		hr::gl::glVertexArrayVertexBuffer(mGl.vertexArray.id(), 0, mGl.arrayBuffer.id(), 0, sizeof(Font::VertexDataLayout));
 
 		mGl.sampler.init();
 		mGl.sampler.setMinFilter(hr::gl::objects::Sampler::FilterType::Linear);

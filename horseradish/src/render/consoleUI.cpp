@@ -315,8 +315,8 @@ namespace hr { namespace render
 
 	void ConsoleUI::drawBackground(const hr::Matrix &transformMatrix, float bkgAlpha) const
 	{
-		hr::gl::glBindProgramPipeline(mRenderer.mShaders.drawNoTex.progPipeline.getId());
-		hr::gl::glProgramUniformMatrix4fv(mRenderer.mShaders.drawNoTex.progVertex.getId(), mRenderer.mShaders.drawNoTex.progVertex.getUniformLocation("transformationMatrix"), 1, false, transformMatrix.data());
+		hr::gl::glBindProgramPipeline(mRenderer.mShaders.drawNoTex.progPipeline.id());
+		hr::gl::glProgramUniformMatrix4fv(mRenderer.mShaders.drawNoTex.progVertex.id(), mRenderer.mShaders.drawNoTex.progVertex.getUniformLocation("transformationMatrix"), 1, false, transformMatrix.data());
 
 		auto& glImmediateMode = mRenderer.mGlImmediateMode;
 

@@ -22,8 +22,9 @@ namespace hr { namespace render
 	private:
 		struct FBOs {
 			hr::gl::objects::Sampler samplerTex;
+			hr::gl::objects::Sampler samplerLuminance;
 			hr::gl::objects::FrameBuffer fboZPass, fboForward;
-			hr::gl::objects::Texture texZ, texLighting, texNormals, texSpecular;
+			hr::gl::objects::Texture texZ, texLighting, texNormals, texSpecular, texAvgLuminance;
 		};
 
 		struct Shaders{
@@ -53,6 +54,9 @@ namespace hr { namespace render
 				hr::gl::objects::ShaderProgram vertex;
 				hr::gl::objects::ShaderProgram fragment;
 				hr::gl::objects::ProgramPipeline pipeline;
+
+				hr::gl::objects::ShaderProgram computeSaturateShader;
+				hr::gl::objects::ProgramPipeline computeSaturatePipeline;
 			} postprocess;
 		};
 

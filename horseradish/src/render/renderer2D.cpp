@@ -23,6 +23,6 @@ namespace hr { namespace render
 		mShaders.text.progPipeline.setStage(mShaders.text.progVertex);
 		mShaders.text.progPipeline.setStage(mShaders.text.progFragment);
 
-		mGui.font = std::make_unique<tools::Font>(textSize, textFont, mShaders.text.progVertex.getId(), mShaders.text.progFragment.getId(), mShaders.text.progPipeline.getId());
+		mGui.font = std::make_unique<tools::Font>(textSize, textFont, mShaders.text.progVertex.id(), mShaders.text.progFragment.id(), mShaders.text.progPipeline.id());
 	}
 } }

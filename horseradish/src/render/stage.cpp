@@ -249,8 +249,8 @@ namespace hr { namespace render
 		mRenderData.progFragment.init(hr::gl::objects::ShaderProgram::Type::Fragment, fileSystem.readFileAsString("shaders/stage.fshader"));
 
 		auto matrixProj2D = hr::gl::tools::Viewport::genMatrix2DProj(renderWidth, renderHeight);
-		hr::gl::glProgramUniform1i(mRenderData.progFragment.getId(), mRenderData.progFragment.getUniformLocation("texSampler"), 0);
-		hr::gl::glProgramUniformMatrix4fv(mRenderData.progVertex.getId(), mRenderData.progVertex.getUniformLocation("transformationMatrix"), 1, false, matrixProj2D.data());
+		hr::gl::glProgramUniform1i(mRenderData.progFragment.id(), mRenderData.progFragment.getUniformLocation("texSampler"), 0);
+		hr::gl::glProgramUniformMatrix4fv(mRenderData.progVertex.id(), mRenderData.progVertex.getUniformLocation("transformationMatrix"), 1, false, matrixProj2D.data());
 
 		mRenderData.progPipeline.init();
 		mRenderData.progPipeline.setStage(mRenderData.progVertex);
@@ -298,7 +298,7 @@ namespace hr { namespace render
 
 		mScenesDrawned = false;
 
-		hr::gl::glBindProgramPipeline(mRenderData.progPipeline.getId());
+		hr::gl::glBindProgramPipeline(mRenderData.progPipeline.id());
 
 		mRenderData.sampler.bind(0);
 		mRenderData.texColor.bind(0);

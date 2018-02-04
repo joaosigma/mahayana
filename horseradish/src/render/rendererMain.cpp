@@ -19,9 +19,9 @@ namespace hr { namespace render
 		hr::gl::glDepthMask(GL_TRUE);
 		hr::gl::glDepthFunc(GL_LEQUAL);
 
-		hr::gl::glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		hr::gl::glClear(GL_DEPTH_BUFFER_BIT);
 
-		hr::gl::glBindProgramPipeline(mShaders.forwardPassZ.pipeline.getId());
+		hr::gl::glBindProgramPipeline(mShaders.forwardPassZ.pipeline.id());
 
 		mWorld.mRenderData.vboIndirectDraw.bind();
 		for (auto& curObject : mWorld.mRenderData.objects)
@@ -35,23 +35,16 @@ namespace hr { namespace render
 
 	void RendererMain::passLighting(const tools::Camera& hrCamera, const hr::gl::tools::Viewport& hrViewport)
 	{
-		mWorld.mRenderData.vaoMesh.bind();
-		mFBOs.fboForward.bind();
-		mFBOs.fboForward.drawBuffers<3>({ GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2 });
-
 		hr::gl::glEnable(GL_DEPTH_TEST);
 		hr::gl::glDepthMask(GL_FALSE);
-		hr::gl::glDepthFunc(GL_EQUAL); //match against already written Z
+		hr::gl::glDepthFunc(GL_EQUAL); //match against already written Z (on the depth pass)
 		
-		hr::gl::glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-		hr::gl::glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-		hr::gl::glClear(GL_COLOR_BUFFER_BIT);
-
-		hr::gl::glBindProgramPipeline(mShaders.forwardPassLighting.pipeline.getId());
+		hr::gl::glBindProgramPipeline(mShaders.forwardPassLighting.pipeline.id());
 
 		mSamplers.samplerNormals.bind(1);
 		mSamplers.samplerAlbedo.bind(0);
 
+		mWorld.mRenderData.vaoMesh.bind();
 		mWorld.mRenderData.vboIndirectDraw.bind();
 		for (auto& curObject : mWorld.mRenderData.objects)
 		{			
@@ -74,8 +67,8 @@ namespace hr { namespace render
 
 	void RendererMain::passSky(const tools::Camera& hrCamera, const hr::gl::tools::Viewport& hrViewport)
 	{
-		auto winX = hrViewport.width();
-		auto winY = hrViewport.height();
+		mFBOs.fboForward.bind();
+		mFBOs.fboForward.drawBuffers<3>({ GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2 });
 
 		hr::gl::glEnable(GL_DEPTH_TEST);
 		hr::gl::glDepthMask(GL_FALSE);
@@ -88,9 +81,9 @@ namespace hr { namespace render
 			matrixProjection = hrViewport.getProjection(hr::gl::tools::Viewport::ProjectionType::Proj3D);
 		}
 
-		hr::gl::glProgramUniformMatrix4fv(mShaders.forwardPassSky.vertex.getId(), mShaders.forwardPassSky.vertex.getUniformLocation("modelviewMatrix"), 1, false, matrixModelView.data());
-		hr::gl::glProgramUniformMatrix4fv(mShaders.forwardPassSky.vertex.getId(), mShaders.forwardPassSky.vertex.getUniformLocation("projectionMatrix"), 1, false, matrixProjection.data());
-		hr::gl::glBindProgramPipeline(mShaders.forwardPassSky.pipeline.getId());
+		hr::gl::glProgramUniformMatrix4fv(mShaders.forwardPassSky.vertex.id(), mShaders.forwardPassSky.vertex.getUniformLocation("modelviewMatrix"), 1, false, matrixModelView.data());
+		hr::gl::glProgramUniformMatrix4fv(mShaders.forwardPassSky.vertex.id(), mShaders.forwardPassSky.vertex.getUniformLocation("projectionMatrix"), 1, false, matrixProjection.data());
+		hr::gl::glBindProgramPipeline(mShaders.forwardPassSky.pipeline.id());
 
 		mSamplers.samplerSky.bind(0);
 		mTexSky.bind(0);
@@ -122,14 +115,31 @@ namespace hr { namespace render
 		hr::gl::glDisable(GL_DEPTH_TEST);
 		hr::gl::glDepthMask(GL_FALSE);
 
-		hr::gl::glProgramUniformMatrix4fv(mShaders.postprocess.vertex.getId(), mShaders.postprocess.vertex.getUniformLocation("projectionMatrix"), 1, false, hrViewport.getProjection(hr::gl::tools::Viewport::ProjectionType::Proj2D).data());
-		hr::gl::glBindProgramPipeline(mShaders.postprocess.pipeline.getId());
 
+		{
+			hr::gl::glMemoryBarrier(GL_FRAMEBUFFER_BARRIER_BIT);
+
+			hr::gl::glBindProgramPipeline(mShaders.postprocess.computeSaturatePipeline.id());
+			hr::gl::glBindImageTexture(0, mFBOs.texLighting.id(), 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA16F);
+			hr::gl::glBindImageTexture(1, mFBOs.texAvgLuminance.id(), 0, GL_FALSE, 0, GL_READ_WRITE, GL_R16F);
+			hr::gl::glDispatchCompute(mFBOs.texLighting.width() /4, mFBOs.texLighting.height()/4, 1);
+
+			hr::gl::glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+
+			mFBOs.texAvgLuminance.genMipmaps();
+		}
+
+
+		hr::gl::glProgramUniformMatrix4fv(mShaders.postprocess.vertex.id(), mShaders.postprocess.vertex.getUniformLocation("projectionMatrix"), 1, false, hrViewport.getProjection(hr::gl::tools::Viewport::ProjectionType::Proj2D).data());
+		hr::gl::glBindProgramPipeline(mShaders.postprocess.pipeline.id());
+
+		mFBOs.samplerLuminance.bind(3);
 		mFBOs.samplerTex.bind(3);
 		mFBOs.samplerTex.bind(2);
 		mFBOs.samplerTex.bind(1);
 		mFBOs.samplerTex.bind(0);
 
+		mFBOs.texAvgLuminance.bind(4);
 		mFBOs.texZ.bind(3);
 		mFBOs.texSpecular.bind(2);
 		mFBOs.texNormals.bind(1);
@@ -137,7 +147,7 @@ namespace hr { namespace render
 
 		mGlImmediateMode.beginDraw(hr::gl::tools::ImmediateMode::GeometryType::Quads);
 			mGlImmediateMode.setColorF(1.0f);
-			mGlImmediateMode.addQuadTexCoords(0.0f, 0.0f, static_cast<float>(winX), static_cast<float>(winY), false);
+			mGlImmediateMode.addQuadTexCoords(0.0f, 0.0f, static_cast<float>(winX), static_cast<float>(winY), true);
 		mGlImmediateMode.endDraw();
 	}
 
@@ -215,23 +225,23 @@ namespace hr { namespace render
 		mWorld.mRenderData.vaoMesh.reset();
 		mWorld.mRenderData.vaoMesh.init();
 
-		hr::gl::glEnableVertexArrayAttrib(mWorld.mRenderData.vaoMesh.getId(), 0);
-		hr::gl::glEnableVertexArrayAttrib(mWorld.mRenderData.vaoMesh.getId(), 1);
-		hr::gl::glEnableVertexArrayAttrib(mWorld.mRenderData.vaoMesh.getId(), 2);
-		hr::gl::glEnableVertexArrayAttrib(mWorld.mRenderData.vaoMesh.getId(), 3);
+		hr::gl::glEnableVertexArrayAttrib(mWorld.mRenderData.vaoMesh.id(), 0);
+		hr::gl::glEnableVertexArrayAttrib(mWorld.mRenderData.vaoMesh.id(), 1);
+		hr::gl::glEnableVertexArrayAttrib(mWorld.mRenderData.vaoMesh.id(), 2);
+		hr::gl::glEnableVertexArrayAttrib(mWorld.mRenderData.vaoMesh.id(), 3);
 
-		hr::gl::glVertexArrayAttribBinding(mWorld.mRenderData.vaoMesh.getId(), 0, 0);
-		hr::gl::glVertexArrayAttribBinding(mWorld.mRenderData.vaoMesh.getId(), 1, 0);
-		hr::gl::glVertexArrayAttribBinding(mWorld.mRenderData.vaoMesh.getId(), 2, 0);
-		hr::gl::glVertexArrayAttribBinding(mWorld.mRenderData.vaoMesh.getId(), 3, 0);
+		hr::gl::glVertexArrayAttribBinding(mWorld.mRenderData.vaoMesh.id(), 0, 0);
+		hr::gl::glVertexArrayAttribBinding(mWorld.mRenderData.vaoMesh.id(), 1, 0);
+		hr::gl::glVertexArrayAttribBinding(mWorld.mRenderData.vaoMesh.id(), 2, 0);
+		hr::gl::glVertexArrayAttribBinding(mWorld.mRenderData.vaoMesh.id(), 3, 0);
 
-		hr::gl::glVertexArrayAttribFormat(mWorld.mRenderData.vaoMesh.getId(), 0, 3, GL_FLOAT, false, offsetof(hr::geom::Mesh::VertexData, pos));
-		hr::gl::glVertexArrayAttribFormat(mWorld.mRenderData.vaoMesh.getId(), 1, 2, GL_FLOAT, false, offsetof(hr::geom::Mesh::VertexData, uv));
-		hr::gl::glVertexArrayAttribFormat(mWorld.mRenderData.vaoMesh.getId(), 2, 3, GL_SHORT, true, offsetof(hr::geom::Mesh::VertexData, normal));
-		hr::gl::glVertexArrayAttribFormat(mWorld.mRenderData.vaoMesh.getId(), 3, 4, GL_SHORT, true, offsetof(hr::geom::Mesh::VertexData, tangent));
+		hr::gl::glVertexArrayAttribFormat(mWorld.mRenderData.vaoMesh.id(), 0, 3, GL_FLOAT, false, offsetof(hr::geom::Mesh::VertexData, pos));
+		hr::gl::glVertexArrayAttribFormat(mWorld.mRenderData.vaoMesh.id(), 1, 2, GL_FLOAT, false, offsetof(hr::geom::Mesh::VertexData, uv));
+		hr::gl::glVertexArrayAttribFormat(mWorld.mRenderData.vaoMesh.id(), 2, 3, GL_SHORT, true, offsetof(hr::geom::Mesh::VertexData, normal));
+		hr::gl::glVertexArrayAttribFormat(mWorld.mRenderData.vaoMesh.id(), 3, 4, GL_SHORT, true, offsetof(hr::geom::Mesh::VertexData, tangent));
 
-		hr::gl::glVertexArrayElementBuffer(mWorld.mRenderData.vaoMesh.getId(), mWorld.mRenderData.vboMeshIndexData.getId());
-		hr::gl::glVertexArrayVertexBuffer(mWorld.mRenderData.vaoMesh.getId(), 0, mWorld.mRenderData.vboMeshData.getId(), 0, sizeof(hr::geom::Mesh::VertexData));
+		hr::gl::glVertexArrayElementBuffer(mWorld.mRenderData.vaoMesh.id(), mWorld.mRenderData.vboMeshIndexData.id());
+		hr::gl::glVertexArrayVertexBuffer(mWorld.mRenderData.vaoMesh.id(), 0, mWorld.mRenderData.vboMeshData.id(), 0, sizeof(hr::geom::Mesh::VertexData));
 	}
 
 	void RendererMain::loadDiffuse(const std::string& texFilePath, hr::gl::objects::Texture& targetTexture, bool compress)
@@ -421,6 +431,7 @@ namespace hr { namespace render
 		mFBOs.texNormals.init(hr::gl::objects::Texture::Type::TexRectangle, hr::gl::objects::Texture::StorageType::RGBA_16F, renderWidth, renderHeight);
 		mFBOs.texSpecular.init(hr::gl::objects::Texture::Type::TexRectangle, hr::gl::objects::Texture::StorageType::RGBA_8, renderWidth, renderHeight);
 		mFBOs.texZ.init(hr::gl::objects::Texture::Type::TexRectangle, hr::gl::objects::Texture::StorageType::DEPTH_24, renderWidth, renderHeight);
+		mFBOs.texAvgLuminance.init(hr::gl::objects::Texture::Type::Tex2D, hr::gl::objects::Texture::StorageType::R_16F, renderWidth, renderHeight);
 
 		mFBOs.fboZPass.reset();
 		mFBOs.fboZPass.init();
@@ -439,9 +450,14 @@ namespace hr { namespace render
 
 		//samplers for the FBOs
 		mFBOs.samplerTex.init();
-		mFBOs.samplerTex.setMinFilter(hr::gl::objects::Sampler::FilterType::Point);
 		mFBOs.samplerTex.setMagFilter(hr::gl::objects::Sampler::FilterType::Point);
+		mFBOs.samplerTex.setMinFilter(hr::gl::objects::Sampler::FilterType::Point);
 		mFBOs.samplerTex.setWrap(hr::gl::objects::Sampler::WrapType::ClampEdge);
+
+		mFBOs.samplerLuminance.init();
+		mFBOs.samplerLuminance.setMagFilter(hr::gl::objects::Sampler::FilterType::Linear);
+		mFBOs.samplerLuminance.setMinFilter(hr::gl::objects::Sampler::FilterType::LinearMipLinear);
+		mFBOs.samplerLuminance.setWrap(hr::gl::objects::Sampler::WrapType::ClampEdge);
 
 		//shaders
 		mShaders.forwardPassZ.vertex.init(hr::gl::objects::ShaderProgram::Type::Vertex, mFileSystem.readFileAsString("shaders/rPassZ.vshader"));
@@ -457,9 +473,7 @@ namespace hr { namespace render
 		mShaders.forwardPassLighting.pipeline.setStage(mShaders.forwardPassLighting.fragment);
 
 		mShaders.forwardPassSky.vertex.init(hr::gl::objects::ShaderProgram::Type::Vertex, mFileSystem.readFileAsString("shaders/rPassSky.vshader"));
-		mShaders.forwardPassSky.vertex.getInfoLog();
 		mShaders.forwardPassSky.fragment.init(hr::gl::objects::ShaderProgram::Type::Fragment, mFileSystem.readFileAsString("shaders/rPassSky.fshader"));
-		mShaders.forwardPassSky.fragment.getInfoLog();
 		mShaders.forwardPassSky.pipeline.init();
 		mShaders.forwardPassSky.pipeline.setStage(mShaders.forwardPassSky.vertex);
 		mShaders.forwardPassSky.pipeline.setStage(mShaders.forwardPassSky.fragment);
@@ -469,6 +483,10 @@ namespace hr { namespace render
 		mShaders.postprocess.pipeline.init();
 		mShaders.postprocess.pipeline.setStage(mShaders.postprocess.vertex);
 		mShaders.postprocess.pipeline.setStage(mShaders.postprocess.fragment);
+
+		mShaders.postprocess.computeSaturateShader.init(hr::gl::objects::ShaderProgram::Type::Compute, mFileSystem.readFileAsString("shaders/rSaturatePP.cshader"));
+		mShaders.postprocess.computeSaturatePipeline.init();
+		mShaders.postprocess.computeSaturatePipeline.setStage(mShaders.postprocess.computeSaturateShader);
 
 		//buffers
 		mShaders.forwardPassBuffers.uniform.init(hr::gl::objects::Buffer::Type::UniformBuffer, sizeof(Shaders::UniformLayout), hr::gl::objects::Buffer::UsageType::PersistentOnlyWrite);
@@ -522,7 +540,7 @@ namespace hr { namespace render
 				uniformData.numLights = numLights;
 
 				mShaders.forwardPassBuffers.uniform.writeData(&uniformData, sizeof(Shaders::UniformLayout), 0);
-				hr::gl::glBindBufferBase(GL_UNIFORM_BUFFER, 1, mShaders.forwardPassBuffers.uniform.getId());
+				hr::gl::glBindBufferBase(GL_UNIFORM_BUFFER, 1, mShaders.forwardPassBuffers.uniform.id());
 			}
 
 			//shader storage buffer common to every pass is prepared/set here
@@ -546,16 +564,15 @@ namespace hr { namespace render
 					}
 
 					mShaders.forwardPassBuffers.storage.writeData(storageData.data(), sizeof(Shaders::LightLayout) * numLights, 0);
-					hr::gl::glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, mShaders.forwardPassBuffers.storage.getId());
+					hr::gl::glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, mShaders.forwardPassBuffers.storage.id());
 				}
 			}
 
 			passDepth(hrCamera, hrViewport);
+			passSky(hrCamera, hrViewport);
 			passLighting(hrCamera, hrViewport);
 
 		mShaders.forwardPassBuffers.fence.place();
-
-		passSky(hrCamera, hrViewport);
 	}
 
 	void RendererMain::renderDebug(RendererDebug& rendererDebug, const tools::Camera& hrCamera, const hr::gl::tools::Viewport& hrViewport)

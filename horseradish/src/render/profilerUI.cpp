@@ -89,8 +89,8 @@ namespace hr { namespace render
 		float posX = viewRect.width - guiFont.getTextWidth(mInfoStr) - 10.0f;
 		float posY = viewRect.height - guiFont.getMaxHeight() - 15.0f;
 
-		hr::gl::glBindProgramPipeline(mRenderer.mShaders.drawNoTex.progPipeline.getId());
-		hr::gl::glProgramUniformMatrix4fv(mRenderer.mShaders.drawNoTex.progVertex.getId(), mRenderer.mShaders.drawNoTex.progVertex.getUniformLocation("transformationMatrix"), 1, false, transformMatrix.data());
+		hr::gl::glBindProgramPipeline(mRenderer.mShaders.drawNoTex.progPipeline.id());
+		hr::gl::glProgramUniformMatrix4fv(mRenderer.mShaders.drawNoTex.progVertex.id(), mRenderer.mShaders.drawNoTex.progVertex.getUniformLocation("transformationMatrix"), 1, false, transformMatrix.data());
 
 		glImmediateMode.beginDraw(hr::gl::tools::ImmediateMode::GeometryType::LineStrip);
 			glImmediateMode.setColor(128, 128, 128);
@@ -199,8 +199,8 @@ namespace hr { namespace render
 
 	void ProfilerUI::drawStatsBackground(const hr::Rectangle<float>& viewRect, const hr::Matrix &transformMatrix, float bkgAlpha) const
 	{
-		hr::gl::glBindProgramPipeline(mRenderer.mShaders.drawNoTex.progPipeline.getId());
-		hr::gl::glProgramUniformMatrix4fv(mRenderer.mShaders.drawNoTex.progVertex.getId(), mRenderer.mShaders.drawNoTex.progVertex.getUniformLocation("transformationMatrix"), 1, false, transformMatrix.data());
+		hr::gl::glBindProgramPipeline(mRenderer.mShaders.drawNoTex.progPipeline.id());
+		hr::gl::glProgramUniformMatrix4fv(mRenderer.mShaders.drawNoTex.progVertex.id(), mRenderer.mShaders.drawNoTex.progVertex.getUniformLocation("transformationMatrix"), 1, false, transformMatrix.data());
 
 		auto& glImmediateMode = mRenderer.mGlImmediateMode;
 		auto& guiFont = *mRenderer.mGui.font;

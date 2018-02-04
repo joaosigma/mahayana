@@ -31,8 +31,8 @@ namespace hr { namespace render
 			hr::Matrix matrixTransform = hrViewport.getProjection(hr::gl::tools::Viewport::ProjectionType::Proj3D);
 			matrixTransform *= hrCamera.modelView();
 
-			hr::gl::glBindProgramPipeline(mRenderer2D.mShaders.drawNoTex.progPipeline.getId());
-			hr::gl::glProgramUniformMatrix4fv(mRenderer2D.mShaders.drawNoTex.progVertex.getId(), mRenderer2D.mShaders.drawNoTex.progVertex.getUniformLocation("transformationMatrix"), 1, false, matrixTransform.data());
+			hr::gl::glBindProgramPipeline(mRenderer2D.mShaders.drawNoTex.progPipeline.id());
+			hr::gl::glProgramUniformMatrix4fv(mRenderer2D.mShaders.drawNoTex.progVertex.id(), mRenderer2D.mShaders.drawNoTex.progVertex.getUniformLocation("transformationMatrix"), 1, false, matrixTransform.data());
 		}
 
 		for (auto& curObject : mWorld.mRenderData.objects)
@@ -103,8 +103,8 @@ namespace hr { namespace render
 			matrixTransform = hrViewport.getProjection(hr::gl::tools::Viewport::ProjectionType::Proj3D);
 			matrixTransform *= hrCamera.modelView();
 
-			hr::gl::glProgramUniformMatrix4fv(mShaders.geomDebug.vertex.getId(), mShaders.geomDebug.vertex.getUniformLocation("matTrans"), 1, false, matrixTransform.data());
-			hr::gl::glBindProgramPipeline(mShaders.geomDebug.pipeline.getId());
+			hr::gl::glProgramUniformMatrix4fv(mShaders.geomDebug.vertex.id(), mShaders.geomDebug.vertex.getUniformLocation("matTrans"), 1, false, matrixTransform.data());
+			hr::gl::glBindProgramPipeline(mShaders.geomDebug.pipeline.id());
 
 			hr::gl::glDepthMask(GL_FALSE);
 			hr::gl::glDepthFunc(GL_GEQUAL);
