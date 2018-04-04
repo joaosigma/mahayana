@@ -8,11 +8,11 @@
 #include <cstddef>
 #include <algorithm>
 
-namespace hr { namespace render
+namespace hr::render
 {
-	void RendererMain::passDepth(const tools::Camera& hrCamera, const hr::gl::tools::Viewport& hrViewport)
+	void RendererMain::passDepth(Scene& scene, const tools::Camera& hrCamera, const hr::gl::tools::Viewport& hrViewport)
 	{
-		mWorld.mRenderData.vaoMesh.bind();
+		scene.mRenderData.vaoMesh.bind();
 		mFBOs.fboZPass.bind();
 
 		hr::gl::glEnable(GL_DEPTH_TEST);
@@ -23,17 +23,15 @@ namespace hr { namespace render
 
 		hr::gl::glBindProgramPipeline(mShaders.forwardPassZ.pipeline.id());
 
-		mWorld.mRenderData.vboIndirectDraw.bind();
-		for (auto& curObject : mWorld.mRenderData.objects)
+		scene.mRenderData.vboIndirectDraw.bind();
+		for (auto& curObject : scene.mRenderData.objects)
 		{
-			auto& concept = mWorld.mConcepts[curObject->conceptId];
-
-			hr::gl::glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_SHORT, reinterpret_cast<void*>(concept.renderData.meshDrawIndirectOffset), 1, 0);
+			hr::gl::glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_SHORT, reinterpret_cast<void*>(curObject->meshDrawIndirectOffset), 1, 0);
 		}
-		mWorld.mRenderData.vboIndirectDraw.unbind();
+		scene.mRenderData.vboIndirectDraw.unbind();
 	}
 
-	void RendererMain::passLighting(const tools::Camera& hrCamera, const hr::gl::tools::Viewport& hrViewport)
+	void RendererMain::passLighting(Scene& scene, const tools::Camera& hrCamera, const hr::gl::tools::Viewport& hrViewport)
 	{
 		hr::gl::glEnable(GL_DEPTH_TEST);
 		hr::gl::glDepthMask(GL_FALSE);
@@ -44,28 +42,26 @@ namespace hr { namespace render
 		mSamplers.samplerNormals.bind(1);
 		mSamplers.samplerAlbedo.bind(0);
 
-		mWorld.mRenderData.vaoMesh.bind();
-		mWorld.mRenderData.vboIndirectDraw.bind();
-		for (auto& curObject : mWorld.mRenderData.objects)
+		scene.mRenderData.vaoMesh.bind();
+		scene.mRenderData.vboIndirectDraw.bind();
+		for (auto& curObject : scene.mRenderData.objects)
 		{			
-			auto& concept = mWorld.mConcepts[curObject->conceptId];
-
-			if (concept.renderData.texNormal.isValid())
-				concept.renderData.texNormal.bind(1);
+			if (curObject->texNormal.isValid())
+				curObject->texNormal.bind(1);
 			else
 				mTexDefaultNormals.bind(1);
 
-			if (concept.renderData.texDiffuse.isValid())
-				concept.renderData.texDiffuse.bind(0);
+			if (curObject->texDiffuse.isValid())
+				curObject->texDiffuse.bind(0);
 			else
 				mTexDefaultAlbedo.bind(0);
 
-			hr::gl::glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_SHORT, reinterpret_cast<void*>(concept.renderData.meshDrawIndirectOffset), 1, 0);
+			hr::gl::glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_SHORT, reinterpret_cast<void*>(curObject->meshDrawIndirectOffset), 1, 0);
 		}
-		mWorld.mRenderData.vboIndirectDraw.unbind();
+		scene.mRenderData.vboIndirectDraw.unbind();
 	}
 
-	void RendererMain::passSky(const tools::Camera& hrCamera, const hr::gl::tools::Viewport& hrViewport)
+	void RendererMain::passSky(Scene& scene, const tools::Camera& hrCamera, const hr::gl::tools::Viewport& hrViewport)
 	{
 		mFBOs.fboForward.bind();
 		mFBOs.fboForward.drawBuffers<3>({ GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2 });
@@ -115,7 +111,6 @@ namespace hr { namespace render
 		hr::gl::glDisable(GL_DEPTH_TEST);
 		hr::gl::glDepthMask(GL_FALSE);
 
-
 		{
 			hr::gl::glMemoryBarrier(GL_FRAMEBUFFER_BARRIER_BIT);
 
@@ -128,7 +123,6 @@ namespace hr { namespace render
 
 			mFBOs.texAvgLuminance.genMipmaps();
 		}
-
 
 		hr::gl::glProgramUniformMatrix4fv(mShaders.postprocess.vertex.id(), mShaders.postprocess.vertex.getUniformLocation("projectionMatrix"), 1, false, hrViewport.getProjection(hr::gl::tools::Viewport::ProjectionType::Proj2D).data());
 		hr::gl::glBindProgramPipeline(mShaders.postprocess.pipeline.id());
@@ -151,105 +145,117 @@ namespace hr { namespace render
 		mGlImmediateMode.endDraw();
 	}
 
-	void RendererMain::loadGeometry()
+	void RendererMain::loadGeometry(Scene& scene, const IRenderObjectManager& manager)
 	{
-		mWorld.mRenderData.vboMeshData.reset();
-		mWorld.mRenderData.vboMeshIndexData.reset();
+		scene.mObjects.reserve(manager.numObjects());
+
+		scene.mRenderData.vboMeshData.reset();
+		scene.mRenderData.vboMeshIndexData.reset();
 
 		size_t vboMeshSize = 0, vboMeshIndexSize = 0;
-		for (const auto& concept : mWorld.mConcepts)
+		manager.iterateObjects([&vboMeshSize, &vboMeshIndexSize](IRenderObject& obj)
 		{
-			vboMeshSize += sizeof(hr::geom::Mesh::VertexData) * concept.second.geom.numVertices;
-			vboMeshIndexSize += sizeof(unsigned short) * concept.second.geom.numIndices;
-		}
+			vboMeshSize += sizeof(hr::geom::Mesh::VertexData) * obj.numVertices();
+			vboMeshIndexSize += sizeof(unsigned short) * obj.numIndices();
+		});
 
-		mWorld.mRenderData.vboMeshData.init(gl::objects::Buffer::Type::ArrayBuffer, vboMeshSize, gl::objects::Buffer::UsageType::PersistentOnlyWrite);
-		mWorld.mRenderData.vboMeshIndexData.init(gl::objects::Buffer::Type::ElementArrayBuffer, vboMeshIndexSize, gl::objects::Buffer::UsageType::PersistentOnlyWrite);
+		scene.mRenderData.vboMeshData.init(gl::objects::Buffer::Type::ArrayBuffer, vboMeshSize, gl::objects::Buffer::UsageType::PersistentOnlyWrite);
+		scene.mRenderData.vboMeshIndexData.init(gl::objects::Buffer::Type::ElementArrayBuffer, vboMeshIndexSize, gl::objects::Buffer::UsageType::PersistentOnlyWrite);
 
 		int baseVertexOffset = 0;
 		int poolVertex = 0, poolIndex = 0;
 		int numGeoms = 0;
-		for (auto& concept : mWorld.mConcepts)
+		manager.iterateObjects([&](IRenderObject& obj)
 		{
+			auto& mesh = scene.mObjects[obj.id()];
+
 			numGeoms++;
-			concept.second.renderData.meshVBOVertexOffset = baseVertexOffset;
-			concept.second.renderData.meshTriListOffset = (void*)poolIndex;
+			mesh.bbox = obj.bbox();
+			mesh.meshVBOVertexOffset = baseVertexOffset;
+			mesh.meshTriListOffset = (void*)poolIndex;
 
-			auto sizeVertices = sizeof(hr::geom::Mesh::VertexData) * concept.second.geom.numVertices;
-			auto sizeIndices = sizeof(unsigned short) * concept.second.geom.numIndices;
-
-			mWorld.mRenderData.vboMeshData.writeData([this, &concept](void* const destBuffer, size_t requestedDataSize)
+			//vertices
 			{
-				mWorld.mGeomFileStream.seek(hr::streams::Stream::SeekOrigin::Begin, concept.second.geom.fstreamVertexOffset);
-				auto bytesRead = mWorld.mGeomFileStream.read(destBuffer, requestedDataSize);
-				assert(bytesRead == requestedDataSize);
+				auto sizeVertices = sizeof(hr::geom::Mesh::VertexData) * obj.numVertices();
 
-			}, sizeVertices, poolVertex);
-			poolVertex += sizeVertices;
+				scene.mRenderData.vboMeshData.writeData([&obj](void* const destBuffer, size_t requestedDataSize)
+				{
+					auto bytesRead = obj.readVertices(destBuffer, requestedDataSize);
+					assert(bytesRead == requestedDataSize);
 
-			baseVertexOffset += concept.second.geom.numVertices;
+				}, sizeVertices, poolVertex);
+				poolVertex += sizeVertices;
 
-			mWorld.mRenderData.vboMeshIndexData.writeData([this, &concept, &sizeVertices](void* const destBuffer, size_t requestedDataSize)
+				baseVertexOffset += obj.numVertices();
+			}
+
+			//indices
 			{
-				mWorld.mGeomFileStream.seek(hr::streams::Stream::SeekOrigin::Begin, concept.second.geom.fstreamIndexOffset);
-				auto bytesRead = mWorld.mGeomFileStream.read(destBuffer, requestedDataSize);
-				assert(bytesRead == requestedDataSize);
+				auto sizeIndices = sizeof(unsigned short) * obj.numIndices();
 
-			}, sizeIndices, poolIndex);
-			poolIndex += sizeIndices;
-		}
+				scene.mRenderData.vboMeshIndexData.writeData([&obj](void* const destBuffer, size_t requestedDataSize)
+				{
+					auto bytesRead = obj.readIndices(destBuffer, requestedDataSize);
+					assert(bytesRead == requestedDataSize);
+
+				}, sizeIndices, poolIndex);
+				poolIndex += sizeIndices;
+			}
+		});
 
 		{
 			auto drawCommands = std::unique_ptr<gl::objects::Buffer::DrawElementsIndirectCommand[]>(new gl::objects::Buffer::DrawElementsIndirectCommand[numGeoms]);
 
 			numGeoms = 0;
-			for (auto& concept : mWorld.mConcepts)
+			manager.iterateObjects([&](IRenderObject& obj)
 			{
+				auto& mesh = scene.mObjects[obj.id()];
+
 				gl::objects::Buffer::DrawElementsIndirectCommand drawIndirect;
 				drawIndirect.baseInstance = 0;
-				drawIndirect.baseVertex = concept.second.renderData.meshVBOVertexOffset;
-				drawIndirect.count = concept.second.geom.numIndices;
-				drawIndirect.firstIndex = ((unsigned int)concept.second.renderData.meshTriListOffset) / sizeof(unsigned short);
+				drawIndirect.baseVertex = mesh.meshVBOVertexOffset;
+				drawIndirect.count = obj.numIndices();
+				drawIndirect.firstIndex = ((unsigned int)mesh.meshTriListOffset) / sizeof(unsigned short);
 				drawIndirect.instanceCount = 1;
 
-				concept.second.renderData.meshDrawIndirectOffset = sizeof(gl::objects::Buffer::DrawElementsIndirectCommand) * numGeoms;
+				mesh.meshDrawIndirectOffset = sizeof(gl::objects::Buffer::DrawElementsIndirectCommand) * numGeoms;
 
 				drawCommands[numGeoms] = drawIndirect;
 				numGeoms++;
-			}
+			});
 
-			mWorld.mRenderData.vboIndirectDraw.reset();
-			mWorld.mRenderData.vboIndirectDraw.init(gl::objects::Buffer::Type::DrawIndirect, drawCommands.get(), sizeof(gl::objects::Buffer::DrawElementsIndirectCommand) * numGeoms, gl::objects::Buffer::UsageType::ServerStatic);
+			scene.mRenderData.vboIndirectDraw.reset();
+			scene.mRenderData.vboIndirectDraw.init(gl::objects::Buffer::Type::DrawIndirect, drawCommands.get(), sizeof(gl::objects::Buffer::DrawElementsIndirectCommand) * numGeoms, gl::objects::Buffer::UsageType::ServerStatic);
 		}
 
-		mWorld.mRenderData.vaoMesh.reset();
-		mWorld.mRenderData.vaoMesh.init();
+		scene.mRenderData.vaoMesh.reset();
+		scene.mRenderData.vaoMesh.init();
 
-		hr::gl::glEnableVertexArrayAttrib(mWorld.mRenderData.vaoMesh.id(), 0);
-		hr::gl::glEnableVertexArrayAttrib(mWorld.mRenderData.vaoMesh.id(), 1);
-		hr::gl::glEnableVertexArrayAttrib(mWorld.mRenderData.vaoMesh.id(), 2);
-		hr::gl::glEnableVertexArrayAttrib(mWorld.mRenderData.vaoMesh.id(), 3);
+		hr::gl::glEnableVertexArrayAttrib(scene.mRenderData.vaoMesh.id(), 0);
+		hr::gl::glEnableVertexArrayAttrib(scene.mRenderData.vaoMesh.id(), 1);
+		hr::gl::glEnableVertexArrayAttrib(scene.mRenderData.vaoMesh.id(), 2);
+		hr::gl::glEnableVertexArrayAttrib(scene.mRenderData.vaoMesh.id(), 3);
 
-		hr::gl::glVertexArrayAttribBinding(mWorld.mRenderData.vaoMesh.id(), 0, 0);
-		hr::gl::glVertexArrayAttribBinding(mWorld.mRenderData.vaoMesh.id(), 1, 0);
-		hr::gl::glVertexArrayAttribBinding(mWorld.mRenderData.vaoMesh.id(), 2, 0);
-		hr::gl::glVertexArrayAttribBinding(mWorld.mRenderData.vaoMesh.id(), 3, 0);
+		hr::gl::glVertexArrayAttribBinding(scene.mRenderData.vaoMesh.id(), 0, 0);
+		hr::gl::glVertexArrayAttribBinding(scene.mRenderData.vaoMesh.id(), 1, 0);
+		hr::gl::glVertexArrayAttribBinding(scene.mRenderData.vaoMesh.id(), 2, 0);
+		hr::gl::glVertexArrayAttribBinding(scene.mRenderData.vaoMesh.id(), 3, 0);
 
-		hr::gl::glVertexArrayAttribFormat(mWorld.mRenderData.vaoMesh.id(), 0, 3, GL_FLOAT, false, offsetof(hr::geom::Mesh::VertexData, pos));
-		hr::gl::glVertexArrayAttribFormat(mWorld.mRenderData.vaoMesh.id(), 1, 2, GL_FLOAT, false, offsetof(hr::geom::Mesh::VertexData, uv));
-		hr::gl::glVertexArrayAttribFormat(mWorld.mRenderData.vaoMesh.id(), 2, 3, GL_SHORT, true, offsetof(hr::geom::Mesh::VertexData, normal));
-		hr::gl::glVertexArrayAttribFormat(mWorld.mRenderData.vaoMesh.id(), 3, 4, GL_SHORT, true, offsetof(hr::geom::Mesh::VertexData, tangent));
+		hr::gl::glVertexArrayAttribFormat(scene.mRenderData.vaoMesh.id(), 0, 3, GL_FLOAT, false, offsetof(hr::geom::Mesh::VertexData, pos));
+		hr::gl::glVertexArrayAttribFormat(scene.mRenderData.vaoMesh.id(), 1, 2, GL_FLOAT, false, offsetof(hr::geom::Mesh::VertexData, uv));
+		hr::gl::glVertexArrayAttribFormat(scene.mRenderData.vaoMesh.id(), 2, 3, GL_SHORT, true, offsetof(hr::geom::Mesh::VertexData, normal));
+		hr::gl::glVertexArrayAttribFormat(scene.mRenderData.vaoMesh.id(), 3, 4, GL_SHORT, true, offsetof(hr::geom::Mesh::VertexData, tangent));
 
-		hr::gl::glVertexArrayElementBuffer(mWorld.mRenderData.vaoMesh.id(), mWorld.mRenderData.vboMeshIndexData.id());
-		hr::gl::glVertexArrayVertexBuffer(mWorld.mRenderData.vaoMesh.id(), 0, mWorld.mRenderData.vboMeshData.id(), 0, sizeof(hr::geom::Mesh::VertexData));
+		hr::gl::glVertexArrayElementBuffer(scene.mRenderData.vaoMesh.id(), scene.mRenderData.vboMeshIndexData.id());
+		hr::gl::glVertexArrayVertexBuffer(scene.mRenderData.vaoMesh.id(), 0, scene.mRenderData.vboMeshData.id(), 0, sizeof(hr::geom::Mesh::VertexData));
 	}
 
-	void RendererMain::loadDiffuse(const std::string& texFilePath, hr::gl::objects::Texture& targetTexture, bool compress)
+	void RendererMain::loadDiffuse(std::string_view texFilePath, hr::gl::objects::Texture& targetTexture, bool compress)
 	{
 		if (texFilePath.empty())
 			return;
 
-		auto compressedPath = "../" + texFilePath + ".hrctex";
+		auto compressedPath = "../" + std::string(texFilePath) + ".hrctex";
 
 		//texture is compressed
 		if (mFileSystem.fileExists(compressedPath.c_str()))
@@ -263,7 +269,7 @@ namespace hr { namespace render
 		}
 
 		//read source image		
-		auto fileStream = mFileSystem.fileRead(texFilePath.c_str());
+		auto fileStream = mFileSystem.fileRead(texFilePath);
 		if (!fileStream)
 			return;
 
@@ -343,12 +349,12 @@ namespace hr { namespace render
 		}
 	}
 
-	void RendererMain::loadNormal(const std::string& texFilePath, hr::gl::objects::Texture& targetTexture, bool compress)
+	void RendererMain::loadNormal(std::string_view texFilePath, hr::gl::objects::Texture& targetTexture, bool compress)
 	{
 		if (texFilePath.empty())
 			return;
 
-		auto compressedPath = "../" + texFilePath + ".hrctex";
+		auto compressedPath = "../" + std::string(texFilePath) + ".hrctex";
 
 		//texture is compressed
 		if (mFileSystem.fileExists(compressedPath.c_str()))
@@ -362,7 +368,7 @@ namespace hr { namespace render
 		}
 
 		//read source image		
-		auto fileStream = mFileSystem.fileRead(texFilePath.c_str());
+		auto fileStream = mFileSystem.fileRead(texFilePath);
 		if (!fileStream)
 			return;		
 
@@ -399,22 +405,23 @@ namespace hr { namespace render
 		}
 	}
 
-	void RendererMain::loadTextures()
+	void RendererMain::loadTextures(Scene& scene, const IRenderObjectManager& manager)
 	{
-		for (auto& concept : mWorld.mConcepts)
+		manager.iterateObjects([this, &scene](IRenderObject& obj)
 		{
-			concept.second.renderData.texDiffuse.reset();
-			concept.second.renderData.texNormal.reset();
+			auto& mesh = scene.mObjects[obj.id()];
 
-			loadDiffuse(concept.second.matDiffusePath, concept.second.renderData.texDiffuse, true);
-			loadNormal(concept.second.matNormalPath, concept.second.renderData.texNormal, true);
-		}
+			mesh.texDiffuse.reset();
+			mesh.texNormal.reset();
+
+			loadDiffuse(obj.texDiffusePath(), mesh.texDiffuse, true);
+			loadNormal(obj.texNormalPath(), mesh.texNormal, true);
+		});
 	}
 
-	RendererMain::RendererMain(const hr::gl::objects::Context& glContext, hr::io::FileSystem& fileSystem, hr::render::World& renderWorld, size_t renderWidth, size_t renderHeight)
-		: Renderer(glContext)
-		, mWorld(renderWorld)
-		, mFileSystem(fileSystem)
+	RendererMain::RendererMain(const hr::gl::objects::Context& glContext, hr::io::FileSystem& fileSystem, size_t renderWidth, size_t renderHeight)
+		: mFileSystem(fileSystem)
+		, mGlContext(glContext)
 	{
 		loadDiffuse(R"(media\default_albedo.jpg)", mTexDefaultAlbedo, true);
 		loadDiffuse(R"(media\skies\archesPineTree.hdr)", mTexSky, false);
@@ -509,15 +516,31 @@ namespace hr { namespace render
 		mTexDefaultAlbedo.reset();
 		mTexDefaultNormals.reset();
 	}
-	
-	void RendererMain::loadWorld()
+
+	RendererMain::SceneId RendererMain::loadScene(const IRenderObjectManager& manager)
 	{
-		loadGeometry();
-		loadTextures();
+		if (manager.numObjects() == 0)
+			return 0;
+
+		auto id = mGenSceneIds++;
+		auto& scene = mScenes[id];
+
+		loadGeometry(scene, manager);
+		loadTextures(scene, manager);
+
+		return id;
 	}
 
+	void RendererMain::unloadScene(SceneId sceneId)
+	{
+
+	}
+	
 	void RendererMain::render(const tools::Camera& hrCamera, const hr::gl::tools::Viewport& hrViewport)
 	{
+		if (mScenes.empty())
+			return;
+
 		if (mFileSystem.watchChanged(mShadersWatchFolderID))
 		{
 			//reload shaders
@@ -568,20 +591,41 @@ namespace hr { namespace render
 				}
 			}
 
-			passDepth(hrCamera, hrViewport);
-			passSky(hrCamera, hrViewport);
-			passLighting(hrCamera, hrViewport);
+			auto& scene = mScenes.begin()->second;
+
+			passDepth(scene, hrCamera, hrViewport);
+			passSky(scene, hrCamera, hrViewport);
+			passLighting(scene, hrCamera, hrViewport);
 
 		mShaders.forwardPassBuffers.fence.place();
 	}
 
 	void RendererMain::renderDebug(RendererDebug& rendererDebug, const tools::Camera& hrCamera, const hr::gl::tools::Viewport& hrViewport)
 	{
-		rendererDebug.render(hrCamera, hrViewport);
+		rendererDebug.render(*this, hrCamera, hrViewport);
 	}
 
 	void RendererMain::renderComposite(const hr::gl::tools::Viewport& hrViewport)
 	{
 		compositePostProcessing(hrViewport);
 	}
-} }
+
+	void RendererMain::prepareNextFrame(SceneId sceneId, const std::vector<IRenderObject::ObjectId>& objects)
+	{
+		auto sceneIt = mScenes.find(sceneId);
+		if (sceneIt == mScenes.end())
+			return;
+
+		auto& scene = sceneIt->second;
+
+		scene.mRenderData.objects.clear();
+		for (auto&& objectId : objects)
+		{
+			auto objectIt = scene.mObjects.find(objectId);
+			if (objectIt == scene.mObjects.end())
+				continue;
+
+			scene.mRenderData.objects.push_back(&objectIt->second);
+		}
+	}
+}

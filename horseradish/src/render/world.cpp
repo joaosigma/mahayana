@@ -21,49 +21,139 @@
 
 namespace hr { namespace render
 {
-	#pragma pack(push, 1)
-	std::array<unsigned char, 6> GeomFileSig = { 'h', 'r', 'g', 'e', 'o', 'm' };
-
-	struct GeomHeader
+	namespace
 	{
-		unsigned char fileSig[GeomFileSig.size()];
-		unsigned char version;
-		std::uint32_t numGeoms;
-	};
+#pragma pack(push, 1)
+		std::array<unsigned char, 6> GeomFileSig = { 'h', 'r', 'g', 'e', 'o', 'm' };
 
-	struct GeomChunkInfo
-	{
-		std::uint32_t id;
-		std::uint32_t geomsOffset;
-		std::uint32_t size;
-		std::uint32_t numVertices;
-		std::uint32_t numIndices;
-		float bboxMin[3], bboxMax[3];
-	};
-	#pragma pack(pop)
-
-	World::World(const std::string& scenePath, const std::string& geomPath, bool editorMode)
-		: m_editorMode(editorMode)
-	{
-		auto success = loadWorld(scenePath, geomPath);
-		if (!success)
+		struct GeomHeader
 		{
-			cleanup();
-			return;
-		}
+			unsigned char fileSig[GeomFileSig.size()];
+			unsigned char version;
+			std::uint32_t numGeoms;
+		};
+
+		struct GeomChunkInfo
+		{
+			std::uint32_t id;
+			std::uint32_t geomsOffset;
+			std::uint32_t size;
+			std::uint32_t numVertices;
+			std::uint32_t numIndices;
+			float bboxMin[3], bboxMax[3];
+		};
+#pragma pack(pop)
 	}
+
+	class RendererObjectProxy
+		: public hr::render::IRenderObject
+	{
+	public:
+		size_t objectId = 0;
+		struct {
+			hr::BBox bbox;
+			size_t numVertices = 0, numIndices = 0;
+			size_t fstreamVertexOffset = 0, fstreamIndexOffset = 0;
+		} geom;
+		std::string matDiffusePath, matNormalPath;
+		hr::streams::FileStream& fileStream;
+
+	public:
+		RendererObjectProxy(hr::streams::FileStream& fileStream)
+			: fileStream(fileStream)
+		{ }
+
+	private:
+		size_t id() const override
+		{
+			return objectId;
+		}
+
+		BBox bbox() const override
+		{
+			return geom.bbox;
+		}
+
+		size_t numVertices() const override
+		{
+			return geom.numVertices;
+		}
+
+		size_t numIndices() const override
+		{
+			return geom.numIndices;
+		}
+
+		std::string_view texDiffusePath() const override
+		{
+			return matDiffusePath;
+		}
+
+		std::string_view texNormalPath() const override
+		{
+			return matNormalPath;
+		}
+
+		size_t readVertices(void* const destBuffer, size_t requestedDataSize) override
+		{
+			fileStream.seek(hr::streams::Stream::SeekOrigin::Begin, geom.fstreamVertexOffset);
+			
+			auto bytesRead = fileStream.read(destBuffer, requestedDataSize);
+			assert(bytesRead == requestedDataSize);
+			
+			return bytesRead;
+		}
+
+		size_t readIndices(void* const destBuffer, size_t requestedDataSize) override
+		{
+			fileStream.seek(hr::streams::Stream::SeekOrigin::Begin, geom.fstreamIndexOffset);
+			
+			auto bytesRead = fileStream.read(destBuffer, requestedDataSize);
+			assert(bytesRead == requestedDataSize);
+
+			return bytesRead;
+		}
+	};
+
+	World::World(bool editorMode)
+		: m_editorMode(editorMode)
+	{ }
 
 	World::~World()
 	{
-		cleanup();
+		std::vector<AreaId> ids;
+
+		ids.reserve(mAreas.size());
+		for (auto&& [areaId, area] : mAreas)
+			ids.push_back(areaId);
+
+		for (auto&& areaId : ids)
+			unloadArea(areaId);
 	}
 
-	void World::loadData(hr::io::FileSystem& fileSystem)
+	World::AreaId World::loadArea(IRenderer& renderer, const std::string& scenePath, const std::string& geomPath)
 	{
-		mRenderData.objects.reserve(mObjects.size());
+		auto id = mGenAreaIds++;
+
+		auto& area = mAreas[id];
+		area.id = id;
+
+		auto success = load(renderer, area, scenePath, geomPath);
+		if (!success)
+		{
+			unloadArea(id);
+			return 0;
+		}
+
+		return id;
 	}
 
-	void World::prepareNextFrame(const tools::Camera& hrCamera, const hr::gl::tools::Viewport& hrViewport)
+	void World::unloadArea(AreaId areaId)
+	{
+
+	}
+
+	void World::prepareNextFrame(IRenderer& renderer, const tools::Camera& hrCamera, const hr::gl::tools::Viewport& hrViewport)
 	{
 		auto camPos = hrCamera.getPos();
 
@@ -73,129 +163,177 @@ namespace hr { namespace render
 		camFrustum.setZFar(hrViewport.zfar());
 		camFrustum.calculateFrustum(hrViewport.getProjection(hr::gl::tools::Viewport::ProjectionType::Proj3D), hrCamera.modelView());
 
-		mRenderData.objects.clear();
-		for (auto& curObject : mObjects)
+		std::vector<IRenderObject::ObjectId> targetObjects;
+
+		for (const auto& [areaId, area] : mAreas)
 		{
-			if (!camFrustum.testBox(curObject.bbox))
-				continue;
+			targetObjects.clear();
 
-			mRenderData.objects.push_back(&curObject);
+			for (auto& instance : area.mInstances)
+			{
+				if (!camFrustum.testBox(instance.bbox))
+					continue;
+
+				targetObjects.push_back(instance.objectId);
+			}
+
+			renderer.prepareNextFrame(area.sceneId, targetObjects);
 		}
-
-		if (mRenderData.objects.empty())
-			return;
 	}
 
-	void World::cleanup()
+	World::AreaId World::addEmptyArea()
 	{
-		mConcepts.clear();
-		mObjects.clear();
+		auto id = mGenAreaIds++;
 
-		mRenderData.objects.clear();
+		auto& area = mAreas[id];
+		area.id = id;
+
+		return id;
 	}
 
-	bool World::loadWorld(const std::string& scenePath, const std::string& geomPath)
+	bool World::load(IRenderer& renderer, Area& area, const std::string& scenePath, const std::string& geomPath)
 	{
 		hr::streams::FileStream sceneFileStream(scenePath, true, false);
 		hr::streams::StreamReader streamScene(sceneFileStream);
 
-		mGeomFileStream = hr::streams::FileStream(geomPath, true, m_editorMode ? true : false);
-		hr::streams::StreamReader streamGeom(mGeomFileStream);
+		area.mGeomFileStream = hr::streams::FileStream(geomPath, true, m_editorMode ? true : false);
+		hr::streams::StreamReader streamGeom(area.mGeomFileStream);
 
-		std::unordered_map<size_t, GeomChunkInfo> geomInfo;
+		std::map<size_t, RendererObjectProxy> mRendererObjects;
 
-		//read geom info
-		size_t geomsOffset = 0;
 		{
-			GeomHeader geomHeader;
-			if (streamGeom.read(&geomHeader, sizeof(GeomHeader)) != sizeof(GeomHeader))
-				return false;
-			if (std::memcmp(geomHeader.fileSig, GeomFileSig.data(), sizeof(geomHeader.fileSig)) != 0)
-				return false;
+			std::unordered_map<size_t, GeomChunkInfo> geomInfo;
 
-			geomsOffset = streamGeom.position();
-			streamGeom.seek(hr::streams::Stream::SeekOrigin::End, -(sizeof(GeomChunkInfo) * geomHeader.numGeoms));
-
-			geomInfo.rehash(geomHeader.numGeoms);
-			for (size_t curGeom = 0; curGeom < geomHeader.numGeoms; ++curGeom)
+			//read geom info
+			size_t geomsOffset = 0;
 			{
-				GeomChunkInfo chunkInfo;
-				streamGeom.read(&chunkInfo, sizeof(GeomChunkInfo));
+				GeomHeader geomHeader;
+				if (streamGeom.read(&geomHeader, sizeof(GeomHeader)) != sizeof(GeomHeader))
+					return false;
+				if (std::memcmp(geomHeader.fileSig, GeomFileSig.data(), sizeof(geomHeader.fileSig)) != 0)
+					return false;
 
-				geomInfo[chunkInfo.id] = chunkInfo;
-			}
-		}
+				geomsOffset = streamGeom.position();
+				streamGeom.seek(hr::streams::Stream::SeekOrigin::End, -static_cast<int>(sizeof(GeomChunkInfo) * geomHeader.numGeoms));
 
-		//read scene
-		{
-			std::shared_ptr<unsigned char> buffer;
-			size_t bufferSize;
-
-			streamScene.stream().cloneAllContent(buffer, bufferSize, [](size_t requiredSize)
-			{
-				std::shared_ptr<unsigned char> buffer(new unsigned char[requiredSize + 1], std::default_delete<unsigned char[]>());
-				buffer.get()[requiredSize] = '\0';
-				return buffer;
-			});
-
-			rapidjson::Document d;
-			d.ParseInsitu(reinterpret_cast<char*>(buffer.get()));
-
-			{
-				auto& jsonConcepts = d["concepts"];
-				assert(jsonConcepts.IsArray());
-
-				for (rapidjson::Value::ConstValueIterator itr = jsonConcepts.Begin(); itr != jsonConcepts.End(); ++itr)
+				geomInfo.rehash(geomHeader.numGeoms);
+				for (size_t curGeom = 0; curGeom < geomHeader.numGeoms; ++curGeom)
 				{
-					size_t conceptId = (*itr)["id"].GetUint();
+					GeomChunkInfo chunkInfo;
+					streamGeom.read(&chunkInfo, sizeof(GeomChunkInfo));
 
-					auto& concept = mConcepts[conceptId];
-					concept.id = conceptId;
-					concept.name = (*itr)["name"].GetString();
+					geomInfo[chunkInfo.id] = chunkInfo;
+				}
+			}
 
-					auto geomIt = geomInfo.find(concept.id);
-					if (geomIt == geomInfo.end())
-						continue;
+			//read scene
+			{
+				std::shared_ptr<unsigned char> buffer;
+				size_t bufferSize;
 
-					concept.geom.numVertices = geomIt->second.numVertices;
-					concept.geom.numIndices = geomIt->second.numIndices;
-					concept.geom.fstreamVertexOffset = geomsOffset + geomIt->second.geomsOffset;
-					concept.geom.fstreamIndexOffset = concept.geom.fstreamVertexOffset + (sizeof(hr::geom::Mesh::VertexData) * concept.geom.numVertices);
-					concept.geom.bbox.setMinMax(geomIt->second.bboxMin, geomIt->second.bboxMax);
+				streamScene.stream().cloneAllContent(buffer, bufferSize, [](size_t requiredSize)
+				{
+					std::shared_ptr<unsigned char> buffer(new unsigned char[requiredSize + 1], std::default_delete<unsigned char[]>());
+					buffer.get()[requiredSize] = '\0';
+					return buffer;
+				});
 
-					if ((*itr).HasMember("material"))
+				rapidjson::Document d;
+				d.ParseInsitu(reinterpret_cast<char*>(buffer.get()));
+
+				{
+					auto& jsonConcepts = d["concepts"];
+					assert(jsonConcepts.IsArray());
+
+					for (rapidjson::Value::ConstValueIterator itr = jsonConcepts.Begin(); itr != jsonConcepts.End(); ++itr)
 					{
-						auto& jsonMaterial = ((*itr).FindMember("material"))->value;
+						size_t objectId = (*itr)["id"].GetUint();
 
-						concept.matDiffusePath = jsonMaterial["diffusePath"].GetString();
-						concept.matNormalPath = jsonMaterial["normalPath"].GetString();
+						auto& object = area.mObjects[objectId];
+						auto& objectRenderer = mRendererObjects.try_emplace(objectId, area.mGeomFileStream).first->second;
+
+						object.objectId = objectId;
+						objectRenderer.objectId = objectId;
+
+						//read geom info and bbox
+						{
+							auto geomIt = geomInfo.find(object.objectId);
+							if (geomIt == geomInfo.end())
+								continue;
+
+							objectRenderer.geom.numVertices = geomIt->second.numVertices;
+							objectRenderer.geom.numIndices = geomIt->second.numIndices;
+							objectRenderer.geom.fstreamVertexOffset = geomsOffset + geomIt->second.geomsOffset;
+							objectRenderer.geom.fstreamIndexOffset = objectRenderer.geom.fstreamVertexOffset + (sizeof(hr::geom::Mesh::VertexData) * objectRenderer.geom.numVertices);
+
+							object.bbox.setMinMax(geomIt->second.bboxMin, geomIt->second.bboxMax);
+							objectRenderer.geom.bbox = object.bbox;
+						}
+
+						//read material info
+						if ((*itr).HasMember("material"))
+						{
+							auto& jsonMaterial = ((*itr).FindMember("material"))->value;
+
+							objectRenderer.matDiffusePath = jsonMaterial["diffusePath"].GetString();
+							objectRenderer.matNormalPath = jsonMaterial["normalPath"].GetString();
+						}
+					}
+				}
+
+				{
+					auto& jsonObjects = d["objects"];
+					assert(jsonObjects.IsArray());
+
+					area.mInstances.reserve(jsonObjects.Size());
+					for (rapidjson::Value::ConstValueIterator itr = jsonObjects.Begin(); itr != jsonObjects.End(); ++itr)
+					{
+						Instance newInstance;
+						newInstance.type = static_cast<Instance::Type>((*itr)["type"].GetUint());
+						newInstance.objectId = (*itr)["conceptId"].GetUint();
+						if (area.mObjects.find(newInstance.objectId) == area.mObjects.end())
+							continue;
+
+						newInstance.bbox = area.mObjects[newInstance.objectId].bbox;
+						area.mInstances.push_back(newInstance);
 					}
 				}
 			}
+		}
 
+		//send data to the render
+		{
+			struct RendererProxy
+				: public IRenderObjectManager
 			{
-				auto& jsonObjects = d["objects"];
-				assert(jsonObjects.IsArray());
+				std::map<size_t, RendererObjectProxy>& renderObjects;
 
-				mObjects.reserve(jsonObjects.Size());
-				for (rapidjson::Value::ConstValueIterator itr = jsonObjects.Begin(); itr != jsonObjects.End(); ++itr)
+				RendererProxy(std::map<size_t, RendererObjectProxy>& renderObjects)
+					: renderObjects(renderObjects)
+				{ }
+
+				size_t numObjects() const override
 				{
-					Object newObject;
-					newObject.type = static_cast<Object::Type>((*itr)["type"].GetUint());
-					newObject.conceptId = (*itr)["conceptId"].GetUint();
-					if (mConcepts.find(newObject.conceptId) == mConcepts.end())
-						continue;
-
-					newObject.bbox = mConcepts[newObject.conceptId].geom.bbox;
-					mObjects.push_back(newObject);
+					return renderObjects.size();
 				}
-			}
+
+				void iterateObjects(std::function<void(IRenderObject&)> cb) const override
+				{
+					if (!cb)
+						return;
+
+					for (auto&[objectId, object] : renderObjects)
+						cb(object);
+				}
+			};
+
+			area.sceneId = renderer.loadScene(RendererProxy(mRendererObjects));
 		}
 
 		return true;
 	}
 
-	void WorldEditor::createEmptyScene(const std::string& scenePath, const std::string& geomPath)
+	void WorldEditor::createEmptyArea(const std::string& scenePath, const std::string& geomPath)
 	{
 		if (std::experimental::filesystem::exists(scenePath))
 			std::experimental::filesystem::remove(scenePath);
@@ -244,53 +382,76 @@ namespace hr { namespace render
 		}
 	}
 
-	WorldEditor::WorldEditor(const std::string& scenePath, const std::string& geomPath)
-		: World(scenePath, geomPath, true)
+	WorldEditor::WorldEditor()
+		: World(true)
+	{ }
+
+	WorldEditor::AreaId WorldEditor::newArea(std::string_view scenePath, std::string_view geomPath)
 	{
-		m_paths.scene = scenePath;
-		m_paths.geom = geomPath;
+		auto newId = addEmptyArea();
+
+		assert(mAreasData.find(newId) == mAreasData.end());
+		auto& areaData = mAreasData[newId];
+
+		areaData.pathScene = scenePath;
+		areaData.pathGeom = geomPath;
+
+		return newId;
 	}
 
-	bool WorldEditor::importMesh(const std::string& name, const hr::geom::Mesh& mesh)
+	bool WorldEditor::importMesh(AreaId areaId, std::string_view name, const hr::geom::Mesh& mesh)
 	{
-		if (!mesh.check())
+		if (!mesh.check() || (mAreas.find(areaId) == mAreas.end()))
 			return false;
 
-		//create concept
-		auto conceptId = genId();
+		auto& area = mAreas[areaId];
+		auto& areaData = mAreasData[areaId];
+
+		//create object
+		auto objectId = genObjectId(area);
 		{
-			auto& concept = mConcepts[conceptId];
-			concept.id = conceptId;
-			concept.name = name;
+			auto& object = area.mObjects[objectId];
+			auto& objectData = areaData.objects[objectId];
+			
+			object.objectId = objectId;
+			objectData.objectId = objectId;
+			objectData.name = name;
 		}
 
 		//we store new geometry immediately
-		addMesh(conceptId, mesh);
+		addMesh(area, objectId, mesh);
 
-		//create an object associated with the concept
+		//create an instance associated with the object
 		{
-			Object newObject;
-			newObject.type = Object::Type::Static;
-			newObject.conceptId = conceptId;
-			newObject.bbox = mesh.getBoundingBox();
-			mObjects.push_back(newObject);
+			Instance newInstance;
+			newInstance.type = Instance::Type::Static;
+			newInstance.objectId = objectId;
+			newInstance.bbox = mesh.getBoundingBox();
+			area.mInstances.push_back(newInstance);
 		}
 
 		//need to save everything to file (new geometry was already saved)
-		saveScene();
+		saveArea(area);
 
 		return true;
 	}
 
-	bool WorldEditor::importObj(const std::string& basePath, const std::string& fileName)
+	bool WorldEditor::importObj(AreaId areaId, std::string_view basePath, std::string_view fileName)
 	{
+		if (mAreas.find(areaId) == mAreas.end())
+			return false;
+
 		tinyobj::attrib_t objVertexAttribs;
 		std::vector<tinyobj::shape_t> objShapes;
 		std::vector<tinyobj::material_t> objMaterials;
 
 		{
+			std::string fullPath;
+			fullPath.reserve(basePath.size() + fileName.size() + 1);
+			fullPath.append(basePath).append(fileName);
+
 			std::string errorDesc;
-			auto success = tinyobj::LoadObj(&objVertexAttribs, &objShapes, &objMaterials, &errorDesc, (basePath + fileName).c_str(), basePath.c_str());
+			auto success = tinyobj::LoadObj(&objVertexAttribs, &objShapes, &objMaterials, &errorDesc, fullPath.c_str(), std::string(basePath).c_str());
 			if (!success)
 				return false;
 		}
@@ -298,7 +459,10 @@ namespace hr { namespace render
 		if (objShapes.empty())
 			return true;
 
-		mObjects.reserve(mObjects.size() + objShapes.size());
+		auto& area = mAreas[areaId];
+		auto& areaData = mAreasData[areaId];
+
+		area.mInstances.reserve(area.mInstances.size() + objShapes.size());
 
 		for (const auto& shape : objShapes)
 		{
@@ -320,15 +484,18 @@ namespace hr { namespace render
 			}))
 				continue;
 
-			//ignore shapes if a concept with the same name already exists
-			if (std::find_if(mConcepts.begin(), mConcepts.end(), [&name = shape.name](const std::map<size_t, Concept>::value_type& keyValue) { return (keyValue.second.name == name); }) != mConcepts.end())
+			//ignore shapes if a object with the same name already exists
+			if (std::find_if(areaData.objects.begin(), areaData.objects.end(), [&name = shape.name](const auto& keyValue) { return (keyValue.second.name == name); }) != areaData.objects.end())
 				continue;
 
-			//create concept
-			auto conceptId = genId();
-			auto& concept = mConcepts[conceptId];
-			concept.id = conceptId;
-			concept.name = shape.name;
+			//create object
+			auto objectId = genObjectId(area);
+			auto& object = area.mObjects[objectId];
+			auto& objectData = areaData.objects[objectId];
+
+			object.objectId = objectId;
+			objectData.objectId = objectId;
+			objectData.name = shape.name;
 
 			//process mesh
 			{
@@ -415,7 +582,7 @@ namespace hr { namespace render
 				newMesh.optimizeIndices();
 
 				//we store new geometry immediately
-				addMesh(conceptId, newMesh);
+				addMesh(area, objectId, newMesh);
 			}
 
 			//process material
@@ -427,53 +594,56 @@ namespace hr { namespace render
 					const auto& mat = objMaterials[materialId];
 
 					if (!mat.diffuse_texname.empty())
-						concept.matDiffusePath = mat.diffuse_texname;
+						objectData.matDiffusePath = mat.diffuse_texname;
 					else if (!mat.ambient_texname.empty())
-						concept.matDiffusePath = mat.ambient_texname;
+						objectData.matDiffusePath = mat.ambient_texname;
 					else
 						materialId = materialId;
 
 					if (!mat.normal_texname.empty())
-						concept.matNormalPath = mat.normal_texname;
+						objectData.matNormalPath = mat.normal_texname;
 					else if (!mat.bump_texname.empty())
-						concept.matNormalPath = mat.bump_texname;
+						objectData.matNormalPath = mat.bump_texname;
 					else if (mat.unknown_parameter.find("bump") != mat.unknown_parameter.end())
-						concept.matNormalPath = mat.unknown_parameter.find("bump")->second;
+						objectData.matNormalPath = mat.unknown_parameter.find("bump")->second;
 					else if (mat.unknown_parameter.find("map_bump") != mat.unknown_parameter.end())
-						concept.matNormalPath = mat.unknown_parameter.find("map_bump")->second;
+						objectData.matNormalPath = mat.unknown_parameter.find("map_bump")->second;
 					else
 						materialId = materialId;
 				}
 			}
 
 			//create an object associated with the concept
-			Object newObject;
-			newObject.type = Object::Type::Static;
-			newObject.conceptId = concept.id;
-			newObject.bbox = concept.geom.bbox;
-			mObjects.push_back(newObject);
+			Instance newInstance;
+			newInstance.type = Instance::Type::Static;
+			newInstance.objectId = object.objectId;
+			newInstance.bbox = object.bbox;
+			area.mInstances.push_back(newInstance);
 		}
 
 		//need to save everything to file (new geometry was already saved)
-		saveScene();
+		saveArea(area);
 
 		return true;
 	}
 
-	void WorldEditor::processMesh(const std::vector<size_t>& conceptIds, std::function<void(hr::geom::Mesh&)> cb)
+	void WorldEditor::processMesh(AreaId areaId, const std::vector<size_t>& objectIds, std::function<void(hr::geom::Mesh&)> cb)
 	{
-		if (!cb)
+		if (!cb || (mAreas.find(areaId) == mAreas.end()))
 			return;
 
-		auto func = [this, cb](Concept& concept)
+		auto& area = mAreas[areaId];
+		auto& areaData = mAreasData[areaId];
+
+		auto func = [cb](Area& area, AreaData::ObjectData& object)
 		{
-			hr::geom::Mesh mesh(concept.geom.numVertices, concept.geom.numIndices);
+			hr::geom::Mesh mesh(object.geom.numVertices, object.geom.numIndices);
 
-			mGeomFileStream.seek(hr::streams::Stream::SeekOrigin::Begin, concept.geom.fstreamVertexOffset);
-			mGeomFileStream.read(mesh.vertices(), mesh.sizeVertices());
+			area.mGeomFileStream.seek(hr::streams::Stream::SeekOrigin::Begin, object.geom.fstreamVertexOffset);
+			area.mGeomFileStream.read(mesh.vertices(), mesh.sizeVertices());
 
-			mGeomFileStream.seek(hr::streams::Stream::SeekOrigin::Begin, concept.geom.fstreamIndexOffset);
-			mGeomFileStream.read(mesh.indices(), mesh.sizeIndices());
+			area.mGeomFileStream.seek(hr::streams::Stream::SeekOrigin::Begin, object.geom.fstreamIndexOffset);
+			area.mGeomFileStream.read(mesh.indices(), mesh.sizeIndices());
 
 			{
 				auto numVertices = mesh.numVertices();
@@ -484,63 +654,79 @@ namespace hr { namespace render
 					return;
 			}
 
-			mGeomFileStream.seek(hr::streams::Stream::SeekOrigin::Begin, concept.geom.fstreamVertexOffset);
-			mGeomFileStream.write(mesh.vertices(), mesh.sizeVertices());
+			area.mGeomFileStream.seek(hr::streams::Stream::SeekOrigin::Begin, object.geom.fstreamVertexOffset);
+			area.mGeomFileStream.write(mesh.vertices(), mesh.sizeVertices());
 
-			mGeomFileStream.seek(hr::streams::Stream::SeekOrigin::Begin, concept.geom.fstreamIndexOffset);
-			mGeomFileStream.write(mesh.indices(), mesh.sizeIndices());
+			area.mGeomFileStream.seek(hr::streams::Stream::SeekOrigin::Begin, object.geom.fstreamIndexOffset);
+			area.mGeomFileStream.write(mesh.indices(), mesh.sizeIndices());
 		};
 
-		if (conceptIds.empty())
+		if (objectIds.empty())
 		{
-			for (auto& concept : mConcepts)
-				func(concept.second);
+			for (auto& [objectId, object] : area.mObjects)
+			{
+				assert(areaData.objects.find(objectId) != areaData.objects.end());
+				func(area, areaData.objects[objectId]);
+			}
 		}
 		else
 		{
-			for (const auto& conceptId : conceptIds)
+			for (const auto& objectId : objectIds)
 			{
-				auto it = mConcepts.find(conceptId);
-				if (it != mConcepts.end())
-					func(it->second);
+				auto it = area.mObjects.find(objectId);
+				if (it == area.mObjects.end())
+					continue;
+
+				assert(areaData.objects.find(objectId) != areaData.objects.end());
+				func(area, areaData.objects[objectId]);
 			}
 		}
 	}
 
-	std::vector<size_t> WorldEditor::unusedConcepts() const
+	std::vector<size_t> WorldEditor::unusedObjects(AreaId areaId) const
 	{
-		std::vector<size_t> conceptIds;
+		auto areaIt = mAreas.find(areaId);
+		if (areaIt == mAreas.end())
+			return { };
 
-		for (const auto& concept : mConcepts)
+		const auto& area = areaIt->second;
+
+		std::vector<size_t> objectIds;
+		for (const auto& [objectId, object] : area.mObjects)
 		{
-			if (std::find_if(mObjects.begin(), mObjects.end(), [conceptId = concept.first](const Object& object) { return (object.conceptId == conceptId); }) != mObjects.end())
+			if (std::find_if(area.mInstances.begin(), area.mInstances.end(), [objectId](const auto& instance) { return (instance.objectId == objectId); }) != area.mInstances.end())
 				continue;
 
-			conceptIds.push_back(concept.first);
+			objectIds.push_back(objectId);
 		}
 
-		return conceptIds;
+		return objectIds;
 	}
 
-	void WorldEditor::removeConcepts(const std::vector<size_t>& conceptIds)
+	void WorldEditor::removeObjects(AreaId areaId, const std::vector<size_t>& objectIds)
 	{
-		for (const auto& conceptId : conceptIds)
+		if (mAreas.find(areaId) == mAreas.end())
+			return;
+
+		auto& area = mAreas[areaId];
+
+		for (const auto& objectId : objectIds)
 		{
-			mConcepts.erase(conceptId);
-			std::remove_if(mObjects.begin(), mObjects.end(), [conceptId](const Object& object) { return (object.conceptId == conceptId); });
+			area.mObjects.erase(objectId);
+			std::remove_if(area.mInstances.begin(), area.mInstances.end(), [objectId](const auto& instance) { return (instance.objectId == objectId); });
 		}
 	}
 
-	size_t WorldEditor::genId() const
+	size_t WorldEditor::genObjectId(Area& area) const
 	{
 		size_t curId = 1;
-		while (mConcepts.find(curId) != mConcepts.end())
+		while (area.mObjects.find(curId) != area.mObjects.end())
 			curId++;
 
 		return curId;
 	}
 
-	void WorldEditor::addMesh(size_t geomId, const hr::geom::Mesh& mesh)
+	void WorldEditor::addMesh(Area& area, size_t geomId, const hr::geom::Mesh& mesh)
 	{
 		size_t numGeoms = 0;
 
@@ -548,7 +734,7 @@ namespace hr { namespace render
 		{
 			GeomHeader geomHeader;
 			{
-				hr::streams::StreamReader stream(mGeomFileStream);
+				hr::streams::StreamReader stream(area.mGeomFileStream);
 
 				stream.seek(hr::streams::Stream::SeekOrigin::Begin, 0);
 				if (stream.read(&geomHeader, sizeof(GeomHeader)) != sizeof(GeomHeader))
@@ -559,7 +745,7 @@ namespace hr { namespace render
 			numGeoms = geomHeader.numGeoms;
 
 			{
-				hr::streams::StreamWriter stream(mGeomFileStream);
+				hr::streams::StreamWriter stream(area.mGeomFileStream);
 
 				stream.seek(hr::streams::Stream::SeekOrigin::Begin, 0);
 				if (stream.write(&geomHeader, sizeof(GeomHeader)) != sizeof(GeomHeader))
@@ -582,7 +768,7 @@ namespace hr { namespace render
 		//if this is the first geom, simply write it and then the chunk
 		if (numGeoms == 1)
 		{
-			hr::streams::StreamWriter stream(mGeomFileStream);
+			hr::streams::StreamWriter stream(area.mGeomFileStream);
 
 			stream.seek(hr::streams::Stream::SeekOrigin::Begin, sizeof(GeomHeader));
 
@@ -594,7 +780,7 @@ namespace hr { namespace render
 			if (stream.write(&newGeomChunk, sizeof(GeomChunkInfo)) != sizeof(GeomChunkInfo))
 				return;
 
-			mGeomFileStream.flush();
+			area.mGeomFileStream.flush();
 			return;
 		}
 
@@ -603,7 +789,7 @@ namespace hr { namespace render
 		//read all geom chunks
 		auto chunksTmp = std::unique_ptr<GeomChunkInfo[]>(new GeomChunkInfo[numGeoms - 1]);
 		{
-			hr::streams::StreamReader stream(mGeomFileStream);
+			hr::streams::StreamReader stream(area.mGeomFileStream);
 
 			stream.seek(hr::streams::Stream::SeekOrigin::End, -chunksSize);
 			if (stream.read(chunksTmp.get(), chunksSize) != chunksSize)
@@ -612,7 +798,7 @@ namespace hr { namespace render
 		
 		//write the new geom, old chunks and the new chunk
 		{
-			hr::streams::StreamWriter stream(mGeomFileStream);
+			hr::streams::StreamWriter stream(area.mGeomFileStream);
 
 			stream.seek(hr::streams::Stream::SeekOrigin::End, -chunksSize);
 			newGeomChunk.geomsOffset = stream.position() - sizeof(GeomHeader);
@@ -629,17 +815,21 @@ namespace hr { namespace render
 				return;
 		}
 
-		mGeomFileStream.flush();
+		area.mGeomFileStream.flush();
 	}
 
-	void WorldEditor::saveScene()
+	void WorldEditor::saveArea(Area& area)
 	{
-		//the scene is always exported whole, which means that we can destroy the old version completly
+		assert(mAreasData.find(area.id) == mAreasData.end());
+		auto& areaData = mAreasData[area.id];
 
-		if (std::experimental::filesystem::exists(m_paths.scene))
-			std::experimental::filesystem::remove(m_paths.scene);
+		//the area is always exported whole, which means that we can destroy the old version completly
+		//also: we only need to save the scene (geom was already taken care of)
 
-		hr::streams::FileStream streamScene(m_paths.scene, false, true);
+		if (std::experimental::filesystem::exists(areaData.pathScene))
+			std::experimental::filesystem::remove(areaData.pathScene);
+
+		hr::streams::FileStream streamScene(areaData.pathScene, false, true);
 
 		rapidjson::StringBuffer s;
 		rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(s);
@@ -655,23 +845,23 @@ namespace hr { namespace render
 
 		writer.String("concepts");
 		writer.StartArray();
-		for (auto& concept : mConcepts)
+		for (auto& object : areaData.objects)
 		{
 			writer.StartObject();
 
 			writer.String("id");
-			writer.Uint(concept.second.id);
+			writer.Uint(object.second.objectId);
 
 			writer.String("name");
-			writer.String(concept.second.name.c_str());
+			writer.String(object.second.name.c_str());
 
 			writer.String("material");
 			writer.StartObject();
 			writer.String("diffusePath");
-			writer.String(concept.second.matDiffusePath.c_str());
+			writer.String(object.second.matDiffusePath.c_str());
 
 			writer.String("normalPath");
-			writer.String(concept.second.matNormalPath.c_str());
+			writer.String(object.second.matNormalPath.c_str());
 			writer.EndObject();
 
 			writer.EndObject();
@@ -680,7 +870,7 @@ namespace hr { namespace render
 
 		writer.String("objects");
 		writer.StartArray();
-		for (auto& curObject : mObjects)
+		for (auto& curObject : area.mInstances)
 		{
 			writer.StartObject();
 
@@ -688,7 +878,7 @@ namespace hr { namespace render
 			writer.Uint(static_cast<unsigned int>(curObject.type));
 
 			writer.String("conceptId");
-			writer.Uint(curObject.conceptId);
+			writer.Uint(curObject.objectId);
 
 			writer.EndObject();
 		}

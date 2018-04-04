@@ -3,7 +3,7 @@
 #include "stringUtils.hpp"
 #include "../platform/platform.hpp"
 
-namespace hr { namespace io
+namespace hr::io
 {
 	void Path::cleanPath()
 	{
@@ -20,13 +20,7 @@ namespace hr { namespace io
 		return *this;
 	}
 
-	Path& Path::operator+=(const char* const path)
-	{
-		combine(path);
-		return *this;
-	}
-
-	Path& Path::operator+=(const std::string& path)
+	Path& Path::operator+=(std::string_view path)
 	{
 		combine(path);
 		return *this;
@@ -37,19 +31,9 @@ namespace hr { namespace io
 		mPath.clear();
 	}
 
-	void Path::set(const std::string& path)
+	void Path::set(std::string_view path)
 	{
 		mPath = path;
-		cleanPath();
-	}
-
-	void Path::set(const char* const path)
-	{
-		mPath.clear();
-
-		if (path)
-			mPath = path;
-
 		cleanPath();
 	}
 
@@ -100,9 +84,9 @@ namespace hr { namespace io
 		hr::StringUtils::replace(mPath, "//", hr::StringUtils::conv2UTF8(hr::platform::Platform::DirectorySeparatorChar));
 	}
 
-	void Path::combine(const char* const pathToAppend)
+	void Path::combine(std::string_view pathToAppend)
 	{
-		if (!pathToAppend || (*pathToAppend == '\0'))
+		if (pathToAppend.empty())
 			return;
 
 		if (!mPath.empty())
@@ -117,11 +101,6 @@ namespace hr { namespace io
 		mPath += pathToAppend;
 
 		cleanPath();
-	}
-
-	void Path::combine(const std::string& pathToAppend)
-	{
-		combine(pathToAppend.c_str());
 	}
 
 	void Path::removeLastComponent()
@@ -168,4 +147,4 @@ namespace hr { namespace io
 		std::string finalPath(mPath, 0, reversed.size() - charPos - 1);
 		set(finalPath);
 	}
-} }
+}

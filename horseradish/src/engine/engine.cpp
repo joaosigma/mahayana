@@ -35,29 +35,29 @@ namespace hr { namespace engine
 
 		//mount current and previous directory
 		auto currentFolder = hr::io::Path(hr::io::Path::KnownPath::CurrentFolder);
-		mFileSystem->mountPath(currentFolder, nullptr);
+		mFileSystem->mountPath(currentFolder, {});
 		currentFolder.removeLastComponent();
-		mFileSystem->mountPath(currentFolder, nullptr);
+		mFileSystem->mountPath(currentFolder, {});
 
 		//mount main game resource directory
-		mFileSystem->mountPath(hr::io::Path("d:/jogos/doom3/base/"), nullptr);
+		mFileSystem->mountPath(hr::io::Path("d:/jogos/doom3/base/"), {});
 		mLoggerRuntimeCtx->info("${olive}->${default}Path set to: \"d:/jogos/doom3/base/\"");
 
 		size_t totalFich = 0;
 		size_t totalPacks = 0;
 
 		//for every pack/zip/7zip file
-		/*hr::io::FileSystem::findFiles("d:/jogos/doom3/base/pak*.pk4", true, [&](const hr::io::Path &filePath, const hr::hUInt64 &fileSize)
+		hr::io::FileSystem::findFiles("d:/jogos/doom3/base/pak*.pk4", true, [&](const hr::io::Path &filePath, const hr::hUInt64 &fileSize)
 		{
 			size_t numFilesZip;
 
 			//mount the zip file as a directoty
-			if (mFileSystem->mountZip(filePath, nullptr, &numFilesZip))
+			if (mFileSystem->mountZip(filePath, {}, &numFilesZip))
 			{
 				totalPacks += 1;
 				totalFich += numFilesZip;
 			}
-		});*/
+		});
 
 		mLoggerRuntimeCtx->info("   loaded {0} archives with a total of {1} files", totalPacks, totalFich);
 	}

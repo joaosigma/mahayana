@@ -2,7 +2,7 @@
 
 #include <string>
 
-namespace hr { namespace io
+namespace hr::io
 {
 	class Path
 	{
@@ -16,16 +16,9 @@ namespace hr { namespace io
 		void cleanPath();
 
 	public:
-		Path()
-		{ }
+		Path() = default;
 
-		explicit Path(const char* const path)
-			: mPath(path)
-		{
-			cleanPath();
-		}
-
-		explicit Path(const std::string& path)
+		explicit Path(std::string_view path)
 			: mPath(path)
 		{
 			cleanPath();
@@ -37,8 +30,7 @@ namespace hr { namespace io
 		}
 
 		Path& operator+=(const Path& path);
-		Path& operator+=(const char* const path);
-		Path& operator+=(const std::string& path);
+		Path& operator+=(std::string_view path);
 
 		bool isEmpty() const
 		{
@@ -52,18 +44,16 @@ namespace hr { namespace io
 
 		void clear();
 
-		void set(const std::string& path);
-		void set(const char* const path);
+		void set(std::string_view path);
 		void set(const Path &path1, const Path &path2);
 		void set(const KnownPath &knownPath);
 
 		void combine(const Path &pathToAppend);
-		void combine(const char* const pathToAppend);
-		void combine(const std::string& pathToAppend);
+		void combine(std::string_view pathToAppend);
 
 		void removeLastComponent();
 		void removeComponents(size_t numComponents = 0);
 
 		void removeFile();
 	};
-} }
+}

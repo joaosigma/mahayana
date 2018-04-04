@@ -8,102 +8,92 @@
 
 #include <algorithm>
 
-static
-uLong ZCALLBACK zwrite(voidpf opaque, voidpf stream, const void* buf, uLong size)
-{	return 0; }
-
-static
-int ZCALLBACK zerror(voidpf opaque, voidpf stream)
-{	return 0; }
-
-static
-voidpf ZCALLBACK zopen(voidpf opaque, const char* filename, int mode)
+namespace hr::io
 {
-	auto fileStream = new hr::streams::FileStream(filename, true, false);
-	
-	return ((voidpf)fileStream);
-}
+	namespace
+	{
+		uLong ZCALLBACK zwrite(voidpf opaque, voidpf stream, const void* buf, uLong size)
+		{
+			return 0;
+		}
 
-static
-uLong ZCALLBACK zread(voidpf opaque, voidpf stream, void* buf, uLong size)
-{
-	auto fileStream = reinterpret_cast<hr::streams::FileStream*>(stream);
+		int ZCALLBACK zerror(voidpf opaque, voidpf stream)
+		{
+			return 0;
+		}
 
-	return fileStream->read(buf,size);
-}
+		voidpf ZCALLBACK zopen(voidpf opaque, const char* filename, int mode)
+		{
+			auto fileStream = new hr::streams::FileStream(filename, true, false);
 
-static
-long ZCALLBACK ztell(voidpf opaque, voidpf stream)
-{
-	auto fileStream = reinterpret_cast<hr::streams::FileStream*>(stream);
+			return ((voidpf)fileStream);
+		}
 
-	return fileStream->position();
-}
+		uLong ZCALLBACK zread(voidpf opaque, voidpf stream, void* buf, uLong size)
+		{
+			auto fileStream = reinterpret_cast<hr::streams::FileStream*>(stream);
 
-static
-long ZCALLBACK zseek(voidpf opaque, voidpf stream, uLong offset, int origin)
-{
-	auto fileStream = reinterpret_cast<hr::streams::FileStream*>(stream);
+			return fileStream->read(buf, size);
+		}
 
-	if (origin == ZLIB_FILEFUNC_SEEK_CUR)
-		fileStream->seek(hr::streams::Stream::SeekOrigin::Current, offset);
-	else if (origin == ZLIB_FILEFUNC_SEEK_END)
-		fileStream->seek(hr::streams::Stream::SeekOrigin::End, offset);
-	else if (origin == ZLIB_FILEFUNC_SEEK_SET)
-		fileStream->seek(hr::streams::Stream::SeekOrigin::Begin, offset);
-	else
-		return 1;
+		long ZCALLBACK ztell(voidpf opaque, voidpf stream)
+		{
+			auto fileStream = reinterpret_cast<hr::streams::FileStream*>(stream);
 
-	return 0;
-}
+			return fileStream->position();
+		}
 
-static
-int ZCALLBACK zclose(voidpf opaque, voidpf stream)
-{
-	auto fileStream = reinterpret_cast<hr::streams::FileStream*>(stream);
+		long ZCALLBACK zseek(voidpf opaque, voidpf stream, uLong offset, int origin)
+		{
+			auto fileStream = reinterpret_cast<hr::streams::FileStream*>(stream);
 
-	fileStream->close();
-	delete fileStream;
+			if (origin == ZLIB_FILEFUNC_SEEK_CUR)
+				fileStream->seek(hr::streams::Stream::SeekOrigin::Current, offset);
+			else if (origin == ZLIB_FILEFUNC_SEEK_END)
+				fileStream->seek(hr::streams::Stream::SeekOrigin::End, offset);
+			else if (origin == ZLIB_FILEFUNC_SEEK_SET)
+				fileStream->seek(hr::streams::Stream::SeekOrigin::Begin, offset);
+			else
+				return 1;
 
-	return 0;
-}
+			return 0;
+		}
 
-static
-void overloadZLibIO(zlib_filefunc_def * const zlibFileFunc)
-{
-	if (!zlibFileFunc)
-		return;
+		int ZCALLBACK zclose(voidpf opaque, voidpf stream)
+		{
+			auto fileStream = reinterpret_cast<hr::streams::FileStream*>(stream);
 
-	zlibFileFunc->zclose_file = zclose;
-	zlibFileFunc->zopen_file = zopen;
-	zlibFileFunc->zread_file = zread;
-	zlibFileFunc->zseek_file = zseek;
-	zlibFileFunc->ztell_file = ztell;
+			fileStream->close();
+			delete fileStream;
 
-	zlibFileFunc->zerror_file = zerror;
-	zlibFileFunc->zwrite_file = zwrite;
-}
+			return 0;
+		}
 
-namespace hr { namespace io
-{
-	FileSystem::MountData::MountData(const char* const mountPoint)
+		void overloadZLibIO(zlib_filefunc_def * const zlibFileFunc)
+		{
+			if (!zlibFileFunc)
+				return;
+
+			zlibFileFunc->zclose_file = zclose;
+			zlibFileFunc->zopen_file = zopen;
+			zlibFileFunc->zread_file = zread;
+			zlibFileFunc->zseek_file = zseek;
+			zlibFileFunc->ztell_file = ztell;
+
+			zlibFileFunc->zerror_file = zerror;
+			zlibFileFunc->zwrite_file = zwrite;
+		}
+	}
+
+	FileSystem::MountData::MountData(std::string_view mountPoint)
 	{
 		mMountPoint.set(mountPoint);
 	}
-	FileSystem::MountData::~MountData()
-	{
-		mMountPoint.clear();
-	}
-
-	FileSystem::MountDataPath::MountDataPath(const char* const baseFolder, const char* const mountPoint)
+	
+	FileSystem::MountDataPath::MountDataPath(std::string_view baseFolder, std::string_view mountPoint)
 		: MountData(mountPoint)
 	{
 		mBaseFolder.set(baseFolder);
-	}
-
-	FileSystem::MountDataPath::~MountDataPath()
-	{
-		mBaseFolder.clear();
 	}
 
 	FileSystem::MountType FileSystem::MountDataPath::mountType() const
@@ -115,7 +105,7 @@ namespace hr { namespace io
 	{
 	}
 
-	std::unique_ptr<streams::Stream> FileSystem::MountDataPath::fileRead(const char* const filePath)
+	std::unique_ptr<streams::Stream> FileSystem::MountDataPath::fileRead(std::string_view filePath)
 	{
 		auto pathFinal = mBaseFolder;
 		pathFinal += filePath;
@@ -128,7 +118,7 @@ namespace hr { namespace io
 		return std::move(fileStream);
 	}
 
-	bool FileSystem::MountDataPath::fileExists(const char* const filePath)
+	bool FileSystem::MountDataPath::fileExists(std::string_view filePath)
 	{
 		auto pathFinal = mBaseFolder;
 		pathFinal += filePath;
@@ -136,7 +126,7 @@ namespace hr { namespace io
 		return FileSystem::fileExists(pathFinal.str().c_str());
 	}
 
-	FileSystem::MountDataZip::MountDataZip(const char* const zipPath, const char* const mountPoint)
+	FileSystem::MountDataZip::MountDataZip(std::string_view zipPath, std::string_view mountPoint)
 		: MountData(mountPoint), mZipFile(nullptr)
 	{
 		zlib_filefunc_def zlibAPI;
@@ -203,12 +193,12 @@ namespace hr { namespace io
 	{
 	}
 
-	std::unique_ptr<streams::Stream> FileSystem::MountDataZip::fileRead(const char* const filePath)
+	std::unique_ptr<streams::Stream> FileSystem::MountDataZip::fileRead(std::string_view filePath)
 	{
-		if (!filePath || (*filePath == '\0'))
-			return std::unique_ptr<streams::Stream>();
+		if (filePath.empty())
+			return nullptr;
 
-		auto itFile = mFileEntries.find(filePath);
+		auto itFile = mFileEntries.find(std::string(filePath));
 		if (itFile == mFileEntries.end())
 			return nullptr;
 
@@ -226,12 +216,12 @@ namespace hr { namespace io
 		return std::move(memStream);
 	}
 
-	bool FileSystem::MountDataZip::fileExists(const char* const filePath)
+	bool FileSystem::MountDataZip::fileExists(std::string_view filePath)
 	{
-		if (!filePath || (*filePath == '\0'))
+		if (filePath.empty())
 			return false;
 
-		return (mFileEntries.find(filePath) != mFileEntries.end());
+		return (mFileEntries.find(std::string(filePath)) != mFileEntries.end());
 	}
 
 	const int FileSystem::FolderNameLength = 128;
@@ -257,12 +247,11 @@ namespace hr { namespace io
 
 	void FileSystem::findFiles(const std::string& baseFolderAndFilter, const bool returnFilesFullPath, std::function<void(const hr::io::Path &filePath, const hr::hUInt64 &fileSize)> actionFileFound)
 	{
-		HANDLE handleFind;
-		WIN32_FIND_DATA findData;
-		hr::io::Path basePath, fileFinalPath;
-
 		if (!actionFileFound || baseFolderAndFilter.empty())
 			return;
+
+		HANDLE handleFind;
+		WIN32_FIND_DATA findData;
 
 		{
 			auto baseFolderAndFilterWChar = hr::StringUtils::conv2UTF16(baseFolderAndFilter);
@@ -272,6 +261,7 @@ namespace hr { namespace io
 				return;
 		}
 
+		hr::io::Path basePath;
 		basePath.set(baseFolderAndFilter);
 		basePath.removeFile();
 
@@ -282,7 +272,12 @@ namespace hr { namespace io
 
 			auto filePath = hr::StringUtils::conv2UTF8(findData.cFileName);
 
-			hr::hUInt64 fileSize = (findData.nFileSizeHigh * (MAXDWORD + 1)) + findData.nFileSizeLow;
+			ULARGE_INTEGER ul;
+			ul.HighPart = findData.nFileSizeHigh;
+			ul.LowPart = findData.nFileSizeLow;
+			hr::hUInt64 fileSize = ul.QuadPart;
+
+			hr::io::Path fileFinalPath;
 
 			if (returnFilesFullPath)
 			{
@@ -302,15 +297,14 @@ namespace hr { namespace io
 		FindClose(handleFind);
 	}
 
-	bool FileSystem::fileExists(const char* const filePath)
+	bool FileSystem::fileExists(std::string_view filePath)
 	{
-		DWORD fileAtributes;
-
-		if (!filePath || (*filePath == '\0'))
+		if (filePath.empty())
 			return false;
 
+		DWORD fileAtributes;
 		{
-			auto filePathWChar = hr::StringUtils::conv2UTF16(filePath);
+			auto filePathWChar = hr::StringUtils::conv2UTF16(std::string(filePath));
 
 			fileAtributes = GetFileAttributes(filePathWChar.c_str());
 		}
@@ -324,7 +318,7 @@ namespace hr { namespace io
 		return true;
 	}
 
-	bool FileSystem::mountPath(const hr::io::Path &baseFolder, const char* const mountPoint)
+	bool FileSystem::mountPath(const hr::io::Path &baseFolder, std::string_view mountPoint)
 	{
 		if (mListMounts.size() >= mMaxNumMounts)
 			return false;
@@ -333,7 +327,7 @@ namespace hr { namespace io
 		return true;
 	}
 
-	bool FileSystem::mountZip(const hr::io::Path &zipPath, const char* const mountPoint, size_t* const numFilesZip)
+	bool FileSystem::mountZip(const hr::io::Path &zipPath, std::string_view mountPoint, size_t* const numFilesZip)
 	{
 		if (mListMounts.size() >= mMaxNumMounts)
 			return false;
@@ -346,10 +340,10 @@ namespace hr { namespace io
 		return true;
 	}
 
-	std::unique_ptr<streams::Stream> FileSystem::fileRead(const char * const filePath)
+	std::unique_ptr<streams::Stream> FileSystem::fileRead(std::string_view filePath)
 	{
-		if (!filePath || (*filePath == '\0'))
-			return std::unique_ptr<streams::Stream>();
+		if (filePath.empty())
+			return nullptr;
 
 		for (auto& curMount : mListMounts)
 		{
@@ -359,13 +353,13 @@ namespace hr { namespace io
 			return curMount->fileRead(filePath);
 		}
 
-		return std::unique_ptr<streams::Stream>();
+		return nullptr;
 	}
 
-	std::unique_ptr<streams::Stream> FileSystem::fileRead(const char * const filePath, FileSystem::MountType mountType)
+	std::unique_ptr<streams::Stream> FileSystem::fileRead(std::string_view filePath, FileSystem::MountType mountType)
 	{
-		if (!filePath || (*filePath == '\0'))
-			return std::unique_ptr<streams::Stream>();
+		if (filePath.empty())
+			return nullptr;
 
 		for (auto& curMount : mListMounts)
 		{
@@ -378,10 +372,10 @@ namespace hr { namespace io
 			return curMount->fileRead(filePath);
 		}
 
-		return std::unique_ptr<streams::Stream>();
+		return nullptr;
 	}
 
-	std::string FileSystem::readFileAsString(const char * const filePath)
+	std::string FileSystem::readFileAsString(std::string_view filePath)
 	{
 		auto fileStream = fileRead(filePath);
 		if (!fileStream)
@@ -394,15 +388,15 @@ namespace hr { namespace io
 		return fileData.toStr();
 	}
 
-	int FileSystem::watchChangeCreate(const char* const baseFolder, bool includeSubFolders, FileSystem::ChangeType changeType)
+	int FileSystem::watchChangeCreate(std::string_view baseFolder, bool includeSubFolders, FileSystem::ChangeType changeType)
 	{
 		HANDLE handleChange;
 
-		if (!baseFolder || (changeType == 0))
+		if (baseFolder.empty())
 			return -1;
 
 		{
-			auto baseFolderWChar = hr::StringUtils::conv2UTF16(baseFolder);
+			auto baseFolderWChar = hr::StringUtils::conv2UTF16(std::string(baseFolder));
 
 			DWORD changeFlags = 0;
 			if (changeType & FileName)
@@ -445,4 +439,4 @@ namespace hr { namespace io
 
 		return didChange;
 	}
-} }
+}

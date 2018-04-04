@@ -12,7 +12,7 @@
 #include <functional>
 #include <unordered_map>
 
-namespace hr { namespace io
+namespace hr::io
 {
 	class FileSystem
 	{
@@ -31,8 +31,7 @@ namespace hr { namespace io
 			int changeID = 0;
 			HANDLE changeHandle = nullptr;
 
-			WatchChangeData()
-			{ }
+			WatchChangeData() = default;
 
 			WatchChangeData(int changeID, HANDLE changeHandle)
 				: changeID(changeID)
@@ -46,13 +45,13 @@ namespace hr { namespace io
 			hr::io::Path mMountPoint;
 
 		public:
-			MountData(const char* const mountPoint);
-			virtual ~MountData();
+			MountData(std::string_view mountPoint);
+			virtual ~MountData() = default;
 
 			virtual FileSystem::MountType mountType() const = 0;
 			virtual void filesEnumerate() = 0;
-			virtual std::unique_ptr<streams::Stream> fileRead(const char* const filePath) = 0;
-			virtual bool fileExists(const char* const filePath) = 0;
+			virtual std::unique_ptr<streams::Stream> fileRead(std::string_view filePath) = 0;
+			virtual bool fileExists(std::string_view filePath) = 0;
 		};
 
 		class MountDataPath : public MountData
@@ -60,14 +59,13 @@ namespace hr { namespace io
 			hr::io::Path mBaseFolder;
 
 		public:
-			MountDataPath(const char* const baseFolder, const char* const mountPoint);
-			~MountDataPath();
+			MountDataPath(std::string_view baseFolder, std::string_view mountPoint);
 
 			FileSystem::MountType mountType() const;
 
 			void filesEnumerate();
-			std::unique_ptr<streams::Stream> fileRead(const char* const filePath);
-			bool fileExists(const char* const filePath);
+			std::unique_ptr<streams::Stream> fileRead(std::string_view filePath);
+			bool fileExists(std::string_view filePath);
 		};
 
 		class MountDataZip : public MountData
@@ -83,15 +81,15 @@ namespace hr { namespace io
 			std::unordered_map<std::string, ZipEntry> mFileEntries;
 
 		public:
-			MountDataZip(const char* const zipPath, const char* const mountPoint);
+			MountDataZip(std::string_view zipPath, std::string_view mountPoint);
 			~MountDataZip();
 
 			FileSystem::MountType mountType() const;
 			size_t numberFiles() const;
 
 			void filesEnumerate();
-			std::unique_ptr<streams::Stream> fileRead(const char* const filePath);
-			bool fileExists(const char* const filePath);
+			std::unique_ptr<streams::Stream> fileRead(std::string_view filePath);
+			bool fileExists(std::string_view filePath);
 		};
 
 		size_t mMaxNumMounts = 0;
@@ -103,18 +101,18 @@ namespace hr { namespace io
 		~FileSystem();
 
 		static void findFiles(const std::string& baseFolderAndFilter, const bool returnFilesFullPath, std::function<void(const hr::io::Path &filePath, const hr::hUInt64 &fileSize)> actionFileFound);
-		static bool fileExists(const char* const filePath);
+		static bool fileExists(std::string_view filePath);
 
-		bool mountPath(const hr::io::Path &baseFolder, const char* const mountPoint);
-		bool mountZip(const hr::io::Path &zipPath, const char* const mountPoint, size_t* const numFilesZip = nullptr);
+		bool mountPath(const hr::io::Path &baseFolder, std::string_view mountPoint);
+		bool mountZip(const hr::io::Path &zipPath, std::string_view mountPoint, size_t* const numFilesZip = nullptr);
 
-		std::unique_ptr<streams::Stream> fileRead(const char * const filePath);
-		std::unique_ptr<streams::Stream> fileRead(const char * const filePath, MountType mountType);
+		std::unique_ptr<streams::Stream> fileRead(std::string_view filePath);
+		std::unique_ptr<streams::Stream> fileRead(std::string_view filePath, MountType mountType);
 
-		std::string readFileAsString(const char* const filePath);
+		std::string readFileAsString(std::string_view filePath);
 
-		int watchChangeCreate(const char* const baseFolder, bool includeSubFolders, ChangeType changeType);
+		int watchChangeCreate(std::string_view baseFolder, bool includeSubFolders, ChangeType changeType);
 		void watchChangeDelete(const int watchChangeID);
 		bool watchChanged(const int watchChangeID);
 	};
-} }
+}

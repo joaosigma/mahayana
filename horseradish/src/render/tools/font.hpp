@@ -41,8 +41,7 @@ namespace hr { namespace render { namespace tools
 			int numCharsMax = -1;
 			size_t numCharsSkip = 0;
 
-			UnicodeRange()
-			{ }
+			UnicodeRange() = default;
 
 			UnicodeRange(int numCharsSkip)
 				: numCharsSkip(numCharsSkip)

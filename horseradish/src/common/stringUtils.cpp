@@ -7,6 +7,72 @@
 
 namespace hr
 {
+	namespace
+	{
+		const char* skipLeftWhitespace(const char* str)
+		{
+			while (memchr(" \t\n\r", *str, 4))
+				++str;
+			return str;
+		}
+
+		const char* skipRightWhitespace(const char* end)
+		{
+			while (memchr(" \t\n\r", end[-1], 4))
+				--end;
+			return end;
+		}
+
+		size_t unicodeUTF8Size(const unsigned int unicodeChar)
+		{
+			if (unicodeChar < 0x80)
+				return 1;
+			if (unicodeChar < 0x800)
+				return 2;
+			if (unicodeChar < 0x10000)
+				return 3;
+			if (unicodeChar < 0x110000)
+				return 4;
+			return 0;
+		}
+
+		size_t unicodeUTF8(const unsigned int unicodeChar, char* const outBuffer)
+		{
+			if (unicodeChar < 0x80)
+			{
+				outBuffer[0] = (char)unicodeChar;
+				return 1;
+			}
+
+			if (unicodeChar < 0x800)
+			{
+				outBuffer[0] = (unicodeChar >> 6) | 0xC0;
+				outBuffer[1] = (unicodeChar & 0x3F) | 0x80;
+				return 2;
+			}
+
+			if (unicodeChar < 0x10000)
+			{
+				outBuffer[0] = (unicodeChar >> 12) | 0xE0;
+				outBuffer[1] = ((unicodeChar >> 6) & 0x3F) | 0x80;
+				outBuffer[2] = (unicodeChar & 0x3F) | 0x80;
+				return 3;
+			}
+
+			if (unicodeChar < 0x110000)
+			{
+				outBuffer[0] = (unicodeChar >> 18) | 0xF0;
+				outBuffer[1] = ((unicodeChar >> 12) & 0x3F) | 0x80;
+				outBuffer[2] = ((unicodeChar >> 6) & 0x3F) | 0x80;
+				outBuffer[3] = (unicodeChar & 0x3F) | 0x80;
+				return 4;
+			}
+
+			outBuffer[0] = '\0';
+			return 0;
+		}
+	}
+
 	const unsigned __int32 StringUtils::utf8Wrapper::utf8Iterator::offsetsFromUTF8[6] = { 0x00000000UL, 0x00003080UL, 0x000E2080UL, 0x03C82080UL, 0xFA082080UL, 0x82082080UL };
 
 	void StringUtils::conv2UTF8(const std::wstring& strUTF16, std::string& strUTF8)
@@ -31,7 +97,7 @@ namespace hr
 
 		char tmpBuffer[4];
 
-		auto numBytes = StringUtils::unicodeUTF8(charUnicode, tmpBuffer);
+		auto numBytes = unicodeUTF8(charUnicode, tmpBuffer);
 		strUTF8.append(tmpBuffer, numBytes);
 	}
 
@@ -45,7 +111,7 @@ namespace hr
 		char tmpBuffer[4];
 		for (const auto& curUnicode : strUnicode)
 		{
-			auto numBytes = StringUtils::unicodeUTF8(curUnicode, tmpBuffer);
+			auto numBytes = unicodeUTF8(curUnicode, tmpBuffer);
 			strUTF8.append(tmpBuffer, numBytes);
 		}
 	}
@@ -108,7 +174,7 @@ namespace hr
 		return vec;
 	}
 
-	bool StringUtils::endsWith(const std::string& str, const std::string& ending)
+	bool StringUtils::endsWith(std::string_view str, std::string_view ending)
 	{
 		return (str.size() >= ending.size()) && equal(ending.rbegin(), ending.rend(), str.rbegin());
 	}
@@ -118,7 +184,7 @@ namespace hr
 		str = StringUtils::closeAtCopy(str, pos);
 	}
 
-	std::string StringUtils::closeAtCopy(const std::string& str, size_t pos)
+	std::string StringUtils::closeAtCopy(std::string_view str, size_t pos)
 	{
 		if (pos == 0)
 			return std::string();
@@ -132,7 +198,7 @@ namespace hr
 			if ((pos--) == 0)
 				break;
 
-			auto numBytes = StringUtils::unicodeUTF8(curChar, tmpBuffer);
+			auto numBytes = unicodeUTF8(curChar, tmpBuffer);
 			newStr.append(tmpBuffer, numBytes);
 		}
 
@@ -144,15 +210,15 @@ namespace hr
 		if (str.empty())
 			return;
 
-		str.assign(StringUtils::findFirst(str.c_str()), StringUtils::findLast(str.c_str() + str.length()));
+		str.assign(skipLeftWhitespace(str.c_str()), skipRightWhitespace(str.c_str() + str.length()));
 	}
 
-	std::string StringUtils::trimCopy(const std::string& str)
+	std::string StringUtils::trimCopy(std::string_view str)
 	{
 		if (str.empty())
 			return std::string();
 
-		return std::string(StringUtils::findFirst(str.c_str()), StringUtils::findLast(str.c_str() + str.length()));
+		return std::string(skipLeftWhitespace(str.data()), skipRightWhitespace(str.data() + str.length()));
 	}
 
 	void StringUtils::replace(std::string& str, const unsigned int unicodeCharOld, const unsigned int unicodeCharNew)
@@ -160,7 +226,7 @@ namespace hr
 		str = StringUtils::replaceCopy(str, unicodeCharOld, unicodeCharNew);
 	}
 
-	std::string StringUtils::replaceCopy(const std::string& str, const unsigned int replaceOldChar, const unsigned int replaceNewChar)
+	std::string StringUtils::replaceCopy(std::string_view str, const unsigned int replaceOldChar, const unsigned int replaceNewChar)
 	{
 		std::string newStr;
 		newStr.reserve(str.size());
@@ -168,7 +234,7 @@ namespace hr
 		char tmpBuffer[4];
 		for (const auto& curChar : StringUtils::utf8Wrapper(str))
 		{
-			auto numBytes = StringUtils::unicodeUTF8((curChar == replaceOldChar) ? replaceNewChar : curChar, tmpBuffer);
+			auto numBytes = unicodeUTF8((curChar == replaceOldChar) ? replaceNewChar : curChar, tmpBuffer);
 			newStr.append(tmpBuffer, numBytes);
 		}
 
@@ -228,8 +294,8 @@ namespace hr
 		*walker = '\0';
 		for (const auto& curUnicode : StringUtils::utf8Wrapper(str))
 		{
-			walker -= StringUtils::unicodeUTF8Size(curUnicode);
-			StringUtils::unicodeUTF8(curUnicode, walker);
+			walker -= unicodeUTF8Size(curUnicode);
+			unicodeUTF8(curUnicode, walker);
 		}
 
 		return std::string(walker);

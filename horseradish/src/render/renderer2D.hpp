@@ -7,7 +7,7 @@
 
 namespace hr { namespace render
 {
-	class Renderer2D : public Renderer
+	class Renderer2D
 	{
 	public:
 		struct Shaders{
@@ -25,10 +25,11 @@ namespace hr { namespace render
 
 		size_t mRenderWidth = 0, mRenderHeight = 0;
 		hr::gl::tools::ImmediateMode mGlImmediateMode;
+		const hr::gl::objects::Context& glContext;
 
 	public:
 		Renderer2D(const hr::gl::objects::Context& glContext)
-			: Renderer(glContext)
+			: glContext(glContext)
 		{ }
 
 		void initialize(size_t renderWidth, size_t renderHeight, hr::io::FileSystem * const fileSystem, const char* const textFont, size_t textSize);

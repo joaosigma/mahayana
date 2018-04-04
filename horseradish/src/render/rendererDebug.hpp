@@ -1,7 +1,6 @@
 #pragma once
 
 #include "renderer.hpp"
-#include "world.hpp"
 
 #include "tools/camera.hpp"
 #include "../common/fileSystem.hpp"
@@ -11,13 +10,13 @@
 namespace hr { namespace render
 {
 	class Renderer2D;
+	class RendererMain;
 
 	class RendererDebug
-		: public Renderer
 	{
-		hr::render::World& mWorld;
 		Renderer2D& mRenderer2D;
 		hr::io::FileSystem& mFileSystem;
+		const hr::gl::objects::Context& mGlContext;
 		hr::gl::tools::ImmediateMode mGlImmediateMode;
 
 		struct {
@@ -35,9 +34,9 @@ namespace hr { namespace render
 		} mShaders;
 
 	public:
-		RendererDebug(const hr::gl::objects::Context& glContext, hr::io::FileSystem& fileSystem, Renderer2D& renderer2D, hr::render::World& renderWorld);
+		RendererDebug(const hr::gl::objects::Context& glContext, hr::io::FileSystem& fileSystem, Renderer2D& renderer2D);
 		~RendererDebug();
 
-		void render(const tools::Camera& hrCamera, const hr::gl::tools::Viewport& hrViewport);
+		void render(RendererMain& rendererMain, const tools::Camera& hrCamera, const hr::gl::tools::Viewport& hrViewport);
 	};
 } }

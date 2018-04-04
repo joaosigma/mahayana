@@ -246,32 +246,37 @@ namespace hr { namespace engine
 			size_t displayWidth = var<int>("renderer.dims.width");
 			size_t displayHeight = var<int>("renderer.dims.height");
 
+			renderer2D = std::make_unique<hr::render::Renderer2D>(*glContext);
+			renderer2D->initialize(displayWidth, displayHeight,
+				mFileSystem.get(), var<std::string>("sys.console.text.font").c_str(),
+				var<int>("sys.console.text.size"));
+
+			rendererDebug = std::make_unique<hr::render::RendererDebug>(*glContext, *mFileSystem, *renderer2D);
+
+			rendererMain = std::make_unique<hr::render::RendererMain>(*glContext, *mFileSystem, displayWidth, displayHeight);
+
+			stage = std::make_unique<render::Stage>(*mRuntime, *mLoggerRuntimeCtx, *mFileSystem, *glContext, displayWidth, displayHeight);
+
 			//!!!!!!!!!!!!!!!! dev
 			{
 				/*{
-					hr::render::WorldEditor::createEmptyScene("c:/Users/Sigma/Desktop/sandstone2.hscene", "c:/Users/Sigma/Desktop/sandstone2.hgeom");
+					hr::render::WorldEditor::createEmptyScene("c:/Users/Sigma/Desktop/spheres.hscene", "c:/Users/Sigma/Desktop/spheres.hgeom");
 
-					hr::render::WorldEditor editor("c:/Users/Sigma/Desktop/sandstone2.hscene", "c:/Users/Sigma/Desktop/sandstone2.hgeom");
-					editor.importObj(R"(C:\Users\Sigma\Desktop\Rock_Sandstone_plras_8K_3d_ms\)", "Aset_rock_sandstone_S_plras_LOD0.obj");
+					hr::render::WorldEditor editor("c:/Users/Sigma/Desktop/spheres.hscene", "c:/Users/Sigma/Desktop/spheres.hgeom");
+
+					hr::geom::Mesh sphere = hr::geom::Mesh::genSphere(40, 40);
+					sphere.scaleUV(4.0f);
+					sphere.genTangents4();
+					editor.importMesh("teste", sphere);
 				}*/
 
-				renderData = std::make_unique<hr::render::World>("c:/Users/Sigma/Desktop/spheres.hscene", "c:/Users/Sigma/Desktop/spheres.hgeom");
-				//renderData = std::make_unique<hr::render::World>("c:/Users/Sigma/Desktop/wood-log.hscene", "c:/Users/Sigma/Desktop/wood-log.hgeom");
-				//renderData = std::make_unique<hr::render::World>("c:/Users/Sigma/Desktop/sandstone1.hscene", "c:/Users/Sigma/Desktop/sandstone1.hgeom");
-				//renderData = std::make_unique<hr::render::World>("c:/Users/Sigma/Desktop/sandstone2.hscene", "c:/Users/Sigma/Desktop/sandstone2.hgeom");
-				//renderData = std::make_unique<hr::render::World>("c:/Users/Sigma/Desktop/volund.hscene", "c:/Users/Sigma/Desktop/volund.hgeom");				
+				renderData = std::make_unique<hr::render::World>();
+				renderData->loadArea(*rendererMain, "c:/Users/Sigma/Desktop/spheres.hscene", "c:/Users/Sigma/Desktop/spheres.hgeom");
+				//renderData->loadArea(*rendererMain, "c:/Users/Sigma/Desktop/wood-log.hscene", "c:/Users/Sigma/Desktop/wood-log.hgeom");
+				//renderData->loadArea(*rendererMain, "c:/Users/Sigma/Desktop/sandstone1.hscene", "c:/Users/Sigma/Desktop/sandstone1.hgeom");
+				//renderData->loadArea(*rendererMain, "c:/Users/Sigma/Desktop/sandstone2.hscene", "c:/Users/Sigma/Desktop/sandstone2.hgeom");
+				//renderData->loadArea(*rendererMain, "c:/Users/Sigma/Desktop/volund.hscene", "c:/Users/Sigma/Desktop/volund.hgeom");				
 			}
-
-			renderer2D = std::make_unique<hr::render::Renderer2D>(*glContext);
-			renderer2D->initialize(displayWidth, displayHeight,
-									mFileSystem.get(), var<std::string>("sys.console.text.font").c_str(),
-									var<int>("sys.console.text.size"));
-
-			rendererDebug = std::make_unique<hr::render::RendererDebug>(*glContext, *mFileSystem, *renderer2D, *renderData);
-
-			rendererMain = std::make_unique<hr::render::RendererMain>(*glContext, *mFileSystem, *renderData, displayWidth, displayHeight);
-
-			stage = std::make_unique<render::Stage>(*mRuntime, *mLoggerRuntimeCtx, *mFileSystem, *glContext, displayWidth, displayHeight);
 		}
 			
 		//start other renderers (misc) related stuff
@@ -299,12 +304,6 @@ namespace hr { namespace engine
 
 		hr::gl::glEnable(GL_FRAMEBUFFER_SRGB);
 
-		//!!!!!!!!!!!!!!!! dev
-		{
-			renderData->loadData(*mFileSystem);
-			rendererMain->loadWorld();
-		}
-
 		//we are about to enter the main render loop
 		{
 			//setup camera
@@ -313,7 +312,7 @@ namespace hr { namespace engine
 			camera.setTarget(0.0f, 0.0f, 0.0f);
 			camera.setMovementScale(hr::render::tools::CameraFPS::CameraInput::Keyboard, 10.0f);
 
-			hr::gl::tools::Viewport viewportRender(90.0f, var<int>("renderer.dims.width"), var<int>("renderer.dims.height"), 1.0f, 500.0f);
+			hr::gl::tools::Viewport viewportRender(90.0f, var<int>("renderer.dims.width"), var<int>("renderer.dims.height"), 0.1f, 500.0f);
 			hr::gl::glViewport(0, 0, viewportRender.width(), viewportRender.height());
 
 			hr::gl::objects::Query::Group<8> renderGlQueryGroup = {
@@ -321,7 +320,7 @@ namespace hr { namespace engine
 				hr::gl::objects::Query::Type::VerticesSubmitted, hr::gl::objects::Query::Type::PrimitivesSubmitted,
 				hr::gl::objects::Query::Type::VertexShaderInvocations, hr::gl::objects::Query::Type::FragmentShaderInvocations,
 				hr::gl::objects::Query::Type::ClippingInputPrimitives, hr::gl::objects::Query::Type::ClippingOutputPrimitives
-				};
+			};
 
 			float lastDeltaTimeS = 0.0f;
 
@@ -331,7 +330,7 @@ namespace hr { namespace engine
 				profiler->nextSample();
 
 				//--------------------
-				//Start frame rendering requests to queue stuff on the GPU
+				//Start frame rendering requests to queue stuff onto the GPU
 				//--------------------
 
 				//in case nothing is drawn
@@ -428,7 +427,7 @@ namespace hr { namespace engine
 				}
 
 				//process step in the render data, stage and console
-				renderData->prepareNextFrame(camera, viewportRender);
+				renderData->prepareNextFrame(*rendererMain, camera, viewportRender);
 				stage->processStep();
 
 				if (consoleUI)

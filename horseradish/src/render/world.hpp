@@ -2,108 +2,119 @@
 
 #include "tools/camera.hpp"
 
+#include "renderer.hpp"
+
 #include "common/mesh.hpp"
-#include "common/fileSystem.hpp"
-#include "common/OpenGL/objects.hpp"
+#include "common/stream.hpp"
 #include "common/OpenGL/tools/frustum.hpp"
 #include "common/OpenGL/tools/viewport.hpp"
 
 #include <map>
+#include <atomic>
 #include <vector>
 
-namespace hr { namespace render
+namespace hr::render
 {
-	class Concept
-	{
-	public:
-		size_t id = 0;
-		std::string name;
-		struct {
-			size_t numVertices = 0, numIndices = 0;
-			size_t fstreamVertexOffset = 0, fstreamIndexOffset = 0;
-			hr::BBox bbox;
-		} geom;
-		std::string matDiffusePath, matNormalPath;
-
-		struct
-		{
-			int meshVBOVertexOffset = 0;
-			unsigned int meshDrawIndirectOffset = 0;
-			void *meshTriListOffset = nullptr;
-
-			hr::gl::objects::Texture texDiffuse, texNormal;
-
-		} renderData;
-	};
-
-	class Object
-	{
-	public:
-		enum class Type: unsigned int { Static = 1, Instance = 2 };
-
-		Type type;
-		size_t conceptId;
-		hr::BBox bbox;
-
-		//instance data: [{quat, translate}, ...]
-	};
-
 	class World
 	{
 	public:
-		std::map<size_t, Concept> mConcepts;
-		std::vector<Object> mObjects;
+		typedef size_t AreaId;
 
-		struct RenderData{
-			std::vector<Object*> objects;
+		static constexpr AreaId InvalidAreaId = 0;
 
-			hr::gl::objects::Buffer vboMeshData, vboMeshIndexData, vboIndirectDraw;
-			hr::gl::objects::VertexArray vaoMesh;
-		}mRenderData;
+	protected:
+		class Object
+		{
+		public:
+			size_t objectId = 0;
+			hr::BBox bbox;
+		};
 
-		hr::streams::FileStream mGeomFileStream;
+		class Instance
+		{
+		public:
+			enum class Type : unsigned int { Static = 1, Instance = 2 };
+
+			Type type;
+			size_t objectId;
+			hr::BBox bbox;
+
+			//instance data: [{quat, translate}, ...]
+		};
+
+		struct Area
+		{
+			AreaId id;
+			IRenderer::SceneId sceneId;
+			std::map<size_t, Object> mObjects;
+			std::vector<Instance> mInstances;
+			hr::streams::FileStream mGeomFileStream;
+		};
+
+	protected:
+		std::unordered_map<AreaId, Area> mAreas;
+		std::atomic<AreaId> mGenAreaIds{ 1 };
 
 	private:
 		bool m_editorMode = false;
 
 	public:
-		World(const std::string& scenePath, const std::string& geomPath, bool editorMode = false);
+		World(bool editorMode = false);
 		virtual ~World();
 
-		void loadData(hr::io::FileSystem& fileSystem);
-		void prepareNextFrame(const tools::Camera& hrCamera, const hr::gl::tools::Viewport& hrViewport);
+		AreaId loadArea(IRenderer& renderer, const std::string& scenePath, const std::string& geomPath);
+		void unloadArea(AreaId areaId);
+
+		void prepareNextFrame(IRenderer& renderer, const tools::Camera& hrCamera, const hr::gl::tools::Viewport& hrViewport);
+
+	protected:
+		AreaId addEmptyArea();
 
 	private:
-		void cleanup();
-		bool loadWorld(const std::string& scenePath, const std::string& geomPath);
+		bool load(IRenderer& renderer, Area& area, const std::string& scenePath, const std::string& geomPath);
 	};
 
 	class WorldEditor
 		: public World
 	{
-		struct
+		struct AreaData
 		{
-			std::string scene, geom;
-		} m_paths;
+			struct ObjectData
+			{
+				size_t objectId;
+				std::string name;
+				std::string matDiffusePath, matNormalPath;
+				struct {
+					size_t numVertices = 0, numIndices = 0;
+					size_t fstreamVertexOffset = 0, fstreamIndexOffset = 0;
+				} geom;
+			};
+
+			std::unordered_map<size_t, ObjectData> objects;
+			std::string pathScene, pathGeom;
+		};
+		std::unordered_map<AreaId, AreaData> mAreasData;
 
 	public:
-		static void createEmptyScene(const std::string& scenePath, const std::string& geomPath);
+		static void createEmptyArea(const std::string& scenePath, const std::string& geomPath);
 
 	public:
-		WorldEditor(const std::string& scenePath, const std::string& geomPath);
+		WorldEditor();
 
-		bool importMesh(const std::string& name, const hr::geom::Mesh& mesh);
-		bool importObj(const std::string& basePath, const std::string& fileName);
+		AreaId newArea(std::string_view scenePath, std::string_view geomPath);
 
-		void processMesh(const std::vector<size_t>& conceptIds, std::function<void(hr::geom::Mesh&)> cb);
+		bool importMesh(AreaId areaId, std::string_view name, const hr::geom::Mesh& mesh);
+		bool importObj(AreaId areaId, std::string_view basePath, std::string_view fileName);
 
-		std::vector<size_t> unusedConcepts() const;
-		void removeConcepts(const std::vector<size_t>& conceptIds);
+		void processMesh(AreaId areaId, const std::vector<size_t>& objectIds, std::function<void(hr::geom::Mesh&)> cb);
+
+		std::vector<size_t> unusedObjects(AreaId areaId) const;
+		void removeObjects(AreaId areaId, const std::vector<size_t>& objectIds);
 
 	private:
-		size_t genId() const;
+		size_t genObjectId(Area& area) const;
 
-		void addMesh(size_t geomId, const hr::geom::Mesh& mesh);
-		void saveScene();
+		void addMesh(Area& area, size_t geomId, const hr::geom::Mesh& mesh);
+		void saveArea(Area& area);
 	};
-} }
+}

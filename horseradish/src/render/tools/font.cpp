@@ -336,7 +336,7 @@ namespace hr { namespace render { namespace tools
 				continue;
 			}
 
-			std::unordered_map<unsigned short, CharacterData>::const_iterator it = mCharMap.find(curCharUnicode);
+			auto it = mCharMap.find(curCharUnicode);
 			if (it == mCharMap.end())
 				continue;
 
@@ -518,7 +518,7 @@ namespace hr { namespace render { namespace tools
 		if (!mValid)
 			return 0.0f;
 
-		std::unordered_map<unsigned short, CharacterData>::const_iterator it = mCharMap.find(unicodeChar);
+		auto it = mCharMap.find(unicodeChar);
 		if (it == mCharMap.end())
 			return 0.0f;
 
@@ -667,7 +667,7 @@ namespace hr { namespace render { namespace tools
 			if ((numChars++) >= maxUnicodeCharsRead)
 				break;
 
-			std::unordered_map<unsigned short, CharacterData>::const_iterator itChar = mCharMap.find(curCharUnicode);
+			auto itChar = mCharMap.find(curCharUnicode);
 			if (itChar == mCharMap.end())
 				continue;
 
