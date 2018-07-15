@@ -474,7 +474,7 @@ namespace hr
 
 		void setYUV(unsigned char y, unsigned char u, unsigned char v)
 		{
-			HALIGN_16BYTES float pixelAux[4];
+			alignas(16) float pixelAux[4];
 
 			pixelAux[0] = y;
 			pixelAux[1] = u;
@@ -519,7 +519,7 @@ namespace hr
 
 		void setYCbCr(unsigned char y, unsigned char cb, unsigned char cr, bool fullRange)
 		{
-			HALIGN_16BYTES float pixelAux[4];
+			alignas(16) float pixelAux[4];
 
 			pixelAux[0] = y;
 			pixelAux[1] = cb;
@@ -560,7 +560,7 @@ namespace hr
 
 		void setYPbPr(unsigned char y, unsigned char pb, unsigned char pr, bool coefficientsSDTV)
 		{
-			HALIGN_16BYTES float pixelAux[4];
+			alignas(16) float pixelAux[4];
 
 			pixelAux[0] = y;
 			pixelAux[1] = pb;
@@ -591,7 +591,7 @@ namespace hr
 
 		void setCMYK(unsigned char c, unsigned char m, unsigned char y, unsigned char k)
 		{
-			HALIGN_16BYTES float pixelAux[4];
+			alignas(16) float pixelAux[4];
 
 			pixelAux[0] = c;
 			pixelAux[1] = m;

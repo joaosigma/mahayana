@@ -12,20 +12,20 @@ namespace hr
 		float mMinX, mMinY, mMaxX, mMaxY;
 
 	public:
-		BRect()
+		BRect() noexcept
 			: mMinX(std::numeric_limits<float>::infinity())
 			, mMinY(std::numeric_limits<float>::infinity())
 			, mMaxX(-std::numeric_limits<float>::infinity())
 			, mMaxY(-std::numeric_limits<float>::infinity())
 		{ }
 		
-		BRect(const BRect& brect)
+		BRect(const BRect& brect) noexcept
 			: mMinX(brect.mMinX), mMinY(brect.mMinY), mMaxX(brect.mMaxX), mMaxY(brect.mMaxY)
 		{ }
-		BRect(const float &minX, const float &minY, const float &maxX, const float &maxY)
+		BRect(const float &minX, const float &minY, const float &maxX, const float &maxY) noexcept
 			: mMinX(minX), mMinY(minY), mMaxX(maxX), mMaxY(maxY)
 		{ }
-		BRect(const float &centerX, const float &centerY, const float &expandAmount)
+		BRect(const float &centerX, const float &centerY, const float &expandAmount) noexcept
 			: mMinX(centerX), mMinY(centerY), mMaxX(centerX), mMaxY(centerY)
 		{
 			expand(expandAmount);

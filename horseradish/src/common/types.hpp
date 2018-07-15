@@ -4,7 +4,6 @@
 
 #define HRESTRICT __restrict
 #define HFUNC_RESTRICT __declspec(restrict)
-#define HALIGN_16BYTES __declspec(align(16))
 
 namespace hr
 {
@@ -46,7 +45,10 @@ namespace hr
 		{ }
 	};
 
-	typedef HALIGN_16BYTES union{
+#pragma warning( push )
+#pragma warning( disable : 4324)
+
+	typedef union alignas(16) {
 		 float               f32[4];
 		 double              d64[2];
 		 __int8              i8[16];
@@ -60,7 +62,7 @@ namespace hr
 		 __m128              m128;
 	} hData128;
 
-	typedef HALIGN_16BYTES union{
+	typedef union alignas(16) {
 		 float               f32[5];
 		 __int8              i8[20];
 		 __int16             i16[10];
@@ -69,6 +71,8 @@ namespace hr
 		 unsigned __int16    ui16[10];
 		 unsigned __int32    ui32[5];
 	} hData160;
+
+#pragma warning( pop ) 
 
 	bool operator == (const hData128& a, const hData128& b);
 	bool operator != (const hData128& a, const hData128& b);

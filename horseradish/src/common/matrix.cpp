@@ -8,222 +8,240 @@
 
 namespace hr
 {
-	void Matrix::asmMat4x4Vec3(float *vecWrite, const float *vecRead, float wCompMul, size_t stride, const float *mat, size_t numVec)
+	namespace
 	{
-		unsigned int leftOver;
-		__m128 mat1, mat2, mat3, mat4, final;
-
-		mat1 = _mm_loadu_ps(mat + 0);
-		mat2 = _mm_loadu_ps(mat + 4);
-		mat3 = _mm_loadu_ps(mat + 8);
-		mat4 = _mm_mul_ps(_mm_loadu_ps(mat + 12), _mm_load_ps1(&wCompMul));
-
-		leftOver = numVec;
-		for (; leftOver >= 4; leftOver -= 4)
+		void asmMat4x4Vec3(float *vecWrite, const float *vecRead, float wCompMul, size_t stride, const float *mat, size_t numVec)
 		{
-			final = _mm_mul_ps(_mm_load_ps1(vecRead + 0), mat1);
-			final = _mm_add_ps(final, _mm_mul_ps(_mm_load_ps1(vecRead + 1), mat2));
-			final = _mm_add_ps(final, _mm_mul_ps(_mm_load_ps1(vecRead + 2), mat3));
-			final = _mm_add_ps(final, mat4);
-			_mm_storel_pi((__m64 *)vecWrite, final);
-			_mm_store_ss(vecWrite + 2, _mm_movehl_ps(final, final));
+			unsigned int leftOver;
+			__m128 mat1, mat2, mat3, mat4, final;
 
-			vecRead = (float*)(((unsigned char*)vecRead) + stride);
-			vecWrite = (float*)(((unsigned char*)vecWrite) + stride);
+			mat1 = _mm_loadu_ps(mat + 0);
+			mat2 = _mm_loadu_ps(mat + 4);
+			mat3 = _mm_loadu_ps(mat + 8);
+			mat4 = _mm_mul_ps(_mm_loadu_ps(mat + 12), _mm_load_ps1(&wCompMul));
 
-			final = _mm_mul_ps(_mm_load_ps1(vecRead + 0), mat1);
-			final = _mm_add_ps(final, _mm_mul_ps(_mm_load_ps1(vecRead + 1), mat2));
-			final = _mm_add_ps(final, _mm_mul_ps(_mm_load_ps1(vecRead + 2), mat3));
-			final = _mm_add_ps(final, mat4);
-			_mm_storel_pi((__m64 *)vecWrite, final);
-			_mm_store_ss(vecWrite + 2, _mm_movehl_ps(final, final));
-
-			vecRead = (float*)(((unsigned char*)vecRead) + stride);
-			vecWrite = (float*)(((unsigned char*)vecWrite) + stride);
-
-			final = _mm_mul_ps(_mm_load_ps1(vecRead + 0), mat1);
-			final = _mm_add_ps(final, _mm_mul_ps(_mm_load_ps1(vecRead + 1), mat2));
-			final = _mm_add_ps(final, _mm_mul_ps(_mm_load_ps1(vecRead + 2), mat3));
-			final = _mm_add_ps(final, mat4);
-			_mm_storel_pi((__m64 *)vecWrite, final);
-			_mm_store_ss(vecWrite + 2, _mm_movehl_ps(final, final));
-
-			vecRead = (float*)(((unsigned char*)vecRead) + stride);
-			vecWrite = (float*)(((unsigned char*)vecWrite) + stride);
-
-			final = _mm_mul_ps(_mm_load_ps1(vecRead + 0), mat1);
-			final = _mm_add_ps(final, _mm_mul_ps(_mm_load_ps1(vecRead + 1), mat2));
-			final = _mm_add_ps(final, _mm_mul_ps(_mm_load_ps1(vecRead + 2), mat3));
-			final = _mm_add_ps(final, mat4);
-			_mm_storel_pi((__m64 *)vecWrite, final);
-			_mm_store_ss(vecWrite + 2, _mm_movehl_ps(final, final));
-
-			vecRead = (float*)(((unsigned char*)vecRead) + stride);
-			vecWrite = (float*)(((unsigned char*)vecWrite) + stride);
-		}
-
-		for (; leftOver > 0; leftOver--)
-		{
-			final = _mm_mul_ps(_mm_load_ps1(vecRead + 0), mat1);
-			final = _mm_add_ps(final, _mm_mul_ps(_mm_load_ps1(vecRead + 1), mat2));
-			final = _mm_add_ps(final, _mm_mul_ps(_mm_load_ps1(vecRead + 2), mat3));
-			final = _mm_add_ps(final, mat4);
-			_mm_storel_pi((__m64 *)vecWrite, final);
-			_mm_store_ss(vecWrite + 2, _mm_movehl_ps(final, final));
-
-			vecRead = (float*)(((unsigned char*)vecRead) + stride);
-			vecWrite = (float*)(((unsigned char*)vecWrite) + stride);
-		}
-	}
-
-	void Matrix::asmMat4x4Vec4(float *vecWrite, const float *vecRead, size_t stride, const float *mat, size_t numVec)
-	{
-		unsigned int leftOver;
-		__m128 mat1, mat2, mat3, mat4, final, curVec;
-
-		mat1 = _mm_loadu_ps(mat + 0);
-		mat2 = _mm_loadu_ps(mat + 4);
-		mat3 = _mm_loadu_ps(mat + 8);
-		mat4 = _mm_loadu_ps(mat + 12);
-
-		leftOver = numVec;
-
-		if ((reinterpret_cast<uintptr_t>(vecWrite) % 16 == 0) && (reinterpret_cast<uintptr_t>(vecRead) % 16 == 0) && (stride % 16 == 0))
-		{
+			leftOver = numVec;
 			for (; leftOver >= 4; leftOver -= 4)
 			{
-				curVec = _mm_load_ps(vecRead);
-				final = _mm_mul_ps(_mm_shuffle_ps(curVec, curVec, 0x00), mat1);
-				final = _mm_add_ps(final, _mm_mul_ps(_mm_shuffle_ps(curVec, curVec, 0x55), mat2));
-				final = _mm_add_ps(final, _mm_mul_ps(_mm_shuffle_ps(curVec, curVec, 0xAA), mat3));
-				final = _mm_add_ps(final, _mm_mul_ps(_mm_shuffle_ps(curVec, curVec, 0xFF), mat4));
-				_mm_store_ps(vecWrite, final);
+				final = _mm_mul_ps(_mm_load_ps1(vecRead + 0), mat1);
+				final = _mm_add_ps(final, _mm_mul_ps(_mm_load_ps1(vecRead + 1), mat2));
+				final = _mm_add_ps(final, _mm_mul_ps(_mm_load_ps1(vecRead + 2), mat3));
+				final = _mm_add_ps(final, mat4);
+				_mm_storel_pi((__m64 *)vecWrite, final);
+				_mm_store_ss(vecWrite + 2, _mm_movehl_ps(final, final));
 
 				vecRead = (float*)(((unsigned char*)vecRead) + stride);
 				vecWrite = (float*)(((unsigned char*)vecWrite) + stride);
 
-				curVec = _mm_load_ps(vecRead);
-				final = _mm_mul_ps(_mm_shuffle_ps(curVec, curVec, 0x00), mat1);
-				final = _mm_add_ps(final, _mm_mul_ps(_mm_shuffle_ps(curVec, curVec, 0x55), mat2));
-				final = _mm_add_ps(final, _mm_mul_ps(_mm_shuffle_ps(curVec, curVec, 0xAA), mat3));
-				final = _mm_add_ps(final, _mm_mul_ps(_mm_shuffle_ps(curVec, curVec, 0xFF), mat4));
-				_mm_store_ps(vecWrite, final);
+				final = _mm_mul_ps(_mm_load_ps1(vecRead + 0), mat1);
+				final = _mm_add_ps(final, _mm_mul_ps(_mm_load_ps1(vecRead + 1), mat2));
+				final = _mm_add_ps(final, _mm_mul_ps(_mm_load_ps1(vecRead + 2), mat3));
+				final = _mm_add_ps(final, mat4);
+				_mm_storel_pi((__m64 *)vecWrite, final);
+				_mm_store_ss(vecWrite + 2, _mm_movehl_ps(final, final));
 
 				vecRead = (float*)(((unsigned char*)vecRead) + stride);
 				vecWrite = (float*)(((unsigned char*)vecWrite) + stride);
 
-				curVec = _mm_load_ps(vecRead);
-				final = _mm_mul_ps(_mm_shuffle_ps(curVec, curVec, 0x00), mat1);
-				final = _mm_add_ps(final, _mm_mul_ps(_mm_shuffle_ps(curVec, curVec, 0x55), mat2));
-				final = _mm_add_ps(final, _mm_mul_ps(_mm_shuffle_ps(curVec, curVec, 0xAA), mat3));
-				final = _mm_add_ps(final, _mm_mul_ps(_mm_shuffle_ps(curVec, curVec, 0xFF), mat4));
-				_mm_store_ps(vecWrite, final);
+				final = _mm_mul_ps(_mm_load_ps1(vecRead + 0), mat1);
+				final = _mm_add_ps(final, _mm_mul_ps(_mm_load_ps1(vecRead + 1), mat2));
+				final = _mm_add_ps(final, _mm_mul_ps(_mm_load_ps1(vecRead + 2), mat3));
+				final = _mm_add_ps(final, mat4);
+				_mm_storel_pi((__m64 *)vecWrite, final);
+				_mm_store_ss(vecWrite + 2, _mm_movehl_ps(final, final));
 
 				vecRead = (float*)(((unsigned char*)vecRead) + stride);
 				vecWrite = (float*)(((unsigned char*)vecWrite) + stride);
 
-				curVec = _mm_load_ps(vecRead);
-				final = _mm_mul_ps(_mm_shuffle_ps(curVec, curVec, 0x00), mat1);
-				final = _mm_add_ps(final, _mm_mul_ps(_mm_shuffle_ps(curVec, curVec, 0x55), mat2));
-				final = _mm_add_ps(final, _mm_mul_ps(_mm_shuffle_ps(curVec, curVec, 0xAA), mat3));
-				final = _mm_add_ps(final, _mm_mul_ps(_mm_shuffle_ps(curVec, curVec, 0xFF), mat4));
-				_mm_store_ps(vecWrite, final);
+				final = _mm_mul_ps(_mm_load_ps1(vecRead + 0), mat1);
+				final = _mm_add_ps(final, _mm_mul_ps(_mm_load_ps1(vecRead + 1), mat2));
+				final = _mm_add_ps(final, _mm_mul_ps(_mm_load_ps1(vecRead + 2), mat3));
+				final = _mm_add_ps(final, mat4);
+				_mm_storel_pi((__m64 *)vecWrite, final);
+				_mm_store_ss(vecWrite + 2, _mm_movehl_ps(final, final));
 
 				vecRead = (float*)(((unsigned char*)vecRead) + stride);
 				vecWrite = (float*)(((unsigned char*)vecWrite) + stride);
 			}
-		}
-		else
-		{
-			for (; leftOver >= 4; leftOver -= 4)
+
+			for (; leftOver > 0; leftOver--)
 			{
-				curVec = _mm_loadu_ps(vecRead);
-				final = _mm_mul_ps(_mm_shuffle_ps(curVec, curVec, 0x00), mat1);
-				final = _mm_add_ps(final, _mm_mul_ps(_mm_shuffle_ps(curVec, curVec, 0x55), mat2));
-				final = _mm_add_ps(final, _mm_mul_ps(_mm_shuffle_ps(curVec, curVec, 0xAA), mat3));
-				final = _mm_add_ps(final, _mm_mul_ps(_mm_shuffle_ps(curVec, curVec, 0xFF), mat4));
-				_mm_storeu_ps(vecWrite, final);
-
-				vecRead = (float*)(((unsigned char*)vecRead) + stride);
-				vecWrite = (float*)(((unsigned char*)vecWrite) + stride);
-
-				curVec = _mm_loadu_ps(vecRead);
-				final = _mm_mul_ps(_mm_shuffle_ps(curVec, curVec, 0x00), mat1);
-				final = _mm_add_ps(final, _mm_mul_ps(_mm_shuffle_ps(curVec, curVec, 0x55), mat2));
-				final = _mm_add_ps(final, _mm_mul_ps(_mm_shuffle_ps(curVec, curVec, 0xAA), mat3));
-				final = _mm_add_ps(final, _mm_mul_ps(_mm_shuffle_ps(curVec, curVec, 0xFF), mat4));
-				_mm_storeu_ps(vecWrite, final);
-
-				vecRead = (float*)(((unsigned char*)vecRead) + stride);
-				vecWrite = (float*)(((unsigned char*)vecWrite) + stride);
-
-				curVec = _mm_loadu_ps(vecRead);
-				final = _mm_mul_ps(_mm_shuffle_ps(curVec, curVec, 0x00), mat1);
-				final = _mm_add_ps(final, _mm_mul_ps(_mm_shuffle_ps(curVec, curVec, 0x55), mat2));
-				final = _mm_add_ps(final, _mm_mul_ps(_mm_shuffle_ps(curVec, curVec, 0xAA), mat3));
-				final = _mm_add_ps(final, _mm_mul_ps(_mm_shuffle_ps(curVec, curVec, 0xFF), mat4));
-				_mm_storeu_ps(vecWrite, final);
-
-				vecRead = (float*)(((unsigned char*)vecRead) + stride);
-				vecWrite = (float*)(((unsigned char*)vecWrite) + stride);
-
-				curVec = _mm_loadu_ps(vecRead);
-				final = _mm_mul_ps(_mm_shuffle_ps(curVec, curVec, 0x00), mat1);
-				final = _mm_add_ps(final, _mm_mul_ps(_mm_shuffle_ps(curVec, curVec, 0x55), mat2));
-				final = _mm_add_ps(final, _mm_mul_ps(_mm_shuffle_ps(curVec, curVec, 0xAA), mat3));
-				final = _mm_add_ps(final, _mm_mul_ps(_mm_shuffle_ps(curVec, curVec, 0xFF), mat4));
-				_mm_storeu_ps(vecWrite, final);
+				final = _mm_mul_ps(_mm_load_ps1(vecRead + 0), mat1);
+				final = _mm_add_ps(final, _mm_mul_ps(_mm_load_ps1(vecRead + 1), mat2));
+				final = _mm_add_ps(final, _mm_mul_ps(_mm_load_ps1(vecRead + 2), mat3));
+				final = _mm_add_ps(final, mat4);
+				_mm_storel_pi((__m64 *)vecWrite, final);
+				_mm_store_ss(vecWrite + 2, _mm_movehl_ps(final, final));
 
 				vecRead = (float*)(((unsigned char*)vecRead) + stride);
 				vecWrite = (float*)(((unsigned char*)vecWrite) + stride);
 			}
 		}
 
-		for (; leftOver > 0; leftOver--)
+		void asmMat4x4Vec4(float *vecWrite, const float *vecRead, size_t stride, const float *mat, size_t numVec)
 		{
-			curVec = _mm_loadu_ps(vecRead);
-			final = _mm_mul_ps(_mm_shuffle_ps(curVec, curVec, 0x00), mat1);
-			final = _mm_add_ps(final, _mm_mul_ps(_mm_shuffle_ps(curVec, curVec, 0x55), mat2));
-			final = _mm_add_ps(final, _mm_mul_ps(_mm_shuffle_ps(curVec, curVec, 0xAA), mat3));
-			final = _mm_add_ps(final, _mm_mul_ps(_mm_shuffle_ps(curVec, curVec, 0xFF), mat4));
-			_mm_storeu_ps(vecWrite, final);
+			unsigned int leftOver;
+			__m128 mat1, mat2, mat3, mat4, final, curVec;
 
-			vecRead = (float*)(((unsigned char*)vecRead) + stride);
-			vecWrite = (float*)(((unsigned char*)vecWrite) + stride);
+			mat1 = _mm_loadu_ps(mat + 0);
+			mat2 = _mm_loadu_ps(mat + 4);
+			mat3 = _mm_loadu_ps(mat + 8);
+			mat4 = _mm_loadu_ps(mat + 12);
+
+			leftOver = numVec;
+
+			if ((reinterpret_cast<uintptr_t>(vecWrite) % 16 == 0) && (reinterpret_cast<uintptr_t>(vecRead) % 16 == 0) && (stride % 16 == 0))
+			{
+				for (; leftOver >= 4; leftOver -= 4)
+				{
+					curVec = _mm_load_ps(vecRead);
+					final = _mm_mul_ps(_mm_shuffle_ps(curVec, curVec, 0x00), mat1);
+					final = _mm_add_ps(final, _mm_mul_ps(_mm_shuffle_ps(curVec, curVec, 0x55), mat2));
+					final = _mm_add_ps(final, _mm_mul_ps(_mm_shuffle_ps(curVec, curVec, 0xAA), mat3));
+					final = _mm_add_ps(final, _mm_mul_ps(_mm_shuffle_ps(curVec, curVec, 0xFF), mat4));
+					_mm_store_ps(vecWrite, final);
+
+					vecRead = (float*)(((unsigned char*)vecRead) + stride);
+					vecWrite = (float*)(((unsigned char*)vecWrite) + stride);
+
+					curVec = _mm_load_ps(vecRead);
+					final = _mm_mul_ps(_mm_shuffle_ps(curVec, curVec, 0x00), mat1);
+					final = _mm_add_ps(final, _mm_mul_ps(_mm_shuffle_ps(curVec, curVec, 0x55), mat2));
+					final = _mm_add_ps(final, _mm_mul_ps(_mm_shuffle_ps(curVec, curVec, 0xAA), mat3));
+					final = _mm_add_ps(final, _mm_mul_ps(_mm_shuffle_ps(curVec, curVec, 0xFF), mat4));
+					_mm_store_ps(vecWrite, final);
+
+					vecRead = (float*)(((unsigned char*)vecRead) + stride);
+					vecWrite = (float*)(((unsigned char*)vecWrite) + stride);
+
+					curVec = _mm_load_ps(vecRead);
+					final = _mm_mul_ps(_mm_shuffle_ps(curVec, curVec, 0x00), mat1);
+					final = _mm_add_ps(final, _mm_mul_ps(_mm_shuffle_ps(curVec, curVec, 0x55), mat2));
+					final = _mm_add_ps(final, _mm_mul_ps(_mm_shuffle_ps(curVec, curVec, 0xAA), mat3));
+					final = _mm_add_ps(final, _mm_mul_ps(_mm_shuffle_ps(curVec, curVec, 0xFF), mat4));
+					_mm_store_ps(vecWrite, final);
+
+					vecRead = (float*)(((unsigned char*)vecRead) + stride);
+					vecWrite = (float*)(((unsigned char*)vecWrite) + stride);
+
+					curVec = _mm_load_ps(vecRead);
+					final = _mm_mul_ps(_mm_shuffle_ps(curVec, curVec, 0x00), mat1);
+					final = _mm_add_ps(final, _mm_mul_ps(_mm_shuffle_ps(curVec, curVec, 0x55), mat2));
+					final = _mm_add_ps(final, _mm_mul_ps(_mm_shuffle_ps(curVec, curVec, 0xAA), mat3));
+					final = _mm_add_ps(final, _mm_mul_ps(_mm_shuffle_ps(curVec, curVec, 0xFF), mat4));
+					_mm_store_ps(vecWrite, final);
+
+					vecRead = (float*)(((unsigned char*)vecRead) + stride);
+					vecWrite = (float*)(((unsigned char*)vecWrite) + stride);
+				}
+			}
+			else
+			{
+				for (; leftOver >= 4; leftOver -= 4)
+				{
+					curVec = _mm_loadu_ps(vecRead);
+					final = _mm_mul_ps(_mm_shuffle_ps(curVec, curVec, 0x00), mat1);
+					final = _mm_add_ps(final, _mm_mul_ps(_mm_shuffle_ps(curVec, curVec, 0x55), mat2));
+					final = _mm_add_ps(final, _mm_mul_ps(_mm_shuffle_ps(curVec, curVec, 0xAA), mat3));
+					final = _mm_add_ps(final, _mm_mul_ps(_mm_shuffle_ps(curVec, curVec, 0xFF), mat4));
+					_mm_storeu_ps(vecWrite, final);
+
+					vecRead = (float*)(((unsigned char*)vecRead) + stride);
+					vecWrite = (float*)(((unsigned char*)vecWrite) + stride);
+
+					curVec = _mm_loadu_ps(vecRead);
+					final = _mm_mul_ps(_mm_shuffle_ps(curVec, curVec, 0x00), mat1);
+					final = _mm_add_ps(final, _mm_mul_ps(_mm_shuffle_ps(curVec, curVec, 0x55), mat2));
+					final = _mm_add_ps(final, _mm_mul_ps(_mm_shuffle_ps(curVec, curVec, 0xAA), mat3));
+					final = _mm_add_ps(final, _mm_mul_ps(_mm_shuffle_ps(curVec, curVec, 0xFF), mat4));
+					_mm_storeu_ps(vecWrite, final);
+
+					vecRead = (float*)(((unsigned char*)vecRead) + stride);
+					vecWrite = (float*)(((unsigned char*)vecWrite) + stride);
+
+					curVec = _mm_loadu_ps(vecRead);
+					final = _mm_mul_ps(_mm_shuffle_ps(curVec, curVec, 0x00), mat1);
+					final = _mm_add_ps(final, _mm_mul_ps(_mm_shuffle_ps(curVec, curVec, 0x55), mat2));
+					final = _mm_add_ps(final, _mm_mul_ps(_mm_shuffle_ps(curVec, curVec, 0xAA), mat3));
+					final = _mm_add_ps(final, _mm_mul_ps(_mm_shuffle_ps(curVec, curVec, 0xFF), mat4));
+					_mm_storeu_ps(vecWrite, final);
+
+					vecRead = (float*)(((unsigned char*)vecRead) + stride);
+					vecWrite = (float*)(((unsigned char*)vecWrite) + stride);
+
+					curVec = _mm_loadu_ps(vecRead);
+					final = _mm_mul_ps(_mm_shuffle_ps(curVec, curVec, 0x00), mat1);
+					final = _mm_add_ps(final, _mm_mul_ps(_mm_shuffle_ps(curVec, curVec, 0x55), mat2));
+					final = _mm_add_ps(final, _mm_mul_ps(_mm_shuffle_ps(curVec, curVec, 0xAA), mat3));
+					final = _mm_add_ps(final, _mm_mul_ps(_mm_shuffle_ps(curVec, curVec, 0xFF), mat4));
+					_mm_storeu_ps(vecWrite, final);
+
+					vecRead = (float*)(((unsigned char*)vecRead) + stride);
+					vecWrite = (float*)(((unsigned char*)vecWrite) + stride);
+				}
+			}
+
+			for (; leftOver > 0; leftOver--)
+			{
+				curVec = _mm_loadu_ps(vecRead);
+				final = _mm_mul_ps(_mm_shuffle_ps(curVec, curVec, 0x00), mat1);
+				final = _mm_add_ps(final, _mm_mul_ps(_mm_shuffle_ps(curVec, curVec, 0x55), mat2));
+				final = _mm_add_ps(final, _mm_mul_ps(_mm_shuffle_ps(curVec, curVec, 0xAA), mat3));
+				final = _mm_add_ps(final, _mm_mul_ps(_mm_shuffle_ps(curVec, curVec, 0xFF), mat4));
+				_mm_storeu_ps(vecWrite, final);
+
+				vecRead = (float*)(((unsigned char*)vecRead) + stride);
+				vecWrite = (float*)(((unsigned char*)vecWrite) + stride);
+			}
+		}
+
+		void fastMat4x4Mult(float * const result, const float * const mat1, const float * const mat2)
+		{
+			_mm256_zeroupper();
+
+			__m256 a0, a1;
+			a0 = _mm256_loadu_ps(mat2 + 0);
+			a1 = _mm256_loadu_ps(mat2 + 8);
+
+			__m128 b0, b1, b2, b3;
+			b0 = _mm_loadu_ps(mat1 + 0);
+			b1 = _mm_loadu_ps(mat1 + 4);
+			b2 = _mm_loadu_ps(mat1 + 8);
+			b3 = _mm_loadu_ps(mat1 + 12);
+
+			__m256 out0;
+			out0 = _mm256_mul_ps(_mm256_shuffle_ps(a0, a0, 0x00), _mm256_broadcast_ps(&b0));
+			out0 = _mm256_add_ps(out0, _mm256_mul_ps(_mm256_shuffle_ps(a0, a0, 0x55), _mm256_broadcast_ps(&b1)));
+			out0 = _mm256_add_ps(out0, _mm256_mul_ps(_mm256_shuffle_ps(a0, a0, 0xaa), _mm256_broadcast_ps(&b2)));
+			out0 = _mm256_add_ps(out0, _mm256_mul_ps(_mm256_shuffle_ps(a0, a0, 0xff), _mm256_broadcast_ps(&b3)));
+
+			__m256 out1;
+			out1 = _mm256_mul_ps(_mm256_shuffle_ps(a1, a1, 0x00), _mm256_broadcast_ps(&b0));
+			out1 = _mm256_add_ps(out1, _mm256_mul_ps(_mm256_shuffle_ps(a1, a1, 0x55), _mm256_broadcast_ps(&b1)));
+			out1 = _mm256_add_ps(out1, _mm256_mul_ps(_mm256_shuffle_ps(a1, a1, 0xaa), _mm256_broadcast_ps(&b2)));
+			out1 = _mm256_add_ps(out1, _mm256_mul_ps(_mm256_shuffle_ps(a1, a1, 0xff), _mm256_broadcast_ps(&b3)));
+
+			_mm256_storeu_ps(result + 0, out0);
+			_mm256_storeu_ps(result + 8, out1);
+		}
+
+		void fastMat4x4Transpose(float * const result, const float * const mat)
+		{
+			__m128 row1, row2, row3, row4;
+
+			row1 = _mm_loadu_ps(mat + 0);
+			row2 = _mm_loadu_ps(mat + 4);
+			row3 = _mm_loadu_ps(mat + 8);
+			row4 = _mm_loadu_ps(mat + 12);
+			_MM_TRANSPOSE4_PS(row1, row2, row3, row4);
+			_mm_storeu_ps(result + 0, row1);
+			_mm_storeu_ps(result + 4, row2);
+			_mm_storeu_ps(result + 8, row3);
+			_mm_storeu_ps(result + 12, row4);
 		}
 	}
-	
-	void Matrix::fastMat4x4Mult(float * const result, const float * const mat1, const float * const mat2)
-	{
-		_mm256_zeroupper();
 
-		__m256 a0, a1;
-		a0 = _mm256_loadu_ps(mat2 + 0);
-		a1 = _mm256_loadu_ps(mat2 + 8);
-
-		__m128 b0, b1, b2, b3;
-		b0 = _mm_loadu_ps(mat1 + 0);
-		b1 = _mm_loadu_ps(mat1 + 4);
-		b2 = _mm_loadu_ps(mat1 + 8);
-		b3 = _mm_loadu_ps(mat1 + 12);
-
-		__m256 out0;
-		out0 = _mm256_mul_ps(_mm256_shuffle_ps(a0, a0, 0x00), _mm256_broadcast_ps(&b0));
-		out0 = _mm256_add_ps(out0, _mm256_mul_ps(_mm256_shuffle_ps(a0, a0, 0x55), _mm256_broadcast_ps(&b1)));
-		out0 = _mm256_add_ps(out0, _mm256_mul_ps(_mm256_shuffle_ps(a0, a0, 0xaa), _mm256_broadcast_ps(&b2)));
-		out0 = _mm256_add_ps(out0, _mm256_mul_ps(_mm256_shuffle_ps(a0, a0, 0xff), _mm256_broadcast_ps(&b3)));
-
-		__m256 out1;
-		out1 = _mm256_mul_ps(_mm256_shuffle_ps(a1, a1, 0x00), _mm256_broadcast_ps(&b0));
-		out1 = _mm256_add_ps(out1, _mm256_mul_ps(_mm256_shuffle_ps(a1, a1, 0x55), _mm256_broadcast_ps(&b1)));
-		out1 = _mm256_add_ps(out1, _mm256_mul_ps(_mm256_shuffle_ps(a1, a1, 0xaa), _mm256_broadcast_ps(&b2)));
-		out1 = _mm256_add_ps(out1, _mm256_mul_ps(_mm256_shuffle_ps(a1, a1, 0xff), _mm256_broadcast_ps(&b3)));
-
-		_mm256_storeu_ps(result + 0, out0);
-		_mm256_storeu_ps(result + 8, out1);
-	}
-
-	Matrix::Matrix(const Matrix3 &mat)
+	Matrix::Matrix(const Matrix3 &mat) noexcept
 	{
 		m[0] = mat.m[0];	m[1] = mat.m[1];	m[2] = mat.m[2];
 		m[4] = mat.m[3];	m[5] = mat.m[4];	m[6] = mat.m[5];
@@ -232,14 +250,42 @@ namespace hr
 		m[15] = 1.0f;
 	}
 
-	Matrix::Matrix(const float src[16])
+	Matrix::Matrix(const float src[16]) noexcept
 	{
 		std::memcpy(m, src, sizeof(float) * 16);
 	}
 
+	Matrix::Matrix(const Quaternion &unitQuaternion) noexcept
+	{
+		m[0] = 1.0f - 2.0f * (unitQuaternion[1] * unitQuaternion[1] + unitQuaternion[2] * unitQuaternion[2]);
+		m[4] =        2.0f * (unitQuaternion[0] * unitQuaternion[1] - unitQuaternion[2] * unitQuaternion[3]);
+		m[8] =        2.0f * (unitQuaternion[0] * unitQuaternion[2] + unitQuaternion[1] * unitQuaternion[3]);
+
+		m[1] =        2.0f * (unitQuaternion[0] * unitQuaternion[1] + unitQuaternion[2] * unitQuaternion[3]);
+		m[5] = 1.0f - 2.0f * (unitQuaternion[0] * unitQuaternion[0] + unitQuaternion[2] * unitQuaternion[2]);
+		m[9] =        2.0f * (unitQuaternion[1] * unitQuaternion[2] - unitQuaternion[0] * unitQuaternion[3]);
+
+		m[2] =         2.0f * (unitQuaternion[0] * unitQuaternion[2] - unitQuaternion[1] * unitQuaternion[3]);
+		m[6] =         2.0f * (unitQuaternion[1] * unitQuaternion[2] + unitQuaternion[0] * unitQuaternion[3]);
+		m[10] = 1.0f - 2.0f * (unitQuaternion[0] * unitQuaternion[0] + unitQuaternion[1] * unitQuaternion[1]);
+
+		m[3] = m[7] = m[11] = m[12] = m[13] = m[14] = 0.0f;
+		m[15] = 1.0f;
+	}
+
+	void Matrix::operator*=(const float s)
+	{
+		__m128 scalar = _mm_load_ps1(&s);
+
+		_mm_storeu_ps(m +  0, _mm_mul_ps(_mm_loadu_ps(m +  0), scalar));
+		_mm_storeu_ps(m +  4, _mm_mul_ps(_mm_loadu_ps(m +  4), scalar));
+		_mm_storeu_ps(m +  8, _mm_mul_ps(_mm_loadu_ps(m +  8), scalar));
+		_mm_storeu_ps(m + 12, _mm_mul_ps(_mm_loadu_ps(m + 12), scalar));
+	}
+
 	void Matrix::operator*=(const Matrix &s)
 	{
-		Matrix::fastMat4x4Mult(this->m, this->m, s.m);
+		fastMat4x4Mult(this->m, this->m, s.m);
 	}
 
 	void Matrix::operator*=(const Matrix3 &s)
@@ -268,54 +314,60 @@ namespace hr
 
 	void Matrix::operator*=(const float src[16])
 	{
-		Matrix::fastMat4x4Mult(m, m, src);
+		fastMat4x4Mult(m, m, src);
+	}
+
+	void Matrix::operator*=(const Quaternion &unitQuaternion)
+	{
+		Matrix mat(unitQuaternion);
+		fastMat4x4Mult(m, m, mat.m);
 	}
 
 	void Matrix::operator+=(const Matrix &s)
 	{
-		_mm_storeu_ps(m, _mm_add_ps(_mm_loadu_ps(m), _mm_loadu_ps(s.m)));
-		_mm_storeu_ps(m + 4, _mm_add_ps(_mm_loadu_ps(m + 4), _mm_loadu_ps(s.m + 4)));
-		_mm_storeu_ps(m + 8, _mm_add_ps(_mm_loadu_ps(m + 8), _mm_loadu_ps(s.m + 8)));
+		_mm_storeu_ps(m +  0, _mm_add_ps(_mm_loadu_ps(m +  0), _mm_loadu_ps(s.m +  0)));
+		_mm_storeu_ps(m +  4, _mm_add_ps(_mm_loadu_ps(m +  4), _mm_loadu_ps(s.m +  4)));
+		_mm_storeu_ps(m +  8, _mm_add_ps(_mm_loadu_ps(m +  8), _mm_loadu_ps(s.m +  8)));
 		_mm_storeu_ps(m + 12, _mm_add_ps(_mm_loadu_ps(m + 12), _mm_loadu_ps(s.m + 12)));
 	}
 
 	void Matrix::operator+=(const float src[16])
 	{
-		_mm_storeu_ps(m, _mm_add_ps(_mm_loadu_ps(m), _mm_loadu_ps(src)));
-		_mm_storeu_ps(m + 4, _mm_add_ps(_mm_loadu_ps(m + 4), _mm_loadu_ps(src + 4)));
-		_mm_storeu_ps(m + 8, _mm_add_ps(_mm_loadu_ps(m + 8), _mm_loadu_ps(src + 8)));
+		_mm_storeu_ps(m +  0, _mm_add_ps(_mm_loadu_ps(m +  0), _mm_loadu_ps(src +  0)));
+		_mm_storeu_ps(m +  4, _mm_add_ps(_mm_loadu_ps(m +  4), _mm_loadu_ps(src +  4)));
+		_mm_storeu_ps(m +  8, _mm_add_ps(_mm_loadu_ps(m +  8), _mm_loadu_ps(src +  8)));
 		_mm_storeu_ps(m + 12, _mm_add_ps(_mm_loadu_ps(m + 12), _mm_loadu_ps(src + 12)));
 	}
 
 	void Matrix::operator-=(const Matrix &s)
 	{
-		_mm_storeu_ps(m, _mm_sub_ps(_mm_loadu_ps(m), _mm_loadu_ps(s.m)));
-		_mm_storeu_ps(m + 4, _mm_sub_ps(_mm_loadu_ps(m + 4), _mm_loadu_ps(s.m + 4)));
-		_mm_storeu_ps(m + 8, _mm_sub_ps(_mm_loadu_ps(m + 8), _mm_loadu_ps(s.m + 8)));
+		_mm_storeu_ps(m +  0, _mm_sub_ps(_mm_loadu_ps(m +  0), _mm_loadu_ps(s.m +  0)));
+		_mm_storeu_ps(m +  4, _mm_sub_ps(_mm_loadu_ps(m +  4), _mm_loadu_ps(s.m +  4)));
+		_mm_storeu_ps(m +  8, _mm_sub_ps(_mm_loadu_ps(m +  8), _mm_loadu_ps(s.m +  8)));
 		_mm_storeu_ps(m + 12, _mm_sub_ps(_mm_loadu_ps(m + 12), _mm_loadu_ps(s.m + 12)));
 	}
 
 	void Matrix::operator-=(const float src[16])
 	{
-		_mm_storeu_ps(m, _mm_sub_ps(_mm_loadu_ps(m), _mm_loadu_ps(src)));
-		_mm_storeu_ps(m + 4, _mm_sub_ps(_mm_loadu_ps(m + 4), _mm_loadu_ps(src + 4)));
-		_mm_storeu_ps(m + 8, _mm_sub_ps(_mm_loadu_ps(m + 8), _mm_loadu_ps(src + 8)));
+		_mm_storeu_ps(m +  0, _mm_sub_ps(_mm_loadu_ps(m +  0), _mm_loadu_ps(src +  0)));
+		_mm_storeu_ps(m +  4, _mm_sub_ps(_mm_loadu_ps(m +  4), _mm_loadu_ps(src +  4)));
+		_mm_storeu_ps(m +  8, _mm_sub_ps(_mm_loadu_ps(m +  8), _mm_loadu_ps(src +  8)));
 		_mm_storeu_ps(m + 12, _mm_sub_ps(_mm_loadu_ps(m + 12), _mm_loadu_ps(src + 12)));
 	}
 
 	Matrix Matrix::operator*(const Matrix &s) const
 	{
 		Matrix res;
-		Matrix::fastMat4x4Mult(res.m, m, s.m);
+		fastMat4x4Mult(res.m, m, s.m);
 		return res;
 	}
 
 	Matrix Matrix::operator+(const Matrix &s) const
 	{
 		Matrix res;
-		_mm_storeu_ps(res.m, _mm_add_ps(_mm_loadu_ps(m), _mm_loadu_ps(s.m)));
-		_mm_storeu_ps(res.m + 4, _mm_add_ps(_mm_loadu_ps(m + 4), _mm_loadu_ps(s.m + 4)));
-		_mm_storeu_ps(res.m + 8, _mm_add_ps(_mm_loadu_ps(m + 8), _mm_loadu_ps(s.m + 8)));
+		_mm_storeu_ps(res.m +  0, _mm_add_ps(_mm_loadu_ps(m +  0), _mm_loadu_ps(s.m +  0)));
+		_mm_storeu_ps(res.m +  4, _mm_add_ps(_mm_loadu_ps(m +  4), _mm_loadu_ps(s.m +  4)));
+		_mm_storeu_ps(res.m +  8, _mm_add_ps(_mm_loadu_ps(m +  8), _mm_loadu_ps(s.m +  8)));
 		_mm_storeu_ps(res.m + 12, _mm_add_ps(_mm_loadu_ps(m + 12), _mm_loadu_ps(s.m + 12)));
 		return res;
 	}
@@ -323,10 +375,23 @@ namespace hr
 	Matrix Matrix::operator-(const Matrix &s) const
 	{
 		Matrix res;
-		_mm_storeu_ps(res.m, _mm_sub_ps(_mm_loadu_ps(m), _mm_loadu_ps(s.m)));
-		_mm_storeu_ps(res.m + 4, _mm_sub_ps(_mm_loadu_ps(m + 4), _mm_loadu_ps(s.m + 4)));
-		_mm_storeu_ps(res.m + 8, _mm_sub_ps(_mm_loadu_ps(m + 8), _mm_loadu_ps(s.m + 8)));
+		_mm_storeu_ps(res.m +  0, _mm_sub_ps(_mm_loadu_ps(m +  0), _mm_loadu_ps(s.m +  0)));
+		_mm_storeu_ps(res.m +  4, _mm_sub_ps(_mm_loadu_ps(m +  4), _mm_loadu_ps(s.m +  4)));
+		_mm_storeu_ps(res.m +  8, _mm_sub_ps(_mm_loadu_ps(m +  8), _mm_loadu_ps(s.m +  8)));
 		_mm_storeu_ps(res.m + 12, _mm_sub_ps(_mm_loadu_ps(m + 12), _mm_loadu_ps(s.m + 12)));
+		return res;
+	}
+
+	Matrix Matrix::operator*(const float s) const
+	{
+		Matrix res;
+
+		__m128 scalar = _mm_load_ps1(&s);
+		_mm_storeu_ps(res.m +  0, _mm_mul_ps(_mm_loadu_ps(m +  0), scalar));
+		_mm_storeu_ps(res.m +  4, _mm_mul_ps(_mm_loadu_ps(m +  4), scalar));
+		_mm_storeu_ps(res.m +  8, _mm_mul_ps(_mm_loadu_ps(m +  8), scalar));
+		_mm_storeu_ps(res.m + 12, _mm_mul_ps(_mm_loadu_ps(m + 12), scalar));
+
 		return res;
 	}
 
@@ -363,7 +428,7 @@ namespace hr
 
 	void Matrix::transform(Vector3f* const vec, size_t numVec) const
 	{
-		Matrix::asmMat4x4Vec3((float*)vec, (float*)vec, 1.0f, sizeof(Vector3f), m, numVec);
+		asmMat4x4Vec3((float*)vec, (float*)vec, 1.0f, sizeof(Vector3f), m, numVec);
 	}
 
 	void Matrix::transform(Vector4f& vec) const
@@ -390,43 +455,7 @@ namespace hr
 
 	void Matrix::transform(Vector4f* const vec, size_t numVec) const
 	{
-		Matrix::asmMat4x4Vec4((float*)vec, (float*)vec, sizeof(Vector4f), m, numVec);
-	}
-
-	void Matrix::rotateScale(float vec[3]) const
-	{
-		float vecX = vec[0];
-		float vecY = vec[1];
-		float vecZ = vec[2];
-
-		vec[0] = vecX*m[0] + vecY*m[4] + vecZ*m[8];
-		vec[1] = vecX*m[1] + vecY*m[5] + vecZ*m[9];
-		vec[2] = vecX*m[2] + vecY*m[6] + vecZ*m[10];
-	}
-
-	void Matrix::rotateScale(Vector3f& vec) const
-	{
-		__m128 row1, row2, row3;
-
-		row1 = _mm_mul_ps(_mm_load_ps1(&vec[0]), _mm_loadu_ps(m + 0));
-		row2 = _mm_mul_ps(_mm_load_ps1(&vec[1]), _mm_loadu_ps(m + 4));
-		row3 = _mm_mul_ps(_mm_load_ps1(&vec[2]), _mm_loadu_ps(m + 8));
-		_mm_storeu_ps(vec.data(), _mm_add_ps(_mm_add_ps(row1, row2), row3));
-	}
-
-	void Matrix::rotateScale(const Vector3f& vec, Vector3f& result) const
-	{
-		__m128 row1, row2, row3;
-
-		row1 = _mm_mul_ps(_mm_load_ps1(&vec[0]), _mm_loadu_ps(m + 0));
-		row2 = _mm_mul_ps(_mm_load_ps1(&vec[1]), _mm_loadu_ps(m + 4));
-		row3 = _mm_mul_ps(_mm_load_ps1(&vec[2]), _mm_loadu_ps(m + 8));
-		_mm_storeu_ps(result.data(), _mm_add_ps(_mm_add_ps(row1, row2), row3));
-	}
-
-	void Matrix::rotateScale(Vector3f* const vec, size_t numVec) const
-	{
-		Matrix::asmMat4x4Vec3((float*)vec, (float*)vec, 0.0f, sizeof(Vector3f), m, numVec);
+		asmMat4x4Vec4((float*)vec, (float*)vec, sizeof(Vector4f), m, numVec);
 	}
 
 	void Matrix::transform(BBox &bbox) const
@@ -631,96 +660,27 @@ namespace hr
 		std::memcpy(dest, m, sizeof(float) * 16);
 	}
 
-	Matrix Matrix::transpose() const
+	Matrix Matrix::getTranspose() const
 	{
 		Matrix result;
-		__m128 row1, row2, row3, row4;
-
-		row1 = _mm_loadu_ps(m + 0);
-		row2 = _mm_loadu_ps(m + 4);
-		row3 = _mm_loadu_ps(m + 8);
-		row4 = _mm_loadu_ps(m + 12);
-		_MM_TRANSPOSE4_PS(row1, row2, row3, row4);
-		_mm_storeu_ps(result.m + 0, row1);
-		_mm_storeu_ps(result.m + 4, row2);
-		_mm_storeu_ps(result.m + 8, row3);
-		_mm_storeu_ps(result.m + 12, row4);
-
+		fastMat4x4Transpose(result.m, m);
 		return result;
 	}
 
-	void Matrix::transpose()
+	Matrix& Matrix::transpose()
 	{
-		__m128 row1, row2, row3, row4;
-
-		row1 = _mm_loadu_ps(m + 0);
-		row2 = _mm_loadu_ps(m + 4);
-		row3 = _mm_loadu_ps(m + 8);
-		row4 = _mm_loadu_ps(m + 12);
-		_MM_TRANSPOSE4_PS(row1, row2, row3, row4);
-		_mm_storeu_ps(m + 0, row1);
-		_mm_storeu_ps(m + 4, row2);
-		_mm_storeu_ps(m + 8, row3);
-		_mm_storeu_ps(m + 12, row4);
+		fastMat4x4Transpose(m, m);
+		return *this;
 	}
 
-	Matrix Matrix::inverse() const
+	Matrix Matrix::getInverse() const
 	{
-		Matrix result;
-		float tmp[12], det;
-
-		//calculate pairs for first 8 elements (cofactors)
-		tmp[0] = m[10] * m[15];	tmp[1] = m[11] * m[14];
-		tmp[2] = m[9] * m[15];	tmp[3] = m[11] * m[13];
-		tmp[4] = m[9] * m[14];	tmp[5] = m[10] * m[13];
-		tmp[6] = m[8] * m[15];	tmp[7] = m[11] * m[12];
-		tmp[8] = m[8] * m[14];	tmp[9] = m[10] * m[12];
-		tmp[10] = m[8] * m[13];	tmp[11] = m[9] * m[12];
-
-		//calculate first 8 elements (cofactors)
-		result.m[0] = tmp[0] * m[5] + tmp[3] * m[6] + tmp[4] * m[7] - tmp[1] * m[5] - tmp[2] * m[6] - tmp[5] * m[7];
-		result.m[4] = tmp[1] * m[4] + tmp[6] * m[6] + tmp[9] * m[7] - tmp[0] * m[4] - tmp[7] * m[6] - tmp[8] * m[7];
-		result.m[8] = tmp[2] * m[4] + tmp[7] * m[5] + tmp[10] * m[7] - tmp[3] * m[4] - tmp[6] * m[5] - tmp[11] * m[7];
-		result.m[12] = tmp[5] * m[4] + tmp[8] * m[5] + tmp[11] * m[6] - tmp[4] * m[4] - tmp[9] * m[5] - tmp[10] * m[6];
-		result.m[1] = tmp[1] * m[1] + tmp[2] * m[2] + tmp[5] * m[3] - tmp[0] * m[1] - tmp[3] * m[2] - tmp[4] * m[3];
-		result.m[5] = tmp[0] * m[0] + tmp[7] * m[2] + tmp[8] * m[3] - tmp[1] * m[0] - tmp[6] * m[2] - tmp[9] * m[3];
-		result.m[9] = tmp[3] * m[0] + tmp[6] * m[1] + tmp[11] * m[3] - tmp[2] * m[0] - tmp[7] * m[1] - tmp[10] * m[3];
-		result.m[13] = tmp[4] * m[0] + tmp[9] * m[1] + tmp[10] * m[2] - tmp[5] * m[0] - tmp[8] * m[1] - tmp[11] * m[2];
-
-		//calculate pairs for second 8 elements (cofactors)
-		tmp[0] = m[2] * m[7];		tmp[1] = m[3] * m[6];
-		tmp[2] = m[1] * m[7];		tmp[3] = m[3] * m[5];
-		tmp[4] = m[1] * m[6];		tmp[5] = m[2] * m[5];
-		tmp[6] = m[0] * m[7];		tmp[7] = m[3] * m[4];
-		tmp[8] = m[0] * m[6];		tmp[9] = m[2] * m[4];
-		tmp[10] = m[0] * m[5];		tmp[11] = m[1] * m[4];
-
-		//calculate second 8 elements (cofactors)
-		result.m[2] = tmp[0] * m[13] + tmp[3] * m[14] + tmp[4] * m[15] - tmp[1] * m[13] - tmp[2] * m[14] - tmp[5] * m[15];
-		result.m[6] = tmp[1] * m[12] + tmp[6] * m[14] + tmp[9] * m[15] - tmp[0] * m[12] - tmp[7] * m[14] - tmp[8] * m[15];
-		result.m[10] = tmp[2] * m[12] + tmp[7] * m[13] + tmp[10] * m[15] - tmp[3] * m[12] - tmp[6] * m[13] - tmp[11] * m[15];
-		result.m[14] = tmp[5] * m[12] + tmp[8] * m[13] + tmp[11] * m[14] - tmp[4] * m[12] - tmp[9] * m[13] - tmp[10] * m[14];
-		result.m[3] = tmp[2] * m[10] + tmp[5] * m[11] + tmp[1] * m[9] - tmp[4] * m[11] - tmp[0] * m[9] - tmp[3] * m[10];
-		result.m[7] = tmp[8] * m[11] + tmp[0] * m[8] + tmp[7] * m[10] - tmp[6] * m[10] - tmp[9] * m[11] - tmp[1] * m[8];
-		result.m[11] = tmp[6] * m[9] + tmp[11] * m[11] + tmp[3] * m[8] - tmp[10] * m[11] - tmp[2] * m[8] - tmp[7] * m[9];
-		result.m[15] = tmp[10] * m[10] + tmp[4] * m[8] + tmp[9] * m[9] - tmp[8] * m[9] - tmp[11] * m[10] - tmp[5] * m[8];
-
-		// calculate determinant
-		det = m[0] * result.m[0] + m[1] * result.m[4] + m[2] * result.m[8] + m[3] * result.m[12];
-		if (Math::isZero(det))
-			return result;
-
-		//multiplicar tudo pelo determinante
-		det = 1.0f / det;
-		result.m[0] *= det;		result.m[1] *= det;		result.m[2] *= det;		result.m[3] *= det;
-		result.m[4] *= det;		result.m[5] *= det;		result.m[6] *= det;		result.m[7] *= det;
-		result.m[8] *= det;		result.m[9] *= det;		result.m[10] *= det;	result.m[11] *= det;
-		result.m[12] *= det;	result.m[13] *= det;	result.m[14] *= det;	result.m[15] *= det;
-
+		Matrix result(*this);
+		result.inverse();
 		return result;
 	}
 
-	void Matrix::inverse()
+	Matrix& Matrix::inverse()
 	{
 		float tmp[12], result[16], det;
 
@@ -763,7 +723,7 @@ namespace hr
 		// calculate determinant
 		det = m[0] * result[0] + m[1] * result[4] + m[2] * result[8] + m[3] * result[12];
 		if (Math::isZero(det))
-			return;
+			return *this;
 
 		//multiplicar tudo pelo determinante
 		det = 1.0f / det;
@@ -774,141 +734,32 @@ namespace hr
 
 		//basta copiar para mim próprio e pronto
 		std::memcpy(m, result, sizeof(float) * 16);
+
+		return *this;
 	}
 
-	Matrix Matrix::inverseTranspose() const
+	Matrix Matrix::getInverseTranspose() const
 	{
-		Matrix result;
-		float tmp[12], det;
-
-		//calculate pairs for first 8 elements (cofactors)
-		tmp[0] = m[10] * m[15];	tmp[1] = m[11] * m[14];
-		tmp[2] = m[9] * m[15];	tmp[3] = m[11] * m[13];
-		tmp[4] = m[9] * m[14];	tmp[5] = m[10] * m[13];
-		tmp[6] = m[8] * m[15];	tmp[7] = m[11] * m[12];
-		tmp[8] = m[8] * m[14];	tmp[9] = m[10] * m[12];
-		tmp[10] = m[8] * m[13];	tmp[11] = m[9] * m[12];
-
-		//calculate first 8 elements (cofactors)
-		result.m[0] = tmp[0] * m[5] + tmp[3] * m[6] + tmp[4] * m[7] - tmp[1] * m[5] - tmp[2] * m[6] - tmp[5] * m[7];
-		result.m[1] = tmp[1] * m[4] + tmp[6] * m[6] + tmp[9] * m[7] - tmp[0] * m[4] - tmp[7] * m[6] - tmp[8] * m[7];
-		result.m[2] = tmp[2] * m[4] + tmp[7] * m[5] + tmp[10] * m[7] - tmp[3] * m[4] - tmp[6] * m[5] - tmp[11] * m[7];
-		result.m[3] = tmp[5] * m[4] + tmp[8] * m[5] + tmp[11] * m[6] - tmp[4] * m[4] - tmp[9] * m[5] - tmp[10] * m[6];
-		result.m[4] = tmp[1] * m[1] + tmp[2] * m[2] + tmp[5] * m[3] - tmp[0] * m[1] - tmp[3] * m[2] - tmp[4] * m[3];
-		result.m[5] = tmp[0] * m[0] + tmp[7] * m[2] + tmp[8] * m[3] - tmp[1] * m[0] - tmp[6] * m[2] - tmp[9] * m[3];
-		result.m[6] = tmp[3] * m[0] + tmp[6] * m[1] + tmp[11] * m[3] - tmp[2] * m[0] - tmp[7] * m[1] - tmp[10] * m[3];
-		result.m[7] = tmp[4] * m[0] + tmp[9] * m[1] + tmp[10] * m[2] - tmp[5] * m[0] - tmp[8] * m[1] - tmp[11] * m[2];
-
-		//calculate pairs for second 8 elements (cofactors)
-		tmp[0] = m[2] * m[7];		tmp[1] = m[3] * m[6];
-		tmp[2] = m[1] * m[7];		tmp[3] = m[3] * m[5];
-		tmp[4] = m[1] * m[6];		tmp[5] = m[2] * m[5];
-		tmp[6] = m[0] * m[7];		tmp[7] = m[3] * m[4];
-		tmp[8] = m[0] * m[6];		tmp[9] = m[2] * m[4];
-		tmp[10] = m[0] * m[5];		tmp[11] = m[1] * m[4];
-
-		//calculate second 8 elements (cofactors)
-		result.m[8] = tmp[0] * m[13] + tmp[3] * m[14] + tmp[4] * m[15] - tmp[1] * m[13] - tmp[2] * m[14] - tmp[5] * m[15];
-		result.m[9] = tmp[1] * m[12] + tmp[6] * m[14] + tmp[9] * m[15] - tmp[0] * m[12] - tmp[7] * m[14] - tmp[8] * m[15];
-		result.m[10] = tmp[2] * m[12] + tmp[7] * m[13] + tmp[10] * m[15] - tmp[3] * m[12] - tmp[6] * m[13] - tmp[11] * m[15];
-		result.m[11] = tmp[5] * m[12] + tmp[8] * m[13] + tmp[11] * m[14] - tmp[4] * m[12] - tmp[9] * m[13] - tmp[10] * m[14];
-		result.m[12] = tmp[2] * m[10] + tmp[5] * m[11] + tmp[1] * m[9] - tmp[4] * m[11] - tmp[0] * m[9] - tmp[3] * m[10];
-		result.m[13] = tmp[8] * m[11] + tmp[0] * m[8] + tmp[7] * m[10] - tmp[6] * m[10] - tmp[9] * m[11] - tmp[1] * m[8];
-		result.m[14] = tmp[6] * m[9] + tmp[11] * m[11] + tmp[3] * m[8] - tmp[10] * m[11] - tmp[2] * m[8] - tmp[7] * m[9];
-		result.m[15] = tmp[10] * m[10] + tmp[4] * m[8] + tmp[9] * m[9] - tmp[8] * m[9] - tmp[11] * m[10] - tmp[5] * m[8];
-
-		// calculate determinant
-		det = m[0] * result.m[0] + m[1] * result.m[1] + m[2] * result.m[2] + m[3] * result.m[3];
-		if (Math::isZero(det))
-			return result;
-
-		//multiplicar tudo pelo determinante
-		det = 1.0f / det;
-		result.m[0] *= det;		result.m[1] *= det;		result.m[2] *= det;		result.m[3] *= det;
-		result.m[4] *= det;		result.m[5] *= det;		result.m[6] *= det;		result.m[7] *= det;
-		result.m[8] *= det;		result.m[9] *= det;		result.m[10] *= det;	result.m[11] *= det;
-		result.m[12] *= det;	result.m[13] *= det;	result.m[14] *= det;	result.m[15] *= det;
-
+		Matrix result(*this);
+		result.inverseTranspose();
 		return result;
 	}
 
-	void Matrix::inverseTranspose()
+	Matrix& Matrix::inverseTranspose()
 	{
-		float tmp[12], result[16], det;
-
-		//calculate pairs for first 8 elements (cofactors)
-		tmp[0] = m[10] * m[15];	tmp[1] = m[11] * m[14];
-		tmp[2] = m[9] * m[15];	tmp[3] = m[11] * m[13];
-		tmp[4] = m[9] * m[14];	tmp[5] = m[10] * m[13];
-		tmp[6] = m[8] * m[15];	tmp[7] = m[11] * m[12];
-		tmp[8] = m[8] * m[14];	tmp[9] = m[10] * m[12];
-		tmp[10] = m[8] * m[13];	tmp[11] = m[9] * m[12];
-
-		//calculate first 8 elements (cofactors)
-		result[0] = tmp[0] * m[5] + tmp[3] * m[6] + tmp[4] * m[7] - tmp[1] * m[5] - tmp[2] * m[6] - tmp[5] * m[7];
-		result[1] = tmp[1] * m[4] + tmp[6] * m[6] + tmp[9] * m[7] - tmp[0] * m[4] - tmp[7] * m[6] - tmp[8] * m[7];
-		result[2] = tmp[2] * m[4] + tmp[7] * m[5] + tmp[10] * m[7] - tmp[3] * m[4] - tmp[6] * m[5] - tmp[11] * m[7];
-		result[3] = tmp[5] * m[4] + tmp[8] * m[5] + tmp[11] * m[6] - tmp[4] * m[4] - tmp[9] * m[5] - tmp[10] * m[6];
-		result[4] = tmp[1] * m[1] + tmp[2] * m[2] + tmp[5] * m[3] - tmp[0] * m[1] - tmp[3] * m[2] - tmp[4] * m[3];
-		result[5] = tmp[0] * m[0] + tmp[7] * m[2] + tmp[8] * m[3] - tmp[1] * m[0] - tmp[6] * m[2] - tmp[9] * m[3];
-		result[6] = tmp[3] * m[0] + tmp[6] * m[1] + tmp[11] * m[3] - tmp[2] * m[0] - tmp[7] * m[1] - tmp[10] * m[3];
-		result[7] = tmp[4] * m[0] + tmp[9] * m[1] + tmp[10] * m[2] - tmp[5] * m[0] - tmp[8] * m[1] - tmp[11] * m[2];
-
-		//calculate pairs for second 8 elements (cofactors)
-		tmp[0] = m[2] * m[7];		tmp[1] = m[3] * m[6];
-		tmp[2] = m[1] * m[7];		tmp[3] = m[3] * m[5];
-		tmp[4] = m[1] * m[6];		tmp[5] = m[2] * m[5];
-		tmp[6] = m[0] * m[7];		tmp[7] = m[3] * m[4];
-		tmp[8] = m[0] * m[6];		tmp[9] = m[2] * m[4];
-		tmp[10] = m[0] * m[5];		tmp[11] = m[1] * m[4];
-
-		//calculate second 8 elements (cofactors)
-		result[8] = tmp[0] * m[13] + tmp[3] * m[14] + tmp[4] * m[15] - tmp[1] * m[13] - tmp[2] * m[14] - tmp[5] * m[15];
-		result[9] = tmp[1] * m[12] + tmp[6] * m[14] + tmp[9] * m[15] - tmp[0] * m[12] - tmp[7] * m[14] - tmp[8] * m[15];
-		result[10] = tmp[2] * m[12] + tmp[7] * m[13] + tmp[10] * m[15] - tmp[3] * m[12] - tmp[6] * m[13] - tmp[11] * m[15];
-		result[11] = tmp[5] * m[12] + tmp[8] * m[13] + tmp[11] * m[14] - tmp[4] * m[12] - tmp[9] * m[13] - tmp[10] * m[14];
-		result[12] = tmp[2] * m[10] + tmp[5] * m[11] + tmp[1] * m[9] - tmp[4] * m[11] - tmp[0] * m[9] - tmp[3] * m[10];
-		result[13] = tmp[8] * m[11] + tmp[0] * m[8] + tmp[7] * m[10] - tmp[6] * m[10] - tmp[9] * m[11] - tmp[1] * m[8];
-		result[14] = tmp[6] * m[9] + tmp[11] * m[11] + tmp[3] * m[8] - tmp[10] * m[11] - tmp[2] * m[8] - tmp[7] * m[9];
-		result[15] = tmp[10] * m[10] + tmp[4] * m[8] + tmp[9] * m[9] - tmp[8] * m[9] - tmp[11] * m[10] - tmp[5] * m[8];
-
-		// calculate determinant
-		det = m[0] * result[0] + m[1] * result[1] + m[2] * result[2] + m[3] * result[3];
-		if (Math::isZero(det))
-			return;
-
-		//multiplicar tudo pelo determinante
-		det = 1.0f / det;
-		result[0] *= det;		result[1] *= det;		result[2] *= det;		result[3] *= det;
-		result[4] *= det;		result[5] *= det;		result[6] *= det;		result[7] *= det;
-		result[8] *= det;		result[9] *= det;		result[10] *= det;	result[11] *= det;
-		result[12] *= det;	result[13] *= det;	result[14] *= det;	result[15] *= det;
-
-		//basta copiar para mim próprio e pronto
-		std::memcpy(m, result, sizeof(float) * 16);
+		inverse();
+		transpose();
+		return *this;
 	}
 
-	Matrix Matrix::inverseHomogenous() const
+	Matrix Matrix::getInverseHomogenous() const
 	{
-		Matrix result;
-		float aux1, aux2;
-
-		std::memcpy(result.m, m, sizeof(float) * 16);
-
-		aux1 = result.m[1];	result.m[1] = result.m[4];	result.m[4] = aux1;
-		aux1 = result.m[2];	result.m[2] = result.m[8];	result.m[8] = aux1;
-		aux1 = result.m[6];	result.m[6] = result.m[9];	result.m[9] = aux1;
-
-		aux1 = -(result.m[0] * result.m[12] + result.m[4] * result.m[13] + result.m[8] * result.m[14]);
-		aux2 = -(result.m[1] * result.m[12] + result.m[5] * result.m[13] + result.m[9] * result.m[14]);
-		result.m[14] = -(result.m[2] * result.m[12] + result.m[6] * result.m[13] + result.m[10] * result.m[14]);
-		result.m[13] = aux2;
-		result.m[12] = aux1;
-
+		Matrix result(*this);
+		result.inverseHomogenous();
 		return result;
 	}
 
-	void Matrix::inverseHomogenous()
+	Matrix& Matrix::inverseHomogenous()
 	{
 		float aux1, aux2;
 
@@ -921,13 +772,15 @@ namespace hr
 		m[14] = -(m[2] * m[12] + m[6] * m[13] + m[10] * m[14]);
 		m[13] = aux2;
 		m[12] = aux1;
+
+		return *this;
 	}
 
 	Matrix& Matrix::mulTranslation(float x, float y, float z)
 	{
 		__m128 row1, row2, row3;
 
-		row1 = _mm_mul_ps(_mm_load_ps1(&x), _mm_loadu_ps(m));
+		row1 = _mm_mul_ps(_mm_load_ps1(&x), _mm_loadu_ps(m + 0));
 		row2 = _mm_mul_ps(_mm_load_ps1(&y), _mm_loadu_ps(m + 4));
 		row3 = _mm_mul_ps(_mm_load_ps1(&z), _mm_loadu_ps(m + 8));
 		_mm_storeu_ps(m + 12, _mm_add_ps(_mm_add_ps(row1, row2), _mm_add_ps(row3, _mm_loadu_ps(m + 12))));
@@ -937,13 +790,7 @@ namespace hr
 
 	Matrix& Matrix::mulTranslation(const float * const vec)
 	{
-		__m128 row1, row2, row3;
-
-		row1 = _mm_mul_ps(_mm_load_ps1(vec + 0), _mm_loadu_ps(m));
-		row2 = _mm_mul_ps(_mm_load_ps1(vec + 1), _mm_loadu_ps(m + 4));
-		row3 = _mm_mul_ps(_mm_load_ps1(vec + 2), _mm_loadu_ps(m + 8));
-		_mm_storeu_ps(m + 12, _mm_add_ps(_mm_add_ps(row1, row2), _mm_add_ps(row3, _mm_loadu_ps(m + 12))));
-
+		mulTranslation(vec[0], vec[1], vec[2]);
 		return *this;
 	}
 
@@ -958,106 +805,31 @@ namespace hr
 
 	Matrix& Matrix::mulScale(const float * const vec)
 	{
-		_mm_storeu_ps(m + 0, _mm_mul_ps(_mm_load_ps1(vec + 0), _mm_loadu_ps(m + 0)));
-		_mm_storeu_ps(m + 4, _mm_mul_ps(_mm_load_ps1(vec + 1), _mm_loadu_ps(m + 4)));
-		_mm_storeu_ps(m + 8, _mm_mul_ps(_mm_load_ps1(vec + 2), _mm_loadu_ps(m + 8)));
-
-		return *this;
-	}
-
-	Matrix& Matrix::mulRotationX(float angleDeg)
-	{
-		float c, s, p1, p2, p3, p4;
-
-		Math::sinCos(Math::convDeg2Rad(angleDeg), s, c);
-
-		p1 = m[4];
-		p2 = m[5];
-		p3 = m[6];
-		p4 = m[7];
-
-		m[4] = c * m[4] + s * m[8];
-		m[5] = c * m[5] + s * m[9];
-		m[6] = c * m[6] + s * m[10];
-		m[7] = c * m[7] + s * m[11];
-
-		m[8] = -s * p1 + c * m[8];
-		m[9] = -s * p2 + c * m[9];
-		m[10] = -s * p3 + c * m[10];
-		m[11] = -s * p4 + c * m[11];
-
-		return *this;
-	}
-
-	Matrix& Matrix::mulRotationY(float angleDeg)
-	{
-		float c, s, p1, p2, p3, p4;
-
-		Math::sinCos(Math::convDeg2Rad(angleDeg), s, c);
-
-		p1 = m[0];
-		p2 = m[1];
-		p3 = m[2];
-		p4 = m[3];
-
-		m[0] = c * m[0] + -s * m[8];
-		m[1] = c * m[1] + -s * m[9];
-		m[2] = c * m[2] + -s * m[10];
-		m[3] = c * m[3] + -s * m[11];
-
-		m[8] = s * p1 + c * m[8];
-		m[9] = s * p2 + c * m[9];
-		m[10] = s * p3 + c * m[10];
-		m[11] = s * p4 + c * m[11];
-
-		return *this;
-	}
-
-	Matrix& Matrix::mulRotationZ(float angleDeg)
-	{
-		float c, s, p1, p2, p3, p4;
-
-		Math::sinCos(Math::convDeg2Rad(angleDeg), s, c);
-
-		p1 = m[0];
-		p2 = m[1];
-		p3 = m[2];
-		p4 = m[3];
-
-		m[0] = c * m[0] + s * m[4];
-		m[1] = c * m[1] + s * m[5];
-		m[2] = c * m[2] + s * m[6];
-		m[3] = c * m[3] + s * m[7];
-
-		m[4] = -s * p1 + c * m[4];
-		m[5] = -s * p2 + c * m[5];
-		m[6] = -s * p3 + c * m[6];
-		m[7] = -s * p4 + c * m[7];
-
+		mulScale(vec[0], vec[1], vec[2]);
 		return *this;
 	}
 
 	Matrix& Matrix::mul(const Matrix &s)
 	{
-		Matrix::fastMat4x4Mult(this->m, this->m, s.m);
+		fastMat4x4Mult(this->m, this->m, s.m);
 		return *this;
 	}
 
 	Matrix& Matrix::mul(const float src[16])
 	{
-		Matrix::fastMat4x4Mult(m, m, src);
+		fastMat4x4Mult(m, m, src);
 		return *this;
 	}
 
 	Matrix& Matrix::mulReverseOrder(const Matrix &s)
 	{
-		Matrix::fastMat4x4Mult(this->m, s.m, this->m);
+		fastMat4x4Mult(this->m, s.m, this->m);
 		return *this;
 	}
 
 	Matrix& Matrix::mulReverseOrder(const float src[16])
 	{
-		Matrix::fastMat4x4Mult(m, src, m);
+		fastMat4x4Mult(m, src, m);
 		return *this;
 	}
 
@@ -1080,11 +852,6 @@ namespace hr
 	void Matrix::set(const Matrix &mat)
 	{
 		std::memcpy(m, mat.m, sizeof(float) * 16);
-	}
-
-	void Matrix::setZero(void)
-	{
-		std::memset(m, 0, sizeof(float) * 16);
 	}
 
 	void Matrix::setIdentity(void)
@@ -1138,32 +905,12 @@ namespace hr
 
 	void Matrix::setTranspose(const float src[16])
 	{
-		__m128 row1, row2, row3, row4;
-
-		row1 = _mm_loadu_ps(src + 0);
-		row2 = _mm_loadu_ps(src + 4);
-		row3 = _mm_loadu_ps(src + 8);
-		row4 = _mm_loadu_ps(src + 12);
-		_MM_TRANSPOSE4_PS(row1, row2, row3, row4);
-		_mm_storeu_ps(m + 0, row1);
-		_mm_storeu_ps(m + 4, row2);
-		_mm_storeu_ps(m + 8, row3);
-		_mm_storeu_ps(m + 12, row4);
+		fastMat4x4Transpose(m, src);
 	}
 
 	void Matrix::setTranspose(const Matrix &mat)
 	{
-		__m128 row1, row2, row3, row4;
-
-		row1 = _mm_loadu_ps(mat.m + 0);
-		row2 = _mm_loadu_ps(mat.m + 4);
-		row3 = _mm_loadu_ps(mat.m + 8);
-		row4 = _mm_loadu_ps(mat.m + 12);
-		_MM_TRANSPOSE4_PS(row1, row2, row3, row4);
-		_mm_storeu_ps(m + 0, row1);
-		_mm_storeu_ps(m + 4, row2);
-		_mm_storeu_ps(m + 8, row3);
-		_mm_storeu_ps(m + 12, row4);
+		fastMat4x4Transpose(m, mat.m);
 	}
 
 	void Matrix::setTranslation(float x, float y, float z)
@@ -1177,32 +924,24 @@ namespace hr
 
 	void Matrix::setTranslation(const float vec[3])
 	{
-		m[0] = m[5] = m[10] = m[15] = 1.0f;
-		m[1] = m[2] = m[3] = m[4] = m[6] = m[7] = m[8] = m[9] = m[11] = 0.0f;
-		m[12] = vec[0];
-		m[13] = vec[1];
-		m[14] = vec[2];
+		setTranslation(vec[0], vec[1], vec[2]);
 	}
 
 	void Matrix::setTranslation(const Vector3f& vec)
 	{
-		m[0] = m[5] = m[10] = m[15] = 1.0f;
-		m[1] = m[2] = m[3] = m[4] = m[6] = m[7] = m[8] = m[9] = m[11] = 0.0f;
-		m[12] = vec[0];
-		m[13] = vec[1];
-		m[14] = vec[2];
+		setTranslation(vec[0], vec[1], vec[2]);
 	}
 
 	void Matrix::setScale(float scale)
 	{
-		memset(m, 0, sizeof(float) * 16);
+		std::memset(m, 0, sizeof(float) * 16);
 		m[0] = m[5] = m[10] = scale;
 		m[15] = 1.0f;
 	}
 
 	void Matrix::setScale(float x, float y, float z)
 	{
-		memset(m, 0, sizeof(float) * 16);
+		std::memset(m, 0, sizeof(float) * 16);
 		m[0] = x;
 		m[5] = y;
 		m[10] = z;
@@ -1211,11 +950,7 @@ namespace hr
 
 	void Matrix::setScale(const Vector3f& vec)
 	{
-		memset(m, 0, sizeof(float) * 16);
-		m[0] = vec[0];
-		m[5] = vec[1];
-		m[10] = vec[2];
-		m[15] = 1.0f;
+		setScale(vec[0], vec[1], vec[2]);
 	}
 
 	void Matrix::setReflect(const Plane &plane)
@@ -1242,29 +977,6 @@ namespace hr
 		m[12] = -2.0f * pNormal[0] * d;
 		m[13] = -2.0f * pNormal[1] * d;
 		m[14] = -2.0f * pNormal[2] * d;
-		m[15] = 1.0f;
-	}
-
-	void Matrix::setReflect(float a, float b, float c, float d)
-	{
-		m[0] = -2.0f * a * a + 1.0f;
-		m[1] = -2.0f * b * a;
-		m[2] = -2.0f * c * a;
-		m[3] = 0.0f;
-
-		m[4] = -2.0f * a * b;
-		m[5] = -2.0f * b * b + 1.0f;
-		m[6] = -2.0f * c * b;
-		m[7] = 0.0f;
-
-		m[8] = -2.0f * a * c;
-		m[9] = -2.0f * b * c;
-		m[10] = -2.0f * c * c + 1.0f;
-		m[11] = 0.0f;
-
-		m[12] = -2.0f * a * d;
-		m[13] = -2.0f * b * d;
-		m[14] = -2.0f * c * d;
 		m[15] = 1.0f;
 	}
 
@@ -1662,6 +1374,21 @@ namespace hr
 		std::memcpy(m, src, sizeof(float) * 9);
 	}
 
+	Matrix3::Matrix3(const Quaternion &unitQuaternion)
+	{
+		m[0] = 1.0f - 2.0f * (unitQuaternion[1] * unitQuaternion[1] + unitQuaternion[2] * unitQuaternion[2]);
+		m[3] =        2.0f * (unitQuaternion[0] * unitQuaternion[1] - unitQuaternion[2] * unitQuaternion[3]);
+		m[6] =        2.0f * (unitQuaternion[0] * unitQuaternion[2] + unitQuaternion[1] * unitQuaternion[3]);
+
+		m[1] =        2.0f * (unitQuaternion[0] * unitQuaternion[1] + unitQuaternion[2] * unitQuaternion[3]);
+		m[4] = 1.0f - 2.0f * (unitQuaternion[0] * unitQuaternion[0] + unitQuaternion[2] * unitQuaternion[2]);
+		m[7] =        2.0f * (unitQuaternion[1] * unitQuaternion[2] - unitQuaternion[0] * unitQuaternion[3]);
+
+		m[2] =        2.0f * (unitQuaternion[0] * unitQuaternion[2] - unitQuaternion[1] * unitQuaternion[3]);
+		m[5] =        2.0f * (unitQuaternion[1] * unitQuaternion[2] + unitQuaternion[0] * unitQuaternion[3]);
+		m[8] = 1.0f - 2.0f * (unitQuaternion[0] * unitQuaternion[0] + unitQuaternion[1] * unitQuaternion[1]);
+	}
+
 	void Matrix3::operator*=(const Matrix &s)
 	{
 		float matAux[9];
@@ -1682,23 +1409,9 @@ namespace hr
 
 	void Matrix3::operator*=(const Matrix3 &s)
 	{
-		float matAux[9];
-		std::memcpy(matAux, m, sizeof(float) * 9);
-
-		m[0] = s.m[0] * matAux[0] + s.m[1] * matAux[3] + s.m[2] * matAux[6];
-		m[1] = s.m[0] * matAux[1] + s.m[1] * matAux[4] + s.m[2] * matAux[7];
-		m[2] = s.m[0] * matAux[2] + s.m[1] * matAux[5] + s.m[2] * matAux[8];
-
-		m[3] = s.m[3] * matAux[0] + s.m[4] * matAux[3] + s.m[5] * matAux[6];
-		m[4] = s.m[3] * matAux[1] + s.m[4] * matAux[4] + s.m[5] * matAux[7];
-		m[5] = s.m[3] * matAux[2] + s.m[4] * matAux[5] + s.m[5] * matAux[8];
-
-		m[6] = s.m[6] * matAux[0] + s.m[7] * matAux[3] + s.m[8] * matAux[6];
-		m[7] = s.m[6] * matAux[1] + s.m[7] * matAux[4] + s.m[8] * matAux[7];
-		m[8] = s.m[6] * matAux[2] + s.m[7] * matAux[5] + s.m[8] * matAux[8];
+		this->operator*=(s.m);
 	}
-
-
+	
 	void Matrix3::operator*=(const float src[9])
 	{
 		float matAux[9];
@@ -1719,17 +1432,7 @@ namespace hr
 
 	void Matrix3::operator+=(const Matrix3 &s)
 	{
-		m[0] += s.m[0];
-		m[1] += s.m[1];
-		m[2] += s.m[2];
-
-		m[3] += s.m[3];
-		m[4] += s.m[4];
-		m[5] += s.m[5];
-
-		m[6] += s.m[6];
-		m[7] += s.m[7];
-		m[8] += s.m[8];
+		this->operator+=(s.m);
 	}
 
 	void Matrix3::operator+=(const float src[9])
@@ -1749,17 +1452,7 @@ namespace hr
 
 	void Matrix3::operator-=(const Matrix3 &s)
 	{
-		m[0] -= s.m[0];
-		m[1] -= s.m[1];
-		m[2] -= s.m[2];
-
-		m[3] -= s.m[3];
-		m[4] -= s.m[4];
-		m[5] -= s.m[5];
-
-		m[6] -= s.m[6];
-		m[7] -= s.m[7];
-		m[8] -= s.m[8];
+		this->operator-=(s.m);
 	}
 
 	void Matrix3::operator-=(const float src[9])
@@ -1984,117 +1677,77 @@ namespace hr
 		std::memcpy(dest, m, sizeof(float) * 9);
 	}
 
-	void Matrix3::transpose(Matrix3 &dest) const
+	Matrix3 Matrix3::getTranspose() const
 	{
-		dest.m[1] = m[3];
-		dest.m[2] = m[6];
-		dest.m[3] = m[1];
-		dest.m[5] = m[7];
-		dest.m[6] = m[2];
-		dest.m[7] = m[5];
+		Matrix3 newMat;
 
-		dest.m[0] = m[0];
-		dest.m[4] = m[4];
-		dest.m[8] = m[8];
+		newMat.m[1] = m[3];
+		newMat.m[2] = m[6];
+		newMat.m[3] = m[1];
+		newMat.m[5] = m[7];
+		newMat.m[6] = m[2];
+		newMat.m[7] = m[5];
+
+		newMat.m[0] = m[0];
+		newMat.m[4] = m[4];
+		newMat.m[8] = m[8];
+
+		return newMat;
 	}
 
-	void Matrix3::transpose()
+	Matrix3& Matrix3::transpose()
 	{
 		std::swap(m[1], m[3]);
 		std::swap(m[2], m[6]);
 		std::swap(m[5], m[7]);
+
+		return *this;
 	}
 
-	void Matrix3::mulRotationX(float angleDeg)
-	{
-		float c, s;
-		Math::sinCos(Math::convDeg2Rad(angleDeg), s, c);
-
-		float p1 = m[3];
-		float p2 = m[4];
-		float p3 = m[5];
-
-		m[3] = (c * p1) + (s * m[6]);
-		m[4] = (c * p2) + (s * m[7]);
-		m[5] = (c * p3) + (s * m[8]);
-
-		m[6] = (-s * p1) + (c * m[6]);
-		m[7] = (-s * p2) + (c * m[7]);
-		m[8] = (-s * p3) + (c * m[8]);
-	}
-
-	void Matrix3::mulRotationY(float angleDeg)
-	{
-		float c, s;
-		Math::sinCos(Math::convDeg2Rad(angleDeg), s, c);
-
-		float p1 = m[0];
-		float p2 = m[1];
-		float p3 = m[2];
-
-		m[0] = (c * p1) + (-s * m[6]);
-		m[1] = (c * p2) + (-s * m[7]);
-		m[2] = (c * p3) + (-s * m[8]);
-
-		m[6] = (s * p1) + (c * m[6]);
-		m[7] = (s * p2) + (c * m[7]);
-		m[8] = (s * p3) + (c * m[8]);
-	}
-
-	void Matrix3::mulRotationZ(float angleDeg)
-	{
-		float c, s;
-		Math::sinCos(Math::convDeg2Rad(angleDeg), s, c);
-
-		float p1 = m[0];
-		float p2 = m[1];
-		float p3 = m[2];
-
-		m[0] = (c * p1) + (s * m[3]);
-		m[1] = (c * p2) + (s * m[4]);
-		m[2] = (c * p3) + (s * m[5]);
-
-		m[3] = (-s * p1) + (c * m[3]);
-		m[4] = (-s * p2) + (c * m[4]);
-		m[5] = (-s * p3) + (c * m[5]);
-	}
-
-	void Matrix3::set(float value)
+	Matrix3& Matrix3::set(float value)
 	{
 		m[0] = m[1] = m[2] = value;
 		m[3] = m[4] = m[5] = value;
 		m[6] = m[7] = m[8] = value;
+
+		return *this;
 	}
 
-	void Matrix3::set(const float src[9])
+	Matrix3& Matrix3::set(const float src[9])
 	{
 		std::memcpy(m, src, sizeof(float) * 9);
+		return *this;
 	}
 
-	void Matrix3::set(const Matrix &mat)
+	Matrix3& Matrix3::set(const Matrix &mat)
 	{
 		m[0] = mat.m[0];		m[1] = mat.m[1];		m[2] = mat.m[2];
 		m[3] = mat.m[4];		m[4] = mat.m[5];		m[5] = mat.m[6];
 		m[6] = mat.m[8];		m[7] = mat.m[9];		m[8] = mat.m[10];
+
+		return *this;
 	}
 
-	void Matrix3::set(const Matrix3 &mat)
+	Matrix3& Matrix3::set(const Matrix3 &mat)
 	{
 		std::memcpy(m, mat.m, sizeof(float) * 9);
+		return *this;
 	}
 
-	void Matrix3::setZero(void)
+	Matrix3& Matrix3::setZero(void)
 	{
 		std::memset(m, 0, sizeof(float) * 9);
+		return *this;
 	}
 
-	void Matrix3::setIdentity(void)
+	Matrix3& Matrix3::setIdentity(void)
 	{
 		std::memset(m, 0, sizeof(float) * 9);
 		m[0] = m[4] = m[8] = 1.0f;
+		return *this;
 	}
 
-	void Matrix3::setRotationX(float angleDeg)
+	Matrix3& Matrix3::setRotationX(float angleDeg)
 	{
 		float c, s;
 		Math::sinCos(Math::convDeg2Rad(angleDeg), s, c);
@@ -2106,9 +1759,11 @@ namespace hr
 
 		m[1] = m[2] = m[3] = m[6] = 0.0f;
 		m[0] = 1.0f;
+
+		return *this;
 	}
 
-	void Matrix3::setRotationY(float angleDeg)
+	Matrix3& Matrix3::setRotationY(float angleDeg)
 	{
 		float c, s;
 		Math::sinCos(Math::convDeg2Rad(angleDeg), s, c);
@@ -2120,9 +1775,11 @@ namespace hr
 
 		m[1] = m[3] = m[5] = m[7] = 0.0f;
 		m[4] = 1.0f;
+
+		return *this;
 	}
 
-	void Matrix3::setRotationZ(float angleDeg)
+	Matrix3& Matrix3::setRotationZ(float angleDeg)
 	{
 		float c, s;
 		Math::sinCos(Math::convDeg2Rad(angleDeg), s, c);
@@ -2134,9 +1791,11 @@ namespace hr
 
 		m[2] = m[5] = m[6] = m[7] = 0.0f;
 		m[8] = 1.0f;
+
+		return *this;
 	}
 
-	void Matrix3::setRotation(float angleDeg, const Vector3f& vec)
+	Matrix3& Matrix3::setRotation(float angleDeg, const Vector3f& vec)
 	{
 		float c, s, t, txx, tyy, tzz, txy, txz, tyz;
 
@@ -2165,9 +1824,11 @@ namespace hr
 		m[6] = txz + aux[1];
 		m[7] = tyz - aux[0];
 		m[8] = tzz + c;
+
+		return *this;
 	}
 
-	void Matrix3::setRotation(float angleDegX, float angleDegY, float angleDegZ)
+	Matrix3& Matrix3::setRotation(float angleDegX, float angleDegY, float angleDegZ)
 	{
 		float cx, cy, cz, sx, sy, sz;
 
@@ -2186,14 +1847,17 @@ namespace hr
 		m[6] = -cx * cz * sy + sx * sz;
 		m[7] = cz * sx + cx * sy + sz;
 		m[8] = cx * cy;
+
+		return *this;
 	}
 
-	void Matrix3::setRotation(float angleDeg, float x, float y, float z)
+	Matrix3& Matrix3::setRotation(float angleDeg, float x, float y, float z)
 	{
 		setRotation(angleDeg, Vector3f(x, y, z));
+		return *this;
 	}
 
-	void Matrix3::setRotationFromTo(const Vector3f& from, const Vector3f& to)
+	Matrix3& Matrix3::setRotationFromTo(const Vector3f& from, const Vector3f& to)
 	{
 		Vector3f v;
 		float e, h, f;
@@ -2257,7 +1921,8 @@ namespace hr
 					m[j * 3 + i] = -c1 * u[i] * u[j] - c2 * v[i] * v[j] + c3 * v[i] * u[j];
 				m[i * 3 + i] += 1.0f;
 			}
-			return;
+
+			return *this;
 		}
 
 		float hvx, hvz, hvxy, hvxz, hvyz;
@@ -2280,5 +1945,7 @@ namespace hr
 		m[2] = hvxz - v[1];
 		m[5] = hvyz + v[0];
 		m[8] = e + hvz * v[2];
+
+		return *this;
 	}
 }

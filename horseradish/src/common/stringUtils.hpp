@@ -132,7 +132,10 @@ namespace hr
 		static void trim(std::string& str);
 		static std::string trimCopy(std::string_view str);
 
-		static void replace(std::string& str, const unsigned int unicodeCharOld, const unsigned int unicodeCharNew);
+		static void erase(std::string& str, const unsigned int unicodeChar);
+		static std::string eraseCopy(std::string_view str, const unsigned int unicodeChar);
+
+		static void replace(std::string& str, const unsigned int replaceOldChar, const unsigned int replaceNewChar);
 		static std::string replaceCopy(std::string_view str, const unsigned int replaceOldChar, const unsigned int replaceNewChar);
 
 		static void replace(std::string& str, const std::string& replaceOldStr, const std::string& replaceNewStr);

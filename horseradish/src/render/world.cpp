@@ -31,9 +31,11 @@ namespace hr { namespace render
 			unsigned char fileSig[GeomFileSig.size()];
 			unsigned char version;
 			std::uint32_t numGeoms;
+			std::uint32_t numAnimSets; //new
+			std::uint32_t numAnims; //new
 		};
 
-		struct GeomChunkInfo
+		/*struct GeomChunkInfo
 		{
 			std::uint32_t id;
 			std::uint32_t geomsOffset;
@@ -41,8 +43,124 @@ namespace hr { namespace render
 			std::uint32_t numVertices;
 			std::uint32_t numIndices;
 			float bboxMin[3], bboxMax[3];
+		};*/
+
+		enum class GeomType : std::uint16_t { Static = 1, Animated = 2};
+		enum class GeomFlags : std::uint32_t { None = 0, AnimExtraBoneSet = (1<<0) };
+
+		struct GeomChunkInfo
+		{
+			std::uint32_t id;
+			std::uint16_t type;
+			std::uint32_t flags;
+			std::uint32_t geomsOffset;
+			std::uint32_t size;
+			std::uint32_t numVertices;
+			std::uint32_t numIndices;
+			std::uint32_t animSetId;
+		};
+
+		struct AnimSetChunkInfo
+		{
+			std::uint32_t id;
+			std::uint32_t flags;
+			std::uint32_t geomsOffset;
+			std::uint32_t size;
+			std::uint16_t numJoints;
+		};
+
+		struct AnimChunkInfo
+		{
+			std::uint32_t id;
+			std::uint32_t flags;
+			std::uint32_t geomsOffset;
+			std::uint32_t size;
+			float frameRate;
+			std::uint32_t numFrames;
+			std::uint32_t animSetId;
 		};
 #pragma pack(pop)
+
+		bool fileAddData(hr::streams::FileStream& fstream, size_t numGeoms, size_t numAnimSets, size_t numAnims, std::function<bool(hr::streams::StreamWriter&)> cbWriteData, std::function<bool(hr::streams::StreamWriter&)> cbWriteGeomChunk, std::function<bool(hr::streams::StreamWriter&)> cbWriteAnimSetChunk, std::function<bool(hr::streams::StreamWriter&)> cbWriteAnimChunk)
+		{
+			std::unique_ptr<GeomChunkInfo[]> geomChunksTmp;
+			std::unique_ptr<AnimChunkInfo[]> animChunksTmp;
+			std::unique_ptr<AnimSetChunkInfo[]> animSetChunksTmp;
+
+			int geomChunksSize = sizeof(GeomChunkInfo) * numGeoms;
+			int animChunksSize = sizeof(AnimChunkInfo) * numAnims;
+			int animSetchunksSize = sizeof(AnimSetChunkInfo) * numAnimSets;
+
+			if ((numGeoms > 0) || (numAnimSets > 0) || (numAnims > 0))
+			{
+				hr::streams::StreamReader freader(fstream);
+
+				if (numGeoms > 0)
+				{
+					geomChunksTmp = std::unique_ptr<GeomChunkInfo[]>(new GeomChunkInfo[numGeoms]);
+
+					freader.seek(hr::streams::Stream::SeekOrigin::End, -(geomChunksSize + animSetchunksSize + animChunksSize));
+					if (freader.read(geomChunksTmp.get(), geomChunksSize) != geomChunksSize)
+						return false;
+				}
+
+				if (numAnimSets > 0)
+				{
+					animSetChunksTmp = std::unique_ptr<AnimSetChunkInfo[]>(new AnimSetChunkInfo[numAnimSets]);
+
+					freader.seek(hr::streams::Stream::SeekOrigin::End, -(animSetchunksSize + animChunksSize));
+					if (freader.read(animSetChunksTmp.get(), animSetchunksSize) != animSetchunksSize)
+						return false;
+				}
+
+				if (numAnims > 0)
+				{
+					animChunksTmp = std::unique_ptr<AnimChunkInfo[]>(new AnimChunkInfo[numAnims]);
+
+					freader.seek(hr::streams::Stream::SeekOrigin::End, -animChunksSize);
+					if (freader.read(animChunksTmp.get(), animChunksSize) != animChunksSize)
+						return false;
+				}
+			}
+
+			hr::streams::StreamWriter fwriter(fstream);
+
+			{
+				fwriter.seek(hr::streams::Stream::SeekOrigin::End, -(geomChunksSize + animSetchunksSize + animChunksSize));
+
+				if (!cbWriteData(fwriter))
+					return false;
+			}
+
+			if (geomChunksTmp)
+			{
+				if (fwriter.write(geomChunksTmp.get(), geomChunksSize) != geomChunksSize)
+					return false;
+			}
+
+			if (cbWriteGeomChunk && !cbWriteGeomChunk(fwriter))
+				return false;
+
+			if (animSetChunksTmp)
+			{
+				if (fwriter.write(animSetChunksTmp.get(), animSetchunksSize) != animSetchunksSize)
+					return false;
+			}
+
+			if (cbWriteAnimSetChunk && !cbWriteAnimSetChunk(fwriter))
+				return false;
+
+			if (animChunksTmp)
+			{
+				if (fwriter.write(animChunksTmp.get(), animChunksSize) != animChunksSize)
+					return false;
+			}
+
+			if (cbWriteAnimChunk && !cbWriteAnimChunk(fwriter))
+				return false;
+
+			return true;
+		}
 	}
 
 	class RendererObjectProxy
@@ -94,7 +212,7 @@ namespace hr { namespace render
 			return matNormalPath;
 		}
 
-		size_t readVertices(void* const destBuffer, size_t requestedDataSize) override
+		size_t readVertices(void* const destBuffer, size_t requestedDataSize) const override
 		{
 			fileStream.seek(hr::streams::Stream::SeekOrigin::Begin, geom.fstreamVertexOffset);
 			
@@ -104,7 +222,7 @@ namespace hr { namespace render
 			return bytesRead;
 		}
 
-		size_t readIndices(void* const destBuffer, size_t requestedDataSize) override
+		size_t readIndices(void* const destBuffer, size_t requestedDataSize) const override
 		{
 			fileStream.seek(hr::streams::Stream::SeekOrigin::Begin, geom.fstreamIndexOffset);
 			
@@ -115,8 +233,298 @@ namespace hr { namespace render
 		}
 	};
 
-	World::World(bool editorMode)
-		: m_editorMode(editorMode)
+	bool World::geomFileCreate(hr::streams::FileStream& fstream)
+	{
+		GeomHeader geomHeader;
+		geomHeader.numGeoms = 0;
+		geomHeader.numAnims = 0;
+		geomHeader.numAnimSets = 0;
+		geomHeader.version = 1;
+		std::memcpy(geomHeader.fileSig, GeomFileSig.data(), sizeof(geomHeader.fileSig));
+
+		fstream.write(&geomHeader, sizeof(geomHeader));
+		return true;
+	}
+
+	bool World::geomFileAddMesh(hr::streams::FileStream& fstream, size_t geomId, const hr::geom::Mesh& mesh)
+	{
+		size_t numGeoms = 0, numAnimSets = 0, numAnims = 0;
+
+		//update file header
+		{
+			GeomHeader geomHeader;
+			{
+				hr::streams::StreamReader stream(fstream);
+
+				stream.seek(hr::streams::Stream::SeekOrigin::Begin, 0);
+				if (stream.read(&geomHeader, sizeof(GeomHeader)) != sizeof(GeomHeader))
+					return false;
+			}
+
+			numGeoms = geomHeader.numGeoms;
+			numAnims = geomHeader.numAnims;
+			numAnimSets = geomHeader.numAnimSets;
+
+			geomHeader.numGeoms++;
+
+			{
+				hr::streams::StreamWriter stream(fstream);
+
+				stream.seek(hr::streams::Stream::SeekOrigin::Begin, 0);
+				if (stream.write(&geomHeader, sizeof(GeomHeader)) != sizeof(GeomHeader))
+					return false;
+			}
+		}
+
+		GeomChunkInfo newGeomChunk;
+		newGeomChunk.id = geomId;
+		newGeomChunk.type = static_cast<std::uint16_t>(GeomType::Static);
+		newGeomChunk.flags = static_cast<std::uint32_t>(GeomFlags::None);
+		newGeomChunk.numVertices = mesh.numVertices();
+		newGeomChunk.numIndices = mesh.numIndices();
+		newGeomChunk.size = mesh.sizeVertices() + mesh.sizeIndices() + (sizeof(float) * 6); //vertices + indices + bbox
+		newGeomChunk.geomsOffset = 0;
+		newGeomChunk.animSetId = 0;
+	
+		auto success = fileAddData(fstream, numGeoms, numAnimSets, numAnims, [&mesh, &newGeomChunk](hr::streams::StreamWriter& fwriter)
+		{
+			newGeomChunk.geomsOffset = fwriter.position();
+
+			if (fwriter.write(mesh.vertices(), mesh.sizeVertices()) != mesh.sizeVertices())
+				return false;
+			if (fwriter.write(mesh.indices(), mesh.sizeIndices()) != mesh.sizeIndices())
+				return false;
+
+			auto bbox = mesh.getBoundingBox();
+
+			if (fwriter.write(bbox.min().data(), sizeof(float) * 3) != sizeof(float) * 3)
+				return false;
+			if (fwriter.write(bbox.max().data(), sizeof(float) * 3) != sizeof(float) * 3)
+				return false;
+
+			return true;
+
+		}, [&newGeomChunk](hr::streams::StreamWriter& fwriter)
+		{
+			if (fwriter.write(&newGeomChunk, sizeof(GeomChunkInfo)) != sizeof(GeomChunkInfo))
+				return false;
+
+			return true;
+
+		}, nullptr, nullptr);
+
+		return success;
+	}
+
+	bool World::geomFileAddMeshAnim(hr::streams::FileStream& fstream, size_t geomId, const hr::geom::MeshAnim& meshAnim, size_t animSetId)
+	{
+		size_t numGeoms = 0, numAnimSets = 0, numAnims = 0;
+
+		//update file header
+		{
+			GeomHeader geomHeader;
+			{
+				hr::streams::StreamReader stream(fstream);
+
+				stream.seek(hr::streams::Stream::SeekOrigin::Begin, 0);
+				if (stream.read(&geomHeader, sizeof(GeomHeader)) != sizeof(GeomHeader))
+					return false;
+			}
+
+			numGeoms = geomHeader.numGeoms;
+			numAnims = geomHeader.numAnims;
+			numAnimSets = geomHeader.numAnimSets;
+
+			geomHeader.numGeoms++;
+
+			{
+				hr::streams::StreamWriter stream(fstream);
+
+				stream.seek(hr::streams::Stream::SeekOrigin::Begin, 0);
+				if (stream.write(&geomHeader, sizeof(GeomHeader)) != sizeof(GeomHeader))
+					return false;
+			}
+		}
+
+		GeomChunkInfo newGeomChunk;
+		newGeomChunk.id = geomId;
+		newGeomChunk.type = static_cast<std::uint16_t>(GeomType::Animated);
+		newGeomChunk.flags = static_cast<std::uint32_t>((meshAnim.skinningType() == geom::MeshAnim::SkinningType::Vertex8Joints) ? GeomFlags::AnimExtraBoneSet : GeomFlags::None);
+		newGeomChunk.numVertices = meshAnim.mesh().numVertices();
+		newGeomChunk.numIndices = meshAnim.mesh().numIndices();
+		newGeomChunk.size = meshAnim.mesh().sizeVertices() + meshAnim.mesh().sizeIndices() + (sizeof(float) * 6) + meshAnim.sizeVerticesJoints(); //vertices + indices + bbox + vertexJoints
+		newGeomChunk.geomsOffset = 0;
+		newGeomChunk.animSetId = animSetId;
+
+		auto success = fileAddData(fstream, numGeoms, numAnimSets, numAnims, [&meshAnim, &newGeomChunk](hr::streams::StreamWriter& fwriter)
+		{
+			newGeomChunk.geomsOffset = fwriter.position();
+
+			if (fwriter.write(meshAnim.mesh().vertices(), meshAnim.mesh().sizeVertices()) != meshAnim.mesh().sizeVertices())
+				return false;
+			if (fwriter.write(meshAnim.mesh().indices(), meshAnim.mesh().sizeIndices()) != meshAnim.mesh().sizeIndices())
+				return false;
+
+			auto bbox = meshAnim.mesh().getBoundingBox();
+
+			if (fwriter.write(bbox.min().data(), sizeof(float) * 3) != sizeof(float) * 3)
+				return false;
+			if (fwriter.write(bbox.max().data(), sizeof(float) * 3) != sizeof(float) * 3)
+				return false;
+
+			if (fwriter.write(meshAnim.verticesJoints(), meshAnim.sizeVerticesJoints()) != meshAnim.sizeVerticesJoints())
+				return false;
+
+			return true;
+
+		}, [&newGeomChunk](hr::streams::StreamWriter& fwriter)
+		{
+			if (fwriter.write(&newGeomChunk, sizeof(GeomChunkInfo)) != sizeof(GeomChunkInfo))
+				return false;
+
+			return true;
+
+		}, nullptr, nullptr);
+
+		return success;
+	}
+
+	bool World::geomFileAddAnimationSet(hr::streams::FileStream& fstream, size_t animSetId, const hr::geom::MeshAnimSet& animSet)
+	{
+		size_t numGeoms = 0, numAnimSets = 0, numAnims = 0;
+
+		//update file header
+		{
+			GeomHeader geomHeader;
+			{
+				hr::streams::StreamReader stream(fstream);
+
+				stream.seek(hr::streams::Stream::SeekOrigin::Begin, 0);
+				if (stream.read(&geomHeader, sizeof(GeomHeader)) != sizeof(GeomHeader))
+					return false;
+			}
+
+			numGeoms = geomHeader.numGeoms;
+			numAnims = geomHeader.numAnims;
+			numAnimSets = geomHeader.numAnimSets;
+
+			geomHeader.numAnimSets++;
+
+			{
+				hr::streams::StreamWriter stream(fstream);
+
+				stream.seek(hr::streams::Stream::SeekOrigin::Begin, 0);
+				if (stream.write(&geomHeader, sizeof(GeomHeader)) != sizeof(GeomHeader))
+					return false;
+			}
+		}
+
+		AnimSetChunkInfo newAnimSetChunk;
+		newAnimSetChunk.id = animSetId;
+		newAnimSetChunk.flags = 0;
+		newAnimSetChunk.size = (sizeof(float) * 16) * animSet.numJoints(); //one mat4x4 for each joint
+		newAnimSetChunk.numJoints = animSet.numJoints();
+		newAnimSetChunk.geomsOffset = 0;
+
+		auto success = fileAddData(fstream, numGeoms, numAnimSets, numAnims, [&animSet, &newAnimSetChunk](hr::streams::StreamWriter& fwriter)
+		{
+			newAnimSetChunk.geomsOffset = fwriter.position();
+
+			for (size_t curJoint = 0; curJoint < animSet.numJoints(); curJoint++)
+			{
+				auto& mat = animSet.bindPoseInvertedMat(curJoint);
+				if (fwriter.write(mat.data(), sizeof(float) * 16) != sizeof(float) * 16)
+					return false;
+			}
+
+			return true;
+
+		}, nullptr, [&newAnimSetChunk](hr::streams::StreamWriter& fwriter)
+		{
+			if (fwriter.write(&newAnimSetChunk, sizeof(AnimSetChunkInfo)) != sizeof(AnimSetChunkInfo))
+				return false;
+
+			return true;
+
+		}, nullptr);
+
+		return success;
+	}
+
+	bool World::geomFileAddAnimation(hr::streams::FileStream& fstream, size_t animId, size_t animSetId, float frameRate, const std::vector<hr::geom::MeshAnimSet::Frame>& animation)
+	{
+		size_t numGeoms = 0, numAnimSets = 0, numAnims = 0;
+
+		//update file header
+		{
+			GeomHeader geomHeader;
+			{
+				hr::streams::StreamReader stream(fstream);
+
+				stream.seek(hr::streams::Stream::SeekOrigin::Begin, 0);
+				if (stream.read(&geomHeader, sizeof(GeomHeader)) != sizeof(GeomHeader))
+					return false;
+			}
+
+			numGeoms = geomHeader.numGeoms;
+			numAnims = geomHeader.numAnims;
+			numAnimSets = geomHeader.numAnimSets;
+
+			geomHeader.numAnims++;
+
+			{
+				hr::streams::StreamWriter stream(fstream);
+
+				stream.seek(hr::streams::Stream::SeekOrigin::Begin, 0);
+				if (stream.write(&geomHeader, sizeof(GeomHeader)) != sizeof(GeomHeader))
+					return false;
+			}
+		}
+
+		AnimChunkInfo newAnimChunk;
+		newAnimChunk.id = animId;
+		newAnimChunk.flags = 0;
+		newAnimChunk.animSetId = animSetId;
+		newAnimChunk.size = ((sizeof(float) * (3 + 4)) * animation.size()) + (sizeof(float) * 6); //one (vec3 + quaternion) for each frame of animation plus the bbox
+		newAnimChunk.frameRate = frameRate;
+		newAnimChunk.numFrames = animation.size();
+		newAnimChunk.geomsOffset = 0;
+
+		auto success = fileAddData(fstream, numGeoms, numAnimSets, numAnims, [&animation, &newAnimChunk](hr::streams::StreamWriter& fwriter)
+		{
+			newAnimChunk.geomsOffset = fwriter.position();
+
+			for (const auto& curFrame : animation)
+			{
+				for (const auto& curJoint : curFrame.joints)
+				{
+					if (fwriter.write(curJoint.pos.data(), sizeof(float) * 3) != sizeof(float) * 3)
+						return false;
+					if (fwriter.write(curJoint.rot.data(), sizeof(float) * 4) != sizeof(float) * 4)
+						return false;
+				}
+
+				if (fwriter.write(curFrame.bbox.min().data(), sizeof(float) * 3) != sizeof(float) * 3)
+					return false;
+				if (fwriter.write(curFrame.bbox.max().data(), sizeof(float) * 3) != sizeof(float) * 3)
+					return false;
+			}
+
+			return true;
+
+		}, nullptr, nullptr, [&newAnimChunk](hr::streams::StreamWriter& fwriter)
+		{
+			if (fwriter.write(&newAnimChunk, sizeof(AnimChunkInfo)) != sizeof(AnimChunkInfo))
+				return false;
+
+			return true;
+
+		});
+
+		return success;
+	}
+
+	World::World()
 	{ }
 
 	World::~World()
@@ -153,7 +561,7 @@ namespace hr { namespace render
 
 	}
 
-	void World::prepareNextFrame(IRenderer& renderer, const tools::Camera& hrCamera, const hr::gl::tools::Viewport& hrViewport)
+	void World::prepareNextFrame(Timestep& timestep, IRenderer& renderer, const tools::Camera& hrCamera, const hr::gl::tools::Viewport& hrViewport)
 	{
 		auto camPos = hrCamera.getPos();
 
@@ -163,32 +571,253 @@ namespace hr { namespace render
 		camFrustum.setZFar(hrViewport.zfar());
 		camFrustum.calculateFrustum(hrViewport.getProjection(hr::gl::tools::Viewport::ProjectionType::Proj3D), hrCamera.modelView());
 
-		std::vector<IRenderObject::ObjectId> targetObjects;
-
-		for (const auto& [areaId, area] : mAreas)
+		//run animations and update vertex data
 		{
-			targetObjects.clear();
-
-			for (auto& instance : area.mInstances)
+			class RendererObjectProxy
+				: public hr::render::IRenderObject
 			{
-				if (!camFrustum.testBox(instance.bbox))
-					continue;
+			public:
+				size_t objectId = 0;
+				hr::geom::Mesh& mesh;
 
-				targetObjects.push_back(instance.objectId);
+			public:
+				RendererObjectProxy(size_t objectId, hr::geom::Mesh& mesh)
+					: objectId(objectId)
+					, mesh(mesh)
+				{ }
+
+			private:
+				size_t id() const override
+				{
+					return objectId;
+				}
+
+				BBox bbox() const override
+				{
+					return {};
+				}
+
+				size_t numVertices() const override
+				{
+					return mesh.numVertices();
+				}
+
+				size_t numIndices() const override
+				{
+					return 0;
+				}
+
+				std::string_view texDiffusePath() const override
+				{
+					return {};
+				}
+
+				std::string_view texNormalPath() const override
+				{
+					return {};
+				}
+
+				size_t readVertices(void* const destBuffer, size_t requestedDataSize) const override
+				{
+					assert(requestedDataSize == mesh.sizeVertices());
+					std::memcpy(destBuffer, mesh.vertices(), requestedDataSize);
+
+					return requestedDataSize;
+				}
+
+				size_t readIndices(void* const destBuffer, size_t requestedDataSize) const override
+				{
+					return 0;
+				}
+			};
+
+			struct RendererProxy
+				: public IRenderObjectManager
+			{
+				std::vector<RendererObjectProxy>& renderObjects;
+
+				RendererProxy(std::vector<RendererObjectProxy>& renderObjects)
+					: renderObjects(renderObjects)
+				{ }
+
+				size_t numObjects() const override
+				{
+					return renderObjects.size();
+				}
+
+				void iterateObjects(std::function<void(IRenderObject&)> cb) const override
+				{
+					if (!cb)
+						return;
+
+					for (auto& object : renderObjects)
+						cb(object);
+				}
+			};
+
+			std::vector<RendererObjectProxy> targetObjects;
+
+			for (auto&[areaId, area] : mAreas)
+			{
+				for (auto&[animSetId, animSet] : area.mAnimationSets)
+					animSet.animationSet.animate(1, timestep.t);
+
+				targetObjects.clear();
+
+				for (auto&[objectId, object] : area.mObjects)
+				{
+					if (!object.anim.hasAnim)
+						continue;
+
+					auto animSet = area.mAnimationSets.find(object.anim.animSetId);
+					if (animSet == area.mAnimationSets.end())
+						continue;
+
+					/*if (!camFrustum.testBox(animSet->second.animationSet.updatedBBox())) //no point in updating the object if its entire anim set is not visible
+						continue;*/
+
+					animSet->second.animationSet.updateMesh(object.anim.meshAnim, object.anim.meshAnimated);
+					
+					targetObjects.push_back(RendererObjectProxy(objectId, object.anim.meshAnimated));
+				}
+
+				renderer.updateVertexData(area.sceneId, RendererProxy(targetObjects));
 			}
+		}
 
-			renderer.prepareNextFrame(area.sceneId, targetObjects);
+		{
+			std::vector<IRenderObject::ObjectId> targetObjects;
+
+			for (const auto&[areaId, area] : mAreas)
+			{
+				targetObjects.clear();
+
+				for (auto& instance : area.mInstances)
+				{
+					auto itObject = area.mObjects.find(instance.objectId);
+					if (itObject == area.mObjects.end())
+						continue;
+
+					if (itObject->second.anim.hasAnim)
+					{
+						auto animSet = area.mAnimationSets.find(itObject->second.anim.animSetId);
+						if (animSet == area.mAnimationSets.end())
+							continue;
+
+						/*if (!camFrustum.testBox(animSet->second.animationSet.updatedBBox())) //no point in updating the object if its entire anim set is not visible
+							continue;*/
+					}
+					else
+					{
+						if (!camFrustum.testBox(instance.bbox))
+							continue;
+					}
+
+					targetObjects.push_back(instance.objectId);
+				}
+
+				renderer.prepareNextFrame(area.sceneId, targetObjects);
+			}
 		}
 	}
 
-	World::AreaId World::addEmptyArea()
+	bool World::loadAnimations(hr::streams::StreamReader& sreader, Area& area)
 	{
-		auto id = mGenAreaIds++;
+		std::vector<AnimChunkInfo> animInfos;
+		std::vector<AnimSetChunkInfo> animSetInfos;
 
-		auto& area = mAreas[id];
-		area.id = id;
+		//read infos
+		{
+			GeomHeader geomHeader;
+			if (sreader.read(&geomHeader, sizeof(GeomHeader)) != sizeof(GeomHeader))
+				return false;
 
-		return id;
+			int animChunksSize = sizeof(AnimChunkInfo) * geomHeader.numAnims;
+			int animSetchunksSize = sizeof(AnimSetChunkInfo) * geomHeader.numAnimSets;
+
+			if (geomHeader.numAnimSets > 0)
+			{
+				sreader.seek(hr::streams::Stream::SeekOrigin::End, -(animSetchunksSize + animChunksSize));
+
+				animSetInfos.reserve(geomHeader.numAnimSets);
+				for (size_t curGeom = 0; curGeom < geomHeader.numAnimSets; ++curGeom)
+				{
+					AnimSetChunkInfo chunkInfo;
+					sreader.read(&chunkInfo, sizeof(AnimSetChunkInfo));
+
+					animSetInfos.push_back(std::move(chunkInfo));
+				}
+			}
+
+			if (geomHeader.numAnims > 0)
+			{
+				sreader.seek(hr::streams::Stream::SeekOrigin::End, -animChunksSize);
+
+				animInfos.reserve(geomHeader.numAnims);
+				for (size_t curGeom = 0; curGeom < geomHeader.numAnims; ++curGeom)
+				{
+					AnimChunkInfo chunkInfo;
+					sreader.read(&chunkInfo, sizeof(AnimChunkInfo));
+
+					animInfos.push_back(std::move(chunkInfo));
+				}
+			}
+		}
+
+		//read everything
+		for (const auto& animSetInfo : animSetInfos)
+		{
+			auto& animSet = area.mAnimationSets[animSetInfo.id];
+
+			{
+				std::vector<Matrix> bindPoseMats;
+				bindPoseMats.resize(animSetInfo.numJoints);
+
+				sreader.seek(hr::streams::Stream::SeekOrigin::Begin, animSetInfo.geomsOffset);
+
+				for (size_t curJointIndex = 0; curJointIndex < animSetInfo.numJoints; curJointIndex++)
+					sreader.read(bindPoseMats[curJointIndex].data(), sizeof(float) * 16);
+
+				animSet.animationSet = geom::MeshAnimSet(std::move(bindPoseMats));
+			}
+
+			for (const auto& animInfo : animInfos)
+			{
+				if (animInfo.animSetId != animSetInfo.id)
+					continue;
+
+				sreader.seek(hr::streams::Stream::SeekOrigin::Begin, animInfo.geomsOffset);
+
+				std::vector<geom::MeshAnimSet::Frame> animFrames;
+				animFrames.reserve(animInfo.numFrames);
+
+				for (size_t curFrameIndex = 0; curFrameIndex < animInfo.numFrames; curFrameIndex++)
+				{
+					std::vector<geom::MeshAnimSet::Joint> skeleton;
+					skeleton.resize(animSetInfo.numJoints);
+
+					for (size_t curJointIndex = 0; curJointIndex < animSetInfo.numJoints; curJointIndex++)
+					{
+						sreader.read(skeleton[curJointIndex].pos.data(), sizeof(float) * 3);
+						sreader.read(skeleton[curJointIndex].rot.data(), sizeof(float) * 4);
+					}
+
+					Vector3f bboxMin, bboxMax;
+					sreader.read(bboxMin.data(), sizeof(float) * 3);
+					sreader.read(bboxMax.data(), sizeof(float) * 3);
+
+					geom::MeshAnimSet::Frame newFrame;
+					newFrame.bbox.setMinMax(bboxMin, bboxMax);
+					newFrame.joints = std::move(skeleton);
+
+					animFrames.push_back(std::move(newFrame));
+				}
+
+				animSet.animationSet.animAdd(animInfo.id, animInfo.frameRate, std::move(animFrames));
+			}
+		}
+
+		return true;
 	}
 
 	bool World::load(IRenderer& renderer, Area& area, const std::string& scenePath, const std::string& geomPath)
@@ -196,16 +825,33 @@ namespace hr { namespace render
 		hr::streams::FileStream sceneFileStream(scenePath, true, false);
 		hr::streams::StreamReader streamScene(sceneFileStream);
 
-		area.mGeomFileStream = hr::streams::FileStream(geomPath, true, m_editorMode ? true : false);
-		hr::streams::StreamReader streamGeom(area.mGeomFileStream);
+		hr::streams::FileStream geomFileStream(geomPath, true, false);
+		hr::streams::StreamReader streamGeom(geomFileStream);
+
+		//check file
+		{
+			GeomHeader geomHeader;
+			if (streamGeom.read(&geomHeader, sizeof(GeomHeader)) != sizeof(GeomHeader))
+				return false;
+			if (std::memcmp(geomHeader.fileSig, GeomFileSig.data(), sizeof(geomHeader.fileSig)) != 0)
+				return false;
+
+			streamGeom.seek(hr::streams::Stream::SeekOrigin::Begin, 0);
+		}
+
+		//load all animation sets and corresponding animations
+		{
+			loadAnimations(streamGeom, area);
+			streamGeom.seek(hr::streams::Stream::SeekOrigin::Begin, 0);
+		}
 
 		std::map<size_t, RendererObjectProxy> mRendererObjects;
 
+		//read objects and instances
 		{
 			std::unordered_map<size_t, GeomChunkInfo> geomInfo;
 
-			//read geom info
-			size_t geomsOffset = 0;
+			//read geom infos
 			{
 				GeomHeader geomHeader;
 				if (streamGeom.read(&geomHeader, sizeof(GeomHeader)) != sizeof(GeomHeader))
@@ -213,16 +859,22 @@ namespace hr { namespace render
 				if (std::memcmp(geomHeader.fileSig, GeomFileSig.data(), sizeof(geomHeader.fileSig)) != 0)
 					return false;
 
-				geomsOffset = streamGeom.position();
-				streamGeom.seek(hr::streams::Stream::SeekOrigin::End, -static_cast<int>(sizeof(GeomChunkInfo) * geomHeader.numGeoms));
+				int geomChunksSize = sizeof(GeomChunkInfo) * geomHeader.numGeoms;
+				int animChunksSize = sizeof(AnimChunkInfo) * geomHeader.numAnims;
+				int animSetchunksSize = sizeof(AnimSetChunkInfo) * geomHeader.numAnimSets;
 
-				geomInfo.rehash(geomHeader.numGeoms);
-				for (size_t curGeom = 0; curGeom < geomHeader.numGeoms; ++curGeom)
+				if (geomHeader.numGeoms > 0)
 				{
-					GeomChunkInfo chunkInfo;
-					streamGeom.read(&chunkInfo, sizeof(GeomChunkInfo));
+					streamGeom.seek(hr::streams::Stream::SeekOrigin::End, -(geomChunksSize + animSetchunksSize + animChunksSize));
 
-					geomInfo[chunkInfo.id] = chunkInfo;
+					geomInfo.rehash(geomHeader.numGeoms);
+					for (size_t curGeom = 0; curGeom < geomHeader.numGeoms; ++curGeom)
+					{
+						GeomChunkInfo chunkInfo;
+						streamGeom.read(&chunkInfo, sizeof(GeomChunkInfo));
+
+						geomInfo[chunkInfo.id] = chunkInfo;
+					}
 				}
 			}
 
@@ -242,47 +894,89 @@ namespace hr { namespace render
 				d.ParseInsitu(reinterpret_cast<char*>(buffer.get()));
 
 				{
-					auto& jsonConcepts = d["concepts"];
+					auto& jsonConcepts = d["objects"];
 					assert(jsonConcepts.IsArray());
 
 					for (rapidjson::Value::ConstValueIterator itr = jsonConcepts.Begin(); itr != jsonConcepts.End(); ++itr)
 					{
 						size_t objectId = (*itr)["id"].GetUint();
 
-						auto& object = area.mObjects[objectId];
-						auto& objectRenderer = mRendererObjects.try_emplace(objectId, area.mGeomFileStream).first->second;
+						auto objectType = static_cast<Object::Type>((*itr)["type"].GetUint());
 
-						object.objectId = objectId;
-						objectRenderer.objectId = objectId;
-
-						//read geom info and bbox
+						if (objectType == Object::Type::Static)
 						{
-							auto geomIt = geomInfo.find(object.objectId);
-							if (geomIt == geomInfo.end())
-								continue;
+							auto& object = area.mObjects[objectId];
+							auto& objectRenderer = mRendererObjects.try_emplace(objectId, geomFileStream).first->second;
 
-							objectRenderer.geom.numVertices = geomIt->second.numVertices;
-							objectRenderer.geom.numIndices = geomIt->second.numIndices;
-							objectRenderer.geom.fstreamVertexOffset = geomsOffset + geomIt->second.geomsOffset;
-							objectRenderer.geom.fstreamIndexOffset = objectRenderer.geom.fstreamVertexOffset + (sizeof(hr::geom::Mesh::VertexData) * objectRenderer.geom.numVertices);
+							object.id = objectId;
+							object.type = Object::Type::Static;
+							objectRenderer.objectId = objectId;
 
-							object.bbox.setMinMax(geomIt->second.bboxMin, geomIt->second.bboxMax);
-							objectRenderer.geom.bbox = object.bbox;
-						}
+							//read geom info and bbox
+							{
+								auto geomIt = geomInfo.find(object.id);
+								if (geomIt == geomInfo.end())
+									continue;
 
-						//read material info
-						if ((*itr).HasMember("material"))
-						{
-							auto& jsonMaterial = ((*itr).FindMember("material"))->value;
+								{
+									streamGeom.seek(hr::streams::Stream::SeekOrigin::Begin, geomIt->second.geomsOffset);
 
-							objectRenderer.matDiffusePath = jsonMaterial["diffusePath"].GetString();
-							objectRenderer.matNormalPath = jsonMaterial["normalPath"].GetString();
+									object.anim.hasAnim = (geomIt->second.type == static_cast<std::uint16_t>(GeomType::Animated));
+									if (object.anim.hasAnim)
+									{
+										object.anim.animSetId = geomIt->second.animSetId;
+
+										object.anim.meshAnimated = hr::geom::Mesh(geomIt->second.numVertices, geomIt->second.numIndices); //bind pose
+										streamGeom.read(object.anim.meshAnimated.vertices(), object.anim.meshAnimated.sizeVertices());
+										streamGeom.read(object.anim.meshAnimated.indices(), object.anim.meshAnimated.sizeIndices());
+									}
+									else
+									{
+										streamGeom.seek(hr::streams::Stream::SeekOrigin::Current, hr::geom::Mesh::sizeVertices(objectRenderer.geom.numVertices));
+										streamGeom.seek(hr::streams::Stream::SeekOrigin::Current, hr::geom::Mesh::sizeIndices(objectRenderer.geom.numIndices));
+									}
+
+									{
+										Vector3f bboxMin, bboxMax;
+
+										streamGeom.read(bboxMin.data(), sizeof(float) * 3);
+										streamGeom.read(bboxMax.data(), sizeof(float) * 3);
+
+										object.bbox.setMinMax(bboxMin, bboxMax);
+									}
+
+									if (object.anim.hasAnim)
+									{
+										if ((geomIt->second.flags & static_cast<std::uint16_t>(GeomFlags::AnimExtraBoneSet)) != 0)
+											object.anim.meshAnim = hr::geom::MeshAnim(object.anim.meshAnimated, hr::geom::MeshAnim::SkinningType::Vertex8Joints);
+										else
+											object.anim.meshAnim = hr::geom::MeshAnim(object.anim.meshAnimated, hr::geom::MeshAnim::SkinningType::Vertex4Joints);
+
+										streamGeom.read(object.anim.meshAnim.verticesJoints(), object.anim.meshAnim.sizeVerticesJoints());
+									}
+								}
+
+								objectRenderer.geom.numVertices = geomIt->second.numVertices;
+								objectRenderer.geom.numIndices = geomIt->second.numIndices;
+								objectRenderer.geom.fstreamVertexOffset = geomIt->second.geomsOffset;
+								objectRenderer.geom.fstreamIndexOffset = objectRenderer.geom.fstreamVertexOffset + hr::geom::Mesh::sizeVertices(objectRenderer.geom.numVertices);
+								objectRenderer.geom.bbox = object.bbox;
+							}
+
+							//read material info
+							if ((*itr).HasMember("material"))
+							{
+								auto& jsonMaterial = ((*itr).FindMember("material"))->value;
+
+								objectRenderer.matDiffusePath = jsonMaterial["diffusePath"].GetString();
+								objectRenderer.matNormalPath = jsonMaterial["normalPath"].GetString();
+							}
 						}
 					}
 				}
 
 				{
-					auto& jsonObjects = d["objects"];
+					auto& jsonObjects = d["instances"];
 					assert(jsonObjects.IsArray());
 
 					area.mInstances.reserve(jsonObjects.Size());
@@ -290,12 +984,13 @@ namespace hr { namespace render
 					{
 						Instance newInstance;
 						newInstance.type = static_cast<Instance::Type>((*itr)["type"].GetUint());
-						newInstance.objectId = (*itr)["conceptId"].GetUint();
-						if (area.mObjects.find(newInstance.objectId) == area.mObjects.end())
-							continue;
+						newInstance.objectId = (*itr)["objectId"].GetUint();
 
-						newInstance.bbox = area.mObjects[newInstance.objectId].bbox;
-						area.mInstances.push_back(newInstance);
+						if (area.mObjects.find(newInstance.objectId) != area.mObjects.end())
+						{
+							newInstance.bbox = area.mObjects[newInstance.objectId].bbox;
+							area.mInstances.push_back(newInstance);
+						}
 					}
 				}
 			}
@@ -331,561 +1026,5 @@ namespace hr { namespace render
 		}
 
 		return true;
-	}
-
-	void WorldEditor::createEmptyArea(const std::string& scenePath, const std::string& geomPath)
-	{
-		if (std::experimental::filesystem::exists(scenePath))
-			std::experimental::filesystem::remove(scenePath);
-		if (std::experimental::filesystem::exists(geomPath))
-			std::experimental::filesystem::remove(geomPath);
-
-		//empty scene
-		{
-			hr::streams::FileStream streamScene(scenePath, false, true);
-
-			rapidjson::StringBuffer s;
-			rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(s);
-
-			writer.StartObject();
-
-			writer.String("version");
-			writer.StartArray();
-			writer.Int(1);
-			writer.Int(0);
-			writer.Int(0);
-			writer.EndArray();
-
-			writer.String("concepts");
-			writer.StartArray();
-			writer.EndArray();
-
-			writer.String("objects");
-			writer.StartArray();
-			writer.EndArray();
-
-			writer.EndObject();
-
-			streamScene.write(s.GetString(), s.GetSize());
-		}
-
-		//empty geom
-		{
-			hr::streams::FileStream streamGeom(geomPath, false, true);
-
-			GeomHeader geomHeader;
-			geomHeader.numGeoms = 0;
-			geomHeader.version = 1;
-			std::memcpy(geomHeader.fileSig, GeomFileSig.data(), sizeof(geomHeader.fileSig));
-
-			streamGeom.write(&geomHeader, sizeof(geomHeader));
-		}
-	}
-
-	WorldEditor::WorldEditor()
-		: World(true)
-	{ }
-
-	WorldEditor::AreaId WorldEditor::newArea(std::string_view scenePath, std::string_view geomPath)
-	{
-		auto newId = addEmptyArea();
-
-		assert(mAreasData.find(newId) == mAreasData.end());
-		auto& areaData = mAreasData[newId];
-
-		areaData.pathScene = scenePath;
-		areaData.pathGeom = geomPath;
-
-		return newId;
-	}
-
-	bool WorldEditor::importMesh(AreaId areaId, std::string_view name, const hr::geom::Mesh& mesh)
-	{
-		if (!mesh.check() || (mAreas.find(areaId) == mAreas.end()))
-			return false;
-
-		auto& area = mAreas[areaId];
-		auto& areaData = mAreasData[areaId];
-
-		//create object
-		auto objectId = genObjectId(area);
-		{
-			auto& object = area.mObjects[objectId];
-			auto& objectData = areaData.objects[objectId];
-			
-			object.objectId = objectId;
-			objectData.objectId = objectId;
-			objectData.name = name;
-		}
-
-		//we store new geometry immediately
-		addMesh(area, objectId, mesh);
-
-		//create an instance associated with the object
-		{
-			Instance newInstance;
-			newInstance.type = Instance::Type::Static;
-			newInstance.objectId = objectId;
-			newInstance.bbox = mesh.getBoundingBox();
-			area.mInstances.push_back(newInstance);
-		}
-
-		//need to save everything to file (new geometry was already saved)
-		saveArea(area);
-
-		return true;
-	}
-
-	bool WorldEditor::importObj(AreaId areaId, std::string_view basePath, std::string_view fileName)
-	{
-		if (mAreas.find(areaId) == mAreas.end())
-			return false;
-
-		tinyobj::attrib_t objVertexAttribs;
-		std::vector<tinyobj::shape_t> objShapes;
-		std::vector<tinyobj::material_t> objMaterials;
-
-		{
-			std::string fullPath;
-			fullPath.reserve(basePath.size() + fileName.size() + 1);
-			fullPath.append(basePath).append(fileName);
-
-			std::string errorDesc;
-			auto success = tinyobj::LoadObj(&objVertexAttribs, &objShapes, &objMaterials, &errorDesc, fullPath.c_str(), std::string(basePath).c_str());
-			if (!success)
-				return false;
-		}
-
-		if (objShapes.empty())
-			return true;
-
-		auto& area = mAreas[areaId];
-		auto& areaData = mAreasData[areaId];
-
-		area.mInstances.reserve(area.mInstances.size() + objShapes.size());
-
-		for (const auto& shape : objShapes)
-		{
-			//ignore empty shapes
-			if (shape.mesh.indices.empty())
-				continue;
-
-			//all tris must belong to the same material
-			if (!shape.mesh.material_ids.empty())
-			{
-				if (std::count(shape.mesh.material_ids.begin(), shape.mesh.material_ids.end(), shape.mesh.material_ids[0]) != shape.mesh.material_ids.size())
-					continue;
-			}
-
-			//all indices must have position and tex coords
-			if (std::any_of(shape.mesh.indices.begin(), shape.mesh.indices.end(), [](const tinyobj::index_t& index)
-			{
-				return ((index.vertex_index == -1) || (index.texcoord_index == -1));
-			}))
-				continue;
-
-			//ignore shapes if a object with the same name already exists
-			if (std::find_if(areaData.objects.begin(), areaData.objects.end(), [&name = shape.name](const auto& keyValue) { return (keyValue.second.name == name); }) != areaData.objects.end())
-				continue;
-
-			//create object
-			auto objectId = genObjectId(area);
-			auto& object = area.mObjects[objectId];
-			auto& objectData = areaData.objects[objectId];
-
-			object.objectId = objectId;
-			objectData.objectId = objectId;
-			objectData.name = shape.name;
-
-			//process mesh
-			{
-				bool ignoreNormals = std::any_of(shape.mesh.indices.begin(), shape.mesh.indices.end(), [](const tinyobj::index_t& index)
-				{
-					return (index.normal_index == -1);
-				});
-
-				hr::geom::Mesh newMesh;
-				{
-					struct hashableIndex
-						: public tinyobj::index_t
-					{
-						struct hash
-						{
-							size_t operator()(const hashableIndex& index) const
-							{
-								size_t seed = index.vertex_index;
-								seed ^= index.texcoord_index + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-								seed ^= index.normal_index + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-								return seed;
-							}
-						};
-
-						hashableIndex(tinyobj::index_t index)
-							: tinyobj::index_t(index)
-						{ }
-
-						bool operator ==(const hashableIndex& other) const
-						{
-							return (vertex_index == other.vertex_index) && (texcoord_index == other.texcoord_index) && (normal_index == other.normal_index);
-						}
-					};
-
-					std::unordered_map<hashableIndex, size_t, hashableIndex::hash> mapping;
-
-					for (const auto& index : shape.mesh.indices)
-					{
-						if (mapping.find(index) != mapping.end())
-							continue;
-
-						mapping[index] = mapping.size();
-					}
-
-					if (mapping.size() >= hr::geom::Mesh::maxVertexCount())
-						continue;
-
-					newMesh = hr::geom::Mesh(mapping.size(), shape.mesh.indices.size());
-
-					for (const auto& keyValue : mapping)
-					{
-						auto vertexIndex = keyValue.second;
-
-						newMesh.vertices()[vertexIndex].pos[0] = objVertexAttribs.vertices[keyValue.first.vertex_index * 3 + 0];
-						newMesh.vertices()[vertexIndex].pos[1] = objVertexAttribs.vertices[keyValue.first.vertex_index * 3 + 1];
-						newMesh.vertices()[vertexIndex].pos[2] = objVertexAttribs.vertices[keyValue.first.vertex_index * 3 + 2];
-
-						newMesh.vertices()[vertexIndex].uv[0] = objVertexAttribs.texcoords[keyValue.first.texcoord_index * 2 + 0];
-						newMesh.vertices()[vertexIndex].uv[1] = objVertexAttribs.texcoords[keyValue.first.texcoord_index * 2 + 1];
-
-						if (!ignoreNormals)
-						{
-							newMesh.vertices()[vertexIndex].normal[0] = hr::geom::Mesh::pack(objVertexAttribs.normals[keyValue.first.normal_index * 3 + 0]);
-							newMesh.vertices()[vertexIndex].normal[1] = hr::geom::Mesh::pack(objVertexAttribs.normals[keyValue.first.normal_index * 3 + 1]);
-							newMesh.vertices()[vertexIndex].normal[2] = hr::geom::Mesh::pack(objVertexAttribs.normals[keyValue.first.normal_index * 3 + 2]);
-						}
-					}
-
-					size_t curIndex = 0;
-					for (const auto& index : shape.mesh.indices)
-					{
-						auto mappingIt = mapping.find(index);
-						assert(mappingIt != mapping.end());
-
-						newMesh.indices()[curIndex++] = static_cast<unsigned short>(mappingIt->second);
-					}
-				}
-
-				assert(newMesh.check());
-				if (ignoreNormals)
-					newMesh.genNormals();
-				newMesh.genTangents4();
-
-				newMesh.optimizeIndices();
-
-				//we store new geometry immediately
-				addMesh(area, objectId, newMesh);
-			}
-
-			//process material
-			if (!shape.mesh.material_ids.empty())
-			{
-				auto materialId = shape.mesh.material_ids[0];
-				if ((materialId >= 0) && (materialId < objMaterials.size()))
-				{
-					const auto& mat = objMaterials[materialId];
-
-					if (!mat.diffuse_texname.empty())
-						objectData.matDiffusePath = mat.diffuse_texname;
-					else if (!mat.ambient_texname.empty())
-						objectData.matDiffusePath = mat.ambient_texname;
-					else
-						materialId = materialId;
-
-					if (!mat.normal_texname.empty())
-						objectData.matNormalPath = mat.normal_texname;
-					else if (!mat.bump_texname.empty())
-						objectData.matNormalPath = mat.bump_texname;
-					else if (mat.unknown_parameter.find("bump") != mat.unknown_parameter.end())
-						objectData.matNormalPath = mat.unknown_parameter.find("bump")->second;
-					else if (mat.unknown_parameter.find("map_bump") != mat.unknown_parameter.end())
-						objectData.matNormalPath = mat.unknown_parameter.find("map_bump")->second;
-					else
-						materialId = materialId;
-				}
-			}
-
-			//create an object associated with the concept
-			Instance newInstance;
-			newInstance.type = Instance::Type::Static;
-			newInstance.objectId = object.objectId;
-			newInstance.bbox = object.bbox;
-			area.mInstances.push_back(newInstance);
-		}
-
-		//need to save everything to file (new geometry was already saved)
-		saveArea(area);
-
-		return true;
-	}
-
-	void WorldEditor::processMesh(AreaId areaId, const std::vector<size_t>& objectIds, std::function<void(hr::geom::Mesh&)> cb)
-	{
-		if (!cb || (mAreas.find(areaId) == mAreas.end()))
-			return;
-
-		auto& area = mAreas[areaId];
-		auto& areaData = mAreasData[areaId];
-
-		auto func = [cb](Area& area, AreaData::ObjectData& object)
-		{
-			hr::geom::Mesh mesh(object.geom.numVertices, object.geom.numIndices);
-
-			area.mGeomFileStream.seek(hr::streams::Stream::SeekOrigin::Begin, object.geom.fstreamVertexOffset);
-			area.mGeomFileStream.read(mesh.vertices(), mesh.sizeVertices());
-
-			area.mGeomFileStream.seek(hr::streams::Stream::SeekOrigin::Begin, object.geom.fstreamIndexOffset);
-			area.mGeomFileStream.read(mesh.indices(), mesh.sizeIndices());
-
-			{
-				auto numVertices = mesh.numVertices();
-				auto numIndices = mesh.numIndices();
-				cb(mesh);
-
-				if ((mesh.numVertices() != numVertices) || (mesh.numIndices() != numIndices))
-					return;
-			}
-
-			area.mGeomFileStream.seek(hr::streams::Stream::SeekOrigin::Begin, object.geom.fstreamVertexOffset);
-			area.mGeomFileStream.write(mesh.vertices(), mesh.sizeVertices());
-
-			area.mGeomFileStream.seek(hr::streams::Stream::SeekOrigin::Begin, object.geom.fstreamIndexOffset);
-			area.mGeomFileStream.write(mesh.indices(), mesh.sizeIndices());
-		};
-
-		if (objectIds.empty())
-		{
-			for (auto& [objectId, object] : area.mObjects)
-			{
-				assert(areaData.objects.find(objectId) != areaData.objects.end());
-				func(area, areaData.objects[objectId]);
-			}
-		}
-		else
-		{
-			for (const auto& objectId : objectIds)
-			{
-				auto it = area.mObjects.find(objectId);
-				if (it == area.mObjects.end())
-					continue;
-
-				assert(areaData.objects.find(objectId) != areaData.objects.end());
-				func(area, areaData.objects[objectId]);
-			}
-		}
-	}
-
-	std::vector<size_t> WorldEditor::unusedObjects(AreaId areaId) const
-	{
-		auto areaIt = mAreas.find(areaId);
-		if (areaIt == mAreas.end())
-			return { };
-
-		const auto& area = areaIt->second;
-
-		std::vector<size_t> objectIds;
-		for (const auto& [objectId, object] : area.mObjects)
-		{
-			if (std::find_if(area.mInstances.begin(), area.mInstances.end(), [objectId](const auto& instance) { return (instance.objectId == objectId); }) != area.mInstances.end())
-				continue;
-
-			objectIds.push_back(objectId);
-		}
-
-		return objectIds;
-	}
-
-	void WorldEditor::removeObjects(AreaId areaId, const std::vector<size_t>& objectIds)
-	{
-		if (mAreas.find(areaId) == mAreas.end())
-			return;
-
-		auto& area = mAreas[areaId];
-
-		for (const auto& objectId : objectIds)
-		{
-			area.mObjects.erase(objectId);
-			std::remove_if(area.mInstances.begin(), area.mInstances.end(), [objectId](const auto& instance) { return (instance.objectId == objectId); });
-		}
-	}
-
-	size_t WorldEditor::genObjectId(Area& area) const
-	{
-		size_t curId = 1;
-		while (area.mObjects.find(curId) != area.mObjects.end())
-			curId++;
-
-		return curId;
-	}
-
-	void WorldEditor::addMesh(Area& area, size_t geomId, const hr::geom::Mesh& mesh)
-	{
-		size_t numGeoms = 0;
-
-		//update file header
-		{
-			GeomHeader geomHeader;
-			{
-				hr::streams::StreamReader stream(area.mGeomFileStream);
-
-				stream.seek(hr::streams::Stream::SeekOrigin::Begin, 0);
-				if (stream.read(&geomHeader, sizeof(GeomHeader)) != sizeof(GeomHeader))
-					return;
-			}
-
-			geomHeader.numGeoms++;
-			numGeoms = geomHeader.numGeoms;
-
-			{
-				hr::streams::StreamWriter stream(area.mGeomFileStream);
-
-				stream.seek(hr::streams::Stream::SeekOrigin::Begin, 0);
-				if (stream.write(&geomHeader, sizeof(GeomHeader)) != sizeof(GeomHeader))
-					return;
-			}
-		}
-
-		GeomChunkInfo newGeomChunk;
-		newGeomChunk.id = geomId;
-		newGeomChunk.numVertices = mesh.numVertices();
-		newGeomChunk.numIndices = mesh.numIndices();
-		newGeomChunk.size = mesh.sizeVertices() + mesh.sizeVertices();
-		newGeomChunk.geomsOffset = 0;
-		{
-			auto bbox = mesh.getBoundingBox();
-			bbox.min(newGeomChunk.bboxMin);
-			bbox.max(newGeomChunk.bboxMax);
-		}
-
-		//if this is the first geom, simply write it and then the chunk
-		if (numGeoms == 1)
-		{
-			hr::streams::StreamWriter stream(area.mGeomFileStream);
-
-			stream.seek(hr::streams::Stream::SeekOrigin::Begin, sizeof(GeomHeader));
-
-			if (stream.write(mesh.vertices(), mesh.sizeVertices()) != mesh.sizeVertices())
-				return;
-			if (stream.write(mesh.indices(), mesh.sizeIndices()) != mesh.sizeIndices())
-				return;
-
-			if (stream.write(&newGeomChunk, sizeof(GeomChunkInfo)) != sizeof(GeomChunkInfo))
-				return;
-
-			area.mGeomFileStream.flush();
-			return;
-		}
-
-		int chunksSize = sizeof(GeomChunkInfo) * (numGeoms - 1);
-
-		//read all geom chunks
-		auto chunksTmp = std::unique_ptr<GeomChunkInfo[]>(new GeomChunkInfo[numGeoms - 1]);
-		{
-			hr::streams::StreamReader stream(area.mGeomFileStream);
-
-			stream.seek(hr::streams::Stream::SeekOrigin::End, -chunksSize);
-			if (stream.read(chunksTmp.get(), chunksSize) != chunksSize)
-				return;
-		}
-		
-		//write the new geom, old chunks and the new chunk
-		{
-			hr::streams::StreamWriter stream(area.mGeomFileStream);
-
-			stream.seek(hr::streams::Stream::SeekOrigin::End, -chunksSize);
-			newGeomChunk.geomsOffset = stream.position() - sizeof(GeomHeader);
-
-			if (stream.write(mesh.vertices(), mesh.sizeVertices()) != mesh.sizeVertices())
-				return;
-			if (stream.write(mesh.indices(), mesh.sizeIndices()) != mesh.sizeIndices())
-				return;
-
-			if (stream.write(chunksTmp.get(), chunksSize) != chunksSize)
-				return;
-			
-			if (stream.write(&newGeomChunk, sizeof(GeomChunkInfo)) != sizeof(GeomChunkInfo))
-				return;
-		}
-
-		area.mGeomFileStream.flush();
-	}
-
-	void WorldEditor::saveArea(Area& area)
-	{
-		assert(mAreasData.find(area.id) == mAreasData.end());
-		auto& areaData = mAreasData[area.id];
-
-		//the area is always exported whole, which means that we can destroy the old version completly
-		//also: we only need to save the scene (geom was already taken care of)
-
-		if (std::experimental::filesystem::exists(areaData.pathScene))
-			std::experimental::filesystem::remove(areaData.pathScene);
-
-		hr::streams::FileStream streamScene(areaData.pathScene, false, true);
-
-		rapidjson::StringBuffer s;
-		rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(s);
-
-		writer.StartObject();
-
-		writer.String("version");
-		writer.StartArray();
-		writer.Int(1);
-		writer.Int(0);
-		writer.Int(0);
-		writer.EndArray();
-
-		writer.String("concepts");
-		writer.StartArray();
-		for (auto& object : areaData.objects)
-		{
-			writer.StartObject();
-
-			writer.String("id");
-			writer.Uint(object.second.objectId);
-
-			writer.String("name");
-			writer.String(object.second.name.c_str());
-
-			writer.String("material");
-			writer.StartObject();
-			writer.String("diffusePath");
-			writer.String(object.second.matDiffusePath.c_str());
-
-			writer.String("normalPath");
-			writer.String(object.second.matNormalPath.c_str());
-			writer.EndObject();
-
-			writer.EndObject();
-		}
-		writer.EndArray();
-
-		writer.String("objects");
-		writer.StartArray();
-		for (auto& curObject : area.mInstances)
-		{
-			writer.StartObject();
-
-			writer.String("type");
-			writer.Uint(static_cast<unsigned int>(curObject.type));
-
-			writer.String("conceptId");
-			writer.Uint(curObject.objectId);
-
-			writer.EndObject();
-		}
-		writer.EndArray();
-
-		writer.EndObject();
-
-		streamScene.write(s.GetString(), s.GetSize());
 	}
 } }

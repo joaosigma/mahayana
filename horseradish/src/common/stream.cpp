@@ -42,7 +42,7 @@ namespace hr { namespace streams
 		return !mIsClosed;
 	}
 
-	bool MemoryStream::canWrite(size_t numBytes) const
+	bool MemoryStream::canWrite(size_t) const
 	{
 		return canWrite();
 	}
@@ -205,7 +205,7 @@ namespace hr { namespace streams
 		return false;
 	}
 
-	bool MemoryViewStream::canWrite(size_t numBytes) const
+	bool MemoryViewStream::canWrite(size_t) const
 	{
 		return canWrite();
 	}
@@ -234,7 +234,7 @@ namespace hr { namespace streams
 		return numBytes;
 	}
 
-	size_t MemoryViewStream::write(const void* const inBuffer, size_t numBytes)
+	size_t MemoryViewStream::write(const void* const, size_t)
 	{
 		return 0;
 	}
@@ -479,7 +479,7 @@ namespace hr { namespace streams
 		return (mClosed ? false : mCanWrite);
 	}
 
-	bool FileStream::canWrite(size_t numBytes) const
+	bool FileStream::canWrite(size_t) const
 	{
 		return canWrite();
 	}

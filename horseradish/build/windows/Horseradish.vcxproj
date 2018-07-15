@@ -23,7 +23,7 @@
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>Horseradish</RootNamespace>
     <ProjectName>horseradish</ProjectName>
-    <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.17134.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -87,7 +87,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
-      <WarningLevel>Level3</WarningLevel>
+      <WarningLevel>Level4</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>HR_DEVEL;HR_PROFILLING;WIN32;_DEBUG;_WINDOWS;NOMINMAX;WINVER=0x0601;_WIN32_WINNT=0x0601;NTDDI_VERSION=0x06010000;WIN32_LEAN_AND_MEAN;NOGDICAPMASKS;NOMENUS;NOICONS;NOSYSCOMMANDS;NOSHOWWINDOW;NOCTLMGR;NOMEMMGR;NOOPENFILE;NOWH;NODEFERWINDOWPOS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
@@ -109,7 +109,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
-      <WarningLevel>Level3</WarningLevel>
+      <WarningLevel>Level4</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>HR_DEVEL;HR_PROFILLING;WIN32;_DEBUG;_WINDOWS;NOMINMAX;WINVER=0x0601;_WIN32_WINNT=0x0601;NTDDI_VERSION=0x06010000;WIN32_LEAN_AND_MEAN;NOGDICAPMASKS;NOMENUS;NOICONS;NOSYSCOMMANDS;NOSHOWWINDOW;NOCTLMGR;NOMEMMGR;NOOPENFILE;NOWH;NODEFERWINDOWPOS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
@@ -129,7 +129,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
-      <WarningLevel>Level3</WarningLevel>
+      <WarningLevel>Level4</WarningLevel>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
@@ -155,7 +155,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
-      <WarningLevel>Level3</WarningLevel>
+      <WarningLevel>Level4</WarningLevel>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
@@ -187,6 +187,7 @@
     <ClCompile Include="..\..\src\common\math.cpp" />
     <ClCompile Include="..\..\src\common\matrix.cpp" />
     <ClCompile Include="..\..\src\common\mesh.cpp" />
+    <ClCompile Include="..\..\src\common\meshAnim.cpp" />
     <ClCompile Include="..\..\src\common\opengl\context.cpp" />
     <ClCompile Include="..\..\src\common\opengl\openGL.cpp" />
     <ClCompile Include="..\..\src\common\opengl\openGLext.cpp" />
@@ -282,6 +283,7 @@
     <ClCompile Include="..\..\src\render\tools\font.cpp" />
     <ClCompile Include="..\..\src\render\tools\texture.cpp" />
     <ClCompile Include="..\..\src\render\world.cpp" />
+    <ClCompile Include="..\..\src\render\worldEditor.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\build.hpp" />
@@ -298,6 +300,7 @@
     <ClInclude Include="..\..\src\common\math.hpp" />
     <ClInclude Include="..\..\src\common\matrix.hpp" />
     <ClInclude Include="..\..\src\common\mesh.hpp" />
+    <ClInclude Include="..\..\src\common\meshAnim.hpp" />
     <ClInclude Include="..\..\src\common\opengl\context.hpp" />
     <ClInclude Include="..\..\src\common\opengl\objects.hpp" />
     <ClInclude Include="..\..\src\common\opengl\openGL.hpp" />
@@ -433,6 +436,7 @@
     <ClInclude Include="..\..\src\render\tools\font.hpp" />
     <ClInclude Include="..\..\src\render\tools\texture.hpp" />
     <ClInclude Include="..\..\src\render\world.hpp" />
+    <ClInclude Include="..\..\src\render\worldEditor.hpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\src\libs\libsquish\singlecolourlookup.inl" />

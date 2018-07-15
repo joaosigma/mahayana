@@ -4,6 +4,7 @@
 #include "vector.hpp"
 #include "plane.hpp"
 #include "bvolumes.hpp"
+#include "quaternion.hpp"
 
 namespace hr
 {
@@ -13,23 +14,27 @@ namespace hr
 
 		friend class Matrix3;
 
-		static void asmMat4x4Vec3(float *vecWrite, const float *vecRead, float wCompMul, size_t stride, const float *mat, size_t numVec);
-		static void asmMat4x4Vec4(float *vecWrite, const float *vecRead, size_t stride, const float *mat, size_t numVec);
-		static void fastMat4x4Mult(float * const result, const float * const mat1, const float * const mat2);
-
 	public:
-		Matrix()
+		Matrix() noexcept
 		{
 			std::memset(m, 0, sizeof(float) * 16);
 			m[0] = m[5] = m[10] = m[15] = 1.0f;
 		}
 
-		explicit Matrix(const Matrix3 &mat);
-		explicit Matrix(const float src[16]);
+		Matrix(const Matrix& mat) noexcept
+		{
+			std::memcpy(m, mat.m, sizeof(float) * 16);
+		}
+
+		explicit Matrix(const Matrix3 &mat) noexcept;
+		explicit Matrix(const float src[16]) noexcept;
+		explicit Matrix(const Quaternion &unitQuaternion) noexcept;
 		
+		void operator*=(const float s);
 		void operator*=(const Matrix &s);
 		void operator*=(const Matrix3 &s);
 		void operator*=(const float src[16]);
+		void operator*=(const Quaternion &unitQuaternion);
 		void operator+=(const Matrix &s);
 		void operator+=(const float src[16]);
 		void operator-=(const Matrix &s);
@@ -38,6 +43,7 @@ namespace hr
 		Matrix operator*(const Matrix &s) const;
 		Matrix operator+(const Matrix &s) const;
 		Matrix operator-(const Matrix &s) const;
+		Matrix operator*(const float s) const;
 
 		float& operator[](size_t index)
 		{
@@ -68,11 +74,6 @@ namespace hr
 		void transform(const Vector4f &vec, Vector4f &result) const;
 		void transform(Vector4f * const vec, size_t numVec) const;
 
-		void rotateScale(float vec[3]) const;
-		void rotateScale(Vector3f &vec) const;
-		void rotateScale(const Vector3f &vec, Vector3f &result) const;
-		void rotateScale(Vector3f * const vec, size_t numVec) const;
-
 		void transform(BBox &bbox) const;
 		void transform(const BBox &bbox, BBox &bboxDest) const;
 
@@ -81,6 +82,7 @@ namespace hr
 
 		void getRotation(Vector3f &vec, float &angle) const;
 		void getEulerAngles(float &rfYAngle, float &rfPAngle, float &rfRAngle) const;
+
 		Matrix3 getMat3x3() const;
 		void getMat3x3(Matrix3 &mat3) const;
 		void getMat3x3(float dest[9]) const;
@@ -88,25 +90,22 @@ namespace hr
 
 		void write(float dest[16]) const;
 
-		Matrix transpose() const;
-		void transpose();
+		Matrix getTranspose() const;
+		Matrix& transpose();
 
-		Matrix inverse() const;
-		void inverse();
+		Matrix getInverse() const;
+		Matrix& inverse();
 
-		Matrix inverseTranspose() const;
-		void inverseTranspose();
+		Matrix getInverseTranspose() const;
+		Matrix& inverseTranspose();
 
-		Matrix inverseHomogenous() const;
-		void inverseHomogenous();
+		Matrix getInverseHomogenous() const;
+		Matrix& inverseHomogenous();
 
 		Matrix& mulTranslation(float x, float y, float z);
 		Matrix& mulTranslation(const float * const vec);
 		Matrix& mulScale(float x, float y, float z);
 		Matrix& mulScale(const float * const vec);
-		Matrix& mulRotationX(float angleDeg);
-		Matrix& mulRotationY(float angleDeg);
-		Matrix& mulRotationZ(float angleDeg);
 		Matrix& mul(const Matrix &s);
 		Matrix& mul(const float src[16]);
 		Matrix& mulReverseOrder(const Matrix &s);
@@ -115,7 +114,6 @@ namespace hr
 		void set(float value);
 		void set(const float src[16]);
 		void set(const Matrix &mat);
-		void setZero(void);
 		void setIdentity(void);
 		void setFrom3x3(const Matrix3 &mat3);
 		void setFrom3x3(const float src[9]);
@@ -129,7 +127,6 @@ namespace hr
 		void setScale(float x, float y, float z);
 		void setScale(const Vector3f &vec);
 		void setReflect(const Plane &plane);
-		void setReflect(float a, float b, float c, float d);
 		void setRotationX(float angleDeg);
 		void setRotationY(float angleDeg);
 		void setRotationZ(float angleDeg);
@@ -159,6 +156,7 @@ namespace hr
 
 		explicit Matrix3(const Matrix &mat);
 		explicit Matrix3(const float src[9]);
+		explicit Matrix3(const Quaternion &unitQuaternion);
 
 		void operator*=(const Matrix &s);
 		void operator*=(const Matrix3 &s);
@@ -205,25 +203,21 @@ namespace hr
 
 		void write(float dest[9]) const;
 
-		void transpose(Matrix3 &dest) const;
-		void transpose(void);
+		Matrix3 getTranspose() const;
+		Matrix3& transpose(void);
 
-		void mulRotationX(float angleDeg);
-		void mulRotationY(float angleDeg);
-		void mulRotationZ(float angleDeg);
-
-		void set(float value);
-		void set(const float src[9]);
-		void set(const Matrix &mat);
-		void set(const Matrix3 &mat);
-		void setZero(void);
-		void setIdentity(void);
-		void setRotationX(float angleDeg);
-		void setRotationY(float angleDeg);
-		void setRotationZ(float angleDeg);
-		void setRotation(float angleDeg, const Vector3f &vec);
-		void setRotation(float angleDegX, float angleDegY, float angleDegZ);
-		void setRotation(float angleDeg, float x, float y, float z);
-		void setRotationFromTo(const Vector3f &from, const Vector3f &to);
+		Matrix3& set(float value);
+		Matrix3& set(const float src[9]);
+		Matrix3& set(const Matrix &mat);
+		Matrix3& set(const Matrix3 &mat);
+		Matrix3& setZero(void);
+		Matrix3& setIdentity(void);
+		Matrix3& setRotationX(float angleDeg);
+		Matrix3& setRotationY(float angleDeg);
+		Matrix3& setRotationZ(float angleDeg);
+		Matrix3& setRotation(float angleDeg, const Vector3f &vec);
+		Matrix3& setRotation(float angleDegX, float angleDegY, float angleDegZ);
+		Matrix3& setRotation(float angleDeg, float x, float y, float z);
+		Matrix3& setRotationFromTo(const Vector3f &from, const Vector3f &to);
 	};
 }

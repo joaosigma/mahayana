@@ -50,10 +50,10 @@ namespace hr { namespace render { namespace tools
 		axis.normalize();
 
 		quat.setAxisAngle(axis, angY);
-		quat.rotateVector3(mAxis.dir, viewDir);
+		viewDir = quat.unitRotate(mAxis.dir);
 		viewDir.normalize();
 		quat.setAxisAngle(0.0f, 1.0f, 0.0f, -angX);
-		quat.rotateVector3(viewDir);
+		viewDir = quat.unitRotate(viewDir);
 
 		mAxis.dir = viewDir;
 		mAxis.dir.normalize();
@@ -120,7 +120,7 @@ namespace hr { namespace render { namespace tools
 
 		newDir.set(0.0f, 0.0f, -1.0f);
 		quat.setFromEuler(angX, -angY, 0.0f);
-		quat.rotateVector3(newDir);
+		newDir = quat.unitRotate(newDir);
 		newDir.normalize();
 
 		auto curTarget = getTarget();

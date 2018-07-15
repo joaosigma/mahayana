@@ -30,7 +30,7 @@ int stbIOEof(void *user)
 
 namespace hr { namespace imaging
 {
-	Image<unsigned char, ImageFormatRGB> Factory::readPNG(hr::streams::StreamReader &streamReader)
+	Image<unsigned char, ImageFormatRGB> Factory::readPNG(const hr::streams::StreamReader &streamReader)
 	{
 		hr::streams::MemoryViewStream streamContent;
 		streamReader.stream().cloneAllContent(streamContent);
@@ -47,7 +47,7 @@ namespace hr { namespace imaging
 		return Image<unsigned char, ImageFormatRGB>();
 	}
 
-	Image<unsigned char, ImageFormatRGBA> Factory::readPNGWithAlpha(hr::streams::StreamReader &streamReader)
+	Image<unsigned char, ImageFormatRGBA> Factory::readPNGWithAlpha(const hr::streams::StreamReader &streamReader)
 	{
 		hr::streams::MemoryViewStream streamContent;
 		streamReader.stream().cloneAllContent(streamContent);
@@ -255,7 +255,6 @@ namespace hr { namespace imaging
 				for (size_t x = 0; x < imgWidth; x++)
 				{
 					__int16 temp = ((__int16 *)rawData.get())[(imgWidth * (imgHeight - y - 1) + x)];
-					size_t pixelPos = 4 * (y * imgWidth + x);
 
 					imgWalker[0] = (temp & 0x1F) << 3;
 					imgWalker[1] = ((temp >> 5) & 0x1F) << 3;

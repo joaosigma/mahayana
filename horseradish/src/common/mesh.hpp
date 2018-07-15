@@ -1,13 +1,14 @@
 #pragma once
 
 #include "vector.hpp"
+#include "quaternion.hpp"
 #include "bvolumes.hpp"
 
 #include <limits>
 #include <memory>
 #include <cassert>
 
-namespace hr { namespace geom
+namespace hr::geom
 {
 	class Mesh
 	{
@@ -21,14 +22,27 @@ namespace hr { namespace geom
 			short tangent[4];
 		};
 		#pragma pack(pop)
-		static_assert(sizeof(VertexData) == 36, "VertexData must be tightly packed: sizeof() == 36");
+		static_assert(sizeof(VertexData) == 36, "Mesh vertex data must be tightly packed: sizeof() == 36");
 
 		static short pack(const float value);
 		static float unpack(const short value);
 		static void pack(const float* const in, short* const out, size_t numValues);
 		static void unpack(const short* const in, float* const out, size_t numValues);
 
-		static size_t maxVertexCount();
+		static constexpr size_t maxVertexCount()
+		{
+			return static_cast<size_t>(std::numeric_limits<unsigned short>::max());
+		}
+
+		static constexpr size_t sizeVertices(size_t numVertices)
+		{
+			return (sizeof(VertexData) * numVertices);
+		}
+
+		static constexpr size_t sizeIndices(size_t numIndices)
+		{
+			return (sizeof(unsigned short) * numIndices);
+		}
 
 		static Mesh genBox(size_t precision);
 		static Mesh genSphere(size_t sDiv, size_t tDiv);
@@ -39,8 +53,7 @@ namespace hr { namespace geom
 		size_t mNumVertices = 0, mNumIndices = 0;
 
 	public:
-		Mesh()
-		{ }
+		Mesh() = default;
 
 		Mesh(size_t numVertices, size_t numIndices);
 		Mesh(std::unique_ptr<VertexData[]> vertices, size_t numVertices, std::unique_ptr<unsigned short[]> indices, size_t numIndices);
@@ -55,7 +68,6 @@ namespace hr { namespace geom
 		{
 			return mData.get();
 		}
-
 		VertexData* vertices()
 		{
 			return mData.get();
@@ -65,18 +77,32 @@ namespace hr { namespace geom
 		{
 			return mIndices.get();
 		}
-
 		unsigned short* indices()
 		{
 			return mIndices.get();
 		}
 
-		size_t sizeVertices() const;
-		size_t sizeIndices() const;
+		size_t sizeVertices() const
+		{
+			return Mesh::sizeVertices(mNumVertices);
+		}
+		size_t sizeIndices() const
+		{
+			return Mesh::sizeIndices(mNumIndices);
+		}
 
-		size_t numIndices() const;
-		size_t numVertices() const;
-		size_t numTris() const;
+		size_t numIndices() const
+		{
+			return mNumIndices;
+		}
+		size_t numVertices() const
+		{
+			return mNumVertices;
+		}
+		size_t numTris() const
+		{
+			return mNumIndices / 3;
+		}
 
 		bool check() const;
 
@@ -93,11 +119,10 @@ namespace hr { namespace geom
 		void translate(const Vector3f& translate);
 		void centerMass(const Vector3f& center);
 		void confine(float maxAxis);
-		void confine(const Vector3f& center, float maxAxis);
 		void invertTriWinding();
 		void optimizeIndices();
 
 		void genNormals();
 		void genTangents4();
 	};
-} }
+}

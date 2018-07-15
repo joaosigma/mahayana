@@ -23,7 +23,7 @@ int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PWSTR lpCmdLine, int n
 
 	//minimal checks
 	{
-		if (!hr::platform::Platform::cpuCheckFeatures((hr::platform::Platform::CPUFeature)(hr::platform::Platform::SSE | hr::platform::Platform::SSE2 | hr::platform::Platform::CMov)))
+ 		if (!hr::platform::Platform::cpuCheckFeatures((hr::platform::Platform::CPUFeature)(hr::platform::Platform::SSE | hr::platform::Platform::SSE2 | hr::platform::Platform::CMov)))
 		{
 			hr::platform::Window::MsgBoxWarn("The CPU doesn't have the minimum required features.\nThe application cannot proceed.");
 			return 0;

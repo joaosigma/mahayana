@@ -21,10 +21,8 @@ namespace hr { namespace streams
 	public:
 		enum class SeekOrigin { Begin, Current, End };
 
-		Stream()
-		{ }
-		virtual ~Stream()
-		{ }
+		Stream() = default;
+		virtual ~Stream() = default;
 
 		virtual void close() = 0;
 		virtual void flush() = 0;
@@ -118,8 +116,7 @@ namespace hr { namespace streams
 		std::shared_ptr<unsigned char> mDataShared;
 
 	public:
-		MemoryViewStream()
-		{ }
+		MemoryViewStream() = default;
 
 		MemoryViewStream(std::shared_ptr<unsigned char> data, size_t dataSize)
 			: MemoryViewStream(data, 0, dataSize)
@@ -190,8 +187,7 @@ namespace hr { namespace streams
 		static bool streamDump(Stream& stream, const std::string& filePath);
 
 	public:
-		FileStream()
-		{ }
+		FileStream() = default;
 
 		FileStream(const std::string& filePath, bool toRead, bool toWrite)
 		{

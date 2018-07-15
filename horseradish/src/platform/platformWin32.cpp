@@ -62,8 +62,8 @@ int pipeRead(HANDLE pipeHandle, void *outBuffer, const int outBufferSize)
 
 namespace hr { namespace platform
 {
-	const char* Platform::NewLine = "\r\n\0";
-	const int Platform::NewLineSize = 2;
+	const char* Platform::NewLine = "\r\n";
+	const size_t Platform::NewLineSize = 2;
 
 	const unsigned int Platform::DirectorySeparatorChar = '\\';
 	const unsigned int Platform::VolumeSeparatorChar = ':';

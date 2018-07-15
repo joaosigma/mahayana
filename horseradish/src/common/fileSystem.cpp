@@ -12,38 +12,38 @@ namespace hr::io
 {
 	namespace
 	{
-		uLong ZCALLBACK zwrite(voidpf opaque, voidpf stream, const void* buf, uLong size)
+		uLong ZCALLBACK zwrite(voidpf, voidpf, const void*, uLong)
 		{
 			return 0;
 		}
 
-		int ZCALLBACK zerror(voidpf opaque, voidpf stream)
+		int ZCALLBACK zerror(voidpf, voidpf)
 		{
 			return 0;
 		}
 
-		voidpf ZCALLBACK zopen(voidpf opaque, const char* filename, int mode)
+		voidpf ZCALLBACK zopen(voidpf, const char* filename, int)
 		{
 			auto fileStream = new hr::streams::FileStream(filename, true, false);
 
 			return ((voidpf)fileStream);
 		}
 
-		uLong ZCALLBACK zread(voidpf opaque, voidpf stream, void* buf, uLong size)
+		uLong ZCALLBACK zread(voidpf, voidpf stream, void* buf, uLong size)
 		{
 			auto fileStream = reinterpret_cast<hr::streams::FileStream*>(stream);
 
 			return fileStream->read(buf, size);
 		}
 
-		long ZCALLBACK ztell(voidpf opaque, voidpf stream)
+		long ZCALLBACK ztell(voidpf, voidpf stream)
 		{
 			auto fileStream = reinterpret_cast<hr::streams::FileStream*>(stream);
 
 			return fileStream->position();
 		}
 
-		long ZCALLBACK zseek(voidpf opaque, voidpf stream, uLong offset, int origin)
+		long ZCALLBACK zseek(voidpf, voidpf stream, uLong offset, int origin)
 		{
 			auto fileStream = reinterpret_cast<hr::streams::FileStream*>(stream);
 
@@ -59,7 +59,7 @@ namespace hr::io
 			return 0;
 		}
 
-		int ZCALLBACK zclose(voidpf opaque, voidpf stream)
+		int ZCALLBACK zclose(voidpf, voidpf stream)
 		{
 			auto fileStream = reinterpret_cast<hr::streams::FileStream*>(stream);
 

@@ -12,7 +12,6 @@ namespace hr::render
 {
 	void RendererMain::passDepth(Scene& scene, const tools::Camera& hrCamera, const hr::gl::tools::Viewport& hrViewport)
 	{
-		scene.mRenderData.vaoMesh.bind();
 		mFBOs.fboZPass.bind();
 
 		hr::gl::glEnable(GL_DEPTH_TEST);
@@ -23,12 +22,17 @@ namespace hr::render
 
 		hr::gl::glBindProgramPipeline(mShaders.forwardPassZ.pipeline.id());
 
-		scene.mRenderData.vboIndirectDraw.bind();
-		for (auto& curObject : scene.mRenderData.objects)
+		if (!scene.mRenderData.objects.empty())
 		{
-			hr::gl::glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_SHORT, reinterpret_cast<void*>(curObject->meshDrawIndirectOffset), 1, 0);
+			scene.mRenderData.vaoMesh.bind();
+
+			scene.mRenderData.vboIndirectDraw.bind();
+			for (auto& curObject : scene.mRenderData.objects)
+			{
+				hr::gl::glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_SHORT, reinterpret_cast<void*>(curObject->meshDrawIndirectOffset), 1, 0);
+			}
+			scene.mRenderData.vboIndirectDraw.unbind();
 		}
-		scene.mRenderData.vboIndirectDraw.unbind();
 	}
 
 	void RendererMain::passLighting(Scene& scene, const tools::Camera& hrCamera, const hr::gl::tools::Viewport& hrViewport)
@@ -36,16 +40,20 @@ namespace hr::render
 		hr::gl::glEnable(GL_DEPTH_TEST);
 		hr::gl::glDepthMask(GL_FALSE);
 		hr::gl::glDepthFunc(GL_EQUAL); //match against already written Z (on the depth pass)
-		
+
 		hr::gl::glBindProgramPipeline(mShaders.forwardPassLighting.pipeline.id());
 
 		mSamplers.samplerNormals.bind(1);
 		mSamplers.samplerAlbedo.bind(0);
 
+		//static
+		if (scene.mRenderData.objects.empty())
+			return;
+
 		scene.mRenderData.vaoMesh.bind();
 		scene.mRenderData.vboIndirectDraw.bind();
 		for (auto& curObject : scene.mRenderData.objects)
-		{			
+		{
 			if (curObject->texNormal.isValid())
 				curObject->texNormal.bind(1);
 			else
@@ -147,18 +155,22 @@ namespace hr::render
 
 	void RendererMain::loadGeometry(Scene& scene, const IRenderObjectManager& manager)
 	{
-		scene.mObjects.reserve(manager.numObjects());
-
 		scene.mRenderData.vboMeshData.reset();
 		scene.mRenderData.vboMeshIndexData.reset();
+
+		if (manager.numObjects() <= 0)
+			return;
+
+		scene.mObjects.reserve(manager.numObjects());
 
 		size_t vboMeshSize = 0, vboMeshIndexSize = 0;
 		manager.iterateObjects([&vboMeshSize, &vboMeshIndexSize](IRenderObject& obj)
 		{
-			vboMeshSize += sizeof(hr::geom::Mesh::VertexData) * obj.numVertices();
-			vboMeshIndexSize += sizeof(unsigned short) * obj.numIndices();
+			vboMeshSize += hr::geom::Mesh::sizeVertices(obj.numVertices());
+			vboMeshIndexSize += hr::geom::Mesh::sizeIndices(obj.numIndices());
 		});
 
+		assert((vboMeshSize > 0) && (vboMeshIndexSize > 0));
 		scene.mRenderData.vboMeshData.init(gl::objects::Buffer::Type::ArrayBuffer, vboMeshSize, gl::objects::Buffer::UsageType::PersistentOnlyWrite);
 		scene.mRenderData.vboMeshIndexData.init(gl::objects::Buffer::Type::ElementArrayBuffer, vboMeshIndexSize, gl::objects::Buffer::UsageType::PersistentOnlyWrite);
 
@@ -171,12 +183,13 @@ namespace hr::render
 
 			numGeoms++;
 			mesh.bbox = obj.bbox();
+			mesh.meshVBOStartPos = poolVertex;
 			mesh.meshVBOVertexOffset = baseVertexOffset;
 			mesh.meshTriListOffset = (void*)poolIndex;
 
 			//vertices
 			{
-				auto sizeVertices = sizeof(hr::geom::Mesh::VertexData) * obj.numVertices();
+				auto sizeVertices = hr::geom::Mesh::sizeVertices(obj.numVertices());
 
 				scene.mRenderData.vboMeshData.writeData([&obj](void* const destBuffer, size_t requestedDataSize)
 				{
@@ -191,7 +204,7 @@ namespace hr::render
 
 			//indices
 			{
-				auto sizeIndices = sizeof(unsigned short) * obj.numIndices();
+				auto sizeIndices = hr::geom::Mesh::sizeIndices(obj.numIndices());
 
 				scene.mRenderData.vboMeshIndexData.writeData([&obj](void* const destBuffer, size_t requestedDataSize)
 				{
@@ -409,13 +422,13 @@ namespace hr::render
 	{
 		manager.iterateObjects([this, &scene](IRenderObject& obj)
 		{
-			auto& mesh = scene.mObjects[obj.id()];
+			auto& object = scene.mObjects[obj.id()];
 
-			mesh.texDiffuse.reset();
-			mesh.texNormal.reset();
+			object.texDiffuse.reset();
+			object.texNormal.reset();
 
-			loadDiffuse(obj.texDiffusePath(), mesh.texDiffuse, true);
-			loadNormal(obj.texNormalPath(), mesh.texNormal, true);
+			loadDiffuse(obj.texDiffusePath(), object.texDiffuse, true);
+			loadNormal(obj.texNormalPath(), object.texNormal, true);
 		});
 	}
 
@@ -519,7 +532,7 @@ namespace hr::render
 
 	RendererMain::SceneId RendererMain::loadScene(const IRenderObjectManager& manager)
 	{
-		if (manager.numObjects() == 0)
+		if (manager.numObjects() <= 0)
 			return 0;
 
 		auto id = mGenSceneIds++;
@@ -610,6 +623,27 @@ namespace hr::render
 		compositePostProcessing(hrViewport);
 	}
 
+	void RendererMain::updateVertexData(SceneId sceneId, const IRenderObjectManager& manager)
+	{
+		auto sceneIt = mScenes.find(sceneId);
+		if (sceneIt == mScenes.end())
+			return;
+
+		auto& scene = sceneIt->second;
+
+		manager.iterateObjects([&scene](IRenderObject& obj)
+		{
+			auto& mesh = scene.mObjects[obj.id()];
+
+			scene.mRenderData.vboMeshData.writeData([&obj](void* const destBuffer, size_t requestedDataSize)
+			{
+				auto bytesRead = obj.readVertices(destBuffer, requestedDataSize);
+				assert(bytesRead == requestedDataSize);
+
+			}, hr::geom::Mesh::sizeVertices(obj.numVertices()), mesh.meshVBOStartPos);
+		});
+	}
+
 	void RendererMain::prepareNextFrame(SceneId sceneId, const std::vector<IRenderObject::ObjectId>& objects)
 	{
 		auto sceneIt = mScenes.find(sceneId);
@@ -619,13 +653,12 @@ namespace hr::render
 		auto& scene = sceneIt->second;
 
 		scene.mRenderData.objects.clear();
+
 		for (auto&& objectId : objects)
 		{
 			auto objectIt = scene.mObjects.find(objectId);
-			if (objectIt == scene.mObjects.end())
-				continue;
-
-			scene.mRenderData.objects.push_back(&objectIt->second);
+			if (objectIt != scene.mObjects.end())
+				scene.mRenderData.objects.push_back(&objectIt->second);
 		}
 	}
 }

@@ -391,6 +391,18 @@ namespace hr
 			return final;
 		}
 
+		static Vector evalLinear(const Vector &from, const Vector &to, const float &t)
+		{
+			Vector result;
+			__m128 tmp;
+
+			tmp = _mm_mul_ps(_mm_loadu_ps(from.mData), _mm_set_ps1(1.0f - t));
+			tmp = _mm_add_ps(tmp, _mm_mul_ps(_mm_loadu_ps(to.mData), _mm_load_ps1(&t)));
+
+			_mm_storeu_ps(result.mData, tmp);
+			return result;
+		}
+
 		static Vector evalSplineCatmullRom(const Vector& p1, const Vector& p2, const Vector& p3, const Vector& p4, float t)
 		{
 			assert(t >= 0.0f && t <= 1.0f);
@@ -830,7 +842,7 @@ namespace hr
 			storeCrossProduct(Vector(p), Vector(q));
 		}
 
-		void storeInterpolate(const Vector &from, const Vector &to, const float &t)
+		void storeInterpolate(const Vector &from, const Vector &to, const float t)
 		{
 			__m128 tmp;
 
@@ -839,12 +851,12 @@ namespace hr
 			_mm_storeu_ps(mData, tmp);
 		}
 
-		void storeInterpolate(const float from[3], const float to[3], const float &t)
+		void storeInterpolate(const float from[3], const float to[3], const float t)
 		{
 			storeInterpolate(Vector(from), Vector(to), t);
 		}
 
-		void storeInterpolate(const Vector &to, const float &t)
+		void storeInterpolate(const Vector &to, const float t)
 		{
 			__m128 tmp;
 
@@ -853,14 +865,17 @@ namespace hr
 			_mm_storeu_ps(mData, tmp);
 		}
 
-		void storeInterpolateNormals(const Vector &n1, const Vector &n2, const float &t)
+		void storeInterpolateNormals(const Vector &n1, const Vector &n2, const float t)
 		{
 			float a = acos(n1.getDot(n2));
-			float sinA = 1.0f / sinf(a);
+			float sinA = 1.0f / (sinf(a) + 0.00001f);
 
-			mData[0] = (sin((1.0f - t)*a)*n1.mData[0] + sin(t*a)*n2.mData[0]) * sinA;
-			mData[1] = (sin((1.0f - t)*a)*n1.mData[1] + sin(t*a)*n2.mData[1]) * sinA;
-			mData[2] = (sin((1.0f - t)*a)*n1.mData[2] + sin(t*a)*n2.mData[2]) * sinA;
+			float t0 = sin((1.0f - t)*a);
+			float t1 = sin(t*a);
+
+			mData[0] = (t0 * n1.mData[0] + t1 * n2.mData[0]) * sinA;
+			mData[1] = (t0 * n1.mData[1] + t1 * n2.mData[1]) * sinA;
+			mData[2] = (t0 * n1.mData[2] + t1 * n2.mData[2]) * sinA;
 		}
 
 		void storeClosestInSegment(const Vector &point, const Vector &p1, const Vector &p2)
@@ -1159,7 +1174,7 @@ namespace hr
 			_mm_storeu_ps(mData, tmp);
 		}
 
-		void storeInterpolate(const float from[4], const float to[4], const float &t)
+		void storeInterpolate(const float from[4], const float to[4], const float t)
 		{
 			__m128 tmp;
 

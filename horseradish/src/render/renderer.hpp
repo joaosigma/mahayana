@@ -23,10 +23,10 @@ namespace hr::render
 		virtual BBox bbox() const = 0;
 
 		virtual size_t numVertices() const = 0;
-		virtual size_t readVertices(void* const destBuffer, size_t requestedDataSize) = 0;
+		virtual size_t readVertices(void* const destBuffer, size_t requestedDataSize) const = 0;
 
 		virtual size_t numIndices() const = 0;
-		virtual size_t readIndices(void* const destBuffer, size_t requestedDataSize) = 0;
+		virtual size_t readIndices(void* const destBuffer, size_t requestedDataSize) const = 0;
 
 		virtual std::string_view texDiffusePath() const = 0;
 		virtual std::string_view texNormalPath() const = 0;
@@ -53,6 +53,8 @@ namespace hr::render
 
 		virtual SceneId loadScene(const IRenderObjectManager& manager) = 0;
 		virtual void unloadScene(SceneId sceneId) = 0;
+
+		virtual void updateVertexData(SceneId sceneId, const IRenderObjectManager& manager) = 0;
 		virtual void prepareNextFrame(SceneId sceneId, const std::vector<IRenderObject::ObjectId>& objects) = 0;
 	};
 }

@@ -4,8 +4,7 @@
 
 namespace hr
 {
-	HALIGN_16BYTES
-	class Plane
+	class alignas(16) Plane
 	{
 		float mA, mB, mC, mD; //scalar equation of plane: ax + by + cz = d
 

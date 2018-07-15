@@ -112,7 +112,7 @@ namespace hr { namespace gl { namespace tools
 		for (size_t i = 0; i < numLeftOvers; i++)
 		{
 			mBufferData[i] = mBufferData[numElements + i];
-			mBufferIndices[i] = i;
+			mBufferIndices[i] = static_cast<unsigned short>(i);
 		}
 
 		mState.curVertex = numLeftOvers;

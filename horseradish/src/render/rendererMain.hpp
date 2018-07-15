@@ -29,6 +29,7 @@ namespace hr::render
 		{
 			struct Object
 			{
+				int meshVBOStartPos = 0;
 				int meshVBOVertexOffset = 0;
 				unsigned int meshDrawIndirectOffset = 0;
 				void *meshTriListOffset = nullptr;
@@ -39,13 +40,20 @@ namespace hr::render
 			};
 			std::unordered_map<size_t, Object> mObjects;
 
+			struct ObjectAnim
+				: public Object
+			{
+			};
+			std::unordered_map<size_t, ObjectAnim> mObjectsAnim;
+
 			struct RenderData
 			{
 				std::vector<Object*> objects;
 
 				hr::gl::objects::Buffer vboMeshData, vboMeshIndexData, vboIndirectDraw;
 				hr::gl::objects::VertexArray vaoMesh;
-			} mRenderData;
+			};
+			RenderData mRenderData;
 		};
 
 		struct FBOs
@@ -139,6 +147,7 @@ namespace hr::render
 		SceneId loadScene(const IRenderObjectManager& manager) override;
 		void unloadScene(SceneId sceneId) override;
 
+		void updateVertexData(SceneId sceneId, const IRenderObjectManager& manager) override;
 		void prepareNextFrame(SceneId sceneId, const std::vector<IRenderObject::ObjectId>& objects) override;
 	};
 }

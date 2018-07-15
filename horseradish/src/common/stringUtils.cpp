@@ -221,9 +221,32 @@ namespace hr
 		return std::string(skipLeftWhitespace(str.data()), skipRightWhitespace(str.data() + str.length()));
 	}
 
-	void StringUtils::replace(std::string& str, const unsigned int unicodeCharOld, const unsigned int unicodeCharNew)
+	void StringUtils::erase(std::string& str, const unsigned int unicodeChar)
 	{
-		str = StringUtils::replaceCopy(str, unicodeCharOld, unicodeCharNew);
+		str = StringUtils::eraseCopy(str, unicodeChar);
+	}
+
+	std::string StringUtils::eraseCopy(std::string_view str, const unsigned int unicodeChar)
+	{
+		std::string newStr;
+		newStr.reserve(str.size());
+
+		char tmpBuffer[4];
+		for (const auto& curChar : StringUtils::utf8Wrapper(str))
+		{
+			if (curChar == unicodeChar)
+				continue;
+
+			auto numBytes = unicodeUTF8(curChar, tmpBuffer);
+			newStr.append(tmpBuffer, numBytes);
+		}
+
+		return newStr;
+	}
+
+	void StringUtils::replace(std::string& str, const unsigned int replaceOldChar, const unsigned int replaceNewChar)
+	{
+		str = StringUtils::replaceCopy(str, replaceOldChar, replaceNewChar);
 	}
 
 	std::string StringUtils::replaceCopy(std::string_view str, const unsigned int replaceOldChar, const unsigned int replaceNewChar)

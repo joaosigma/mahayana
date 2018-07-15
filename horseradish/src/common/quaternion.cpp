@@ -33,56 +33,37 @@ namespace hr
 
 	void Quaternion::operator/=(const Quaternion &quat)
 	{
-		Quaternion q, r, s;
+		auto mag = 1.0f / quat.getMagnitudeSquared();
 
-		q.mData[0] = -quat.mData[0];
-		q.mData[1] = -quat.mData[1];
-		q.mData[2] = -quat.mData[2];
-		q.mData[3] = quat.mData[3];
+		Quaternion inv;
+		inv[0] = -quat[0] * mag;
+		inv[1] = -quat[1] * mag;
+		inv[2] = -quat[2] * mag;
+		inv[3] = quat[3] * mag;
 
-		r.mData[0] = mData[0];
-		r.mData[1] = mData[1];
-		r.mData[2] = mData[2];
-		r.mData[3] = mData[3];
-		r *= q;
-
-		s.mData[0] = q.mData[0];
-		s.mData[1] = q.mData[1];
-		s.mData[2] = q.mData[2];
-		s.mData[3] = q.mData[3];
-		s *= q;
-
-		mData[0] = r.mData[0] / s.mData[3];
-		mData[1] = r.mData[1] / s.mData[3];
-		mData[2] = r.mData[2] / s.mData[3];
-		mData[3] = r.mData[3] / s.mData[3];
+		operator*=(inv);
 	}
 
-	void Quaternion::setAxisAngle(const float &vx, const float &vy, const float &vz, const float &angleDeg)
+	Quaternion& Quaternion::setAxisAngle(const float &unitVecX, const float &unitVecY, const float &unitVecZ, const float &angleDeg)
 	{
-		float angleRad = (angleDeg*0.017453292519943295f)*0.5f;
+		float angleRad = (angleDeg * 0.017453292519943295f) * 0.5f;
 
-		float resSin;
-		Math::sinCos(angleRad, resSin, mData[3]);
+		float sin;
+		Math::sinCos(angleRad, sin, mData[3]);
 
-		mData[0] = vx*resSin;
-		mData[1] = vy*resSin;
-		mData[2] = vz*resSin;
+		mData[0] = unitVecX * sin;
+		mData[1] = unitVecY * sin;
+		mData[2] = unitVecZ * sin;
+
+		return *this;
 	}
 
-	void Quaternion::setAxisAngle(const Vector3f &vec, const float &angleDeg)
+	Quaternion& Quaternion::setAxisAngle(const Vector3f &unitVec, const float &angleDeg)
 	{
-		float angleRad = (angleDeg*0.017453292519943295f)*0.5f;
-
-		float resSin;
-		Math::sinCos(angleRad, resSin, mData[3]);
-
-		mData[0] = vec[0] * resSin;
-		mData[1] = vec[1] * resSin;
-		mData[2] = vec[2] * resSin;
+		return setAxisAngle(unitVec[0], unitVec[1], unitVec[2], angleDeg);
 	}
 
-	void Quaternion::setFromMatrix3x3(const float * const matrix)
+	Quaternion& Quaternion::setFromMatrix3x3(const float * const matrix)
 	{
 		float s = matrix[0] + matrix[4] + matrix[8];
 		if (s > 0.0f)
@@ -94,7 +75,8 @@ namespace hr
 			mData[0] = (matrix[5] - matrix[7])*s;
 			mData[1] = (matrix[6] - matrix[2])*s;
 			mData[2] = (matrix[1] - matrix[3])*s;
-			return;
+			
+			return *this;
 		}
 
 		if ((matrix[4] <= matrix[0]) && (matrix[8] <= matrix[0]))
@@ -106,7 +88,8 @@ namespace hr
 			mData[1] = (matrix[1] + matrix[3])*s;
 			mData[2] = (matrix[2] + matrix[6])*s;
 			mData[3] = (matrix[5] - matrix[7])*s;
-			return;
+
+			return *this;
 		}
 
 		if ((matrix[4] > matrix[0]) && (matrix[8] <= matrix[4]))
@@ -118,7 +101,8 @@ namespace hr
 			mData[3] = (matrix[6] - matrix[2])*s;
 			mData[2] = (matrix[5] + matrix[7])*s;
 			mData[0] = (matrix[3] + matrix[1])*s;
-			return;
+
+			return *this;
 		}
 
 		s = Math::sqrt((matrix[8] - (matrix[0] + matrix[4])) + 1.0f);
@@ -128,9 +112,11 @@ namespace hr
 		mData[3] = (matrix[1] - matrix[3])*s;
 		mData[0] = (matrix[6] + matrix[2])*s;
 		mData[1] = (matrix[7] + matrix[5])*s;
+
+		return *this;
 	}
 
-	void Quaternion::setFromMatrix4x4(const float * const matrix)
+	Quaternion& Quaternion::setFromMatrix4x4(const float * const matrix)
 	{
 		float s = matrix[0] + matrix[5] + matrix[10];
 		if (s > 0.0f)
@@ -142,7 +128,8 @@ namespace hr
 			mData[0] = (matrix[6] - matrix[9])*s;
 			mData[1] = (matrix[8] - matrix[2])*s;
 			mData[2] = (matrix[1] - matrix[4])*s;
-			return;
+			
+			return *this;
 		}
 
 		if ((matrix[5] <= matrix[0]) && (matrix[10] <= matrix[0]))
@@ -154,7 +141,8 @@ namespace hr
 			mData[1] = (matrix[1] + matrix[4])*s;
 			mData[2] = (matrix[2] + matrix[8])*s;
 			mData[3] = (matrix[6] - matrix[9])*s;
-			return;
+			
+			return *this;
 		}
 
 		if ((matrix[5] > matrix[0]) && (matrix[10] <= matrix[5]))
@@ -166,7 +154,8 @@ namespace hr
 			mData[3] = (matrix[8] - matrix[2])*s;
 			mData[2] = (matrix[6] + matrix[9])*s;
 			mData[0] = (matrix[4] + matrix[1])*s;
-			return;
+			
+			return *this;
 		}
 
 		s = Math::sqrt((matrix[10] - (matrix[0] + matrix[5])) + 1.0f);
@@ -176,9 +165,11 @@ namespace hr
 		mData[3] = (matrix[1] - matrix[4])*s;
 		mData[0] = (matrix[8] + matrix[2])*s;
 		mData[1] = (matrix[9] + matrix[6])*s;
+
+		return *this;
 	}
 
-	void Quaternion::setFromEuler(const float &angX, const float &angY, const float &angZ)
+	Quaternion& Quaternion::setFromEuler(const float &angX, const float &angY, const float &angZ)
 	{
 		float cosR, cosP, cosY, sinR, sinP, sinY, cpcy, spsy;
 
@@ -194,260 +185,247 @@ namespace hr
 		mData[2] = cosR * cosP * sinY - sinR * sinP * cosY;
 
 		normalize();
+
+		return *this;
 	}
 
-	void Quaternion::setSLerp(const Quaternion &from, const Quaternion &to, const float &t)
+	Quaternion& Quaternion::setSLerp(const Quaternion &from, const Quaternion &to, float t)
 	{
-		float c, s;
+		Quaternion v1 = to;
 
-		float dot = from.getDot(to);
-		if (dot > 0.99999f)
+		float dot = from.getDot(v1); // compute the cosine of the angle between the two vectors.
+
+		// If the dot product is negative, slerp won't take
+		// the shorter path. Note that v1 and -v1 are equivalent when
+		// the negation is applied to all four components. Fix by 
+		// reversing one quaternion.
+		if (dot < 0.0f)
 		{
-			mData[0] = from.mData[0] + (to.mData[0] + from.mData[0]) * t;
-			mData[1] = from.mData[1] + (to.mData[1] + from.mData[1]) * t;
-			mData[2] = from.mData[2] + (to.mData[2] + from.mData[2]) * t;
-			mData[3] = from.mData[3] + (to.mData[3] + from.mData[3]) * t;
-			normalize();
-			return;
+			v1.mData[0] = -v1.mData[0];
+			v1.mData[1] = -v1.mData[1];
+			v1.mData[2] = -v1.mData[2];
+			v1.mData[3] = -v1.mData[3];
+			dot = -dot;
+		}
+		
+		// If the inputs are too close for comfort, linearly interpolate and normalize the result.
+		if (dot >= 0.99995)
+		{
+			setNLerp(from, v1, t);
+			return *this;
 		}
 
-		dot = Math::fClamp(dot, -1.0f, 1.0f);
-		Math::sinCos(acosf(dot)*t, s, c);
+		// Since dot is in range [0, DOT_THRESHOLD], acos is safe
+		double theta_0 = acos(dot);        // theta_0 = angle between input vectors
+		double theta = theta_0 * t;          // theta = angle between v0 and result
+		double sin_theta = sin(theta);     // compute this value only once
+		double sin_theta_0 = sin(theta_0) + 0.0000001; // compute this value only once
 
-		Quaternion qAux;
-		qAux.mData[0] = to.mData[0] - from.mData[0] * dot;
-		qAux.mData[1] = to.mData[1] - from.mData[1] * dot;
-		qAux.mData[2] = to.mData[2] - from.mData[2] * dot;
-		qAux.mData[3] = to.mData[3] - from.mData[3] * dot;
-		qAux.normalize();
+		double s0 = cos(theta) - dot * sin_theta / sin_theta_0;  // == sin(theta_0 - theta) / sin(theta_0)
+		double s1 = sin_theta / sin_theta_0;
 
-		mData[0] = from.mData[0] * c + qAux.mData[0] * s;
-		mData[1] = from.mData[1] * c + qAux.mData[1] * s;
-		mData[2] = from.mData[2] * c + qAux.mData[2] * s;
-		mData[3] = from.mData[3] * c + qAux.mData[3] * s;
+		mData[0] = static_cast<float>(from.mData[0] * s0 + v1.mData[0] * s1);
+		mData[1] = static_cast<float>(from.mData[1] * s0 + v1.mData[1] * s1);
+		mData[2] = static_cast<float>(from.mData[2] * s0 + v1.mData[2] * s1);
+		mData[3] = static_cast<float>(from.mData[3] * s0 + v1.mData[3] * s1);
+
+		normalize();
+		return *this;
 	}
 
-	void Quaternion::setLerp(const Quaternion &from, const Quaternion &to, const float &t)
+	Quaternion& Quaternion::setNLerp(const Quaternion &from, const Quaternion &to, float t)
 	{
-		float to1[4], cosom, scale0, scale1;
+		float t0 = 1.0f - t;
 
-		cosom = from.mData[0] * to.mData[0] + from.mData[1] * to.mData[1] + from.mData[2] * to.mData[2] + from.mData[3] * to.mData[3];
-
-		if (cosom < 0.0f)
+		if (from.getDot(to) < 0.0f)
 		{
-			to1[0] = -to.mData[0];
-			to1[1] = -to.mData[1];
-			to1[2] = -to.mData[2];
-			to1[3] = -to.mData[3];
+			mData[0] = (t0 * from.mData[0]) + (t * (-to.mData[0]));
+			mData[1] = (t0 * from.mData[1]) + (t * (-to.mData[1]));
+			mData[2] = (t0 * from.mData[2]) + (t * (-to.mData[2]));
+			mData[3] = (t0 * from.mData[3]) + (t * (-to.mData[3]));
 		}
 		else
 		{
-			to1[0] = to.mData[0];
-			to1[1] = to.mData[1];
-			to1[2] = to.mData[2];
-			to1[3] = to.mData[3];
+			mData[0] = (t0 * from.mData[0]) + (t * to.mData[0]);
+			mData[1] = (t0 * from.mData[1]) + (t * to.mData[1]);
+			mData[2] = (t0 * from.mData[2]) + (t * to.mData[2]);
+			mData[3] = (t0 * from.mData[3]) + (t * to.mData[3]);
 		}
 
-		scale0 = 1.0f - t;
-		scale1 = t;
-
-		mData[0] = scale0*from.mData[0] + scale1*to1[0];
-		mData[1] = scale0*from.mData[1] + scale1*to1[1];
-		mData[2] = scale0*from.mData[2] + scale1*to1[2];
-		mData[3] = scale0*from.mData[3] + scale1*to1[3];
+		normalize();
+		return *this;
 	}
 
-	void Quaternion::set(const float &nx, const float &ny, const float &nz, const float &nw)
+	Quaternion& Quaternion::set(const float &nx, const float &ny, const float &nz, const float &nw)
 	{
 		mData[0] = nx;
 		mData[1] = ny;
 		mData[2] = nz;
 		mData[3] = nw;
+
+		return *this;
 	}
 
-	void Quaternion::set(const Vector3f &vec, const float &nw)
+	Quaternion& Quaternion::set(const Vector3f &vec, const float &nw)
 	{
 		mData[0] = vec[0];
 		mData[1] = vec[1];
 		mData[2] = vec[2];
 		mData[3] = nw;
+
+		return *this;
 	}
 
-	void Quaternion::setAngle(const float &nx, const float &ny, const float &nz, const float &angleDeg)
+	Quaternion& Quaternion::setAngle(const float &nx, const float &ny, const float &nz, const float &angleDeg)
 	{
 		mData[0] = nx;
 		mData[1] = ny;
 		mData[2] = nz;
 		mData[3] = cos(angleDeg*0.00872664625997164788461845384f);	//also divides by 2
+
+		return *this;
 	}
 
-	void Quaternion::setAngle(const Vector3f &vec, const float &angleDeg)
+	Quaternion& Quaternion::setAngle(const Vector3f &vec, const float &angleDeg)
 	{
-		mData[0] = vec[0];
-		mData[1] = vec[1];
-		mData[2] = vec[2];
-		mData[3] = cos(angleDeg*0.00872664625997164788461845384f);	//also divides by 2
+		setAngle(vec[0], vec[1], vec[2], angleDeg);
+		return *this;
 	}
 
-	void Quaternion::set(const Quaternion &quat)
+	Quaternion& Quaternion::setFromVectors(const Vector3f &v1, const Vector3f &v2)
+	{
+		Vector3f t;
+
+		// get dot product of two vectors
+		float cost = Vector3f::calcDot(v1, v2);
+
+		// check if parallel
+		if (cost > 0.99999f)
+		{
+			mData[0] = mData[1] = mData[2] = 0.0f;
+			mData[3] = 1.0f;
+
+			return *this;
+		}
+		// check if opposite
+		else if (cost < -0.99999f)
+		{
+			// check if we can use cross product of from vector with [1, 0, 0]
+			t.set(0.0, v1[0], -v1[1]);
+
+			if (t.getDot() < 1e-6) // nope! we need cross product of from vector with [0, 1, 0]
+				t.set(-v1[2], 0.0, v1[0]);
+
+			// normalize
+			t.normalize();
+
+			mData[0] = t[0];
+			mData[1] = t[1];
+			mData[2] = t[2];
+			mData[3] = 0.0;
+
+			return *this;
+		}
+
+		// ... else we can just cross two vectors
+		t = v1.crossProduct(v2);
+		t.normalize();
+
+		// we have to use half-angle formulae (sin^2 t = ( 1 - cos (2t) ) /2)
+		t *= sqrt(0.5f * (1.0f - cost));
+
+		// scale the axis to get the normalized quaternion
+		mData[0] = t[0];
+		mData[1] = t[1];
+		mData[2] = t[2];
+
+		// cos^2 t = ( 1 + cos (2t) ) / 2
+		// w part is cosine of half the rotation angle
+		mData[3] = sqrt(0.5f * (1.0f + cost));
+
+		return *this;
+	}
+
+	Quaternion& Quaternion::setIdentity()
+	{
+		mData[0] = mData[1] = mData[2] = 0.0f;
+		mData[3] = 1.0f;
+
+		return *this;
+	}
+
+	Quaternion& Quaternion::set(const Quaternion &quat)
 	{
 		std::memcpy(mData, quat.mData, sizeof(float) * 4);
+
+		return *this;
 	}
 
-	void Quaternion::scaleAngle(float scale)
+	Quaternion& Quaternion::scaleAngle(float scale)
 	{
 		mData[3] *= scale;
+
+		return *this;
 	}
 
-	void Quaternion::invert()
+	Quaternion& Quaternion::conjugate()
 	{
 		mData[0] = -mData[0];
 		mData[1] = -mData[1];
 		mData[2] = -mData[2];
+
+		return *this;
 	}
 
-	void Quaternion::normalize()
+	Quaternion& Quaternion::normalize()
 	{
 		__m128 vecTmp = _mm_loadu_ps(mData);
 		__m128 vecMag = _mm_rsqrt_ps(_mm_dp_ps(vecTmp, vecTmp, 0xF0 | 0xF));
 		_mm_storeu_ps(mData, _mm_mul_ps(vecTmp, vecMag));
+
+		return *this;
 	}
 
-	void Quaternion::mulEulerAngles(float angX, float angY, float angZ)
+	Quaternion& Quaternion::expandWNormalized()
 	{
-		float auxX, auxY, auxZ, auxW;
-		float degX, degY, degZ;
-		float cosR, cosP, cosY, sinR, sinP, sinY, cpcy, spsy;
+		//we can only expand (calculate) W if we assume the quaternion is of unit length, which means the final quaternion is already normalized
 
-		Math::sinCos(angX*0.0087266462599716478846184f, sinR, cosR);
-		Math::sinCos(angY*0.0087266462599716478846184f, sinP, cosP);
-		Math::sinCos(angZ*0.0087266462599716478846184f, sinY, cosY);
-		spsy = sinP * sinY;
-		cpcy = cosP * cosY;
+		float term = 1.0f - (mData[0] * mData[0]) - (mData[1] * mData[1]) - (mData[2] * mData[2]);
+		mData[3] = (term < 0.0f) ? 0.0f : -sqrt(term);
 
-		auxW = cosR * cpcy + sinR * spsy;
-		auxX = sinR * cpcy - cosR * spsy;
-		auxY = cosR * sinP * cosY + sinR * cosP * sinY;
-		auxZ = cosR * cosP * sinY - sinR * sinP * cosY;
-
-		spsy = 1.0f / sqrt(auxX*auxX + auxY*auxY + auxZ*auxZ + auxW*auxW);
-		auxX *= spsy;
-		auxY *= spsy;
-		auxZ *= spsy;
-		auxW *= spsy;
-
-		degX = mData[0];
-		degY = mData[1];
-		degZ = mData[2];
-		cosP = mData[3];
-
-		mData[0] = cosP*auxX + degX*auxW + degY*auxZ - degZ*auxY;
-		mData[1] = cosP*auxY - degX*auxZ + degY*auxW + degZ*auxX;
-		mData[2] = cosP*auxZ + degX*auxY - degY*auxX + degZ*auxW;
-		mData[3] = cosP*auxW - degX*auxX - degY*auxY - degZ*auxZ;
+		return *this;
 	}
 
-	void Quaternion::expandW()
+	float Quaternion::getMagnitude() const
 	{
-		float term;
+		float mag;
 
-		term = 1.0f - (mData[0] * mData[0]) - (mData[1] * mData[1]) - (mData[2] * mData[2]);
-		mData[3] = 0.0f;
-		if (term >= 0.0f)
-			mData[3] = -(float)sqrt(term);
+		__m128 vecTmp = _mm_loadu_ps(mData);
+		_mm_store_ss(&mag, _mm_sqrt_ss(_mm_dp_ps(vecTmp, vecTmp, 0xF0 | 0xF)));
+
+		return mag;
 	}
 
-	void Quaternion::expandWNormalize()
+	float Quaternion::getMagnitudeSquared() const
 	{
-		float auxF;
+		float mag;
 
-		auxF = 1.0f - (mData[0] * mData[0]) - (mData[1] * mData[1]) - (mData[2] * mData[2]);
-		mData[3] = 0.0f;
-		if (auxF >= 0.0f)
-			mData[3] = -(float)sqrt(auxF);
+		__m128 vecTmp = _mm_loadu_ps(mData);
+		_mm_store_ss(&mag, _mm_dp_ps(vecTmp, vecTmp, 0xF0 | 0xF));
 
-		auxF = 1.0f / sqrt((auxF - 1.0f)*(-1.0f) + mData[3] * mData[3]);
-		mData[0] *= auxF;
-		mData[1] *= auxF;
-		mData[2] *= auxF;
-		mData[3] *= auxF;
+		return mag;
 	}
 
 	float Quaternion::getDot(const Quaternion &quat) const
 	{
-		float final;
+		float dot;
 
-		__m128 qTmp = _mm_loadu_ps(mData);
-		_mm_store_ss(&final, _mm_dp_ps(qTmp, qTmp, 0xF0 | 0xF));
-		return final;
-	}
-
-	void Quaternion::getVector(float * const vec) const
-	{
-		vec[0] = mData[0];
-		vec[1] = mData[1];
-		vec[2] = mData[2];
-	}
-
-	void Quaternion::getVector(Vector3f &vec) const
-	{
-		vec.set(mData);
-	}
-
-	void Quaternion::getMatrix3x3(float* const matrix) const
-	{
-		float xx, yy, zz, wx, wy, wz, xy, xz, yz;
-
-		xx = mData[0] * mData[0];
-		yy = mData[1] * mData[1];
-		zz = mData[2] * mData[2];
-		wx = mData[3] * mData[3];
-		wy = mData[3] * mData[1];
-		wz = mData[3] * mData[2];
-		xy = mData[0] * mData[1];
-		xz = mData[0] * mData[2];
-		yz = mData[1] * mData[2];
-
-		matrix[0] = 1.0f - 2.0f * (yy + zz);
-		matrix[1] = 2.0f * (xy - wz);
-		matrix[2] = 2.0f * (xz + wy);
-
-		matrix[3] = 2.0f * (xy + wz);
-		matrix[4] = 1.0f - 2.0f * (xx + zz);
-		matrix[5] = 2.0f * (yz - wx);
-
-		matrix[6] = 2.0f * (xz - wy);
-		matrix[7] = 2.0f * (yz + wx);
-		matrix[8] = 1.0f - 2.0f * (xx + yy);
-	}
-
-	void Quaternion::getMatrix4x4(float* const matrix) const
-	{
-		matrix[0] = 1.0f - 2.0f * (mData[1] * mData[1] + mData[2] * mData[2]);
-		matrix[1] = 2.0f * (mData[0] * mData[1] - mData[3] * mData[2]);
-		matrix[2] = 2.0f * (mData[0] * mData[2] + mData[3] * mData[1]);
-		matrix[3] = 0.0f;
-
-		matrix[4] = 2.0f * (mData[0] * mData[1] + mData[3] * mData[2]);
-		matrix[5] = 1.0f - 2.0f * (mData[0] * mData[0] + mData[2] * mData[2]);
-		matrix[6] = 2.0f * (mData[1] * mData[2] - mData[3] * mData[0]);
-		matrix[7] = 0.0f;
-
-		matrix[8] = 2.0f * (mData[0] * mData[2] - mData[3] * mData[1]);
-		matrix[9] = 2.0f * (mData[1] * mData[2] + mData[3] * mData[0]);
-		matrix[10] = 1.0f - 2.0f * (mData[0] * mData[0] + mData[1] * mData[1]);
-		matrix[11] = 0.0f;
-
-		matrix[12] = 0.0f;
-		matrix[13] = 0.0f;
-		matrix[14] = 0.0f;
-		matrix[15] = 1.0f;
+		_mm_store_ss(&dot, _mm_dp_ps(_mm_loadu_ps(mData), _mm_loadu_ps(quat.mData), 0xF0 | 0xF));
+		return dot;
 	}
 
 	void Quaternion::getAxisAngle(float* const vecX, float* const vecY, float* const vecZ, float* const ang) const
 	{
-		float auxX, auxY, auxZ;
-
 		float len = mData[0] * mData[0] + mData[1] * mData[1] + mData[2] * mData[2];
 		if (len == 0.0f)
 		{
@@ -459,9 +437,9 @@ namespace hr
 		}
 
 		len = 1.0f / len;
-		auxX = mData[0] * len;
-		auxY = mData[1] * len;
-		auxZ = mData[2] * len;
+		float auxX = mData[0] * len;
+		float auxY = mData[1] * len;
+		float auxZ = mData[2] * len;
 
 		len = 1.0f / sqrt(auxX*auxX + auxY*auxY + auxZ*auxZ);
 		*vecX = auxX*len;
@@ -495,101 +473,20 @@ namespace hr
 		//TODO
 	}
 
-	void Quaternion::setFromVectors(const Vector3f &v1, const Vector3f &v2)
+	Vector3f Quaternion::unitRotate(const Vector3f &vec) const
 	{
-		Vector3f t;
+		Vector3f u(mData[0], mData[1], mData[2]);
 
-		// get dot product of two vectors
-		float cost = Vector3f::calcDot(v1, v2);
+		Vector3f res;
+		res = u * 2.0f * u.getDot(vec);
+		res += vec * ((mData[3] * mData[3]) - u.getDot(u));
+		res += u.crossProduct(vec) * 2.0f * mData[3];
 
-		// check if parallel
-		if (cost > 0.99999f)
-		{
-			mData[0] = mData[1] = mData[2] = 0.0f;
-			mData[3] = 1.0f;
-			return;
-		}
-		// check if opposite
-		else if (cost < -0.99999f)
-		{
-			// check if we can use cross product of from vector with [1, 0, 0]
-			t.set(0.0, v1[0], -v1[1]);
-
-			if (t.getDot() < 1e-6) // nope! we need cross product of from vector with [0, 1, 0]
-				t.set(-v1[2], 0.0, v1[0]);
-
-			// normalize
-			t.normalize();
-
-			mData[0] = t[0];
-			mData[1] = t[1];
-			mData[2] = t[2];
-			mData[3] = 0.0;
-			return;
-		}
-
-		// ... else we can just cross two vectors
-		t = v1.crossProduct(v2);
-		t.normalize();
-
-		// we have to use half-angle formulae (sin^2 t = ( 1 - cos (2t) ) /2)
-		t *= sqrt(0.5f * (1.0f - cost));
-
-		// scale the axis to get the normalized quaternion
-		mData[0] = t[0];
-		mData[1] = t[1];
-		mData[2] = t[2];
-
-		// cos^2 t = ( 1 + cos (2t) ) / 2
-		// w part is cosine of half the rotation angle
-		mData[3] = sqrt(0.5f * (1.0f + cost));
+		return res;
 	}
 
-	void Quaternion::setIdentity()
+	void Quaternion::unitRotate(const Vector3f &vec, Vector3f &dest) const
 	{
-		mData[0] = mData[1] = mData[2] = 0.0f;
-		mData[3] = 1.0f;
-	}
-
-	void Quaternion::rotateVector3(Vector3f &vec) const
-	{
-		rotateVector3(vec, vec);
-	}
-
-	void Quaternion::rotateVector3(const Vector3f &vec, Vector3f &dest) const
-	{
-		float auxX, auxY, auxZ, auxW, W;
-
-		auxX = -(mData[3] * vec[0] + mData[1] * vec[2] - mData[2] * vec[1]);
-		auxY = -(mData[3] * vec[1] - mData[0] * vec[2] + mData[2] * vec[0]);
-		auxZ = -(mData[3] * vec[2] + mData[0] * vec[1] - mData[1] * vec[0]);
-		auxW = -(mData[0] * vec[0] - mData[1] * vec[1] - mData[2] * vec[2]);
-		auxW = mData[0] * vec[0] + mData[1] * vec[1] + mData[2] * vec[2];
-
-		W = -mData[3];
-		dest[0] = auxW*mData[0] + auxX*W + auxY*mData[2] - auxZ*mData[1];
-		dest[1] = auxW*mData[1] - auxX*mData[2] + auxY*W + auxZ*mData[0];
-		dest[2] = auxW*mData[2] + auxX*mData[1] - auxY*mData[0] + auxZ*W;
-	}
-
-	void Quaternion::rotateVector3(const float * const vec, float * const dest) const
-	{
-		float auxX, auxY, auxZ, auxW, W;
-
-		auxX = -(mData[3] * vec[0] + mData[1] * vec[2] - mData[2] * vec[1]);
-		auxY = -(mData[3] * vec[1] - mData[0] * vec[2] + mData[2] * vec[0]);
-		auxZ = -(mData[3] * vec[2] + mData[0] * vec[1] - mData[1] * vec[0]);
-		auxW = -(mData[0] * vec[0] - mData[1] * vec[1] - mData[2] * vec[2]);
-		auxW = mData[0] * vec[0] + mData[1] * vec[1] + mData[2] * vec[2];
-
-		W = -mData[3];
-		dest[0] = auxW*mData[0] + auxX*W + auxY*mData[2] - auxZ*mData[1];
-		dest[1] = auxW*mData[1] - auxX*mData[2] + auxY*W + auxZ*mData[0];
-		dest[2] = auxW*mData[2] + auxX*mData[1] - auxY*mData[0] + auxZ*W;
-	}
-
-	void Quaternion::rotateVector3(const float &vx, const float &vy, const float &vz, Vector3f &dest) const
-	{
-		rotateVector3(Vector3f(vx, vy, vz), dest);
+		dest = unitRotate(vec);
 	}
 }

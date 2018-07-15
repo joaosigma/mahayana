@@ -10,14 +10,17 @@
 #include <vector>
 #include <limits>
 
-namespace hr { namespace geom
+namespace hr::geom
 {
-	static const float shortScaleFrom = 1.0f / static_cast<float>(std::numeric_limits<short>::max());
-	static const float shortScaleTo = static_cast<float>(std::numeric_limits<short>::max());
+	namespace
+	{
+		const float shortScaleFrom = 1.0f / static_cast<float>(std::numeric_limits<short>::max());
+		const float shortScaleTo = static_cast<float>(std::numeric_limits<short>::max());
+	}
 
 	short Mesh::pack(const float value)
 	{
-		return static_cast<short>(value * shortScaleTo);
+		return static_cast<short>(Math::fClamp(value, -1.0f, 1.0f) * shortScaleTo);
 	}
 
 	float Mesh::unpack(const short value)
@@ -37,11 +40,6 @@ namespace hr { namespace geom
 			out[i] = Mesh::unpack(in[i]);
 	}
 
-	size_t Mesh::maxVertexCount()
-	{
-		return static_cast<size_t>(std::numeric_limits<unsigned short>::max());
-	}
-
 	Mesh Mesh::genBox(size_t precision)
 	{
 		precision = (precision == 0) ? 1 : precision;
@@ -57,12 +55,12 @@ namespace hr { namespace geom
 			{
 				for (size_t x = 0; x < precision; x++)
 				{
-					indicesPtr[0] = indexOffset + (x + 0) + ((y + 0) * (precision + 1));
-					indicesPtr[1] = indexOffset + (x + 1) + ((y + 1) * (precision + 1));
-					indicesPtr[2] = indexOffset + (x + 0) + ((y + 1) * (precision + 1));
+					indicesPtr[0] = static_cast<unsigned short>(indexOffset + (x + 0) + ((y + 0) * (precision + 1)));
+					indicesPtr[1] = static_cast<unsigned short>(indexOffset + (x + 1) + ((y + 1) * (precision + 1)));
+					indicesPtr[2] = static_cast<unsigned short>(indexOffset + (x + 0) + ((y + 1) * (precision + 1)));
 
 					indicesPtr[3] = indicesPtr[0];
-					indicesPtr[4] = indexOffset + (x + 1) + ((y + 0) * (precision + 1));
+					indicesPtr[4] = static_cast<unsigned short>(indexOffset + (x + 1) + ((y + 0) * (precision + 1)));
 					indicesPtr[5] = indicesPtr[1];
 
 					indicesPtr += 6;
@@ -231,7 +229,7 @@ namespace hr { namespace geom
 
 				for (size_t s = 0; s < tDiv; s++)
 				{
-					const float angX = Math::constPiScaled(2.0f) * static_cast<float>(s) * stepS;				   
+					const float angX = Math::constPiScaled(2.0f) * static_cast<float>(s) * stepS;
 					const float x = cos(angX) * sinAngZ;
 					const float z = sin(angX) * sinAngZ;
 
@@ -257,39 +255,17 @@ namespace hr { namespace geom
 			{
 				for (size_t s = 0; s < (tDiv - 1); s++)
 				{
-					indicesPtr[0] = (r + 1) * tDiv + s;
-					indicesPtr[1] = r * tDiv + (s + 1);
-					indicesPtr[2] = r * tDiv + s;
+					indicesPtr[0] = static_cast<unsigned short>((r + 1) * tDiv + s);
+					indicesPtr[1] = static_cast<unsigned short>(r * tDiv + (s + 1));
+					indicesPtr[2] = static_cast<unsigned short>(r * tDiv + s);
 
 					indicesPtr[3] = indicesPtr[0];
-					indicesPtr[4] = (r + 1) * tDiv + (s + 1);
+					indicesPtr[4] = static_cast<unsigned short>((r + 1) * tDiv + (s + 1));
 					indicesPtr[5] = indicesPtr[1];
 
 					indicesPtr += 6;
 				}
 			}
-
-			/*auto indicesPtr = mesh.mIndices.get();
-			for (size_t r = 0; r < sDiv; r++)
-			{
-				for (size_t s = 0; s < tDiv; s++)
-				{
-					auto left = r;
-					auto right = (r + 1) % sDiv;
-					auto top = s;
-					auto bottom = (s + 1) % tDiv;
-
-					indicesPtr[0] = left + top * sDiv;
-					indicesPtr[1] = left + bottom * sDiv;
-					indicesPtr[2] = right + top * sDiv;
-
-					indicesPtr[3] = right + top * sDiv;
-					indicesPtr[4] = left + bottom * sDiv;
-					indicesPtr[5] = right + bottom * sDiv;
-
-					indicesPtr += 6;
-				}
-			}*/
 		}
 
 		return mesh;
@@ -343,31 +319,6 @@ namespace hr { namespace geom
 		return *this;
 	}
 
-	size_t Mesh::sizeVertices() const
-	{
-		return (sizeof(VertexData) * mNumVertices);
-	}
-
-	size_t Mesh::sizeIndices() const
-	{
-		return (sizeof(unsigned short) * mNumIndices);
-	}
-
-	size_t Mesh::numIndices() const
-	{
-		return mNumIndices;
-	}
-
-	size_t Mesh::numVertices() const
-	{
-		return mNumVertices;
-	}
-
-	size_t Mesh::numTris() const
-	{
-		return mNumIndices / 3;
-	}
-
 	bool Mesh::check() const
 	{
 		if (!mData || !mIndices || (mNumVertices <= 0) && (mNumIndices <= 0))
@@ -391,14 +342,14 @@ namespace hr { namespace geom
 
 		{
 			__m128 curPoint;
-			auto vertexPtr = static_cast<VertexData*>(mData.get());
+			auto vertexData = mData.get();
 
-			minPoint = maxPoint = _mm_loadu_ps(vertexPtr->pos);
-			vertexPtr++;
+			minPoint = maxPoint = _mm_loadu_ps(vertexData->pos);
+			vertexData++;
 
-			for (size_t i = 1; i < mNumVertices; i++, vertexPtr++)
+			for (size_t i = 1; i < mNumVertices; i++, vertexData++)
 			{
-				curPoint = _mm_loadu_ps(vertexPtr->pos);
+				curPoint = _mm_loadu_ps(vertexData->pos);
 				minPoint = _mm_min_ps(minPoint, curPoint);
 				maxPoint = _mm_max_ps(maxPoint, curPoint);
 			}
@@ -413,7 +364,7 @@ namespace hr { namespace geom
 
 	float Mesh::getIndicesCacheRatio(size_t cacheSize) const
 	{
-		if (cacheSize == 0)
+		if (!mNumIndices || !cacheSize)
 			return 0.0f;
 		if (cacheSize >= mNumIndices)
 			return 1.0f;
@@ -456,9 +407,9 @@ namespace hr { namespace geom
 
 		for (size_t i = 0; i < mNumIndices; i += 3)
 		{
-			Vector3f p1(mData[i * 3 + 0].pos);
-			Vector3f p2(mData[i * 3 + 1].pos);
-			Vector3f p3(mData[i * 3 + 2].pos);
+			Vector3f p1(mData[mIndices[i * 3 + 0]].pos);
+			Vector3f p2(mData[mIndices[i * 3 + 1]].pos);
+			Vector3f p3(mData[mIndices[i * 3 + 2]].pos);
 
 			Vector3f normal;
 			normal.storeNormal(p1, p2, p3);
@@ -495,16 +446,16 @@ namespace hr { namespace geom
 						continue;
 
 					v = qvec.getDot(rayDir);
-					if ((v<0.0) || ((u + v)>det))
+					if ((v < 0.0) || ((u + v) > det))
 						continue;
 				}
 				else
 				{
-					if (u > 0.0 || u<det)
+					if (u > 0.0 || u < det)
 						continue;
 
 					v = qvec.getDot(rayDir);
-					if ((v>0.0) || ((u + v) < det))
+					if ((v > 0.0) || ((u + v) < det))
 						continue;
 				}
 
@@ -528,16 +479,16 @@ namespace hr { namespace geom
 
 	void Mesh::flipUV()
 	{
-		auto vertexPtr = static_cast<VertexData*>(mData.get());
-		for (size_t i = 0; i < mNumVertices; i++, vertexPtr++)
-			vertexPtr->uv[1] = 1.0f - vertexPtr->uv[1];
+		auto vertexData = mData.get();
+		for (size_t i = 0; i < mNumVertices; i++, vertexData++)
+			vertexData->uv[1] = 1.0f - vertexData->uv[1];
 	}
 
 	void Mesh::mirrorUV()
 	{
-		auto vertexPtr = static_cast<VertexData*>(mData.get());
-		for (size_t i = 0; i < mNumVertices; i++, vertexPtr++)
-			vertexPtr->uv[0] = 1.0f - vertexPtr->uv[0];
+		auto vertexData = mData.get();
+		for (size_t i = 0; i < mNumVertices; i++, vertexData++)
+			vertexData->uv[0] = 1.0f - vertexData->uv[0];
 	}
 
 	void Mesh::scaleUV(float scaleAmount)
@@ -547,118 +498,54 @@ namespace hr { namespace geom
 
 	void Mesh::scaleUV(float scaleU, float scaleV)
 	{
-		auto vertexPtr = static_cast<VertexData*>(mData.get());
-		for (size_t i = 0; i < mNumVertices; i++, vertexPtr++)
+		auto vertexData = mData.get();
+		for (size_t i = 0; i < mNumVertices; i++, vertexData++)
 		{
-			vertexPtr->uv[0] *= scaleU;
-			vertexPtr->uv[1] *= scaleV;
+			vertexData->uv[0] *= scaleU;
+			vertexData->uv[1] *= scaleV;
 		}
 	}
 
 	void Mesh::scale(float scaleAmount)
 	{
-		auto vertexPtr = static_cast<VertexData*>(mData.get());
-		for (size_t i = 0; i < mNumVertices; i++, vertexPtr++)
+		auto vertexData = mData.get();
+		for (size_t i = 0; i < mNumVertices; i++, vertexData++)
 		{
-			vertexPtr->pos[0] *= scaleAmount;
-			vertexPtr->pos[1] *= scaleAmount;
-			vertexPtr->pos[2] *= scaleAmount;
+			vertexData->pos[0] *= scaleAmount;
+			vertexData->pos[1] *= scaleAmount;
+			vertexData->pos[2] *= scaleAmount;
 		}
 	}
 
 	void Mesh::translate(const Vector3f& translate)
 	{
-		auto vertexPtr = static_cast<VertexData*>(mData.get());
-		for (size_t i = 0; i < mNumVertices; i++, vertexPtr++)
+		auto vertexData = mData.get();
+		for (size_t i = 0; i < mNumVertices; i++, vertexData++)
 		{
-			vertexPtr->pos[0] += translate[0];
-			vertexPtr->pos[1] += translate[1];
-			vertexPtr->pos[2] += translate[2];
+			vertexData->pos[0] += translate[0];
+			vertexData->pos[1] += translate[1];
+			vertexData->pos[2] += translate[2];
 		}
 	}
 
 	void Mesh::centerMass(const Vector3f& center)
 	{
-		auto bbox = getBoundingBox();
-
-		Vector3f minP = bbox.min();
-		Vector3f maxP = bbox.max();
-
-		auto distance = maxP - minP;
-		distance[0] = std::abs(distance[0])*0.5f;
-		distance[1] = std::abs(distance[1])*0.5f;
-		distance[2] = std::abs(distance[2])*0.5f;
-
-		distance = center - (minP + distance);
-
-		auto vertexPtr = static_cast<VertexData*>(mData.get());
-		for (size_t i = 0; i < mNumVertices; i++, vertexPtr++)
-		{
-			vertexPtr->pos[0] += distance[0];
-			vertexPtr->pos[1] += distance[1];
-			vertexPtr->pos[2] += distance[2];
-		}
+		translate(center - getBoundingBox().center());
 	}
 
 	void Mesh::confine(float maxAxis)
 	{
 		auto bbox = getBoundingBox();
+		auto distance = (bbox.max() - bbox.min()).abs();
 
-		Vector3f minP = bbox.min();
-		Vector3f maxP = bbox.max();
-
-		auto distance = maxP - minP;
-		distance[0] = std::abs(distance[0]);
-		distance[1] = std::abs(distance[1]);
-		distance[2] = std::abs(distance[2]);
-
-		auto distanceMax = std::fmax(distance[0], distance[1]);
-		distanceMax = std::fmax(distanceMax, distance[2]);
-
-		auto scale = maxAxis / distanceMax;
-
-		auto vertexPtr = static_cast<VertexData*>(mData.get());
-		for (size_t i = 0; i < mNumVertices; i++, vertexPtr++)
-		{
-			vertexPtr->pos[0] *= scale;
-			vertexPtr->pos[1] *= scale;
-			vertexPtr->pos[2] *= scale;
-		}
-	}
-
-	void Mesh::confine(const Vector3f& center, float maxAxis)
-	{
-		auto bbox = getBoundingBox();
-
-		Vector3f minP = bbox.min();
-		Vector3f maxP = bbox.max();
-
-		auto distance = maxP - minP;
-		distance[0] = std::abs(distance[0]);
-		distance[1] = std::abs(distance[1]);
-		distance[2] = std::abs(distance[2]);
-
-		auto distanceMax = std::fmax(distance[0], distance[1]);
-		distanceMax = std::fmax(distanceMax, distance[2]);
-
-		auto scale = maxAxis / distanceMax;
-
-		distance *= 0.5f;
-		distance = center - (minP + distance);
-
-		auto vertexPtr = static_cast<VertexData*>(mData.get());
-		for (size_t i = 0; i < mNumVertices; i++, vertexPtr++)
-		{
-			vertexPtr->pos[0] = (vertexPtr->pos[0] + distance[0]) * scale;
-			vertexPtr->pos[1] = (vertexPtr->pos[1] + distance[1]) * scale;
-			vertexPtr->pos[2] = (vertexPtr->pos[2] + distance[2]) * scale;
-		}
+		scale(maxAxis / std::fmax(std::fmax(distance[0], distance[1]), distance[2]));
 	}
 
 	void Mesh::invertTriWinding()
 	{
-		for (size_t i = 0; i < mNumIndices; i += 3)
-			std::swap(mIndices[0], mIndices[2]);
+		auto indices = mIndices.get();
+		for (size_t i = 0; i < mNumIndices; i += 3, indices += 3)
+			std::swap(indices[0], indices[2]);
 	}
 
 	void Mesh::optimizeIndices()
@@ -699,59 +586,64 @@ namespace hr { namespace geom
 
 	void Mesh::genTangents4()
 	{
+		struct DataWrapper
+		{
+			size_t numIndices;
+			VertexData* vertexData;
+			const unsigned short* indices;
+		};
+
 		SMikkTSpaceInterface inter;
 		inter.m_getNumFaces = [](const SMikkTSpaceContext * pContext) -> int
 		{
-			auto instance = reinterpret_cast<Mesh*>(pContext->m_pUserData);
-			return (instance->mNumIndices / 3);
+			auto instance = reinterpret_cast<DataWrapper*>(pContext->m_pUserData);
+			return (instance->numIndices / 3);
 		};
 
-		inter.m_getNumVerticesOfFace = [](const SMikkTSpaceContext * pContext, const int iFace)
+		inter.m_getNumVerticesOfFace = [](const SMikkTSpaceContext *, const int)
 		{
 			return 3;
 		};
 
 		inter.m_getPosition = [](const SMikkTSpaceContext * pContext, float fvPosOut[], const int iFace, const int iVert)
 		{
-			auto instance = reinterpret_cast<Mesh*>(pContext->m_pUserData);
+			auto instance = reinterpret_cast<DataWrapper*>(pContext->m_pUserData);
 
-			assert(((iFace * 3) + iVert) < instance->mNumIndices);
-			auto vData = instance->mData.get() + instance->mIndices[(iFace * 3) + iVert];
+			auto vData = instance->vertexData + instance->indices[(iFace * 3) + iVert];
 			memcpy(fvPosOut, vData->pos, sizeof(float) * 3);
 		};
 
 		inter.m_getNormal = [](const SMikkTSpaceContext * pContext, float fvNormOut[], const int iFace, const int iVert)
 		{
-			auto instance = reinterpret_cast<Mesh*>(pContext->m_pUserData);
+			auto instance = reinterpret_cast<DataWrapper*>(pContext->m_pUserData);
 
-			assert(((iFace * 3) + iVert) < instance->mNumIndices);
-			auto vData = instance->mData.get() + instance->mIndices[(iFace * 3) + iVert];
+			auto vData = instance->vertexData + instance->indices[(iFace * 3) + iVert];
 			Mesh::unpack(vData->normal, fvNormOut, 3);
 		};
 
 		inter.m_getTexCoord = [](const SMikkTSpaceContext * pContext, float fvTexcOut[], const int iFace, const int iVert)
 		{
-			auto instance = reinterpret_cast<Mesh*>(pContext->m_pUserData);
+			auto instance = reinterpret_cast<DataWrapper*>(pContext->m_pUserData);
 
-			assert(((iFace * 3) + iVert) < instance->mNumIndices);
-			auto vData = instance->mData.get() + instance->mIndices[(iFace * 3) + iVert];
+			auto vData = instance->vertexData + instance->indices[(iFace * 3) + iVert];
 			memcpy(fvTexcOut, vData->uv, sizeof(float) * 2);
 		};
 
 		inter.m_setTSpace = nullptr;
 		inter.m_setTSpaceBasic = [](const SMikkTSpaceContext * pContext, const float fvTangent[], const float fSign, const int iFace, const int iVert)
 		{
-			auto instance = reinterpret_cast<Mesh*>(pContext->m_pUserData);
+			auto instance = reinterpret_cast<DataWrapper*>(pContext->m_pUserData);
 
-			assert(((iFace * 3) + iVert) < instance->mNumIndices);
-			auto vData = instance->mData.get() + instance->mIndices[(iFace * 3) + iVert];
+			auto vData = instance->vertexData + instance->indices[(iFace * 3) + iVert];
 			Mesh::pack(fvTangent, vData->tangent, 3);
 			vData->tangent[3] = Mesh::pack(fSign);
 		};
-		
+
+		DataWrapper dataWrapper{ mNumIndices, mData.get(), mIndices.get() };
+
 		SMikkTSpaceContext ctx;
 		ctx.m_pInterface = &inter;
-		ctx.m_pUserData = this;
+		ctx.m_pUserData = &dataWrapper;
 		genTangSpaceDefault(&ctx);
 	}
-} }
+}

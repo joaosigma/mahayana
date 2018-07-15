@@ -31,7 +31,7 @@ namespace hr { namespace platform
 
 	public:
 		static const char* NewLine;
-		static const int NewLineSize;
+		static const size_t NewLineSize;
 
 		static const unsigned int DirectorySeparatorChar;
 		static const unsigned int VolumeSeparatorChar;

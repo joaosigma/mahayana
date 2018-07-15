@@ -388,6 +388,12 @@
     <ClCompile Include="..\..\src\libs\mikktspace\mikktspace.cpp">
       <Filter>libs\mikktspace</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\render\worldEditor.cpp">
+      <Filter>render</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\common\meshAnim.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\common\opengl\objects.hpp">
@@ -834,6 +840,12 @@
     </ClInclude>
     <ClInclude Include="..\..\src\libs\mikktspace\mikktspace.h">
       <Filter>libs\mikktspace</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\render\worldEditor.hpp">
+      <Filter>render</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\common\meshAnim.hpp">
+      <Filter>common</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

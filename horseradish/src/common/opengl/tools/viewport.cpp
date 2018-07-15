@@ -11,7 +11,7 @@ namespace hr { namespace gl { namespace tools
 			double xmin = ymin * aspectRatio;
 			double xmax = ymax * aspectRatio;
 
-			mat.setZero();
+			mat.set(0.0f);
 			mat[0] = static_cast<float>((2.0 * near) / (xmax - xmin));
 			mat[5] = static_cast<float>((2.0 * near) / (ymax - ymin));
 			mat[8] = static_cast<float>((xmax + xmin) / (xmax - xmin));
@@ -23,7 +23,7 @@ namespace hr { namespace gl { namespace tools
 
 		void funcOrtho(hr::Matrix& mat, double left, double right, double bottom, double top, double near, double far)
 		{
-			mat.setZero();
+			mat.set(0.0f);
 			mat[0] = static_cast<float>(2.0 / (right - left));
 			mat[5] = static_cast<float>(2.0 / (top - bottom));
 			mat[10] = static_cast<float>(-2.0 / (far - near));
