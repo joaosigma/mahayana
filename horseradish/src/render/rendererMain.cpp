@@ -635,6 +635,8 @@ namespace hr::render
 		{
 			auto& mesh = scene.mObjects[obj.id()];
 
+			mesh.bbox = obj.bbox();
+
 			scene.mRenderData.vboMeshData.writeData([&obj](void* const destBuffer, size_t requestedDataSize)
 			{
 				auto bytesRead = obj.readVertices(destBuffer, requestedDataSize);

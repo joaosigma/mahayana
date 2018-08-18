@@ -76,12 +76,19 @@ namespace hr::render
 			std::map<size_t, AnimationSet> mAnimationSets;
 		};
 
+	public:
+		static bool migrateBinData(const std::string& binPathOld, const std::string& binPathNew);
+
 	protected:
 		static bool geomFileCreate(hr::streams::FileStream& fstream);
 		static bool geomFileAddMesh(hr::streams::FileStream& fstream, size_t geomId, const hr::geom::Mesh& mesh);
 		static bool geomFileAddMeshAnim(hr::streams::FileStream& fstream, size_t geomId, const hr::geom::MeshAnim& meshAnim, size_t animSetId);
 		static bool geomFileAddAnimationSet(hr::streams::FileStream& fstream, size_t animSetId, const hr::geom::MeshAnimSet& animSet);
 		static bool geomFileAddAnimation(hr::streams::FileStream& fstream, size_t animId, size_t animSetId, float frameRate, const std::vector<hr::geom::MeshAnimSet::Frame>& animation);
+		static bool geomFileRemoveGeom(hr::streams::FileStream& fstreamOld, hr::streams::FileStream& fstreamNew, std::vector<size_t> geomIds);
+
+		static bool loadAnimationSets(hr::streams::FileStream& fstream, size_t animSetId, geom::MeshAnimSet& meshAnimSet);
+		static bool loadAnimationSetMeshes(hr::streams::FileStream& fstream, size_t animSetId, std::vector<hr::geom::MeshAnim>& meshes);
 
 	protected:
 		std::unordered_map<AreaId, Area> mAreas;
@@ -91,13 +98,13 @@ namespace hr::render
 		World();
 		virtual ~World();
 
-		AreaId loadArea(IRenderer& renderer, const std::string& scenePath, const std::string& geomPath);
+		AreaId loadArea(IRenderer& renderer, const std::string& scenePath, const std::string& binPath);
 		void unloadArea(AreaId areaId);
 
 		void prepareNextFrame(Timestep& timestep, IRenderer& renderer, const tools::Camera& hrCamera, const hr::gl::tools::Viewport& hrViewport);
 
 	private:
 		bool loadAnimations(hr::streams::StreamReader& sreader, Area& area);
-		bool load(IRenderer& renderer, Area& area, const std::string& scenePath, const std::string& geomPath);
+		bool load(IRenderer& renderer, Area& area, const std::string& scenePath, const std::string& binPath);
 	};
 }

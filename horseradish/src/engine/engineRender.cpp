@@ -2,11 +2,13 @@
 
 #include "profiler.hpp"
 
+#include "../common/timer.hpp"
 #include "../common/opengl/openGL.hpp"
 #include "../common/opengl/tools/viewport.hpp"
 
 #include "../render/stage.hpp"
 #include "../render/world.hpp"
+#include "../render/worldEditor.hpp"
 #include "../render/consoleUI.hpp"
 #include "../render/profilerUI.hpp"
 #include "../render/rendererMain.hpp"
@@ -167,6 +169,8 @@ namespace hr { namespace engine
 	void Engine::renderLoop()
 	{
 		hr::Timer timerFrame;
+		hr::Timer timerTotal;
+		hr::render::World::Timestep timestep;
 		std::unique_ptr<Profiler> profiler;
 		std::unique_ptr<render::Stage> stage;
 		std::unique_ptr<hr::render::RendererMain> rendererMain;
@@ -259,23 +263,26 @@ namespace hr { namespace engine
 
 			//!!!!!!!!!!!!!!!! dev
 			{
-				/*{
-					hr::render::WorldEditor::createEmptyScene("c:/Users/Sigma/Desktop/spheres.hscene", "c:/Users/Sigma/Desktop/spheres.hgeom");
+				{
+					//hr::render::WorldEditor editor;
 
-					hr::render::WorldEditor editor("c:/Users/Sigma/Desktop/spheres.hscene", "c:/Users/Sigma/Desktop/spheres.hgeom");
+					//auto newArea = editor.newArea("c:/Users/Sigma/Desktop/md5.hscene", "c:/Users/Sigma/Desktop/md5.hbin");
 
-					hr::geom::Mesh sphere = hr::geom::Mesh::genSphere(40, 40);
-					sphere.scaleUV(4.0f);
-					sphere.genTangents4();
-					editor.importMesh("teste", sphere);
-				}*/
+					//editor.importMD5(newArea, R"(C:\Users\Sigma\Desktop\network_guardian\mesh.md5mesh)", "network_guardian");
+					//editor.removeObjects(newArea, { "network_guardian/ng_lo_collision" });
+					//editor.importMD5Anim(newArea, "network_guardian", R"(C:\Users\Sigma\Desktop\network_guardian\idle.md5anim)", "idle");
+					//editor.importMD5Anim(newArea, "hellknight", R"(C:\Users\Sigma\Desktop\hellknight\stand.md5anim)", "stand");
+				}
 
 				renderData = std::make_unique<hr::render::World>();
-				renderData->loadArea(*rendererMain, "c:/Users/Sigma/Desktop/spheres.hscene", "c:/Users/Sigma/Desktop/spheres.hgeom");
-				//renderData->loadArea(*rendererMain, "c:/Users/Sigma/Desktop/wood-log.hscene", "c:/Users/Sigma/Desktop/wood-log.hgeom");
-				//renderData->loadArea(*rendererMain, "c:/Users/Sigma/Desktop/sandstone1.hscene", "c:/Users/Sigma/Desktop/sandstone1.hgeom");
-				//renderData->loadArea(*rendererMain, "c:/Users/Sigma/Desktop/sandstone2.hscene", "c:/Users/Sigma/Desktop/sandstone2.hgeom");
-				//renderData->loadArea(*rendererMain, "c:/Users/Sigma/Desktop/volund.hscene", "c:/Users/Sigma/Desktop/volund.hgeom");				
+				//renderData->loadArea(*rendererMain, "../scenes/spheres.hscene", "../scenes/spheres.hbin");
+				//renderData->loadArea(*rendererMain, "../scenes/wood-log.hscene", "../scenes/wood-log.hbin");
+				//renderData->loadArea(*rendererMain, "../scenes/sandstone1.hscene", "../scenes/sandstone1.hbin");
+				//renderData->loadArea(*rendererMain, "../scenes/sandstone2.hscene", "../scenes/sandstone2.hbin");
+				renderData->loadArea(*rendererMain, "../scenes/volund.hscene", "../scenes/volund.hbin");				
+				//renderData->loadArea(*rendererMain, "../scenes/makron.hscene", "../scenes/makron.hbin");
+				//renderData->loadArea(*rendererMain, "../scenes/hellknight.hscene", "../scenes/hellknight.hbin");
+				//renderData->loadArea(*rendererMain, "../scenes/guardian.hscene", "../scenes/guardian.hbin");
 			}
 		}
 			
@@ -328,6 +335,8 @@ namespace hr { namespace engine
 			{
 				timerFrame.reStart();
 				profiler->nextSample();
+
+				timestep.t = timerTotal.getTimeS();
 
 				//--------------------
 				//Start frame rendering requests to queue stuff onto the GPU
@@ -402,7 +411,7 @@ namespace hr { namespace engine
 				}
 
 				//process window messages
-				mWindow->processMessages([&](const platform::Window::Message &msg)
+				mWindow->processMessages([this, &stage, &consoleUI, &timestep](const platform::Window::Message &msg)
 				{
 					if (msg.isType(platform::Window::Message::MessageType::CharacterKey))
 						mRuntime->callVoidMethod("events.onKeyPress", msg.getParam());
@@ -427,7 +436,7 @@ namespace hr { namespace engine
 				}
 
 				//process step in the render data, stage and console
-				renderData->prepareNextFrame(*rendererMain, camera, viewportRender);
+				renderData->prepareNextFrame(timestep, *rendererMain, camera, viewportRender);
 				stage->processStep();
 
 				if (consoleUI)

@@ -17,7 +17,7 @@ namespace hr
 			{
 				static const unsigned __int32 offsetsFromUTF8[6];
 
-				static bool isutf8(const char &value)
+				static constexpr bool isutf8(char value)
 				{
 					return ((value & 0xC0) != 0x80);
 				}

@@ -120,7 +120,7 @@ namespace hr::render
 	WorldEditor::WorldEditor()
 	{ }
 
-	WorldEditor::AreaId WorldEditor::newArea(std::string_view scenePath, std::string_view geomPath)
+	WorldEditor::AreaId WorldEditor::newArea(std::string_view scenePath, std::string_view binPath)
 	{
 		AreaId newId;
 		{
@@ -134,14 +134,14 @@ namespace hr::render
 		auto& areaData = mAreasData[newId];
 
 		areaData.pathScene = scenePath;
-		areaData.pathGeom = geomPath;
+		areaData.pathBin = binPath;
 
 		//create "empty" files
 		{
 			if (std::experimental::filesystem::exists(std::string(scenePath)))
 				std::experimental::filesystem::remove(std::string(scenePath));
-			if (std::experimental::filesystem::exists(std::string(geomPath)))
-				std::experimental::filesystem::remove(std::string(geomPath));
+			if (std::experimental::filesystem::exists(std::string(binPath)))
+				std::experimental::filesystem::remove(std::string(binPath));
 
 			{
 				hr::streams::FileStream streamScene(std::string(scenePath), false, true);
@@ -172,7 +172,7 @@ namespace hr::render
 			}
 
 			{
-				hr::streams::FileStream streamGeom(std::string(geomPath), false, true);
+				hr::streams::FileStream streamGeom(std::string(binPath), false, true);
 
 				World::geomFileCreate(streamGeom);
 			}
@@ -203,7 +203,7 @@ namespace hr::render
 
 		//we store new geometry immediately
 		{
-			hr::streams::FileStream geomFileStream(areaData.pathGeom, true, true);
+			hr::streams::FileStream geomFileStream(areaData.pathBin, true, true);
 			World::geomFileAddMesh(geomFileStream, objectId, mesh);
 		}
 
@@ -370,7 +370,7 @@ namespace hr::render
 
 				//we store new geometry immediately
 				{
-					hr::streams::FileStream geomFileStream(areaData.pathGeom, true, true);
+					hr::streams::FileStream geomFileStream(areaData.pathBin, true, true);
 					World::geomFileAddMesh(geomFileStream, objectId, newMesh);
 				}
 			}
@@ -427,6 +427,7 @@ namespace hr::render
 			int parent;
 			Vector3f pos;
 			Quaternion rot;
+			char name[256];
 		};
 		typedef std::vector<MD5Joint> MD5Skeleton;
 
@@ -481,8 +482,7 @@ namespace hr::render
 						MD5Joint joint;
 						float qx, qy, qz;
 
-						char stringAux[128];
-						sscanf(parser.data(), "%s %d ( %f %f %f ) ( %f %f %f )", stringAux, &joint.parent, &joint.pos[0], &joint.pos[1], &joint.pos[2], &qx, &qy, &qz);
+						sscanf(parser.data(), "%s %d ( %f %f %f ) ( %f %f %f )", joint.name, &joint.parent, &joint.pos[0], &joint.pos[1], &joint.pos[2], &qx, &qy, &qz);
 
 						joint.rot.set(qx, qy, qz, 0.0f).expandWNormalized();
 						md5Model.bindPose.push_back(std::move(joint));
@@ -750,12 +750,36 @@ namespace hr::render
 
 			animSet.id = animSetId;
 			animSetData.animSetId = animSetId;
-			animSetData.numJoints = meshAnimSet.numJoints();
 			animSetData.name = meshAnimSet.name();
 
 			{
-				hr::streams::FileStream geomFileStream(areaData.pathGeom, true, true);
+				hr::streams::FileStream geomFileStream(areaData.pathBin, true, true);
 				World::geomFileAddAnimationSet(geomFileStream, animSetId, meshAnimSet);
+			}
+
+			assert(md5Model.bindPose.size() == meshAnimSet.numJoints());
+
+			animSetData.joints.reserve(md5Model.bindPose.size());
+			for (auto& joint : md5Model.bindPose)
+			{
+				AreaData::AnimSetData::JointData jointData;
+
+				jointData.index = animSetData.joints.size();
+				jointData.parentIndex = joint.parent;
+
+				{
+					std::string_view name(joint.name);
+
+					while (!name.empty() && name[0] == '"')
+						name = name.substr(1);
+					while (!name.empty() && name[name.size() - 1] == '"')
+						name = name.substr(0, name.size() - 1);
+
+					std::fill(jointData.name.begin(), jointData.name.end(), 0);
+					std::memcpy(jointData.name.data(), name.data(), std::min(name.size(), jointData.name.size() - 1));
+				}
+
+				animSetData.joints.push_back(std::move(jointData));
 			}
 		}
 
@@ -770,9 +794,17 @@ namespace hr::render
 			object.id = objectId;
 			object.type = Object::Type::Static;
 			objectData.objectId = objectId;
-			objectData.name = StringUtils::eraseCopy(md5Mesh.shader, '"');
-			objectData.matDiffusePath = "texs/hellknight/hellknight_b_albedo.png";
-			objectData.matNormalPath = "texs/hellknight/hellknight_normal.png";
+			
+
+			{
+				auto fullName = StringUtils::eraseCopy(md5Mesh.shader, '"');
+				auto slashIndex = fullName.find_last_of('/');
+				auto finalPart = (slashIndex == std::string::npos) ? fullName : fullName.substr(slashIndex + 1);
+
+				objectData.name = fmt::format("{0}/{1}", meshAnimSet.name(), finalPart);
+				objectData.matDiffusePath = fmt::format("texs/{0}/{1}.albedo.png", meshAnimSet.name(), finalPart);
+				objectData.matNormalPath = fmt::format("texs/{0}/{1}.normal.png", meshAnimSet.name(), finalPart);
+			}
 
 			assert(md5Mesh.mesh.mesh().check());
 			md5Mesh.mesh.mesh().genNormals();
@@ -781,7 +813,7 @@ namespace hr::render
 
 			//we store new geometry immediately
 			{
-				hr::streams::FileStream geomFileStream(areaData.pathGeom, true, true);
+				hr::streams::FileStream geomFileStream(areaData.pathBin, true, true);
 				World::geomFileAddMeshAnim(geomFileStream, objectId, md5Mesh.mesh, animSetId);
 			}
 
@@ -831,7 +863,7 @@ namespace hr::render
 		{
 			MD5Parser parser(md5AnimPath);
 
-			size_t numFrames, numJoints, frameRate, numAnimatedComponents;
+			size_t numFrames = 0, numJoints = 0, frameRate = 0, numAnimatedComponents = 0;
 			{
 				if (parser.moveToNext("numFrames"))
 					sscanf_s(parser.data(), "numFrames %d", &numFrames);
@@ -1040,9 +1072,29 @@ namespace hr::render
 
 				animFrames.push_back(std::move(newFrame));
 			}
+		}
 
-			/*for (auto&& md5Mesh : model.meshes)
-				meshAnimSet.animUpdateBBoxes(animId, md5Mesh.mesh);*/
+		//we have everything, but we still have to calculate one final thing: the bboxes for all frames
+		{
+			geom::MeshAnimSet meshAnimSet;
+			std::vector<hr::geom::MeshAnim> meshes;
+			{
+				hr::streams::FileStream geomFileStream(areaData.pathBin, true, false);
+
+				if (!World::loadAnimationSets(geomFileStream, animSetId, meshAnimSet))
+					return false;
+
+				if (!World::loadAnimationSetMeshes(geomFileStream, animSetId, meshes))
+					return false;
+			}
+
+			meshAnimSet.animAdd(0, md5Anim.frameRate, animFrames);
+			for (auto&& mesh : meshes)
+				meshAnimSet.animUpdateBBoxes(0, mesh);
+
+			auto& updatedAnims = meshAnimSet.animFrames(0);
+			for (size_t i = 0; i < updatedAnims.size(); i++)
+				animFrames[i].bbox = updatedAnims[i].bbox;
 		}
 
 		//create the animation in memory and in the geom file
@@ -1051,7 +1103,7 @@ namespace hr::render
 
 			for (auto&& frame : animFrames) //number of joints must match
 			{
-				if (frame.joints.size() != animSetData.numJoints)
+				if (frame.joints.size() != animSetData.joints.size())
 					return false;
 			}
 
@@ -1061,7 +1113,7 @@ namespace hr::render
 
 			animSetData.anims.push_back(AreaData::AnimSetData::Animation{ newAnimId, std::move(newAnimName) });
 
-			hr::streams::FileStream geomFileStream(areaData.pathGeom, true, true);
+			hr::streams::FileStream geomFileStream(areaData.pathBin, true, true);
 			World::geomFileAddAnimation(geomFileStream, newAnimId, animSetId, md5Anim.frameRate, std::move(animFrames));
 		}
 
@@ -1079,7 +1131,7 @@ namespace hr::render
 		auto& area = mAreas[areaId];
 		auto& areaData = mAreasData[areaId];
 
-		hr::streams::FileStream geomFileStream(areaData.pathGeom, true, true);
+		hr::streams::FileStream geomFileStream(areaData.pathBin, true, true);
 
 		auto func = [&geomFileStream, cb](Area& area, AreaData::ObjectData& object)
 		{
@@ -1149,17 +1201,54 @@ namespace hr::render
 		return objectIds;
 	}
 
-	void WorldEditor::removeObjects(AreaId areaId, const std::vector<size_t>& objectIds)
+	void WorldEditor::removeObjects(AreaId areaId, const std::vector<std::string_view>& objectsNames)
 	{
-		if (mAreas.find(areaId) == mAreas.end())
+		if (objectsNames.empty() || (mAreas.find(areaId) == mAreas.end()))
 			return;
 
 		auto& area = mAreas[areaId];
+		auto& areaData = mAreasData[areaId];
+
+		std::unordered_set<size_t> objectIds;
+		for (auto&& targetName : objectsNames)
+		{
+			for (const auto&[objectId, object] : areaData.objects)
+			{
+				if (object.name == targetName)
+					objectIds.insert(objectId);
+			}
+		}
+
+		if (objectIds.empty())
+			return;
 
 		for (const auto& objectId : objectIds)
 		{
 			area.mObjects.erase(objectId);
-			std::remove_if(area.mInstances.begin(), area.mInstances.end(), [objectId](const auto& instance) { return (instance.objectId == objectId); });
+			area.mInstances.erase(
+				std::remove_if(area.mInstances.begin(), area.mInstances.end(), [objectId](const auto& instance) { return (instance.objectId == objectId); }),
+				area.mInstances.end());
+
+			areaData.objects.erase(objectId);
+		}
+
+		saveArea(area); //this only takes care of the scene
+
+		//now we take care of the binary data
+		{
+			std::experimental::filesystem::rename(areaData.pathBin, areaData.pathBin + ".tmp");
+
+			{
+				hr::streams::FileStream geomFileStreamOld(areaData.pathBin + ".tmp", true, false);
+				hr::streams::FileStream geomFileStreamNew(areaData.pathBin, false, true);
+
+				std::vector<size_t> finalObjectIds;
+				finalObjectIds.insert(finalObjectIds.end(), objectIds.begin(), objectIds.end());
+
+				geomFileRemoveGeom(geomFileStreamOld, geomFileStreamNew, std::move(finalObjectIds));
+			}
+
+			std::experimental::filesystem::remove(areaData.pathBin + ".tmp");
 		}
 	}
 
@@ -1229,6 +1318,24 @@ namespace hr::render
 			writer.String("name");
 			writer.String(animSet.second.name.c_str());
 
+			writer.String("joints");
+			writer.StartArray();
+			for (auto& joint : animSet.second.joints)
+			{
+				writer.StartObject();
+
+				writer.String("index");
+				writer.Uint(joint.index);
+
+				writer.String("parent");
+				writer.Int(joint.parentIndex);
+
+				writer.String("name");
+				writer.String(joint.name.data());
+
+				writer.EndObject();
+			}
+			writer.EndArray();
 
 			writer.String("animation");
 			writer.StartArray();

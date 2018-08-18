@@ -328,6 +328,31 @@ namespace hr { namespace streams
 			return mStream.write(buffer, numBytes);
 		}
 
+		size_t write(StreamReader& reader, const size_t numBytes)
+		{
+			unsigned char tmpBuffer[1024];
+
+			size_t bytesRemaining = numBytes;
+			size_t bytesTotalWritten = 0;
+
+			while (bytesRemaining > 0)
+			{
+				auto bytesRead = reader.read(tmpBuffer, std::min(bytesRemaining, sizeof(tmpBuffer)));
+				if (bytesRead <= 0)
+					break;
+
+				auto bytesWriten = write(tmpBuffer, bytesRead);
+
+				bytesRemaining -= bytesRead;
+				bytesTotalWritten += bytesWriten;
+
+				if (bytesWriten != bytesRead)
+					break;
+			}
+
+			return bytesTotalWritten;
+		}
+
 		size_t writeString(const char* const str, bool includeTerminator = false)
 		{
 			if (!str || !mStream.canWrite())
