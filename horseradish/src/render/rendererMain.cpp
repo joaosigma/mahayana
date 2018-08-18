@@ -436,7 +436,7 @@ namespace hr::render
 		: mFileSystem(fileSystem)
 		, mGlContext(glContext)
 	{
-		loadDiffuse(R"(media\default_albedo.jpg)", mTexDefaultAlbedo, true);
+		loadDiffuse(R"(media\default_albedo.png)", mTexDefaultAlbedo, true);
 		loadDiffuse(R"(media\skies\archesPineTree.hdr)", mTexSky, false);
 		loadNormal(R"(media\default_normal.png)", mTexDefaultNormals, true);
 	

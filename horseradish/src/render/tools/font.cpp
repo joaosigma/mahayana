@@ -252,7 +252,7 @@ namespace hr { namespace render { namespace tools
 		}
 
 		//build distance map
-		sdfBuild(imgFinal.data(), imgFinal.width(), static_cast<float>(Font::sBufferPadding - 1), imgFinal.data(), imgFinal.width(), imgFinal.height(), imgFinal.width());
+		sdfBuildDistanceField(imgFinal.data(), imgFinal.width(), static_cast<float>(Font::sBufferPadding - 1), imgFinal.data(), imgFinal.width(), imgFinal.height(), imgFinal.width());
 		imgFinal = imgFinal.resize(imgFinal.width() / 2, imgFinal.height() / 2);
 
 		if (FT_HAS_KERNING(ftFace) != 0)
