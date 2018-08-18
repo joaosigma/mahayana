@@ -31,9 +31,6 @@
     <Filter Include="engine">
       <UniqueIdentifier>{f8ef15b6-8464-4338-8f39-421ebc89a217}</UniqueIdentifier>
     </Filter>
-    <Filter Include="libs\cppformat">
-      <UniqueIdentifier>{da850c5a-1156-4750-a01b-e129ad7504f6}</UniqueIdentifier>
-    </Filter>
     <Filter Include="render\tools">
       <UniqueIdentifier>{7fb52b8f-685a-4433-b358-764f7655b71e}</UniqueIdentifier>
     </Filter>
@@ -75,6 +72,9 @@
     </Filter>
     <Filter Include="libs\mikktspace">
       <UniqueIdentifier>{9927814a-6eac-4cbe-98f0-1ed6053a196b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="libs\fmt">
+      <UniqueIdentifier>{da850c5a-1156-4750-a01b-e129ad7504f6}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -213,9 +213,6 @@
     </ClCompile>
     <ClCompile Include="..\..\src\libs\squirrel\sqvm.cpp">
       <Filter>libs\squirrel</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\libs\cppformat\format.cc">
-      <Filter>libs\cppformat</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\engine\logger.cpp">
       <Filter>engine</Filter>
@@ -394,6 +391,9 @@
     <ClCompile Include="..\..\src\common\meshAnim.cpp">
       <Filter>common</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\libs\fmt\format.cc">
+      <Filter>libs\fmt</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\common\opengl\objects.hpp">
@@ -543,9 +543,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\libs\squirrel\sqvm.h">
       <Filter>libs\squirrel</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\libs\cppformat\format.h">
-      <Filter>libs\cppformat</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\engine\logger.hpp">
       <Filter>engine</Filter>
@@ -846,6 +843,15 @@
     </ClInclude>
     <ClInclude Include="..\..\src\common\meshAnim.hpp">
       <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\libs\fmt\core.h">
+      <Filter>libs\fmt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\libs\fmt\format.h">
+      <Filter>libs\fmt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\libs\fmt\format-inl.h">
+      <Filter>libs\fmt</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

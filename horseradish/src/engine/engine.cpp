@@ -3,7 +3,7 @@
 #include "common/opengl/openGL.hpp"
 #include "../build.hpp"
 
-#include <libs/cppformat/format.h>
+#include <libs/fmt/format.h>
 
 #include <cassert>
 

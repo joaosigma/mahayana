@@ -15,7 +15,7 @@
 #include "../render/rendererDebug.hpp"
 #include "../render/renderer2D.hpp"
 
-#include <libs/cppformat/format.h>
+#include <libs/fmt/format.h>
 
 static
 void openglInitialize()

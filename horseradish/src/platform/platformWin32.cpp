@@ -3,7 +3,7 @@
 #include "../common/stringUtils.hpp"
 #include "../common/scopedAction.hpp"
 
-#include <libs/cppformat/format.h>
+#include <libs/fmt/format.h>
 
 #if defined(_WIN32)
 

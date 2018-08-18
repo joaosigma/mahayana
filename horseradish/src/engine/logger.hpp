@@ -2,7 +2,7 @@
 
 #include "common/stream.hpp"
 
-#include <libs/cppformat/format.h>
+#include <libs/fmt/format.h>
 
 #include <vector>
 #include <deque>

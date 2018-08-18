@@ -209,7 +209,7 @@
     <ClCompile Include="..\..\src\engine\logger.cpp" />
     <ClCompile Include="..\..\src\engine\profiler.cpp" />
     <ClCompile Include="..\..\src\engine\runtime.cpp" />
-    <ClCompile Include="..\..\src\libs\cppformat\format.cc" />
+    <ClCompile Include="..\..\src\libs\fmt\format.cc" />
     <ClCompile Include="..\..\src\libs\forsyth\forsythtriangleorderoptimizer.cpp" />
     <ClCompile Include="..\..\src\libs\libsquish\alpha.cpp" />
     <ClCompile Include="..\..\src\libs\libsquish\clusterfit.cpp" />
@@ -325,7 +325,9 @@
     <ClInclude Include="..\..\src\engine\logger.hpp" />
     <ClInclude Include="..\..\src\engine\profiler.hpp" />
     <ClInclude Include="..\..\src\engine\runtime.hpp" />
-    <ClInclude Include="..\..\src\libs\cppformat\format.h" />
+    <ClInclude Include="..\..\src\libs\fmt\core.h" />
+    <ClInclude Include="..\..\src\libs\fmt\format-inl.h" />
+    <ClInclude Include="..\..\src\libs\fmt\format.h" />
     <ClInclude Include="..\..\src\libs\forsyth\forsythtriangleorderoptimizer.h" />
     <ClInclude Include="..\..\src\libs\libsquish\alpha.h" />
     <ClInclude Include="..\..\src\libs\libsquish\clusterfit.h" />

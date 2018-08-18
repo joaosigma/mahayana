@@ -2,7 +2,7 @@
 
 #include "../common/color.hpp"
 
-#include <libs/cppformat/format.h>
+#include <libs/fmt/format.h>
 
 namespace hr { namespace render
 {
