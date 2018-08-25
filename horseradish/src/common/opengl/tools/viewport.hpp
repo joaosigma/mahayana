@@ -13,7 +13,7 @@ namespace hr { namespace gl { namespace tools
 		static hr::Matrix genMatrix2DProj(size_t width, size_t height);
 
 	private:
-		float mFov, mZNear, mZFar;
+		float mFovY, mZNear;
 		size_t mWidth, mHeight;
 		struct {
 			hr::Matrix mp2D, mp3D;
@@ -28,21 +28,20 @@ namespace hr { namespace gl { namespace tools
 			: Viewport(90.0f, width, height)
 		{ }
 
-		explicit Viewport(const float fov, const size_t width, const size_t height)
-			: Viewport(fov, width, height, 1.0f, 1000.0f)
+		explicit Viewport(const float fovY, const size_t width, const size_t height)
+			: Viewport(fovY, width, height, 0.1f)
 		{ }
 
-		explicit Viewport(const float fov, const size_t width, const size_t height, const float zNear, const float zFar)
-			: mFov(fov), mZNear(zNear), mZFar(zFar), mWidth(width ? width : 1), mHeight(height ? height : 1)
+		explicit Viewport(const float fovY, const size_t width, const size_t height, const float zNear)
+			: mFovY(fovY), mZNear(zNear), mWidth(width ? width : 1), mHeight(height ? height : 1)
 		{
 			calcMatrices();
 		}
 
 		const hr::Matrix& getProjection(ProjectionType projectionType) const;
 		
-		float fov() const { return mFov; }
+		float fovY() const { return mFovY; }
 		float znear() const { return mZNear; }
-		float zfar() const { return mZFar; }
 
 		size_t width() const { return mWidth; }
 		size_t height() const { return mHeight; }

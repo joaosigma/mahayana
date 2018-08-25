@@ -29,7 +29,7 @@ namespace hr { namespace render
 	{
 		hr::gl::glEnable(GL_DEPTH_TEST);
 		hr::gl::glDepthMask(GL_FALSE);
-		hr::gl::glDepthFunc(GL_LEQUAL);
+		hr::gl::glDepthFunc(GL_GREATER);
 
 		hr::Matrix matrixTransform = hrViewport.getProjection(hr::gl::tools::Viewport::ProjectionType::Proj3D);
 		matrixTransform *= hrCamera.modelView();

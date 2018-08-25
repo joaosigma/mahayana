@@ -972,7 +972,7 @@ namespace hr { namespace render
 		hr::gl::tools::Frustum camFrustum;
 		camFrustum.setCamPosition(camPos);
 		camFrustum.setZNear(hrViewport.znear());
-		camFrustum.setZFar(hrViewport.zfar());
+		//camFrustum.setZFar(hrViewport.zfar());
 		camFrustum.calculateFrustum(hrViewport.getProjection(hr::gl::tools::Viewport::ProjectionType::Proj3D), hrCamera.modelView());
 
 		//run animations and update vertex data
@@ -1339,8 +1339,8 @@ namespace hr { namespace render
 									}
 									else
 									{
-										streamBin.seek(hr::streams::Stream::SeekOrigin::Current, hr::geom::Mesh::sizeVertices(objectRenderer.geom.numVertices));
-										streamBin.seek(hr::streams::Stream::SeekOrigin::Current, hr::geom::Mesh::sizeIndices(objectRenderer.geom.numIndices));
+										streamBin.seek(hr::streams::Stream::SeekOrigin::Current, hr::geom::Mesh::sizeVertices(geomIt->second.numVertices));
+										streamBin.seek(hr::streams::Stream::SeekOrigin::Current, hr::geom::Mesh::sizeIndices(geomIt->second.numIndices));
 									}
 
 									{

@@ -307,7 +307,7 @@ namespace hr { namespace render { namespace tools
 		textureDst.init(hr::gl::objects::Texture::Type::Tex2D, hr::gl::objects::Texture::StorageType::RGB_8, imageSrc.width(), imageSrc.height());
 
 		size_t curLevel = 0;
-		auto imageScaled = imageSrc.convert<unsigned char, hr::imaging::ImageFormatRGBA>(255);
+		auto imageScaled = imageSrc.convert<unsigned char, hr::imaging::ImageFormatRGBA>(0, 255);
 
 		while(true)
 		{
@@ -382,7 +382,7 @@ namespace hr { namespace render { namespace tools
 		if (imageSrc.empty())
 			return false;
 
-		auto imageRGBA = imageSrc.convert<unsigned char, hr::imaging::ImageFormatRGBA>(255); //we have to work with RGBA
+		auto imageRGBA = imageSrc.convert<unsigned char, hr::imaging::ImageFormatRGBA>(0, 255); //we have to work with RGBA
 		return TextureTools::storeCompressedDiffuse(streamOut, imageRGBA);
 	}
 
@@ -439,13 +439,13 @@ namespace hr { namespace render { namespace tools
 		textureDst.init(hr::gl::objects::Texture::Type::Tex2D, hr::gl::objects::Texture::StorageType::RG_8, imageSrc.width(), imageSrc.height());
 
 		size_t curLevel = 0;
-		auto imageScaled = imageSrc.convert<unsigned char, hr::imaging::ImageFormatRGBA>(255).convert<float, hr::imaging::ImageFormatRGBA>();
+		auto imageScaled = imageSrc.convert<float, hr::imaging::ImageFormatRGBA>(0, 255);
 
 		while (true)
 		{
 			auto imageNormals = imageScaled.clone();
 			imageNormals.renormalizeNormals(true);
-			auto imageByte = imageNormals.convert<unsigned char, hr::imaging::ImageFormatRGBA>();
+			auto imageByte = imageNormals.convert<unsigned char, hr::imaging::ImageFormatRGBA>(0.0f, 1.0f);
 
 			textureDst.uploadData(curLevel, 0, 0, imageByte.width(), imageByte.height(), hr::gl::objects::Texture::DataFormat::RGBA, hr::gl::objects::Texture::DataType::UBYTE, imageByte.data());
 			if (imageByte.getArea() <= 1)
@@ -495,7 +495,7 @@ namespace hr { namespace render { namespace tools
 		if (imageSrc.empty())
 			return false;
 
-		auto imageRGBA = imageSrc.convert<unsigned char, hr::imaging::ImageFormatRGBA>(255); //we have to work with RGBA
+		auto imageRGBA = imageSrc.convert<unsigned char, hr::imaging::ImageFormatRGBA>(0, 255); //we have to work with RGBA
 		return TextureTools::storeCompressedNormal(streamOut, imageRGBA);
 	}
 
@@ -550,12 +550,12 @@ namespace hr { namespace render { namespace tools
 		}
 		else
 		{
-			auto imageScaled = imageSrc.convert<float, hr::imaging::ImageFormatRGBA>();
+			auto imageScaled = imageSrc.convert<float, hr::imaging::ImageFormatRGBA>(0, 255);
 			while (true)
 			{
 				auto imageNormals = imageScaled.clone();
 				imageNormals.renormalizeNormals(true);
-				auto imageByte = imageNormals.convert<unsigned char, hr::imaging::ImageFormatRGBA>();
+				auto imageByte = imageNormals.convert<unsigned char, hr::imaging::ImageFormatRGBA>(0.0f, 1.0f);
 
 				auto compressBlock = compressInitBlockBC5(imageScaled.width(), imageScaled.height());
 				auto compressedImg = compressImageBC5(compressBlock, imageByte);

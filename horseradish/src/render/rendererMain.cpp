@@ -16,7 +16,7 @@ namespace hr::render
 
 		hr::gl::glEnable(GL_DEPTH_TEST);
 		hr::gl::glDepthMask(GL_TRUE);
-		hr::gl::glDepthFunc(GL_LEQUAL);
+		hr::gl::glDepthFunc(GL_GREATER);
 
 		hr::gl::glClear(GL_DEPTH_BUFFER_BIT);
 
@@ -76,7 +76,7 @@ namespace hr::render
 
 		hr::gl::glEnable(GL_DEPTH_TEST);
 		hr::gl::glDepthMask(GL_FALSE);
-		hr::gl::glDepthFunc(GL_LEQUAL);
+		hr::gl::glDepthFunc(GL_GREATER);
 
 		hr::Matrix matrixProjection;
 		hr::Matrix matrixModelView;
@@ -450,7 +450,7 @@ namespace hr::render
 		mFBOs.texLighting.init(hr::gl::objects::Texture::Type::TexRectangle, hr::gl::objects::Texture::StorageType::RGBA_16F, renderWidth, renderHeight);
 		mFBOs.texNormals.init(hr::gl::objects::Texture::Type::TexRectangle, hr::gl::objects::Texture::StorageType::RGBA_16F, renderWidth, renderHeight);
 		mFBOs.texSpecular.init(hr::gl::objects::Texture::Type::TexRectangle, hr::gl::objects::Texture::StorageType::RGBA_8, renderWidth, renderHeight);
-		mFBOs.texZ.init(hr::gl::objects::Texture::Type::TexRectangle, hr::gl::objects::Texture::StorageType::DEPTH_24, renderWidth, renderHeight);
+		mFBOs.texZ.init(hr::gl::objects::Texture::Type::TexRectangle, hr::gl::objects::Texture::StorageType::DEPTH_32F, renderWidth, renderHeight);
 		mFBOs.texAvgLuminance.init(hr::gl::objects::Texture::Type::Tex2D, hr::gl::objects::Texture::StorageType::R_16F, renderWidth, renderHeight);
 
 		mFBOs.fboZPass.reset();

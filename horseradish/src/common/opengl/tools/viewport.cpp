@@ -4,9 +4,9 @@ namespace hr { namespace gl { namespace tools
 {
 	namespace
 	{
-		void funcProjection(hr::Matrix& mat, double fov, double aspectRatio, double near, double far)
+		void funcProjection(hr::Matrix& mat, double fovy, double aspectRatio, double znear)
 		{
-			double ymax = near * tan(fov * 0.00872664625997164788461845384); //0.008726646259971 = pi / 180.0 / 2.0
+			/*double ymax = near * tan(fov * 0.00872664625997164788461845384); //0.008726646259971 = pi / 180.0 / 2.0
 			double ymin = -ymax;
 			double xmin = ymin * aspectRatio;
 			double xmax = ymax * aspectRatio;
@@ -18,7 +18,15 @@ namespace hr { namespace gl { namespace tools
 			mat[9] = static_cast<float>((ymax + ymin) / (ymax - ymin));
 			mat[10] = -static_cast<float>((far + near) / (far - near));
 			mat[11] = -1.0f;
-			mat[14] = -static_cast<float>((2.0 * far * near) / (far - near));
+			mat[14] = -static_cast<float>((2.0 * far * near) / (far - near));*/
+
+			double f = 1.0 / tan(fovy / 2.0);
+
+			mat.set(0.0f);
+			mat[0] = static_cast<float>(f / aspectRatio);
+			mat[5] = static_cast<float>(f);
+			mat[11] = -1.0f;
+			mat[14] = static_cast<float>(znear);
 		};
 
 		void funcOrtho(hr::Matrix& mat, double left, double right, double bottom, double top, double near, double far)
@@ -43,7 +51,7 @@ namespace hr { namespace gl { namespace tools
 
 	void Viewport::calcMatrices()
 	{
-		funcProjection(mMatrices.mp3D, mFov, static_cast<double>(mWidth) / static_cast<double>(mHeight), mZNear, mZFar);
+		funcProjection(mMatrices.mp3D, mFovY, static_cast<double>(mWidth) / static_cast<double>(mHeight), mZNear);
 		funcOrtho(mMatrices.mp2D, 0.0, mWidth, 0.0, mHeight, 1.0, -1.0);
 	}
 
@@ -62,7 +70,7 @@ namespace hr { namespace gl { namespace tools
 
 	void Viewport::pointOnZNear(hr::Vector3f& center) const
 	{
-		center[0] = mZNear * tan(mFov * 0.5f);
+		center[0] = mZNear * tan(mFovY * 0.5f);
 		center[1] = (center[1]) * static_cast<float>(mWidth) / static_cast<float>(mHeight);
 		center[2] = mZNear;
 	}

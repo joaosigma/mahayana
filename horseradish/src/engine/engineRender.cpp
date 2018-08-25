@@ -17,155 +17,158 @@
 
 #include <libs/fmt/format.h>
 
-static
-void openglInitialize()
-{
-	hr::gl::glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-	hr::gl::glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-	hr::gl::glDepthFunc(GL_LEQUAL);
-	hr::gl::glDepthMask(GL_TRUE);
-	hr::gl::glClearDepth(1.0f);
-	hr::gl::glClearStencil(0);
-	hr::gl::glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	hr::gl::glPolygonOffset(1.0f, 1.0f);
-	hr::gl::glDisable(GL_DEPTH_TEST);
-	hr::gl::glDisable(GL_BLEND);
-	hr::gl::glDisable(GL_SCISSOR_TEST);
-	hr::gl::glDisable(GL_STENCIL_TEST);
-	hr::gl::glEnable(GL_CULL_FACE);
-	hr::gl::glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
-	hr::gl::glCullFace(GL_BACK);
-	hr::gl::glFrontFace(GL_CCW);
-
-	hr::gl::glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-}
-
-static
-void openGLWriteInfo(hr::engine::Logger &logger, const hr::gl::objects::Context &glContext)
-{
-	std::string infoValueString;
-	int infoValueInt;
-
-	hr::engine::Logger::Context ctx(logger, hr::engine::Logger::ModuleType::Graphics);
-
-	//driver info
-	ctx.info("${olive}->${default}OpenGL driver info:");
-	glContext.info(hr::gl::objects::Context::InformationType::Version, infoValueString);
-	ctx.info("   OpenGL version: " + infoValueString);
-	glContext.info(hr::gl::objects::Context::InformationType::Vendor, infoValueString);
-	ctx.info("   OpenGL vendor: " + infoValueString);
-	glContext.info(hr::gl::objects::Context::InformationType::Renderer, infoValueString);
-	ctx.info("   OpenGL renderer: " + infoValueString);
-
-	//extensions available
-	ctx.info("${olive}->${default}OpenGL extensions available:");
-	hr::gl::glGetIntegerv(GL_NUM_EXTENSIONS, &infoValueInt);
-	for (int curExt = 0; curExt < infoValueInt; curExt++)
-		ctx.info((const char*)hr::gl::glGetStringi(GL_EXTENSIONS, curExt));
-
-	//other stuff
-	ctx.info("${olive}->${default}OpenGL extended information:");
-
-	glContext.info(hr::gl::objects::Context::InformationType::GLSLVersion, infoValueString);
-	ctx.info("   GLSL version: " + infoValueString);
-
-	glContext.info(hr::gl::objects::Context::InformationType::MaxDrawBuffers, infoValueInt);
-	ctx.info("   Maximum number of draw buffers: {0}", infoValueInt);
-
-	glContext.info(hr::gl::objects::Context::InformationType::MaxColorAttachments, infoValueInt);
-	ctx.info("   Maximum number of color attachments in FBOs: {0}", infoValueInt);
-
-	glContext.info(hr::gl::objects::Context::InformationType::MaxTextureSize, infoValueInt);
-	ctx.info("   Maximum 1D/2D texture size: {0}x{0}", infoValueInt);
-	glContext.info(hr::gl::objects::Context::InformationType::MaxTexture3DSize, infoValueInt);
-	ctx.info("   Maximum 3D texture size: {0}x{0}x{0}", infoValueInt);
-	glContext.info(hr::gl::objects::Context::InformationType::MaxTextureCubemapSize, infoValueInt);
-	ctx.info("   Maximum cubemap texture size: {0}x{0}", infoValueInt);
-	glContext.info(hr::gl::objects::Context::InformationType::MaxTextureRectSize, infoValueInt);
-	ctx.info("   Maximum rectangle texture size: {0}x{0}", infoValueInt);
-}
-
-static
-void CALLBACK openglDebugMessagesCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *message, const void *userParam)
-{
-	const char *glSource = "", *glType = "", *glSeverity = "";
-
-	auto logger = const_cast<hr::engine::Logger*>(reinterpret_cast<const hr::engine::Logger*>(userParam));
-
-	switch (source)
-	{
-	case GL_DEBUG_SOURCE_API_ARB:
-		glSource = "source(api)";
-		break;
-	case GL_DEBUG_SOURCE_SHADER_COMPILER_ARB:
-		glSource = "source(glsl)";
-		break;
-	case GL_DEBUG_SOURCE_WINDOW_SYSTEM_ARB:
-		glSource = "source(window system)";
-		break;
-	case GL_DEBUG_SOURCE_THIRD_PARTY_ARB:
-		glSource = "source(third party)";
-		break;
-	case GL_DEBUG_SOURCE_APPLICATION_ARB:
-		glSource = "source(application)";
-		break;
-	case GL_DEBUG_SOURCE_OTHER_ARB:
-		glSource = "source(other)";
-		break;
-	default:
-		glSource = "source(unknown)";
-		break;
-	}
-
-	switch (type)
-	{
-	case GL_DEBUG_TYPE_ERROR_ARB:
-		glType = "type(error)";
-		break;
-	case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR_ARB:
-		glType = "type(deprecated)";
-		break;
-	case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR_ARB:
-		glType = "type(undefined)";
-		break;
-	case GL_DEBUG_TYPE_PERFORMANCE_ARB:
-		glType = "type(performance)";
-		break;
-	case GL_DEBUG_TYPE_PORTABILITY_ARB:
-		glType = "type(portability)";
-		break;
-	case GL_DEBUG_TYPE_OTHER_ARB:
-		glType = "type(other)";
-		break;
-	default:
-		glType = "type(unknown)";
-		break;
-	}
-
-	auto entryType = hr::engine::Logger::EntryType::Info;
-	switch (severity)
-	{
-	case GL_DEBUG_SEVERITY_HIGH_ARB:
-		glSeverity = "severity(high)";
-		entryType = hr::engine::Logger::EntryType::Warning;
-		break;
-	case GL_DEBUG_SEVERITY_MEDIUM_ARB:
-		glSeverity = "severity(medium)";
-		break;
-	case GL_DEBUG_SEVERITY_LOW_ARB:
-		glSeverity = "severity(low)";
-		break;
-	default:
-		glSeverity = "severity(unknown)";
-		break;
-	}
-
-	logger->log(entryType, hr::engine::Logger::ModuleType::Graphics, "OpenGL [{0} - {1} - {2}]:", glSource, glType, glSeverity);
-	logger->log(entryType, hr::engine::Logger::ModuleType::Graphics, "     {0}", message);
-}
-
 namespace hr { namespace engine
 {
+	namespace
+	{
+		void openglInitialize()
+		{
+			hr::gl::glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+			hr::gl::glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+			hr::gl::glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+			hr::gl::glPolygonOffset(1.0f, 1.0f);
+			hr::gl::glDisable(GL_DEPTH_TEST);
+			hr::gl::glDisable(GL_BLEND);
+			hr::gl::glDisable(GL_SCISSOR_TEST);
+			hr::gl::glDisable(GL_STENCIL_TEST);
+			hr::gl::glEnable(GL_CULL_FACE);
+			hr::gl::glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
+			hr::gl::glCullFace(GL_BACK);
+			hr::gl::glFrontFace(GL_CCW);
+
+			hr::gl::glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+
+			//we are using Reverse-Z (https://nlguillemot.wordpress.com/2016/12/07/reversed-z-in-opengl/)
+			hr::gl::glClipControl(GL_LOWER_LEFT, GL_ZERO_TO_ONE);
+			hr::gl::glDepthFunc(GL_GREATER);
+			hr::gl::glDepthMask(GL_TRUE);
+			hr::gl::glClearDepth(0.0f);
+			hr::gl::glClearStencil(0);
+		}
+
+		void openGLWriteInfo(hr::engine::Logger &logger, const hr::gl::objects::Context &glContext)
+		{
+			std::string infoValueString;
+			int infoValueInt;
+
+			hr::engine::Logger::Context ctx(logger, hr::engine::Logger::ModuleType::Graphics);
+
+			//driver info
+			ctx.info("${olive}->${default}OpenGL driver info:");
+			glContext.info(hr::gl::objects::Context::InformationType::Version, infoValueString);
+			ctx.info("   OpenGL version: " + infoValueString);
+			glContext.info(hr::gl::objects::Context::InformationType::Vendor, infoValueString);
+			ctx.info("   OpenGL vendor: " + infoValueString);
+			glContext.info(hr::gl::objects::Context::InformationType::Renderer, infoValueString);
+			ctx.info("   OpenGL renderer: " + infoValueString);
+
+			//extensions available
+			ctx.info("${olive}->${default}OpenGL extensions available:");
+			hr::gl::glGetIntegerv(GL_NUM_EXTENSIONS, &infoValueInt);
+			for (int curExt = 0; curExt < infoValueInt; curExt++)
+				ctx.info((const char*)hr::gl::glGetStringi(GL_EXTENSIONS, curExt));
+
+			//other stuff
+			ctx.info("${olive}->${default}OpenGL extended information:");
+
+			glContext.info(hr::gl::objects::Context::InformationType::GLSLVersion, infoValueString);
+			ctx.info("   GLSL version: " + infoValueString);
+
+			glContext.info(hr::gl::objects::Context::InformationType::MaxDrawBuffers, infoValueInt);
+			ctx.info("   Maximum number of draw buffers: {0}", infoValueInt);
+
+			glContext.info(hr::gl::objects::Context::InformationType::MaxColorAttachments, infoValueInt);
+			ctx.info("   Maximum number of color attachments in FBOs: {0}", infoValueInt);
+
+			glContext.info(hr::gl::objects::Context::InformationType::MaxTextureSize, infoValueInt);
+			ctx.info("   Maximum 1D/2D texture size: {0}x{0}", infoValueInt);
+			glContext.info(hr::gl::objects::Context::InformationType::MaxTexture3DSize, infoValueInt);
+			ctx.info("   Maximum 3D texture size: {0}x{0}x{0}", infoValueInt);
+			glContext.info(hr::gl::objects::Context::InformationType::MaxTextureCubemapSize, infoValueInt);
+			ctx.info("   Maximum cubemap texture size: {0}x{0}", infoValueInt);
+			glContext.info(hr::gl::objects::Context::InformationType::MaxTextureRectSize, infoValueInt);
+			ctx.info("   Maximum rectangle texture size: {0}x{0}", infoValueInt);
+		}
+
+		void CALLBACK openglDebugMessagesCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *message, const void *userParam)
+		{
+			const char *glSource = "", *glType = "", *glSeverity = "";
+
+			auto logger = const_cast<hr::engine::Logger*>(reinterpret_cast<const hr::engine::Logger*>(userParam));
+
+			switch (source)
+			{
+			case GL_DEBUG_SOURCE_API_ARB:
+				glSource = "source(api)";
+				break;
+			case GL_DEBUG_SOURCE_SHADER_COMPILER_ARB:
+				glSource = "source(glsl)";
+				break;
+			case GL_DEBUG_SOURCE_WINDOW_SYSTEM_ARB:
+				glSource = "source(window system)";
+				break;
+			case GL_DEBUG_SOURCE_THIRD_PARTY_ARB:
+				glSource = "source(third party)";
+				break;
+			case GL_DEBUG_SOURCE_APPLICATION_ARB:
+				glSource = "source(application)";
+				break;
+			case GL_DEBUG_SOURCE_OTHER_ARB:
+				glSource = "source(other)";
+				break;
+			default:
+				glSource = "source(unknown)";
+				break;
+			}
+
+			switch (type)
+			{
+			case GL_DEBUG_TYPE_ERROR_ARB:
+				glType = "type(error)";
+				break;
+			case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR_ARB:
+				glType = "type(deprecated)";
+				break;
+			case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR_ARB:
+				glType = "type(undefined)";
+				break;
+			case GL_DEBUG_TYPE_PERFORMANCE_ARB:
+				glType = "type(performance)";
+				break;
+			case GL_DEBUG_TYPE_PORTABILITY_ARB:
+				glType = "type(portability)";
+				break;
+			case GL_DEBUG_TYPE_OTHER_ARB:
+				glType = "type(other)";
+				break;
+			default:
+				glType = "type(unknown)";
+				break;
+			}
+
+			auto entryType = hr::engine::Logger::EntryType::Info;
+			switch (severity)
+			{
+			case GL_DEBUG_SEVERITY_HIGH_ARB:
+				glSeverity = "severity(high)";
+				entryType = hr::engine::Logger::EntryType::Warning;
+				break;
+			case GL_DEBUG_SEVERITY_MEDIUM_ARB:
+				glSeverity = "severity(medium)";
+				break;
+			case GL_DEBUG_SEVERITY_LOW_ARB:
+				glSeverity = "severity(low)";
+				break;
+			default:
+				glSeverity = "severity(unknown)";
+				break;
+			}
+
+			logger->log(entryType, hr::engine::Logger::ModuleType::Graphics, "OpenGL [{0} - {1} - {2}]:", glSource, glType, glSeverity);
+			logger->log(entryType, hr::engine::Logger::ModuleType::Graphics, "     {0}", message);
+		}
+	}
+
 	void Engine::renderLoop()
 	{
 		hr::Timer timerFrame;
@@ -264,9 +267,19 @@ namespace hr { namespace engine
 			//!!!!!!!!!!!!!!!! dev
 			{
 				{
-					//hr::render::WorldEditor editor;
+					hr::render::WorldEditor editor;
 
-					//auto newArea = editor.newArea("c:/Users/Sigma/Desktop/md5.hscene", "c:/Users/Sigma/Desktop/md5.hbin");
+					auto newArea = editor.newArea("c:/Users/Sigma/Desktop/xeno.hscene", "c:/Users/Sigma/Desktop/xeno.hbin");
+
+					editor.importGLTF(newArea, R"(C:\Users\Sigma\Desktop\xeno\scene.gltf)");
+
+					/*editor.processMesh(newArea, { }, [](hr::geom::Mesh& mesh)
+					{
+						Matrix trans;
+
+						trans.setRotation(0.0f, 180.0f, 0.0f);
+						mesh.transform(trans, Matrix3(trans));
+					});*/
 
 					//editor.importMD5(newArea, R"(C:\Users\Sigma\Desktop\network_guardian\mesh.md5mesh)", "network_guardian");
 					//editor.removeObjects(newArea, { "network_guardian/ng_lo_collision" });
@@ -279,10 +292,12 @@ namespace hr { namespace engine
 				//renderData->loadArea(*rendererMain, "../scenes/wood-log.hscene", "../scenes/wood-log.hbin");
 				//renderData->loadArea(*rendererMain, "../scenes/sandstone1.hscene", "../scenes/sandstone1.hbin");
 				//renderData->loadArea(*rendererMain, "../scenes/sandstone2.hscene", "../scenes/sandstone2.hbin");
-				renderData->loadArea(*rendererMain, "../scenes/volund.hscene", "../scenes/volund.hbin");				
+				//renderData->loadArea(*rendererMain, "../scenes/volund.hscene", "../scenes/volund.hbin");				
 				//renderData->loadArea(*rendererMain, "../scenes/makron.hscene", "../scenes/makron.hbin");
 				//renderData->loadArea(*rendererMain, "../scenes/hellknight.hscene", "../scenes/hellknight.hbin");
 				//renderData->loadArea(*rendererMain, "../scenes/guardian.hscene", "../scenes/guardian.hbin");
+
+				renderData->loadArea(*rendererMain, "c:/Users/Sigma/Desktop/xeno.hscene", "c:/Users/Sigma/Desktop/xeno.hbin");
 			}
 		}
 			
@@ -319,7 +334,7 @@ namespace hr { namespace engine
 			camera.setTarget(0.0f, 0.0f, 0.0f);
 			camera.setMovementScale(hr::render::tools::CameraFPS::CameraInput::Keyboard, 10.0f);
 
-			hr::gl::tools::Viewport viewportRender(90.0f, var<int>("renderer.dims.width"), var<int>("renderer.dims.height"), 0.1f, 500.0f);
+			hr::gl::tools::Viewport viewportRender(45.0f, var<int>("renderer.dims.width"), var<int>("renderer.dims.height"), 0.05f);
 			hr::gl::glViewport(0, 0, viewportRender.width(), viewportRender.height());
 
 			hr::gl::objects::Query::Group<8> renderGlQueryGroup = {
