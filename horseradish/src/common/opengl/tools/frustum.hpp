@@ -21,8 +21,7 @@ namespace hr { namespace gl { namespace tools
 		bool sweptSpherePlaneIntersect(float &t0, float &t1, const hr::Plane &plane, const hr::Vector3f &sphereCenter, const float &sphereRadius, const hr::Vector3f &sweepDir) const;
 
 	public:
-		Frustum()
-		{ }
+		Frustum() = default;
 
 		Frustum& operator=(const Frustum& frustum)
 		{

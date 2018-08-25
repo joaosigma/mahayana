@@ -1,24 +1,30 @@
 #include "math.hpp"
 
-union halfType{
-	unsigned short bits;
-	struct{
-		unsigned long m : 10;
-		unsigned long e : 5;
-		unsigned long s : 1;
-	}ieee;
-};
-union ieee_single {
-	float f;
-	struct{
-		unsigned long m : 23;
-		unsigned long e : 8;
-		unsigned long s : 1;
-		}ieee;
-};
-
 namespace hr
 {
+	namespace
+	{
+		union halfType
+		{
+			unsigned short bits;
+			struct {
+				unsigned long m : 10;
+				unsigned long e : 5;
+				unsigned long s : 1;
+			}ieee;
+		};
+
+		union ieee_single
+		{
+			float f;
+			struct {
+				unsigned long m : 23;
+				unsigned long e : 8;
+				unsigned long s : 1;
+			}ieee;
+		};
+	}
+
 	float Math::htof(unsigned short val)
 	{
 		halfType h;

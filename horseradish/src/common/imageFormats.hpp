@@ -102,7 +102,7 @@ namespace hr { namespace imaging
 		}
 
 		template<typename T>
-		static void readRGBA(const T* const dataIn, T* const dataOut, const T defaultColorValue, const T defaultAlphaValue)
+		static void readRGBA(const T* const dataIn, T* const dataOut, const T defaultColorValue, const T)
 		{
 			dataOut[0] = dataIn[0];
 			dataOut[1] = dataOut[2] = defaultColorValue;
@@ -137,13 +137,13 @@ namespace hr { namespace imaging
 		}
 
 		template<typename T>
-		static void readRGB(const T* const dataIn, T* const dataOut, const T defaultColorValue)
+		static void readRGB(const T* const dataIn, T* const dataOut, const T)
 		{
 			std::memcpy(dataOut, dataIn, sizeof(T) * 3);
 		}
 
 		template<typename T>
-		static void readRGBA(const T* const dataIn, T* const dataOut, const T defaultColorValue, const T defaultAlphaValue)
+		static void readRGBA(const T* const dataIn, T* const dataOut, const T, const T defaultAlphaValue)
 		{
 			std::memcpy(dataOut, dataIn, sizeof(T) * 3);
 			dataOut[3] = defaultAlphaValue;
@@ -176,13 +176,13 @@ namespace hr { namespace imaging
 		}
 
 		template<typename T>
-		static void readRGB(const T* const dataIn, T* const dataOut, const T defaultColorValue)
+		static void readRGB(const T* const dataIn, T* const dataOut, const T)
 		{
 			std::memcpy(dataOut, dataIn, sizeof(T) * 3);
 		}
 
 		template<typename T>
-		static void readRGBA(const T* const dataIn, T* const dataOut, const T defaultColorValue, const T defaultAlphaValue)
+		static void readRGBA(const T* const dataIn, T* const dataOut, const T, const T)
 		{
 			std::memcpy(dataOut, dataIn, sizeof(T) * 4);
 		}

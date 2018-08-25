@@ -76,6 +76,21 @@
     <Filter Include="libs\fmt">
       <UniqueIdentifier>{da850c5a-1156-4750-a01b-e129ad7504f6}</UniqueIdentifier>
     </Filter>
+    <Filter Include="libs\tinyexr">
+      <UniqueIdentifier>{e160ae66-a3ee-4813-a80d-7a679b95780a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="libs\tinygltf">
+      <UniqueIdentifier>{40a0b3ed-9828-4c15-9215-37326b2fcca7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="libs\aes256">
+      <UniqueIdentifier>{7e341fc1-8a46-44a1-931b-e0e48160b868}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="libs\md5">
+      <UniqueIdentifier>{27d32681-5769-4d8c-a76f-238dc84802f5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="libs\sha256">
+      <UniqueIdentifier>{d8cccab3-4025-413f-9dc8-7d814ff73db4}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\common\opengl\openGLext.cpp">
@@ -393,6 +408,21 @@
     </ClCompile>
     <ClCompile Include="..\..\src\libs\fmt\format.cc">
       <Filter>libs\fmt</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\libs\tinyexr\tinyexr.cc">
+      <Filter>libs\tinyexr</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\libs\tinygltf\tiny_gltf.cc">
+      <Filter>libs\tinygltf</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\libs\aes256\aes256.c">
+      <Filter>libs\aes256</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\libs\md5\md5.c">
+      <Filter>libs\md5</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\libs\sha256\sha256.c">
+      <Filter>libs\sha256</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -876,6 +906,27 @@
     </ClInclude>
     <ClInclude Include="..\..\src\libs\rapidjson\writer.h">
       <Filter>libs\rapidjson</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\libs\tinyexr\tinyexr.h">
+      <Filter>libs\tinyexr</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\libs\tinygltf\json.hpp">
+      <Filter>libs\tinygltf</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\libs\tinygltf\tiny_gltf.h">
+      <Filter>libs\tinygltf</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\libs\tinygltf\tiny_gltf_options.h">
+      <Filter>libs\tinygltf</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\libs\aes256\aes256.h">
+      <Filter>libs\aes256</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\libs\md5\md5.h">
+      <Filter>libs\md5</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\libs\sha256\sha256.h">
+      <Filter>libs\sha256</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

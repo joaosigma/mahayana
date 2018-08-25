@@ -52,7 +52,7 @@ namespace hr { namespace gl { namespace objects
 			RG_8, RG_16F, RG_32F, RG_8I, RG_8UI, RG_16I, RG_16UI, RG_32I, RG_32UI,
 			RGB_8, RGB_16F, RGB_32F, RGB_8I, RGB_8UI, RGB_16I, RGB_16UI, RGB_32I, RGB_32UI,
 			RGBA_8, RGBA_16F, RGBA_32F, RGBA_8I, RGBA_8UI, RGBA_16I, RGBA_16UI, RGBA_32I, RGBA_32UI,
-			DEPTH_16, DEPTH_24, DEPTH_24_STENCIL_8,
+			DEPTH_16, DEPTH_24, DEPTH_24_STENCIL_8, DEPTH_32F,
 
 			COMPRESSED_BC1, COMPRESSED_SRGB_BC1, //RGB
 			COMPRESSED_BC3, COMPRESSED_SRGB_BC3, //RGBA
@@ -178,6 +178,8 @@ namespace hr { namespace gl { namespace objects
 				return GL_DEPTH_COMPONENT24;
 			case StorageType::DEPTH_24_STENCIL_8:
 				return GL_DEPTH24_STENCIL8;
+			case StorageType::DEPTH_32F:
+				return GL_DEPTH_COMPONENT32F;
 
 			case StorageType::COMPRESSED_BC1:
 				return GL_COMPRESSED_RGB_S3TC_DXT1_EXT;
@@ -289,7 +291,7 @@ namespace hr { namespace gl { namespace objects
 			switch (type)
 			{
 			case Type::Tex1D:
-				assert((width > 0) && (height = 0) && (depth == 0));
+				assert((width > 0) && (height == 0) && (depth == 0));
 				assert(Texture::translate(type) == GL_TEXTURE_1D);
 
 				mType = Texture::translate(type);
@@ -481,6 +483,7 @@ namespace hr { namespace gl { namespace objects
 			case GL_DEPTH_COMPONENT16:
 			case GL_DEPTH_COMPONENT24:
 			case GL_DEPTH24_STENCIL8:
+			case GL_DEPTH_COMPONENT32F:
 				return true;
 			};
 

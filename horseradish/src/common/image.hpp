@@ -9,21 +9,20 @@
 
 namespace hr { namespace imaging
 {
-	template<typename TDataType, typename TDataFormat>
-	class Image;
+	//forward declaration of the two main types
+	template<typename TDataType, typename TDataFormat> class Image;
+	template<typename TDataType, typename TDataFormat> class ImageView;
 
-	template<typename TDataType, typename TDataFormat, typename TDerived>
+	template<typename TDataType, typename TDataFormat>
 	class ImageViewBase
 	{
-		static_assert(std::is_arithmetic<TDataType>::value, "Data type must be arithmetic (e.g.: float, unsigned char, etc.)");
-		static_assert(std::is_base_of<ImageFormat<TDataFormat>, TDataFormat>::value, "Data format must inherit from type ImageFormat");
+		static_assert(std::is_arithmetic_v<TDataType>, "Data type must be arithmetic (e.g.: float, unsigned char, etc.)");
+		static_assert(std::is_base_of_v<ImageFormat<TDataFormat>, TDataFormat>, "Data format must inherit from type ImageFormat");
 
-		template<typename T1, typename T2>
-		friend class ImageView;
-		template<typename T1, typename T2>
-		friend class ImageBase;
-		template<typename T1, typename T2>
-		friend class Image;
+		template<typename, typename> friend class Image;
+		template<typename, typename> friend class ImageBase;
+		template<typename, typename> friend class ImageView;
+		template<typename, typename> friend class ImageViewBase;
 
 	public:
 		ImageViewBase(TDataType* const data, size_t width, size_t height)
@@ -91,6 +90,14 @@ namespace hr { namespace imaging
 			return (TDataFormat::size() * sizeof(TDataType));
 		}
 
+		void getPixel(const size_t x, const size_t y, TDataType* const pixelValue, const TDataType defaultColorValue, const TDataType defaultAlphaValue) const
+		{
+			assert(mDataPtr);
+			assert(pixelValue);
+
+			TDataFormat::readRGBA<TDataType>(mDataPtr + getPos(x, y), pixelValue, defaultColorValue, defaultAlphaValue);
+		}
+
 		Image<TDataType, TDataFormat> crop(size_t cropX, size_t cropY, size_t cropWidth, size_t cropHeight) const
 		{
 			if (empty() || ((cropWidth * cropHeight) <= 0) || ((cropX + cropWidth) > mWidth) || ((cropY + cropHeight) > mHeight))
@@ -120,9 +127,62 @@ namespace hr { namespace imaging
 			return newImg;
 		}
 
+		template<typename TNewDataType, typename TNewDataFormat>
+		Image<TNewDataType, TNewDataFormat> convert(const TDataType defaultColorValue, const TDataType defaultAlphaValue) const
+		{
+			static_assert(std::is_base_of_v<ImageFormat<TNewDataFormat>, TNewDataFormat>, "Data format must inherit from type ImageFormat");
+
+			//special clone case
+			if constexpr (std::is_same_v<TDataType, TNewDataType> && std::is_same_v<TDataFormat, TNewDataFormat>)
+			{
+				return clone();
+			}
+			else
+			{
+				Image<TNewDataType, TNewDataFormat> newImg(mWidth, mHeight);
+
+				//for the same data type
+				if constexpr (std::is_same_v<TDataType, TNewDataType>)
+				{
+					TDataType pixel[4];
+					for (size_t y = 0; y < mHeight; ++y)
+					{
+						for (size_t x = 0; x < mWidth; ++x)
+						{
+							TDataFormat::readRGBA<TDataType>(mDataPtr + getPos(x, y), pixel, defaultColorValue, defaultAlphaValue);
+							TNewDataFormat::writeRGBA<TNewDataType>(newImg.mDataPtr + newImg.getPos(x, y), pixel);
+						}
+					}
+				}
+				//for float <-> unsigned char conversion
+				else if constexpr (
+					(std::is_same_v<TDataType, unsigned char> && std::is_same_v<TNewDataType, float>) ||
+					(std::is_same_v<TDataType, float> && std::is_same_v<TNewDataType, unsigned char>))
+				{
+					TDataType pixelIn[4];
+					TNewDataType pixelOut[4];
+					for (size_t y = 0; y < mHeight; ++y)
+					{
+						for (size_t x = 0; x < mWidth; ++x)
+						{
+							TDataFormat::readRGBA<TDataType>(mDataPtr + getPos(x, y), pixelIn, defaultColorValue, defaultAlphaValue);
+							hr::Color::convertColor(pixelOut, pixelIn, true);
+							TNewDataFormat::writeRGBA<TNewDataType>(newImg.mDataPtr + newImg.getPos(x, y), pixelOut);
+						}
+					}
+				}
+				//all other convertions are (currently) not supported
+				else
+				{
+					static_assert(std::false_type::value, "Can't convert between data types");
+				}
+
+				return newImg;
+			}
+		}
+
 	private:
-		ImageViewBase()
-		{ }
+		ImageViewBase() = default;
 
 		size_t getPos(const size_t x, const size_t y) const
 		{
@@ -136,14 +196,14 @@ namespace hr { namespace imaging
 
 	template<typename TDataType, typename TDataFormat> // generic ImageView (any type supported)
 	class ImageView
-		: public ImageViewBase<TDataType, TDataFormat, ImageView<TDataType, TDataFormat>>
+		: public ImageViewBase<TDataType, TDataFormat>
 	{
-		typedef ImageViewBase<TDataType, TDataFormat, ImageView<TDataType, TDataFormat>> BaseType;
+		using BaseType = ImageViewBase<TDataType, TDataFormat>;
 
-		template<typename T1, typename T2>
-		friend class ImageBase;
-		template<typename T1, typename T2>
-		friend class Image;
+		template<typename, typename> friend class Image;
+		template<typename, typename> friend class ImageBase;
+		template<typename, typename> friend class ImageView;
+		template<typename, typename> friend class ImageViewBase;
 
 	public:
 		ImageView(TDataType* const data, size_t width, size_t height)
@@ -153,51 +213,20 @@ namespace hr { namespace imaging
 		ImageView(ImageView&& imgView) = default;
 		ImageView& operator=(ImageView&& imgView) = default;
 
-		void getPixel(const size_t x, const size_t y, TDataType* const pixelValue, const TDataType defaultColorValue, const TDataType defaultAlphaValue) const
-		{
-			assert(mDataPtr);
-			assert(pixelValue);
-
-			TDataFormat::readRGBA<TDataType>(mDataPtr + getPos(x, y), pixelValue, defaultColorValue, defaultAlphaValue);
-		}
-
-		template<typename TNewDataType, typename TNewDataFormat>
-		Image<TNewDataType, TNewDataFormat> convert(const TDataType defaultColorValue, const TDataType defaultAlphaValue) const
-		{
-			static_assert(!std::is_same<TDataType, TNewDataType>::value, "A new data type must be specified");
-			static_assert(!std::is_same<TDataFormat, TNewDataFormat>::value, "A new data format must be specified");
-			static_assert(std::is_base_of<ImageFormat<TNewDataFormat>, TNewDataFormat>::value, "Data format must inherit from type ImageFormat");
-
-			Image<TNewDataType, TNewDataFormat> newImg(mWidth, mHeight);
-
-			TDataType pixel[4];
-			for (size_t y = 0; y < mHeight; ++y)
-			{
-				for (size_t x = 0; x < mWidth; ++x)
-				{
-					TDataFormat::readRGBA<TDataType>(mDataPtr + getPos(x, y), pixel, defaultColorValue, defaultAlphaValue);
-					TNewDataFormat::writeRGBA<TDataType>(newImg.mDataPtr + newImg.getPos(x, y), pixel);
-				}
-			}
-
-			return newImg;
-		}
-
 	private:
-		ImageView()
-		{ }
+		ImageView() = default;
 	};
 
 	template<typename TDataFormat> // unsigned char specialization
 	class ImageView<unsigned char, TDataFormat>
-		: public ImageViewBase<unsigned char, TDataFormat, ImageView<unsigned char, TDataFormat>>
+		: public ImageViewBase<unsigned char, TDataFormat>
 	{
-		typedef ImageViewBase<unsigned char, TDataFormat, ImageView<unsigned char, TDataFormat>> BaseType;
+		using BaseType = ImageViewBase<unsigned char, TDataFormat>;
 
-		template<typename T1, typename T2>
-		friend class ImageBase;
-		template<typename T1, typename T2>
-		friend class Image;
+		template<typename, typename> friend class Image;
+		template<typename, typename> friend class ImageBase;
+		template<typename, typename> friend class ImageView;
+		template<typename, typename> friend class ImageViewBase;
 
 	public:
 		ImageView(unsigned char* const data, size_t width, size_t height)
@@ -225,72 +254,78 @@ namespace hr { namespace imaging
 			TDataFormat::readRGBA<unsigned char>(mDataPtr + getPos(x, y), pixelValue, 0, 255);
 		}
 
-		template<typename TNewDataType, typename TNewDataFormat,
-			typename std::enable_if<std::is_same<TNewDataType, float>::value && std::is_same<TDataFormat, TNewDataFormat>::value>::type* = nullptr>
-		Image<float, TDataFormat> convert() const // { unsigned char -> float, same format } specialization
+		template<typename TNewDataType, typename TNewDataFormat>
+		Image<TNewDataType, TNewDataFormat> convert(const unsigned char defaultColorValue, const unsigned char defaultAlphaValue) const
 		{
-			Image<float, TDataFormat> newImg(mWidth, mHeight);
+			static_assert(std::is_base_of<ImageFormat<TNewDataFormat>, TNewDataFormat>::value, "Data format must inherit from type ImageFormat");
 
+			// { unsigned char -> float, same format } special case
+			if constexpr (std::is_same_v<float, TNewDataType> && std::is_same_v<TDataFormat, TNewDataFormat>)
 			{
-				size_t curPos = 0;
-				auto walker = mDataPtr;
-				auto count = getArea() * TDataFormat::size();
-				auto walkerOut = newImg.mDataPtr;
-				auto countBlock = (count / 4) * 4;
+				Image<float, TDataFormat> newImg(mWidth, mHeight);
 
-				for (; curPos < countBlock; curPos += 4, walker += 4, walkerOut += 4)
-					hr::Color::convertColor(walkerOut, walker, true);
-
-				for (; curPos < count; curPos++, walker++, walkerOut++)
-					*walkerOut = hr::Color::convertColor(*walker);
-			}
-
-			return newImg;
-		}
-
-		template<typename TNewDataType, typename TNewDataFormat,
-			typename std::enable_if<std::is_same<TNewDataType, unsigned char>::value && std::is_same<TDataFormat, ImageFormatRGB>::value && std::is_same<TNewDataFormat, ImageFormatRGBA>::value>::type* = nullptr>
-		Image<unsigned char, ImageFormatRGBA> convert(unsigned char defaultAlpha) const // { same type, RGB -> RGBA } specialization
-		{
-			Image<unsigned char, ImageFormatRGBA> newImg(mWidth, mHeight);
-
-			{
-				auto numPixels = getArea();
-				auto walker = mDataPtr;
-				auto walkerOut = newImg.mDataPtr;
-
-				for (size_t pixel = 0; pixel < numPixels; ++pixel, walker += 3, walkerOut += 4)
 				{
-					walkerOut[0] = walker[0];
-					walkerOut[1] = walker[1];
-					walkerOut[2] = walker[2];
-					walkerOut[3] = defaultAlpha;
+					size_t curPos = 0;
+					auto walker = mDataPtr;
+					auto count = getArea() * TDataFormat::size();
+					auto walkerOut = newImg.mDataPtr;
+					auto countBlock = (count / 4) * 4;
+
+					for (; curPos < countBlock; curPos += 4, walker += 4, walkerOut += 4)
+						hr::Color::convertColor(walkerOut, walker, true);
+
+					for (; curPos < count; curPos++, walker++, walkerOut++)
+						*walkerOut = hr::Color::convertColor(*walker);
 				}
+
+				return newImg;
 			}
-
-			return newImg;
-		}
-
-		template<typename TNewDataType, typename TNewDataFormat,
-			typename std::enable_if<std::is_same<TNewDataType, unsigned char>::value && std::is_same<TDataFormat, ImageFormatRGBA>::value && std::is_same<TNewDataFormat, ImageFormatRGB>::value>::type* = nullptr>
-			Image<unsigned char, ImageFormatRGB> convert() const // { same type, RGBA -> RGB } specialization
-		{
-			Image<unsigned char, ImageFormatRGB> newImg(mWidth, mHeight);
-
+			// { same type, RGB -> RGBA } special case
+			else if constexpr (std::is_same_v<unsigned char, TNewDataType> && std::is_same_v<TDataFormat, ImageFormatRGB> && std::is_same_v<TNewDataFormat, ImageFormatRGBA>)
 			{
-				auto numPixels = getArea();
-				auto walker = mDataPtr;
-				auto walkerOut = newImg.mDataPtr;
+				Image<unsigned char, ImageFormatRGBA> newImg(mWidth, mHeight);
 
-				for (size_t pixel = 0; pixel < numPixels; ++pixel, walker += 4, walkerOut += 3)
 				{
-					walkerOut[0] = walker[0];
-					walkerOut[1] = walker[1];
-					walkerOut[2] = walker[2];
-				}
-			}
+					auto numPixels = getArea();
+					auto walker = mDataPtr;
+					auto walkerOut = newImg.mDataPtr;
 
-			return newImg;
+					for (size_t pixel = 0; pixel < numPixels; ++pixel, walker += 3, walkerOut += 4)
+					{
+						walkerOut[0] = walker[0];
+						walkerOut[1] = walker[1];
+						walkerOut[2] = walker[2];
+						walkerOut[3] = defaultAlphaValue;
+					}
+				}
+
+				return newImg;
+			}
+			// { same type, RGBA -> RGB }
+			else if constexpr (std::is_same_v<unsigned char, TNewDataType> && std::is_same_v<TDataFormat, ImageFormatRGBA> && std::is_same_v<TNewDataFormat, ImageFormatRGB>)
+			{
+				Image<unsigned char, ImageFormatRGB> newImg(mWidth, mHeight);
+
+				{
+					auto numPixels = getArea();
+					auto walker = mDataPtr;
+					auto walkerOut = newImg.mDataPtr;
+
+					for (size_t pixel = 0; pixel < numPixels; ++pixel, walker += 4, walkerOut += 3)
+					{
+						walkerOut[0] = walker[0];
+						walkerOut[1] = walker[1];
+						walkerOut[2] = walker[2];
+					}
+				}
+
+				return newImg;
+			}
+			else
+			{
+				//this takes care of all other cases
+				return ImageViewBase<unsigned char, TDataFormat>::template convert<TNewDataType, TNewDataFormat>(defaultColorValue, defaultAlphaValue);
+			}
 		}
 
 		Image<unsigned char, TDataFormat> resize(size_t width, size_t height) const
@@ -306,35 +341,19 @@ namespace hr { namespace imaging
 		}
 
 	private:
-		ImageView()
-		{ }
+		ImageView() = default;
 	};
 
 	template<typename TDataFormat> // float specialization
 	class ImageView<float, TDataFormat>
-		: public ImageViewBase<float, TDataFormat, ImageView<float, TDataFormat>>
+		: public ImageViewBase<float, TDataFormat>
 	{
-		typedef ImageViewBase<float, TDataFormat, ImageView<float, TDataFormat>> BaseType;
+		using BaseType = ImageViewBase<float, TDataFormat>;
 
-		template<typename T1, typename T2>
-		friend class ImageBase;
-		template<typename T1, typename T2>
-		friend class Image;
-
-		void convertTo(unsigned char* dataOut, const size_t pos, const size_t count) const
-		{
-			assert(mDataPtr);
-
-			size_t curPos = 0;
-			auto walker = mDataPtr + pos;
-			auto countBlock = (count / 4) * 4;
-
-			for (; curPos < countBlock; curPos += 4, walker += 4, dataOut += 4)
-				hr::Color::convertColor(dataOut, walker, true);
-
-			for (; curPos < count; curPos++, walker++, dataOut++)
-				*dataOut = hr::Color::convertColor(*walker);
-		}
+		template<typename, typename> friend class Image;
+		template<typename, typename> friend class ImageBase;
+		template<typename, typename> friend class ImageView;
+		template<typename, typename> friend class ImageViewBase;
 
 	public:
 		ImageView(float* const data, size_t width, size_t height)
@@ -362,27 +381,37 @@ namespace hr { namespace imaging
 			TDataFormat::readRGBA<float>(mDataPtr + getPos(x, y), pixelValue, 0.0f, 1.0f);
 		}
 
-		template<typename TNewDataType, typename TNewDataFormat,
-			typename std::enable_if<std::is_same<TNewDataType, unsigned char>::value && std::is_same<TDataFormat, TNewDataFormat>::value>::type* = nullptr>
-			Image<unsigned char, TDataFormat> convert() const // { float -> unsigned char, same format } specialization
+		template<typename TNewDataType, typename TNewDataFormat>
+		Image<TNewDataType, TNewDataFormat> convert(const float defaultColorValue, const float defaultAlphaValue) const
 		{
-			Image<unsigned char, TDataFormat> newImg(mWidth, mHeight);
+			static_assert(std::is_base_of<ImageFormat<TNewDataFormat>, TNewDataFormat>::value, "Data format must inherit from type ImageFormat");
 
+			// { float -> unsigned char, same format } special case
+			if constexpr (std::is_same_v<unsigned char, TNewDataType> && std::is_same_v<TDataFormat, TNewDataFormat>) 
 			{
-				size_t curPos = 0;
-				auto walker = mDataPtr;
-				auto count = getArea() * TDataFormat::size();
-				auto walkerOut = newImg.mDataPtr;
-				auto countBlock = (count / 4) * 4;
+				Image<unsigned char, TDataFormat> newImg(mWidth, mHeight);
 
-				for (; curPos < countBlock; curPos += 4, walker += 4, walkerOut += 4)
-					hr::Color::convertColor(walkerOut, walker, true);
+				{
+					size_t curPos = 0;
+					auto walker = mDataPtr;
+					auto count = getArea() * TDataFormat::size();
+					auto walkerOut = newImg.mDataPtr;
+					auto countBlock = (count / 4) * 4;
 
-				for (; curPos < count; curPos++, walker++, walkerOut++)
-					*walkerOut = hr::Color::convertColor(*walker);
+					for (; curPos < countBlock; curPos += 4, walker += 4, walkerOut += 4)
+						hr::Color::convertColor(walkerOut, walker, true);
+
+					for (; curPos < count; curPos++, walker++, walkerOut++)
+						*walkerOut = hr::Color::convertColor(*walker);
+				}
+
+				return newImg;
 			}
-
-			return newImg;
+			else
+			{
+				//this takes care of all other cases
+				return ImageViewBase<float, TDataFormat>::template convert<TNewDataType, TNewDataFormat>(defaultColorValue, defaultAlphaValue);
+			}
 		}
 
 		Image<float, TDataFormat> resize(size_t width, size_t height) const
@@ -398,16 +427,17 @@ namespace hr { namespace imaging
 		}
 
 	private:
-		ImageView()
-		{ }
+		ImageView() = default;
 	};
 
 	template<typename TDataType, typename TDataFormat>
 	class ImageBase
 		: public ImageView<TDataType, TDataFormat>
 	{
-		template<typename T1, typename T2>
-		friend class Image;
+		template<typename, typename> friend class Image;
+		template<typename, typename> friend class ImageBase;
+		template<typename, typename> friend class ImageView;
+		template<typename, typename> friend class ImageViewBase;
 
 	public:
 		ImageBase(const ImageBase&) = delete;
@@ -499,14 +529,15 @@ namespace hr { namespace imaging
 	class Image
 		: public ImageBase<TDataType, TDataFormat>
 	{
-		typedef ImageBase<TDataType, TDataFormat> BaseType;
+		using BaseType = ImageBase<TDataType, TDataFormat>;
 
-		template<typename T1, typename T2>
-		friend class ImageView;
+		template<typename, typename> friend class Image;
+		template<typename, typename> friend class ImageBase;
+		template<typename, typename> friend class ImageView;
+		template<typename, typename> friend class ImageViewBase;
 
 	public:
-		Image()
-		{ }
+		Image() = default;
 
 		Image(size_t width, size_t height)
 			: BaseType(width, height)
@@ -526,14 +557,15 @@ namespace hr { namespace imaging
 	class Image<unsigned char, TDataFormat>
 		: public ImageBase<unsigned char, TDataFormat>
 	{
-		typedef ImageBase<unsigned char, TDataFormat> BaseType;
+		using BaseType = ImageBase<unsigned char, TDataFormat>;
 
-		template<typename T1, typename T2>
-		friend class ImageView;
+		template<typename, typename> friend class Image;
+		template<typename, typename> friend class ImageBase;
+		template<typename, typename> friend class ImageView;
+		template<typename, typename> friend class ImageViewBase;
 
 	public:
-		Image()
-		{ }
+		Image() = default;
 
 		Image(size_t width, size_t height)
 			: BaseType(width, height)
@@ -706,14 +738,15 @@ namespace hr { namespace imaging
 	class Image<float, TDataFormat>
 		: public ImageBase<float, TDataFormat>
 	{
-		typedef ImageBase<float, TDataFormat> BaseType;
+		using BaseType = ImageBase<float, TDataFormat>;
 
-		template<typename T1, typename T2>
-		friend class ImageView;
+		template<typename, typename> friend class Image;
+		template<typename, typename> friend class ImageBase;
+		template<typename, typename> friend class ImageView;
+		template<typename, typename> friend class ImageViewBase;
 
 	public:
-		Image()
-		{ }
+		Image() = default;
 
 		Image(size_t width, size_t height)
 			: BaseType(width, height)
@@ -764,7 +797,7 @@ namespace hr { namespace imaging
 			TDataFormat::writeRGBA(mDataPtr + getPos(x, y), pixelValue);
 		}
 
-		void transform(std::function<bool(hr::Color&)> cb)
+		void transform(const std::function<bool(hr::Color&)>& cb)
 		{
 			if (empty() || !cb)
 				return;

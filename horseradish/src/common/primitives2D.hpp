@@ -9,27 +9,20 @@ namespace hr
 	{
 		static_assert(std::is_arithmetic<T>::value, "Data type must be arithmetic (e.g.: float, unsigned char, etc.)");
 
-		T x = {}, y = {}, width = {}, height = {};
+		T x{};
+		T y{};
+		T width{};
+		T height{};
 
-		Rectangle()
+		Rectangle() = default;
+		Rectangle(const Rectangle&) = default;
+		Rectangle& operator=(const Rectangle&) = default;
+		Rectangle(Rectangle&&) = default;
+		Rectangle& operator=(Rectangle&&) = default;
+
+		Rectangle(const T &x, const T &y, const T &width, const T &height)
+			: x{ x }, y{ y }, width{ width }, height{ height }
 		{ }
-
-		Rectangle(const Rectangle &r)
-			: x(r.x), y(r.y), width(r.width), height(r.height)
-		{}
-
-		explicit Rectangle(const T &x, const T &y, const T &width, const T &height)
-			: x(x), y(y), width(width), height(height)
-		{ }
-
-		Rectangle& operator=(const Rectangle &r)
-		{
-			x = r.x;
-			y = r.y;
-			width = r.width;
-			height = r.height;
-			return *this;
-		}
 
 		void operator+=(const Rectangle &r)
 		{
@@ -59,7 +52,7 @@ namespace hr
 
 		void reset()
 		{
-			x = y = width = height = {};
+			*this = Rectangle{};
 		}
 		
 		void reset(const T &x, const T &y, const T &width, const T &height)
@@ -111,27 +104,18 @@ namespace hr
 	{
 		static_assert(std::is_arithmetic<T>::value, "Data type must be arithmetic (e.g.: float, unsigned char, etc.)");
 
-		T width = {}, height = {};
+		T width{};
+		T height{};
 
-		Size()
-		{ }
-
-		Size(const Size &s)
-			: width(s.width)
-			, height(s.height)
-		{ }
+		Size() = default;
+		Size(const Size&) = default;
+		Size& operator=(const Size&) = default;
+		Size(Size&&) = default;
+		Size& operator=(Size&&) = default;
 
 		Size(const T &width, const T &height)
-			: width(width)
-			, height(height)
+			: width{ width } , height{ height }
 		{ }
-
-		Size& operator=(const Size &s)
-		{
-			width = s.width;
-			height = s.height;
-			return *this;
-		}
 
 		void operator+=(const Size &s)
 		{
@@ -179,7 +163,7 @@ namespace hr
 
 		void reset()
 		{
-			width = height = {};
+			*this = Size{};
 		}
 
 		void reset(const T &width, const T &height)
@@ -211,27 +195,18 @@ namespace hr
 	{
 		static_assert(std::is_arithmetic<T>::value, "Data type must be arithmetic (e.g.: float, unsigned char, etc.)");
 
-		T x = {}, y = {};
+		T x{};
+		T y{};
 
-		Point()
+		Point() = default;
+		Point(const Point&) = default;
+		Point& operator=(const Point&) = default;
+		Point(Point&&) = default;
+		Point& operator=(Point&&) = default;
+
+		Point(const T &x, const T &y)
+			: x{ x } , y{ y }
 		{ }
-
-		Point(const Point &p)
-			: x(p.x)
-			, y(p.y)
-		{ }
-
-		explicit Point(const T &x, const T &y)
-			: x(x)
-			, y(y)
-		{ }
-
-		Point& operator=(const Point &p)
-		{
-			x = p.x;
-			y = p.y;
-			return *this;
-		}
 
 		void operator+=(const Point &p)
 		{
@@ -279,7 +254,7 @@ namespace hr
 
 		void reset()
 		{
-			x = y = {};
+			*this = Point{};
 		}
 		
 		void reset(const T &x, const T &y)

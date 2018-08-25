@@ -15,6 +15,19 @@ namespace hr
 			mData[3] = 1.0f;
 		}
 
+		explicit Quaternion(const float quat[4])
+		{
+			std::memcpy(mData, quat, sizeof(float) * 4);
+		}
+
+		explicit Quaternion(const double quat[4])
+		{
+			mData[0] = static_cast<float>(quat[0]);
+			mData[1] = static_cast<float>(quat[1]);
+			mData[2] = static_cast<float>(quat[2]);
+			mData[3] = static_cast<float>(quat[3]);
+		}
+
 		explicit Quaternion(const float qx, const float qy, const float qz, const float qw)
 		{
 			mData[0] = qx;

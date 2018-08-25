@@ -1,63 +1,68 @@
 #include "sorting.hpp"
 
+#include "types.hpp"
+
 #include <cstring>
 
 namespace hr
 {
-	void Sorting::radixByte0(size_t howMuch, const int * const HRESTRICT source, int * const HRESTRICT dest)
+	namespace
 	{
-		size_t count[256], index[256], i;
+		void radixByte0(size_t howMuch, const int * const HRESTRICT source, int * const HRESTRICT dest)
+		{
+			size_t count[256], index[256], i;
 
-		std::memset(count, 0, sizeof(count));
-		for (i = 0; i < howMuch; i++)
-			count[((source[i]) >> (0)) & 0xff]++;
-		index[0] = 0;
-		for (i = 0; i < 255; i++)
-			index[i + 1] = index[i] + count[i];
-		for (i = 0; i < howMuch; i++)
-			dest[index[((source[i]) >> (0)) & 0xff]++] = source[i];
-	}
+			std::memset(count, 0, sizeof(count));
+			for (i = 0; i < howMuch; i++)
+				count[((source[i]) >> (0)) & 0xff]++;
+			index[0] = 0;
+			for (i = 0; i < 255; i++)
+				index[i + 1] = index[i] + count[i];
+			for (i = 0; i < howMuch; i++)
+				dest[index[((source[i]) >> (0)) & 0xff]++] = source[i];
+		}
 
-	void Sorting::radixByte1(size_t howMuch, const int * const HRESTRICT source, int * const HRESTRICT dest)
-	{
-		size_t count[256], index[256], i;
+		void radixByte1(size_t howMuch, const int * const HRESTRICT source, int * const HRESTRICT dest)
+		{
+			size_t count[256], index[256], i;
 
-		std::memset(count, 0, sizeof(count));
-		for (i = 0; i < howMuch; i++)
-			count[((source[i]) >> (8)) & 0xff]++;
-		index[0] = 0;
-		for (i = 0; i < 255; i++)
-			index[i + 1] = index[i] + count[i];
-		for (i = 0; i < howMuch; i++)
-			dest[index[((source[i]) >> (8)) & 0xff]++] = source[i];
-	}
+			std::memset(count, 0, sizeof(count));
+			for (i = 0; i < howMuch; i++)
+				count[((source[i]) >> (8)) & 0xff]++;
+			index[0] = 0;
+			for (i = 0; i < 255; i++)
+				index[i + 1] = index[i] + count[i];
+			for (i = 0; i < howMuch; i++)
+				dest[index[((source[i]) >> (8)) & 0xff]++] = source[i];
+		}
 
-	void Sorting::radixByte2(size_t howMuch, const int * const HRESTRICT source, int * const HRESTRICT dest)
-	{
-		size_t count[256], index[256], i;
+		void radixByte2(size_t howMuch, const int * const HRESTRICT source, int * const HRESTRICT dest)
+		{
+			size_t count[256], index[256], i;
 
-		std::memset(count, 0, sizeof(count));
-		for (i = 0; i < howMuch; i++)
-			count[((source[i]) >> (16)) & 0xff]++;
-		index[0] = 0;
-		for (i = 0; i < 255; i++)
-			index[i + 1] = index[i] + count[i];
-		for (i = 0; i < howMuch; i++)
-			dest[index[((source[i]) >> (16)) & 0xff]++] = source[i];
-	}
+			std::memset(count, 0, sizeof(count));
+			for (i = 0; i < howMuch; i++)
+				count[((source[i]) >> (16)) & 0xff]++;
+			index[0] = 0;
+			for (i = 0; i < 255; i++)
+				index[i + 1] = index[i] + count[i];
+			for (i = 0; i < howMuch; i++)
+				dest[index[((source[i]) >> (16)) & 0xff]++] = source[i];
+		}
 
-	void Sorting::radixByte3(size_t howMuch, const int * const HRESTRICT source, int * const HRESTRICT dest)
-	{
-		size_t count[256], index[256], i;
+		void radixByte3(size_t howMuch, const int * const HRESTRICT source, int * const HRESTRICT dest)
+		{
+			size_t count[256], index[256], i;
 
-		std::memset(count, 0, sizeof(count));
-		for (i = 0; i < howMuch; i++)
-			count[((source[i]) >> (24)) & 0xff]++;
-		index[0] = 0;
-		for (i = 0; i < 255; i++)
-			index[i + 1] = index[i] + count[i];
-		for (i = 0; i < howMuch; i++)
-			dest[index[((source[i]) >> (24)) & 0xff]++] = source[i];
+			std::memset(count, 0, sizeof(count));
+			for (i = 0; i < howMuch; i++)
+				count[((source[i]) >> (24)) & 0xff]++;
+			index[0] = 0;
+			for (i = 0; i < 255; i++)
+				index[i + 1] = index[i] + count[i];
+			for (i = 0; i < howMuch; i++)
+				dest[index[((source[i]) >> (24)) & 0xff]++] = source[i];
+		}
 	}
 
 	void Sorting::radixSort(int *baseArray, int *tempArray, size_t numElements)

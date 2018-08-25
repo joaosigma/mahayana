@@ -48,7 +48,8 @@ namespace hr
 #pragma warning( push )
 #pragma warning( disable : 4324)
 
-	typedef union alignas(16) {
+	typedef union
+	{
 		 float               f32[4];
 		 double              d64[2];
 		 __int8              i8[16];
@@ -61,16 +62,19 @@ namespace hr
 		 unsigned __int64    ui64[2];
 		 __m128              m128;
 	} hData128;
+	static_assert(sizeof(hData128) == 16);
 
-	typedef union alignas(16) {
-		 float               f32[5];
-		 __int8              i8[20];
-		 __int16             i16[10];
-		 __int32             i32[5];
-		 unsigned __int8     ui8[20];
-		 unsigned __int16    ui16[10];
-		 unsigned __int32    ui32[5];
-	} hData160;
+	typedef union 
+	{
+		float               f32[8];
+		__int8              i8[32];
+		__int16             i16[16];
+		__int32             i32[8];
+		unsigned __int8     ui8[32];
+		unsigned __int16    ui16[16];
+		unsigned __int32    ui32[8];
+	} hData256;
+	static_assert(sizeof(hData256) == 32);
 
 #pragma warning( pop ) 
 
@@ -80,4 +84,11 @@ namespace hr
 	bool operator > (const hData128& a, const hData128& b);
 	bool operator <= (const hData128& a, const hData128& b);
 	bool operator >= (const hData128& a, const hData128& b);
+
+	bool operator == (const hData256& a, const hData256& b);
+	bool operator != (const hData256& a, const hData256& b);
+	bool operator < (const hData256& a, const hData256& b);
+	bool operator > (const hData256& a, const hData256& b);
+	bool operator <= (const hData256& a, const hData256& b);
+	bool operator >= (const hData256& a, const hData256& b);
 }

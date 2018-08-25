@@ -348,7 +348,7 @@ namespace hr { namespace engine
 			}
 		}
 
-		static void vmPushStack(HSQUIRRELVM sqvm)
+		static void vmPushStack(HSQUIRRELVM)
 		{ }
 
 		template<typename TFirst, typename... TRest>

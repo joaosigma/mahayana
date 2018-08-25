@@ -255,6 +255,12 @@ namespace hr
 		std::memcpy(m, src, sizeof(float) * 16);
 	}
 
+	Matrix::Matrix(const double src[16]) noexcept
+	{
+		for (int i = 0; i < 16; i++)
+			m[i] = static_cast<float>(src[i]);
+	}
+
 	Matrix::Matrix(const Quaternion &unitQuaternion) noexcept
 	{
 		m[0] = 1.0f - 2.0f * (unitQuaternion[1] * unitQuaternion[1] + unitQuaternion[2] * unitQuaternion[2]);

@@ -8,6 +8,20 @@
 
 namespace hr
 {
+	/*
+	The matrix classes uses a row-major mathematical convention and layout
+		row 0 is indices [0 ... 3]
+		row 1 is indices [4 ... 7]
+		...
+	This means that the layout reads as: [Xx Xy Xz 0 Yx Yy Yz 0 Zx Zy Zz 0 Tx Ty Tz 0]
+
+	So in order for multiplication with vectors to work, they must be read as a "column with 4 rows" and are transformed like: v*M (left of pre-multiplication)
+	So, matrix-matrix multiplication happens with a pre-multiple of the transpose:
+		Res = Mat1.operator*(Mat2) means Res = Mat2^T * Mat1 (as opposed to Res = Mat1 * Mat2)
+
+	(Unreal4 matrix behaves the same as this one, although this one predates it!)
+	*/
+
 	class Matrix
 	{
 		float m[16];
@@ -28,6 +42,7 @@ namespace hr
 
 		explicit Matrix(const Matrix3 &mat) noexcept;
 		explicit Matrix(const float src[16]) noexcept;
+		explicit Matrix(const double src[16]) noexcept;
 		explicit Matrix(const Quaternion &unitQuaternion) noexcept;
 		
 		void operator*=(const float s);

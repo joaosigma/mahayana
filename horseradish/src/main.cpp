@@ -12,7 +12,7 @@
 
 #include "common/primitives2D.hpp"
 
-int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PWSTR lpCmdLine, int nCmdShow)
+int WINAPI wWinMain(HINSTANCE, HINSTANCE hInstPrev, PWSTR lpCmdLine, int nCmdShow)
 {
 	UNREFERENCED_PARAMETER(hInstPrev); 
 	UNREFERENCED_PARAMETER(nCmdShow);

@@ -209,6 +209,7 @@
     <ClCompile Include="..\..\src\engine\logger.cpp" />
     <ClCompile Include="..\..\src\engine\profiler.cpp" />
     <ClCompile Include="..\..\src\engine\runtime.cpp" />
+    <ClCompile Include="..\..\src\libs\aes256\aes256.c" />
     <ClCompile Include="..\..\src\libs\fmt\format.cc" />
     <ClCompile Include="..\..\src\libs\forsyth\forsythtriangleorderoptimizer.cpp" />
     <ClCompile Include="..\..\src\libs\libsquish\alpha.cpp" />
@@ -223,8 +224,10 @@
     <ClCompile Include="..\..\src\libs\lodepng\lodepng.cpp" />
     <ClCompile Include="..\..\src\libs\lz4\lz4.c" />
     <ClCompile Include="..\..\src\libs\lz4\lz4hc.c" />
+    <ClCompile Include="..\..\src\libs\md5\md5.c" />
     <ClCompile Include="..\..\src\libs\mikktspace\mikktspace.cpp" />
     <ClCompile Include="..\..\src\libs\sdf\sdf.cpp" />
+    <ClCompile Include="..\..\src\libs\sha256\sha256.c" />
     <ClCompile Include="..\..\src\libs\squirrel\sqapi.cpp" />
     <ClCompile Include="..\..\src\libs\squirrel\sqbaselib.cpp" />
     <ClCompile Include="..\..\src\libs\squirrel\sqclass.cpp" />
@@ -248,6 +251,8 @@
     <ClCompile Include="..\..\src\libs\stb\stb_dxt.cpp" />
     <ClCompile Include="..\..\src\libs\stb\stb_image.cpp" />
     <ClCompile Include="..\..\src\libs\stb\stb_image_resize.cpp" />
+    <ClCompile Include="..\..\src\libs\tinyexr\tinyexr.cc" />
+    <ClCompile Include="..\..\src\libs\tinygltf\tiny_gltf.cc" />
     <ClCompile Include="..\..\src\libs\tinyobjloader\tiny_obj_loader.cc" />
     <ClCompile Include="..\..\src\libs\zlib\adler32.c" />
     <ClCompile Include="..\..\src\libs\zlib\compress.c" />
@@ -325,6 +330,7 @@
     <ClInclude Include="..\..\src\engine\logger.hpp" />
     <ClInclude Include="..\..\src\engine\profiler.hpp" />
     <ClInclude Include="..\..\src\engine\runtime.hpp" />
+    <ClInclude Include="..\..\src\libs\aes256\aes256.h" />
     <ClInclude Include="..\..\src\libs\fmt\core.h" />
     <ClInclude Include="..\..\src\libs\fmt\format-inl.h" />
     <ClInclude Include="..\..\src\libs\fmt\format.h" />
@@ -347,6 +353,7 @@
     <ClInclude Include="..\..\src\libs\lodepng\lodepngoptions.h" />
     <ClInclude Include="..\..\src\libs\lz4\lz4.h" />
     <ClInclude Include="..\..\src\libs\lz4\lz4hc.h" />
+    <ClInclude Include="..\..\src\libs\md5\md5.h" />
     <ClInclude Include="..\..\src\libs\mikktspace\mikktspace.h" />
     <ClInclude Include="..\..\src\libs\rapidjson\allocators.h" />
     <ClInclude Include="..\..\src\libs\rapidjson\cursorstreamwrapper.h" />
@@ -386,6 +393,7 @@
     <ClInclude Include="..\..\src\libs\rapidjson\stringbuffer.h" />
     <ClInclude Include="..\..\src\libs\rapidjson\writer.h" />
     <ClInclude Include="..\..\src\libs\sdf\sdf.h" />
+    <ClInclude Include="..\..\src\libs\sha256\sha256.h" />
     <ClInclude Include="..\..\src\libs\squirrel\sqarray.h" />
     <ClInclude Include="..\..\src\libs\squirrel\sqclass.h" />
     <ClInclude Include="..\..\src\libs\squirrel\sqclosure.h" />
@@ -414,6 +422,10 @@
     <ClInclude Include="..\..\src\libs\stb\stb_dxt.h" />
     <ClInclude Include="..\..\src\libs\stb\stb_image.h" />
     <ClInclude Include="..\..\src\libs\stb\stb_image_resize.h" />
+    <ClInclude Include="..\..\src\libs\tinyexr\tinyexr.h" />
+    <ClInclude Include="..\..\src\libs\tinygltf\json.hpp" />
+    <ClInclude Include="..\..\src\libs\tinygltf\tiny_gltf.h" />
+    <ClInclude Include="..\..\src\libs\tinygltf\tiny_gltf_options.h" />
     <ClInclude Include="..\..\src\libs\tinyobjloader\tiny_obj_loader.h" />
     <ClInclude Include="..\..\src\libs\zlib\crc32.h" />
     <ClInclude Include="..\..\src\libs\zlib\deflate.h" />

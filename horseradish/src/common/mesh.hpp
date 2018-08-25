@@ -1,7 +1,7 @@
 #pragma once
 
 #include "vector.hpp"
-#include "quaternion.hpp"
+#include "matrix.hpp"
 #include "bvolumes.hpp"
 
 #include <limits>
@@ -119,6 +119,8 @@ namespace hr::geom
 		void translate(const Vector3f& translate);
 		void centerMass(const Vector3f& center);
 		void confine(float maxAxis);
+		void transform(const Matrix& matFull, const Matrix3& matRot);
+
 		void invertTriWinding();
 		void optimizeIndices();
 

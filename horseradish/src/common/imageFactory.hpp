@@ -20,5 +20,7 @@ namespace hr { namespace imaging
 		static Image<unsigned char, ImageFormatRGB> readJPG(hr::streams::StreamReader &streamReader);
 
 		static Image<float, ImageFormatRGB> readHDRI(hr::streams::StreamReader &streamReader);
+
+		static Image<float, ImageFormatRGBA> readEXR(const char* const fileName);
 	};
 } }

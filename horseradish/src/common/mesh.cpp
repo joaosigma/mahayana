@@ -541,6 +541,36 @@ namespace hr::geom
 		scale(maxAxis / std::fmax(std::fmax(distance[0], distance[1]), distance[2]));
 	}
 
+	void Mesh::transform(const Matrix& matFull, const Matrix3& matRot)
+	{
+		auto vertexData = mData.get();
+		for (size_t i = 0; i < mNumVertices; i++, vertexData++)
+		{
+			//position
+			{
+				Vector3f pos(vertexData->pos);
+				matFull.transform(pos);
+				pos.write(vertexData->pos);
+			}
+
+			//normal
+			{
+				Vector3f normal;
+				Mesh::unpack(vertexData->normal, normal.data(), 3);
+				matRot.transform(normal);
+				Mesh::pack(normal.data(), vertexData->normal, 3);
+			}
+			
+			//tangent
+			{
+				Vector3f tangent;
+				Mesh::unpack(vertexData->tangent, tangent.data(), 3);
+				matRot.transform(tangent);
+				Mesh::pack(tangent.data(), vertexData->tangent, 3);
+			}
+		}
+	}
+
 	void Mesh::invertTriWinding()
 	{
 		auto indices = mIndices.get();
