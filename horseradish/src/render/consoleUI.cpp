@@ -141,7 +141,7 @@ namespace hr { namespace render
 
 		float maxLineY = mTextRect.y + mTextRect.height;
 		float curLineY = mTextRect.y;
-		auto textHeight = guiFont->getMaxHeight() * 1.1f;
+		auto textHeight = guiFont->getMaxHeight(textSize) * 1.1f;
 
 		//draw prompt
 		{
@@ -168,7 +168,7 @@ namespace hr { namespace render
 				auto cursorOffset = mCursor.offset + PromptDefault.size();
 				if ((cursorOffset >= unicodeCharOffset) && (cursorOffset <= (unicodeCharOffset + unicodeCharCount)))
 				{
-					auto strLength = guiFont->getTextWidth(unicodeStr, unicodeCharOffset, cursorOffset - unicodeCharOffset);
+					auto strLength = guiFont->getTextWidth(textSize, unicodeStr, unicodeCharOffset, cursorOffset - unicodeCharOffset);
 					guiFont->writeChar(mTextRect.x + strLength, lineY, '_');
 
 					auto cursorChar = hr::StringUtils::getUnicodeAt(unicodeStr, cursorOffset);

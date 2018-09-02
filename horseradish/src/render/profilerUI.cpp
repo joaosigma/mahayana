@@ -86,16 +86,16 @@ namespace hr { namespace render
 		auto& glImmediateMode = mRenderer.mGlImmediateMode;
 		auto& guiFont = *mRenderer.mGui.font;
 
-		float posX = viewRect.width - guiFont.getTextWidth(mInfoStr) - 10.0f;
-		float posY = viewRect.height - guiFont.getMaxHeight() - 15.0f;
+		float posX = viewRect.width - guiFont.getTextWidth(textSize, mInfoStr) - 10.0f;
+		float posY = viewRect.height - guiFont.getMaxHeight(textSize) - 15.0f;
 
 		hr::gl::glBindProgramPipeline(mRenderer.mShaders.drawNoTex.progPipeline.id());
 		hr::gl::glProgramUniformMatrix4fv(mRenderer.mShaders.drawNoTex.progVertex.id(), mRenderer.mShaders.drawNoTex.progVertex.getUniformLocation("transformationMatrix"), 1, false, transformMatrix.data());
 
 		glImmediateMode.beginDraw(hr::gl::tools::ImmediateMode::GeometryType::LineStrip);
 			glImmediateMode.setColor(128, 128, 128);
-			glImmediateMode.addPosition(viewRect.width, posY + guiFont.getMaxHeight() + 5.0f);
-			glImmediateMode.addPosition(posX - 5.0f, posY + guiFont.getMaxHeight() + 5.0f);
+			glImmediateMode.addPosition(viewRect.width, posY + guiFont.getMaxHeight(textSize) + 5.0f);
+			glImmediateMode.addPosition(posX - 5.0f, posY + guiFont.getMaxHeight(textSize) + 5.0f);
 			glImmediateMode.addPosition(posX - 5.0f, posY - 5.0f);
 			glImmediateMode.addPosition(viewRect.width, posY - 5.0f);
 		glImmediateMode.endDraw();
@@ -124,8 +124,8 @@ namespace hr { namespace render
 		auto& glImmediateMode = mRenderer.mGlImmediateMode;
 		auto& guiFont = *mRenderer.mGui.font;
 
-		auto textPreviewHeight = guiFont.getMaxHeight();
-		auto textPreviewWidth = guiFont.getTextWidth("XXX.XX X") + 5.0f;
+		auto textPreviewHeight = guiFont.getMaxHeight(textSize);
+		auto textPreviewWidth = guiFont.getTextWidth(textSize, "XXX.XX X") + 5.0f;
 
 		hr::Rectangle<float> graphRect(viewRect.x + 10.0f, viewRect.y + 10.0f, viewRect.width - 20.0f - textPreviewWidth, viewRect.height - 20.0f);
 		graphRect.y += textPreviewHeight + 10.0f;
@@ -185,13 +185,13 @@ namespace hr { namespace render
 				msg = fmt::format("{0:.2f}", curSample.value);
 
 			guiFont.setColor(color[0], color[1], color[2]);
-			guiFont.write(graphRect.x + graphRect.width + 5.0f, curSample.posY - (guiFont.getMaxHeight() * 0.5f), msg);
+			guiFont.write(graphRect.x + graphRect.width + 5.0f, curSample.posY - (guiFont.getMaxHeight(textSize) * 0.5f), msg);
 
 			msg = fmt::format("{0}: {1}", hr::engine::Profiler::translateStatId(curSample.statId), msg);
 			guiFont.write(posX, graphRect.y + 5.0f - (textPreviewHeight + 10.0f), msg);
 
 			posX += 5.0f;
-			posX += guiFont.getTextWidth(msg);
+			posX += guiFont.getTextWidth(textSize, msg);
 		}
 
 		guiFont.paintEnd();

@@ -336,6 +336,76 @@ namespace hr { namespace render { namespace tools
 		}
 	}
 
+	size_t Font::countUnicodeChars(float fontScale, const std::string& text, const size_t numUnicodeCharsSkip, float maxWidth) const
+	{
+		float totalWidth = 0.0f;
+		size_t numChars = 0;
+		size_t numCharsSkip = numUnicodeCharsSkip;
+
+		for (const auto& curCharUnicode : StringUtils::utf8Wrapper(text))
+		{
+			if (numCharsSkip > 0)
+			{
+				numCharsSkip--;
+				continue;
+			}
+
+			auto itChar = mCharMap.find(curCharUnicode);
+			if (itChar == mCharMap.end())
+				continue;
+
+			totalWidth += (itChar->second.advanceX * fontScale);
+			if (totalWidth > maxWidth)
+				return numChars;
+
+			numChars++;
+		}
+
+		return numChars;
+	}
+
+	float Font::getTextWidth(const std::string& text) const
+	{
+		float totalWidth = 0.0f;
+		for (const auto& curCharUnicode : StringUtils::utf8Wrapper(text))
+		{
+			auto itChar = mCharMap.find(curCharUnicode);
+			if (itChar == mCharMap.end())
+				continue;
+
+			totalWidth += itChar->second.advanceX;
+		}
+
+		return totalWidth;
+	}
+
+	float Font::getTextWidth(const std::string& text, const size_t numUnicodeCharsSkip, const size_t maxUnicodeCharsRead) const
+	{
+		float totalWidth = 0.0f;
+		unsigned int numChars = 0;
+		unsigned int numCharsSkip = numUnicodeCharsSkip;
+
+		for (const auto& curCharUnicode : StringUtils::utf8Wrapper(text))
+		{
+			if (numCharsSkip > 0)
+			{
+				numCharsSkip--;
+				continue;
+			}
+
+			if ((numChars++) >= maxUnicodeCharsRead)
+				break;
+
+			auto itChar = mCharMap.find(curCharUnicode);
+			if (itChar == mCharMap.end())
+				continue;
+
+			totalWidth += itChar->second.advanceX;
+		}
+
+		return totalWidth;
+	}
+
 	float Font::getCharKerning(const CharacterData& leftCharData, unsigned short leftCharUnicodeID, unsigned short rightCharUnicodeID) const
 	{
 		if ((leftCharData.kernDataIndices.second <= 0) || (rightCharUnicodeID <= 0))
@@ -416,19 +486,83 @@ namespace hr { namespace render { namespace tools
 		mCharMap.clear();
 	}
 
-	void Font::layout(const std::string& text, const float maxWidth, std::function<void(size_t, size_t, size_t)> writeCb) const
+	bool Font::isValid() const
 	{
-		if ((maxWidth <= 0.0f) || !writeCb)
+		return mValid;
+	}
+
+	float Font::getMaxHeight(size_t targetSize) const
+	{
+		if (!mValid || (targetSize <= 0))
+			return 0.0f;
+
+		return mFontInfo.maxHeight * (static_cast<float>(targetSize) / baseFontSize);
+	}
+
+	float Font::getTextWidth(size_t targetSize, const std::string& text) const
+	{
+		if (!mValid || text.empty() || (targetSize <= 0))
+			return 0.0f;
+
+		return getTextWidth(text) * (static_cast<float>(targetSize) / baseFontSize);
+	}
+
+	float Font::getTextWidth(size_t targetSize, const std::string& text, const size_t numUnicodeCharsSkip, const size_t maxUnicodeCharsRead) const
+	{
+		return getTextWidth(text, numUnicodeCharsSkip, maxUnicodeCharsRead) * (static_cast<float>(targetSize) / baseFontSize);
+	}
+
+	void Font::paintBegin(size_t targetSize, const float * const tranformationMatrix)
+	{
+		if (mState.paintStarted || (targetSize <= 0))
 			return;
 
-		auto numLines = static_cast<unsigned int>(std::ceil(getTextWidth(text) / maxWidth));
+		mGl.texture.bind(0);
+		mGl.sampler.bind(0);
+		mGl.vertexArray.bind();
+
+		hr::gl::glProgramUniform1i(mGlFragmentProgramID, mGlUniformSampler, 0);
+		if (tranformationMatrix)
+			hr::gl::glProgramUniformMatrix4fv(mGlVertexProgramID, mGlUniformMatrix, 1, false, tranformationMatrix);
+
+		hr::gl::glBindProgramPipeline(mGlProgramPipelineID);
+
+		mState.scale = static_cast<float>(targetSize) / baseFontSize;
+		mState.paintStarted = true;
+	}
+
+	void Font::paintEnd()
+	{
+		if (!mState.paintStarted)
+			return;
+
+		commitGL();
+
+		mState.paintStarted = false;
+	}
+
+	void Font::paintFlush()
+	{
+		if (!mState.paintStarted)
+			return;
+
+		commitGL();
+	}
+
+	void Font::layout(const std::string& text, const float maxWidth, std::function<void(size_t, size_t, size_t)> writeCb) const
+	{
+		if (text.empty() || (maxWidth <= 0.0f) || !writeCb)
+			return;
+
+		auto textWidth = getTextWidth(text) * mState.scale;
+		auto numLines = static_cast<unsigned int>(std::ceil(textWidth / maxWidth));
 		if (numLines == 0)
 			numLines = 1;
 
 		unsigned int numCharsWritten = 0;
 		for (; numLines > 0; numLines--)
 		{
-			auto maxChars = countUnicodeChars(text, numCharsWritten, maxWidth);
+			auto maxChars = countUnicodeChars(mState.scale, text, numCharsWritten, maxWidth);
 
 			writeCb(numLines - 1, numCharsWritten, maxChars);
 
@@ -522,146 +656,6 @@ namespace hr { namespace render { namespace tools
 	void Font::setColor(const Color &color)
 	{
 		mState.stateColor.set(color);
-	}
-
-	bool Font::isValid() const
-	{
-		return mValid;
-	}
-
-	float Font::getMaxHeight() const
-	{
-		return mFontInfo.maxHeight * mState.scale;
-	}
-
-	float Font::getCharWidth(const unsigned int &unicodeChar) const
-	{
-		auto it = mCharMap.find(unicodeChar);
-		if (it == mCharMap.end())
-			return 0.0f;
-
-		return it->second.advanceX * mState.scale;
-	}
-
-	size_t Font::countUnicodeChars(const std::string& text, const float maxWidth) const
-	{
-		return countUnicodeChars(text, 0, maxWidth);
-	}
-
-	size_t Font::countUnicodeChars(const std::string& text, const size_t numUnicodeCharsSkip, const float maxWidth) const
-	{
-		if (!mValid || text.empty() || (maxWidth <= 0.0f))
-			return 0;
-
-		float totalWidth = 0.0f;
-		size_t numChars = 0;
-		size_t numCharsSkip = numUnicodeCharsSkip;
-
-		for (const auto& curCharUnicode : StringUtils::utf8Wrapper(text))
-		{
-			auto itChar = mCharMap.find(curCharUnicode);
-			if (itChar == mCharMap.end())
-				continue;
-
-			if (numCharsSkip > 0)
-			{
-				numCharsSkip--;
-				continue;
-			}
-
-			totalWidth += (itChar->second.advanceX * mState.scale);
-			if (totalWidth > maxWidth)
-				return numChars;
-
-			numChars++;
-		}
-
-		return numChars;
-	}
-
-	float Font::getTextWidth(const std::string& text) const
-	{
-		if (!mValid || text.empty())
-			return 0.0f;
-
-		float totalWidth = 0.0f;
-		for (const auto& curCharUnicode : StringUtils::utf8Wrapper(text))
-		{
-			auto itChar = mCharMap.find(curCharUnicode);
-			if (itChar == mCharMap.end())
-				continue;
-
-			totalWidth += itChar->second.advanceX;
-		}
-
-		return totalWidth * mState.scale;
-	}
-
-	float Font::getTextWidth(const std::string& text, const size_t numUnicodeCharsSkip, const size_t maxUnicodeCharsRead) const
-	{
-		if (!mValid || text.empty() || (maxUnicodeCharsRead == 0))
-			return 0.0f;
-
-		float totalWidth = 0.0f;
-		unsigned int numChars = 0;
-		unsigned int numCharsSkip = numUnicodeCharsSkip;
-
-		for (const auto& curCharUnicode : StringUtils::utf8Wrapper(text))
-		{
-			if (numCharsSkip > 0)
-			{
-				numCharsSkip--;
-				continue;
-			}
-
-			if ((numChars++) >= maxUnicodeCharsRead)
-				break;
-
-			auto itChar = mCharMap.find(curCharUnicode);
-			if (itChar == mCharMap.end())
-				continue;
-
-			totalWidth += itChar->second.advanceX;
-		}
-
-		return totalWidth * mState.scale;
-	}
-
-	void Font::paintBegin(size_t targetSize, const float * const tranformationMatrix)
-	{
-		if (mState.paintStarted || (targetSize <= 0))
-			return;
-
-		mGl.texture.bind(0);
-		mGl.sampler.bind(0);
-		mGl.vertexArray.bind();
-
-		hr::gl::glProgramUniform1i(mGlFragmentProgramID, mGlUniformSampler, 0);
-		if (tranformationMatrix)
-			hr::gl::glProgramUniformMatrix4fv(mGlVertexProgramID, mGlUniformMatrix, 1, false, tranformationMatrix);
-
-		hr::gl::glBindProgramPipeline(mGlProgramPipelineID);
-
-		mState.scale = static_cast<float>(targetSize) / baseFontSize;
-		mState.paintStarted = true;
-	}
-
-	void Font::paintEnd()
-	{
-		if (!mState.paintStarted)
-			return;
-
-		commitGL();
-
-		mState.paintStarted = false;
-	}
-
-	void Font::paintFlush()
-	{
-		if (!mState.paintStarted)
-			return;
-
-		commitGL();
 	}
 
 } } }

@@ -91,9 +91,27 @@ namespace hr { namespace render { namespace tools
 		bool initFont(const char * const fontFilePath);
 		void internalWrite(const float &px, const float &py, const std::string& str, UnicodeRange strRange);
 
+		size_t countUnicodeChars(float fontScale, const std::string& text, const size_t numUnicodeCharsSkip, float maxWidth) const;
+
+		float getTextWidth(const std::string& text) const;
+		float getTextWidth(const std::string& text, const size_t numUnicodeCharsSkip, const size_t maxUnicodeCharsRead) const;
+
 	public:
 		Font(const char * const fontFilePath, unsigned int glVertexProgramID, unsigned int glFragmentProgramID, unsigned int glProgramPipelineID);
 		~Font();
+
+		bool isValid() const;
+
+		float getMaxHeight(size_t targetSize) const;
+
+		float getTextWidth(size_t targetSize, const std::string& text) const;
+		float getTextWidth(size_t targetSize, const std::string& text, const size_t numUnicodeCharsSkip, const size_t maxUnicodeCharsRead) const;
+
+		//these next methods interact with the paint context (e.g.: font size)
+
+		void paintBegin(size_t targetSize, const float * const tranformationMatrix);
+		void paintEnd();
+		void paintFlush();
 
 		void layout(const std::string& text, const float maxWidth, std::function<void(size_t curLine, size_t unicodeCharOffset, size_t unicodeCharCount)> writeCb) const;
 
@@ -109,21 +127,6 @@ namespace hr { namespace render { namespace tools
 		void setColor(const float &r, const float &g, const float &b);
 		void setColor(const float * const color);
 		void setColor(const Color &color);
-
-		bool isValid() const;
-
-		float getMaxHeight() const;
-		float getCharWidth(const unsigned int &unicodeChar) const;
-
-		size_t countUnicodeChars(const std::string& text, const float maxWidth) const;
-		size_t countUnicodeChars(const std::string& text, const size_t numUnicodeCharsSkip, const float maxWidth) const;
-
-		float getTextWidth(const std::string& text) const;
-		float getTextWidth(const std::string&, const size_t numUnicodeCharsSkip, const size_t maxUnicodeCharsRead) const;
-
-		void paintBegin(size_t targetSize, const float * const tranformationMatrix);
-		void paintEnd();
-		void paintFlush();
 	};
 
 } } }
