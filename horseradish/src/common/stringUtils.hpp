@@ -15,95 +15,47 @@ namespace hr
 		public:
 			class utf8Iterator : public std::iterator<std::forward_iterator_tag, unsigned int>
 			{
-				static const unsigned __int32 offsetsFromUTF8[6];
-
-				static constexpr bool isutf8(char value)
-				{
-					return ((value & 0xC0) != 0x80);
-				}
-
-				std::string_view::const_iterator mStrIt, mStrItNext, mStrItEnd;
+				const uint8_t *mIt, *mItNext, *mItEnd;
 
 			public:
-				utf8Iterator(std::string_view str)
-					: mStrIt(str.begin()), mStrItNext(str.begin()), mStrItEnd(str.end())
-				{ }
-
-				utf8Iterator(std::string_view::const_iterator itBegin, std::string_view::const_iterator itEnd)
-					: mStrIt(itBegin), mStrItNext(itBegin), mStrItEnd(itEnd)
+				explicit constexpr utf8Iterator(const uint8_t* start, const uint8_t* end)
+					: mIt{ start }, mItNext{ start }, mItEnd{ end }
 				{ }
 
 				bool operator==(const utf8Iterator& other)
 				{
-					return (mStrIt == other.mStrIt);
+					return (mIt == other.mIt);
 				}
 
 				bool operator!=(const utf8Iterator& other)
 				{
-					return (mStrIt != other.mStrIt);
+					return (mIt != other.mIt);
 				}
 
-				utf8Iterator& operator++()
-				{
-					if (mStrIt == mStrItEnd)
-						return *this;
+				utf8Iterator& operator++();
+				utf8Iterator operator++(int);
 
-					if (mStrIt < mStrItNext)
-					{
-						mStrIt = mStrItNext;
-						return *this;
-					}
-
-					do {
-						mStrIt++;
-					} while ((mStrIt != mStrItEnd) && !utf8Iterator::isutf8(*mStrIt));
-
-					return *this;
-				}
-
-				utf8Iterator operator++(int)
-				{
-					utf8Iterator tmp(*this);
-					operator++();
-					return tmp;
-				}
-
-				unsigned int operator*()
-				{
-					if (mStrIt == mStrItEnd)
-						return 0;
-
-					mStrItNext = mStrIt;
-
-					unsigned int finalChar = 0, bytesRead = 0;
-					do {
-						finalChar <<= 6;
-						finalChar += static_cast<unsigned char>(*mStrItNext);
-
-						bytesRead++;
-						mStrItNext++;
-					} while ((mStrItNext != mStrItEnd) && !utf8Iterator::isutf8(*mStrItNext));
-
-					finalChar -= utf8Iterator::offsetsFromUTF8[bytesRead - 1];
-					return finalChar;
-				}
+				unsigned int operator*();
 			};
 
 		public:
 			typedef utf8Iterator const_iterator;
 
-			utf8Wrapper(std::string_view str)
-				: mStr(str)
-			{ }
+			explicit utf8Wrapper(std::string_view str);
+			explicit utf8Wrapper(std::string_view str, size_t skipCodepoints);
 
 			const_iterator begin() const
 			{
-				return utf8Iterator(mStr);
+				auto start = reinterpret_cast<const uint8_t*>(mStr.data());
+				auto end = start + mStr.size();
+				return utf8Iterator(start, end);
 			}
 
 			const_iterator end() const
 			{
-				return utf8Iterator(mStr.end(), mStr.end());
+				auto start = reinterpret_cast<const uint8_t*>(mStr.data());
+				auto end = start + mStr.size();
+				return utf8Iterator(end, end);
 			}
 
 		private:
@@ -111,14 +63,17 @@ namespace hr
 		};
 
 	public:
+		static bool isValidUTF8(std::string_view str);
+		static size_t countUTF8Codepoints(std::string_view str);
+
 		static void conv2UTF8(const std::wstring& strUTF16, std::string& strUTF8);
 		static void conv2UTF8(const wchar_t* const strUTF16, std::string& strUTF8);
-		static void conv2UTF8(const unsigned int charUnicode, std::string& strUTF8);
-		static void conv2UTF8(const std::vector<unsigned int>& strUnicode, std::string& strUTF8);
+		static void conv2UTF8(const unsigned int ucodepoint, std::string& strUTF8);
+		static void conv2UTF8(const std::vector<unsigned int>& ucodepoints, std::string& strUTF8);
 		static std::string conv2UTF8(const std::wstring& strUTF16);
 		static std::string conv2UTF8(const wchar_t* const strUTF16);
-		static std::string conv2UTF8(const unsigned int charUnicode);
-		static std::string conv2UTF8(const std::vector<unsigned int>& strUnicode);
+		static std::string conv2UTF8(const unsigned int ucodepoint);
+		static std::string conv2UTF8(const std::vector<unsigned int>& ucodepoints);
 
 		static std::wstring conv2UTF16(const std::string& strUTF8);
 		static std::wstring conv2UTF16(const char* const strUTF8);
@@ -132,16 +87,16 @@ namespace hr
 		static void trim(std::string& str);
 		static std::string trimCopy(std::string_view str);
 
-		static void erase(std::string& str, const unsigned int unicodeChar);
-		static std::string eraseCopy(std::string_view str, const unsigned int unicodeChar);
+		static void erase(std::string& str, const unsigned int codepoint);
+		static std::string eraseCopy(std::string_view str, const unsigned int codepoint);
 
-		static void replace(std::string& str, const unsigned int replaceOldChar, const unsigned int replaceNewChar);
-		static std::string replaceCopy(std::string_view str, const unsigned int replaceOldChar, const unsigned int replaceNewChar);
+		static void replace(std::string& str, const unsigned int codepointOld, const unsigned int codepointNew);
+		static std::string replaceCopy(std::string_view str, const unsigned int codepointOld, const unsigned int codepointNew);
 
 		static void replace(std::string& str, const std::string& replaceOldStr, const std::string& replaceNewStr);
 		static std::string replaceCopy(const std::string& str, const std::string& replaceOldStr, const std::string& replaceNewStr);
 
-		static unsigned int getUnicodeAt(const std::string& str, size_t strIndex);
+		static unsigned int getUnicodeAt(const std::string& str, size_t index);
 
 		static void reverse(std::string& str);
 		static std::string reverseCopy(const std::string& str);

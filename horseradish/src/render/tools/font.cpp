@@ -340,16 +340,9 @@ namespace hr { namespace render { namespace tools
 	{
 		float totalWidth = 0.0f;
 		size_t numChars = 0;
-		size_t numCharsSkip = numUnicodeCharsSkip;
 
-		for (const auto& curCharUnicode : StringUtils::utf8Wrapper(text))
+		for (const auto& curCharUnicode : StringUtils::utf8Wrapper(text, numUnicodeCharsSkip))
 		{
-			if (numCharsSkip > 0)
-			{
-				numCharsSkip--;
-				continue;
-			}
-
 			auto itChar = mCharMap.find(curCharUnicode);
 			if (itChar == mCharMap.end())
 				continue;
@@ -383,16 +376,9 @@ namespace hr { namespace render { namespace tools
 	{
 		float totalWidth = 0.0f;
 		unsigned int numChars = 0;
-		unsigned int numCharsSkip = numUnicodeCharsSkip;
 
-		for (const auto& curCharUnicode : StringUtils::utf8Wrapper(text))
+		for (const auto& curCharUnicode : StringUtils::utf8Wrapper(text, numUnicodeCharsSkip))
 		{
-			if (numCharsSkip > 0)
-			{
-				numCharsSkip--;
-				continue;
-			}
-
 			if ((numChars++) >= maxUnicodeCharsRead)
 				break;
 

@@ -296,8 +296,7 @@ namespace hr { namespace engine
 		}
 
 	public:
-		Profiler()
-		{ }
+		Profiler() = default;
 
 		void enableStat(StatId statId)
 		{ }

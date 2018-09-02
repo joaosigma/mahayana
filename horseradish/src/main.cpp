@@ -14,16 +14,16 @@
 
 int WINAPI wWinMain(HINSTANCE, HINSTANCE hInstPrev, PWSTR lpCmdLine, int nCmdShow)
 {
-	UNREFERENCED_PARAMETER(hInstPrev); 
+	UNREFERENCED_PARAMETER(hInstPrev);
 	UNREFERENCED_PARAMETER(nCmdShow);
 
 #ifdef HR_VS_MEMORY_LEAKS
-	_CrtSetDbgFlag ( _CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF );
+	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 #endif
 
 	//minimal checks
 	{
- 		if (!hr::platform::Platform::cpuCheckFeatures((hr::platform::Platform::CPUFeature)(hr::platform::Platform::SSE | hr::platform::Platform::SSE2 | hr::platform::Platform::CMov)))
+		if (!hr::platform::Platform::cpuCheckFeatures((hr::platform::Platform::CPUFeature)(hr::platform::Platform::SSE | hr::platform::Platform::SSE2 | hr::platform::Platform::CMov)))
 		{
 			hr::platform::Window::MsgBoxWarn("The CPU doesn't have the minimum required features.\nThe application cannot proceed.");
 			return 0;
@@ -49,12 +49,12 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE hInstPrev, PWSTR lpCmdLine, int nCmdSho
 	_controlfp_s(&curControlWord, _PC_24, _MCW_PC);	//set precision control to 24bit
 	_controlfp_s(&curControlWord, _DN_FLUSH, _MCW_DN); //convert denorms to zero
 	_controlfp_s(&curControlWord, _RC_NEAR, _MCW_RC); //round to nearest (e.g.: 1.5 > 2.0)
-	_controlfp_s(&curControlWord, _EM_INVALID|_EM_DENORMAL|_EM_ZERODIVIDE|_EM_OVERFLOW|_EM_UNDERFLOW|_EM_INEXACT, _MCW_EM); //ignore exceptions
+	_controlfp_s(&curControlWord, _EM_INVALID | _EM_DENORMAL | _EM_ZERODIVIDE | _EM_OVERFLOW | _EM_UNDERFLOW | _EM_INEXACT, _MCW_EM); //ignore exceptions
 	_clearfp(); //clear previous exceptions
 #endif
 
 	auto cmdLine = hr::StringUtils::conv2UTF8(lpCmdLine);
-	
+
 	hr::engine::Engine engine(cmdLine);
 	auto success = engine.mainLoop();
 
@@ -81,5 +81,5 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE hInstPrev, PWSTR lpCmdLine, int nCmdSho
 		break;
 	}
 
-	return engine.getExitCode();	
+	return engine.getExitCode();
 }
