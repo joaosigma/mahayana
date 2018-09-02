@@ -3,65 +3,61 @@
 #include "common/image.hpp"
 #include "common/opengl/openGLext.hpp"
 
-#include "libs/sdf/sdf.h"
+#include "libs/stb/stb_truetype.h"
 
 #include <algorithm>
 #include <cstddef>
 
-#include <ft2build.h>
-#include FT_FREETYPE_H
-#include FT_BITMAP_H
-#include FT_GLYPH_H
-#include FT_RENDER_H
-
-const unsigned short validFontCharacters[] = {32,126, 192,255, 880,1008, 7936,8176, 1536,1791, 1040,1299};
-const wchar_t validAditionalFontCharacters[] = {L"¥§©®±µ€"};
-
 namespace hr { namespace render { namespace tools
 {
+	namespace
+	{
+		constexpr unsigned short baseFontSize = 30;
+		constexpr unsigned short sdfBufferPadding = 12;
+		constexpr unsigned short sdfBufferMargin = 2;
+
+		constexpr std::array<std::pair<uint32_t, uint32_t>, 6> validFontCharacters{ { {32,126}, {192,255}, {880,1008}, {7936,8176}, {1536,1791}, {1040,1299} } };
+		constexpr const char* validAditionalFontCharacters{ u8"¥§©®±µ€" };
+	}
+
 	void Font::commitGL()
 	{
 		if (mState.numCharWritten == 0)
 			return;
 
 		assert(mState.paintStarted);
-
-		mGl.fence.wait();
-			mGl.arrayBuffer.writeData(mState.charData.data(), sizeof(VertexDataLayout) * mState.numCharWritten * 4, 0);
-			hr::gl::glDrawRangeElements(GL_TRIANGLES, 0, mState.numCharWritten * 4, mState.numCharWritten * 6, GL_UNSIGNED_SHORT, (void*)0);
-		mGl.fence.place();
+		if (mState.paintStarted)
+		{
+			mGl.fence.wait();
+				mGl.arrayBuffer.writeData(mState.charData.data(), sizeof(VertexDataLayout) * mState.numCharWritten * 4, 0);
+				hr::gl::glDrawRangeElements(GL_TRIANGLES, 0, mState.numCharWritten * 4, mState.numCharWritten * 6, GL_UNSIGNED_SHORT, (void*)0);
+			mGl.fence.place();
+		}
 
 		mState.numCharWritten = 0;
 	}
 
 	bool Font::createCharData()
 	{
-		auto numCharPairs = sizeof(validFontCharacters) / sizeof(unsigned short);
-		if ((numCharPairs % 2) != 0)
-			return false;
-
-		numCharPairs /= 2;
-		for (size_t curPair = 0; curPair < numCharPairs; curPair++)
+		for (const auto& pair : validFontCharacters)
 		{
-			if (validFontCharacters[curPair * 2 + 0] > validFontCharacters[curPair * 2 + 1])
+			if (pair.first >= pair.second)
 				return false;
 		}
-
+		
 		size_t numNormalChars = 0;
-		for (size_t curPair = 0; curPair < numCharPairs; curPair++)
-			numNormalChars += validFontCharacters[curPair * 2 + 1] - validFontCharacters[curPair * 2 + 0] + 1;
+		for (const auto& pair : validFontCharacters)
+			numNormalChars += pair.second - pair.first + 1;
 
-		auto strExtraChars = hr::StringUtils::conv2UTF8(validAditionalFontCharacters);
+		mCharMap.reserve(numNormalChars + 7);
 
-		mCharMap.reserve(numNormalChars + (sizeof(validAditionalFontCharacters) / sizeof(wchar_t)));
-
-		for (size_t curPair = 0; curPair < numCharPairs; curPair++)
+		for (const auto& pair : validFontCharacters)
 		{
-			for (unsigned short curCharIndex = validFontCharacters[curPair * 2 + 0]; curCharIndex <= validFontCharacters[curPair * 2 + 1]; curCharIndex++)
+			for (auto curCharIndex = pair.first; curCharIndex <= pair.second; curCharIndex++)
 				mCharMap[curCharIndex];
 		}
 
-		for (const auto& curChar : hr::StringUtils::utf8Wrapper(strExtraChars))
+		for (const auto& curChar : hr::StringUtils::utf8Wrapper(validAditionalFontCharacters))
 			mCharMap[curChar];
 
 		return true;
@@ -69,106 +65,97 @@ namespace hr { namespace render { namespace tools
 
 	bool Font::initFont(const char * const fontFilePath)
 	{
-		FT_Library ftLibrary;
-		FT_Face ftFace;
-		FT_Int32 ftLoadFlags;
-		int texWidth, texHeight, texMaxLineHeight, texLastWidth, totalArea;
-
-		if (FT_Init_FreeType(&ftLibrary))
+		auto fileContent = hr::streams::FileStream::readEntireFile(fontFilePath);
+		
+		stbtt_fontinfo fontInfo;
+		if (!stbtt_InitFont(&fontInfo, reinterpret_cast<const unsigned char*>(fileContent->data()), 0))
 			return false;
 
-		if (FT_New_Face(ftLibrary, fontFilePath, 0, &ftFace))
+		float targetScale = stbtt_ScaleForPixelHeight(&fontInfo, baseFontSize);
 		{
-			FT_Done_FreeType(ftLibrary);
-			return false;
+			int descent;
+			stbtt_GetFontVMetrics(&fontInfo, nullptr, &descent, nullptr);
+
+			mFontInfo.baseHeight = -(descent*targetScale); //height that sets us at the baseline
 		}
 
-		if (FT_Select_Charmap(ftFace, FT_ENCODING_UNICODE))
 		{
-			FT_Done_Face(ftFace);
-			FT_Done_FreeType(ftLibrary);
-			return false;
+			int x0, x1, y0, y1;
+			stbtt_GetFontBoundingBox(&fontInfo, &x0, &y0, &x1, &y1);
+
+			mFontInfo.maxHeight = (y1*targetScale) - (y0*targetScale);
 		}
-
-		FT_Set_Pixel_Sizes(ftFace, 0, 96); //always choose 64 pixels
-		auto downScale = static_cast<float>(mFontInfo.size) / 96.0f;
-
-		mFontInfo.maxHeight = static_cast<float>(ftFace->size->metrics.height >> 6) * downScale;
-		mFontInfo.baseHeight = -1.0f * static_cast<float>(ftFace->size->metrics.descender >> 6) * downScale;
-
-		if (!createCharData())
-		{
-			FT_Done_Face(ftFace);
-			FT_Done_FreeType(ftLibrary);
-			return false;
-		}
-
-		ftLoadFlags = FT_LOAD_DEFAULT | FT_LOAD_NO_HINTING | FT_LOAD_RENDER;
-		totalArea = 0;
 
 		struct GlyphData
 		{
-			unsigned short unicodeId;
+			uint32_t codepoint;
 			unsigned short width, height;
 			unsigned short texX, texY;
 
-			GlyphData(unsigned short unicodeId, unsigned short width, unsigned short height)
-				: unicodeId(unicodeId), width(width), height(height), texX(0), texY(0)
+			GlyphData(uint32_t codepoint, unsigned short width, unsigned short height)
+				: codepoint(codepoint), width(width), height(height), texX(0), texY(0)
 			{ }
 		};
 		std::vector<GlyphData> validGlyphs;
 		validGlyphs.reserve(mCharMap.size());
 
-		for (std::unordered_map<unsigned short, CharacterData>::iterator it = mCharMap.begin(); it != mCharMap.end();)
+		int totalArea = 0;
+		
+		for (auto it = mCharMap.begin(); it != mCharMap.end();)
 		{
-			auto freetypeCharIndex = FT_Get_Char_Index(ftFace, it->first);
-			if (freetypeCharIndex == 0)
+			auto glyphIndex = stbtt_FindGlyphIndex(&fontInfo, it->first);
+			if (glyphIndex == 0)
 			{
 				it = mCharMap.erase(it);
 				continue;
 			}
 
-			auto freetypeError = FT_Load_Glyph(ftFace, freetypeCharIndex, ftLoadFlags);
-			if (freetypeError != 0)
+			float advanceX, offsetX, offsetY;
+			unsigned short glyphWidth, glyphHeight;
 			{
-				it = mCharMap.erase(it);
-				continue;
-			}
+				int advance, leftSideBearing;
+				stbtt_GetGlyphHMetrics(&fontInfo, glyphIndex, &advance, &leftSideBearing);
+				advanceX = advance * targetScale;
+				offsetX = leftSideBearing * targetScale;
 
-			auto glyphWidth = ftFace->glyph->bitmap.width;
-			auto glyphHeight = ftFace->glyph->bitmap.rows;
+				int x0, x1, y0, y1;
+				stbtt_GetGlyphBitmapBox(&fontInfo, glyphIndex, targetScale, targetScale, &x0, &y0, &x1, &y1);
+
+				glyphWidth = x1 - x0;
+				glyphHeight = y1 - y0;
+				offsetY = -y1;
+			}
 
 			validGlyphs.push_back(GlyphData(it->first, glyphWidth, glyphHeight));
 
-			CharacterData& curChar = it->second;
+			auto& curChar = it->second;
 			++it;
 
-			float glyphOffset[] = { static_cast<float>(ftFace->glyph->bitmap_left), static_cast<float>(ftFace->glyph->bitmap_top) - static_cast<float>(ftFace->glyph->bitmap.rows) };
+			curChar.advanceX = advanceX;
+			curChar.rect.offsetX = (offsetX - static_cast<float>(sdfBufferPadding));
+			curChar.rect.offsetY = (offsetY - static_cast<float>(sdfBufferPadding));
+			curChar.rect.width = (static_cast<float>(glyphWidth) + (static_cast<float>(sdfBufferPadding) * 2.0f));
+			curChar.rect.height = (static_cast<float>(glyphHeight) + (static_cast<float>(sdfBufferPadding) * 2.0f));
 
-			curChar.advanceX = static_cast<float>(ftFace->glyph->advance.x >> 6) * downScale;
-			curChar.rect.offsetX = (glyphOffset[0] - static_cast<float>(Font::sBufferPadding)) * downScale;
-			curChar.rect.offsetY = (glyphOffset[1] - static_cast<float>(Font::sBufferPadding)) * downScale;
-			curChar.rect.width = (static_cast<float>(ftFace->glyph->bitmap.width) + static_cast<float>(Font::sBufferPadding)) * downScale;
-			curChar.rect.height = (static_cast<float>(ftFace->glyph->bitmap.rows) + static_cast<float>(Font::sBufferPadding)) * downScale;
-
-			auto charArea = glyphWidth * glyphHeight;
-			curChar.skipDraw = (charArea < 4);
+			curChar.skipDraw = stbtt_IsGlyphEmpty(&fontInfo, glyphIndex) != 0;
 			if (curChar.skipDraw)
 				continue;
 
+			auto charArea = glyphWidth * glyphHeight;
+			assert(charArea > 0);
 			if (charArea > 0)
-				totalArea += (glyphWidth + (Font::sBufferPadding * 2)) * (glyphHeight + (Font::sBufferPadding * 2));
+				totalArea += (glyphWidth + (sdfBufferPadding * 2)) * (glyphHeight + (sdfBufferPadding * 2));
 		}
 
-		texWidth = hr::Math::iProxPowerOfTwo(hr::Math::ftoi(hr::Math::sqrt(totalArea)));
-		texHeight = 0;
+		int texWidth = hr::Math::iProxPowerOfTwo(hr::Math::ftoi(hr::Math::sqrt(totalArea)));
+		int texHeight = 0;
 
-		texLastWidth = 0;
+		int texLastWidth = 0, texMaxLineHeight = 0;
 		for (size_t charIndex = 0; charIndex < validGlyphs.size(); charIndex++)
 		{
 			GlyphData& glyphData = validGlyphs[charIndex];
-			CharacterData& charData = mCharMap[glyphData.unicodeId];
-		
+			CharacterData& charData = mCharMap[glyphData.codepoint];
+
 			if (charData.skipDraw)
 				continue;
 
@@ -176,29 +163,29 @@ namespace hr { namespace render { namespace tools
 			{
 				glyphData.texX = 0;
 				glyphData.texY = 0;
-				texLastWidth = glyphData.texX + glyphData.width + (Font::sBufferPadding * 2);
-				texMaxLineHeight = glyphData.texY + glyphData.height + (Font::sBufferPadding * 2);
+				texLastWidth = glyphData.texX + glyphData.width + (sdfBufferPadding * 2);
+				texMaxLineHeight = glyphData.texY + glyphData.height + (sdfBufferPadding * 2);
 				continue;
 			}
 
-			if ((texLastWidth + glyphData.width + (Font::sBufferPadding * 2)) > texWidth)
+			if ((texLastWidth + glyphData.width + (sdfBufferPadding * 2)) > texWidth)
 			{
 				glyphData.texX = 0;
 				glyphData.texY = texMaxLineHeight;
-				texLastWidth = glyphData.texX + glyphData.width + (Font::sBufferPadding * 2);
-				texMaxLineHeight = glyphData.texY + glyphData.height + (Font::sBufferPadding * 2);
+				texLastWidth = glyphData.texX + glyphData.width + (sdfBufferPadding * 2);
+				texMaxLineHeight = glyphData.texY + glyphData.height + (sdfBufferPadding * 2);
 				continue;
 			}
 
 			glyphData.texX = texLastWidth;
 			glyphData.texY = validGlyphs[charIndex - 1].texY;
-			texLastWidth = glyphData.texX + glyphData.width + (Font::sBufferPadding * 2);
+			texLastWidth = glyphData.texX + glyphData.width + (sdfBufferPadding * 2);
 
-			auto nextY = glyphData.texY + glyphData.height + (Font::sBufferPadding * 2);
+			auto nextY = glyphData.texY + glyphData.height + (sdfBufferPadding * 2);
 			if (nextY > texMaxLineHeight)
 				texMaxLineHeight = nextY;
 		}
-
+		
 		texHeight = hr::Math::iProxPowerOfTwo(texMaxLineHeight + (texMaxLineHeight % 2));
 
 		{
@@ -208,106 +195,70 @@ namespace hr { namespace render { namespace tools
 			for (size_t charIndex = 0; charIndex < validGlyphs.size(); charIndex++)
 			{
 				GlyphData& glyphData = validGlyphs[charIndex];
-				CharacterData& charData = mCharMap[glyphData.unicodeId];
+				CharacterData& charData = mCharMap[glyphData.codepoint];
 				if (charData.skipDraw)
 					continue;
 
 				charData.rect.minUV[0] = static_cast<float>(glyphData.texX) * invTexWidth;
 				charData.rect.minUV[1] = static_cast<float>(glyphData.texY) * invTexHeight;
 
-				charData.rect.maxUV[0] = charData.rect.minUV[0] + static_cast<float>(glyphData.width + Font::sBufferPadding) * invTexWidth;
-				charData.rect.maxUV[1] = charData.rect.minUV[1] + static_cast<float>(glyphData.height + Font::sBufferPadding) * invTexHeight;
+				charData.rect.maxUV[0] = charData.rect.minUV[0] + static_cast<float>(glyphData.width + sdfBufferPadding + sdfBufferPadding) * invTexWidth;
+				charData.rect.maxUV[1] = charData.rect.minUV[1] + static_cast<float>(glyphData.height + sdfBufferPadding + sdfBufferPadding) * invTexHeight;
 			}
-		}	
+		}
 
 		hr::imaging::Image<unsigned char, hr::imaging::ImageFormatR> imgFinal(texWidth, texHeight);
 		imgFinal.clear(0, 0, 0, 0);
-	
+
+		//read each glyph bitmap
 		for (auto& glyphData : validGlyphs)
 		{
-			CharacterData& charData = mCharMap[glyphData.unicodeId];
-
+			CharacterData& charData = mCharMap[glyphData.codepoint];
 			if (charData.skipDraw)
 				continue;
 
-			if (FT_Load_Glyph(ftFace, FT_Get_Char_Index(ftFace, glyphData.unicodeId), ftLoadFlags))
-				continue;
+			int bitmapWidth, bitmapHeight, bitmapXoff, bitmapYoff;
+			auto bitmapData = stbtt_GetCodepointSDF(&fontInfo, targetScale, glyphData.codepoint,
+				sdfBufferPadding - sdfBufferMargin, 127, 127.5f / static_cast<float>(sdfBufferPadding - sdfBufferMargin),
+				&bitmapWidth, &bitmapHeight, &bitmapXoff, &bitmapYoff);
 
-			FT_Glyph ftGlyph;
-			if (FT_Get_Glyph(ftFace->glyph, &ftGlyph))
-				continue;
+			hr::imaging::ImageView<unsigned char, hr::imaging::ImageFormatR> imgGlyph(bitmapData, bitmapWidth, bitmapHeight);
 
-			FT_Glyph_To_Bitmap(&ftGlyph, FT_RENDER_MODE_NORMAL, nullptr, 1);
-			FT_BitmapGlyph bitmapGlyph = (FT_BitmapGlyph)ftGlyph;
+			imgFinal.setPixelRegion(imgGlyph, glyphData.texX + sdfBufferMargin, glyphData.texY + sdfBufferMargin, true);
 
-
-			hr::imaging::Image<unsigned char, hr::imaging::ImageFormatR> imgAux(bitmapGlyph->bitmap.width + (Font::sBufferPadding * 2), bitmapGlyph->bitmap.rows + (Font::sBufferPadding * 2));
-			imgAux.clear(0, 0, 0, 0);
-
-			hr::imaging::ImageView<unsigned char, hr::imaging::ImageFormatR> imgGlyph(bitmapGlyph->bitmap.buffer, bitmapGlyph->bitmap.width, bitmapGlyph->bitmap.rows);
-
-			imgAux.setPixelRegion(imgGlyph, Font::sBufferPadding, Font::sBufferPadding, true);
-
-			imgFinal.setPixelRegion(imgAux, glyphData.texX, glyphData.texY);
+			stbtt_FreeSDF(bitmapData, nullptr);
 		}
 
-		//build distance map
-		sdfBuildDistanceField(imgFinal.data(), imgFinal.width(), static_cast<float>(Font::sBufferPadding - 1), imgFinal.data(), imgFinal.width(), imgFinal.height(), imgFinal.width());
-		imgFinal = imgFinal.resize(imgFinal.width() / 2, imgFinal.height() / 2);
-
-		if (FT_HAS_KERNING(ftFace) != 0)
+		//get kerning info
 		{
-			for (const auto& curChar1 : mCharMap)
+			for (auto& curChar1 : mCharMap)
 			{
-				auto glyphIndex1 = FT_Get_Char_Index(ftFace, curChar1.first);
+				auto glyphIndex1 = stbtt_FindGlyphIndex(&fontInfo, curChar1.first);
 
+				curChar1.second.kernDataIndices.first = mKerningData.size();
+				curChar1.second.kernDataIndices.second = 0;
+				
 				for (const auto& curChar2 : mCharMap)
 				{
-					FT_Vector kernVector;
-
-					if (curChar1.first == curChar2.first)
-						continue;
-
-					auto glyphIndex2 = FT_Get_Char_Index(ftFace, curChar2.first);
-					if (glyphIndex1 == glyphIndex2)
-						continue;
-
-					if (FT_Get_Kerning(ftFace, glyphIndex1, glyphIndex2, FT_KERNING_DEFAULT, &kernVector) != 0)
-						continue;
-
-					if (kernVector.x == 0)
+					auto kernAmount = stbtt_GetGlyphKernAdvance(&fontInfo, glyphIndex1, stbtt_FindGlyphIndex(&fontInfo, curChar2.first));
+					if (kernAmount == 0)
 						continue;
 
 					KerningData newKerningData;
-					newKerningData.char1 = curChar1.first;
-					newKerningData.char2 = curChar2.first;
-					newKerningData.offset = (kernVector.x >> 6) * downScale;
+					newKerningData.codepoint1 = curChar1.first;
+					newKerningData.codepoint2 = curChar2.first;
+					newKerningData.offset = static_cast<float>(kernAmount) * targetScale;
 
 					mKerningData.push_back(newKerningData);
 				}
-			}
 
-			mKerningData.push_back(KerningData());
-		}
-
-		FT_Done_Face(ftFace);
-		FT_Done_FreeType(ftLibrary);
-
-		for (auto& curChar : mCharMap)
-		{
-			for (const auto& curKerning : mKerningData)
-			{
-				if ((curKerning.char1 == 0) || (curKerning.char1 != curChar.first))
-					continue;
-
-				curChar.second.kernData = &curKerning;
-				break;
+				curChar1.second.kernDataIndices.second = mKerningData.size() - curChar1.second.kernDataIndices.first;
 			}
 		}
 
 		mGl.texture.init(hr::gl::objects::Texture::Type::Tex2D, hr::gl::objects::Texture::StorageType::R_8, imgFinal.width(), imgFinal.height());
 		mGl.texture.uploadData(0, 0, 0, imgFinal.width(), imgFinal.height(), hr::gl::objects::Texture::DataFormat::R, hr::gl::objects::Texture::DataType::UBYTE, imgFinal.data());
-
+		
 		return true;
 	}
 
@@ -387,28 +338,25 @@ namespace hr { namespace render { namespace tools
 
 	float Font::getCharKerning(const CharacterData& leftCharData, unsigned short leftCharUnicodeID, unsigned short rightCharUnicodeID) const
 	{
-		if (!leftCharData.kernData || (rightCharUnicodeID <= 0))
+		if ((leftCharData.kernDataIndices.second <= 0) || (rightCharUnicodeID <= 0))
 			return 0.0f;
 
-		for (const KerningData *curKerning = leftCharData.kernData; true; curKerning++)
+		auto kernWalker = mKerningData.data() + leftCharData.kernDataIndices.first;
+		for (auto count = leftCharData.kernDataIndices.second; count > 0; count--, kernWalker++)
 		{
-			if (curKerning->char1 != leftCharUnicodeID)
-				break;
-
-			if (curKerning->char2 == rightCharUnicodeID)
-				return curKerning->offset;
+			if (kernWalker->codepoint2 == rightCharUnicodeID)
+				return kernWalker->offset;
 		}
 
 		return 0.0f;
 	}
 
-	Font::Font(const size_t fontSize, const char * const fontFilePath, unsigned int glVertexProgramID, unsigned int glFragmentProgramID, unsigned int glProgramPipelineID)
+	Font::Font(const char * const fontFilePath, unsigned int glVertexProgramID, unsigned int glFragmentProgramID, unsigned int glProgramPipelineID)
 		: mGlVertexProgramID(glVertexProgramID), mGlFragmentProgramID(glFragmentProgramID), mGlProgramPipelineID(glProgramPipelineID)
 	{
-		mFontInfo.size = fontSize;
 		mState.stateColor.set(1.0f, 1.0f, 1.0f, 1.0f);
 	
-		if (!fontFilePath || (fontSize <= 2))
+		if (!fontFilePath)
 			return;
 
 		mGlUniformSampler = hr::gl::glGetUniformLocation(glFragmentProgramID, "texTextSampler");
@@ -452,8 +400,10 @@ namespace hr { namespace render { namespace tools
 		mGl.sampler.setMinFilter(hr::gl::objects::Sampler::FilterType::Linear);
 		mGl.sampler.setMagFilter(hr::gl::objects::Sampler::FilterType::Linear);
 		mGl.sampler.setWrap(hr::gl::objects::Sampler::WrapType::ClampBorder);
-		mGl.sampler.setBorderColor(0.0f, 0.0f, 0.0f, 0.0f);
-	
+		mGl.sampler.setBorderColor(0.0f, 0.0f, 0.0f, 1.0f);
+
+		if (!createCharData())
+			return;
 		if (!initFont(fontFilePath))
 			return;
 
@@ -586,7 +536,7 @@ namespace hr { namespace render { namespace tools
 
 	float Font::getCharWidth(const unsigned int &unicodeChar) const
 	{
-		std::unordered_map<unsigned short, CharacterData>::const_iterator it = mCharMap.find(unicodeChar);
+		auto it = mCharMap.find(unicodeChar);
 		if (it == mCharMap.end())
 			return 0.0f;
 
@@ -609,7 +559,7 @@ namespace hr { namespace render { namespace tools
 
 		for (const auto& curCharUnicode : StringUtils::utf8Wrapper(text))
 		{
-			std::unordered_map<unsigned short, CharacterData>::const_iterator itChar = mCharMap.find(curCharUnicode);
+			auto itChar = mCharMap.find(curCharUnicode);
 			if (itChar == mCharMap.end())
 				continue;
 
@@ -619,7 +569,7 @@ namespace hr { namespace render { namespace tools
 				continue;
 			}
 
-			totalWidth += itChar->second.advanceX;
+			totalWidth += (itChar->second.advanceX * mState.scale);
 			if (totalWidth > maxWidth)
 				return numChars;
 
@@ -637,7 +587,7 @@ namespace hr { namespace render { namespace tools
 		float totalWidth = 0.0f;
 		for (const auto& curCharUnicode : StringUtils::utf8Wrapper(text))
 		{
-			std::unordered_map<unsigned short, CharacterData>::const_iterator itChar = mCharMap.find(curCharUnicode);
+			auto itChar = mCharMap.find(curCharUnicode);
 			if (itChar == mCharMap.end())
 				continue;
 
@@ -677,9 +627,9 @@ namespace hr { namespace render { namespace tools
 		return totalWidth * mState.scale;
 	}
 
-	void Font::paintBegin(const float * const tranformationMatrix, float scale)
+	void Font::paintBegin(size_t targetSize, const float * const tranformationMatrix)
 	{
-		if (mState.paintStarted || (scale == 0.0f))
+		if (mState.paintStarted || (targetSize <= 0))
 			return;
 
 		mGl.texture.bind(0);
@@ -692,7 +642,7 @@ namespace hr { namespace render { namespace tools
 
 		hr::gl::glBindProgramPipeline(mGlProgramPipelineID);
 
-		mState.scale = scale;
+		mState.scale = static_cast<float>(targetSize) / baseFontSize;
 		mState.paintStarted = true;
 	}
 

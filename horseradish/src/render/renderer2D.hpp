@@ -32,6 +32,6 @@ namespace hr { namespace render
 			: glContext(glContext)
 		{ }
 
-		void initialize(size_t renderWidth, size_t renderHeight, hr::io::FileSystem * const fileSystem, const char* const textFont, size_t textSize);
+		void initialize(size_t renderWidth, size_t renderHeight, hr::io::FileSystem * const fileSystem, const char* const textFont);
 	};
 } }

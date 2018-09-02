@@ -78,7 +78,7 @@ namespace hr { namespace render
 		return color;
 	}
 
-	void ProfilerUI::drawInfo(const hr::Rectangle<float>& viewRect, const hr::Matrix &transformMatrix) const
+	void ProfilerUI::drawInfo(size_t textSize, const hr::Rectangle<float>& viewRect, const hr::Matrix &transformMatrix) const
 	{
 		if (mInfoStr.empty())
 			return;
@@ -100,13 +100,13 @@ namespace hr { namespace render
 			glImmediateMode.addPosition(viewRect.width, posY - 5.0f);
 		glImmediateMode.endDraw();
 
-		guiFont.paintBegin(transformMatrix.data());
+		guiFont.paintBegin(textSize, transformMatrix.data());
 			guiFont.setColor(1.0f, 1.0f, 1.0f);
 			guiFont.write(posX, posY, mInfoStr);
 		guiFont.paintEnd();
 	}
 
-	void ProfilerUI::drawStats(const hr::Rectangle<float>& viewRect, const hr::Matrix &transformMatrix) const
+	void ProfilerUI::drawStats(size_t textSize, const hr::Rectangle<float>& viewRect, const hr::Matrix &transformMatrix) const
 	{
 		if (GraphStatIds.empty())
 			return;
@@ -167,7 +167,7 @@ namespace hr { namespace render
 		hr::gl::glDisable(GL_LINE_SMOOTH);
 
 		// legend
-		guiFont.paintBegin(transformMatrix.data());
+		guiFont.paintBegin(textSize, transformMatrix.data());
 
 		float posX = graphRect.x;
 		for (const auto& curSample : samplePos)
@@ -203,7 +203,6 @@ namespace hr { namespace render
 		hr::gl::glProgramUniformMatrix4fv(mRenderer.mShaders.drawNoTex.progVertex.id(), mRenderer.mShaders.drawNoTex.progVertex.getUniformLocation("transformationMatrix"), 1, false, transformMatrix.data());
 
 		auto& glImmediateMode = mRenderer.mGlImmediateMode;
-		auto& guiFont = *mRenderer.mGui.font;
 
 		glImmediateMode.beginDraw(hr::gl::tools::ImmediateMode::GeometryType::Quads);
 		glImmediateMode.setColor(0, 0, 0, hr::Color::convertColor(bkgAlpha));
@@ -219,7 +218,7 @@ namespace hr { namespace render
 		glImmediateMode.endDraw();
 	}
 
-	void ProfilerUI::draw(const hr::gl::tools::Viewport& viewport) const
+	void ProfilerUI::draw(size_t textSize, const hr::gl::tools::Viewport& viewport) const
 	{
 		if (!isVisible())
 			return;
@@ -229,7 +228,7 @@ namespace hr { namespace render
 		if (mShowInfo)
 		{
 			hr::Rectangle<float> viewRect(0.0f, 0.0f, viewport.width(), viewport.height());
-			drawInfo(viewRect, transformMatrix);
+			drawInfo(textSize, viewRect, transformMatrix);
 		}
 
 		if (mShowStats)
@@ -237,7 +236,7 @@ namespace hr { namespace render
 			hr::Rectangle<float> viewRect(20.0f, 20.0f, viewport.width() - 40.0f, (viewport.height() * 0.5f) - 40.0f);
 
 			drawStatsBackground(viewRect, transformMatrix, 0.8f);
-			drawStats(viewRect, transformMatrix);
+			drawStats(textSize, viewRect, transformMatrix);
 		}
 	}
 

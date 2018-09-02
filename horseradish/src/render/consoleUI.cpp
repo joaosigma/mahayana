@@ -132,7 +132,7 @@ namespace hr { namespace render
 		}
 	}
 
-	void ConsoleUI::drawContent(const hr::Matrix &transformMatrix) const
+	void ConsoleUI::drawContent(size_t textSize, const hr::Matrix &transformMatrix) const
 	{
 		if (!mRenderer.mGui.font)
 			return;
@@ -145,7 +145,7 @@ namespace hr { namespace render
 
 		//draw prompt
 		{
-			guiFont->paintBegin(transformMatrix.data());
+			guiFont->paintBegin(textSize, transformMatrix.data());
 			guiFont->setColor(1.0f, 1.0f, 1.0f);
 
 			std::string unicodeStr = PromptDefault;
@@ -211,7 +211,7 @@ namespace hr { namespace render
 				return (maxLines > 0);
 			}, mLogView.offset);
 
-			guiFont->paintBegin(transformMatrix.data());
+			guiFont->paintBegin(textSize, transformMatrix.data());
 			guiFont->setColor(1.0f, 1.0f, 1.0f);
 
 			for (const auto& logMsg : logMsgs)
@@ -343,7 +343,7 @@ namespace hr { namespace render
 		mTextRect.reset(mViewRect.x + 9.0f, mViewRect.y + 9.0f, mViewRect.width - 18.0f, mViewRect.height - 18.0f);
 	}
 
-	void ConsoleUI::draw(const hr::gl::tools::Viewport& viewport) const
+	void ConsoleUI::draw(size_t textSize, const hr::gl::tools::Viewport& viewport) const
 	{
 		if (!isVisible())
 			return;
@@ -351,7 +351,7 @@ namespace hr { namespace render
 		hr::Matrix transformMatrix = viewport.getProjection(hr::gl::tools::Viewport::ProjectionType::Proj2D);
 
 		drawBackground(transformMatrix, 0.8f);
-		drawContent(transformMatrix);
+		drawContent(textSize, transformMatrix);
 	}
 
 	bool ConsoleUI::isVisible() const

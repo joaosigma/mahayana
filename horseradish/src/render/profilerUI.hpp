@@ -17,8 +17,8 @@ namespace hr { namespace render
 		hr::render::Renderer2D& mRenderer;
 		const hr::engine::Profiler& mProfiler;
 		
-		void drawInfo(const hr::Rectangle<float>& viewRect, const hr::Matrix &transformMatrix) const;
-		void drawStats(const hr::Rectangle<float>& viewRect, const hr::Matrix &transformMatrix) const;
+		void drawInfo(size_t textSize, const hr::Rectangle<float>& viewRect, const hr::Matrix &transformMatrix) const;
+		void drawStats(size_t textSize, const hr::Rectangle<float>& viewRect, const hr::Matrix &transformMatrix) const;
 		void drawStatsBackground(const hr::Rectangle<float>& viewRect, const hr::Matrix &transformMatrix, float bkgAlpha) const;
 
 	public:
@@ -26,7 +26,7 @@ namespace hr { namespace render
 			: mRenderer(renderer), mProfiler(profiler)
 		{ }
 
-		void draw(const hr::gl::tools::Viewport& viewport) const;
+		void draw(size_t textSize, const hr::gl::tools::Viewport& viewport) const;
 
 		void processStats();
 

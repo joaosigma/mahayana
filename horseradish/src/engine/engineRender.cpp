@@ -90,8 +90,11 @@ namespace hr { namespace engine
 			ctx.info("   Maximum rectangle texture size: {0}x{0}", infoValueInt);
 		}
 
-		void CALLBACK openglDebugMessagesCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *message, const void *userParam)
+		void CALLBACK openglDebugMessagesCallback(GLenum source, GLenum type, GLuint, GLenum severity, GLsizei length, const GLchar *message, const void *userParam)
 		{
+			if (length <= 0)
+				return;
+
 			const char *glSource = "", *glType = "", *glSeverity = "";
 
 			auto logger = const_cast<hr::engine::Logger*>(reinterpret_cast<const hr::engine::Logger*>(userParam));
@@ -254,9 +257,7 @@ namespace hr { namespace engine
 			size_t displayHeight = var<int>("renderer.dims.height");
 
 			renderer2D = std::make_unique<hr::render::Renderer2D>(*glContext);
-			renderer2D->initialize(displayWidth, displayHeight,
-				mFileSystem.get(), var<std::string>("sys.console.text.font").c_str(),
-				var<int>("sys.console.text.size"));
+			renderer2D->initialize(displayWidth, displayHeight, mFileSystem.get(), var<std::string>("sys.console.text.font").c_str());
 
 			rendererDebug = std::make_unique<hr::render::RendererDebug>(*glContext, *mFileSystem, *renderer2D);
 
@@ -351,7 +352,7 @@ namespace hr { namespace engine
 				timerFrame.reStart();
 				profiler->nextSample();
 
-				timestep.t = timerTotal.getTimeS();
+				timestep.t = static_cast<float>(timerTotal.getTimeS());
 
 				//--------------------
 				//Start frame rendering requests to queue stuff onto the GPU
@@ -383,14 +384,16 @@ namespace hr { namespace engine
 				//draw console and/or profiler
 				if ((profilerUI && profilerUI->isVisible()) || (consoleUI && consoleUI->isVisible()))
 				{
+					auto fontSize = static_cast<size_t>(var<int>("sys.console.text.size"));
+
 					hr::gl::glEnable(GL_BLEND);
 					hr::gl::glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 					if (profilerUI && profilerUI->isVisible())
-						profilerUI->draw(viewportRender); //sys.profiler.draw
+						profilerUI->draw(fontSize, viewportRender);
 
 					if (consoleUI && consoleUI->isVisible())
-						consoleUI->draw(viewportRender);
+						consoleUI->draw(fontSize, viewportRender);
 
 					hr::gl::glDisable(GL_BLEND);
 				}
@@ -485,7 +488,7 @@ namespace hr { namespace engine
 					auto frameTotalTimeMS = timerFrame.getTimeMS();
 					if (frameTotalTimeMS < 16.5) //cap to 60fps
 					{
-						std::this_thread::sleep_for(std::chrono::milliseconds(hr::Math::ftoi(16 - frameTotalTimeMS)));
+						std::this_thread::sleep_for(std::chrono::milliseconds(hr::Math::ftoi(16.0f - frameTotalTimeMS)));
 						while (timerFrame.getTimeMS() < 16.5);
 					}
 				}

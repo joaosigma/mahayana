@@ -21,7 +21,7 @@ namespace hr { namespace render { namespace tools
 
 		struct KerningData
 		{
-			unsigned short char1 = 0, char2 = 0;
+			uint32_t codepoint1 = 0, codepoint2 = 0;
 			float offset = 0;
 		};
 
@@ -33,7 +33,7 @@ namespace hr { namespace render { namespace tools
 				float offsetX, offsetY, width, height;
 				float minUV[2], maxUV[2];
 			} rect;
-			const KerningData *kernData = nullptr;
+			std::pair<size_t, size_t> kernDataIndices; //{start index, size}
 		};
 
 		struct UnicodeRange
@@ -53,12 +53,11 @@ namespace hr { namespace render { namespace tools
 		};
 
 		static constexpr size_t sMumMaxChar = 256;
-		static constexpr unsigned short sBufferPadding = 5;
 
 	private:
 		bool mValid = false;
 		std::vector<KerningData> mKerningData;
-		std::unordered_map<unsigned short, CharacterData> mCharMap;
+		std::unordered_map<uint32_t, CharacterData> mCharMap;
 	
 		unsigned int mGlVertexProgramID, mGlFragmentProgramID, mGlProgramPipelineID, mGlUniformSampler, mGlUniformMatrix;
 	
@@ -83,7 +82,6 @@ namespace hr { namespace render { namespace tools
 
 		struct
 		{
-			size_t size = 0;
 			float maxHeight = 0.0f, baseHeight = 0.0f;
 		} mFontInfo;
 
@@ -94,7 +92,7 @@ namespace hr { namespace render { namespace tools
 		void internalWrite(const float &px, const float &py, const std::string& str, UnicodeRange strRange);
 
 	public:
-		Font(const size_t fontSize, const char * const fontFilePath, unsigned int glVertexProgramID, unsigned int glFragmentProgramID, unsigned int glProgramPipelineID);
+		Font(const char * const fontFilePath, unsigned int glVertexProgramID, unsigned int glFragmentProgramID, unsigned int glProgramPipelineID);
 		~Font();
 
 		void layout(const std::string& text, const float maxWidth, std::function<void(size_t curLine, size_t unicodeCharOffset, size_t unicodeCharCount)> writeCb) const;
@@ -123,7 +121,7 @@ namespace hr { namespace render { namespace tools
 		float getTextWidth(const std::string& text) const;
 		float getTextWidth(const std::string&, const size_t numUnicodeCharsSkip, const size_t maxUnicodeCharsRead) const;
 
-		void paintBegin(const float * const tranformationMatrix, float scale = 1.0f);
+		void paintBegin(size_t targetSize, const float * const tranformationMatrix);
 		void paintEnd();
 		void paintFlush();
 	};

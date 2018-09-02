@@ -40,9 +40,6 @@
     <Filter Include="libs\stb">
       <UniqueIdentifier>{96cea2fa-b4b9-4790-a97e-9590d5422d35}</UniqueIdentifier>
     </Filter>
-    <Filter Include="libs\sdf">
-      <UniqueIdentifier>{99fce4de-c5ba-4be6-a666-3a9e3f2a368a}</UniqueIdentifier>
-    </Filter>
     <Filter Include="libs\forsyth">
       <UniqueIdentifier>{1cfeb5fb-8b93-4a80-9cb8-ca9fd0cd1a4c}</UniqueIdentifier>
     </Filter>
@@ -265,9 +262,6 @@
     <ClCompile Include="..\..\src\common\opengl\tools\viewport.cpp">
       <Filter>common\opengl\tools</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\libs\sdf\sdf.cpp">
-      <Filter>libs\sdf</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\libs\forsyth\forsythtriangleorderoptimizer.cpp">
       <Filter>libs\forsyth</Filter>
     </ClCompile>
@@ -423,6 +417,9 @@
     </ClCompile>
     <ClCompile Include="..\..\src\libs\sha256\sha256.c">
       <Filter>libs\sha256</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\libs\stb\stb_truetype.cpp">
+      <Filter>libs\stb</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -612,9 +609,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\libs\stb\stb_image_resize.h">
       <Filter>libs\stb</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\libs\sdf\sdf.h">
-      <Filter>libs\sdf</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\libs\forsyth\forsythtriangleorderoptimizer.h">
       <Filter>libs\forsyth</Filter>
@@ -927,6 +921,9 @@
     </ClInclude>
     <ClInclude Include="..\..\src\libs\sha256\sha256.h">
       <Filter>libs\sha256</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\libs\stb\stb_truetype.h">
+      <Filter>libs\stb</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
