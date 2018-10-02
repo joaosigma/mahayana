@@ -143,7 +143,7 @@ namespace hr { namespace engine
 
 				Runtime::parsePath(funcName, [&](const std::string& token, bool isLastToken) -> bool
 				{
-					auto tokenWChar = hr::StringUtils::conv2UTF16(token);
+					auto tokenWChar = hr::StringUtils::conv2Native(token);
 
 					if (isLastToken)
 					{
@@ -221,7 +221,7 @@ namespace hr { namespace engine
 				auto pClass = new T(vm, instanceObj, ctx);
 
 				if (!ctx.mErrorThrown.empty())
-					return sq_throwerror(vm, hr::StringUtils::conv2UTF16(ctx.mErrorThrown).c_str());
+					return sq_throwerror(vm, hr::StringUtils::conv2Native(ctx.mErrorThrown).c_str());
 
 				sq_setinstanceup(vm, 1, pClass);
 				sq_setreleasehook(vm, 1, NativeClass<T>::vmDeleteClassInstance);
@@ -260,7 +260,7 @@ namespace hr { namespace engine
 				if (ctx.mReturnValueSet)
 					sq_pop(vm, 1);
 
-				return sq_throwerror(vm, hr::StringUtils::conv2UTF16(ctx.mErrorThrown).c_str());
+				return sq_throwerror(vm, hr::StringUtils::conv2Native(ctx.mErrorThrown).c_str());
 			}
 
 		public:
@@ -271,7 +271,7 @@ namespace hr { namespace engine
 			bool registerClassMethod(const char* const funcName, RegisteredClassFuncType funcCallback)
 			{
 				std::string funcNameStr(funcName);
-				std::wstring funcNameWChar = hr::StringUtils::conv2UTF16(funcNameStr);
+				std::wstring funcNameWChar = hr::StringUtils::conv2Native(funcNameStr);
 
 				sq_pushstring(mVM, funcNameWChar.c_str(), funcNameWChar.size());
 					sq_pushstring(mVM, funcNameWChar.c_str(), funcNameWChar.size()); //free var
@@ -285,7 +285,7 @@ namespace hr { namespace engine
 
 			bool registerClassTable(const char* const tableName)
 			{
-				auto tableNameWChar = hr::StringUtils::conv2UTF16(tableName);
+				auto tableNameWChar = hr::StringUtils::conv2Native(tableName);
 
 				sq_pushstring(mVM, tableNameWChar.c_str(), tableNameWChar.size());
 				sq_newtable(mVM);
@@ -297,7 +297,7 @@ namespace hr { namespace engine
 
 			bool registerClassVar(const char* const varName)
 			{
-				auto varNameWChar = hr::StringUtils::conv2UTF16(varName);
+				auto varNameWChar = hr::StringUtils::conv2Native(varName);
 
 				sq_pushstring(mVM, varNameWChar.c_str(), varNameWChar.size());
 				sq_pushnull(mVM);

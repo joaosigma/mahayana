@@ -26,7 +26,7 @@ namespace hr { namespace render
 			size_t historyOffset = 0;
 			size_t maxHistorySize = 0;
 			std::deque<std::string> history;
-			std::vector<unsigned int> promptUnicode;
+			std::u32string promptUnicode;
 		} mPrompt;
 
 		bool mMainVisible = false;

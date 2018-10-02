@@ -254,7 +254,7 @@ namespace hr::io
 		WIN32_FIND_DATA findData;
 
 		{
-			auto baseFolderAndFilterWChar = hr::StringUtils::conv2UTF16(baseFolderAndFilter);
+			auto baseFolderAndFilterWChar = hr::StringUtils::conv2Native(baseFolderAndFilter);
 
 			handleFind = FindFirstFile(baseFolderAndFilterWChar.c_str(), &findData);
 			if (handleFind == INVALID_HANDLE_VALUE)
@@ -304,7 +304,7 @@ namespace hr::io
 
 		DWORD fileAtributes;
 		{
-			auto filePathWChar = hr::StringUtils::conv2UTF16(std::string(filePath));
+			auto filePathWChar = hr::StringUtils::conv2Native(std::string(filePath));
 
 			fileAtributes = GetFileAttributes(filePathWChar.c_str());
 		}
@@ -396,7 +396,7 @@ namespace hr::io
 			return -1;
 
 		{
-			auto baseFolderWChar = hr::StringUtils::conv2UTF16(std::string(baseFolder));
+			auto baseFolderWChar = hr::StringUtils::conv2Native(std::string(baseFolder));
 
 			DWORD changeFlags = 0;
 			if (changeType & FileName)

@@ -1,4 +1,4 @@
-#include "windowImplWin32.hpp"
+﻿#include "windowImplWin32.hpp"
 
 #if (defined(WIN32) || defined(_WIN32) || defined(__WIN32)) && !defined(__CYGWIN__)
 
@@ -21,7 +21,7 @@ namespace hr { namespace platform
 			RECT secondaryAreaFull, secondaryAreaWork;
 		} cbData;
 
-		EnumDisplayMonitors(nullptr, nullptr, [](HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData) -> BOOL
+		EnumDisplayMonitors(nullptr, nullptr, [](HMONITOR hMonitor, HDC, LPRECT, LPARAM dwData) -> BOOL
 		{
 			MONITORINFO monitorInfo;
 			memset(&monitorInfo, 0, sizeof(MONITORINFO));
@@ -239,7 +239,7 @@ namespace hr { namespace platform
 
 		if (inputData.header.dwType == RIM_TYPEKEYBOARD)
 		{
-			bool keyDown;
+			bool keyDown = false;
 			if (!(inputData.data.keyboard.Flags & RI_KEY_MAKE))
 				keyDown = true;
 			if (inputData.data.keyboard.Flags & RI_KEY_BREAK)
@@ -289,7 +289,7 @@ namespace hr { namespace platform
 			return false;
 		}
 
-		mClassName = hr::StringUtils::conv2UTF16("HorseRadish graphics engine...");
+		mClassName = hr::StringUtils::conv2Native("HorseRadish graphics engine...");
 		mHModule = GetModuleHandle(NULL); //safe since this is not a DLL
 
 		{
@@ -331,7 +331,7 @@ namespace hr { namespace platform
 			DWORD dwExStyle = 0;
 			DWORD dwStyle = WS_POPUP | WS_VISIBLE;
 
-			auto windowTitleWChar = hr::StringUtils::conv2UTF16(windowTitle);
+			auto windowTitleWChar = hr::StringUtils::conv2Native(windowTitle);
 
 			mHWnd = CreateWindowEx(dwExStyle, mClassName.c_str(), windowTitleWChar.c_str(), dwStyle,
 				0, 0, mOriginalDeviceMode.dmPelsWidth, mOriginalDeviceMode.dmPelsHeight,
@@ -355,7 +355,7 @@ namespace hr { namespace platform
 			DWORD dwExStyle = 0;
 			DWORD dwStyle = WS_POPUP | WS_VISIBLE;
 		
-			auto windowTitleWChar = hr::StringUtils::conv2UTF16(windowTitle);
+			auto windowTitleWChar = hr::StringUtils::conv2Native(windowTitle);
 
 			mHWnd = CreateWindowEx(dwExStyle, mClassName.c_str(), windowTitleWChar.c_str(), dwStyle,
 				monitorRect.left, monitorRect.top, monitorRect.right - monitorRect.left, monitorRect.bottom - monitorRect.top,
@@ -388,7 +388,7 @@ namespace hr { namespace platform
 			if (((windowRect.right - windowRect.left) * (windowRect.bottom - windowRect.top)) > ((monitorRect.right - monitorRect.left) * (monitorRect.bottom - monitorRect.top)))
 				windowRect = monitorRect;
 
-			auto windowTitleWChar = hr::StringUtils::conv2UTF16(windowTitle);
+			auto windowTitleWChar = hr::StringUtils::conv2Native(windowTitle);
 
 			mHWnd = CreateWindowEx(dwExStyle, mClassName.c_str(), windowTitleWChar.c_str(), dwStyle,
 				monitorRect.left, monitorRect.top, (windowRect.right - windowRect.left), (windowRect.bottom - windowRect.top),
@@ -549,42 +549,42 @@ namespace hr { namespace platform
 
 	void WindowImpl::MsgBoxInfo(const std::string& msg)
 	{
-		auto msgWChar = hr::StringUtils::conv2UTF16(msg);
+		auto msgWChar = hr::StringUtils::conv2Native(msg);
 
 		MessageBox(nullptr, msgWChar.c_str(), L"Info", MB_OK | MB_ICONINFORMATION);
 	}
 
 	void WindowImpl::MsgBoxInfo(const char * const msg)
 	{
-		auto msgWChar = hr::StringUtils::conv2UTF16(msg);
+		auto msgWChar = hr::StringUtils::conv2Native(msg);
 
 		MessageBox(nullptr, msgWChar.c_str(), L"Info", MB_OK | MB_ICONINFORMATION);
 	}
 
 	void WindowImpl::MsgBoxWarn(const std::string& msg)
 	{
-		auto msgWChar = hr::StringUtils::conv2UTF16(msg);
+		auto msgWChar = hr::StringUtils::conv2Native(msg);
 
 		MessageBox(nullptr, msgWChar.c_str(), L"Warning", MB_OK | MB_ICONWARNING);
 	}
 
 	void WindowImpl::MsgBoxWarn(const char * const msg)
 	{
-		auto msgWChar = hr::StringUtils::conv2UTF16(msg);
+		auto msgWChar = hr::StringUtils::conv2Native(msg);
 
 		MessageBox(nullptr, msgWChar.c_str(), L"Warning", MB_OK | MB_ICONWARNING);
 	}
 
 	void WindowImpl::MsgBoxError(const std::string& msg)
 	{
-		auto msgWChar = hr::StringUtils::conv2UTF16(msg);
+		auto msgWChar = hr::StringUtils::conv2Native(msg);
 
 		MessageBox(nullptr, msgWChar.c_str(), L"Error", MB_OK | MB_ICONERROR);
 	}
 
 	void WindowImpl::MsgBoxError(const char * const msg)
 	{
-		auto msgWChar = hr::StringUtils::conv2UTF16(msg);
+		auto msgWChar = hr::StringUtils::conv2Native(msg);
 	
 		MessageBox(nullptr, msgWChar.c_str(), L"Error", MB_OK | MB_ICONERROR);
 	}
@@ -678,7 +678,7 @@ namespace hr { namespace platform
 		}
 
 		{
-			auto openGLModuleNameWChar = hr::StringUtils::conv2UTF16(openGLModuleName);
+			auto openGLModuleNameWChar = hr::StringUtils::conv2Native(openGLModuleName);
 
 			openglModule = GetModuleHandle(openGLModuleNameWChar.c_str());
 			if (openglModule == nullptr)

@@ -420,8 +420,8 @@ namespace hr { namespace render
 							mPrompt.historyOffset = mPrompt.history.size() - 1;
 
 						mPrompt.promptUnicode.clear();
-						for (const auto& curUnicode : hr::StringUtils::utf8Wrapper(mPrompt.history[mPrompt.historyOffset]))
-							mPrompt.promptUnicode.push_back(curUnicode);
+						for (const auto& codepoint : hr::StringUtils::utf8Wrapper(mPrompt.history[mPrompt.historyOffset]))
+							mPrompt.promptUnicode.push_back(codepoint);
 
 						updateCursorOffset(mPrompt.promptUnicode.size());
 						return;
@@ -435,8 +435,8 @@ namespace hr { namespace render
 						mPrompt.historyOffset--;
 
 						mPrompt.promptUnicode.clear();
-						for (const auto& curUnicode : hr::StringUtils::utf8Wrapper(mPrompt.history[mPrompt.historyOffset]))
-							mPrompt.promptUnicode.push_back(curUnicode);
+						for (const auto& codepoint : hr::StringUtils::utf8Wrapper(mPrompt.history[mPrompt.historyOffset]))
+							mPrompt.promptUnicode.push_back(codepoint);
 
 						updateCursorOffset(mPrompt.promptUnicode.size());
 						return;

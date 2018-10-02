@@ -65,7 +65,7 @@ namespace hr
 			return end;
 		}
 
-		size_t ucodepointUTF8Size(const unsigned int codepoint)
+		size_t ucodepointUTF8Size(const char32_t codepoint)
 		{
 			if (codepoint < 0x80)
 				return 1;
@@ -78,40 +78,86 @@ namespace hr
 			return 0;
 		}
 
-		size_t ucodepointUTF8Encode(const unsigned int codepoint, char* const outBuffer)
+		size_t ucodepointUTF8Encode(const char32_t codepoint, char* const out)
 		{
 			if (codepoint < 0x80)
 			{
-				outBuffer[0] = static_cast<char>(codepoint);
+				out[0] = static_cast<char>(codepoint);
 				return 1;
 			}
 
 			if (codepoint < 0x800)
 			{
-				outBuffer[0] = static_cast<char>((codepoint >> 6) | 0xC0);
-				outBuffer[1] = static_cast<char>((codepoint & 0x3F) | 0x80);
+				out[0] = static_cast<char>((codepoint >> 6) | 0xC0);
+				out[1] = static_cast<char>((codepoint & 0x3F) | 0x80);
 				return 2;
 			}
 
 			if (codepoint < 0x10000)
 			{
-				outBuffer[0] = static_cast<char>((codepoint >> 12) | 0xE0);
-				outBuffer[1] = static_cast<char>(((codepoint >> 6) & 0x3F) | 0x80);
-				outBuffer[2] = static_cast<char>((codepoint & 0x3F) | 0x80);
+				out[0] = static_cast<char>((codepoint >> 12) | 0xE0);
+				out[1] = static_cast<char>(((codepoint >> 6) & 0x3F) | 0x80);
+				out[2] = static_cast<char>((codepoint & 0x3F) | 0x80);
 				return 3;
 			}
 
 			if (codepoint < 0x110000)
 			{
-				outBuffer[0] = static_cast<char>((codepoint >> 18) | 0xF0);
-				outBuffer[1] = static_cast<char>(((codepoint >> 12) & 0x3F) | 0x80);
-				outBuffer[2] = static_cast<char>(((codepoint >> 6) & 0x3F) | 0x80);
-				outBuffer[3] = static_cast<char>((codepoint & 0x3F) | 0x80);
+				out[0] = static_cast<char>((codepoint >> 18) | 0xF0);
+				out[1] = static_cast<char>(((codepoint >> 12) & 0x3F) | 0x80);
+				out[2] = static_cast<char>(((codepoint >> 6) & 0x3F) | 0x80);
+				out[3] = static_cast<char>((codepoint & 0x3F) | 0x80);
 				return 4;
 			}
 
-			outBuffer[0] = '\0';
 			return 0;
+		}
+
+		size_t ucodepointUTF16Encode(char32_t codepoint, char16_t* const out)
+		{
+			if (codepoint <= 0xFFFF)
+			{
+				//UTF-16 surrogate values are illegal in UTF-32 (0xFFFF or 0xFFFE are both reserved values)
+				if ((codepoint >= 0xD800) && (codepoint <= 0xDFFF))
+					return 0;
+
+				out[0] = static_cast<char16_t>(codepoint);
+				return 1;
+			}
+
+			if (codepoint > 0x0010FFFF) //max legal UTF32
+				return 0;
+
+			//target is a character in range 0xFFFF - 0x10FFFF
+			out[0] = static_cast<char16_t>(((codepoint - 0x0010000UL) >> 10) + 0xD800);
+			out[1] = static_cast<char16_t>(((codepoint - 0x0010000UL) & 0x3FFUL) + 0xDC00);
+			return 2;
+		}
+
+		size_t ucodepointUTF16Decode(const char16_t* in, size_t count, char32_t& codepoint)
+		{
+			if (count <= 0)
+				return 0;
+
+			auto uc = static_cast<char32_t>(*in++);
+			if ((uc - 0xd800) >= 2048) //isn't a surrogate
+			{
+				codepoint = uc;
+				return 1; //just read 1 element
+			}
+
+			if (count < 2)
+				return 0;
+
+			if ((uc & 0xfffffc00) != 0xd800) //must be high surrogate (uc = high)
+				return 0;
+
+			auto low = static_cast<char32_t>(*in);
+			if ((low & 0xfffffc00) != 0xdc00) //must be low surrogate
+				return 0;
+
+			codepoint = (uc << 10) + low - 0x35fdc00;
+			return 2;
 		}
 	}
 
@@ -144,21 +190,14 @@ namespace hr
 		return *this;
 	}
 
-	StringUtils::utf8Wrapper::utf8Iterator StringUtils::utf8Wrapper::utf8Iterator::operator++(int)
-	{
-		utf8Iterator tmp(*this);
-		operator++();
-		return tmp;
-	}
-
-	unsigned int StringUtils::utf8Wrapper::utf8Iterator::operator*()
+	char32_t StringUtils::utf8Wrapper::utf8Iterator::operator*() noexcept
 	{
 		if (mIt == mItEnd)
 			return 0;
 
 		mItNext = mIt;
 
-		uint32_t codepoint;
+		uint32_t codepoint = 0;
 		uint32_t state = UTF8_ACCEPT;
 
 		while (mItNext != mItEnd)
@@ -175,10 +214,10 @@ namespace hr
 		}
 
 		++mItNext;
-		return static_cast<unsigned int>(codepoint);
+		return static_cast<char32_t>(codepoint);
 	}
 
-	StringUtils::utf8Wrapper::utf8Wrapper(std::string_view str)
+	StringUtils::utf8Wrapper::utf8Wrapper(std::string_view str) noexcept
 		: mStr{ std::move(str) }
 	{ }
 
@@ -211,6 +250,49 @@ namespace hr
 		s++;
 		mStr = std::string_view(reinterpret_cast<const char*>(s), mStr.length() - (s - reinterpret_cast<const uint8_t*>(mStr.data())));
 	}
+
+	StringUtils::utf16Wrapper::utf16Iterator& StringUtils::utf16Wrapper::utf16Iterator::operator++()
+	{
+		if (mIt == mItEnd)
+			return *this;
+
+		if (mIt < mItNext) //already moved forward (see operator*)
+		{
+			mIt = mItNext;
+			return *this;
+		}
+
+		char32_t codepoint;
+		auto count = ucodepointUTF16Decode(mItNext, mItEnd - mItNext, codepoint);
+		if (count == 0)
+			mIt = mItNext = mItEnd; //invalid
+		else
+			mIt += count;
+
+		return *this;
+	}
+
+	char32_t StringUtils::utf16Wrapper::utf16Iterator::operator*() noexcept
+	{
+		if (mIt == mItEnd)
+			return 0;
+
+		mItNext = mIt;
+		
+		char32_t codepoint;
+		mItNext += ucodepointUTF16Decode(mItNext, mItEnd - mItNext, codepoint);
+		if (mItNext == mIt)
+		{
+			mIt = mItNext = mItEnd; //invalid
+			return 0;
+		}
+
+		return codepoint;
+	}
+
+	StringUtils::utf16Wrapper::utf16Wrapper(std::u16string_view str) noexcept
+		: mStr{ std::move(str) }
+	{ }
 
 	bool StringUtils::isValidUTF8(std::string_view str)
 	{
@@ -248,103 +330,153 @@ namespace hr
 		return count;
 	}
 
-	void StringUtils::conv2UTF8(const std::wstring& strUTF16, std::string& strUTF8)
+	void StringUtils::conv2UTF8(std::wstring_view str, std::string& strUTF8)
 	{
-		if (strUTF16.empty())
+		if constexpr (sizeof(wchar_t) == sizeof(char16_t)) //absurd way of checking if we are in windows or not...
+		{
+			conv2UTF8(std::u16string_view{ reinterpret_cast<const char16_t*>(str.data()), str.size() }, strUTF8);
 			return;
-
-		strUTF8.append(std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t>().to_bytes(strUTF16));
+		}
+		else if constexpr (sizeof(wchar_t) == sizeof(char32_t))
+		{
+			conv2UTF8(std::u32string_view{ reinterpret_cast<const char32_t*>(str.data()), str.size() }, strUTF8);
+			return;
+		}
 	}
 
-	void StringUtils::conv2UTF8(const wchar_t* const strUTF16, std::string& strUTF8)
-	{
-		if (!strUTF16)
-			return;
-
-		strUTF8.append(std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t>().to_bytes(strUTF16));
-	}
-
-	void StringUtils::conv2UTF8(const unsigned int ucodepoint, std::string& strUTF8)
+	void StringUtils::conv2UTF8(char32_t codepoint, std::string& strUTF8)
 	{
 		strUTF8.reserve(strUTF8.size() + 4);
 
 		char tmpBuffer[4];
-		auto numBytes = ucodepointUTF8Encode(ucodepoint, tmpBuffer);
+		auto numBytes = ucodepointUTF8Encode(codepoint, tmpBuffer);
 
 		strUTF8.append(tmpBuffer, numBytes);
 	}
 
-	void StringUtils::conv2UTF8(const std::vector<unsigned int>& ucodepoints, std::string& strUTF8)
+	void StringUtils::conv2UTF8(std::u16string_view strUTF16, std::string& strUTF8)
 	{
-		if (ucodepoints.empty())
-			return;
-
-		strUTF8.reserve(strUTF8.size() + (ucodepoints.size() * 2));
-
 		char tmpBuffer[4];
-		for (const auto& codepoint : ucodepoints)
+		for (const auto& codepoint : StringUtils::utf16Wrapper(strUTF16))
 		{
 			auto numBytes = ucodepointUTF8Encode(codepoint, tmpBuffer);
 			strUTF8.append(tmpBuffer, numBytes);
 		}
 	}
 
-	std::string StringUtils::conv2UTF8(const std::wstring& strUTF16)
+	void StringUtils::conv2UTF8(std::u32string_view strUTF32, std::string& strUTF8)
+	{
+		if (strUTF32.empty())
+			return;
+
+		strUTF8.reserve(strUTF8.size() + (strUTF32.size() * 2));
+
+		char tmpBuffer[4];
+		for (const auto& codepoint : strUTF32)
+		{
+			auto numBytes = ucodepointUTF8Encode(codepoint, tmpBuffer);
+			strUTF8.append(tmpBuffer, numBytes);
+		}
+	}
+
+	std::string StringUtils::conv2UTF8(std::wstring_view str)
+	{
+		std::string strUTF8;
+		StringUtils::conv2UTF8(str, strUTF8);
+		return strUTF8;
+	}
+
+	std::string StringUtils::conv2UTF8(char32_t codepoint)
+	{
+		std::string strUTF8;
+		StringUtils::conv2UTF8(codepoint, strUTF8);
+		return strUTF8;
+	}
+
+	std::string StringUtils::conv2UTF8(std::u16string_view strUTF16)
 	{
 		std::string strUTF8;
 		StringUtils::conv2UTF8(strUTF16, strUTF8);
 		return strUTF8;
 	}
 
-	std::string StringUtils::conv2UTF8(const wchar_t* const strUTF16)
+	std::string StringUtils::conv2UTF8(std::u32string_view strUTF32)
 	{
 		std::string strUTF8;
-		StringUtils::conv2UTF8(strUTF16, strUTF8);
+		StringUtils::conv2UTF8(strUTF32, strUTF8);
 		return strUTF8;
 	}
 
-	std::string StringUtils::conv2UTF8(const unsigned int ucodepoint)
-	{
-		std::string strUTF8;
-		StringUtils::conv2UTF8(ucodepoint, strUTF8);
-		return strUTF8;
-	}
-
-	std::string StringUtils::conv2UTF8(const std::vector<unsigned int>& ucodepoints)
-	{
-		std::string strUTF8;
-		StringUtils::conv2UTF8(ucodepoints, strUTF8);
-		return strUTF8;
-	}
-
-	std::wstring StringUtils::conv2UTF16(const std::string& strUTF8)
+	std::u16string StringUtils::conv2UTF16(std::string_view strUTF8)
 	{
 		if (strUTF8.empty())
-			return std::wstring();
+			return {};
 
-		return std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t>().from_bytes(strUTF8);
+		std::u16string str;
+		str.reserve(strUTF8.size());
+
+		for (const auto& codepoint : StringUtils::utf8Wrapper(strUTF8))
+		{
+			char16_t out[2];
+			auto bytes = ucodepointUTF16Encode(codepoint, out);
+			if (bytes <= 0)
+				return {}; //illegal input
+
+			str.push_back(out[0]);
+			if (bytes == 2)
+				str.push_back(out[1]);
+		}
+
+		return str;
 	}
 
-	std::wstring StringUtils::conv2UTF16(const char* const strUTF8)
-	{
-		if (!strUTF8)
-			return std::wstring();
-
-		return std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t>().from_bytes(strUTF8);
-	}
-
-	std::vector<unsigned int> StringUtils::conv2Unicode(const std::string& strUTF8)
+	std::u32string StringUtils::conv2UTF32(std::string_view strUTF8)
 	{
 		if (strUTF8.empty())
-			return std::vector<unsigned int>();
+			return {};
 
-		std::vector<unsigned int> vec;
-		vec.reserve(strUTF8.size());
+		std::u32string str;
+		str.reserve(strUTF8.size());
 
-		for (const auto& curUnicode : StringUtils::utf8Wrapper(strUTF8))
-			vec.push_back(curUnicode);
+		for (const auto& codepoint : StringUtils::utf8Wrapper(strUTF8))
+			str.push_back(codepoint);
 
-		return vec;
+		return str;
+	}
+
+	std::wstring StringUtils::conv2Native(std::string_view strUTF8)
+	{
+		if constexpr (sizeof(wchar_t) == sizeof(char16_t)) //absurd way of checking if we are in windows or not...
+		{
+			std::wstring str;
+
+			for (const auto& codepoint : StringUtils::utf8Wrapper(strUTF8))
+			{
+				char16_t out[2];
+				auto bytes = ucodepointUTF16Encode(codepoint, out);
+				if (bytes <= 0)
+					return {}; //illegal input
+
+				str.push_back(static_cast<wchar_t>(out[0]));
+				if (bytes == 2)
+					str.push_back(static_cast<wchar_t>(out[1]));
+			}
+
+			return str;
+		}
+		else if constexpr (sizeof(wchar_t) == sizeof(char32_t))
+		{
+			std::wstring str;
+
+			for (const auto& codepoint : StringUtils::utf8Wrapper(strUTF8))
+				str.push_back(static_cast<wchar_t>(codepoint));
+
+			return str;
+		}
+		else
+		{
+			return {};
+		}
 	}
 
 	bool StringUtils::endsWith(std::string_view str, std::string_view ending)
@@ -394,12 +526,12 @@ namespace hr
 		return std::string(skipLeftWhitespace(str.data()), skipRightWhitespace(str.data() + str.length()));
 	}
 
-	void StringUtils::erase(std::string& str, const unsigned int codepoint)
+	void StringUtils::erase(std::string& str, const char32_t codepoint)
 	{
 		str = StringUtils::eraseCopy(str, codepoint);
 	}
 
-	std::string StringUtils::eraseCopy(std::string_view str, const unsigned int codepoint)
+	std::string StringUtils::eraseCopy(std::string_view str, const char32_t codepoint)
 	{
 		std::string newStr;
 		newStr.reserve(str.size());
@@ -417,12 +549,12 @@ namespace hr
 		return newStr;
 	}
 
-	void StringUtils::replace(std::string& str, const unsigned int codepointOld, const unsigned int codepointNew)
+	void StringUtils::replace(std::string& str, const char32_t codepointOld, const char32_t codepointNew)
 	{
 		str = StringUtils::replaceCopy(str, codepointOld, codepointNew);
 	}
 
-	std::string StringUtils::replaceCopy(std::string_view str, const unsigned int codepointOld, const unsigned int codepointNew)
+	std::string StringUtils::replaceCopy(std::string_view str, const char32_t codepointOld, const char32_t codepointNew)
 	{
 		std::string newStr;
 		newStr.reserve(str.size());
@@ -437,17 +569,17 @@ namespace hr
 		return newStr;
 	}
 
-	void StringUtils::replace(std::string& str, const std::string& replaceOldStr, const std::string& replaceNewStr)
+	void StringUtils::replace(std::string& str, std::string_view replaceOldStr, std::string_view replaceNewStr)
 	{
 		str = StringUtils::replaceCopy(str, replaceOldStr, replaceNewStr);
 	}
 
-	std::string StringUtils::replaceCopy(const std::string& str, const std::string& replaceOldStr, const std::string& replaceNewStr)
+	std::string StringUtils::replaceCopy(std::string_view str, std::string_view replaceOldStr, std::string_view replaceNewStr)
 	{
 		if (str.empty() || replaceOldStr.empty())
-			return str;
+			return {};
 
-		std::string newStr = str;
+		std::string newStr{ str };
 
 		std::string::size_type pos;
 		while ((pos = str.find_first_of(replaceOldStr, 0)) != std::string::npos)
@@ -456,12 +588,12 @@ namespace hr
 		return newStr;
 	}
 
-	unsigned int StringUtils::getUnicodeAt(const std::string& str, size_t index)
+	char32_t StringUtils::getUnicodeAt(std::string_view str, size_t index)
 	{
 		if (str.empty())
 			return 0;
 
-		unsigned int curIndex = 0;
+		size_t curIndex = 0;
 		for (const auto& codepoint : StringUtils::utf8Wrapper(str))
 		{
 			if (curIndex == index)
@@ -479,7 +611,7 @@ namespace hr
 		std::swap(reversed, str);
 	}
 
-	std::string StringUtils::reverseCopy(const std::string& str)
+	std::string StringUtils::reverseCopy(std::string_view str)
 	{
 		if (str.empty())
 			return std::string();

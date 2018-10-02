@@ -1557,7 +1557,7 @@ namespace hr { namespace gl
 			if (openGLModule != nullptr)
 				return false;
 
-			auto openGLLibraryNameWChar = hr::StringUtils::conv2UTF16(glLibName);
+			auto openGLLibraryNameWChar = hr::StringUtils::conv2Native(glLibName);
 			
 			openGLModule = LoadLibrary(openGLLibraryNameWChar.c_str());
 			return (openGLModule != nullptr);

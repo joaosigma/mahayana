@@ -393,6 +393,15 @@
     <ClInclude Include="..\..\src\libs\rapidjson\stringbuffer.h" />
     <ClInclude Include="..\..\src\libs\rapidjson\writer.h" />
     <ClInclude Include="..\..\src\libs\sha256\sha256.h" />
+    <ClInclude Include="..\..\src\libs\sparsepp\spp.h" />
+    <ClInclude Include="..\..\src\libs\sparsepp\spp_config.h" />
+    <ClInclude Include="..\..\src\libs\sparsepp\spp_dlalloc.h" />
+    <ClInclude Include="..\..\src\libs\sparsepp\spp_memory.h" />
+    <ClInclude Include="..\..\src\libs\sparsepp\spp_smartptr.h" />
+    <ClInclude Include="..\..\src\libs\sparsepp\spp_stdint.h" />
+    <ClInclude Include="..\..\src\libs\sparsepp\spp_timer.h" />
+    <ClInclude Include="..\..\src\libs\sparsepp\spp_traits.h" />
+    <ClInclude Include="..\..\src\libs\sparsepp\spp_utils.h" />
     <ClInclude Include="..\..\src\libs\squirrel\sqarray.h" />
     <ClInclude Include="..\..\src\libs\squirrel\sqclass.h" />
     <ClInclude Include="..\..\src\libs\squirrel\sqclosure.h" />

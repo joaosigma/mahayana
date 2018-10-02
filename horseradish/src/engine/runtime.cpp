@@ -147,7 +147,7 @@ namespace hr { namespace engine
 		if (mReturnValueSet || !mErrorThrown.empty())
 			return;
 
-		sq_pushstring(mSqvm, hr::StringUtils::conv2UTF16(value).c_str(), -1);
+		sq_pushstring(mSqvm, hr::StringUtils::conv2Native(value).c_str(), -1);
 		mReturnValueSet = true;
 	}
 
@@ -156,7 +156,7 @@ namespace hr { namespace engine
 		if (mReturnValueSet || !mErrorThrown.empty())
 			return;
 
-		auto valueWChar = hr::StringUtils::conv2UTF16(value);
+		auto valueWChar = hr::StringUtils::conv2Native(value);
 
 		sq_pushstring(mSqvm, valueWChar.c_str(), valueWChar.size());
 		mReturnValueSet = true;
@@ -241,7 +241,7 @@ namespace hr { namespace engine
 		int curIndex = 0;
 		for (const auto& value : values)
 		{
-			auto valueWChar = hr::StringUtils::conv2UTF16(value);
+			auto valueWChar = hr::StringUtils::conv2Native(value);
 
 			sq_pushinteger(mSqvm, curIndex);
 			sq_pushstring(mSqvm, valueWChar.c_str(), valueWChar.size());
@@ -268,7 +268,7 @@ namespace hr { namespace engine
 		if (varName.empty())
 			return;
 
-		auto varNameWChar = hr::StringUtils::conv2UTF16(varName);
+		auto varNameWChar = hr::StringUtils::conv2Native(varName);
 
 		sq_pushobject(mVM, mVMInstance);
 		sq_pushstring(mVM, varNameWChar.c_str(), varNameWChar.size());
@@ -282,7 +282,7 @@ namespace hr { namespace engine
 		if (varName.empty())
 			return;
 
-		auto varNameWChar = hr::StringUtils::conv2UTF16(varName);
+		auto varNameWChar = hr::StringUtils::conv2Native(varName);
 
 		sq_pushobject(mVM, mVMInstance);
 		sq_pushstring(mVM, varNameWChar.c_str(), varNameWChar.size());
@@ -296,7 +296,7 @@ namespace hr { namespace engine
 		if (varName.empty())
 			return;
 
-		auto varNameWChar = hr::StringUtils::conv2UTF16(varName);
+		auto varNameWChar = hr::StringUtils::conv2Native(varName);
 
 		sq_pushobject(mVM, mVMInstance);
 		sq_pushstring(mVM, varNameWChar.c_str(), varNameWChar.size());
@@ -310,7 +310,7 @@ namespace hr { namespace engine
 		if (varName.empty())
 			return;
 
-		auto varNameWChar = hr::StringUtils::conv2UTF16(varName);
+		auto varNameWChar = hr::StringUtils::conv2Native(varName);
 
 		sq_pushobject(mVM, mVMInstance);
 		sq_pushstring(mVM, varNameWChar.c_str(), varNameWChar.size());
@@ -324,8 +324,8 @@ namespace hr { namespace engine
 		if (varName.empty())
 			return;
 
-		auto varNameWChar = hr::StringUtils::conv2UTF16(varName);
-		auto valueWChar = hr::StringUtils::conv2UTF16(value);
+		auto varNameWChar = hr::StringUtils::conv2Native(varName);
+		auto valueWChar = hr::StringUtils::conv2Native(value);
 
 		sq_pushobject(mVM, mVMInstance);
 		sq_pushstring(mVM, varNameWChar.c_str(), varNameWChar.size());
@@ -339,8 +339,8 @@ namespace hr { namespace engine
 		if (varName.empty())
 			return;
 
-		auto varNameWChar = hr::StringUtils::conv2UTF16(varName);
-		auto valueWChar = hr::StringUtils::conv2UTF16(value);
+		auto varNameWChar = hr::StringUtils::conv2Native(varName);
+		auto valueWChar = hr::StringUtils::conv2Native(value);
 
 		sq_pushobject(mVM, mVMInstance);
 		sq_pushstring(mVM, varNameWChar.c_str(), varNameWChar.size());
@@ -390,7 +390,7 @@ namespace hr { namespace engine
 
 		Runtime::parsePath(fullPath, [&](const std::string& token, bool isLastToken) -> bool
 		{
-			auto tokenWChar = hr::StringUtils::conv2UTF16(token);
+			auto tokenWChar = hr::StringUtils::conv2Native(token);
 
 			if (isLastToken)
 			{
@@ -530,7 +530,7 @@ namespace hr { namespace engine
 		if (ctx.mReturnValueSet)
 			sq_pop(sqvm, 1);
 
-		return sq_throwerror(sqvm, hr::StringUtils::conv2UTF16(ctx.mErrorThrown).c_str());
+		return sq_throwerror(sqvm, hr::StringUtils::conv2Native(ctx.mErrorThrown).c_str());
 	}
 
 	void Runtime::vmPrintLastError(HSQUIRRELVM sqvm)
@@ -560,13 +560,13 @@ namespace hr { namespace engine
 
 	void Runtime::vmPushStackValue(HSQUIRRELVM sqvm, const char * const value)
 	{
-		auto valueWChar = hr::StringUtils::conv2UTF16(value);
+		auto valueWChar = hr::StringUtils::conv2Native(value);
 		sq_pushstring(sqvm, valueWChar.c_str(), valueWChar.size());
 	}
 
 	void Runtime::vmPushStackValue(HSQUIRRELVM sqvm, const std::string &value)
 	{
-		auto valueWChar = hr::StringUtils::conv2UTF16(value);
+		auto valueWChar = hr::StringUtils::conv2Native(value);
 		sq_pushstring(sqvm, valueWChar.c_str(), valueWChar.size());
 	}
 
@@ -611,8 +611,8 @@ namespace hr { namespace engine
 
 		return Runtime::pushFullPathToStack(mVM, funcName, true, [&](const std::wstring& lastToken)
 		{
-			std::string fullFuncName = std::string(funcName);
-			std::wstring fullFuncNameWChar = hr::StringUtils::conv2UTF16(fullFuncName);
+			auto fullFuncName = std::string(funcName);
+			auto fullFuncNameWChar = hr::StringUtils::conv2Native(fullFuncName);
 
 			sq_pushstring(mVM, lastToken.c_str(), lastToken.size());
 			sq_pushstring(mVM, fullFuncNameWChar.c_str(), fullFuncNameWChar.size()); //free var
@@ -637,7 +637,7 @@ namespace hr { namespace engine
 		sq_pushroottable(mVM);
 
 		{
-			auto scriptWChar = hr::StringUtils::conv2UTF16(script);
+			auto scriptWChar = hr::StringUtils::conv2Native(script);
 
 			if (SQ_FAILED(sq_compilebuffer(mVM, scriptWChar.c_str(), scriptWChar.size(), _SC("main runtime"), SQTrue)))
 			{
@@ -663,7 +663,7 @@ namespace hr { namespace engine
 
 		{
 			auto script = hr::streams::FileStream::readEntireFileAsString(filePath);
-			auto scriptWChar = hr::StringUtils::conv2UTF16(script);
+			auto scriptWChar = hr::StringUtils::conv2Native(script);
 
 			if (SQ_FAILED(sq_compilebuffer(mVM, scriptWChar.c_str(), scriptWChar.size(), _SC("main runtime"), SQTrue)))
 			{

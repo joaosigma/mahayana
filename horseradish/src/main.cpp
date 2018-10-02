@@ -12,10 +12,12 @@
 
 #include "common/primitives2D.hpp"
 
-int WINAPI wWinMain(HINSTANCE, HINSTANCE hInstPrev, PWSTR lpCmdLine, int nCmdShow)
+int WINAPI wWinMain(HINSTANCE, HINSTANCE, PWSTR lpCmdLine, int)
 {
-	UNREFERENCED_PARAMETER(hInstPrev);
-	UNREFERENCED_PARAMETER(nCmdShow);
+	//architecture assumptions
+	static_assert(sizeof(unsigned char) == 1);
+	static_assert(sizeof(unsigned short) == 2);
+	static_assert(sizeof(unsigned int) == 4);
 
 #ifdef HR_VS_MEMORY_LEAKS
 	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);

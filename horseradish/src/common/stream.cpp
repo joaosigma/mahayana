@@ -292,7 +292,7 @@ namespace hr { namespace streams
 		return true;
 	}
 
-	const void* MemoryViewStream::data() const
+	const void* MemoryViewStream::data() const noexcept
 	{
 		return mData;
 	}
@@ -319,7 +319,7 @@ namespace hr { namespace streams
 		if (!toRead && !toWrite)
 			return false;
 
-		auto filePathWChar = hr::StringUtils::conv2UTF16(filePath);
+		auto filePathWChar = hr::StringUtils::conv2Native(filePath);
 
 		if (toRead && toWrite)
 			mFileHandle = CreateFile(filePathWChar.c_str(), GENERIC_READ | GENERIC_WRITE, 0, nullptr, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
@@ -344,7 +344,7 @@ namespace hr { namespace streams
 
 		HANDLE fileHandle;
 		{
-			auto filePathWChar = hr::StringUtils::conv2UTF16(filePath);
+			auto filePathWChar = hr::StringUtils::conv2Native(filePath);
 
 			fileHandle = CreateFile(filePathWChar.c_str(), GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
 			if (fileHandle == INVALID_HANDLE_VALUE)
@@ -378,7 +378,7 @@ namespace hr { namespace streams
 			return std::string();
 
 		{
-			auto filePathWChar = hr::StringUtils::conv2UTF16(filePath);
+			auto filePathWChar = hr::StringUtils::conv2Native(filePath);
 
 			fileHandle = CreateFile(filePathWChar.c_str(), GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
 			if (fileHandle == INVALID_HANDLE_VALUE)
@@ -407,7 +407,7 @@ namespace hr { namespace streams
 
 		HANDLE fileHandle;
 		{
-			auto filePathWChar = hr::StringUtils::conv2UTF16(filePath);
+			auto filePathWChar = hr::StringUtils::conv2Native(filePath);
 
 			fileHandle = CreateFile(filePathWChar.c_str(), GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
 			if (!fileHandle)

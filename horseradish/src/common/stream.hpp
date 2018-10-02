@@ -170,7 +170,14 @@ namespace hr { namespace streams
 		bool cloneAllContent(MemoryViewStream &memView) const override;
 		bool cloneAllContent(std::shared_ptr<unsigned char>& buffer, size_t& bufferSize, std::function<std::shared_ptr<unsigned char>(size_t)> allocatorFunc = nullptr) const override;
 
-		const void* data() const;
+		const void* data() const noexcept;
+
+		template<typename TData>
+		const TData* dataAs() const noexcept
+		{
+			return reinterpret_cast<const TData*>(data());
+		}
+
 		std::string toStr() const;
 	};
 

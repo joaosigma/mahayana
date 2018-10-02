@@ -183,7 +183,7 @@ namespace hr { namespace gl { namespace extensions
 		if (!openGLModuleName)
 			return;
 
-		auto openGLModuleNameWChar = hr::StringUtils::conv2UTF16(openGLModuleName);
+		auto openGLModuleNameWChar = hr::StringUtils::conv2Native(openGLModuleName);
 
 		auto ptrWGlGetProcAddress = (PFNWGLGETPROCADDRESSPROC)GetProcAddress(GetModuleHandle(openGLModuleNameWChar.c_str()), "wglGetProcAddress");
 		if (!ptrWGlGetProcAddress)

@@ -88,6 +88,9 @@
     <Filter Include="libs\sha256">
       <UniqueIdentifier>{d8cccab3-4025-413f-9dc8-7d814ff73db4}</UniqueIdentifier>
     </Filter>
+    <Filter Include="libs\sparsepp">
+      <UniqueIdentifier>{2460b496-3027-4f4f-945b-777d6c1fc4b6}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\common\opengl\openGLext.cpp">
@@ -924,6 +927,33 @@
     </ClInclude>
     <ClInclude Include="..\..\src\libs\stb\stb_truetype.h">
       <Filter>libs\stb</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\libs\sparsepp\spp.h">
+      <Filter>libs\sparsepp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\libs\sparsepp\spp_config.h">
+      <Filter>libs\sparsepp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\libs\sparsepp\spp_dlalloc.h">
+      <Filter>libs\sparsepp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\libs\sparsepp\spp_memory.h">
+      <Filter>libs\sparsepp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\libs\sparsepp\spp_smartptr.h">
+      <Filter>libs\sparsepp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\libs\sparsepp\spp_stdint.h">
+      <Filter>libs\sparsepp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\libs\sparsepp\spp_timer.h">
+      <Filter>libs\sparsepp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\libs\sparsepp\spp_traits.h">
+      <Filter>libs\sparsepp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\libs\sparsepp\spp_utils.h">
+      <Filter>libs\sparsepp</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

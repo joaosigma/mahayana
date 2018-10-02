@@ -37,7 +37,7 @@ namespace hr { namespace render { namespace tools
 		mState.numCharWritten = 0;
 	}
 
-	bool Font::createCharData()
+	bool Font::createCharData(std::unordered_map<uint32_t, Font::CharacterData>& charMap) const
 	{
 		for (const auto& pair : validFontCharacters)
 		{
@@ -49,43 +49,22 @@ namespace hr { namespace render { namespace tools
 		for (const auto& pair : validFontCharacters)
 			numNormalChars += pair.second - pair.first + 1;
 
-		mCharMap.reserve(numNormalChars + 7);
+		charMap.reserve(numNormalChars + 7);
 
 		for (const auto& pair : validFontCharacters)
 		{
 			for (auto curCharIndex = pair.first; curCharIndex <= pair.second; curCharIndex++)
-				mCharMap[curCharIndex];
+				charMap[curCharIndex];
 		}
 
 		for (const auto& curChar : hr::StringUtils::utf8Wrapper(validAditionalFontCharacters))
-			mCharMap[curChar];
+			charMap[curChar];
 
 		return true;
 	}
 
 	bool Font::initFont(const char * const fontFilePath)
 	{
-		auto fileContent = hr::streams::FileStream::readEntireFile(fontFilePath);
-		
-		stbtt_fontinfo fontInfo;
-		if (!stbtt_InitFont(&fontInfo, reinterpret_cast<const unsigned char*>(fileContent->data()), 0))
-			return false;
-
-		float targetScale = stbtt_ScaleForPixelHeight(&fontInfo, baseFontSize);
-		{
-			int descent;
-			stbtt_GetFontVMetrics(&fontInfo, nullptr, &descent, nullptr);
-
-			mFontInfo.baseHeight = -(descent*targetScale); //height that sets us at the baseline
-		}
-
-		{
-			int x0, x1, y0, y1;
-			stbtt_GetFontBoundingBox(&fontInfo, &x0, &y0, &x1, &y1);
-
-			mFontInfo.maxHeight = (y1*targetScale) - (y0*targetScale);
-		}
-
 		struct GlyphData
 		{
 			uint32_t codepoint;
@@ -96,55 +75,91 @@ namespace hr { namespace render { namespace tools
 				: codepoint(codepoint), width(width), height(height), texX(0), texY(0)
 			{ }
 		};
-		std::vector<GlyphData> validGlyphs;
-		validGlyphs.reserve(mCharMap.size());
+
+		auto fileContent = hr::streams::FileStream::readEntireFile(fontFilePath);
+		if (!fileContent)
+			return false;
 
 		int totalArea = 0;
-		
-		for (auto it = mCharMap.begin(); it != mCharMap.end();)
+		float targetScale = 1.0f;
+		stbtt_fontinfo fontInfo;
+		std::vector<GlyphData> validGlyphs;
 		{
-			auto glyphIndex = stbtt_FindGlyphIndex(&fontInfo, it->first);
-			if (glyphIndex == 0)
+			std::unordered_map<uint32_t, Font::CharacterData> charMap;
+			if (!createCharData(charMap))
+				return false;
+
+			if (!stbtt_InitFont(&fontInfo, fileContent->dataAs<unsigned char>(), 0))
+				return false;
+
+			targetScale = stbtt_ScaleForPixelHeight(&fontInfo, baseFontSize);
 			{
-				it = mCharMap.erase(it);
-				continue;
+				int descent;
+				stbtt_GetFontVMetrics(&fontInfo, nullptr, &descent, nullptr);
+
+				mFontInfo.baseHeight = -(descent*targetScale); //height that sets us at the baseline
 			}
 
-			float advanceX, offsetX, offsetY;
-			unsigned short glyphWidth, glyphHeight;
 			{
-				int advance, leftSideBearing;
-				stbtt_GetGlyphHMetrics(&fontInfo, glyphIndex, &advance, &leftSideBearing);
-				advanceX = advance * targetScale;
-				offsetX = leftSideBearing * targetScale;
-
 				int x0, x1, y0, y1;
-				stbtt_GetGlyphBitmapBox(&fontInfo, glyphIndex, targetScale, targetScale, &x0, &y0, &x1, &y1);
+				stbtt_GetFontBoundingBox(&fontInfo, &x0, &y0, &x1, &y1);
 
-				glyphWidth = x1 - x0;
-				glyphHeight = y1 - y0;
-				offsetY = -y1;
+				mFontInfo.maxHeight = (y1*targetScale) - (y0*targetScale);
 			}
 
-			validGlyphs.push_back(GlyphData(it->first, glyphWidth, glyphHeight));
+			validGlyphs.reserve(charMap.size());
 
-			auto& curChar = it->second;
-			++it;
+			for (auto it = charMap.begin(); it != charMap.end();)
+			{
+				auto glyphIndex = stbtt_FindGlyphIndex(&fontInfo, it->first);
+				if (glyphIndex == 0)
+				{
+					it = charMap.erase(it);
+					continue;
+				}
 
-			curChar.advanceX = advanceX;
-			curChar.rect.offsetX = (offsetX - static_cast<float>(sdfBufferPadding));
-			curChar.rect.offsetY = (offsetY - static_cast<float>(sdfBufferPadding));
-			curChar.rect.width = (static_cast<float>(glyphWidth) + (static_cast<float>(sdfBufferPadding) * 2.0f));
-			curChar.rect.height = (static_cast<float>(glyphHeight) + (static_cast<float>(sdfBufferPadding) * 2.0f));
+				float advanceX, offsetX, offsetY;
+				unsigned short glyphWidth, glyphHeight;
+				{
+					int advance, leftSideBearing;
+					stbtt_GetGlyphHMetrics(&fontInfo, glyphIndex, &advance, &leftSideBearing);
+					advanceX = advance * targetScale;
+					offsetX = leftSideBearing * targetScale;
 
-			curChar.skipDraw = stbtt_IsGlyphEmpty(&fontInfo, glyphIndex) != 0;
-			if (curChar.skipDraw)
-				continue;
+					int x0, x1, y0, y1;
+					stbtt_GetGlyphBitmapBox(&fontInfo, glyphIndex, targetScale, targetScale, &x0, &y0, &x1, &y1);
 
-			auto charArea = glyphWidth * glyphHeight;
-			assert(charArea > 0);
-			if (charArea > 0)
-				totalArea += (glyphWidth + (sdfBufferPadding * 2)) * (glyphHeight + (sdfBufferPadding * 2));
+					glyphWidth = x1 - x0;
+					glyphHeight = y1 - y0;
+					offsetY = -y1;
+				}
+
+				validGlyphs.push_back(GlyphData(it->first, glyphWidth, glyphHeight));
+
+				auto& curChar = it->second;
+				++it;
+
+				curChar.advanceX = advanceX;
+				curChar.rect.offsetX = (offsetX - static_cast<float>(sdfBufferPadding));
+				curChar.rect.offsetY = (offsetY - static_cast<float>(sdfBufferPadding));
+				curChar.rect.width = (static_cast<float>(glyphWidth) + (static_cast<float>(sdfBufferPadding) * 2.0f));
+				curChar.rect.height = (static_cast<float>(glyphHeight) + (static_cast<float>(sdfBufferPadding) * 2.0f));
+
+				curChar.skipDraw = stbtt_IsGlyphEmpty(&fontInfo, glyphIndex) != 0;
+				if (curChar.skipDraw)
+					continue;
+
+				auto charArea = glyphWidth * glyphHeight;
+				assert(charArea > 0);
+				if (charArea > 0)
+					totalArea += (glyphWidth + (sdfBufferPadding * 2)) * (glyphHeight + (sdfBufferPadding * 2));
+			}
+
+			//the character map is final
+
+			mCharMap.resize(charMap.size());
+			for (const auto&[key, value] : charMap)
+				mCharMap[key] = value;
 		}
 
 		int texWidth = hr::Math::iProxPowerOfTwo(hr::Math::ftoi(hr::Math::sqrt(totalArea)));
@@ -230,30 +245,28 @@ namespace hr { namespace render { namespace tools
 		}
 
 		//get kerning info
+		for (auto& curChar1 : mCharMap)
 		{
-			for (auto& curChar1 : mCharMap)
-			{
-				auto glyphIndex1 = stbtt_FindGlyphIndex(&fontInfo, curChar1.first);
+			auto glyphIndex1 = stbtt_FindGlyphIndex(&fontInfo, curChar1.first);
 
-				curChar1.second.kernDataIndices.first = mKerningData.size();
-				curChar1.second.kernDataIndices.second = 0;
+			curChar1.second.kernDataIndices.first = mKerningData.size();
+			curChar1.second.kernDataIndices.second = 0;
 				
-				for (const auto& curChar2 : mCharMap)
-				{
-					auto kernAmount = stbtt_GetGlyphKernAdvance(&fontInfo, glyphIndex1, stbtt_FindGlyphIndex(&fontInfo, curChar2.first));
-					if (kernAmount == 0)
-						continue;
+			for (const auto& curChar2 : mCharMap)
+			{
+				auto kernAmount = stbtt_GetGlyphKernAdvance(&fontInfo, glyphIndex1, stbtt_FindGlyphIndex(&fontInfo, curChar2.first));
+				if (kernAmount == 0)
+					continue;
 
-					KerningData newKerningData;
-					newKerningData.codepoint1 = curChar1.first;
-					newKerningData.codepoint2 = curChar2.first;
-					newKerningData.offset = static_cast<float>(kernAmount) * targetScale;
+				KerningData newKerningData;
+				newKerningData.codepoint1 = curChar1.first;
+				newKerningData.codepoint2 = curChar2.first;
+				newKerningData.offset = static_cast<float>(kernAmount) * targetScale;
 
-					mKerningData.push_back(newKerningData);
-				}
-
-				curChar1.second.kernDataIndices.second = mKerningData.size() - curChar1.second.kernDataIndices.first;
+				mKerningData.push_back(newKerningData);
 			}
+
+			curChar1.second.kernDataIndices.second = mKerningData.size() - curChar1.second.kernDataIndices.first;
 		}
 
 		mGl.texture.init(hr::gl::objects::Texture::Type::Tex2D, hr::gl::objects::Texture::StorageType::R_8, imgFinal.width(), imgFinal.height());
@@ -276,20 +289,13 @@ namespace hr { namespace render { namespace tools
 		auto writeData = mState.charData.data() + (mState.numCharWritten * 4);
 
 		unsigned int lastCharUnicode = 0;
-		for (const auto& curCharUnicode : StringUtils::utf8Wrapper(str))
+		for (const auto& curCharUnicode : StringUtils::utf8Wrapper(str, strRange.numCharsSkip))
 		{
-			if (curCharUnicode == 0)
-				break;
-
-			if (strRange.numCharsSkip > 0)
+			if (!mCharMap.contains(curCharUnicode))
 			{
-				strRange.numCharsSkip--;
+				lastCharUnicode = 0;
 				continue;
 			}
-
-			auto it = mCharMap.find(curCharUnicode);
-			if (it == mCharMap.end())
-				continue;
 
 			if (strRange.numCharsMax >= 0)
 			{
@@ -298,10 +304,11 @@ namespace hr { namespace render { namespace tools
 					break;
 			}
 
-			const CharacterData& curCharData = it->second;
+			const auto& curCharData = mCharMap[curCharUnicode];
 			if (curCharData.skipDraw)
 			{
 				posX += curCharData.advanceX * mState.scale;
+				lastCharUnicode = 0;
 				continue;
 			}
 
@@ -311,8 +318,11 @@ namespace hr { namespace render { namespace tools
 				writeData = mState.charData.data() + (mState.numCharWritten * 4);
 			}
 		
-			if (lastCharUnicode && !mKerningData.empty())
-				posX += getCharKerning(curCharData, lastCharUnicode, curCharUnicode) * mState.scale;
+			if (lastCharUnicode && !mKerningData.empty()) //apply kerning
+			{
+				const auto& lastCharData = mCharMap[lastCharUnicode];
+				posX += getCharKerning(lastCharData, curCharUnicode) * mState.scale;
+			}
 			lastCharUnicode = curCharUnicode;
 
 			writeData[0].pos[0] = writeData[3].pos[0] = posX + curCharData.rect.offsetX * mState.scale;
@@ -336,14 +346,14 @@ namespace hr { namespace render { namespace tools
 		}
 	}
 
-	size_t Font::countUnicodeChars(float fontScale, const std::string& text, const size_t numUnicodeCharsSkip, float maxWidth) const
+	size_t Font::countUnicodeChars(float fontScale, const std::string& text, const size_t numCodepointsSkip, float maxWidth) const
 	{
 		float totalWidth = 0.0f;
 		size_t numChars = 0;
 
-		for (const auto& curCharUnicode : StringUtils::utf8Wrapper(text, numUnicodeCharsSkip))
+		for (const auto& codepoint : StringUtils::utf8Wrapper(text, numCodepointsSkip))
 		{
-			auto itChar = mCharMap.find(curCharUnicode);
+			auto itChar = mCharMap.find(codepoint);
 			if (itChar == mCharMap.end())
 				continue;
 
@@ -360,9 +370,9 @@ namespace hr { namespace render { namespace tools
 	float Font::getTextWidth(const std::string& text) const
 	{
 		float totalWidth = 0.0f;
-		for (const auto& curCharUnicode : StringUtils::utf8Wrapper(text))
+		for (const auto& codepoint : StringUtils::utf8Wrapper(text))
 		{
-			auto itChar = mCharMap.find(curCharUnicode);
+			auto itChar = mCharMap.find(codepoint);
 			if (itChar == mCharMap.end())
 				continue;
 
@@ -372,17 +382,17 @@ namespace hr { namespace render { namespace tools
 		return totalWidth;
 	}
 
-	float Font::getTextWidth(const std::string& text, const size_t numUnicodeCharsSkip, const size_t maxUnicodeCharsRead) const
+	float Font::getTextWidth(const std::string& text, const size_t numCodepointsSkip, const size_t maxCodepointsRead) const
 	{
 		float totalWidth = 0.0f;
 		unsigned int numChars = 0;
 
-		for (const auto& curCharUnicode : StringUtils::utf8Wrapper(text, numUnicodeCharsSkip))
+		for (const auto& codepoint : StringUtils::utf8Wrapper(text, numCodepointsSkip))
 		{
-			if ((numChars++) >= maxUnicodeCharsRead)
+			if ((numChars++) >= maxCodepointsRead)
 				break;
 
-			auto itChar = mCharMap.find(curCharUnicode);
+			auto itChar = mCharMap.find(codepoint);
 			if (itChar == mCharMap.end())
 				continue;
 
@@ -392,15 +402,15 @@ namespace hr { namespace render { namespace tools
 		return totalWidth;
 	}
 
-	float Font::getCharKerning(const CharacterData& leftCharData, unsigned short leftCharUnicodeID, unsigned short rightCharUnicodeID) const
+	float Font::getCharKerning(const CharacterData& leftCharData, char32_t rightCodepoint) const
 	{
-		if ((leftCharData.kernDataIndices.second <= 0) || (rightCharUnicodeID <= 0))
+		if ((leftCharData.kernDataIndices.second <= 0) || (rightCodepoint <= 0))
 			return 0.0f;
 
 		auto kernWalker = mKerningData.data() + leftCharData.kernDataIndices.first;
 		for (auto count = leftCharData.kernDataIndices.second; count > 0; count--, kernWalker++)
 		{
-			if (kernWalker->codepoint2 == rightCharUnicodeID)
+			if (kernWalker->codepoint2 == rightCodepoint)
 				return kernWalker->offset;
 		}
 
@@ -458,8 +468,6 @@ namespace hr { namespace render { namespace tools
 		mGl.sampler.setWrap(hr::gl::objects::Sampler::WrapType::ClampBorder);
 		mGl.sampler.setBorderColor(0.0f, 0.0f, 0.0f, 1.0f);
 
-		if (!createCharData())
-			return;
 		if (!initFont(fontFilePath))
 			return;
 
@@ -493,9 +501,9 @@ namespace hr { namespace render { namespace tools
 		return getTextWidth(text) * (static_cast<float>(targetSize) / baseFontSize);
 	}
 
-	float Font::getTextWidth(size_t targetSize, const std::string& text, const size_t numUnicodeCharsSkip, const size_t maxUnicodeCharsRead) const
+	float Font::getTextWidth(size_t targetSize, const std::string& text, const size_t numCodepointsSkip, const size_t maxCodepointsRead) const
 	{
-		return getTextWidth(text, numUnicodeCharsSkip, maxUnicodeCharsRead) * (static_cast<float>(targetSize) / baseFontSize);
+		return getTextWidth(text, numCodepointsSkip, maxCodepointsRead) * (static_cast<float>(targetSize) / baseFontSize);
 	}
 
 	void Font::paintBegin(size_t targetSize, const float * const tranformationMatrix)
@@ -566,33 +574,32 @@ namespace hr { namespace render { namespace tools
 		internalWrite(px, py, text, UnicodeRange());
 	}
 
-	void Font::write(const float &px, const float &py, const std::string& text, const size_t numUnicodeCharsSkip)
+	void Font::write(const float &px, const float &py, const std::string& text, const size_t numCodepointsSkip)
 	{
-		internalWrite(px, py, text, UnicodeRange(numUnicodeCharsSkip));
+		internalWrite(px, py, text, UnicodeRange(numCodepointsSkip));
 	}
 
-	void Font::write(const float &px, const float &py, const std::string& text, const size_t numUnicodeCharsSkip, const size_t maxUnicodeCharsWrite)
+	void Font::write(const float &px, const float &py, const std::string& text, const size_t numCodepointsSkip, const size_t maxCodepointsRead)
 	{
-		internalWrite(px, py, text, UnicodeRange(numUnicodeCharsSkip, static_cast<int>(maxUnicodeCharsWrite)));
+		internalWrite(px, py, text, UnicodeRange(numCodepointsSkip, static_cast<int>(maxCodepointsRead)));
 	}
 
-	float Font::writeChar(const unsigned int &unicodeChar)
+	float Font::writeChar(const char32_t codepoint)
 	{
-		return writeChar(0.0f, 0.0f, unicodeChar);
+		return writeChar(0.0f, 0.0f, codepoint);
 	}
 
-	float Font::writeChar(const float &px, const float &py, const unsigned int &unicodeChar)
+	float Font::writeChar(const float px, const float py, const char32_t codepoint)
 	{
 		unsigned char colorTemp[4];
 
 		if (!mValid)
 			return 0.0f;
 
-		auto it = mCharMap.find(unicodeChar);
-		if (it == mCharMap.end())
+		if (!mCharMap.contains(codepoint))
 			return 0.0f;
 
-		const CharacterData& charData = it->second;
+		const auto& charData = mCharMap[codepoint];
 
 		if (charData.skipDraw)
 			return charData.advanceX * mState.scale;
@@ -624,12 +631,12 @@ namespace hr { namespace render { namespace tools
 		return charData.advanceX * mState.scale;
 	}
 
-	void Font::setColor(const float &r, const float &g, const float &b, const float &a)
+	void Font::setColor(const float r, const float g, const float b, const float a)
 	{
 		mState.stateColor.set(r, g, b, a);
 	}
 
-	void Font::setColor(const float &r, const float &g, const float &b)
+	void Font::setColor(const float r, const float g, const float b)
 	{
 		mState.stateColor.set(r, g, b, 1.0f);
 	}

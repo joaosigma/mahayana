@@ -4,6 +4,7 @@
 #include "common/opengl/objects.hpp"
 #include "common/color.hpp"
 #include "common/stringUtils.hpp"
+#include "libs/sparsepp/spp.h"
 
 #include <array>
 #include <vector>
@@ -21,7 +22,7 @@ namespace hr { namespace render { namespace tools
 
 		struct KerningData
 		{
-			uint32_t codepoint1 = 0, codepoint2 = 0;
+			char32_t codepoint1 = 0, codepoint2 = 0;
 			float offset = 0;
 		};
 
@@ -57,7 +58,7 @@ namespace hr { namespace render { namespace tools
 	private:
 		bool mValid = false;
 		std::vector<KerningData> mKerningData;
-		std::unordered_map<uint32_t, CharacterData> mCharMap;
+		spp::sparse_hash_map<char32_t, CharacterData> mCharMap;
 	
 		unsigned int mGlVertexProgramID, mGlFragmentProgramID, mGlProgramPipelineID, mGlUniformSampler, mGlUniformMatrix;
 	
@@ -86,15 +87,15 @@ namespace hr { namespace render { namespace tools
 		} mFontInfo;
 
 		void commitGL();
-		bool createCharData();
-		float getCharKerning(const CharacterData& leftCharData, unsigned short leftCharUnicodeID, unsigned short rightCharUnicodeID) const;
+		bool createCharData(std::unordered_map<uint32_t, Font::CharacterData>& charMap) const;
+		float getCharKerning(const CharacterData& leftCharData, char32_t rightCodepoint) const;
 		bool initFont(const char * const fontFilePath);
 		void internalWrite(const float &px, const float &py, const std::string& str, UnicodeRange strRange);
 
-		size_t countUnicodeChars(float fontScale, const std::string& text, const size_t numUnicodeCharsSkip, float maxWidth) const;
+		size_t countUnicodeChars(float fontScale, const std::string& text, const size_t numCodepointsSkip, float maxWidth) const;
 
 		float getTextWidth(const std::string& text) const;
-		float getTextWidth(const std::string& text, const size_t numUnicodeCharsSkip, const size_t maxUnicodeCharsRead) const;
+		float getTextWidth(const std::string& text, const size_t numCodepointsSkip, const size_t maxCodepointsRead) const;
 
 	public:
 		Font(const char * const fontFilePath, unsigned int glVertexProgramID, unsigned int glFragmentProgramID, unsigned int glProgramPipelineID);
@@ -105,7 +106,7 @@ namespace hr { namespace render { namespace tools
 		float getMaxHeight(size_t targetSize) const;
 
 		float getTextWidth(size_t targetSize, const std::string& text) const;
-		float getTextWidth(size_t targetSize, const std::string& text, const size_t numUnicodeCharsSkip, const size_t maxUnicodeCharsRead) const;
+		float getTextWidth(size_t targetSize, const std::string& text, const size_t numCodepointsSkip, const size_t maxCodepointsRead) const;
 
 		//these next methods interact with the paint context (e.g.: font size)
 
@@ -117,14 +118,14 @@ namespace hr { namespace render { namespace tools
 
 		void write(const std::string& text);
 		void write(const float &px, const float &py, const std::string& text);
-		void write(const float &px, const float &py, const std::string& text, const size_t numUnicodeCharsSkip);
-		void write(const float &px, const float &py, const std::string& text, const size_t numUnicodeCharsSkip, const size_t maxUnicodeCharsWrite);
+		void write(const float &px, const float &py, const std::string& text, const size_t numCodepointsSkip);
+		void write(const float &px, const float &py, const std::string& text, const size_t numCodepointsSkip, const size_t maxCodepointsRead);
 
-		float writeChar(const unsigned int &unicodeChar);
-		float writeChar(const float &px, const float &py, const unsigned int &unicodeChar);
+		float writeChar(const char32_t codepoint);
+		float writeChar(const float px, const float py, const char32_t codepoint);
 
-		void setColor(const float &r, const float &g, const float &b, const float &a);
-		void setColor(const float &r, const float &g, const float &b);
+		void setColor(const float r, const float g, const float b, const float a);
+		void setColor(const float r, const float g, const float b);
 		void setColor(const float * const color);
 		void setColor(const Color &color);
 	};
