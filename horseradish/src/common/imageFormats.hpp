@@ -82,7 +82,7 @@ namespace hr { namespace imaging
 	};
 
 	struct ImageFormatRA
-		: ImageFormat<ImageFormatR>
+		: ImageFormat<ImageFormatRA>
 	{
 		static size_t size()
 		{
