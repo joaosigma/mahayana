@@ -981,6 +981,18 @@ namespace hr { namespace gl { namespace objects
 			glBindBuffer(mType, 0);
 		}
 
+		bool flush(const size_t bufferOffset, const size_t dataSize)
+		{
+			if (!isValid())
+				return false;
+
+			if (mUsageType != UsageType::PersistentOnlyWrite)
+				return false;
+
+			glFlushMappedNamedBufferRange(mId, bufferOffset, dataSize);
+			return true;
+		}
+
 		bool copyTo(const GLuint targetBufferId, const size_t bufferReadOffset, const size_t bufferWriteOffset, const size_t copyDataSize)
 		{
 			if (!isValid() || (targetBufferId == 0) || (copyDataSize <= 0))

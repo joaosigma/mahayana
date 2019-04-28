@@ -7,14 +7,17 @@
 #include "common/quaternion.hpp"
 #include "common/stringUtils.hpp"
 
-#include "libs/lz4/lz4.h"
-#include "libs/lz4/lz4hc.h"
 #include "libs/fmt/format.h"
+
 #include "libs/rapidjson/document.h"
 #include "libs/rapidjson/rapidjson.h"
 #include "libs/rapidjson/prettywriter.h"
 #include "libs/rapidjson/stringbuffer.h"
+
+#include "libs/tinygltf/tiny_gltf.h"
 #include "libs/tinyobjloader/tiny_obj_loader.h"
+
+#include "glcorearb.h"
 
 #include <array>
 #include <cstdint>
@@ -387,8 +390,6 @@ namespace hr::render
 						objectData.matDiffusePath = mat.diffuse_texname;
 					else if (!mat.ambient_texname.empty())
 						objectData.matDiffusePath = mat.ambient_texname;
-					else
-						materialId = materialId;
 
 					if (!mat.normal_texname.empty())
 						objectData.matNormalPath = mat.normal_texname;
@@ -398,8 +399,6 @@ namespace hr::render
 						objectData.matNormalPath = mat.unknown_parameter.find("bump")->second;
 					else if (mat.unknown_parameter.find("map_bump") != mat.unknown_parameter.end())
 						objectData.matNormalPath = mat.unknown_parameter.find("map_bump")->second;
-					else
-						materialId = materialId;
 				}
 			}
 
@@ -1015,7 +1014,6 @@ namespace hr::render
 
 					for (size_t i = 0; i < numJoints; i++)
 					{
-						const auto& animJoint = animJoints[i];
 						auto& targetJoint = frameSkeleton[i];
 
 						if (targetJoint.parent < 0)
@@ -1123,7 +1121,288 @@ namespace hr::render
 		return true;
 	}
 
-	void WorldEditor::processMesh(AreaId areaId, const std::vector<size_t>& objectIds, std::function<void(hr::geom::Mesh&)> cb)
+	bool WorldEditor::importGLTF(AreaId areaId, std::string_view gltfPath)
+	{
+		if (mAreas.find(areaId) == mAreas.end())
+			return false;
+
+		tinygltf::Model gltfModel;
+		{
+			std::string err, warn;
+			tinygltf::TinyGLTF gltf_ctx;
+
+			bool ret = false;
+			if (std::experimental::filesystem::path(gltfPath.begin(), gltfPath.end()).extension().string() == "glb")
+				ret = gltf_ctx.LoadBinaryFromFile(&gltfModel, &err, &warn, gltfPath.data());
+			else
+				ret = gltf_ctx.LoadASCIIFromFile(&gltfModel, &err, &warn, gltfPath.data());
+
+			if (!ret)
+				return false;
+		}
+
+		if (gltfModel.scenes.empty() || gltfModel.nodes.empty() || gltfModel.meshes.empty())
+			return true;
+
+		auto& area = mAreas[areaId];
+		auto& areaData = mAreasData[areaId];
+
+		std::function<void(const tinygltf::Node&, const Matrix&)> recurNodes;
+		recurNodes = [&](const tinygltf::Node& gltfNode, const Matrix& previousTransform)
+		{
+			Matrix newTransform;
+			Matrix nodeTransform;
+			{
+				if (gltfNode.matrix.size() == 16)
+					nodeTransform = Matrix(gltfNode.matrix.data());
+				else
+				{
+					if (gltfNode.translation.size() == 3)
+						nodeTransform.mulTranslation(static_cast<float>(gltfNode.translation[0]), static_cast<float>(gltfNode.translation[1]), static_cast<float>(gltfNode.translation[2]));
+					if (gltfNode.rotation.size() == 4)
+						nodeTransform *= Quaternion(gltfNode.rotation.data());
+					if (gltfNode.scale.size() == 3)
+						nodeTransform.mulScale(static_cast<float>(gltfNode.scale[0]), static_cast<float>(gltfNode.scale[1]), static_cast<float>(gltfNode.scale[2]));
+				}
+
+				newTransform = previousTransform * nodeTransform;
+			}
+
+			if (gltfNode.mesh >= 0)
+			{
+				auto& gltfMesh = gltfModel.meshes[gltfNode.mesh];
+				for (const auto& gltfPrim : gltfMesh.primitives)
+				{
+					if ((gltfPrim.mode != TINYGLTF_MODE_TRIANGLES) || (gltfPrim.indices < 0))
+						continue;
+					
+					hr::geom::Mesh newMesh;
+					bool hasPos = false;
+					bool hasNormal = false;
+					bool hasTangent = false;
+					bool hasTexCoords = false;
+
+					//read indices and prepare mesh
+					{
+						const auto& gltfAccessor = gltfModel.accessors[gltfPrim.indices];
+						if ((gltfAccessor.bufferView < 0) || (gltfAccessor.count <= 0) || ((gltfAccessor.count % 3) != 0) || gltfAccessor.normalized)
+							continue;
+
+						const auto& gltfBufferView = gltfModel.bufferViews[gltfAccessor.bufferView];
+						if (gltfBufferView.target != GL_ELEMENT_ARRAY_BUFFER)
+							continue;
+
+						const auto& gltfBuffer = gltfModel.buffers[gltfBufferView.buffer];
+						if (gltfBuffer.data.empty())
+							continue;
+
+						if ((gltfAccessor.maxValues.size() == 1) && (gltfAccessor.maxValues[0] >= hr::geom::Mesh::maxVertexCount()))
+							continue;
+
+						auto gltfData = gltfBuffer.data.data() + gltfBufferView.byteOffset;
+
+						std::unique_ptr<unsigned short[]> newIndices;
+						switch (gltfAccessor.componentType)
+						{
+						case TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE:
+							if (gltfAccessor.ByteStride(gltfBufferView) != 1)
+								continue;
+
+							newIndices = std::unique_ptr<unsigned short[]>(new unsigned short[gltfAccessor.count]);
+							for (size_t i = 0; i < gltfAccessor.count; i++)
+								newIndices[i] = (gltfData + gltfAccessor.byteOffset)[i];
+							break;
+						case TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT:
+							if (gltfAccessor.ByteStride(gltfBufferView) != 2)
+								continue;
+
+							newIndices = std::unique_ptr<unsigned short[]>(new unsigned short[gltfAccessor.count]);
+							for (size_t i = 0; i < gltfAccessor.count; i++)
+								newIndices[i] = (reinterpret_cast<const unsigned short*>(gltfData + gltfAccessor.byteOffset))[i];
+							break;
+						case TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT:
+							if ((gltfAccessor.ByteStride(gltfBufferView) != 4) || (gltfAccessor.maxValues.size() != 1))
+								continue;
+
+							newIndices = std::unique_ptr<unsigned short[]>(new unsigned short[gltfAccessor.count]);
+							for (size_t i = 0; i < gltfAccessor.count; i++)
+								newIndices[i] = static_cast<unsigned short>((reinterpret_cast<const uint32_t*>(gltfData + gltfAccessor.byteOffset))[i]);
+							break;
+						default:
+							continue;
+						}
+
+						size_t numVertices = 0;
+						for (size_t i = 0; i < gltfAccessor.count; i++)
+							numVertices = std::max<size_t>(numVertices, newIndices[i]);
+
+						numVertices++;
+						auto newVertices = std::unique_ptr<hr::geom::Mesh::VertexData[]>(new hr::geom::Mesh::VertexData[numVertices]);
+						newMesh = hr::geom::Mesh(std::move(newVertices), numVertices, std::move(newIndices), gltfAccessor.count);
+					}
+
+					//read vertex data
+					for (const auto& gltfAttrib : gltfPrim.attributes)
+					{
+						if (gltfAttrib.second < 0)
+							continue;
+
+						const auto& gltfAccessor = gltfModel.accessors[gltfAttrib.second];
+						if (gltfAccessor.bufferView < 0)
+							continue;
+
+						const auto& gltfBufferView = gltfModel.bufferViews[gltfAccessor.bufferView];
+						if (gltfBufferView.target != GL_ARRAY_BUFFER)
+							continue;
+
+						const auto& gltfBuffer = gltfModel.buffers[gltfBufferView.buffer];
+						if (gltfBuffer.data.empty())
+							continue;
+
+						auto gltfDataStride = gltfAccessor.ByteStride(gltfBufferView);
+						if (gltfDataStride < 0)
+							continue;
+
+						auto vertexData = newMesh.vertices();
+						auto gltfData = gltfBuffer.data.data() + gltfBufferView.byteOffset + gltfAccessor.byteOffset;
+
+						if ((gltfAttrib.first == "POSITION") && (gltfAccessor.type == TINYGLTF_TYPE_VEC3) && (gltfAccessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT))
+						{
+							hasPos = true;
+							for (size_t curIndex = 0; curIndex < newMesh.numVertices(); curIndex++)
+							{
+								std::memcpy(vertexData[curIndex].pos, gltfData, sizeof(float) * 3);
+								gltfData += gltfDataStride;
+							}
+						}
+						else if ((gltfAttrib.first == "TEXCOORD_0") && (gltfAccessor.type == TINYGLTF_TYPE_VEC2) && (gltfAccessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT))
+						{
+							hasTexCoords = true;
+							for (size_t curIndex = 0; curIndex < newMesh.numVertices(); curIndex++)
+							{
+								std::memcpy(vertexData[curIndex].uv, gltfData, sizeof(float) * 2);
+								gltfData += gltfDataStride;
+							}
+						}
+						else if ((gltfAttrib.first == "NORMAL") && (gltfAccessor.type == TINYGLTF_TYPE_VEC3) && (gltfAccessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT))
+						{
+							hasNormal = true;
+							for (size_t curIndex = 0; curIndex < newMesh.numVertices(); curIndex++)
+							{
+								hr::geom::Mesh::pack(reinterpret_cast<const float*>(gltfData), vertexData[curIndex].normal, 3);
+								gltfData += gltfDataStride;
+							}
+						}
+						else if ((gltfAttrib.first == "TANGENT") && (gltfAccessor.type == TINYGLTF_TYPE_VEC4) && (gltfAccessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT))
+						{
+							hasTangent = true;
+							for (size_t curIndex = 0; curIndex < newMesh.numVertices(); curIndex++)
+							{
+								hr::geom::Mesh::pack(reinterpret_cast<const float*>(gltfData), vertexData[curIndex].tangent, 4);
+								gltfData += gltfDataStride;
+							}
+						}
+					}
+
+					if (!newMesh.check() || !hasPos || !hasTexCoords)
+						continue;
+
+					if (!hasNormal)
+						newMesh.genNormals();
+					if (!hasTangent)
+						newMesh.genTangents4();
+
+					newMesh.optimizeIndices();
+
+					newMesh.transform(newTransform, Matrix3(newTransform));
+
+					//we can now create a new object
+					{
+						//create object
+						auto objectId = genObjectId(area);
+						auto& object = area.mObjects[objectId];
+						auto& objectData = areaData.objects[objectId];
+
+						//we store new geometry immediately
+						{
+							hr::streams::FileStream geomFileStream(areaData.pathBin, true, true);
+							World::geomFileAddMesh(geomFileStream, objectId, newMesh);
+						}
+
+						//object can already be prepared
+						object.id = objectId;
+						object.type = Object::Type::Static;
+						object.bbox = newMesh.getBoundingBox();
+						objectData.objectId = objectId;
+						objectData.name = gltfMesh.name;
+						objectData.geom.numVertices = newMesh.numVertices();
+						objectData.geom.numIndices = newMesh.numIndices();
+						{
+							hr::streams::FileStream geomFileStream(areaData.pathBin, true, true);
+							World::geomFileRetrieveOffsets(geomFileStream, objectId, objectData.geom.fstreamVertexOffset, objectData.geom.fstreamIndexOffset);
+						}
+
+						//read material info
+						if (gltfPrim.material >= 0)
+						{
+							const auto& gltfMat = gltfModel.materials[gltfPrim.material];
+							if (!gltfMat.name.empty())
+								objectData.name = objectData.name + "_" + gltfMat.name;
+
+							auto extractImageUri = [](const  tinygltf::Model& model, const tinygltf::Material& material, std::string_view componentName) -> std::string
+							{
+								auto itComponent = material.values.find(std::string(componentName));
+								if (itComponent == material.values.end())
+								{
+									itComponent = material.additionalValues.find(std::string(componentName));
+									if (itComponent == material.additionalValues.end())
+										return {};
+								}
+
+								auto itIndex = itComponent->second.json_double_value.find("index");
+								auto itTexCoord = itComponent->second.json_double_value.find("texCoord");
+								if ((itIndex == itComponent->second.json_double_value.end()) && (itTexCoord == itComponent->second.json_double_value.end()))
+									return {};
+
+								auto texIndex = static_cast<int>(itIndex->second);
+								if ((texIndex < 0) && (static_cast<int>(itTexCoord->second) != 0)) // we support only one set of UVs
+									return {};
+
+								if (model.textures[texIndex].source < 0)
+									return {};
+
+								return model.images[model.textures[texIndex].source].uri;
+							};
+
+							objectData.matDiffusePath = extractImageUri(gltfModel, gltfMat, "baseColorTexture");
+							objectData.matNormalPath = extractImageUri(gltfModel, gltfMat, "normalTexture");
+						}
+
+						//create an object associated with the concept
+						Instance newInstance;
+						newInstance.type = Instance::Type::Static;
+						newInstance.objectId = object.id;
+						newInstance.bbox = object.bbox;
+						area.mInstances.push_back(newInstance);
+					}
+				}
+			}
+
+			for (const auto& nodeIndex : gltfNode.children)
+				recurNodes(gltfModel.nodes[nodeIndex], newTransform);
+		};
+
+		//recursively parse all nodes *only* in the default scene
+		for (const auto& nodeIndex : gltfModel.scenes[gltfModel.defaultScene].nodes)
+			recurNodes(gltfModel.nodes[nodeIndex], {});
+
+		//need to save everything to file (new geometry was already saved)
+		saveArea(area);
+
+		return true;
+	}
+
+	void WorldEditor::processMesh(AreaId areaId, const std::vector<size_t>& objectIds, const std::function<void(hr::geom::Mesh&)>& cb)
 	{
 		if (!cb || (mAreas.find(areaId) == mAreas.end()))
 			return;
@@ -1133,52 +1412,7 @@ namespace hr::render
 
 		hr::streams::FileStream geomFileStream(areaData.pathBin, true, true);
 
-		auto func = [&geomFileStream, cb](Area& area, AreaData::ObjectData& object)
-		{
-			hr::geom::Mesh mesh(object.geom.numVertices, object.geom.numIndices);
-
-			geomFileStream.seek(hr::streams::Stream::SeekOrigin::Begin, object.geom.fstreamVertexOffset);
-			geomFileStream.read(mesh.vertices(), mesh.sizeVertices());
-
-			geomFileStream.seek(hr::streams::Stream::SeekOrigin::Begin, object.geom.fstreamIndexOffset);
-			geomFileStream.read(mesh.indices(), mesh.sizeIndices());
-
-			{
-				auto numVertices = mesh.numVertices();
-				auto numIndices = mesh.numIndices();
-				cb(mesh);
-
-				if ((mesh.numVertices() != numVertices) || (mesh.numIndices() != numIndices))
-					return;
-			}
-
-			geomFileStream.seek(hr::streams::Stream::SeekOrigin::Begin, object.geom.fstreamVertexOffset);
-			geomFileStream.write(mesh.vertices(), mesh.sizeVertices());
-
-			geomFileStream.seek(hr::streams::Stream::SeekOrigin::Begin, object.geom.fstreamIndexOffset);
-			geomFileStream.write(mesh.indices(), mesh.sizeIndices());
-		};
-
-		if (objectIds.empty())
-		{
-			for (auto& [objectId, object] : area.mObjects)
-			{
-				assert(areaData.objects.find(objectId) != areaData.objects.end());
-				func(area, areaData.objects[objectId]);
-			}
-		}
-		else
-		{
-			for (const auto& objectId : objectIds)
-			{
-				auto it = area.mObjects.find(objectId);
-				if (it == area.mObjects.end())
-					continue;
-
-				assert(areaData.objects.find(objectId) != areaData.objects.end());
-				func(area, areaData.objects[objectId]);
-			}
-		}
+		World::geomFileTransformMeshes(geomFileStream, objectIds, cb);
 	}
 
 	std::vector<size_t> WorldEditor::unusedObjects(AreaId areaId) const

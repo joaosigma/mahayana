@@ -85,6 +85,11 @@ namespace hr::render
 		static bool geomFileAddMeshAnim(hr::streams::FileStream& fstream, size_t geomId, const hr::geom::MeshAnim& meshAnim, size_t animSetId);
 		static bool geomFileAddAnimationSet(hr::streams::FileStream& fstream, size_t animSetId, const hr::geom::MeshAnimSet& animSet);
 		static bool geomFileAddAnimation(hr::streams::FileStream& fstream, size_t animId, size_t animSetId, float frameRate, const std::vector<hr::geom::MeshAnimSet::Frame>& animation);
+
+		static bool geomFileTransformMeshes(hr::streams::FileStream& fstream, const std::vector<size_t>& geomIds, const std::function<void(hr::geom::Mesh&)>& cb);
+
+		static bool geomFileRetrieveOffsets(hr::streams::FileStream& fstream, size_t geomId, size_t& vertexOffset, size_t& indexOffset);
+
 		static bool geomFileRemoveGeom(hr::streams::FileStream& fstreamOld, hr::streams::FileStream& fstreamNew, std::vector<size_t> geomIds);
 
 		static bool loadAnimationSets(hr::streams::FileStream& fstream, size_t animSetId, geom::MeshAnimSet& meshAnimSet);

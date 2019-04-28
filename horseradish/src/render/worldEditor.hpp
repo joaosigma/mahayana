@@ -64,8 +64,9 @@ namespace hr::render
 		bool importObj(AreaId areaId, std::string_view basePath, std::string_view fileName);
 		bool importMD5(AreaId areaId, std::string_view md5Path, std::string newAnimSetName);
 		bool importMD5Anim(AreaId areaId, std::string_view animSetParentName, std::string_view md5AnimPath, std::string newAnimName);
+		bool importGLTF(AreaId areaId, std::string_view gltfPath);
 
-		void processMesh(AreaId areaId, const std::vector<size_t>& objectIds, std::function<void(hr::geom::Mesh&)> cb);
+		void processMesh(AreaId areaId, const std::vector<size_t>& objectIds, const std::function<void(hr::geom::Mesh&)>& cb);
 
 		std::vector<size_t> unusedObjects(AreaId areaId) const;
 		void removeObjects(AreaId areaId, const std::vector<std::string_view>& objectsNames);
