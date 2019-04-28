@@ -2,51 +2,62 @@
 
 #include "math.hpp"
 
+#include <type_traits>
+
 namespace hr
 {
-	void Ray::setOrigin(float x, float y, float z)
+	static_assert(std::is_trivially_copyable<Ray>::value);
+
+	Ray& Ray::setOrigin(float x, float y, float z)
 	{
 		mOrigin[0] = x;
 		mOrigin[1] = y;
 		mOrigin[2] = z;
+		return *this;
 	}
 
-	void Ray::setOrigin(const Vector3f& origin)
+	Ray& Ray::setOrigin(const Vector3f& origin)
 	{
 		mOrigin = origin;
+		return *this;
 	}
 
-	void Ray::setDirection(float x, float y, float z)
+	Ray& Ray::setDirection(float x, float y, float z)
 	{
 		mDirection[0] = x;
 		mDirection[1] = y;
 		mDirection[2] = z;
+		return *this;
 	}
 
-	void Ray::setDirection(const Vector3f& direction)
+	Ray& Ray::setDirection(const Vector3f& direction)
 	{
 		mDirection[0] = direction[0];
 		mDirection[1] = direction[1];
 		mDirection[2] = direction[2];
+		return *this;
 	}
 
-	void Ray::setLength(float length)
+	Ray& Ray::setLength(float length)
 	{
 		mLength = std::abs(length);
+		return *this;
 	}
 
-	void Ray::setSizedDirection(float x, float y, float z)
+	Ray& Ray::setSizedDirection(float x, float y, float z)
 	{
 		mDirection.set(x, y, z);
 		mLength = mDirection.getMagnitude();
 		mDirection.normalize();
+		return *this;
 	}
 
-	void Ray::setSizedDirection(const Vector3f& sizedDirection)
+	Ray& Ray::setSizedDirection(const Vector3f& sizedDirection)
 	{
 		mDirection = sizedDirection;
 		mDirection.normalize();
 
 		mLength = sizedDirection.getMagnitude();
+		return *this;
 	}
 }

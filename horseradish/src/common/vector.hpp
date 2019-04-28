@@ -351,7 +351,7 @@ namespace hr
 	template<>
 	class Vector<float, 3>
 	{
-		float mData[4];
+		float mData[4]{ 0.0f, 0.0f, 0.0f, 0.0f };
 
 	public:
 		//static methods
@@ -451,61 +451,47 @@ namespace hr
 
 		//instance methods
 
-		Vector()
-		{
-			_mm_storeu_ps(mData, _mm_setzero_ps());
-		}
+		constexpr Vector() = default;
+		constexpr Vector(const Vector&) = default;
+		constexpr Vector& operator=(const Vector&) = default;
+		constexpr Vector(Vector&&) = default;
+		constexpr Vector& operator=(Vector&&) = default;
 
-		explicit Vector(const float scalar)
-		{
-			_mm_storeu_ps(mData, _mm_load_ps1(&scalar));
-		}
+		explicit constexpr Vector(const float scalar)
+			: mData{ scalar, scalar, scalar, scalar }
+		{ }
 
-		explicit Vector(const float &vx, const float &vy, const float &vz)
-		{
-			mData[0] = vx;
-			mData[1] = vy;
-			mData[2] = vz;
-			mData[3] = 0.0f;
-		}
+		explicit constexpr Vector(const float &vx, const float &vy, const float &vz)
+			: mData{ vx, vy, vz, 0.0f }
+		{ }
 
-		explicit Vector(const float v[3])
-		{
-			mData[0] = v[0];
-			mData[1] = v[1];
-			mData[2] = v[2];
-			mData[3] = 0.0f;
-		}
+		explicit constexpr Vector(const float v[3])
+			: mData{ v[0], v[1], v[2], 0.0f }
+		{ }
 
 		explicit Vector(const __m128 vecDat)
 		{
 			_mm_storeu_ps(mData, vecDat);
 		}
 
-		float* data()
+		constexpr float* data()
 		{
 			return mData;
 		}
 
-		const float* data() const
+		constexpr const float* data() const
 		{
 			return mData;
 		}
 
-		float& operator[] (const size_t index)
+		constexpr float& operator[] (const size_t index)
 		{
 			return mData[index % 3];
 		}
 
-		const float& operator[] (const size_t index) const
+		constexpr const float& operator[] (const size_t index) const
 		{
 			return mData[index % 3];
-		}
-
-		Vector& operator=(const Vector& v)
-		{
-			_mm_storeu_ps(mData, _mm_loadu_ps(v.mData));
-			return *this;
 		}
 
 		Vector& operator=(const float v[3])
@@ -540,28 +526,28 @@ namespace hr
 			_mm_storeu_ps(mData, _mm_div_ps(_mm_loadu_ps(mData), _mm_loadu_ps(v.mData)));
 		}
 
-		void operator+=(const float v[3])
+		constexpr void operator+=(const float v[3])
 		{
 			mData[0] += v[0];
 			mData[1] += v[1];
 			mData[2] += v[2];
 		}
 
-		void operator-=(const float v[3])
+		constexpr void operator-=(const float v[3])
 		{
 			mData[0] -= v[0];
 			mData[1] -= v[1];
 			mData[2] -= v[2];
 		}
 
-		void operator*=(const float v[3])
+		constexpr void operator*=(const float v[3])
 		{
 			mData[0] *= v[0];
 			mData[1] *= v[1];
 			mData[2] *= v[2];
 		}
 
-		void operator/=(const float v[3])
+		constexpr void operator/=(const float v[3])
 		{
 			mData[0] /= v[0];
 			mData[1] /= v[1];
@@ -903,7 +889,7 @@ namespace hr
 	template<>
 	class Vector<float, 4>
 	{
-		float mData[4];
+		float mData[4]{ 0.0f, 0.0f, 0.0f, 0.0f };
 
 	public:
 
@@ -954,70 +940,55 @@ namespace hr
 
 		//instance methods
 
-		Vector()
-		{
-			_mm_storeu_ps(mData, _mm_setzero_ps());
-		}
+		constexpr Vector() = default;
+		constexpr Vector(const Vector&) = default;
+		constexpr Vector& operator=(const Vector&) = default;
+		constexpr Vector(Vector&&) = default;
+		constexpr Vector& operator=(Vector&&) = default;
 
-		explicit Vector(const Vector3f &s)
-		{
-			_mm_storeu_ps(mData, _mm_loadu_ps(s.data()));
-			mData[3] = 1.0f;
-		}
+		explicit constexpr Vector(const Vector3f &v)
+			: mData{ v[0], v[1], v[2], 1.0f }
+		{ }
 
-		explicit Vector(const Vector3f &s, const float vw)
-		{
-			_mm_storeu_ps(mData, _mm_loadu_ps(s.data()));
-			mData[3] = vw;
-		}
+		explicit constexpr Vector(const Vector3f &v, const float vw)
+			: mData{ v[0], v[1], v[2], vw }
+		{ }
 
-		explicit Vector(const float scalar)
-		{
-			_mm_storeu_ps(mData, _mm_load_ps1(&scalar));
-		}
+		explicit constexpr Vector(const float scalar)
+			: mData{ scalar, scalar, scalar, scalar }
+		{ }
 
-		explicit Vector(const float vx, const float vy, const float vz, const float vw)
-		{
-			mData[0] = vx;
-			mData[1] = vy;
-			mData[2] = vz;
-			mData[3] = vw;
-		}
+		explicit constexpr Vector(const float vx, const float vy, const float vz, const float vw)
+			: mData{ vx, vy, vz, vw }
+		{ }
 
-		explicit Vector(const float vec[4])
-		{
-			_mm_storeu_ps(mData, _mm_loadu_ps(vec));
-		}
+		explicit constexpr Vector(const float v[4])
+			: mData{ v[0], v[1], v[2], v[3] }
+		{ }
 
 		explicit Vector(const __m128 vecDat)
 		{
 			_mm_storeu_ps(mData, vecDat);
 		}
 
-		float* data()
+		constexpr float* data()
 		{
 			return mData;
 		}
 
-		const float* data() const
+		constexpr const float* data() const
 		{
 			return mData;
 		}
 
-		float& operator[] (const size_t index)
+		constexpr float& operator[] (const size_t index)
 		{
 			return mData[index % 4];
 		}
 
-		const float& operator[] (const size_t index) const
+		constexpr const float& operator[] (const size_t index) const
 		{
 			return mData[index % 4];
-		}
-
-		Vector& operator=(const Vector &v)
-		{
-			_mm_storeu_ps(mData, _mm_loadu_ps(v.mData));
-			return *this;
 		}
 
 		Vector& operator=(const float vec[4])
@@ -1192,4 +1163,7 @@ namespace hr
 			_mm_storeu_ps(mData, tmp);
 		}
 	};
+
+	static_assert(std::is_trivially_copyable<Vector3f>::value);
+	static_assert(std::is_trivially_copyable<Vector4f>::value);
 }

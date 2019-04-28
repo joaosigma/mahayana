@@ -4,7 +4,9 @@
 
 namespace hr
 {
-	void Plane::setFromPoints(const Vector3f &p0, const Vector3f &p1, const Vector3f &p2)
+	static_assert(std::is_trivially_copyable<Plane>::value);
+
+	Plane& Plane::setFromPoints(const Vector3f &p0, const Vector3f &p1, const Vector3f &p2)
 	{
 		Vector3f normal;
 
@@ -13,9 +15,11 @@ namespace hr
 		mB = normal[1];
 		mC = normal[2];
 		mD = -normal.getDot(p0);
+
+		return *this;
 	}
 
-	void Plane::setFromPoints(const float *p0, const float *p1, const float *p2)
+	Plane& Plane::setFromPoints(const float *p0, const float *p1, const float *p2)
 	{
 		Vector3f normal;
 
@@ -24,6 +28,8 @@ namespace hr
 		mB = normal[1];
 		mC = normal[2];
 		mD = -normal.getDot(p0);
+
+		return *this;
 	}
 
 	Plane Plane::lerp(const Plane &p2, float factor) const
@@ -197,11 +203,11 @@ namespace hr
 		float calcDot = point.getDot(mA, mB, mC) + mD;
 
 		if (Math::isZero(calcDot))
-			return Plane::Position::COPLANAR;
+			return Plane::Position::CoPlanar;
 		if (calcDot > 0.0f)
-			return Plane::Position::FRONT;
+			return Plane::Position::Front;
 
-		return Plane::Position::BEHIND;
+		return Plane::Position::Behind;
 	}
 
 	Plane::Position Plane::classifyTri(const Vector3f &p1, const Vector3f &p2, const Vector3f &p3) const
@@ -210,6 +216,6 @@ namespace hr
 		Position c2 = classifyPoint(p2);
 		Position c3 = classifyPoint(p3);
 
-		return (((c1 == c2) && (c2 == c3)) ? c1 : Position::INTERSECT);
+		return (((c1 == c2) && (c2 == c3)) ? c1 : Position::Intersect);
 	}
 }

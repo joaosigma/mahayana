@@ -3,6 +3,7 @@
 #include "math.hpp"
 
 #include <cstring>
+#include <type_traits>
 #include <immintrin.h>
 #include <xmmintrin.h>
 
@@ -241,24 +242,31 @@ namespace hr
 		}
 	}
 
-	Matrix::Matrix(const Matrix3 &mat) noexcept
-	{
-		m[0] = mat.m[0];	m[1] = mat.m[1];	m[2] = mat.m[2];
-		m[4] = mat.m[3];	m[5] = mat.m[4];	m[6] = mat.m[5];
-		m[8] = mat.m[6];	m[9] = mat.m[7];	m[10] = mat.m[8];
-		m[3] = m[7] = m[11] = m[12] = m[13] = m[14] = 0.0f;
-		m[15] = 1.0f;
-	}
+	static_assert(std::is_trivially_copyable<Matrix>::value);
+	static_assert(std::is_trivially_copyable<Matrix3>::value);
 
-	Matrix::Matrix(const float src[16]) noexcept
-	{
-		std::memcpy(m, src, sizeof(float) * 16);
-	}
+	Matrix::Matrix(const Matrix3 &mat) noexcept
+		: m{ mat.m[0], mat.m[1], mat.m[2], 0.0f, mat.m[3], mat.m[4], mat.m[5], 0.0f, mat.m[6], mat.m[7], mat.m[8], 0.0f, 0.0f, 0.0f, 0.0f, 1.0f }
+	{ }
 
 	Matrix::Matrix(const double src[16]) noexcept
 	{
-		for (int i = 0; i < 16; i++)
-			m[i] = static_cast<float>(src[i]);
+		m[0] = static_cast<float>(src[0]);
+		m[1] = static_cast<float>(src[1]);
+		m[2] = static_cast<float>(src[2]);
+		m[3] = static_cast<float>(src[3]);
+		m[4] = static_cast<float>(src[4]);
+		m[5] = static_cast<float>(src[5]);
+		m[6] = static_cast<float>(src[6]);
+		m[7] = static_cast<float>(src[7]);
+		m[8] = static_cast<float>(src[8]);
+		m[9] = static_cast<float>(src[9]);
+		m[10] = static_cast<float>(src[10]);
+		m[11] = static_cast<float>(src[11]);
+		m[12] = static_cast<float>(src[12]);
+		m[13] = static_cast<float>(src[13]);
+		m[14] = static_cast<float>(src[14]);
+		m[15] = static_cast<float>(src[15]);
 	}
 
 	Matrix::Matrix(const Quaternion &unitQuaternion) noexcept
@@ -738,9 +746,7 @@ namespace hr
 		result[8] *= det;		result[9] *= det;		result[10] *= det;	result[11] *= det;
 		result[12] *= det;	result[13] *= det;	result[14] *= det;	result[15] *= det;
 
-		//basta copiar para mim próprio e pronto
 		std::memcpy(m, result, sizeof(float) * 16);
-
 		return *this;
 	}
 
@@ -921,42 +927,32 @@ namespace hr
 
 	void Matrix::setTranslation(float x, float y, float z)
 	{
-		m[0] = m[5] = m[10] = m[15] = 1.0f;
-		m[1] = m[2] = m[3] = m[4] = m[6] = m[7] = m[8] = m[9] = m[11] = 0.0f;
-		m[12] = x;
-		m[13] = y;
-		m[14] = z;
+		Matrix::genMatTranslate(*this, x, y, z);
 	}
 
 	void Matrix::setTranslation(const float vec[3])
 	{
-		setTranslation(vec[0], vec[1], vec[2]);
+		Matrix::genMatTranslate(*this, vec[0], vec[1], vec[2]);
 	}
 
 	void Matrix::setTranslation(const Vector3f& vec)
 	{
-		setTranslation(vec[0], vec[1], vec[2]);
+		Matrix::genMatTranslate(*this, vec[0], vec[1], vec[2]);
 	}
 
 	void Matrix::setScale(float scale)
 	{
-		std::memset(m, 0, sizeof(float) * 16);
-		m[0] = m[5] = m[10] = scale;
-		m[15] = 1.0f;
+		Matrix::genMatScale(*this, scale, scale, scale);
 	}
 
 	void Matrix::setScale(float x, float y, float z)
 	{
-		std::memset(m, 0, sizeof(float) * 16);
-		m[0] = x;
-		m[5] = y;
-		m[10] = z;
-		m[15] = 1.0f;
+		Matrix::genMatScale(*this, x, y, z);
 	}
 
 	void Matrix::setScale(const Vector3f& vec)
 	{
-		setScale(vec[0], vec[1], vec[2]);
+		Matrix::genMatScale(*this, vec[0], vec[1], vec[2]);
 	}
 
 	void Matrix::setReflect(const Plane &plane)
@@ -1368,19 +1364,8 @@ namespace hr
 		m[0] = m[5] = m[10] = m[15] = 1.0f;
 	}
 
-	Matrix3::Matrix3(const Matrix &mat)
-	{
-		m[0] = mat.m[0];		m[1] = mat.m[1];		m[2] = mat.m[2];
-		m[3] = mat.m[4];		m[4] = mat.m[5];		m[5] = mat.m[6];
-		m[6] = mat.m[8];		m[7] = mat.m[9];		m[8] = mat.m[10];
-	}
-
-	Matrix3::Matrix3(const float src[9])
-	{
-		std::memcpy(m, src, sizeof(float) * 9);
-	}
-
 	Matrix3::Matrix3(const Quaternion &unitQuaternion)
+		: m{ 0.0f }
 	{
 		m[0] = 1.0f - 2.0f * (unitQuaternion[1] * unitQuaternion[1] + unitQuaternion[2] * unitQuaternion[2]);
 		m[3] =        2.0f * (unitQuaternion[0] * unitQuaternion[1] - unitQuaternion[2] * unitQuaternion[3]);

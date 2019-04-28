@@ -5,6 +5,7 @@
 #include "math.hpp"
 #include "encoders.hpp"
 
+#include <type_traits>
 #include <xmmintrin.h>
 #include <emmintrin.h>
 
@@ -14,7 +15,7 @@ namespace hr
 	{
 		static constexpr const unsigned char SRGB2Linear[] = { 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 5, 5, 5, 5, 6, 6, 6, 6, 7, 7, 7, 8, 8, 8, 8, 9, 9, 9, 10, 10, 10, 11, 11, 12, 12, 12, 13, 13, 13, 14, 14, 15, 15, 16, 16, 17, 17, 17, 18, 18, 19, 19, 20, 20, 21, 22, 22, 23, 23, 24, 24, 25, 25, 26, 27, 27, 28, 29, 29, 30, 30, 31, 32, 32, 33, 34, 35, 35, 36, 37, 37, 38, 39, 40, 41, 41, 42, 43, 44, 45, 45, 46, 47, 48, 49, 50, 51, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 76, 77, 78, 79, 80, 81, 82, 84, 85, 86, 87, 88, 90, 91, 92, 93, 95, 96, 97, 99, 100, 101, 103, 104, 105, 107, 108, 109, 111, 112, 114, 115, 116, 118, 119, 121, 122, 124, 125, 127, 128, 130, 131, 133, 134, 136, 138, 139, 141, 142, 144, 146, 147, 149, 151, 152, 154, 156, 157, 159, 161, 163, 164, 166, 168, 170, 171, 173, 175, 177, 179, 181, 183, 184, 186, 188, 190, 192, 194, 196, 198, 200, 202, 204, 206, 208, 210, 212, 214, 216, 218, 220, 222, 224, 226, 229, 231, 233, 235, 237, 239, 242, 244, 246, 248, 250, 253, 255 };
 
-		float mRGBA[4];
+		float mRGBA[4]{ 0.0f,0.0f,0.0f,0.0f };
 
 	public:
 		class KnownColors
@@ -265,15 +266,23 @@ namespace hr
 		}
 
 	public:
-		Color()
-		{
-			_mm_storeu_ps(mRGBA, _mm_setzero_ps());
-		}
+		constexpr Color() = default;
+		constexpr Color(const Color&) = default;
+		constexpr Color& operator=(const Color&) = default;
+		constexpr Color(Color&&) = default;
+		constexpr Color& operator=(Color&&) = default;
 
-		Color(const Color &c)
-		{
-			_mm_storeu_ps(mRGBA, _mm_loadu_ps(c.mRGBA));
-		}
+		explicit constexpr Color(float scalar)
+			: mRGBA{ scalar, scalar , scalar , scalar }
+		{ }
+
+		explicit constexpr Color(float r, float g, float b, float a)
+			: mRGBA{ r, g, b, a }
+		{ }
+
+		explicit constexpr Color(const float * const c)
+			: mRGBA{ c[0], c[1], c[2], c[3] }
+		{ }
 
 		explicit Color(const Vector3f &v)
 		{
@@ -286,40 +295,22 @@ namespace hr
 			_mm_storeu_ps(mRGBA, _mm_loadu_ps(v.data()));
 		}
 
-		explicit Color(float scalar)
-		{
-			_mm_storeu_ps(mRGBA, _mm_load_ps1(&scalar));
-		}
-
-		explicit Color(float r, float g, float b, float a)
-		{
-			mRGBA[0] = r;
-			mRGBA[1] = g;
-			mRGBA[2] = b;
-			mRGBA[3] = a;
-		}
-
-		explicit Color(const float * const c)
-		{
-			_mm_storeu_ps(mRGBA, _mm_loadu_ps(c));
-		}
-
-		float* data()
+		constexpr float* data()
 		{
 			return mRGBA;
 		}
 
-		const float* data() const
+		constexpr const float* data() const
 		{
 			return mRGBA;
 		}
 
-		float& operator[] (const size_t index)
+		constexpr float& operator[] (const size_t index)
 		{
 			return mRGBA[index % 4];
 		}
 
-		const float& operator[] (const size_t index) const
+		constexpr const float& operator[] (const size_t index) const
 		{
 			return mRGBA[index % 4];
 		}
@@ -364,87 +355,105 @@ namespace hr
 			_mm_storeu_ps(mRGBA, _mm_div_ps(_mm_loadu_ps(mRGBA), _mm_load_ps1(&n)));
 		}
 
-		void set(const Color &color)
+		Color& set(const Color &color)
 		{
 			_mm_storeu_ps(mRGBA, _mm_loadu_ps(color.mRGBA));
+			return *this;
 		}
 
-		void set(const Color& color, float a)
+		Color& set(const Color& color, float a)
 		{
 			_mm_storeu_ps(mRGBA, _mm_loadu_ps(color.mRGBA));
 			mRGBA[3] = a;
+
+			return *this;
 		}
 
-		void set(const float *color)
+		Color& set(const float *color)
 		{
 			_mm_storeu_ps(mRGBA, _mm_loadu_ps(color));
+			return *this;
 		}
 
-		void set(const float * const color, float a)
+		Color& set(const float * const color, float a)
 		{
 			mRGBA[0] = color[0];
 			mRGBA[1] = color[1];
 			mRGBA[2] = color[2];
 			mRGBA[3] = a;
+
+			return *this;
 		}
 
-		void set(float crgba)
+		Color& set(float crgba)
 		{
 			_mm_storeu_ps(mRGBA, _mm_load_ps1(&crgba));
+			return *this;
 		}
 
-		void set(float crgb, float a)
+		Color& set(float crgb, float a)
 		{
 			mRGBA[0] = mRGBA[1] = mRGBA[2] = crgb;
 			mRGBA[3] = a;
+			return *this;
 		}
 
-		void set(float r, float g, float b, float a)
+		Color& set(float r, float g, float b, float a)
 		{
 			mRGBA[0] = r;
 			mRGBA[1] = g;
 			mRGBA[2] = b;
 			mRGBA[3] = a;
+
+			return *this;
 		}
 
-		void set(const unsigned char *color)
+		Color& set(const unsigned char *color)
 		{
 			Color::convertColor(mRGBA, color, true);
+			return *this;
 		}
 
-		void set(const unsigned char *color, unsigned char a)
+		Color& set(const unsigned char *color, unsigned char a)
 		{
 			mRGBA[0] = static_cast<float>(color[0]);
 			mRGBA[1] = static_cast<float>(color[1]);
 			mRGBA[2] = static_cast<float>(color[2]);
 			mRGBA[3] = static_cast<float>(a);
 			_mm_storeu_ps(mRGBA, _mm_mul_ps(_mm_loadu_ps(mRGBA), Math::SIMD::fUByteMaxInv));
+
+			return *this;
 		}
 
-		void set(unsigned char r, unsigned char g, unsigned char b, unsigned char a)
+		Color& set(unsigned char r, unsigned char g, unsigned char b, unsigned char a)
 		{
 			mRGBA[0] = static_cast<float>(r);
 			mRGBA[1] = static_cast<float>(g);
 			mRGBA[2] = static_cast<float>(b);
 			mRGBA[3] = static_cast<float>(a);
 			_mm_storeu_ps(mRGBA, _mm_mul_ps(_mm_loadu_ps(mRGBA), Math::SIMD::fUByteMaxInv));
+
+			return *this;
 		}
 
-		void set(unsigned char r, unsigned char g, unsigned char b)
+		Color& set(unsigned char r, unsigned char g, unsigned char b)
 		{
 			mRGBA[0] = static_cast<float>(r);
 			mRGBA[1] = static_cast<float>(g);
 			mRGBA[2] = static_cast<float>(b);
 			mRGBA[3] = 255.0f;
 			_mm_storeu_ps(mRGBA, _mm_mul_ps(_mm_loadu_ps(mRGBA), Math::SIMD::fUByteMaxInv));
+
+			return *this;
 		}
 
-		void setWeight(const Color& c, const float &weight)
+		Color& setWeight(const Color& c, const float &weight)
 		{
 			_mm_storeu_ps(mRGBA, _mm_mul_ps(_mm_loadu_ps(c.mRGBA), _mm_load_ps1(&weight)));
+			return *this;
 		}
 
-		void setWeight(const Color& c1, const float &weight1, const Color& c2, const float &weight2, const Color& c3, const float &weight3, const Color& c4, const float &weight4)
+		Color& setWeight(const Color& c1, const float &weight1, const Color& c2, const float &weight2, const Color& c3, const float &weight3, const Color& c4, const float &weight4)
 		{
 			__m128 temp;
 
@@ -452,27 +461,33 @@ namespace hr
 			temp = _mm_add_ps(temp, _mm_mul_ps(_mm_loadu_ps(c2.mRGBA), _mm_load_ps1(&weight2)));
 			temp = _mm_add_ps(temp, _mm_mul_ps(_mm_loadu_ps(c3.mRGBA), _mm_load_ps1(&weight3)));
 			_mm_storeu_ps(mRGBA, _mm_add_ps(temp, _mm_mul_ps(_mm_loadu_ps(c4.mRGBA), _mm_load_ps1(&weight4))));
+
+			return *this;
 		}
 
-		void setYUV(const float * const yuv)
+		Color& setYUV(const float * const yuv)
 		{
 			setYUV(yuv[0], yuv[1], yuv[2]);
+			return *this;
 		}
 
-		void setYUV(float y, float u, float v)
+		Color& setYUV(float y, float u, float v)
 		{
 			mRGBA[0] = y + (v * 1.140f);
 			mRGBA[1] = y - ((u * 0.395f) + (v * 0.581f));
 			mRGBA[2] = y + (u * 2.032f);
 			mRGBA[3] = 1.0f;
+
+			return *this;
 		}
 
-		void setYUV(const unsigned char * const yuv)
+		Color& setYUV(const unsigned char * const yuv)
 		{
 			setYUV(yuv[0], yuv[1], yuv[2]);
+			return *this;
 		}
 
-		void setYUV(unsigned char y, unsigned char u, unsigned char v)
+		Color& setYUV(unsigned char y, unsigned char u, unsigned char v)
 		{
 			alignas(16) float pixelAux[4];
 
@@ -483,14 +498,17 @@ namespace hr
 			_mm_storeu_ps(pixelAux, _mm_mul_ps(_mm_load_ps(pixelAux), Math::SIMD::fUByteMaxInv));
 
 			setYUV(pixelAux[0], pixelAux[1], pixelAux[2]);
+
+			return *this;
 		}
 
-		void setYCbCr(const float * const ycbcr, bool fullRange)
+		Color& setYCbCr(const float * const ycbcr, bool fullRange)
 		{
 			setYCbCr(ycbcr[0], ycbcr[1], ycbcr[2], fullRange);
+			return *this;
 		}
 
-		void setYCbCr(float y, float cb, float cr, bool fullRange)
+		Color& setYCbCr(float y, float cb, float cr, bool fullRange)
 		{
 			float auxCb = cb - 0.5f;
 			float auxCr = cr - 0.5f;
@@ -510,14 +528,17 @@ namespace hr
 			}
 
 			mRGBA[0] = 1.0f;
+
+			return *this;
 		}
 
-		void setYCbCr(const unsigned char * const ycbcr, bool fullRange)
+		Color& setYCbCr(const unsigned char * const ycbcr, bool fullRange)
 		{
 			setYCbCr(ycbcr[0], ycbcr[1], ycbcr[2], fullRange);
+			return *this;
 		}
 
-		void setYCbCr(unsigned char y, unsigned char cb, unsigned char cr, bool fullRange)
+		Color& setYCbCr(unsigned char y, unsigned char cb, unsigned char cr, bool fullRange)
 		{
 			alignas(16) float pixelAux[4];
 
@@ -528,14 +549,17 @@ namespace hr
 			_mm_storeu_ps(pixelAux, _mm_mul_ps(_mm_load_ps(pixelAux), Math::SIMD::fUByteMaxInv));
 
 			setYCbCr(pixelAux[0], pixelAux[1], pixelAux[2], fullRange);
+
+			return *this;
 		}
 
-		void setYPbPr(const float * const ypbpr, bool coefficientsSDTV)
+		Color& setYPbPr(const float * const ypbpr, bool coefficientsSDTV)
 		{
 			setYPbPr(ypbpr[0], ypbpr[1], ypbpr[2], coefficientsSDTV);
+			return *this;
 		}
 
-		void setYPbPr(float y, float pb, float pr, bool coefficientsSDTV)
+		Color& setYPbPr(float y, float pb, float pr, bool coefficientsSDTV)
 		{
 			if (coefficientsSDTV)
 			{
@@ -551,14 +575,17 @@ namespace hr
 			}
 
 			mRGBA[3] = 1.0f;
+
+			return *this;
 		}
 
-		void setYPbPr(const unsigned char * const ypbpr, bool coefficientsSDTV)
+		Color& setYPbPr(const unsigned char * const ypbpr, bool coefficientsSDTV)
 		{
 			setYPbPr(ypbpr[0], ypbpr[1], ypbpr[2], coefficientsSDTV);
+			return *this;
 		}
 
-		void setYPbPr(unsigned char y, unsigned char pb, unsigned char pr, bool coefficientsSDTV)
+		Color& setYPbPr(unsigned char y, unsigned char pb, unsigned char pr, bool coefficientsSDTV)
 		{
 			alignas(16) float pixelAux[4];
 
@@ -569,27 +596,33 @@ namespace hr
 			_mm_storeu_ps(pixelAux, _mm_mul_ps(_mm_load_ps(pixelAux), Math::SIMD::fUByteMaxInv));
 
 			setYPbPr(pixelAux[0], pixelAux[1], pixelAux[2], coefficientsSDTV);
+
+			return *this;
 		}
 
-		void setCMYK(const float * const cmyk)
+		Color& setCMYK(const float * const cmyk)
 		{
 			setCMYK(cmyk[0], cmyk[1], cmyk[2], cmyk[3]);
+			return *this;
 		}
 
-		void setCMYK(float c, float m, float y, float k)
+		Color& setCMYK(float c, float m, float y, float k)
 		{
 			mRGBA[0] = 1.0f - (c * (1.0f - k)) + k;
 			mRGBA[1] = 1.0f - (m * (1.0f - k)) + k;
 			mRGBA[2] = 1.0f - (y * (1.0f - k)) + k;
 			mRGBA[3] = 1.0f;
+
+			return *this;
 		}
 
-		void setCMYK(const unsigned char * const cmyk)
+		Color& setCMYK(const unsigned char * const cmyk)
 		{
 			setCMYK(cmyk[0], cmyk[1], cmyk[2], cmyk[3]);
+			return *this;
 		}
 
-		void setCMYK(unsigned char c, unsigned char m, unsigned char y, unsigned char k)
+		Color& setCMYK(unsigned char c, unsigned char m, unsigned char y, unsigned char k)
 		{
 			alignas(16) float pixelAux[4];
 
@@ -600,6 +633,8 @@ namespace hr
 			_mm_storeu_ps(pixelAux, _mm_mul_ps(_mm_load_ps(pixelAux), Math::SIMD::fUByteMaxInv));
 
 			setCMYK(pixelAux[0], pixelAux[1], pixelAux[2], pixelAux[3]);
+
+			return *this;
 		}
 
 		void write(float * const dest) const
@@ -817,4 +852,6 @@ namespace hr
 			_mm_storeu_ps(mRGBA, tmp);
 		}
 	};
+
+	static_assert(std::is_trivially_copyable<Color>::value);
 }

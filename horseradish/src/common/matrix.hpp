@@ -24,24 +24,61 @@ namespace hr
 
 	class Matrix
 	{
-		float m[16];
+		float m[16]{ 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f };
 
 		friend class Matrix3;
 
 	public:
-		Matrix() noexcept
+		static constexpr Matrix genMatTranslate(float x, float y, float z)
 		{
-			std::memset(m, 0, sizeof(float) * 16);
-			m[0] = m[5] = m[10] = m[15] = 1.0f;
+			Matrix m;
+			m[12] = x;
+			m[13] = y;
+			m[14] = z;
+
+			return m;
 		}
 
-		Matrix(const Matrix& mat) noexcept
+		static constexpr void genMatTranslate(Matrix& mat, float x, float y, float z)
 		{
-			std::memcpy(m, mat.m, sizeof(float) * 16);
+			mat[12] = x;
+			mat[13] = y;
+			mat[14] = z;
+			mat[0] = mat[5] = mat[10] = mat[15] = 1.0f;
+			mat[1] = mat[2] = mat[3] = mat[4] = mat[6] = mat[7] = mat[8] = mat[9] = mat[11] = 0.0f;
 		}
+
+		static constexpr Matrix genMatScale(float x, float y, float z)
+		{
+			Matrix m;
+			m[0] = x;
+			m[5] = y;
+			m[10] = z;
+
+			return m;
+		}
+
+		static constexpr void genMatScale(Matrix& mat, float x, float y, float z)
+		{
+			mat[0] = x;
+			mat[5] = y;
+			mat[10] = z;
+			mat[15] = 1.0f;
+			mat[1] = mat[2] = mat[3] = mat[4] = mat[6] = mat[7] = mat[8] = mat[9] = mat[11] = mat[12] = mat[13] = mat[14] = 0.0f;
+		}
+
+	public:
+		constexpr Matrix() = default;
+		constexpr Matrix(const Matrix&) = default;
+		constexpr Matrix& operator=(const Matrix&) = default;
+		constexpr Matrix(Matrix&&) = default;
+		constexpr Matrix& operator=(Matrix&&) = default;
+
+		explicit constexpr Matrix(const float src[16]) noexcept
+			: m{ src[0], src[1], src[2], src[3], src[4], src[5], src[6], src[7], src[8], src[9], src[10], src[11], src[12], src[13], src[14], src[15] }
+		{ }	
 
 		explicit Matrix(const Matrix3 &mat) noexcept;
-		explicit Matrix(const float src[16]) noexcept;
 		explicit Matrix(const double src[16]) noexcept;
 		explicit Matrix(const Quaternion &unitQuaternion) noexcept;
 		
@@ -60,22 +97,22 @@ namespace hr
 		Matrix operator-(const Matrix &s) const;
 		Matrix operator*(const float s) const;
 
-		float& operator[](size_t index)
+		constexpr float& operator[](size_t index)
 		{
 			return m[index % 16];
 		}
 
-		const float& operator[](size_t index) const
+		constexpr const float& operator[](size_t index) const
 		{
 			return m[index % 16];
 		}
 
-		float* data()
+		constexpr float* data()
 		{
 			return m;
 		}
 
-		const float* data() const
+		constexpr const float* data() const
 		{
 			return m;
 		}
@@ -158,21 +195,27 @@ namespace hr
 
 	class Matrix3
 	{
-		float m[9];
+		float m[9]{ 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f };
 
 		friend class Matrix;
 
 	public:
-		Matrix3()
-		{
-			std::memset(m, 0, sizeof(float) * 9);
-			m[0] = m[4] = m[8] = 1.0f;
-		}
+		constexpr Matrix3() = default;
+		constexpr Matrix3(const Matrix3&) = default;
+		constexpr Matrix3& operator=(const Matrix3&) = default;
+		constexpr Matrix3(Matrix3&&) = default;
+		constexpr Matrix3& operator=(Matrix3&&) = default;
 
-		explicit Matrix3(const Matrix &mat);
-		explicit Matrix3(const float src[9]);
+		explicit constexpr Matrix3(const Matrix &mat)
+			: m{ mat.m[0], mat.m[1], mat.m[2], mat.m[4], mat.m[5], mat.m[6], mat.m[8], mat.m[9], mat.m[10] }
+		{ }
+
+		explicit constexpr Matrix3(const float src[9])
+			: m{ src[0], src[1], src[2], src[3], src[4], src[5], src[6], src[7], src[8] }
+		{ }
+
 		explicit Matrix3(const Quaternion &unitQuaternion);
-
+		
 		void operator*=(const Matrix &s);
 		void operator*=(const Matrix3 &s);
 		void operator*=(const float src[9]);
@@ -185,22 +228,22 @@ namespace hr
 		Matrix3 operator+(const Matrix3 &s) const;
 		Matrix3 operator-(const Matrix3 &s) const;
 
-		float& operator[](const size_t index)
+		constexpr float& operator[](const size_t index)
 		{
 			return m[index % 9];
 		}
 
-		const float& operator[](const size_t index) const
+		constexpr const float& operator[](const size_t index) const
 		{
 			return m[index % 9];
 		}
 
-		float* data()
+		constexpr float* data()
 		{
 			return m;
 		}
 
-		const float* data() const
+		constexpr const float* data() const
 		{
 			return m;
 		}

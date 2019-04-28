@@ -5,19 +5,16 @@
 
 namespace hr
 {
+	static_assert(std::is_trivially_copyable<BBox>::value);
+	static_assert(std::is_trivially_copyable<BSphere>::value);
+
 	BBox::BBox(const Vector3f * const points, size_t numVec)
 	{
-		mMinPt.set(std::numeric_limits<float>::infinity());
-		mMaxPt.set(-std::numeric_limits<float>::infinity());
-
 		merge(points, numVec);
 	}
 
 	BBox::BBox(const BBox * const bboxes, size_t numBBox)
 	{
-		mMinPt.set(std::numeric_limits<float>::infinity());
-		mMaxPt.set(-std::numeric_limits<float>::infinity());
-
 		for (size_t i = 0; i < numBBox; i++)
 		{
 			merge(bboxes[i].mMaxPt);

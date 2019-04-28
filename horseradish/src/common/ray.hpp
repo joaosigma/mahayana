@@ -6,23 +6,31 @@ namespace hr
 {
 	class Ray
 	{
-		Vector3f mOrigin, mDirection;
-		float mLength;
+		Vector3f mOrigin{ 0.0f }, mDirection{ 0.0f };
+		float mLength{ 0.0f };
 
 	public:
-		Ray()
-			: mOrigin(0.0f), mDirection(0.0f), mLength(0.0f)
-		{ }
+		constexpr Ray() = default;
+		constexpr Ray(const Ray&) = default;
+		constexpr Ray& operator=(const Ray&) = default;
+		constexpr Ray(Ray&&) = default;
+		constexpr Ray& operator=(Ray&&) = default;
 
 		explicit Ray(const Vector3f& origin, const Vector3f& direction)
+			: mOrigin{ origin }
+			, mDirection{ direction }
 		{
-			mOrigin = origin;
-			
-			mDirection = direction;
 			mDirection.normalize();
-
 			mLength = direction.getMagnitude();
 		}
+
+		Ray& setOrigin(float x, float y, float z);
+		Ray& setOrigin(const Vector3f& origin);
+		Ray& setDirection(float x, float y, float z);
+		Ray& setDirection(const Vector3f& direction);
+		Ray& setLength(float length);
+		Ray& setSizedDirection(float x, float y, float z);
+		Ray& setSizedDirection(const Vector3f& sizedDirection);
 
 		const Vector3f& origin() const
 		{
@@ -63,14 +71,6 @@ namespace hr
 		{
 			return vec.getDot(mDirection);
 		}
-
-		void setOrigin(float x, float y, float z);
-		void setOrigin(const Vector3f& origin);
-		void setDirection(float x, float y, float z);
-		void setDirection(const Vector3f& direction);
-		void setLength(float length);
-		void setSizedDirection(float x, float y, float z);
-		void setSizedDirection(const Vector3f& sizedDirection);
 
 		void negateDir()
 		{

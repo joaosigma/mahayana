@@ -14,30 +14,19 @@ namespace hr
 
 	class BBox
 	{
-		Vector3f mMinPt, mMaxPt;
+		Vector3f mMinPt{ std::numeric_limits<float>::infinity() }, mMaxPt{ -std::numeric_limits<float>::infinity() };
 
 	public:
 		enum class Position { Inside, Outside, Intersect };
 
-		BBox()
-			: mMinPt(std::numeric_limits<float>::infinity())
-			, mMaxPt(-std::numeric_limits<float>::infinity())
-		{ }
-
-		BBox(const BBox& bbox)
-			: mMinPt(bbox.mMinPt)
-			, mMaxPt(bbox.mMaxPt)
-		{ }
+		constexpr BBox() = default;
+		constexpr BBox(const BBox&) = default;
+		constexpr BBox& operator=(const BBox&) = default;
+		constexpr BBox(BBox&&) = default;
+		constexpr BBox& operator=(BBox&&) = default;
 
 		explicit BBox(const Vector3f * const points, size_t numVec);
 		explicit BBox(const BBox * const bboxes, size_t numBBox);
-
-		BBox& operator=(const BBox& bbox)
-		{
-			mMinPt.set(bbox.mMinPt);
-			mMaxPt.set(bbox.mMaxPt);
-			return *this;
-		}
 
 		void operator+=(const BBox& bbox)
 		{
@@ -187,7 +176,7 @@ namespace hr
 
 	class BSphere
 	{
-		float mCenter[3], mRadius;
+		float mCenter[3]{ 0.0f, 0.0f, 0.0f }, mRadius{ std::numeric_limits<float>::infinity() };
 
 		float calcDist(const float &px, const float &py, const float &pz) const;
 		float calcDist(const float * const vec) const;
@@ -197,29 +186,16 @@ namespace hr
 	public:
 		enum class Position { Inside, Outside, Intersect };
 
-		BSphere()
-			: mCenter{ 0.0f, 0.0f, 0.0f }
-			, mRadius(std::numeric_limits<float>::infinity())
-		{ }
+		constexpr BSphere() = default;
+		constexpr BSphere(const BSphere&) = default;
+		constexpr BSphere& operator=(const BSphere&) = default;
+		constexpr BSphere(BSphere&&) = default;
+		constexpr BSphere& operator=(BSphere&&) = default;
 
-		BSphere(const BSphere& bsphere)
-			: mCenter{ bsphere.mCenter[0], bsphere.mCenter[1], bsphere.mCenter[2] }
-			, mRadius(bsphere.mRadius)
-		{ }
-		
-		explicit BSphere(const Vector3f& center, float radius)
+		explicit constexpr BSphere(const Vector3f& center, float radius)
 			: mCenter{ center[0], center[1], center[2] }
 			, mRadius(radius)
 		{ }
-
-		BSphere& operator=(const BSphere& bsphere)
-		{
-			mCenter[0] = bsphere.mCenter[0];
-			mCenter[1] = bsphere.mCenter[1];
-			mCenter[2] = bsphere.mCenter[2];
-			mRadius = bsphere.mRadius;
-			return *this;
-		}
 
 		void operator+=(const BSphere& bsphere)
 		{

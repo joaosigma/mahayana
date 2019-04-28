@@ -2,8 +2,12 @@
 
 #include "math.hpp"
 
+#include <type_traits>
+
 namespace hr
 {
+	static_assert(std::is_trivially_copyable<Quaternion>::value);
+
 	void Quaternion::operator+=(const Quaternion &quat)
 	{
 		_mm_storeu_ps(mData, _mm_add_ps(_mm_loadu_ps(mData), _mm_loadu_ps(quat.mData)));
@@ -193,7 +197,7 @@ namespace hr
 	{
 		Quaternion v1 = to;
 
-		float dot = from.getDot(v1); // compute the cosine of the angle between the two vectors.
+		double dot = from.getDot(v1); // compute the cosine of the angle between the two vectors.
 
 		// If the dot product is negative, slerp won't take
 		// the shorter path. Note that v1 and -v1 are equivalent when
@@ -218,10 +222,10 @@ namespace hr
 		// Since dot is in range [0, DOT_THRESHOLD], acos is safe
 		double theta_0 = acos(dot);        // theta_0 = angle between input vectors
 		double theta = theta_0 * t;          // theta = angle between v0 and result
-		double sin_theta = sin(theta);     // compute this value only once
-		double sin_theta_0 = sin(theta_0) + 0.0000001; // compute this value only once
+		double sin_theta = std::sin(theta);     // compute this value only once
+		double sin_theta_0 = std::sin(theta_0) + 0.0000001; // compute this value only once
 
-		double s0 = cos(theta) - dot * sin_theta / sin_theta_0;  // == sin(theta_0 - theta) / sin(theta_0)
+		double s0 = std::cos(theta) - dot * sin_theta / sin_theta_0;  // == sin(theta_0 - theta) / sin(theta_0)
 		double s1 = sin_theta / sin_theta_0;
 
 		mData[0] = static_cast<float>(from.mData[0] * s0 + v1.mData[0] * s1);
@@ -441,7 +445,7 @@ namespace hr
 		float auxY = mData[1] * len;
 		float auxZ = mData[2] * len;
 
-		len = 1.0f / sqrt(auxX*auxX + auxY*auxY + auxZ*auxZ);
+		len = 1.0f / std::sqrt(auxX*auxX + auxY*auxY + auxZ*auxZ);
 		*vecX = auxX*len;
 		*vecY = auxY*len;
 		*vecZ = auxZ*len;
@@ -465,7 +469,7 @@ namespace hr
 		vec *= (1.0f / len);
 		vec.normalize();
 
-		*ang = ((float)acos(mData[3]))*114.5915590261646417f; // 180/pi=57.295779513082320876f * 2.0f
+		*ang = std::acos(mData[3]) * 114.5915590261646417f; // 180/pi=57.295779513082320876f * 2.0f
 	}
 
 	void Quaternion::getEulerAngles(float * const angX, float * const angY, float * const angZ) const

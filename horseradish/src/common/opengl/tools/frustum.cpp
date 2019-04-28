@@ -113,14 +113,14 @@ namespace hr { namespace gl { namespace tools
 
 		for (size_t i = 0; i < 6; i++)
 		{
-			if (mPlanes[i].classifyPoint(corners[0]) != hr::Plane::Position::BEHIND)	continue;
-			if (mPlanes[i].classifyPoint(corners[1]) != hr::Plane::Position::BEHIND)	continue;
-			if (mPlanes[i].classifyPoint(corners[2]) != hr::Plane::Position::BEHIND)	continue;
-			if (mPlanes[i].classifyPoint(corners[3]) != hr::Plane::Position::BEHIND)	continue;
-			if (mPlanes[i].classifyPoint(corners[4]) != hr::Plane::Position::BEHIND)	continue;
-			if (mPlanes[i].classifyPoint(corners[5]) != hr::Plane::Position::BEHIND)	continue;
-			if (mPlanes[i].classifyPoint(corners[6]) != hr::Plane::Position::BEHIND)	continue;
-			if (mPlanes[i].classifyPoint(corners[7]) != hr::Plane::Position::BEHIND)	continue;
+			if (mPlanes[i].classifyPoint(corners[0]) != hr::Plane::Position::Behind)	continue;
+			if (mPlanes[i].classifyPoint(corners[1]) != hr::Plane::Position::Behind)	continue;
+			if (mPlanes[i].classifyPoint(corners[2]) != hr::Plane::Position::Behind)	continue;
+			if (mPlanes[i].classifyPoint(corners[3]) != hr::Plane::Position::Behind)	continue;
+			if (mPlanes[i].classifyPoint(corners[4]) != hr::Plane::Position::Behind)	continue;
+			if (mPlanes[i].classifyPoint(corners[5]) != hr::Plane::Position::Behind)	continue;
+			if (mPlanes[i].classifyPoint(corners[6]) != hr::Plane::Position::Behind)	continue;
+			if (mPlanes[i].classifyPoint(corners[7]) != hr::Plane::Position::Behind)	continue;
 
 			return IntersectionType::FullOutside;
 		}
@@ -131,14 +131,14 @@ namespace hr { namespace gl { namespace tools
 
 		for (size_t i = 0; i < 6; i++)
 		{
-			if (frustum.mPlanes[i].classifyPoint(corners[0]) != hr::Plane::Position::BEHIND)	continue;
-			if (frustum.mPlanes[i].classifyPoint(corners[1]) != hr::Plane::Position::BEHIND)	continue;
-			if (frustum.mPlanes[i].classifyPoint(corners[2]) != hr::Plane::Position::BEHIND)	continue;
-			if (frustum.mPlanes[i].classifyPoint(corners[3]) != hr::Plane::Position::BEHIND)	continue;
-			if (frustum.mPlanes[i].classifyPoint(corners[4]) != hr::Plane::Position::BEHIND)	continue;
-			if (frustum.mPlanes[i].classifyPoint(corners[5]) != hr::Plane::Position::BEHIND)	continue;
-			if (frustum.mPlanes[i].classifyPoint(corners[6]) != hr::Plane::Position::BEHIND)	continue;
-			if (frustum.mPlanes[i].classifyPoint(corners[7]) != hr::Plane::Position::BEHIND)	continue;
+			if (frustum.mPlanes[i].classifyPoint(corners[0]) != hr::Plane::Position::Behind)	continue;
+			if (frustum.mPlanes[i].classifyPoint(corners[1]) != hr::Plane::Position::Behind)	continue;
+			if (frustum.mPlanes[i].classifyPoint(corners[2]) != hr::Plane::Position::Behind)	continue;
+			if (frustum.mPlanes[i].classifyPoint(corners[3]) != hr::Plane::Position::Behind)	continue;
+			if (frustum.mPlanes[i].classifyPoint(corners[4]) != hr::Plane::Position::Behind)	continue;
+			if (frustum.mPlanes[i].classifyPoint(corners[5]) != hr::Plane::Position::Behind)	continue;
+			if (frustum.mPlanes[i].classifyPoint(corners[6]) != hr::Plane::Position::Behind)	continue;
+			if (frustum.mPlanes[i].classifyPoint(corners[7]) != hr::Plane::Position::Behind)	continue;
 
 			return IntersectionType::FullOutside;
 		}

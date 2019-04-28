@@ -9,22 +9,20 @@ namespace hr
 {
 	class BRect
 	{
-		float mMinX, mMinY, mMaxX, mMaxY;
+		float mMinX{ std::numeric_limits<float>::infinity() }, mMinY{ std::numeric_limits<float>::infinity() };
+		float mMaxX{ -std::numeric_limits<float>::infinity() }, mMaxY{ -std::numeric_limits<float>::infinity() };
 
 	public:
-		BRect() noexcept
-			: mMinX(std::numeric_limits<float>::infinity())
-			, mMinY(std::numeric_limits<float>::infinity())
-			, mMaxX(-std::numeric_limits<float>::infinity())
-			, mMaxY(-std::numeric_limits<float>::infinity())
-		{ }
-		
-		BRect(const BRect& brect) noexcept
-			: mMinX(brect.mMinX), mMinY(brect.mMinY), mMaxX(brect.mMaxX), mMaxY(brect.mMaxY)
-		{ }
-		BRect(const float &minX, const float &minY, const float &maxX, const float &maxY) noexcept
+		constexpr BRect() = default;
+		constexpr BRect(const BRect&) = default;
+		constexpr BRect& operator=(const BRect&) = default;
+		constexpr BRect(BRect&&) = default;
+		constexpr BRect& operator=(BRect&&) = default;
+
+		constexpr BRect(const float &minX, const float &minY, const float &maxX, const float &maxY) noexcept
 			: mMinX(minX), mMinY(minY), mMaxX(maxX), mMaxY(maxY)
 		{ }
+
 		BRect(const float &centerX, const float &centerY, const float &expandAmount) noexcept
 			: mMinX(centerX), mMinY(centerY), mMaxX(centerX), mMaxY(centerY)
 		{
@@ -33,15 +31,6 @@ namespace hr
 		
 		explicit BRect(const Vector3f * const points, size_t numVec);
 		explicit BRect(const BRect * const brects, size_t numBRect);
-
-		BRect& operator=(const BRect& brect)
-		{
-			mMinX = brect.mMinX;
-			mMinY = brect.mMinY;
-			mMaxX = brect.mMaxX;
-			mMaxY = brect.mMaxY;
-			return *this;
-		}
 
 		void operator+=(const BRect& brect)
 		{
@@ -130,70 +119,79 @@ namespace hr
 		void merge(const Vector3f * const pts, size_t numPts);
 		void merge(const float &x, const float &y);
 
-		void set(const float &minX, const float &minY, const float &maxX, const float &maxY)
+		BRect& set(const float &minX, const float &minY, const float &maxX, const float &maxY)
 		{
 			mMinX = minX;
 			mMinY = minY;
 			mMaxX = maxX;
 			mMaxY = maxY;
+			return *this;
 		}
 
-		void setExpand(const float &centerX, const float &centerY, const float &expandAmount)
+		BRect& setExpand(const float &centerX, const float &centerY, const float &expandAmount)
 		{
 			mMinX = centerX;
 			mMinY = centerY;
 			mMaxX = centerX;
 			mMaxY = centerY;
 			expand(expandAmount);
+			return *this;
 		}
 
-		void setExpand(const float &centerX, const float &centerY, const float &expandX, const float &expandY)
+		BRect& setExpand(const float &centerX, const float &centerY, const float &expandX, const float &expandY)
 		{
 			mMinX = centerX;
 			mMinY = centerY;
 			mMaxX = centerX;
 			mMaxY = centerY;
 			expand(expandX, expandY);
+			return *this;
 		}
 
-		void setMinMax(const Vector3f &vec)
+		BRect& setMinMax(const Vector3f &vec)
 		{
 			mMinX = vec[0];
 			mMinY = vec[1];
 			mMaxX = vec[0];
 			mMaxY = vec[1];
+			return *this;
 		}
 
-		void setMinMax(const float &x, const float &y)
+		BRect& setMinMax(const float &x, const float &y)
 		{
 			mMinX = x;
 			mMinY = y;
 			mMaxX = x;
 			mMaxY = y;
+			return *this;
 		}
 
-		void setMin(const Vector3f &min)
+		BRect& setMin(const Vector3f &min)
 		{
 			mMinX = min[0];
 			mMinY = min[1];
+			return *this;
 		}
 
-		void setMin(const float &x, const float &y)
+		BRect& setMin(const float &x, const float &y)
 		{
 			mMinX = x;
 			mMinY = y;
+			return *this;
 		}
 
-		void setMax(const Vector3f &max)
+		BRect& setMax(const Vector3f &max)
 		{
 			mMaxX = max[0];
 			mMaxY = max[1];
+			return *this;
 		}
 
-		void setMax(const float &x, const float &y)
+		BRect& setMax(const float &x, const float &y)
 		{
 			mMaxX = x;
 			mMaxY = y;
+			return *this;
 		}
 		
 		void reset()

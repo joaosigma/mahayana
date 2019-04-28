@@ -6,52 +6,43 @@ namespace hr
 {
 	class Quaternion
 	{
-		float mData[4];
+		float mData[4]{ 0.0f, 0.0f, 0.0f, 1.0f };
 
 	public:
-		Quaternion()
-		{
-			mData[0] = mData[1] = mData[2] = 0.0f;
-			mData[3] = 1.0f;
-		}
+		constexpr Quaternion() = default;
+		constexpr Quaternion(const Quaternion&) = default;
+		constexpr Quaternion& operator=(const Quaternion&) = default;
+		constexpr Quaternion(Quaternion&&) = default;
+		constexpr Quaternion& operator=(Quaternion&&) = default;
 
-		explicit Quaternion(const float quat[4])
-		{
-			std::memcpy(mData, quat, sizeof(float) * 4);
-		}
+		explicit constexpr Quaternion(const float quat[4])
+			: mData{ quat[0], quat[1], quat[2], quat[3] }
+		{ }
+		
+		explicit constexpr Quaternion(const double quat[4])
+			: mData{ static_cast<float>(quat[0]), static_cast<float>(quat[1]), static_cast<float>(quat[2]), static_cast<float>(quat[3]) }
+		{ }
 
-		explicit Quaternion(const double quat[4])
-		{
-			mData[0] = static_cast<float>(quat[0]);
-			mData[1] = static_cast<float>(quat[1]);
-			mData[2] = static_cast<float>(quat[2]);
-			mData[3] = static_cast<float>(quat[3]);
-		}
+		explicit constexpr Quaternion(const float qx, const float qy, const float qz, const float qw)
+			: mData{ qx, qy, qz, qw }
+		{ }
 
-		explicit Quaternion(const float qx, const float qy, const float qz, const float qw)
-		{
-			mData[0] = qx;
-			mData[1] = qy;
-			mData[2] = qz;
-			mData[3] = qw;
-		}
-
-		float* data()
+		constexpr float* data()
 		{
 			return mData;
 		}
 
-		const float* data() const
+		constexpr const float* data() const
 		{
 			return mData;
 		}
 
-		float& operator[] (const size_t index)
+		constexpr float& operator[] (const size_t index)
 		{
 			return mData[index % 4];
 		}
 
-		const float& operator[] (const size_t index) const
+		constexpr const float& operator[] (const size_t index) const
 		{
 			return mData[index % 4];
 		}

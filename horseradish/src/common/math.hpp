@@ -90,6 +90,7 @@ namespace hr
 		static float				ceil(const float &f);
 		static float				nearestInt(const float &f);
 		static int					ftoi(const float &f);
+		static int					ftoi(const double &d);
 		static bool					isZero(const float &f);
 
 		static int					iPow(int base, int exp);
@@ -203,6 +204,12 @@ namespace hr
 
 	inline int Math::ftoi(const float &f)
 	{
+		return _mm_cvtss_si32(_mm_load_ss(&f));
+	}
+
+	inline int Math::ftoi(const double &d)
+	{
+		float f = static_cast<float>(d);
 		return _mm_cvtss_si32(_mm_load_ss(&f));
 	}
 

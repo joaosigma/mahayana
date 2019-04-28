@@ -4,67 +4,60 @@
 
 namespace hr
 {
-	class alignas(16) Plane
+	class Plane
 	{
-		float mA, mB, mC, mD; //scalar equation of plane: ax + by + cz = d
+		float mA{ 0.0f }, mB{ 0.0f }, mC{ 0.0f }, mD{ 0.0f }; //scalar equation of plane: ax + by + cz = d
 
 	public:
-		enum class Position { COPLANAR, FRONT, BEHIND, INTERSECT };
+		enum class Position { CoPlanar, Front, Behind, Intersect };
 
-		Plane()
-			: mA(0.0f), mB(0.0f), mC(0.0f), mD(0.0f)
+		constexpr Plane() = default;
+		constexpr Plane(const Plane&) = default;
+		constexpr Plane& operator=(const Plane&) = default;
+		constexpr Plane(Plane&&) = default;
+		constexpr Plane& operator=(Plane&&) = default;
+
+		explicit constexpr Plane(float a, float b, float c, float d)
+			: mA{ a }, mB{ b }, mC{ c }, mD{ d }
 		{ }
 
-		Plane(const Plane &plane)
-			: mA(plane.mA), mB(plane.mB), mC(plane.mC), mD(plane.mD)
+		explicit constexpr Plane(const Vector3f &nN, float d)
+			: mA{ nN[0] }, mB{ nN[1] }, mC{ nN[2] }, mD{ d }
 		{ }
 
-		explicit Plane(float a, float b, float c, float d)
-			: mA(a), mB(b), mC(c), mD(d)
-		{ }
-
-		explicit Plane(const Vector3f &nN, float d)
-			: mA(nN[0]), mB(nN[1]), mC(nN[2]), mD(d)
-		{ }
-
-		Plane& operator=(const Plane& plane)
-		{
-			mA = plane.mA;
-			mB = plane.mB;
-			mC = plane.mC;
-			mD = plane.mD;
-			return *this;
-		}
-
-		void set(float a, float b, float c, float d)
+		Plane& set(float a, float b, float c, float d)
 		{
 			mA = a;
 			mB = b;
 			mC = c;
 			mD = d;
+			return *this;
 		}
 
-		void setNormal(const Vector3f &newNormal)
+		Plane& setNormal(const Vector3f &newNormal)
 		{
 			mA = newNormal[0];
 			mB = newNormal[1];
 			mC = newNormal[2];
+			return *this;
 		}
 
-		void setNormal(float ax, float by, float cz)
+		Plane& setNormal(float ax, float by, float cz)
 		{
 			mA = ax;
 			mB = by;
 			mC = cz;
+			return *this;
 		}
 
-		void setD(float nd)
+		Plane& setD(float nd)
 		{
 			mD = nd;
+			return *this;
 		}
 
-		void setFromPoints(const Vector3f &p0, const Vector3f &p1, const Vector3f &p2);
-		void setFromPoints(const float *p0, const float *p1, const float *p2);
+		Plane& setFromPoints(const Vector3f &p0, const Vector3f &p1, const Vector3f &p2);
+		Plane& setFromPoints(const float *p0, const float *p1, const float *p2);
 
 		Plane lerp(const Plane &p2, float factor) const;
 

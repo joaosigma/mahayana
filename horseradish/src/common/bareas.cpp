@@ -1,7 +1,11 @@
 #include "bareas.hpp"
 
+#include <type_traits>
+
 namespace hr
 {
+	static_assert(std::is_trivially_copyable<BRect>::value);
+
 	BRect::BRect(const Vector3f * const points, size_t numVec)
 	{
 		mMinX = mMinY = std::numeric_limits<float>::infinity();
