@@ -225,6 +225,19 @@
     <ClCompile Include="..\..\src\libs\lz4\lz4.c" />
     <ClCompile Include="..\..\src\libs\lz4\lz4hc.c" />
     <ClCompile Include="..\..\src\libs\md5\md5.c" />
+    <ClCompile Include="..\..\src\libs\meshoptimizer\allocator.cpp" />
+    <ClCompile Include="..\..\src\libs\meshoptimizer\clusterizer.cpp" />
+    <ClCompile Include="..\..\src\libs\meshoptimizer\indexcodec.cpp" />
+    <ClCompile Include="..\..\src\libs\meshoptimizer\indexgenerator.cpp" />
+    <ClCompile Include="..\..\src\libs\meshoptimizer\overdrawanalyzer.cpp" />
+    <ClCompile Include="..\..\src\libs\meshoptimizer\overdrawoptimizer.cpp" />
+    <ClCompile Include="..\..\src\libs\meshoptimizer\simplifier.cpp" />
+    <ClCompile Include="..\..\src\libs\meshoptimizer\stripifier.cpp" />
+    <ClCompile Include="..\..\src\libs\meshoptimizer\vcacheanalyzer.cpp" />
+    <ClCompile Include="..\..\src\libs\meshoptimizer\vcacheoptimizer.cpp" />
+    <ClCompile Include="..\..\src\libs\meshoptimizer\vertexcodec.cpp" />
+    <ClCompile Include="..\..\src\libs\meshoptimizer\vfetchanalyzer.cpp" />
+    <ClCompile Include="..\..\src\libs\meshoptimizer\vfetchoptimizer.cpp" />
     <ClCompile Include="..\..\src\libs\mikktspace\mikktspace.cpp" />
     <ClCompile Include="..\..\src\libs\sha256\sha256.c" />
     <ClCompile Include="..\..\src\libs\squirrel\sqapi.cpp" />
@@ -354,6 +367,7 @@
     <ClInclude Include="..\..\src\libs\lz4\lz4.h" />
     <ClInclude Include="..\..\src\libs\lz4\lz4hc.h" />
     <ClInclude Include="..\..\src\libs\md5\md5.h" />
+    <ClInclude Include="..\..\src\libs\meshoptimizer\meshoptimizer.h" />
     <ClInclude Include="..\..\src\libs\mikktspace\mikktspace.h" />
     <ClInclude Include="..\..\src\libs\rapidjson\allocators.h" />
     <ClInclude Include="..\..\src\libs\rapidjson\cursorstreamwrapper.h" />

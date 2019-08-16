@@ -91,6 +91,9 @@
     <Filter Include="libs\sparsepp">
       <UniqueIdentifier>{2460b496-3027-4f4f-945b-777d6c1fc4b6}</UniqueIdentifier>
     </Filter>
+    <Filter Include="libs\meshoptimizer">
+      <UniqueIdentifier>{bbbdf052-3b04-406d-94c3-78775cd9813f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\common\opengl\openGLext.cpp">
@@ -423,6 +426,45 @@
     </ClCompile>
     <ClCompile Include="..\..\src\libs\stb\stb_truetype.cpp">
       <Filter>libs\stb</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\libs\meshoptimizer\allocator.cpp">
+      <Filter>libs\meshoptimizer</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\libs\meshoptimizer\clusterizer.cpp">
+      <Filter>libs\meshoptimizer</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\libs\meshoptimizer\indexcodec.cpp">
+      <Filter>libs\meshoptimizer</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\libs\meshoptimizer\indexgenerator.cpp">
+      <Filter>libs\meshoptimizer</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\libs\meshoptimizer\overdrawanalyzer.cpp">
+      <Filter>libs\meshoptimizer</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\libs\meshoptimizer\overdrawoptimizer.cpp">
+      <Filter>libs\meshoptimizer</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\libs\meshoptimizer\simplifier.cpp">
+      <Filter>libs\meshoptimizer</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\libs\meshoptimizer\stripifier.cpp">
+      <Filter>libs\meshoptimizer</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\libs\meshoptimizer\vcacheanalyzer.cpp">
+      <Filter>libs\meshoptimizer</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\libs\meshoptimizer\vcacheoptimizer.cpp">
+      <Filter>libs\meshoptimizer</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\libs\meshoptimizer\vertexcodec.cpp">
+      <Filter>libs\meshoptimizer</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\libs\meshoptimizer\vfetchanalyzer.cpp">
+      <Filter>libs\meshoptimizer</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\libs\meshoptimizer\vfetchoptimizer.cpp">
+      <Filter>libs\meshoptimizer</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -954,6 +996,9 @@
     </ClInclude>
     <ClInclude Include="..\..\src\libs\sparsepp\spp_utils.h">
       <Filter>libs\sparsepp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\libs\meshoptimizer\meshoptimizer.h">
+      <Filter>libs\meshoptimizer</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
