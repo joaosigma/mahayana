@@ -1,16 +1,11 @@
-﻿#ifdef HR_VS_MEMORY_LEAKS
-	#define _CRTDBG_MAP_ALLOC
-	#define _CRTDBG_MAPALLOC
-	#include <stdlib.h>
-	#include <crtdbg.h>
-#endif
-
-#include "platform/platform.hpp"
+﻿#include "platform/platform.hpp"
 #include "common/stringUtils.hpp"
 
 #include "engine/engine.hpp"
 
-#include "common/primitives2D.hpp"
+#if !defined(NDEBUG) && defined(HR_BUILD_WINDOWS)
+	#include <crtdbg.h>
+#endif
 
 int WINAPI wWinMain(HINSTANCE, HINSTANCE, PWSTR lpCmdLine, int)
 {
@@ -19,8 +14,8 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, PWSTR lpCmdLine, int)
 	static_assert(sizeof(unsigned short) == 2);
 	static_assert(sizeof(unsigned int) == 4);
 
-#ifdef HR_VS_MEMORY_LEAKS
-	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+#if !defined(NDEBUG) && defined(HR_BUILD_WINDOWS)
+	_CrtSetDbgFlag(_CRTDBG_LEAK_CHECK_DF); //calls _CrtDumpMemoryLeaks to check for memory leaks at the end of process execution
 #endif
 
 	//minimal checks
@@ -45,7 +40,7 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, PWSTR lpCmdLine, int)
 		}
 	}
 
-#ifndef _M_X64
+#if !defined(_M_X64)
 	unsigned int curControlWord;
 
 	_controlfp_s(&curControlWord, _PC_24, _MCW_PC);	//set precision control to 24bit
@@ -60,7 +55,7 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, PWSTR lpCmdLine, int)
 	hr::engine::Engine engine(cmdLine);
 	auto success = engine.mainLoop();
 
-#ifndef _M_X64
+#if !defined(_M_X64)
 	_controlfp_s(&curControlWord, _CW_DEFAULT, 0xfffff);
 #endif
 

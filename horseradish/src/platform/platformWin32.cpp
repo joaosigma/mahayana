@@ -1,11 +1,11 @@
 #include "platform.hpp"
 
+#if defined(HR_BUILD_WINDOWS)
+
 #include "../common/stringUtils.hpp"
 #include "../common/scopedAction.hpp"
 
 #include <libs/fmt/format.h>
-
-#if defined(_WIN32)
 
 #include <io.h>
 #include <regex>
@@ -14,54 +14,55 @@
 #include <windows.h>
 #include <shellapi.h>
 
-struct RedirectData {
-
-	struct PipeHandles{
-		HANDLE read, write;
-	}pipeIn, pipeOut, pipeErr;
-
-	int osHandlePipeIn, osHandlePipeOut, osHandlePipeErr;
-	bool redirected;
-
-} redirectData = { { nullptr, nullptr }, { nullptr, nullptr }, { nullptr, nullptr }, -1, -1, -1, false };
-
-static
-void pipeClear(HANDLE pipeHandle)
+namespace hr::platform
 {
-	DWORD bytesRead, bytesAvailable;
-
-	while (true)
+	namespace
 	{
-		PeekNamedPipe(pipeHandle, nullptr, 0, nullptr, &bytesAvailable, nullptr);
-		if (bytesAvailable <= 0)
-			break;
+		struct RedirectData
+		{
+			struct PipeHandles {
+				HANDLE read, write;
+			}pipeIn, pipeOut, pipeErr;
 
-		char tempBuffer[256];
-		if (ReadFile(pipeHandle, tempBuffer, sizeof(tempBuffer), &bytesRead, nullptr) != TRUE)
-			break;
+			int osHandlePipeIn, osHandlePipeOut, osHandlePipeErr;
+			bool redirected;
 
-		if (bytesRead < sizeof(tempBuffer))
-			break;
+		} redirectData = { { nullptr, nullptr }, { nullptr, nullptr }, { nullptr, nullptr }, -1, -1, -1, false };
+
+		void pipeClear(HANDLE pipeHandle)
+		{
+			DWORD bytesRead, bytesAvailable;
+
+			while (true)
+			{
+				PeekNamedPipe(pipeHandle, nullptr, 0, nullptr, &bytesAvailable, nullptr);
+				if (bytesAvailable <= 0)
+					break;
+
+				char tempBuffer[256];
+				if (ReadFile(pipeHandle, tempBuffer, sizeof(tempBuffer), &bytesRead, nullptr) != TRUE)
+					break;
+
+				if (bytesRead < sizeof(tempBuffer))
+					break;
+			}
+		}
+
+		int pipeRead(HANDLE pipeHandle, void *outBuffer, const int outBufferSize)
+		{
+			DWORD bytesRead, bytesAvailable;
+
+			PeekNamedPipe(pipeHandle, nullptr, 0, nullptr, &bytesAvailable, nullptr);
+			if (bytesAvailable <= 0)
+				return 0;
+
+			if (ReadFile(pipeHandle, outBuffer, outBufferSize, &bytesRead, nullptr) != TRUE)
+				return -1;
+
+			return bytesRead;
+		}
 	}
-}
 
-static
-int pipeRead(HANDLE pipeHandle, void *outBuffer, const int outBufferSize)
-{
-	DWORD bytesRead, bytesAvailable;
-
-	PeekNamedPipe(pipeHandle, nullptr, 0, nullptr, &bytesAvailable, nullptr);
-	if (bytesAvailable <= 0)
-		return 0;
-
-	if (ReadFile(pipeHandle, outBuffer, outBufferSize, &bytesRead, nullptr) != TRUE)
-		return -1;
-
-	return bytesRead;
-}
-
-namespace hr { namespace platform
-{
 	const char* Platform::NewLine = "\r\n";
 	const size_t Platform::NewLineSize = 2;
 
@@ -135,7 +136,7 @@ namespace hr { namespace platform
 
 	bool Platform::isArch64()
 	{
-#if defined(_WIN64)
+#if defined(HR_BUILD_WINDOWS64)
 		return true;
 #else
 		return false;
@@ -583,6 +584,6 @@ namespace hr { namespace platform
 		bytesWritten = 0;
 		return false;
 	}
-} }
+}
 
 #endif

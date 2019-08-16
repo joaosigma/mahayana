@@ -2,7 +2,15 @@
 
 #include <functional>
 
-namespace hr { namespace platform
+#if defined(_WIN32) && !defined(_WIN64)
+	#define HR_BUILD_WINDOWS
+	#define HR_BUILD_WINDOWS32
+#elif defined(_WIN32) && defined(_WIN64)
+	#define HR_BUILD_WINDOWS
+	#define HR_BUILD_WINDOWS64
+#endif
+
+namespace hr::platform
 {
 	class Platform
 	{
@@ -63,4 +71,4 @@ namespace hr { namespace platform
 		static bool stdErrRead(void *outBuffer, int outBufferSize, int &bytesWritten);
 		static bool stdOutRead(void *outBuffer, int outBufferSize, int &bytesWritten);
 	};
-} }
+}

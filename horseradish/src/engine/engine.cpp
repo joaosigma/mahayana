@@ -47,7 +47,7 @@ namespace hr { namespace engine
 		size_t totalPacks = 0;
 
 		//for every pack/zip/7zip file
-		hr::io::FileSystem::findFiles("d:/jogos/doom3/base/pak*.pk4", true, [&](const hr::io::Path &filePath, const hr::hUInt64 &fileSize)
+		hr::io::FileSystem::findFiles("d:/jogos/doom3/base/pak*.pk4", true, [&](const hr::io::Path &filePath, const hr::hUInt64 &)
 		{
 			size_t numFilesZip;
 
@@ -197,7 +197,7 @@ namespace hr { namespace engine
 	{
 		std::vector<std::string> finalList;
 
-		mVars.findAllWithKeys([&](const std::string& key, const std::shared_ptr<IVariable>& var)
+		mVars.findAllWithKeys([&](const std::string& key, const std::shared_ptr<IVariable>&)
 		{
 			finalList.push_back(key);
 		});
@@ -293,7 +293,7 @@ namespace hr { namespace engine
 		mRuntime->registerFunc("runtime.quit", std::bind(&Engine::runtimeFuncRuntime, this, std::placeholders::_1, std::placeholders::_2));
 		mRuntime->registerFunc("runtime.restart", std::bind(&Engine::runtimeFuncRuntime, this, std::placeholders::_1, std::placeholders::_2));
 
-#ifndef NDEBUG
+#if !defined(NDEBUG)
 		mRuntime->registerFunc("runtime.forceCrash", std::bind(&Engine::runtimeFuncRuntime, this, std::placeholders::_1, std::placeholders::_2));
 #endif
 

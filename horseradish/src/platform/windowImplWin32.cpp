@@ -1,13 +1,13 @@
 ﻿#include "windowImplWin32.hpp"
 
-#if (defined(WIN32) || defined(_WIN32) || defined(__WIN32)) && !defined(__CYGWIN__)
+#if defined(HR_BUILD_WINDOWS)
 
 #include "common/stringUtils.hpp"
 #include "common/opengl/openGL.hpp"
 
 #include <Windowsx.h>
 
-namespace hr { namespace platform
+namespace hr::platform
 {
 	static
 	bool retrieveMonitorArea(RECT& monitorArea, bool secondaryIfAvailable, bool fullArea)
@@ -153,8 +153,8 @@ namespace hr { namespace platform
 			if ((window->mDisplayInfo.resizeWidth != window->mDisplayInfo.width) || (window->mDisplayInfo.resizeHeight != window->mDisplayInfo.height))
 			{
 				hr::hSplitUInt32 params(0);
-				params.piecesShort.short0 = window->mDisplayInfo.resizeWidth;
-				params.piecesShort.short1 = window->mDisplayInfo.resizeHeight;
+				params.piecesShort.short0 = static_cast<hUInt16>(window->mDisplayInfo.resizeWidth);
+				params.piecesShort.short1 = static_cast<hUInt16>(window->mDisplayInfo.resizeHeight);
 
 				window->mDisplayInfo.width = window->mDisplayInfo.resizeWidth;
 				window->mDisplayInfo.height = window->mDisplayInfo.resizeHeight;
@@ -245,10 +245,31 @@ namespace hr { namespace platform
 			if (inputData.data.keyboard.Flags & RI_KEY_BREAK)
 				keyDown = false;
 
-			auto virtualKeyCode = WindowImpl::translateVirtualKeyCode(inputData.data.keyboard.VKey);
+			auto virtualKeyCode = static_cast<size_t>(WindowImpl::translateVirtualKeyCode(inputData.data.keyboard.VKey));
 			if (virtualKeyCode < mRawInput.keysRealtime.size())
 				mRawInput.keysRealtime[virtualKeyCode] = keyDown;
 		}
+	}
+
+	void WindowImpl::MsgBoxInfo(std::string_view msg)
+	{
+		auto msgWChar = hr::StringUtils::conv2Native(msg);
+
+		MessageBox(nullptr, msgWChar.c_str(), L"Info", MB_OK | MB_ICONINFORMATION);
+	}
+
+	void WindowImpl::MsgBoxWarn(std::string_view msg)
+	{
+		auto msgWChar = hr::StringUtils::conv2Native(msg);
+
+		MessageBox(nullptr, msgWChar.c_str(), L"Warning", MB_OK | MB_ICONWARNING);
+	}
+
+	void WindowImpl::MsgBoxError(std::string_view msg)
+	{
+		auto msgWChar = hr::StringUtils::conv2Native(msg);
+
+		MessageBox(nullptr, msgWChar.c_str(), L"Error", MB_OK | MB_ICONERROR);
 	}
 
 	WindowImpl::WindowImpl(hr::engine::Logger &logger)
@@ -275,7 +296,7 @@ namespace hr { namespace platform
 		return mErrorMsg;
 	}
 
-	bool WindowImpl::windowInit(const std::string& windowTitle, Window::WindowStyle style, bool targetSecondaryDisplay, const unsigned int targetWidth, const unsigned int targeHeight)
+	bool WindowImpl::windowInit(std::string_view windowTitle, Window::WindowStyle style, bool targetSecondaryDisplay, const unsigned int targetWidth, const unsigned int targeHeight)
 	{
 		if (mIsInitialized)
 		{
@@ -488,7 +509,7 @@ namespace hr { namespace platform
 		return mRawInput.mouseSnapshot;
 	}
 
-	int WindowImpl::messageLoop(std::function<void()> closingCb)
+	int WindowImpl::messageLoop(const std::function<void()>& closingCb)
 	{
 		MSG msg;
 		BOOL returnCode;
@@ -536,57 +557,15 @@ namespace hr { namespace platform
 		return msg.wParam;
 	}
 
-	void WindowImpl::processMessages(std::function<void(const Window::Message&)> cb, const bool resetQueue)
+	void WindowImpl::processMessages(const std::function<void(const Window::Message&)>& cb, const bool resetQueue)
 	{
 		std::lock_guard<std::mutex> lock(mEvents.lock);
 
-		for (int i = 0; i < mEvents.queueSize; i++)
+		for (size_t i = 0; i < mEvents.queueSize; i++)
 			cb(mEvents.queue[i]);
 
 		if (resetQueue)
 			mEvents.queueSize = 0;
-	}
-
-	void WindowImpl::MsgBoxInfo(const std::string& msg)
-	{
-		auto msgWChar = hr::StringUtils::conv2Native(msg);
-
-		MessageBox(nullptr, msgWChar.c_str(), L"Info", MB_OK | MB_ICONINFORMATION);
-	}
-
-	void WindowImpl::MsgBoxInfo(const char * const msg)
-	{
-		auto msgWChar = hr::StringUtils::conv2Native(msg);
-
-		MessageBox(nullptr, msgWChar.c_str(), L"Info", MB_OK | MB_ICONINFORMATION);
-	}
-
-	void WindowImpl::MsgBoxWarn(const std::string& msg)
-	{
-		auto msgWChar = hr::StringUtils::conv2Native(msg);
-
-		MessageBox(nullptr, msgWChar.c_str(), L"Warning", MB_OK | MB_ICONWARNING);
-	}
-
-	void WindowImpl::MsgBoxWarn(const char * const msg)
-	{
-		auto msgWChar = hr::StringUtils::conv2Native(msg);
-
-		MessageBox(nullptr, msgWChar.c_str(), L"Warning", MB_OK | MB_ICONWARNING);
-	}
-
-	void WindowImpl::MsgBoxError(const std::string& msg)
-	{
-		auto msgWChar = hr::StringUtils::conv2Native(msg);
-
-		MessageBox(nullptr, msgWChar.c_str(), L"Error", MB_OK | MB_ICONERROR);
-	}
-
-	void WindowImpl::MsgBoxError(const char * const msg)
-	{
-		auto msgWChar = hr::StringUtils::conv2Native(msg);
-	
-		MessageBox(nullptr, msgWChar.c_str(), L"Error", MB_OK | MB_ICONERROR);
 	}
 
 	void OpenglContextImpl::loadWGLFunctions(HMODULE openglModule)
@@ -597,81 +576,85 @@ namespace hr { namespace platform
 		if (ptrWGlGetProcAddress == nullptr)
 			return;
 
-	#ifdef WGL_ARB_create_context
-		this->wglCreateContextAttribsARB = (PFNWGLCREATECONTEXTATTRIBSARBPROC)ptrWGlGetProcAddress("wglCreateContextAttribsARB");
+	#if defined(WGL_ARB_create_context)
+		mWGL.createContextAttribsARB = (PFNWGLCREATECONTEXTATTRIBSARBPROC)ptrWGlGetProcAddress("wglCreateContextAttribsARB");
 	#endif
 
-	#ifdef WGL_ARB_extensions_string
-		this->wglGetExtensionsStringARB = (PFNWGLGETEXTENSIONSSTRINGARBPROC)ptrWGlGetProcAddress("wglGetExtensionsStringARB");
+	#if defined(WGL_ARB_extensions_string)
+		mWGL.getExtensionsStringARB = (PFNWGLGETEXTENSIONSSTRINGARBPROC)ptrWGlGetProcAddress("wglGetExtensionsStringARB");
 	#endif
 
-	#ifdef WGL_ARB_pixel_format
-		this->wglGetPixelFormatAttribivARB = (PFNWGLGETPIXELFORMATATTRIBIVARBPROC)ptrWGlGetProcAddress("wglGetPixelFormatAttribivARB");
-		this->wglGetPixelFormatAttribfvARB = (PFNWGLGETPIXELFORMATATTRIBFVARBPROC)ptrWGlGetProcAddress("wglGetPixelFormatAttribfvARB");
-		this->wglChoosePixelFormatARB = (PFNWGLCHOOSEPIXELFORMATARBPROC)ptrWGlGetProcAddress("wglChoosePixelFormatARB");
+	#if defined(WGL_ARB_pixel_format)
+		mWGL.getPixelFormatAttribivARB = (PFNWGLGETPIXELFORMATATTRIBIVARBPROC)ptrWGlGetProcAddress("wglGetPixelFormatAttribivARB");
+		mWGL.getPixelFormatAttribfvARB = (PFNWGLGETPIXELFORMATATTRIBFVARBPROC)ptrWGlGetProcAddress("wglGetPixelFormatAttribfvARB");
+		mWGL.choosePixelFormatARB = (PFNWGLCHOOSEPIXELFORMATARBPROC)ptrWGlGetProcAddress("wglChoosePixelFormatARB");
 	#endif
 
-	#ifdef WGL_EXT_swap_control
-		this->wglSwapIntervalEXT = (PFNWGLSWAPINTERVALEXTPROC)ptrWGlGetProcAddress("wglSwapIntervalEXT");
-		this->wglGetSwapIntervalEXT = (PFNWGLGETSWAPINTERVALEXTPROC)ptrWGlGetProcAddress("wglGetSwapIntervalEXT");
+	#if defined(WGL_EXT_swap_control)
+		mWGL.swapIntervalEXT = (PFNWGLSWAPINTERVALEXTPROC)ptrWGlGetProcAddress("wglSwapIntervalEXT");
+		mWGL.getSwapIntervalEXT = (PFNWGLGETSWAPINTERVALEXTPROC)ptrWGlGetProcAddress("wglGetSwapIntervalEXT");
 	#endif
 	}
 
 	bool OpenglContextImpl::auxWindowWGLExt(HINSTANCE hInstance, HMODULE openglModule)
 	{
-		HWND hWndAux;
-		HDC hDCAux;
-		HGLRC hRCAux;
-		PIXELFORMATDESCRIPTOR pfFormatD;
+		auto TempAuxWindowName = L"gl aux window";
 
 		{
 			WNDCLASS winClassAux;
 
 			memset(&winClassAux, 0, sizeof(WNDCLASS));
 			winClassAux.hInstance = hInstance;
-			winClassAux.lpszClassName = L"gl aux window";
+			winClassAux.lpszClassName = TempAuxWindowName;
 			winClassAux.lpfnWndProc = auxWindowWGLExtProc;
 			if (RegisterClass(&winClassAux) == 0)
 				return false;
 		}
 
-		hWndAux = CreateWindow(L"gl aux window", L"gl aux window", WS_POPUP | WS_CLIPCHILDREN | WS_CLIPSIBLINGS, 0, 0, 8, 8, HWND_DESKTOP, nullptr, hInstance, nullptr);
+		HWND hWndAux = CreateWindow(TempAuxWindowName, TempAuxWindowName, WS_POPUP | WS_CLIPCHILDREN | WS_CLIPSIBLINGS, 0, 0, 8, 8, HWND_DESKTOP, nullptr, hInstance, nullptr);
 		if (hWndAux == nullptr)
 		{
-			UnregisterClass(L"gl aux window", hInstance);
+			UnregisterClass(TempAuxWindowName, hInstance);
 			return false;
 		}
 
-		memset(&pfFormatD, 0, sizeof(PIXELFORMATDESCRIPTOR));
-		pfFormatD.nSize = sizeof(PIXELFORMATDESCRIPTOR);
-		pfFormatD.nVersion = 1;
-		pfFormatD.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
-		pfFormatD.iPixelType = PFD_TYPE_RGBA;
-		pfFormatD.cColorBits = 32;
-		pfFormatD.cDepthBits = 24;
-		pfFormatD.iLayerType = PFD_MAIN_PLANE;
-	
-		hDCAux = GetDC(hWndAux);
-		SetPixelFormat(hDCAux, ChoosePixelFormat(hDCAux, &pfFormatD), &pfFormatD);
-		hRCAux = this->wglCreateContext(hDCAux);
-		this->wglMakeCurrent(hDCAux, hRCAux);
+		{
+			PIXELFORMATDESCRIPTOR pfFormatD;
+			memset(&pfFormatD, 0, sizeof(PIXELFORMATDESCRIPTOR));
+			pfFormatD.nSize = sizeof(PIXELFORMATDESCRIPTOR);
+			pfFormatD.nVersion = 1;
+			pfFormatD.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
+			pfFormatD.iPixelType = PFD_TYPE_RGBA;
+			pfFormatD.cColorBits = 32;
+			pfFormatD.cDepthBits = 24;
+			pfFormatD.iLayerType = PFD_MAIN_PLANE;
 
-		this->loadWGLFunctions(openglModule);
+			HDC hDCAux = GetDC(hWndAux);
+			SetPixelFormat(hDCAux, ChoosePixelFormat(hDCAux, &pfFormatD), &pfFormatD);
 
-		this->wglMakeCurrent(nullptr, nullptr);
-		this->wglDeleteContext(hRCAux);
-		ReleaseDC(hWndAux, hDCAux);
+			HGLRC hRCAux = mWGL.createContext(hDCAux);
+			mWGL.makeCurrent(hDCAux, hRCAux);
+
+			this->loadWGLFunctions(openglModule);
+
+			mWGL.makeCurrent(nullptr, nullptr);
+			mWGL.deleteContext(hRCAux);
+
+			ReleaseDC(hWndAux, hDCAux);
+		}
+
 		DestroyWindow(hWndAux);
-		UnregisterClass(L"gl aux window", hInstance);
+		UnregisterClass(TempAuxWindowName, hInstance);
+
 		return true;
 	}
 
-	OpenglContextImpl::OpenglContextImpl(const WindowImpl &window, const std::string& openGLModuleName, int contextMajorVersion, int contextMinorVersion, bool contextDebug, bool contextForwardCompatible)
-		: mWindow(window)
+	OpenglContextImpl::OpenglContextImpl(const WindowImpl &window, std::string_view openGLModuleName, int contextMajorVersion, int contextMinorVersion, bool contextDebug, bool contextForwardCompatible)
+		: mWindow{ window }
 	{
 		HMODULE openglModule;
 
-		if ( (window.mHWnd == nullptr) || openGLModuleName.empty() || (contextMajorVersion < 3) || (contextMinorVersion < 0))
+		if ((window.mHWnd == nullptr) || openGLModuleName.empty() || (contextMajorVersion < 3) || (contextMinorVersion < 0))
 		{
 			mErrorMsg = "incorrect data to properly create a OpenGL context";
 			return;
@@ -688,16 +671,16 @@ namespace hr { namespace platform
 			}
 		}
 
-		wglCreateContext = (HGLRC (APIENTRY *)(HDC hdc))GetProcAddress(openglModule, "wglCreateContext");
-		wglDeleteContext = (BOOL (APIENTRY *)(HGLRC hglrc))GetProcAddress(openglModule, "wglDeleteContext");
-		wglMakeCurrent = (BOOL (APIENTRY *)(HDC hdc, HGLRC hglrc))GetProcAddress(openglModule, "wglMakeCurrent");
-		wglSwapBuffers = (BOOL (APIENTRY *)(HDC hdc))GetProcAddress(openglModule, "wglSwapBuffers");
-		if ((wglCreateContext == nullptr) || (wglDeleteContext == nullptr) || (wglMakeCurrent == nullptr) || (wglSwapBuffers == nullptr))
+		mWGL.createContext = (HGLRC (APIENTRY *)(HDC hdc))GetProcAddress(openglModule, "wglCreateContext");
+		mWGL.deleteContext = (BOOL (APIENTRY *)(HGLRC hglrc))GetProcAddress(openglModule, "wglDeleteContext");
+		mWGL.makeCurrent = (BOOL (APIENTRY *)(HDC hdc, HGLRC hglrc))GetProcAddress(openglModule, "wglMakeCurrent");
+		mWGL.swapBuffers = (BOOL (APIENTRY *)(HDC hdc))GetProcAddress(openglModule, "wglSwapBuffers");
+		if (!mWGL.createContext || !mWGL.deleteContext || !mWGL.makeCurrent || !mWGL.swapBuffers)
 			return;
 
 		auxWindowWGLExt(window.mHModule, openglModule);
 
-		if ((wglChoosePixelFormatARB == nullptr) || (wglGetExtensionsStringARB == nullptr) || (wglCreateContextAttribsARB == nullptr))
+		if (!mWGL.choosePixelFormatARB || !mWGL.getExtensionsStringARB || !mWGL.createContextAttribsARB)
 			return;
 
 		mHDC = GetDC(window.mHWnd);
@@ -707,13 +690,13 @@ namespace hr { namespace platform
 			return;
 		}
 
-		auto wglExt = wglGetExtensionsStringARB(mHDC);
-		if ((wglExt == nullptr) || (strstr(wglExt, "WGL_ARB_create_context_profile") == nullptr))
+		auto wglExt = mWGL.getExtensionsStringARB(mHDC);
+		if (!wglExt || (std::strstr(wglExt, "WGL_ARB_create_context_profile") == nullptr))
 		{
 			mErrorMsg = "extension WGL_ARB_create_context_profile not supported";
 			return;
 		}
-		if ((wglExt == nullptr) || (strstr(wglExt, "WGL_ARB_create_context_profile") == nullptr))
+		if (!wglExt || (std::strstr(wglExt, "WGL_ARB_create_context_profile") == nullptr))
 		{
 			mErrorMsg = "extension WGL_ARB_create_context_profile not supported";
 			return;
@@ -737,8 +720,8 @@ namespace hr { namespace platform
 				WGL_FRAMEBUFFER_SRGB_CAPABLE_ARB, GL_TRUE,
 				0, 0 };
 
-			mUsedPFD = -1;
-			if (wglChoosePixelFormatARB(mHDC, iAttributes, fAttributes, 1, &pixelFormat, &numFormats) == TRUE)
+			mUsedPFD = static_cast<unsigned int>(-1);
+			if (mWGL.choosePixelFormatARB(mHDC, iAttributes, fAttributes, 1, &pixelFormat, &numFormats) == TRUE)
 				mUsedPFD = pixelFormat;
 		}
 
@@ -756,7 +739,7 @@ namespace hr { namespace platform
 				WGL_CONTEXT_PROFILE_MASK_ARB, WGL_CONTEXT_CORE_PROFILE_BIT_ARB,
 				0, 0 };
 
-			mHRC = wglCreateContextAttribsARB(mHDC, 0, contextAttrib);
+			mHRC = mWGL.createContextAttribsARB(mHDC, 0, contextAttrib);
 			if (!mHRC)
 			{
 				mErrorMsg = "unable to create a rendering context";
@@ -764,7 +747,7 @@ namespace hr { namespace platform
 			}
 		}
 
-		if (wglMakeCurrent(mHDC, mHRC) == FALSE)
+		if (mWGL.makeCurrent(mHDC, mHRC) == FALSE)
 		{
 			mErrorMsg = "unable to activate a rendering context";
 			return;
@@ -777,10 +760,10 @@ namespace hr { namespace platform
 	{
 		if (mHRC != nullptr)
 		{
-			if (wglMakeCurrent(mHDC, nullptr) == FALSE)
+			if (mWGL.makeCurrent(mHDC, nullptr) == FALSE)
 				mWindow.mLogger.logError(hr::engine::Logger::ModuleType::Graphics, "Unable to release rendering context.");
 
-			if (wglDeleteContext(mHRC) == FALSE)
+			if (mWGL.deleteContext(mHRC) == FALSE)
 				mWindow.mLogger.logError(hr::engine::Logger::ModuleType::Graphics, "Unable to delete rendering context.");
 
 			mHRC = nullptr;
@@ -807,15 +790,14 @@ namespace hr { namespace platform
 
 	void OpenglContextImpl::setSwapInterval(const size_t &interval) const
 	{
-		if (wglSwapIntervalEXT != nullptr)
-			wglSwapIntervalEXT(interval);
+		if (mWGL.swapIntervalEXT)
+			mWGL.swapIntervalEXT(interval);
 	}
 
 	bool OpenglContextImpl::swapBuffers() const
 	{
-		return ((wglSwapBuffers != nullptr) && (wglSwapBuffers(this->mHDC) != FALSE));
+		return ((mWGL.swapBuffers != nullptr) && (mWGL.swapBuffers(this->mHDC) != FALSE));
 	}
-
-} }
+}
 
 #endif

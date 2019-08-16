@@ -4,7 +4,7 @@
 #include "../common/vector.hpp"
 #include "../common/opengl/objects.hpp"
 
-namespace hr { namespace platform
+namespace hr::platform
 {
 	class WindowImpl;
 	class OpenglContextImpl;
@@ -40,27 +40,25 @@ namespace hr { namespace platform
 			enum class MessageFlags { ControlKey = (1 << 0), ShiftKey = (1 << 1) };
 
 		private:
-			MessageType mType;
-			hr::hInt32 mParam;
-			hr::hSplitUInt32 mFlags;
+			MessageType mType{ MessageType::Void };
+			hr::hInt32 mParam{ 0 };
+			hr::hSplitUInt32 mFlags{ 0 };
 
 		public:
-			Message(MessageType msgType, hr::hInt32 msgParam, hr::hSplitUInt32 msgFlags)
-				: mType(msgType), mParam(msgParam), mFlags(msgFlags)
-			{ }
-
-			Message()
-				: Message(MessageType::Void, 0, 0)
-			{ }
+			Message() = default;
 
 			Message(MessageType msgType)
-				: Message(msgType, 0, 0)
+				: mType{ msgType }
 			{ }
 
 			Message(MessageType msgType, hr::hInt32 msgParam)
-				: mType(msgType), mFlags(0), mParam(msgParam)
+				: mType{ msgType }, mParam{ msgParam }
 			{ }
 
+			Message(MessageType msgType, hr::hInt32 msgParam, hr::hSplitUInt32 msgFlags)
+				: mType{ msgType }, mParam{ msgParam }, mFlags{ msgFlags }
+			{ }
+			
 			MessageType getType() const
 			{
 				return mType;
@@ -86,12 +84,17 @@ namespace hr { namespace platform
 		std::unique_ptr<WindowImpl> mImpl;
 
 	public:
+		static void MsgBoxInfo(std::string_view msg);
+		static void MsgBoxWarn(std::string_view msg);
+		static void MsgBoxError(std::string_view msg);
+
+	public:
 		Window(hr::engine::Logger &logger);
 		~Window();
 
 		std::string getErrorMsg() const;
 
-		bool windowInit(const std::string& windowTitle, WindowStyle style, bool targetSecondaryDisplay, const size_t targetWidth, const size_t targeHeight);
+		bool windowInit(std::string_view windowTitle, WindowStyle style, bool targetSecondaryDisplay, const size_t targetWidth, const size_t targeHeight);
 
 		size_t getDisplayWidth() const;
 		size_t getDisplayHeight() const;
@@ -105,24 +108,18 @@ namespace hr { namespace platform
 		bool rawInputGetKeyStatus(const Window::VirtualKeys &vcode);
 		hr::Vector3f rawInputGetMouseStatus();
 	
-		int messageLoop(std::function<void()> closingCb);
-		void processMessages(std::function<void(const Message&)> cb, const bool resetQueue);
-
-		static void MsgBoxInfo(const std::string& msg);
-		static void MsgBoxInfo(const char * const msg);
-		static void MsgBoxWarn(const std::string& msg);
-		static void MsgBoxWarn(const char * const msg);
-		static void MsgBoxError(const std::string& msg);
-		static void MsgBoxError(const char * const msg);
+		int messageLoop(const std::function<void()>& closingCb);
+		void processMessages(const std::function<void(const Message&)>& cb, const bool resetQueue);
 	};
 
-	class OpenglContext : public hr::gl::objects::Context
+	class OpenglContext
+		: public hr::gl::objects::Context
 	{
-		bool mIsValid = false;
+		bool mIsValid{ false };
 		std::unique_ptr<OpenglContextImpl> mImpl;
 
 	public:
-		OpenglContext(const Window &window, const std::string& openGLModuleName, int contextMajorVersion, int contextMinorVersion, bool contextDebug, bool contextForwardCompatible);
+		OpenglContext(const Window &window, std::string_view openGLModuleName, int contextMajorVersion, int contextMinorVersion, bool contextDebug, bool contextForwardCompatible);
 
 		bool isValid() const;
 		std::string getErrorMsg() const;
@@ -130,5 +127,4 @@ namespace hr { namespace platform
 		void setSwapInterval(size_t interval) const;
 		bool swapBuffers(void) const;
 	};
-
-} }
+}

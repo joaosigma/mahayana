@@ -2,10 +2,25 @@
 
 #include "windowImplWin32.hpp"
 
-namespace hr { namespace platform
+namespace hr::platform
 {
+	void Window::MsgBoxInfo(std::string_view msg)
+	{
+		WindowImpl::MsgBoxInfo(msg);
+	}
+
+	void Window::MsgBoxWarn(std::string_view msg)
+	{
+		WindowImpl::MsgBoxWarn(msg);
+	}
+
+	void Window::MsgBoxError(std::string_view msg)
+	{
+		WindowImpl::MsgBoxError(msg);
+	}
+
 	Window::Window(hr::engine::Logger &logger)
-		: mImpl(new WindowImpl(logger))
+		: mImpl{ new WindowImpl(logger) }
 	{ }
 
 	Window::~Window()
@@ -16,7 +31,7 @@ namespace hr { namespace platform
 		return mImpl->getErrorMsg();
 	}
 
-	bool Window::windowInit(const std::string& windowTitle, WindowStyle style, bool targetSecondaryDisplay, const size_t targetWidth, const size_t targeHeight)
+	bool Window::windowInit(std::string_view windowTitle, WindowStyle style, bool targetSecondaryDisplay, const size_t targetWidth, const size_t targeHeight)
 	{
 		return mImpl->windowInit(windowTitle, style, targetSecondaryDisplay, targetWidth, targeHeight);
 	}
@@ -66,47 +81,17 @@ namespace hr { namespace platform
 		return mImpl->rawInputGetMouseStatus();
 	}
 
-	int Window::messageLoop(std::function<void()> closingCb)
+	int Window::messageLoop(const std::function<void()>& closingCb)
 	{
 		return mImpl->messageLoop(closingCb);
 	}
 
-	void Window::processMessages(std::function<void(const Message&)> cb, const bool resetQueue)
+	void Window::processMessages(const std::function<void(const Message&)>& cb, const bool resetQueue)
 	{
 		mImpl->processMessages(cb, resetQueue);
 	}
 
-	void Window::MsgBoxInfo(const std::string& msg)
-	{
-		WindowImpl::MsgBoxInfo(msg);
-	}
-
-	void Window::MsgBoxInfo(const char * const msg)
-	{
-		WindowImpl::MsgBoxInfo(msg);
-	}
-
-	void Window::MsgBoxWarn(const std::string& msg)
-	{
-		WindowImpl::MsgBoxWarn(msg);
-	}
-
-	void Window::MsgBoxWarn(const char * const msg)
-	{
-		WindowImpl::MsgBoxWarn(msg);
-	}
-
-	void Window::MsgBoxError(const std::string& msg)
-	{
-		WindowImpl::MsgBoxError(msg);
-	}
-
-	void Window::MsgBoxError(const char * const msg)
-	{
-		WindowImpl::MsgBoxError(msg);
-	}
-
-	OpenglContext::OpenglContext(const Window &window, const std::string& openGLModuleName, int contextMajorVersion, int contextMinorVersion, bool contextDebug, bool contextForwardCompatible)
+	OpenglContext::OpenglContext(const Window &window, std::string_view openGLModuleName, int contextMajorVersion, int contextMinorVersion, bool contextDebug, bool contextForwardCompatible)
 		: mImpl(new OpenglContextImpl(*window.mImpl, openGLModuleName, contextMajorVersion, contextMinorVersion, contextDebug, contextForwardCompatible))
 	{
 		mIsValid = initContext();
@@ -131,5 +116,4 @@ namespace hr { namespace platform
 	{
 		return mImpl->swapBuffers();
 	}
-
-}}
+}

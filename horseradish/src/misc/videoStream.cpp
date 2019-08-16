@@ -332,7 +332,7 @@ namespace hr { namespace misc
 					return nullptr;
 			}
 
-	#ifndef VIDEO_IGNORE_TIMING
+	#if !defined(VIDEO_IGNORE_TIMING)
 			if (mTimerInfo.timestampS < mVideoQueue[0].frameStart)
 			{
 				clockIsBehind = true;

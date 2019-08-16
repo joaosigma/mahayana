@@ -4,7 +4,7 @@
 
 namespace hr { namespace engine
 {
-#ifdef HR_PROFILLING
+#if defined(HR_PROFILLING)
 
 	void Profiler::Recorder::dumpBuffer()
 	{

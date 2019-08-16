@@ -146,7 +146,7 @@ namespace hr
 
 	inline void Math::sinCos(float radians, float &s, float &c)
 	{
-#ifdef _M_X64
+#if defined(_M_X64)
 		__m128 sin, cos;
 		SIMD::sinCos(_mm_load_ps1(&radians), &sin, &cos);
 		s = sin.m128_f32[0];
@@ -166,7 +166,7 @@ namespace hr
 
 	inline void Math::sinCos(float radians, float &s, float &c, const float scaleResult)
 	{
-#ifdef _M_X64
+#if defined(_M_X64)
 		__m128 sin, cos;
 		SIMD::sinCos(_mm_load_ps1(&radians), &sin, &cos);
 		s = sin.m128_f32[0] * scaleResult;
