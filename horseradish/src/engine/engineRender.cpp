@@ -21,6 +21,53 @@ namespace hr { namespace engine
 {
 	namespace
 	{
+		class Timestep
+		{
+			double mLag{ 0 };
+			hr::Timer mTimer;
+			hr::Timer mTimerTotal;
+			const double mSimStep{ 0 };
+
+		public:
+			explicit Timestep(size_t simulationHertz) noexcept
+				: mSimStep{ 1.0 / static_cast<double>((simulationHertz <= 0) ? 30 : simulationHertz) * 1000.0 }
+			{ }
+
+			void reset() noexcept
+			{
+				mTimer.reStart();
+				mTimerTotal.reStart();
+			}
+
+			std::chrono::milliseconds totalElapsed() noexcept
+			{
+				return mTimerTotal.getTime();
+			}
+
+			std::chrono::milliseconds update() noexcept
+			{
+				auto elapsed = mTimer.getTime(true);
+				mLag += std::chrono::duration<double, std::chrono::seconds::period>(elapsed).count();
+
+				return elapsed;
+			}
+
+			template<class TCallback>
+			void processSim(TCallback&& cb) noexcept
+			{
+				while (mLag >= mSimStep)
+				{
+					cb(mSimStep);
+					mLag -= mSimStep;
+				}
+			}
+
+			double renderLag() const noexcept
+			{
+				return (mLag / mSimStep); //[0, 1], where 0.5 means that we are drawing between the current state and the next state
+			}
+		};
+
 		void openglInitialize()
 		{
 			hr::gl::glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
@@ -32,6 +79,7 @@ namespace hr { namespace engine
 			hr::gl::glDisable(GL_SCISSOR_TEST);
 			hr::gl::glDisable(GL_STENCIL_TEST);
 			hr::gl::glEnable(GL_CULL_FACE);
+			hr::gl::glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 			hr::gl::glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
 			hr::gl::glCullFace(GL_BACK);
 			hr::gl::glFrontFace(GL_CCW);
@@ -174,9 +222,6 @@ namespace hr { namespace engine
 
 	void Engine::renderLoop()
 	{
-		hr::Timer timerFrame;
-		hr::Timer timerTotal;
-		hr::render::World::Timestep timestep;
 		std::unique_ptr<Profiler> profiler;
 		std::unique_ptr<render::Stage> stage;
 		std::unique_ptr<hr::render::RendererMain> rendererMain;
@@ -269,7 +314,7 @@ namespace hr { namespace engine
 			{
 				{
 					hr::render::WorldEditor editor;
-
+					
 					auto newArea = editor.newArea("c:/Users/Sigma/Desktop/xeno.hscene", "c:/Users/Sigma/Desktop/xeno.hbin");
 
 					editor.importGLTF(newArea, R"(C:\Users\Sigma\Desktop\xeno\scene.gltf)");
@@ -297,7 +342,7 @@ namespace hr { namespace engine
 				//renderData->loadArea(*rendererMain, "../scenes/makron.hscene", "../scenes/makron.hbin");
 				//renderData->loadArea(*rendererMain, "../scenes/hellknight.hscene", "../scenes/hellknight.hbin");
 				//renderData->loadArea(*rendererMain, "../scenes/guardian.hscene", "../scenes/guardian.hbin");
-
+				
 				renderData->loadArea(*rendererMain, "c:/Users/Sigma/Desktop/xeno.hscene", "c:/Users/Sigma/Desktop/xeno.hbin");
 			}
 		}
@@ -345,14 +390,14 @@ namespace hr { namespace engine
 				hr::gl::objects::Query::Type::ClippingInputPrimitives, hr::gl::objects::Query::Type::ClippingOutputPrimitives
 			};
 
-			float lastDeltaTimeS = 0.0f;
+			Timestep timestep(50);
 
 			while (mCurState == State::Running)
 			{
-				timerFrame.reStart();
-				profiler->nextSample();
+				hr::Timer timerFrame;
+				double lastFrameTimeS = std::chrono::duration_cast<std::chrono::duration<double, std::chrono::seconds::period>>(timestep.update()).count();
 
-				timestep.t = static_cast<float>(timerTotal.getTimeS());
+				profiler->nextSample();
 
 				//--------------------
 				//Start frame rendering requests to queue stuff onto the GPU
@@ -425,11 +470,11 @@ namespace hr { namespace engine
 					if (mWindow->rawInputGetKeyStatus(platform::Window::VirtualKeys::Shift))
 						cameraActions = (hr::render::tools::CameraFPS::CameraAction)(cameraActions | hr::render::tools::CameraFPS::Run);
 
-					camera.commitInput(cameraActions, mousePosition[0], mousePosition[1], true, lastDeltaTimeS);
+					camera.commitInput(cameraActions, mousePosition[0], mousePosition[1], true, lastFrameTimeS);
 				}
 
 				//process window messages
-				mWindow->processMessages([this, &stage, &consoleUI, &timestep](const platform::Window::Message &msg)
+				mWindow->processMessages([this, &stage, &consoleUI](const platform::Window::Message &msg)
 				{
 					if (msg.isType(platform::Window::Message::MessageType::CharacterKey))
 						mRuntime->callVoidMethod("events.onKeyPress", msg.getParam());
@@ -453,9 +498,19 @@ namespace hr { namespace engine
 					profiler->addSample(Profiler::StatId::GPUClipOutputPrimitives, static_cast<int64_t>(renderGlQueryGroup.getResultI64<7>()));
 				}
 
+				//run any simulations that require a fixed timestep
+				timestep.processSim([](double deltaTimeMS)
+				{
+				});
+
 				//process step in the render data, stage and console
-				renderData->prepareNextFrame(timestep, *rendererMain, camera, viewportRender);
-				stage->processStep();
+				{
+					hr::render::World::Timestep wTimestep;
+					wTimestep.t = std::chrono::duration<float, std::chrono::seconds::period>(timestep.totalElapsed()).count();
+
+					renderData->prepareNextFrame(wTimestep, *rendererMain, camera, viewportRender);
+					stage->processStep();
+				}
 
 				if (consoleUI)
 					consoleUI->processStep();
@@ -488,15 +543,13 @@ namespace hr { namespace engine
 					auto frameTotalTimeMS = timerFrame.getTimeMS();
 					if (frameTotalTimeMS < 16.5) //cap to 60fps
 					{
-						std::this_thread::sleep_for(std::chrono::milliseconds(hr::Math::ftoi(16.0f - frameTotalTimeMS)));
+						std::this_thread::sleep_for(std::chrono::milliseconds(hr::Math::ftoi(16.0 - frameTotalTimeMS)));
 						while (timerFrame.getTimeMS() < 16.5);
 					}
 				}
 
 				if (Profiler::isSupported())
 					profiler->addSample(Profiler::StatId::FrameTotal, timerFrame.getTimeIntMS());
-
-				lastDeltaTimeS = static_cast<float>(timerFrame.getTimeS());
 			}
 		}
 

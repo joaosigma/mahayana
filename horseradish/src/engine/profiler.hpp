@@ -102,7 +102,7 @@ namespace hr { namespace engine
 
 		class Recorder
 		{
-			static constexpr unsigned int BufferSize = 400;
+			static constexpr size_t BufferSize = 400;
 			static_assert(Recorder::BufferSize >= 1, "Buffer size must be at least 1");
 
 			struct SampleInfo {
@@ -129,11 +129,10 @@ namespace hr { namespace engine
 			uint64 sampleId = 0, value = 0;
 			std::chrono::high_resolution_clock::time_point timestamp;
 
-			Sample()
-			{ }
+			Sample() = default;
 
 			Sample(uint64 sampleId, uint64 value, std::chrono::high_resolution_clock::time_point timestamp)
-			: sampleId(sampleId), value(value), timestamp(timestamp)
+				: sampleId(sampleId), value(value), timestamp(timestamp)
 			{ }
 		};
 
@@ -155,8 +154,7 @@ namespace hr { namespace engine
 				std::array<double, Profiler::QuantizationSamples> samples;
 			} quantizedSamples;
 					
-			StatData()
-			{ }
+			StatData() = default;
 		};
 
 		static constexpr StatGroup extractGroup(StatId statId)

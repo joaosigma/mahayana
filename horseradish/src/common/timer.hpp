@@ -6,34 +6,39 @@
 
 namespace hr
 {
-	class Timer
+	class Timer final
 	{
 		std::chrono::high_resolution_clock::time_point mTimepoint;
 
 	public:
-		Timer();
+		Timer() noexcept;
+		constexpr Timer(const Timer&) = default;
+		constexpr Timer& operator=(const Timer&) = default;
+		constexpr Timer(Timer&&) = default;
+		constexpr Timer& operator=(Timer&&) = default;
 
-		void reStart();
+		void reStart() noexcept;
 
-		std::chrono::milliseconds getTime() const;
+		std::chrono::milliseconds getTime() const noexcept;
+		std::chrono::milliseconds getTime(const bool restart) noexcept;
 
-		double getTimeS() const;
-		double getTimeS(const bool restart);
-		double getTimeMS() const;
-		double getTimeMS(const bool restart);
-		hUInt64 getTimeIntS() const;
-		hUInt64 getTimeIntS(const bool restart);
-		hUInt64 getTimeIntMS() const;
-		hUInt64 getTimeIntMS(const bool restart);
+		double getTimeS() const noexcept;
+		double getTimeS(const bool restart) noexcept;
+		double getTimeMS() const noexcept;
+		double getTimeMS(const bool restart) noexcept;
+		hUInt64 getTimeIntS() const noexcept;
+		hUInt64 getTimeIntS(const bool restart) noexcept;
+		hUInt64 getTimeIntMS() const noexcept;
+		hUInt64 getTimeIntMS(const bool restart) noexcept;
 
-		void setS(const hUInt64 seconds);
-		void setS(const double seconds);
-		void setMS(const hUInt64 miliseconds);
-		void setMS(const double miliseconds);
+		void setS(const hUInt64 seconds) noexcept;
+		void setS(const double seconds) noexcept;
+		void setMS(const hUInt64 miliseconds) noexcept;
+		void setMS(const double miliseconds) noexcept;
 
-		void addS(const hInt64 seconds);
-		void addS(const double seconds);
-		void addMS(const hInt64 miliseconds);
-		void addMS(const double miliseconds);
+		void addS(const hInt64 seconds) noexcept;
+		void addS(const double seconds) noexcept;
+		void addMS(const hInt64 miliseconds) noexcept;
+		void addMS(const double miliseconds) noexcept;
 	};
 }
