@@ -240,7 +240,6 @@ namespace hr::geom
 			while (time >= anim.framePeriodSeconds)
 				time -= anim.framePeriodSeconds;
 
-			//calculo qual a frame onde devo comecar/acabar (primeiro verifico se tenho de recomecar a contagem)
 			indexStart = Math::ftoi(Math::floor(time * anim.frameRate));
 			indexStart = (indexStart >= anim.frames.size()) ? 0 : indexStart;
 

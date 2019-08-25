@@ -4,8 +4,9 @@
 #include "math.hpp"
 #include "vector.hpp"
 
-#include "libs/forsyth/forsythtriangleorderoptimizer.h"
 #include "libs/mikktspace/mikktspace.h"
+#include "libs/meshoptimizer/meshoptimizer.h"
+#include "libs/forsyth/forsythtriangleorderoptimizer.h"
 
 #include <vector>
 #include <limits>
@@ -581,9 +582,15 @@ namespace hr::geom
 	void Mesh::optimizeIndices()
 	{
 		auto newIndices = std::unique_ptr<unsigned short[]>(new unsigned short[mNumIndices]);
+
+		//this optimizes for the vertex cache (reads from mIndices and writes to newIndices)
 		Forsyth::OptimizeFaces(mIndices.get(), mNumIndices, mNumVertices, newIndices.get(), 32);
 
-		std::swap(mIndices, newIndices);
+		//this optimizes for overdraw (reads from newIndices and writes to mIndices)
+		meshopt_optimizeOverdraw(mIndices.get(), newIndices.get(), mNumIndices, mData.get()[0].pos, mNumVertices, sizeof(VertexData), 1.05f);
+
+		//we changed the indices (already written to mIndices), so now, we can change the position of vertex data to be more memory friendly using the new indices
+		meshopt_optimizeVertexFetch(mData.get(), mIndices.get(), mNumIndices, mData.get(), mNumVertices, sizeof(VertexData));
 	}
 
 	void Mesh::genNormals()
