@@ -5,9 +5,10 @@
 namespace hr
 {
 	template <class TKey, class TValue>
-	class AVLTree
+	class AVLTree final
 	{
-		struct Node {
+		struct Node
+		{
 			int height = -1;
 			TKey key;
 			Node *bMiddle = nullptr, *bLeft = nullptr, *bRight = nullptr, *bRoot = nullptr;
@@ -15,14 +16,11 @@ namespace hr
 			TValue value;
 			bool valueSet = false;
 
-			Node()
-			{ }
-
 			Node(Node * const bRoot, int height)
 				: height(height), bRoot(bRoot)
 			{ }
 
-			bool isBalanced() const
+			bool isBalanced() const noexcept
 			{
 				int l = bLeft ? bLeft->height : -1;
 				int r = bRight ? bRight->height : -1;
@@ -30,7 +28,7 @@ namespace hr
 				return (hr::Math::iAbs(l - r) < 2);
 			}
 
-			bool isLeftHeavier() const
+			bool isLeftHeavier() const noexcept
 			{
 				if (!bRight)
 					return true;
@@ -40,7 +38,7 @@ namespace hr
 				return (bLeft->height > bRight->height);
 			}
 
-			void updateWeight()
+			void updateWeight() noexcept
 			{
 				height = hr::Math::iMax(bLeft ? bLeft->height : -1, bRight ? bRight->height : -1) + 1;
 			}
@@ -48,7 +46,7 @@ namespace hr
 
 		Node *mMainTree = nullptr;
 
-		void avlRotateLL(Node * const tree)
+		void avlRotateLL(Node * const tree) noexcept
 		{
 			//my parent gets my son
 			if (tree->bRoot)
@@ -87,7 +85,7 @@ namespace hr
 			novoRoot->updateWeight();
 		}
 
-		void avlRotateRR(Node * const tree)
+		void avlRotateRR(Node * const tree) noexcept
 		{
 			//my parent gets my son
 			if (tree->bRoot)
@@ -126,7 +124,7 @@ namespace hr
 			novoRoot->updateWeight();
 		}
 
-		void avlRotateLR(Node * const tree)
+		void avlRotateLR(Node * const tree) noexcept
 		{
 			//check out the new root
 			auto novoRoot = tree->bLeft->bRight;
@@ -172,7 +170,7 @@ namespace hr
 			novoRoot->bRight->updateWeight();
 		}
 
-		void avlRotateRL(Node * const tree)
+		void avlRotateRL(Node * const tree) noexcept
 		{
 			//check out the new root
 			auto novoRoot = tree->bRight->bLeft;
@@ -299,13 +297,13 @@ namespace hr
 			treeAddData(mMainTree, string, data);
 		}
 
-		bool hasData(const char *what) const
+		bool hasData(const char *what) const noexcept
 		{
 			TValue data;
 			return findData(what, data);
 		}
 
-		TValue getData(const char * const what, TValue defaultValue = TValue()) const
+		TValue getData(const char * const what, TValue defaultValue = TValue()) const noexcept
 		{
 			TValue data;
 			if (findData(what, data))
@@ -314,7 +312,7 @@ namespace hr
 			return defaultValue;
 		}
 
-		bool findData(const char * const what, TValue &value) const
+		bool findData(const char * const what, TValue &value) const noexcept
 		{
 			if (!what || *what == '\0')
 				return false;
@@ -346,7 +344,7 @@ namespace hr
 			return findFunc(mMainTree, what);
 		}
 
-		size_t findAll(const char * const what, const std::function<void(const TValue&)> actionFoundData = nullptr) const
+		size_t findAll(const char * const what, const std::function<void(const TValue&)> actionFoundData = nullptr) const noexcept
 		{
 			size_t count;
 
@@ -396,7 +394,7 @@ namespace hr
 			return count;
 		}
 
-		size_t findAll(const std::function<void(const TValue&)> actionFoundData = nullptr) const
+		size_t findAll(const std::function<void(const TValue&)> actionFoundData = nullptr) const noexcept
 		{
 			size_t count;
 
@@ -423,7 +421,7 @@ namespace hr
 			return count;
 		}
 
-		size_t findAllWithKeys(const std::function<void(const std::string&, const TValue&)> actionFoundData = nullptr) const
+		size_t findAllWithKeys(const std::function<void(const std::string&, const TValue&)> actionFoundData = nullptr) const noexcept
 		{
 			size_t count;
 			std::string curKey;
@@ -459,7 +457,7 @@ namespace hr
 			return count;
 		}
 
-		void nextBestKeyMatch(const char * const what, char *dest) const
+		void nextBestKeyMatch(const char * const what, char *dest) const noexcept
 		{
 			std::function<void(const Node * const, const char * const)> nextBestKeyMatchFunc = [&](const Node * const node, const char * const string)
 			{
