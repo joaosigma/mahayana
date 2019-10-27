@@ -9,7 +9,33 @@ namespace hr
 {
 	class ECSRepository
 	{
-		class FactoryTypeId
+		template <class, class>
+		struct TupleTypeConcat;
+
+		template <class... First, class... Second>
+		struct TupleTypeConcat<std::tuple<First...>, std::tuple<Second...>>
+		{
+			using type = std::tuple<First..., Second...>;
+		};
+
+		class FactoryComponentTypeId
+		{
+			static std::size_t identifier() noexcept
+			{
+				static std::size_t value{ 1 };
+				return value++;
+			}
+
+		public:
+			template<typename>
+			static std::size_t type() noexcept
+			{
+				static const std::size_t value = identifier();
+				return value;
+			}
+		};
+
+		class FactoryIndexTypeId
 		{
 			static std::size_t identifier() noexcept
 			{
@@ -35,10 +61,12 @@ namespace hr
 		template<class TKey, class TValue, class THash = std::hash<TKey>, size_t TPageSize = 4096>
 		class ComponentStorage final : public ComponentStorageBase
 		{
+			template<class... TComponents>
+			friend class View;
+
 			static_assert(TPageSize && ((TPageSize & (TPageSize - 1)) == 0), "size must be power of two");
-			static_assert(sizeof(TKey) < TPageSize);
+			static_assert(sizeof(TKey) < TPageSize, "page size must be bigger than key size");
 			static_assert(!std::is_empty_v<TKey>, "no point in storing an empty key");
-			static_assert(!std::is_empty_v<TValue>, "no point in storing an empty value");
 
 			static constexpr size_t KeysPerPage = TPageSize / sizeof(TKey);
 
@@ -85,41 +113,44 @@ namespace hr
 
 			void reserve(size_t newSize)
 			{
-				assert(mDenseKeys.size() == mDenseValues.size());
+				assert(std::is_empty_v<TValue> || (mDenseKeys.size() == mDenseValues.size()));
 
 				mDenseKeys.reserve(newSize);
-				mDenseValues.reserve(newSize);
+				if constexpr (!std::is_empty_v<TValue>)
+					mDenseValues.reserve(newSize);
 			}
 
 			void shrinkToFit()
 			{
-				assert(mDenseKeys.size() == mDenseValues.size());
+				assert(std::is_empty_v<TValue> || (mDenseKeys.size() == mDenseValues.size()));
 
 				if (mDenseKeys.empty())
 					mReverse.clear();
 
 				mDenseKeys.shrink_to_fit();
-				mDenseValues.shrink_to_fit();
 				mReverse.shrink_to_fit();
+
+				if constexpr (!std::is_empty_v<TValue>)
+					mDenseValues.shrink_to_fit();
 			}
 
 			size_t size() const noexcept
 			{
-				assert(mDenseKeys.size() == mDenseValues.size());
+				assert(std::is_empty_v<TValue> || (mDenseKeys.size() == mDenseValues.size()));
 
 				return mDenseKeys.size();
 			}
 
 			bool empty() const noexcept
 			{
-				assert(mDenseKeys.size() == mDenseValues.size());
+				assert(std::is_empty_v<TValue> || (mDenseKeys.size() == mDenseValues.size()));
 
 				return mDenseKeys.empty();
 			}
 
 			bool has(const TKey& key) const noexcept
 			{
-				assert(mDenseKeys.size() == mDenseValues.size());
+				assert(std::is_empty_v<TValue> || (mDenseKeys.size() == mDenseValues.size()));
 
 				[[maybe_unused]] size_t index;
 				return indexDense(key, index);
@@ -127,49 +158,120 @@ namespace hr
 
 			TValue& value(const TKey& key) noexcept
 			{
-				assert(mDenseKeys.size() == mDenseValues.size());
+				assert(std::is_empty_v<TValue> || (mDenseKeys.size() == mDenseValues.size()));
 
-				size_t index;
-				if (!indexDense(key, index))
+				if constexpr (std::is_empty_v<TValue>)
+				{
 					return mEmptyValue;
+				}
+				else
+				{
+					size_t index;
+					if (!indexDense(key, index))
+						return mEmptyValue;
 
-				return mDenseValues[index];
+					return mDenseValues[index];
+				}
 			}
 
 			const TValue& value(const TKey& key) const noexcept
 			{
-				assert(mDenseKeys.size() == mDenseValues.size());
+				assert(std::is_empty_v<TValue> || (mDenseKeys.size() == mDenseValues.size()));
 
-				size_t index;
-				if (!indexDense(key, index))
+				if constexpr (std::is_empty_v<TValue>)
+				{
 					return mEmptyValue;
+				}
+				else
+				{
+					size_t index;
+					if (!indexDense(key, index))
+						return mEmptyValue;
 
-				return mDenseValues[index];
+					return mDenseValues[index];
+				}
+			}
+
+			template<class TCallback>
+			void forEachKey(TCallback&& cb) const noexcept
+			{
+				assert(std::is_empty_v<TValue> || (mDenseKeys.size() == mDenseValues.size()));
+
+				for (const auto& key : mDenseKeys)
+					cb(key);
 			}
 
 			template<class TCallback>
 			void forEach(TCallback&& cb) noexcept
 			{
-				assert(mDenseKeys.size() == mDenseValues.size());
+				assert(std::is_empty_v<TValue> || (mDenseKeys.size() == mDenseValues.size()));
 
-				auto count = mDenseKeys.size();
-				for (decltype(count) i = 0; i < count; i++)
-					cb(static_cast<const TKey&>(mDenseKeys[i]), mDenseValues[i]);
+				if constexpr (std::is_empty_v<TValue>)
+				{
+					auto count = mDenseKeys.size();
+					auto walkerKeys = mDenseKeys.data();
+
+					for (; count > 0; --count, ++walkerKeys)
+						cb(static_cast<const TKey&>(*walkerKeys), TValue{});
+				}
+				else
+				{
+					auto count = mDenseKeys.size();
+					auto walkerKeys = mDenseKeys.data();
+					auto walkerValues = mDenseValues.data();
+
+					for (; count > 0; --count, ++walkerKeys, ++walkerValues)
+						cb(static_cast<const TKey&>(*walkerKeys), *walkerValues);
+				}
 			}
 
 			template<class TCallback>
 			void forEach(TCallback&& cb) const noexcept
 			{
-				assert(mDenseKeys.size() == mDenseValues.size());
+				assert(std::is_empty_v<TValue> || (mDenseKeys.size() == mDenseValues.size()));
 
-				auto count = mDenseKeys.size();
-				for (decltype(count) i = 0; i < count; i++)
-					cb(mDenseKeys[i], mDenseValues[i]);
+				if constexpr (std::is_empty_v<TValue>)
+				{
+					auto count = mDenseKeys.size();
+					auto walkerKeys = mDenseKeys.data();
+
+					for (; count > 0; --count, ++walkerKeys)
+						cb(*walkerKeys, mEmptyValue);
+				}
+				else
+				{
+					auto count = mDenseKeys.size();
+					auto walkerKeys = mDenseKeys.data();
+					auto walkerValues = mDenseValues.data();
+
+					for (; count > 0; --count, ++walkerKeys, ++walkerValues)
+						cb(*walkerKeys, *walkerValues);
+				}
+			}
+
+			TValue* raw() noexcept
+			{
+				assert(std::is_empty_v<TValue> || (mDenseKeys.size() == mDenseValues.size()));
+
+				if constexpr (std::is_empty_v<TValue>)
+					return nullptr;
+				else
+					return mDenseValues.data();
+			}
+
+			const TValue* raw() const noexcept
+			{
+				assert(std::is_empty_v<TValue> || (mDenseKeys.size() == mDenseValues.size()));
+
+				if constexpr (std::is_empty_v<TValue>)
+					return nullptr;
+				else
+					return mDenseValues.data();
 			}
 
 			void add(TKey key, TValue value)
 			{
-				assert(mDenseKeys.size() == mDenseValues.size());
+				assert(std::is_empty_v<TValue> || (mDenseKeys.size() == mDenseValues.size()));
 
 				auto[page, offset] = indices(key);
 
@@ -180,18 +282,39 @@ namespace hr
 				{
 					pageRef[offset] = mDenseKeys.size() + 1;
 					mDenseKeys.push_back(std::move(key));
-					mDenseValues.push_back(std::move(value));
+					if constexpr (!std::is_empty_v<TValue>)
+						mDenseValues.push_back(std::move(value));
 				}
 				else
 				{
 					mDenseKeys[pageRef[offset] - 1] = std::move(key);
-					mDenseValues[pageRef[offset] - 1] = std::move(value);
+					if constexpr (!std::is_empty_v<TValue>)
+						mDenseValues[pageRef[offset] - 1] = std::move(value);
+				}
+			}
+
+			bool update(TKey key, TValue value) noexcept
+			{
+				assert(std::is_empty_v<TValue> || (mDenseKeys.size() == mDenseValues.size()));
+
+				if constexpr (!std::is_empty_v<TValue>)
+				{
+					return false;
+				}
+				else
+				{
+					size_t index;
+					if (!indexDense(key, index))
+						return false;
+
+					mDenseValues[index] = std::move(value);
+					return true;
 				}
 			}
 
 			void remove(const TKey& key) noexcept
 			{
-				assert(mDenseKeys.size() == mDenseValues.size());
+				assert(std::is_empty_v<TValue> || (mDenseKeys.size() == mDenseValues.size()));
 
 				if (!has(key))
 					return;
@@ -203,20 +326,322 @@ namespace hr
 				auto& pageRefLast = *mReverse[indicesLast.first];
 
 				std::swap(mDenseKeys[pageRefRemove[indicesRemove.second] - 1], mDenseKeys[pageRefLast[indicesLast.second] - 1]);
-				std::swap(mDenseValues[pageRefRemove[indicesRemove.second] - 1], mDenseValues[pageRefLast[indicesLast.second] - 1]);
+				if constexpr (!std::is_empty_v<TValue>)
+					std::swap(mDenseValues[pageRefRemove[indicesRemove.second] - 1], mDenseValues[pageRefLast[indicesLast.second] - 1]);
+
 				pageRefLast[indicesLast.second] = pageRefRemove[indicesRemove.second];
 				pageRefRemove[indicesRemove.second] = 0;
 
 				mDenseKeys.pop_back();
-				mDenseValues.pop_back();
+
+				if constexpr (!std::is_empty_v<TValue>)
+					mDenseValues.pop_back();
+			}
+
+			bool changeKeyIndex(const TKey& key, size_t newIndex) noexcept
+			{
+				assert(std::is_empty_v<TValue> || (mDenseKeys.size() == mDenseValues.size()));
+
+				if (!has(key) || (newIndex >= mDenseKeys.size()))
+					return false;
+
+				auto indicesCurrent = indices(key);
+				auto indicesNew = indices(mDenseKeys[newIndex]);
+				if ((indicesCurrent.first == indicesNew.first) && (indicesCurrent.second == indicesNew.second))
+					return true;
+
+				auto& pageRefCurrent = *mReverse[indicesCurrent.first];
+				auto& pageRefNew = *mReverse[indicesNew.first];
+
+				std::swap(mDenseKeys[pageRefCurrent[indicesCurrent.second] - 1], mDenseKeys[pageRefNew[indicesNew.second] - 1]);
+				if constexpr (!std::is_empty_v<TValue>)
+					std::swap(mDenseValues[pageRefCurrent[indicesCurrent.second] - 1], mDenseValues[pageRefNew[indicesNew.second] - 1]);
+
+				std::swap(pageRefNew[indicesNew.second], pageRefCurrent[indicesCurrent.second]);
+
+				return true;
 			}
 		};
 
-		struct ComponentData final
+		template <class TKey>
+		class IndexBase
 		{
-			size_t id{ 0 };
-			std::unique_ptr<ComponentStorageBase> storage;
-		};		
+		public:
+			virtual ~IndexBase() = default;
+
+			virtual bool processNewKey(const TKey& key) = 0;
+		};
+
+		template<class TKey, class TKeyHash, class TIndexA, class TComponentB>
+		class Index : public IndexBase<TKey>
+		{
+			friend class Index;
+
+			template<class TComponent>
+			using StorageType = ComponentStorage<TKey, TComponent, TKeyHash>;
+
+			std::vector<TKey> mKeys;
+			TIndexA* mIndexBase{ nullptr };
+			IndexBase<TKey>* mIndexParent{ nullptr };
+			StorageType<TComponentB>* mStorageB{ nullptr };
+
+			template<class TCallback, std::size_t... TIdx>
+			void forEach(TCallback&& cb, std::index_sequence<TIdx...>) noexcept
+			{
+				static_assert(std::tuple_size_v<decltype(mIndexBase->raw())> == sizeof...(TIdx));
+
+				auto ptrsA = mIndexBase->raw(); //std::tuple<*...>
+				auto ptrB = mStorageB->raw();
+
+				auto count = mKeys.size();
+				for (decltype(count) i = 0; i < count; ++i)
+				{
+					cb(static_cast<const TKey&>(mKeys[i]), (*std::get<TIdx>(ptrsA))..., *ptrB);
+					((++std::get<TIdx>(ptrsA)), ...);
+					++ptrB;
+				}
+			}
+
+			template<class TCallback, std::size_t... TIdx>
+			void forEach(TCallback&& cb, std::index_sequence<TIdx...>) const noexcept
+			{
+				static_assert(std::tuple_size_v<decltype(mIndexBase->raw())> == sizeof...(TIdx));
+
+				auto ptrsA = mIndexBase->raw(); //std::tuple<*...>
+				auto ptrB = mStorageB->raw();
+
+				auto count = mKeys.size();
+				for (decltype(count) i = 0; i < count; ++i)
+				{
+					cb(static_cast<const TKey&>(mKeys[i]), (*std::get<TIdx>(ptrsA))..., *ptrB);
+					((++std::get<TIdx>(ptrsA)), ...);
+					++ptrB;
+				}
+			}
+
+		public:
+			using TypeTuple = typename TupleTypeConcat<typename TIndexA::TypeTuple, std::tuple<TComponentB>>::type;
+
+		public:
+			Index(TIndexA* indexBase, StorageType<TComponentB>* storageB)
+				: mIndexBase{ indexBase }
+				, mStorageB{ storageB }
+			{
+				mIndexBase->mIndexParent = this;
+
+				if (mIndexBase->size() < mStorageB->size())
+				{
+					mIndexBase->forEachKey([this](const auto& key)
+					{
+						if (!mStorageB->has(key))
+							return;
+
+						mKeys.push_back(key);
+					});
+				}
+				else
+				{
+					mStorageB->forEachKey([this](const auto& key)
+					{
+						if (!mIndexBase->has(key))
+							return;
+
+						mKeys.push_back(key);
+					});
+				}
+
+				size_t curIndex = 0;
+				for (const auto& key : mKeys)
+				{
+					mIndexBase->changeKeyIndex(key, curIndex);
+					mStorageB->changeKeyIndex(key, curIndex);
+					++curIndex;
+				}
+			}
+
+			~Index()
+			{
+				mIndexBase->mIndexParent = nullptr;
+			}
+
+			size_t size() const noexcept
+			{
+				return mKeys.size();
+			}
+
+			bool has(const TKey& key) const noexcept
+			{
+				return (mIndexBase->has(key) && mStorageB->has(key));
+			}
+
+			bool hasParent() const noexcept
+			{
+				return mIndexParent;
+			}
+
+			template<class TCallback>
+			void forEachKey(TCallback&& cb) const noexcept
+			{
+				for (const auto& key : mKeys)
+					cb(key);
+			}
+
+			template<class TCallback>
+			void forEach(TCallback&& cb) noexcept
+			{
+				forEach(std::forward<TCallback>(cb), std::make_integer_sequence<size_t, std::tuple_size_v<TIndexA::TypeTuple>>{});
+			}
+
+			template<class TCallback>
+			void forEach(TCallback&& cb) const noexcept
+			{
+				forEach(std::forward<TCallback>(cb), std::make_integer_sequence<size_t, std::tuple_size_v<TIndexA::TypeTuple>>{});
+			}
+
+			auto raw() noexcept
+			{
+				return std::tuple_cat(mIndexBase->raw(), std::make_tuple(mStorageB->raw()));
+			}
+
+			auto raw() const noexcept
+			{
+				return std::tuple_cat(mIndexBase->raw(), std::make_tuple(mStorageB->raw()));
+			}
+
+			bool changeKeyIndex(const TKey& key, size_t newIndex) noexcept
+			{
+				assert(has(key) && (newIndex < mKeys.size()));
+
+				if (!has(key) || (newIndex >= mKeys.size()))
+					return false;
+
+				if (!mIndexBase->changeKeyIndex(key, newIndex))
+					return false;
+
+				if (!mStorageB->changeKeyIndex(key, newIndex))
+					return false;
+
+				auto it = std::find(std::begin(mKeys), std::end(mKeys), key);
+				assert(it != mKeys.end());
+				std::swap(*it, mKeys[newIndex]);
+
+				return true;
+			}
+
+			bool processNewKey(const TKey& key) override
+			{
+				if (!has(key))
+					return false;
+
+				bool indexed{ false };
+				if (mIndexParent)
+					indexed = mIndexParent->processNewKey(key);
+
+				if (!indexed)
+				{
+					mKeys.push_back(key);
+					mIndexBase->changeKeyIndex(key, mKeys.size() - 1);
+					mStorageB->changeKeyIndex(key, mKeys.size() - 1);
+				}
+
+				return true;
+			}
+		};
+
+		template<class TKey, class TKeyHash, class TComponent>
+		class Index<TKey, TKeyHash, TComponent, void> : public IndexBase<TKey>
+		{
+			friend class Index;
+
+			template<class TComponent>
+			using StorageType = ComponentStorage<TKey, TComponent, TKeyHash>;
+
+			IndexBase<TKey>* mIndexParent{ nullptr };
+			StorageType<TComponent>* mStorage{ nullptr };
+
+		public:
+			using TypeTuple = std::tuple<TComponent>;
+
+		public:
+			Index(StorageType<TComponent>* storage)
+				: mStorage{ storage }
+			{ }
+
+			size_t size() const noexcept
+			{
+				return mStorage->size();
+			}
+
+			bool has(const TKey& key) const noexcept
+			{
+				return mStorage->has(key);
+			}
+
+			bool hasParent() const noexcept
+			{
+				return mIndexParent;
+			}
+
+			template<class TCallback>
+			void forEachKey(TCallback&& cb) const noexcept
+			{
+				mStorage->forEachKey(std::forward<TCallback>(cb));
+			}
+
+			template<class TCallback>
+			void forEach(TCallback&& cb) noexcept
+			{
+				mStorage->forEach(std::forward<TCallback>(cb));
+			}
+
+			template<class TCallback>
+			void forEach(TCallback&& cb) const noexcept
+			{
+				mStorage->forEach(std::forward<TCallback>(cb));
+			}
+
+			std::tuple<TComponent*> raw() noexcept
+			{
+				return { mStorage->raw() };
+			}
+
+			std::tuple<const TComponent*> raw() const noexcept
+			{
+				return { mStorage->raw() };
+			}
+
+			bool changeKeyIndex(const TKey& key, size_t curIndex) noexcept
+			{
+				return mStorage->changeKeyIndex(key, curIndex);
+			}
+
+			bool processNewKey(const TKey& key) override
+			{
+				//the parent index will take care of everything
+				if (mIndexParent)
+					return mIndexParent->processNewKey(key);
+
+				return false;
+			}
+		};
+
+		template<class TKey, class TKeyHash, class TBaseIndex, class TComponent = void, class... TComponents>
+		struct IndexPathImpl
+		{
+			using Type = typename IndexPathImpl<TKey, TKeyHash, Index<TKey, TKeyHash, TBaseIndex, TComponent>, TComponents...>::Type;
+		};
+
+		template<class TKey, class TKeyHash, class TBaseIndex>
+		struct IndexPathImpl<TKey, TKeyHash, TBaseIndex, void>
+		{
+			using Type = TBaseIndex;
+		};
+
+		template<class TKey, class TKeyHash, class TFirst, class... TOthers>
+		struct IndexPath
+		{
+			using Type = typename IndexPathImpl<TKey, TKeyHash, Index<TKey, TKeyHash, TFirst, void>, TOthers...>::Type;
+		};
 
 	public:
 		class EntityId
@@ -247,6 +672,16 @@ namespace hr
 				return (m_data != 0);
 			}
 
+			bool operator==(const EntityId& rhs) const noexcept
+			{
+				return (m_data == rhs.m_data);
+			}
+
+			bool operator!=(const EntityId& rhs) const noexcept
+			{
+				return !operator==(rhs);
+			}
+
 			constexpr std::uint32_t id() const noexcept
 			{
 				return static_cast<std::uint32_t>(m_data & 0xFFFFF);
@@ -271,22 +706,146 @@ namespace hr
 
 			const std::tuple<ComponentStorage<EntityId, TComponents, EntityId::Hash>*...> mPools;
 
+			const std::vector<EntityId>* candidates() const noexcept
+			{
+				return std::min({ (&(std::get<StorageType<TComponents>*>(mPools)->mDenseKeys)) ... },
+					[](const auto lhs, const auto rhs) { return (lhs->size() < rhs->size()); });
+			}
+
 		private:
 			View(StorageType<TComponents>*... data)
 				: mPools{ data... }
 			{ }
 
 		public:
-			size_t size() const noexcept
+			bool has(const EntityId& enttId) const noexcept
 			{
-				return std::tuple_size<std::tuple<ComponentStorage<EntityId, TComponents, EntityId::Hash>*...>>::value;
+				return ((std::get<StorageType<TComponents>*>(mPools)->has(enttId) && ...));
 			}
 
-			template<class TComponent>
+			template<class TCallback>
+			void forEach(TCallback&& cb) const noexcept
+			{
+				auto entities = candidates();
+
+				for (const auto& entt : *entities)
+				{
+					if ((std::get<StorageType<TComponents>*>(mPools)->has(entt) && ...))
+					{
+						cb(entt, std::get<StorageType<TComponents>*>(mPools)->value(entt) ...);
+					}
+				}
+			}
+		};
+
+		template<class TComponent>
+		class View<TComponent>
+		{
+			friend class ECSRepository;
+
+			ComponentStorage<EntityId, TComponent, EntityId::Hash>* mData;
+
+		private:
+			View(ComponentStorage<EntityId, TComponent, EntityId::Hash>* data)
+				: mData{ data }
+			{ }
+
+		public:
 			size_t size() const noexcept
 			{
-				return std::get<StorageType<TComponent>*>(mPools)->size();
+				return mData->size();
 			}
+
+			bool has(const EntityId& enttId) const noexcept
+			{
+				return mData->has(enttId);
+			}
+
+			const TComponent& value(const EntityId& enttId) const noexcept
+			{
+				return mData->value(enttId);
+			}
+
+			template<class TCallback>
+			void forEachKey(TCallback&& cb) const noexcept
+			{
+				mData->forEachKey(std::forward<TCallback>(cb));
+			}
+
+			template<class TCallback>
+			void forEach(TCallback&& cb) const noexcept
+			{
+				mData->forEach(std::forward<TCallback>(cb));
+			}
+
+			const TComponent* raw() const noexcept
+			{
+				return mData->raw();
+			}
+		};
+
+		template<class... TComponents>
+		class ViewIndexed
+		{
+			friend class ECSRepository;
+
+			using Index = typename IndexPath<EntityId, EntityId::Hash, TComponents...>::Type;
+
+			Index* mIndex;
+
+		private:
+			ViewIndexed(Index* index)
+				: mIndex{ index }
+			{ }
+
+		public:
+			size_t size() const noexcept
+			{
+				return (mIndex ? mIndex->size() : );
+			}
+
+			bool has(const EntityId& enttId) const noexcept
+			{
+				return (mIndex ? mIndex->has(enttId) : false);
+			}
+
+			template<class TCallback>
+			void forEachKey(TCallback&& cb) const noexcept
+			{
+				if (!mIndex)
+					return;
+
+				mIndex->forEachKey(std::forward<TCallback>(cb));
+			}
+
+			template<class TCallback>
+			void forEach(TCallback&& cb) const noexcept
+			{
+				if (!mIndex)
+					return;
+
+				mIndex->forEach(std::forward<TCallback>(cb));
+			}
+
+			auto raw() const noexcept
+			{
+				return mIndex->raw();
+			}
+		};
+
+	private:
+		struct ComponentData final
+		{
+			size_t id{ 0 };
+			size_t indexOwnerId{ 0 };
+			IndexBase<EntityId>* indexOwner{ nullptr };
+			std::unique_ptr<ComponentStorageBase> storage;
+		};
+
+		struct IndexData final
+		{
+			size_t id{ 0 };
+			std::unique_ptr<IndexBase<EntityId>> index;
 		};
 
 	private:
@@ -294,7 +853,7 @@ namespace hr
 		template<class TComponent>
 		ComponentStorage<EntityId, TComponent, EntityId::Hash>& assureComponent()
 		{
-			auto cId = FactoryTypeId::type<TComponent>() - 1;
+			auto cId = FactoryComponentTypeId::type<TComponent>() - 1;
 			if (cId >= mComponents.size())
 			{
 				mComponents.resize(cId + 1);
@@ -302,17 +861,72 @@ namespace hr
 				mComponents[cId].storage = std::make_unique<ComponentStorage<EntityId, TComponent, EntityId::Hash>>();
 			}
 
+			assert(std::all_of(mComponents.begin(), mComponents.end(), [](const auto& component) { return (component.id > 0); }));
+
 			return static_cast<ComponentStorage<EntityId, TComponent, EntityId::Hash>&>(*mComponents[cId].storage);
+		}
+
+		template<class TComponent>
+		ComponentData& assureComponentData() noexcept
+		{
+			assureComponent<TComponent>();
+
+			auto cId = FactoryComponentTypeId::type<TComponent>() - 1;
+
+			assert(cId < mComponents.size());
+			return mComponents[cId];
 		}
 
 		template<class TComponent>
 		ComponentStorage<EntityId, TComponent, EntityId::Hash>* retrieveComponent() const noexcept
 		{
-			auto cId = FactoryTypeId::type<TComponent>() - 1;
+			auto cId = FactoryComponentTypeId::type<TComponent>() - 1;
 			if ((cId >= mComponents.size()) || (mComponents[cId].id <= 0))
 				return nullptr;
 
 			return static_cast<ComponentStorage<EntityId, TComponent, EntityId::Hash>*>(mComponents[cId].storage.get());
+		}
+
+		template<class TIndexA, class TComponentB, class... TComponents>
+		bool index(TIndexA* indexA)
+		{
+			//force creation if it doesn't exist
+			auto& cStorageB = assureComponentData<TComponentB>();
+
+			//our target index id
+			auto iId = FactoryIndexTypeId::type<TupleTypeConcat<TIndexA::TypeTuple, std::tuple<TComponentB>>::type>() - 1;
+
+			//if the index is already owned by someone else
+			if (cStorageB.indexOwner && ((cStorageB.indexOwnerId - 1) != iId))
+				return false;
+
+			//if we don't have a corresponding index, create one
+			if (!cStorageB.indexOwner)
+			{
+				assert((iId >= mIndices.size()) || !mIndices[iId].index);
+
+				std::unique_ptr<Index<EntityId, EntityId::Hash, TIndexA, TComponentB>> newIndex;
+				{
+					auto storageB = static_cast<ComponentStorage<EntityId, TComponentB, EntityId::Hash>*>(cStorageB.storage.get());
+					newIndex = std::make_unique<Index<EntityId, EntityId::Hash, TIndexA, TComponentB>>(indexA, storageB);
+				}
+
+				cStorageB.indexOwner = newIndex.get();
+				cStorageB.indexOwnerId = iId + 1;
+
+				mIndices.resize(iId + 1);
+				mIndices[iId].id = iId + 1;
+				mIndices[iId].index = std::move(newIndex);
+			}
+
+			//build the rest of the index
+			if constexpr (sizeof...(TComponents) > 0)
+			{
+				auto curIndex = reinterpret_cast<Index<EntityId, EntityId::Hash, TIndexA, TComponentB>*>(mIndices[iId].index.get());
+				return index<Index<EntityId, EntityId::Hash, TIndexA, TComponentB>, TComponents...>(curIndex);
+			}
+
+			return true;
 		}
 
 	private:
@@ -323,7 +937,8 @@ namespace hr
 		} mEntities;
 
 		std::vector<ComponentData> mComponents;
-
+		std::vector<IndexData> mIndices;
+		
 	public:
 		ECSRepository() = default;
 		ECSRepository(const ECSRepository&) = delete;
@@ -381,12 +996,30 @@ namespace hr
 		template<class TComponent, class... TComponentArgs>
 		void assign(EntityId enttId, TComponentArgs&&... componentArgs)
 		{
-			auto& cStorage = assureComponent<TComponent>();
+			//add data
+			{
+				auto& cStorage = assureComponent<TComponent>();
 
-			if constexpr (sizeof...(componentArgs) <= 0)
-				cStorage.add(enttId, TComponent{});
-			else
-				cStorage.add(enttId, TComponent{ std::forward<TComponentArgs>(componentArgs)... });
+				if constexpr (sizeof...(componentArgs) <= 0)
+					cStorage.add(enttId, TComponent{});
+				else
+					cStorage.add(enttId, TComponent{ std::forward<TComponentArgs>(componentArgs)... });
+			}
+
+			//updates indices
+			{
+				auto& component = assureComponentData<TComponent>();
+				if (component.indexOwner)
+					component.indexOwner->processNewKey(enttId);
+			}
+		}
+
+		template<class TComponent>
+		void update(EntityId enttId, TComponent&& value)
+		{
+			auto cStorage = retrieveComponent<TComponent>();
+			if (cStorage)
+				cStorage->update(enttId, std::forward<TComponent>(value));
 		}
 
 		template<class TComponent>
@@ -429,11 +1062,98 @@ namespace hr
 			cStorage->forEach(cb);
 		}
 
-		template<class... TComponents>
-		View<TComponents...> view() noexcept
+		template<class TComponentA, class... TComponents>
+		bool index()
 		{
+			//force creation if it doesn't exist
+			auto& cStorageA = assureComponentData<TComponentA>();
+
+			//our target index id
+			auto iId = FactoryIndexTypeId::type<std::tuple<TComponentA>>() - 1;
+
+			//if the index is already owned by someone else
+			if (cStorageA.indexOwner && ((cStorageA.indexOwnerId - 1) != iId))
+				return false;
+
+			//if we don't have a corresponding index, create one
+			if (!cStorageA.indexOwner)
+			{
+				assert((iId >= mIndices.size()) || !mIndices[iId].index);
+
+				//the first index is actually just a proxy for the storage
+
+				std::unique_ptr<Index<EntityId, EntityId::Hash, TComponentA, void>> newIndex;
+				{
+					auto storageA = static_cast<ComponentStorage<EntityId, TComponentA, EntityId::Hash>*>(cStorageA.storage.get());
+					newIndex = std::make_unique<Index<EntityId, EntityId::Hash, TComponentA, void>>(storageA);
+				}
+
+				cStorageA.indexOwner = newIndex.get();
+				cStorageA.indexOwnerId = iId + 1;
+
+				mIndices.resize(iId + 1);
+				mIndices[iId].id = iId + 1;
+				mIndices[iId].index = std::move(newIndex);
+			}
+
+			//build the rest of the index
+			if constexpr (sizeof...(TComponents) > 0)
+			{
+				auto curIndex = reinterpret_cast<Index<EntityId, EntityId::Hash, TComponentA, void>*>(mIndices[iId].index.get());
+				if (!index<Index<EntityId, EntityId::Hash, TComponentA, void>, TComponents...>(curIndex))
+					return false;
+			}
+
+			return true;
+		}
+
+		template<class... TComponents>
+		bool indexRemove()
+		{
+			static_assert(sizeof...(TComponents) >= 1, "Indices must have at least one component");
+
+			auto iId = FactoryIndexTypeId::type<std::tuple<TComponents...>>() - 1;
+			if ((iId >= mIndices.size()) || !mIndices[iId].index)
+				return true; //already removed
+
+			auto index = reinterpret_cast<typename IndexPath<EntityId, EntityId::Hash, TComponents...>::Type*>(mIndices[iId].index.get());
+			if (index->hasParent())
+				return false; //can destroy if it's in use
+
+			for (auto& component : mComponents)
+			{
+				if (component.indexOwner != index)
+					continue;
+
+				component.indexOwnerId = 0;
+				component.indexOwner = nullptr;
+				break;
+			}
+
+			mIndices[iId].id = 0;
+			mIndices[iId].index = nullptr; //will destroy index
+
+			return true;
+		}
+
+		template<class... TComponents>
+		View<TComponents...> view()
+		{
+			static_assert(sizeof...(TComponents) >= 1, "Views must have at least one component");
+
 			return { &assureComponent<TComponents>()... };
 		}
 
+		template<class... TComponents>
+		ViewIndexed<TComponents...> viewIndexed() const noexcept
+		{
+			static_assert(sizeof...(TComponents) >= 1, "Indexed views must have at least one component");
+
+			auto iId = FactoryIndexTypeId::type<std::tuple<TComponents...>>() - 1;
+			if ((iId >= mIndices.size()) || !mIndices[iId].index)
+				return { nullptr };
+
+			return { reinterpret_cast<typename IndexPath<EntityId, EntityId::Hash, TComponents...>::Type*>(mIndices[iId].index.get()) };
+		}
 	};
 }
