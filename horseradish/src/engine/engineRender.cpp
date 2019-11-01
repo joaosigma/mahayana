@@ -149,22 +149,22 @@ namespace hr { namespace engine
 
 			switch (source)
 			{
-			case GL_DEBUG_SOURCE_API_ARB:
+			case GL_DEBUG_SOURCE_API:
 				glSource = "source(api)";
 				break;
-			case GL_DEBUG_SOURCE_SHADER_COMPILER_ARB:
+			case GL_DEBUG_SOURCE_SHADER_COMPILER:
 				glSource = "source(glsl)";
 				break;
-			case GL_DEBUG_SOURCE_WINDOW_SYSTEM_ARB:
+			case GL_DEBUG_SOURCE_WINDOW_SYSTEM:
 				glSource = "source(window system)";
 				break;
-			case GL_DEBUG_SOURCE_THIRD_PARTY_ARB:
+			case GL_DEBUG_SOURCE_THIRD_PARTY:
 				glSource = "source(third party)";
 				break;
-			case GL_DEBUG_SOURCE_APPLICATION_ARB:
+			case GL_DEBUG_SOURCE_APPLICATION:
 				glSource = "source(application)";
 				break;
-			case GL_DEBUG_SOURCE_OTHER_ARB:
+			case GL_DEBUG_SOURCE_OTHER:
 				glSource = "source(other)";
 				break;
 			default:
@@ -174,22 +174,22 @@ namespace hr { namespace engine
 
 			switch (type)
 			{
-			case GL_DEBUG_TYPE_ERROR_ARB:
+			case GL_DEBUG_TYPE_ERROR:
 				glType = "type(error)";
 				break;
-			case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR_ARB:
+			case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR:
 				glType = "type(deprecated)";
 				break;
-			case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR_ARB:
+			case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR:
 				glType = "type(undefined)";
 				break;
-			case GL_DEBUG_TYPE_PERFORMANCE_ARB:
+			case GL_DEBUG_TYPE_PERFORMANCE:
 				glType = "type(performance)";
 				break;
-			case GL_DEBUG_TYPE_PORTABILITY_ARB:
+			case GL_DEBUG_TYPE_PORTABILITY:
 				glType = "type(portability)";
 				break;
-			case GL_DEBUG_TYPE_OTHER_ARB:
+			case GL_DEBUG_TYPE_OTHER:
 				glType = "type(other)";
 				break;
 			default:
@@ -200,14 +200,14 @@ namespace hr { namespace engine
 			auto entryType = hr::engine::Logger::EntryType::Info;
 			switch (severity)
 			{
-			case GL_DEBUG_SEVERITY_HIGH_ARB:
+			case GL_DEBUG_SEVERITY_HIGH:
 				glSeverity = "severity(high)";
 				entryType = hr::engine::Logger::EntryType::Warning;
 				break;
-			case GL_DEBUG_SEVERITY_MEDIUM_ARB:
+			case GL_DEBUG_SEVERITY_MEDIUM:
 				glSeverity = "severity(medium)";
 				break;
-			case GL_DEBUG_SEVERITY_LOW_ARB:
+			case GL_DEBUG_SEVERITY_LOW:
 				glSeverity = "severity(low)";
 				break;
 			default:
@@ -252,7 +252,7 @@ namespace hr { namespace engine
 		{
 			int glMajorVersion, glMinorVersion;
 
-			glContext = std::make_unique<platform::OpenglContext>(*mWindow, "OpenGL32.dll", 4, 5, var<bool>("renderer.glDebug"), true);
+			glContext = std::make_unique<platform::OpenglContext>(*mWindow, "OpenGL32.dll", 4, 6, var<bool>("renderer.glDebug"), true);
 			if (!glContext->isValid())
 			{
 				auto errorMsg = glContext->getErrorMsg();
@@ -266,13 +266,13 @@ namespace hr { namespace engine
 
 			hr::gl::glGetIntegerv(GL_MAJOR_VERSION, &glMajorVersion);
 			hr::gl::glGetIntegerv(GL_MINOR_VERSION, &glMinorVersion);
-			if ((glMajorVersion < 4) || ((glMajorVersion == 4) && (glMinorVersion < 5)))
+			if ((glMajorVersion < 4) || ((glMajorVersion == 4) && (glMinorVersion < 6)))
 			{
-				exit(ExitAction::Nothing, "OpenGL version 4.5 or higher is required (try updating your drivers).");
+				exit(ExitAction::Nothing, "OpenGL version 4.6 or higher is required (try updating your drivers).");
 				return;
 			}
 
-			if (!glContext->isExtPresent("GL_ARB_pipeline_statistics_query") || !glContext->isExtPresent("GL_EXT_texture_compression_s3tc"))
+			if (!glContext->isExtPresent("GL_EXT_texture_compression_s3tc"))
 			{
 				exit(ExitAction::Nothing, "Required extensions are not present");
 				return;

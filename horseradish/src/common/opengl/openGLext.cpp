@@ -4,119 +4,75 @@
 
 #define GETADDR(var, name, type)  var = (type)wglProcAddressOpenGL(name);
 
-typedef PROC(APIENTRY *PFNWGLGETPROCADDRESSPROC)(LPCSTR lpcstr);
-
-static
-void loadGLExtFunctions(PFNWGLGETPROCADDRESSPROC wglProcAddressOpenGL)
+namespace hr::gl::extensions
 {
-	using namespace hr::gl::extensions;
+	namespace
+	{
+		typedef PROC(APIENTRY* PFNWGLGETPROCADDRESSPROC)(LPCSTR lpcstr);
 
-#ifdef GL_EXT_direct_state_access
-	GETADDR(glMatrixLoadfEXT, "glMatrixLoadfEXT", PFNGLMATRIXLOADFEXTPROC);
-	GETADDR(glMatrixLoaddEXT, "glMatrixLoaddEXT", PFNGLMATRIXLOADDEXTPROC);
-	GETADDR(glMatrixMultfEXT, "glMatrixMultfEXT", PFNGLMATRIXMULTFEXTPROC);
-	GETADDR(glMatrixMultdEXT, "glMatrixMultdEXT", PFNGLMATRIXMULTDEXTPROC);
-	GETADDR(glMatrixLoadIdentityEXT, "glMatrixLoadIdentityEXT", PFNGLMATRIXLOADIDENTITYEXTPROC);
-	GETADDR(glMatrixRotatefEXT, "glMatrixRotatefEXT", PFNGLMATRIXROTATEFEXTPROC);
-	GETADDR(glMatrixRotatedEXT, "glMatrixRotatedEXT", PFNGLMATRIXROTATEDEXTPROC);
-	GETADDR(glMatrixScalefEXT, "glMatrixScalefEXT", PFNGLMATRIXSCALEFEXTPROC);
-	GETADDR(glMatrixScaledEXT, "glMatrixScaledEXT", PFNGLMATRIXSCALEDEXTPROC);
-	GETADDR(glMatrixTranslatefEXT, "glMatrixTranslatefEXT", PFNGLMATRIXTRANSLATEFEXTPROC);
-	GETADDR(glMatrixTranslatedEXT, "glMatrixTranslatedEXT", PFNGLMATRIXTRANSLATEDEXTPROC);
-	GETADDR(glMatrixFrustumEXT, "glMatrixFrustumEXT", PFNGLMATRIXFRUSTUMEXTPROC);
-	GETADDR(glMatrixOrthoEXT, "glMatrixOrthoEXT", PFNGLMATRIXORTHOEXTPROC);
-	GETADDR(glMatrixPopEXT, "glMatrixPopEXT", PFNGLMATRIXPOPEXTPROC);
-	GETADDR(glMatrixPushEXT, "glMatrixPushEXT", PFNGLMATRIXPUSHEXTPROC);
-	GETADDR(glMatrixLoadTransposefEXT, "glMatrixLoadTransposefEXT", PFNGLMATRIXLOADTRANSPOSEFEXTPROC);
-	GETADDR(glMatrixLoadTransposedEXT, "glMatrixLoadTransposedEXT", PFNGLMATRIXLOADTRANSPOSEDEXTPROC);
-	GETADDR(glMatrixMultTransposefEXT, "glMatrixMultTransposefEXT", PFNGLMATRIXMULTTRANSPOSEFEXTPROC);
-	GETADDR(glMatrixMultTransposedEXT, "glMatrixMultTransposedEXT", PFNGLMATRIXMULTTRANSPOSEDEXTPROC);
-#endif
-
+		void loadGLExtFunctions(PFNWGLGETPROCADDRESSPROC wglProcAddressOpenGL)
+		{
 #ifdef GL_NV_path_rendering
-	GETADDR(glGenPathsNV, "glGenPathsNV", PFNGLGENPATHSNVPROC);
-	GETADDR(glDeletePathsNV, "glDeletePathsNV", PFNGLDELETEPATHSNVPROC);
-	GETADDR(glIsPathNV, "glIsPathNV", PFNGLISPATHNVPROC);
-	GETADDR(glPathCommandsNV, "glPathCommandsNV", PFNGLPATHCOMMANDSNVPROC);
-	GETADDR(glPathCoordsNV, "glPathCoordsNV", PFNGLPATHCOORDSNVPROC);
-	GETADDR(glPathSubCommandsNV, "glPathSubCommandsNV", PFNGLPATHSUBCOMMANDSNVPROC);
-	GETADDR(glPathSubCoordsNV, "glPathSubCoordsNV", PFNGLPATHSUBCOORDSNVPROC);
-	GETADDR(glPathStringNV, "glPathStringNV", PFNGLPATHSTRINGNVPROC);
-	GETADDR(glPathGlyphsNV, "glPathGlyphsNV", PFNGLPATHGLYPHSNVPROC);
-	GETADDR(glPathGlyphRangeNV, "glPathGlyphRangeNV", PFNGLPATHGLYPHRANGENVPROC);
-	GETADDR(glWeightPathsNV, "glWeightPathsNV", PFNGLWEIGHTPATHSNVPROC);
-	GETADDR(glCopyPathNV, "glCopyPathNV", PFNGLCOPYPATHNVPROC);
-	GETADDR(glInterpolatePathsNV, "glInterpolatePathsNV", PFNGLINTERPOLATEPATHSNVPROC);
-	GETADDR(glTransformPathNV, "glTransformPathNV", PFNGLTRANSFORMPATHNVPROC);
-	GETADDR(glPathParameterivNV, "glPathParameterivNV", PFNGLPATHPARAMETERIVNVPROC);
-	GETADDR(glPathParameteriNV, "glPathParameteriNV", PFNGLPATHPARAMETERINVPROC);
-	GETADDR(glPathParameterfvNV, "glPathParameterfvNV", PFNGLPATHPARAMETERFVNVPROC);
-	GETADDR(glPathParameterfNV, "glPathParameterfNV", PFNGLPATHPARAMETERFNVPROC);
-	GETADDR(glPathDashArrayNV, "glPathDashArrayNV", PFNGLPATHDASHARRAYNVPROC);
-	GETADDR(glPathStencilFuncNV, "glPathStencilFuncNV", PFNGLPATHSTENCILFUNCNVPROC);
-	GETADDR(glPathStencilDepthOffsetNV, "glPathStencilDepthOffsetNV", PFNGLPATHSTENCILDEPTHOFFSETNVPROC);
-	GETADDR(glStencilFillPathNV, "glStencilFillPathNV", PFNGLSTENCILFILLPATHNVPROC);
-	GETADDR(glStencilStrokePathNV, "glStencilStrokePathNV", PFNGLSTENCILSTROKEPATHNVPROC);
-	GETADDR(glStencilFillPathInstancedNV, "glStencilFillPathInstancedNV", PFNGLSTENCILFILLPATHINSTANCEDNVPROC);
-	GETADDR(glStencilStrokePathInstancedNV, "glStencilStrokePathInstancedNV", PFNGLSTENCILSTROKEPATHINSTANCEDNVPROC);
-	GETADDR(glPathCoverDepthFuncNV, "glPathCoverDepthFuncNV", PFNGLPATHCOVERDEPTHFUNCNVPROC);
-	GETADDR(glCoverFillPathNV, "glCoverFillPathNV", PFNGLCOVERFILLPATHNVPROC);
-	GETADDR(glCoverStrokePathNV, "glCoverStrokePathNV", PFNGLCOVERSTROKEPATHNVPROC);
-	GETADDR(glCoverFillPathInstancedNV, "glCoverFillPathInstancedNV", PFNGLCOVERFILLPATHINSTANCEDNVPROC);
-	GETADDR(glCoverStrokePathInstancedNV, "glCoverStrokePathInstancedNV", PFNGLCOVERSTROKEPATHINSTANCEDNVPROC);
-	GETADDR(glGetPathParameterivNV, "glGetPathParameterivNV", PFNGLGETPATHPARAMETERIVNVPROC);
-	GETADDR(glGetPathParameterfvNV, "glGetPathParameterfvNV", PFNGLGETPATHPARAMETERFVNVPROC);
-	GETADDR(glGetPathCommandsNV, "glGetPathCommandsNV", PFNGLGETPATHCOMMANDSNVPROC);
-	GETADDR(glGetPathCoordsNV, "glGetPathCoordsNV", PFNGLGETPATHCOORDSNVPROC);
-	GETADDR(glGetPathDashArrayNV, "glGetPathDashArrayNV", PFNGLGETPATHDASHARRAYNVPROC);
-	GETADDR(glGetPathMetricsNV, "glGetPathMetricsNV", PFNGLGETPATHMETRICSNVPROC);
-	GETADDR(glGetPathMetricRangeNV, "glGetPathMetricRangeNV", PFNGLGETPATHMETRICRANGENVPROC);
-	GETADDR(glGetPathSpacingNV, "glGetPathSpacingNV", PFNGLGETPATHSPACINGNVPROC);
-	GETADDR(glIsPointInFillPathNV, "glIsPointInFillPathNV", PFNGLISPOINTINFILLPATHNVPROC);
-	GETADDR(glIsPointInStrokePathNV, "glIsPointInStrokePathNV", PFNGLISPOINTINSTROKEPATHNVPROC);
-	GETADDR(glGetPathLengthNV, "glGetPathLengthNV", PFNGLGETPATHLENGTHNVPROC);
-	GETADDR(glPointAlongPathNV, "glPointAlongPathNV", PFNGLPOINTALONGPATHNVPROC);
-	GETADDR(glMatrixLoad3x2fNV, "glMatrixLoad3x2fNV", PFNGLMATRIXLOAD3X2FNVPROC);
-	GETADDR(glMatrixLoad3x3fNV, "glMatrixLoad3x3fNV", PFNGLMATRIXLOAD3X3FNVPROC);
-	GETADDR(glMatrixLoadTranspose3x3fNV, "glMatrixLoadTranspose3x3fNV", PFNGLMATRIXLOADTRANSPOSE3X3FNVPROC);
-	GETADDR(glMatrixMult3x2fNV, "glMatrixMult3x2fNV", PFNGLMATRIXMULT3X2FNVPROC);
-	GETADDR(glMatrixMult3x3fNV, "glMatrixMult3x3fNV", PFNGLMATRIXMULT3X3FNVPROC);
-	GETADDR(glMatrixMultTranspose3x3fNV, "glMatrixMultTranspose3x3fNV", PFNGLMATRIXMULTTRANSPOSE3X3FNVPROC);
-	GETADDR(glStencilThenCoverFillPathNV, "glStencilThenCoverFillPathNV", PFNGLSTENCILTHENCOVERFILLPATHNVPROC);
-	GETADDR(glStencilThenCoverStrokePathNV, "glStencilThenCoverStrokePathNV", PFNGLSTENCILTHENCOVERSTROKEPATHNVPROC);
-	GETADDR(glStencilThenCoverFillPathInstancedNV, "glStencilThenCoverFillPathInstancedNV", PFNGLSTENCILTHENCOVERFILLPATHINSTANCEDNVPROC);
-	GETADDR(glStencilThenCoverStrokePathInstancedNV, "glStencilThenCoverStrokePathInstancedNV", PFNGLSTENCILTHENCOVERSTROKEPATHINSTANCEDNVPROC);
-	GETADDR(glPathGlyphIndexRangeNV, "glPathGlyphIndexRangeNV", PFNGLPATHGLYPHINDEXRANGENVPROC);
-	GETADDR(glPathGlyphIndexArrayNV, "glPathGlyphIndexArrayNV", PFNGLPATHGLYPHINDEXARRAYNVPROC);
-	GETADDR(glPathMemoryGlyphIndexArrayNV, "glPathMemoryGlyphIndexArrayNV", PFNGLPATHMEMORYGLYPHINDEXARRAYNVPROC);
-	GETADDR(glProgramPathFragmentInputGenNV, "glProgramPathFragmentInputGenNV", PFNGLPROGRAMPATHFRAGMENTINPUTGENNVPROC);
-	GETADDR(glGetProgramResourcefvNV, "glGetProgramResourcefvNV", PFNGLGETPROGRAMRESOURCEFVNVPROC);
+			GETADDR(glGenPathsNV, "glGenPathsNV", PFNGLGENPATHSNVPROC);
+			GETADDR(glDeletePathsNV, "glDeletePathsNV", PFNGLDELETEPATHSNVPROC);
+			GETADDR(glIsPathNV, "glIsPathNV", PFNGLISPATHNVPROC);
+			GETADDR(glPathCommandsNV, "glPathCommandsNV", PFNGLPATHCOMMANDSNVPROC);
+			GETADDR(glPathCoordsNV, "glPathCoordsNV", PFNGLPATHCOORDSNVPROC);
+			GETADDR(glPathSubCommandsNV, "glPathSubCommandsNV", PFNGLPATHSUBCOMMANDSNVPROC);
+			GETADDR(glPathSubCoordsNV, "glPathSubCoordsNV", PFNGLPATHSUBCOORDSNVPROC);
+			GETADDR(glPathStringNV, "glPathStringNV", PFNGLPATHSTRINGNVPROC);
+			GETADDR(glPathGlyphsNV, "glPathGlyphsNV", PFNGLPATHGLYPHSNVPROC);
+			GETADDR(glPathGlyphRangeNV, "glPathGlyphRangeNV", PFNGLPATHGLYPHRANGENVPROC);
+			GETADDR(glWeightPathsNV, "glWeightPathsNV", PFNGLWEIGHTPATHSNVPROC);
+			GETADDR(glCopyPathNV, "glCopyPathNV", PFNGLCOPYPATHNVPROC);
+			GETADDR(glInterpolatePathsNV, "glInterpolatePathsNV", PFNGLINTERPOLATEPATHSNVPROC);
+			GETADDR(glTransformPathNV, "glTransformPathNV", PFNGLTRANSFORMPATHNVPROC);
+			GETADDR(glPathParameterivNV, "glPathParameterivNV", PFNGLPATHPARAMETERIVNVPROC);
+			GETADDR(glPathParameteriNV, "glPathParameteriNV", PFNGLPATHPARAMETERINVPROC);
+			GETADDR(glPathParameterfvNV, "glPathParameterfvNV", PFNGLPATHPARAMETERFVNVPROC);
+			GETADDR(glPathParameterfNV, "glPathParameterfNV", PFNGLPATHPARAMETERFNVPROC);
+			GETADDR(glPathDashArrayNV, "glPathDashArrayNV", PFNGLPATHDASHARRAYNVPROC);
+			GETADDR(glPathStencilFuncNV, "glPathStencilFuncNV", PFNGLPATHSTENCILFUNCNVPROC);
+			GETADDR(glPathStencilDepthOffsetNV, "glPathStencilDepthOffsetNV", PFNGLPATHSTENCILDEPTHOFFSETNVPROC);
+			GETADDR(glStencilFillPathNV, "glStencilFillPathNV", PFNGLSTENCILFILLPATHNVPROC);
+			GETADDR(glStencilStrokePathNV, "glStencilStrokePathNV", PFNGLSTENCILSTROKEPATHNVPROC);
+			GETADDR(glStencilFillPathInstancedNV, "glStencilFillPathInstancedNV", PFNGLSTENCILFILLPATHINSTANCEDNVPROC);
+			GETADDR(glStencilStrokePathInstancedNV, "glStencilStrokePathInstancedNV", PFNGLSTENCILSTROKEPATHINSTANCEDNVPROC);
+			GETADDR(glPathCoverDepthFuncNV, "glPathCoverDepthFuncNV", PFNGLPATHCOVERDEPTHFUNCNVPROC);
+			GETADDR(glCoverFillPathNV, "glCoverFillPathNV", PFNGLCOVERFILLPATHNVPROC);
+			GETADDR(glCoverStrokePathNV, "glCoverStrokePathNV", PFNGLCOVERSTROKEPATHNVPROC);
+			GETADDR(glCoverFillPathInstancedNV, "glCoverFillPathInstancedNV", PFNGLCOVERFILLPATHINSTANCEDNVPROC);
+			GETADDR(glCoverStrokePathInstancedNV, "glCoverStrokePathInstancedNV", PFNGLCOVERSTROKEPATHINSTANCEDNVPROC);
+			GETADDR(glGetPathParameterivNV, "glGetPathParameterivNV", PFNGLGETPATHPARAMETERIVNVPROC);
+			GETADDR(glGetPathParameterfvNV, "glGetPathParameterfvNV", PFNGLGETPATHPARAMETERFVNVPROC);
+			GETADDR(glGetPathCommandsNV, "glGetPathCommandsNV", PFNGLGETPATHCOMMANDSNVPROC);
+			GETADDR(glGetPathCoordsNV, "glGetPathCoordsNV", PFNGLGETPATHCOORDSNVPROC);
+			GETADDR(glGetPathDashArrayNV, "glGetPathDashArrayNV", PFNGLGETPATHDASHARRAYNVPROC);
+			GETADDR(glGetPathMetricsNV, "glGetPathMetricsNV", PFNGLGETPATHMETRICSNVPROC);
+			GETADDR(glGetPathMetricRangeNV, "glGetPathMetricRangeNV", PFNGLGETPATHMETRICRANGENVPROC);
+			GETADDR(glGetPathSpacingNV, "glGetPathSpacingNV", PFNGLGETPATHSPACINGNVPROC);
+			GETADDR(glIsPointInFillPathNV, "glIsPointInFillPathNV", PFNGLISPOINTINFILLPATHNVPROC);
+			GETADDR(glIsPointInStrokePathNV, "glIsPointInStrokePathNV", PFNGLISPOINTINSTROKEPATHNVPROC);
+			GETADDR(glGetPathLengthNV, "glGetPathLengthNV", PFNGLGETPATHLENGTHNVPROC);
+			GETADDR(glPointAlongPathNV, "glPointAlongPathNV", PFNGLPOINTALONGPATHNVPROC);
+			GETADDR(glMatrixLoad3x2fNV, "glMatrixLoad3x2fNV", PFNGLMATRIXLOAD3X2FNVPROC);
+			GETADDR(glMatrixLoad3x3fNV, "glMatrixLoad3x3fNV", PFNGLMATRIXLOAD3X3FNVPROC);
+			GETADDR(glMatrixLoadTranspose3x3fNV, "glMatrixLoadTranspose3x3fNV", PFNGLMATRIXLOADTRANSPOSE3X3FNVPROC);
+			GETADDR(glMatrixMult3x2fNV, "glMatrixMult3x2fNV", PFNGLMATRIXMULT3X2FNVPROC);
+			GETADDR(glMatrixMult3x3fNV, "glMatrixMult3x3fNV", PFNGLMATRIXMULT3X3FNVPROC);
+			GETADDR(glMatrixMultTranspose3x3fNV, "glMatrixMultTranspose3x3fNV", PFNGLMATRIXMULTTRANSPOSE3X3FNVPROC);
+			GETADDR(glStencilThenCoverFillPathNV, "glStencilThenCoverFillPathNV", PFNGLSTENCILTHENCOVERFILLPATHNVPROC);
+			GETADDR(glStencilThenCoverStrokePathNV, "glStencilThenCoverStrokePathNV", PFNGLSTENCILTHENCOVERSTROKEPATHNVPROC);
+			GETADDR(glStencilThenCoverFillPathInstancedNV, "glStencilThenCoverFillPathInstancedNV", PFNGLSTENCILTHENCOVERFILLPATHINSTANCEDNVPROC);
+			GETADDR(glStencilThenCoverStrokePathInstancedNV, "glStencilThenCoverStrokePathInstancedNV", PFNGLSTENCILTHENCOVERSTROKEPATHINSTANCEDNVPROC);
+			GETADDR(glPathGlyphIndexRangeNV, "glPathGlyphIndexRangeNV", PFNGLPATHGLYPHINDEXRANGENVPROC);
+			GETADDR(glPathGlyphIndexArrayNV, "glPathGlyphIndexArrayNV", PFNGLPATHGLYPHINDEXARRAYNVPROC);
+			GETADDR(glPathMemoryGlyphIndexArrayNV, "glPathMemoryGlyphIndexArrayNV", PFNGLPATHMEMORYGLYPHINDEXARRAYNVPROC);
+			GETADDR(glProgramPathFragmentInputGenNV, "glProgramPathFragmentInputGenNV", PFNGLPROGRAMPATHFRAGMENTINPUTGENNVPROC);
+			GETADDR(glGetProgramResourcefvNV, "glGetProgramResourcefvNV", PFNGLGETPROGRAMRESOURCEFVNVPROC);
 #endif
-}
-
-namespace hr { namespace gl { namespace extensions
-{
-#ifdef GL_EXT_direct_state_access
-	PFNGLMATRIXLOADFEXTPROC glMatrixLoadfEXT;
-	PFNGLMATRIXLOADDEXTPROC glMatrixLoaddEXT;
-	PFNGLMATRIXMULTFEXTPROC glMatrixMultfEXT;
-	PFNGLMATRIXMULTDEXTPROC glMatrixMultdEXT;
-	PFNGLMATRIXLOADIDENTITYEXTPROC glMatrixLoadIdentityEXT;
-	PFNGLMATRIXROTATEFEXTPROC glMatrixRotatefEXT;
-	PFNGLMATRIXROTATEDEXTPROC glMatrixRotatedEXT;
-	PFNGLMATRIXSCALEFEXTPROC glMatrixScalefEXT;
-	PFNGLMATRIXSCALEDEXTPROC glMatrixScaledEXT;
-	PFNGLMATRIXTRANSLATEFEXTPROC glMatrixTranslatefEXT;
-	PFNGLMATRIXTRANSLATEDEXTPROC glMatrixTranslatedEXT;
-	PFNGLMATRIXFRUSTUMEXTPROC glMatrixFrustumEXT;
-	PFNGLMATRIXORTHOEXTPROC glMatrixOrthoEXT;
-	PFNGLMATRIXPOPEXTPROC glMatrixPopEXT;
-	PFNGLMATRIXPUSHEXTPROC glMatrixPushEXT;
-	PFNGLMATRIXLOADTRANSPOSEFEXTPROC glMatrixLoadTransposefEXT;
-	PFNGLMATRIXLOADTRANSPOSEDEXTPROC glMatrixLoadTransposedEXT;
-	PFNGLMATRIXMULTTRANSPOSEFEXTPROC glMatrixMultTransposefEXT;
-	PFNGLMATRIXMULTTRANSPOSEDEXTPROC glMatrixMultTransposedEXT;
-#endif
+		}
+	}
 
 #ifdef GL_NV_path_rendering
 	PFNGLGENPATHSNVPROC glGenPathsNV;
@@ -192,11 +148,11 @@ namespace hr { namespace gl { namespace extensions
 		loadGLExtFunctions(ptrWGlGetProcAddress);
 	}
 
-	bool extensionExists(const char * const extensionName)
+	bool extensionExists(const char* const extensionName)
 	{
 		if (!extensionName || *extensionName == '\0')
 			return false;
-	
+
 		GLint numExtensions;
 		hr::gl::glGetIntegerv(GL_NUM_EXTENSIONS, &numExtensions);
 		if (numExtensions <= 0)
@@ -214,4 +170,4 @@ namespace hr { namespace gl { namespace extensions
 
 		return false;
 	}
-} }  }
+}

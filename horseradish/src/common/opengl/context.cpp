@@ -5,7 +5,7 @@
 
 #include <memory>
 
-namespace hr { namespace gl { namespace objects
+namespace hr::gl::objects
 {
 	bool Context::initContext()
 	{
@@ -14,8 +14,6 @@ namespace hr { namespace gl { namespace objects
 
 		hr::gl::extensions::extensionsLoad("OpenGL32.dll");
 
-		if (hr::gl::extensions::extensionExists("GL_EXT_texture_filter_anisotropic"))
-			mExtsAvailable |= Context::ExtFilterAnisotropic;
 		if (hr::gl::extensions::extensionExists("GL_EXT_texture_compression_s3tc"))
 			mExtsAvailable |= Context::ExtCompressionS3;
 		if (hr::gl::extensions::extensionExists("GL_NV_texture_compression_vtc"))
@@ -34,10 +32,7 @@ namespace hr { namespace gl { namespace objects
 		hr::gl::glGetIntegerv(GL_MAX_RECTANGLE_TEXTURE_SIZE, &mInfo.maxTextureRectSize);
 		hr::gl::glGetIntegerv(GL_MAJOR_VERSION, &mInfo.versionMajor);
 		hr::gl::glGetIntegerv(GL_MINOR_VERSION, &mInfo.versionMinor);
-		mInfo.maxAnisotropy = 0.0f;
-
-		if ((mExtsAvailable & Context::ExtFilterAnisotropic) != 0)
-			hr::gl::glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &mInfo.maxAnisotropy);
+		hr::gl::glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY, &mInfo.maxAnisotropy);
 
 		return true;
 	}
@@ -47,7 +42,7 @@ namespace hr { namespace gl { namespace objects
 		return ((mExtsAvailable & extension) == extension);
 	}
 
-	bool Context::isExtPresent(const char * const extensionName) const
+	bool Context::isExtPresent(const char* const extensionName) const
 	{
 		return hr::gl::extensions::extensionExists(extensionName);
 	}
@@ -56,7 +51,7 @@ namespace hr { namespace gl { namespace objects
 	{
 		GLint numMsgsLogged;
 
-		hr::gl::glGetIntegerv(GL_DEBUG_LOGGED_MESSAGES_ARB, &numMsgsLogged);
+		hr::gl::glGetIntegerv(GL_DEBUG_LOGGED_MESSAGES, &numMsgsLogged);
 		if (numMsgsLogged <= 0)
 			return;
 
@@ -82,7 +77,7 @@ namespace hr { namespace gl { namespace objects
 		}
 	}
 
-	bool Context::info(const InformationType &informationType, int &infoValue) const
+	bool Context::info(const InformationType& informationType, int& infoValue) const
 	{
 		switch (informationType)
 		{
@@ -110,7 +105,7 @@ namespace hr { namespace gl { namespace objects
 		return false;
 	}
 
-	bool Context::info(const InformationType &informationType, float &infoValue) const
+	bool Context::info(const InformationType& informationType, float& infoValue) const
 	{
 		switch (informationType)
 		{
@@ -123,7 +118,7 @@ namespace hr { namespace gl { namespace objects
 		return false;
 	}
 
-	bool Context::info(const InformationType &informationType, std::string &infoValue) const
+	bool Context::info(const InformationType& informationType, std::string& infoValue) const
 	{
 		switch (informationType)
 		{
@@ -144,4 +139,4 @@ namespace hr { namespace gl { namespace objects
 		infoValue.clear();
 		return false;
 	}
-} } }
+}

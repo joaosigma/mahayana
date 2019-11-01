@@ -1,6 +1,6 @@
 #include "viewport.hpp"
 
-namespace hr { namespace gl { namespace tools
+namespace hr::gl::tools
 {
 	namespace
 	{
@@ -75,7 +75,7 @@ namespace hr { namespace gl { namespace tools
 		center[2] = mZNear;
 	}
 
-	void Viewport::projectPoint(ProjectionType projType, const hr::Matrix& modelView, hr::Vector3f * const listPoints, size_t numPoints) const
+	void Viewport::projectPoint(ProjectionType projType, const hr::Matrix& modelView, hr::Vector3f* const listPoints, size_t numPoints) const
 	{
 		if (!listPoints || numPoints <= 0)
 			return;
@@ -83,14 +83,14 @@ namespace hr { namespace gl { namespace tools
 		hr::Matrix transMat;
 		switch (projType)
 		{
-			case ProjectionType::Proj2D:
-				transMat = mMatrices.mp2D;
-				break;
-			case ProjectionType::Proj3D:
-				transMat = mMatrices.mp3D;
-				break;
-			default:
-				return;
+		case ProjectionType::Proj2D:
+			transMat = mMatrices.mp2D;
+			break;
+		case ProjectionType::Proj3D:
+			transMat = mMatrices.mp3D;
+			break;
+		default:
+			return;
 		}
 		transMat *= modelView;
 
@@ -113,4 +113,4 @@ namespace hr { namespace gl { namespace tools
 			listPoints[i].set(projX, projY, projZ);
 		}
 	}
-} } }
+}

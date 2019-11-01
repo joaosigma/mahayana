@@ -12,7 +12,7 @@
 #include <functional>
 #include <initializer_list>
 
-namespace hr { namespace gl { namespace objects
+namespace hr::gl::objects
 {
 	class ObjectGL
 	{
@@ -58,6 +58,7 @@ namespace hr { namespace gl { namespace objects
 			COMPRESSED_BC3, COMPRESSED_SRGB_BC3, //RGBA
 			COMPRESSED_BC4, //Mono (grayscale)
 			COMPRESSED_BC5, //Dual (2xgrayscale)
+			COMPRESSED_BC7, COMPRESSED_SRGB_BC7 //RGB and RGBA (best if A correlates to RGB)
 		};
 		enum class DataType { BYTE, UBYTE, SHORT, USHORT, INT, UINT, FLOAT };
 		enum class DataFormat { R, G, B, RG, RGB, RGBA, BGR, BGRA };
@@ -193,6 +194,10 @@ namespace hr { namespace gl { namespace objects
 				return GL_COMPRESSED_RED_RGTC1;
 			case StorageType::COMPRESSED_BC5:
 				return GL_COMPRESSED_RG_RGTC2;
+			case StorageType::COMPRESSED_BC7:
+				return GL_COMPRESSED_RGBA_BPTC_UNORM;
+			case StorageType::COMPRESSED_SRGB_BC7:
+				return GL_COMPRESSED_SRGB_ALPHA_BPTC_UNORM;
 			};
 
 			assert(false);
@@ -503,6 +508,8 @@ namespace hr { namespace gl { namespace objects
 			case GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT:
 			case GL_COMPRESSED_RED_RGTC1:
 			case GL_COMPRESSED_RG_RGTC2:
+			case GL_COMPRESSED_RGBA_BPTC_UNORM:
+			case GL_COMPRESSED_SRGB_ALPHA_BPTC_UNORM:
 				return true;
 			};
 
@@ -677,10 +684,10 @@ namespace hr { namespace gl { namespace objects
 				return false;
 
 			float maxAnisoLevel;
-			if (!mCtx.isExtPresent(Context::ExtFilterAnisotropic) || !mCtx.info(Context::InformationType::MaxAnisotropicLevel, maxAnisoLevel))
+			if (!mCtx.info(Context::InformationType::MaxAnisotropicLevel, maxAnisoLevel))
 				return false;
 
-			hr::gl::glSamplerParameterf(mId, GL_TEXTURE_MAX_ANISOTROPY_EXT, hr::Math::fClamp(anisotropyLevel, 1.0f, maxAnisoLevel));
+			hr::gl::glSamplerParameterf(mId, GL_TEXTURE_MAX_ANISOTROPY, hr::Math::fClamp(anisotropyLevel, 1.0f, maxAnisoLevel));
 			return true;
 		}
 
@@ -1199,22 +1206,22 @@ namespace hr { namespace gl { namespace objects
 				break;
 
 			case Type::VerticesSubmitted:
-				glBeginQuery(GL_VERTICES_SUBMITTED_ARB, mId);
+				glBeginQuery(GL_VERTICES_SUBMITTED, mId);
 				break;
 			case Type::PrimitivesSubmitted:
-				glBeginQuery(GL_PRIMITIVES_SUBMITTED_ARB, mId);
+				glBeginQuery(GL_PRIMITIVES_SUBMITTED, mId);
 				break;
 			case Type::VertexShaderInvocations:
-				glBeginQuery(GL_VERTEX_SHADER_INVOCATIONS_ARB, mId);
+				glBeginQuery(GL_VERTEX_SHADER_INVOCATIONS, mId);
 				break;
 			case Type::FragmentShaderInvocations:
-				glBeginQuery(GL_FRAGMENT_SHADER_INVOCATIONS_ARB, mId);
+				glBeginQuery(GL_FRAGMENT_SHADER_INVOCATIONS, mId);
 				break;
 			case Type::ClippingInputPrimitives:
-				glBeginQuery(GL_CLIPPING_INPUT_PRIMITIVES_ARB, mId);
+				glBeginQuery(GL_CLIPPING_INPUT_PRIMITIVES, mId);
 				break;
 			case Type::ClippingOutputPrimitives:
-				glBeginQuery(GL_CLIPPING_OUTPUT_PRIMITIVES_ARB, mId);
+				glBeginQuery(GL_CLIPPING_OUTPUT_PRIMITIVES, mId);
 				break;
 			}
 		}
@@ -1240,22 +1247,22 @@ namespace hr { namespace gl { namespace objects
 				break;
 
 			case Type::VerticesSubmitted:
-				glEndQuery(GL_VERTICES_SUBMITTED_ARB);
+				glEndQuery(GL_VERTICES_SUBMITTED);
 				break;
 			case Type::PrimitivesSubmitted:
-				glEndQuery(GL_PRIMITIVES_SUBMITTED_ARB);
+				glEndQuery(GL_PRIMITIVES_SUBMITTED);
 				break;
 			case Type::VertexShaderInvocations:
-				glEndQuery(GL_VERTEX_SHADER_INVOCATIONS_ARB);
+				glEndQuery(GL_VERTEX_SHADER_INVOCATIONS);
 				break;
 			case Type::FragmentShaderInvocations:
-				glEndQuery(GL_FRAGMENT_SHADER_INVOCATIONS_ARB);
+				glEndQuery(GL_FRAGMENT_SHADER_INVOCATIONS);
 				break;
 			case Type::ClippingInputPrimitives:
-				glEndQuery(GL_CLIPPING_INPUT_PRIMITIVES_ARB);
+				glEndQuery(GL_CLIPPING_INPUT_PRIMITIVES);
 				break;
 			case Type::ClippingOutputPrimitives:
-				glEndQuery(GL_CLIPPING_OUTPUT_PRIMITIVES_ARB);
+				glEndQuery(GL_CLIPPING_OUTPUT_PRIMITIVES);
 				break;
 			}
 		}
@@ -1721,4 +1728,4 @@ namespace hr { namespace gl { namespace objects
 			}
 		}
 	};
-} } }
+}

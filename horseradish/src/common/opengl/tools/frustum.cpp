@@ -4,9 +4,9 @@
 
 #include <limits>
 
-namespace hr { namespace gl { namespace tools
+namespace hr::gl::tools
 {
-	void Frustum::extractPlanes(const hr::Vector4f &col1, const hr::Vector4f &col2, const hr::Vector4f &col3, const hr::Vector4f &col4)
+	void Frustum::extractPlanes(const hr::Vector4f& col1, const hr::Vector4f& col2, const hr::Vector4f& col3, const hr::Vector4f& col4)
 	{
 		mPlanes[PlaneLeft].set(col4[0] + col1[0], col4[1] + col1[1], col4[2] + col1[2], col4[3] + col1[3]);
 		mPlanes[PlaneRight].set(col4[0] - col1[0], col4[1] - col1[1], col4[2] - col1[2], col4[3] - col1[3]);
@@ -27,7 +27,7 @@ namespace hr { namespace gl { namespace tools
 		mPlanes[PlaneFar].setD(-(mPlanes[PlaneNear].getDotNormal(mPosition) - mZFar));
 	}
 
-	bool Frustum::sweptSpherePlaneIntersect(float &t0, float &t1, const hr::Plane &plane, const hr::Vector3f &sphereCenter, const float &sphereRadius, const hr::Vector3f &sweepDir) const
+	bool Frustum::sweptSpherePlaneIntersect(float& t0, float& t1, const hr::Plane& plane, const hr::Vector3f& sphereCenter, const float& sphereRadius, const hr::Vector3f& sweepDir) const
 	{
 		float b_dot_n, d_dot_n, tmp0, tmp1;
 
@@ -55,25 +55,25 @@ namespace hr { namespace gl { namespace tools
 
 	void Frustum::getCorners(hr::Vector3f points[8]) const
 	{
-	    /*
+		/*
 
-	    7---------------6
-	    |\              |\
-	    | \             | \
-	    |  \  zfar      |  \
-	    |   \           |   \
-	    |    \          |    \
-	    4-----\---------5     \
-	    \      \         \     \
-	     \      \         \     \
-	      \      3---------------2
-	       \     |          \    |
-	        \    |           \   |
-	         \   |    znear   \  |
-	          \  |             \ |
-	           \ 0---------------1
+		7---------------6
+		|\              |\
+		| \             | \
+		|  \  zfar      |  \
+		|   \           |   \
+		|    \          |    \
+		4-----\---------5     \
+		\      \         \     \
+		 \      \         \     \
+		  \      3---------------2
+		   \     |          \    |
+			\    |           \   |
+			 \   |    znear   \  |
+			  \  |             \ |
+			   \ 0---------------1
 
-	    */
+		*/
 
 		if (!points)
 			return;
@@ -89,7 +89,7 @@ namespace hr { namespace gl { namespace tools
 		mPlanes[PlaneFar].testIntersectPlanes(mPlanes[PlaneLeft], mPlanes[PlaneTop], points[7]);
 	}
 
-	Frustum::IntersectionType Frustum::classifyFrustum(const Frustum &frustum) const
+	Frustum::IntersectionType Frustum::classifyFrustum(const Frustum& frustum) const
 	{
 		hr::Vector3f corners[8];
 		frustum.getCorners(corners);
@@ -176,7 +176,7 @@ namespace hr { namespace gl { namespace tools
 		extractPlanes(col1, col2, col3, col4);
 	}
 
-	void Frustum::calculateFrustum(const hr::Matrix& modelView, const hr::Matrix& projection, const hr::Vector3f &pos, float zNear, float zFar)
+	void Frustum::calculateFrustum(const hr::Matrix& modelView, const hr::Matrix& projection, const hr::Vector3f& pos, float zNear, float zFar)
 	{
 		mPosition = pos;
 		mZNear = zNear;
@@ -191,14 +191,14 @@ namespace hr { namespace gl { namespace tools
 		extractPlanes(col1, col2, col3, col4);
 	}
 
-	void Frustum::setIndividualPlane(const PlaneIndex planeIndex, const hr::Plane &plane)
+	void Frustum::setIndividualPlane(const PlaneIndex planeIndex, const hr::Plane& plane)
 	{
 		if (planeIndex > 5)
 			return;
 		mPlanes[planeIndex] = plane;
 	}
 
-	void Frustum::setFrustum(const hr::Vector3f &bboxMin, const hr::Vector3f &bboxMax)
+	void Frustum::setFrustum(const hr::Vector3f& bboxMin, const hr::Vector3f& bboxMax)
 	{
 		mPlanes[PlaneLeft].set(1.0f, 0.0f, 0.0f, -bboxMin[0]);
 		mPlanes[PlaneRight].set(-1.0f, 0.0f, 0.0f, bboxMax[0]);
@@ -208,7 +208,7 @@ namespace hr { namespace gl { namespace tools
 		mPlanes[PlaneFar].set(0.0f, 0.0f, 1.0f, -bboxMin[2]);
 	}
 
-	void Frustum::setFrustum(const hr::Vector3f &center, const float radius)
+	void Frustum::setFrustum(const hr::Vector3f& center, const float radius)
 	{
 		mPlanes[PlaneLeft].set(1.0f, 0.0f, 0.0f, -(center[0] - radius));
 		mPlanes[PlaneRight].set(-1.0f, 0.0f, 0.0f, center[0] + radius);
@@ -218,12 +218,12 @@ namespace hr { namespace gl { namespace tools
 		mPlanes[PlaneFar].set(0.0f, 0.0f, 1.0f, -(center[2] - radius));
 	}
 
-	void Frustum::setFrustum(const hr::BBox &bbox)
+	void Frustum::setFrustum(const hr::BBox& bbox)
 	{
 		setFrustum(bbox.min(), bbox.max());
 	}
 
-	bool Frustum::testCube(const hr::Vector3f &point, const float &size) const
+	bool Frustum::testCube(const hr::Vector3f& point, const float& size) const
 	{
 		hr::Vector3f pCubo[8];
 
@@ -261,7 +261,7 @@ namespace hr { namespace gl { namespace tools
 		return true;
 	}
 
-	bool Frustum::testBox(const hr::Vector3f &min, const hr::Vector3f &max) const
+	bool Frustum::testBox(const hr::Vector3f& min, const hr::Vector3f& max) const
 	{
 		hr::Vector3f pBox[8];
 
@@ -300,35 +300,35 @@ namespace hr { namespace gl { namespace tools
 		return true;
 	}
 
-	bool Frustum::testBox(const hr::BBox &bbox) const
+	bool Frustum::testBox(const hr::BBox& bbox) const
 	{
 		return testBox(bbox.min(), bbox.max());
 	}
 
-	bool Frustum::testSphere(const hr::Vector3f &center, const float &radius) const
+	bool Frustum::testSphere(const hr::Vector3f& center, const float& radius) const
 	{
 		for (auto iPlane = 0; iPlane < 6; iPlane++)
 		{
 			if (mPlanes[iPlane].distance(center) <= -radius)
 				return false;
 		}
-		
+
 		return true;
 	}
 
-	bool Frustum::testSphere(const hr::BSphere &bsphere) const
+	bool Frustum::testSphere(const hr::BSphere& bsphere) const
 	{
 		return testSphere(bsphere.center(), bsphere.radius());
 	}
 
-	bool Frustum::testSphereBox(const hr::BSphere &bsphere, const hr::BBox &bbox) const
+	bool Frustum::testSphereBox(const hr::BSphere& bsphere, const hr::BBox& bbox) const
 	{
 		if (!testSphere(bsphere))
 			return false;
 		return testBox(bbox);
 	}
 
-	bool Frustum::testPoint(const hr::Vector3f &point) const
+	bool Frustum::testPoint(const hr::Vector3f& point) const
 	{
 		for (size_t iPlane = 0; iPlane < 6; iPlane++)
 		{
@@ -339,7 +339,7 @@ namespace hr { namespace gl { namespace tools
 		return true;
 	}
 
-	bool Frustum::testPolygon(const hr::Vector3f * const points, size_t numPoints) const
+	bool Frustum::testPolygon(const hr::Vector3f* const points, size_t numPoints) const
 	{
 		for (size_t iPlane = 0; iPlane < 6; iPlane++)
 		{
@@ -393,7 +393,7 @@ namespace hr { namespace gl { namespace tools
 		return true;
 	}
 
-	bool Frustum::testSweptSphere(const hr::Vector3f &sphereCenter, const float &sphereRadius, const hr::Vector3f &sweepDir) const
+	bool Frustum::testSweptSphere(const hr::Vector3f& sphereCenter, const float& sphereRadius, const hr::Vector3f& sweepDir) const
 	{
 		float displacements[12];
 		hr::Vector3f auxCenter;
@@ -423,4 +423,4 @@ namespace hr { namespace gl { namespace tools
 
 		return inFrustum;
 	}
-} } }
+}

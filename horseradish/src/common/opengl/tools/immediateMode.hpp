@@ -5,13 +5,13 @@
 #include <array>
 #include <memory>
 
-namespace hr { namespace gl { namespace tools
+namespace hr::gl::tools
 {
 	class ImmediateMode
 	{
 	public:
-		enum class GeometryType{ None, Quads, Tris, Lines, LineStrip };
-		enum class InfoType{ FreeVertexCount, MaxVertexCount };
+		enum class GeometryType { None, Quads, Tris, Lines, LineStrip };
+		enum class InfoType { FreeVertexCount, MaxVertexCount };
 
 	private:
 		static constexpr size_t MaxVertexCount = 400; //100 quads
@@ -51,27 +51,27 @@ namespace hr { namespace gl { namespace tools
 
 		void beginDraw(const GeometryType geometryType);
 		void endDraw();
-		
-		void setTexCoord(const float &u, const float &v);
-		void setColor(const unsigned char &r, const unsigned char &g, const unsigned char &b);
-		void setColor(const unsigned char &r, const unsigned char &g, const unsigned char &b, const unsigned char &a);
-		void setColorF(const float &rgb);
-		void setColorF(const float &rgb, const float &a);
-		void setColorF(const float &r, const float &g, const float &b);
-		void setColorF(const float &r, const float &g, const float &b, const float &a);
-		void setColorRGB(const unsigned char * const values);
-		void setColorRGB(const float * const values);
-		
-		void addPosition(const float &x);
-		void addPosition(const float &x, const float &y);
-		void addPosition(const float &x, const float &y, const float &z);
 
-		void addQuad(const float &x, const float &y, const float &width, const float &height);
-		void addQuadTexCoords(const float &x, const float &y, const float &width, const float &height, bool normalizedTexCoords);
-		void addLine(const float &x1, const float &y1, const float &x2, const float &y2);
-		void addLineH(const float &x1, const float &x2, const float &y);
-		void addLineV(const float &x, const float &y1, const float &y2);
+		void setTexCoord(const float& u, const float& v);
+		void setColor(const unsigned char& r, const unsigned char& g, const unsigned char& b);
+		void setColor(const unsigned char& r, const unsigned char& g, const unsigned char& b, const unsigned char& a);
+		void setColorF(const float& rgb);
+		void setColorF(const float& rgb, const float& a);
+		void setColorF(const float& r, const float& g, const float& b);
+		void setColorF(const float& r, const float& g, const float& b, const float& a);
+		void setColorRGB(const unsigned char* const values);
+		void setColorRGB(const float* const values);
+
+		void addPosition(const float& x);
+		void addPosition(const float& x, const float& y);
+		void addPosition(const float& x, const float& y, const float& z);
+
+		void addQuad(const float& x, const float& y, const float& width, const float& height);
+		void addQuadTexCoords(const float& x, const float& y, const float& width, const float& height, bool normalizedTexCoords);
+		void addLine(const float& x1, const float& y1, const float& x2, const float& y2);
+		void addLineH(const float& x1, const float& x2, const float& y);
+		void addLineV(const float& x, const float& y1, const float& y2);
 
 		size_t info(const InfoType infoType) const;
 	};
-} } }
+}

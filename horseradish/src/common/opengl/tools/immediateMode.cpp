@@ -4,7 +4,7 @@
 
 #include <cstddef>
 
-namespace hr { namespace gl { namespace tools
+namespace hr::gl::tools
 {
 	void ImmediateMode::draw(bool keepLeftovers)
 	{
@@ -38,11 +38,11 @@ namespace hr { namespace gl { namespace tools
 				}
 
 				mGl.fence.wait();
-					mGl.vertexArray.bind();
-					mGl.arrayBuffer.writeData(mBufferData.data(), numElements * 4 * sizeof(VertexDataLayout), 0);
-					mGl.elementArrayBuffer.writeData(mBufferIndices.data(), numElements * 6 * sizeof(unsigned short), 0);
+				mGl.vertexArray.bind();
+				mGl.arrayBuffer.writeData(mBufferData.data(), numElements * 4 * sizeof(VertexDataLayout), 0);
+				mGl.elementArrayBuffer.writeData(mBufferIndices.data(), numElements * 6 * sizeof(unsigned short), 0);
 
-					hr::gl::glDrawRangeElements(GL_TRIANGLES, 0, (numElements * 4) - 1, numElements * 6, GL_UNSIGNED_SHORT, (void*)0);
+				hr::gl::glDrawRangeElements(GL_TRIANGLES, 0, (numElements * 4) - 1, numElements * 6, GL_UNSIGNED_SHORT, (void*)0);
 				mGl.fence.place();
 			}
 		}
@@ -52,11 +52,11 @@ namespace hr { namespace gl { namespace tools
 			if (numElements > 0)
 			{
 				mGl.fence.wait();
-					mGl.vertexArray.bind();
-					mGl.arrayBuffer.writeData(mBufferData.data(), numElements * 3 * sizeof(VertexDataLayout), 0);
-					mGl.elementArrayBuffer.writeData(mBufferIndices.data(), numElements * 3 * sizeof(unsigned short), 0);
+				mGl.vertexArray.bind();
+				mGl.arrayBuffer.writeData(mBufferData.data(), numElements * 3 * sizeof(VertexDataLayout), 0);
+				mGl.elementArrayBuffer.writeData(mBufferIndices.data(), numElements * 3 * sizeof(unsigned short), 0);
 
-					hr::gl::glDrawRangeElements(GL_TRIANGLES, 0, (numElements * 3) - 1, numElements * 3, GL_UNSIGNED_SHORT, (void*)0);
+				hr::gl::glDrawRangeElements(GL_TRIANGLES, 0, (numElements * 3) - 1, numElements * 3, GL_UNSIGNED_SHORT, (void*)0);
 				mGl.fence.place();
 			}
 		}
@@ -66,11 +66,11 @@ namespace hr { namespace gl { namespace tools
 			if (numElements > 0)
 			{
 				mGl.fence.wait();
-					mGl.vertexArray.bind();
-					mGl.arrayBuffer.writeData(mBufferData.data(), numElements * 2 * sizeof(VertexDataLayout), 0);
-					mGl.elementArrayBuffer.writeData(mBufferIndices.data(), numElements * 2 * sizeof(unsigned short), 0);
+				mGl.vertexArray.bind();
+				mGl.arrayBuffer.writeData(mBufferData.data(), numElements * 2 * sizeof(VertexDataLayout), 0);
+				mGl.elementArrayBuffer.writeData(mBufferIndices.data(), numElements * 2 * sizeof(unsigned short), 0);
 
-					hr::gl::glDrawRangeElements(GL_LINES, 0, (numElements * 2) - 1, numElements * 2, GL_UNSIGNED_SHORT, (void*)0);
+				hr::gl::glDrawRangeElements(GL_LINES, 0, (numElements * 2) - 1, numElements * 2, GL_UNSIGNED_SHORT, (void*)0);
 				mGl.fence.place();
 			}
 		}
@@ -79,11 +79,11 @@ namespace hr { namespace gl { namespace tools
 			if (mState.curVertex >= 2)
 			{
 				mGl.fence.wait();
-					mGl.vertexArray.bind();
-					mGl.arrayBuffer.writeData(mBufferData.data(), mState.curVertex * sizeof(VertexDataLayout), 0);
-					mGl.elementArrayBuffer.writeData(mBufferIndices.data(), mState.curVertex * sizeof(unsigned short), 0);
+				mGl.vertexArray.bind();
+				mGl.arrayBuffer.writeData(mBufferData.data(), mState.curVertex * sizeof(VertexDataLayout), 0);
+				mGl.elementArrayBuffer.writeData(mBufferIndices.data(), mState.curVertex * sizeof(unsigned short), 0);
 
-					hr::gl::glDrawRangeElements(GL_LINE_STRIP, 0, mState.curVertex - 1, mState.curVertex, GL_UNSIGNED_SHORT, (void*)0);
+				hr::gl::glDrawRangeElements(GL_LINE_STRIP, 0, mState.curVertex - 1, mState.curVertex, GL_UNSIGNED_SHORT, (void*)0);
 				mGl.fence.place();
 			}
 		}
@@ -195,13 +195,13 @@ namespace hr { namespace gl { namespace tools
 		resetState();
 	}
 
-	void ImmediateMode::setTexCoord(const float &u, const float &v)
+	void ImmediateMode::setTexCoord(const float& u, const float& v)
 	{
 		mState.uv[0] = u;
 		mState.uv[1] = v;
 	}
 
-	void ImmediateMode::setColor(const unsigned char &r, const unsigned char &g, const unsigned char &b)
+	void ImmediateMode::setColor(const unsigned char& r, const unsigned char& g, const unsigned char& b)
 	{
 		mState.color[0] = r;
 		mState.color[1] = g;
@@ -209,7 +209,7 @@ namespace hr { namespace gl { namespace tools
 		mState.color[3] = 255;
 	}
 
-	void ImmediateMode::setColor(const unsigned char &r, const unsigned char &g, const unsigned char &b, const unsigned char &a)
+	void ImmediateMode::setColor(const unsigned char& r, const unsigned char& g, const unsigned char& b, const unsigned char& a)
 	{
 		mState.color[0] = r;
 		mState.color[1] = g;
@@ -217,7 +217,7 @@ namespace hr { namespace gl { namespace tools
 		mState.color[3] = a;
 	}
 
-	void ImmediateMode::setColorF(const float &rgb)
+	void ImmediateMode::setColorF(const float& rgb)
 	{
 		mState.color[0] = Color::convertColor(rgb);
 		mState.color[1] = mState.color[0];
@@ -225,7 +225,7 @@ namespace hr { namespace gl { namespace tools
 		mState.color[3] = 255;
 	}
 
-	void ImmediateMode::setColorF(const float &rgb, const float &a)
+	void ImmediateMode::setColorF(const float& rgb, const float& a)
 	{
 		mState.color[0] = Color::convertColor(rgb);
 		mState.color[1] = mState.color[0];
@@ -233,7 +233,7 @@ namespace hr { namespace gl { namespace tools
 		mState.color[3] = Color::convertColor(a);
 	}
 
-	void ImmediateMode::setColorF(const float &r, const float &g, const float &b)
+	void ImmediateMode::setColorF(const float& r, const float& g, const float& b)
 	{
 		mState.color[0] = Color::convertColor(r);
 		mState.color[1] = Color::convertColor(g);
@@ -241,7 +241,7 @@ namespace hr { namespace gl { namespace tools
 		mState.color[3] = 255;
 	}
 
-	void ImmediateMode::setColorF(const float &r, const float &g, const float &b, const float &a)
+	void ImmediateMode::setColorF(const float& r, const float& g, const float& b, const float& a)
 	{
 		mState.color[0] = Color::convertColor(r);
 		mState.color[1] = Color::convertColor(g);
@@ -249,7 +249,7 @@ namespace hr { namespace gl { namespace tools
 		mState.color[3] = Color::convertColor(a);
 	}
 
-	void ImmediateMode::setColorRGB(const unsigned char * const values)
+	void ImmediateMode::setColorRGB(const unsigned char* const values)
 	{
 		mState.color[0] = values[0];
 		mState.color[1] = values[1];
@@ -257,7 +257,7 @@ namespace hr { namespace gl { namespace tools
 		mState.color[3] = 255;
 	}
 
-	void ImmediateMode::setColorRGB(const float * const values)
+	void ImmediateMode::setColorRGB(const float* const values)
 	{
 		mState.color[0] = hr::Color::convertColor(values[0]);
 		mState.color[1] = hr::Color::convertColor(values[1]);
@@ -265,17 +265,17 @@ namespace hr { namespace gl { namespace tools
 		mState.color[3] = 255;
 	}
 
-	void ImmediateMode::addPosition(const float &x)
+	void ImmediateMode::addPosition(const float& x)
 	{
 		addPosition(x, 0.0f, 0.0f);
 	}
 
-	void ImmediateMode::addPosition(const float &x, const float &y)
+	void ImmediateMode::addPosition(const float& x, const float& y)
 	{
 		addPosition(x, y, 0.0f);
 	}
 
-	void ImmediateMode::addPosition(const float &x, const float &y, const float &z)
+	void ImmediateMode::addPosition(const float& x, const float& y, const float& z)
 	{
 		if (mState.geomType == GeometryType::None)
 			return;
@@ -299,7 +299,7 @@ namespace hr { namespace gl { namespace tools
 		mState.curVertex++;
 	}
 
-	void ImmediateMode::addQuad(const float &x, const float &y, const float &width, const float &height)
+	void ImmediateMode::addQuad(const float& x, const float& y, const float& width, const float& height)
 	{
 		if (mState.geomType != GeometryType::Quads)
 			return;
@@ -310,7 +310,7 @@ namespace hr { namespace gl { namespace tools
 		addPosition(x, y + height);
 	}
 
-	void ImmediateMode::addQuadTexCoords(const float &x, const float &y, const float &width, const float &height, bool normalizedTexCoords)
+	void ImmediateMode::addQuadTexCoords(const float& x, const float& y, const float& width, const float& height, bool normalizedTexCoords)
 	{
 		if (mState.geomType != GeometryType::Quads)
 			return;
@@ -320,13 +320,13 @@ namespace hr { namespace gl { namespace tools
 			mState.uv[0] = 0.0f;
 			mState.uv[1] = 0.0f;
 			addPosition(x, y);
-			
+
 			mState.uv[0] = 1.0f;
 			addPosition(x + width, y);
-			
+
 			mState.uv[1] = 1.0f;
 			addPosition(x + width, y + height);
-			
+
 			mState.uv[0] = 0.0f;
 			addPosition(x, y + height);
 		}
@@ -335,19 +335,19 @@ namespace hr { namespace gl { namespace tools
 			mState.uv[0] = x;
 			mState.uv[1] = y;
 			addPosition(x, y);
-			
+
 			mState.uv[0] = x + width;
 			addPosition(x + width, y);
-			
+
 			mState.uv[1] = y + height;
 			addPosition(x + width, y + height);
-			
+
 			mState.uv[0] = x;
 			addPosition(x, y + height);
 		}
 	}
 
-	void ImmediateMode::addLine(const float &x1, const float &y1, const float &x2, const float &y2)
+	void ImmediateMode::addLine(const float& x1, const float& y1, const float& x2, const float& y2)
 	{
 		if (mState.geomType != GeometryType::Lines)
 			return;
@@ -356,7 +356,7 @@ namespace hr { namespace gl { namespace tools
 		addPosition(x2, y2);
 	}
 
-	void ImmediateMode::addLineH(const float &x1, const float &x2, const float &y)
+	void ImmediateMode::addLineH(const float& x1, const float& x2, const float& y)
 	{
 		if (mState.geomType != GeometryType::Lines)
 			return;
@@ -365,7 +365,7 @@ namespace hr { namespace gl { namespace tools
 		addPosition(x2, y);
 	}
 
-	void ImmediateMode::addLineV(const float &x, const float &y1, const float &y2)
+	void ImmediateMode::addLineV(const float& x, const float& y1, const float& y2)
 	{
 		if (mState.geomType != GeometryType::Lines)
 			return;
@@ -386,4 +386,4 @@ namespace hr { namespace gl { namespace tools
 
 		return 0;
 	}
-} } }
+}

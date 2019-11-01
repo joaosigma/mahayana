@@ -3,8 +3,8 @@
 #include "common/vector.hpp"
 #include "common/matrix.hpp"
 
-namespace hr { namespace gl { namespace tools
-{		
+namespace hr::gl::tools
+{
 	class Viewport
 	{
 	public:
@@ -39,7 +39,7 @@ namespace hr { namespace gl { namespace tools
 		}
 
 		const hr::Matrix& getProjection(ProjectionType projectionType) const;
-		
+
 		float fovY() const { return mFovY; }
 		float znear() const { return mZNear; }
 
@@ -48,6 +48,6 @@ namespace hr { namespace gl { namespace tools
 
 		void pointOnZNear(hr::Vector3f& center) const;
 
-		void projectPoint(ProjectionType projType, const hr::Matrix& modelView, hr::Vector3f * const listPoints, size_t numPoints) const;
+		void projectPoint(ProjectionType projType, const hr::Matrix& modelView, hr::Vector3f* const listPoints, size_t numPoints) const;
 	};
-} } }
+}

@@ -4,7 +4,7 @@
 #include "common/matrix.hpp"
 #include "common/ray.hpp"
 
-namespace hr { namespace gl { namespace tools
+namespace hr::gl::tools
 {
 	class Frustum
 	{
@@ -15,10 +15,10 @@ namespace hr { namespace gl { namespace tools
 	private:
 		hr::Plane mPlanes[6];
 		hr::Vector3f mPosition;
-		float mZNear = 0.0f, mZFar = 0.0f;
+		float mZNear{ 0.0f }, mZFar{ 0.0f };
 
-		void extractPlanes(const hr::Vector4f &col1, const hr::Vector4f &col2, const hr::Vector4f &col3, const hr::Vector4f &col4);
-		bool sweptSpherePlaneIntersect(float &t0, float &t1, const hr::Plane &plane, const hr::Vector3f &sphereCenter, const float &sphereRadius, const hr::Vector3f &sweepDir) const;
+		void extractPlanes(const hr::Vector4f& col1, const hr::Vector4f& col2, const hr::Vector4f& col3, const hr::Vector4f& col4);
+		bool sweptSpherePlaneIntersect(float& t0, float& t1, const hr::Plane& plane, const hr::Vector3f& sphereCenter, const float& sphereRadius, const hr::Vector3f& sweepDir) const;
 
 	public:
 		Frustum() = default;
@@ -34,17 +34,17 @@ namespace hr { namespace gl { namespace tools
 			return *this;
 		}
 
-		bool testCube(const hr::Vector3f &point, const float &size) const;
-		bool testBox(const hr::Vector3f &min, const hr::Vector3f &max) const;
-		bool testBox(const hr::BBox &bbox) const;
-		bool testSphere(const hr::Vector3f &center, const float &radius) const;
-		bool testSphere(const hr::BSphere &bsphere) const;
-		bool testSphereBox(const hr::BSphere &bsphere, const hr::BBox &bbox) const;
-		bool testPoint(const hr::Vector3f &point) const;
-		bool testPolygon(const hr::Vector3f * const points, size_t numPoints) const;
+		bool testCube(const hr::Vector3f& point, const float& size) const;
+		bool testBox(const hr::Vector3f& min, const hr::Vector3f& max) const;
+		bool testBox(const hr::BBox& bbox) const;
+		bool testSphere(const hr::Vector3f& center, const float& radius) const;
+		bool testSphere(const hr::BSphere& bsphere) const;
+		bool testSphereBox(const hr::BSphere& bsphere, const hr::BBox& bbox) const;
+		bool testPoint(const hr::Vector3f& point) const;
+		bool testPolygon(const hr::Vector3f* const points, size_t numPoints) const;
 		bool testSquare(const hr::Vector3f points[4]) const;
 		bool testTri(const hr::Vector3f points[3]) const;
-		bool testSweptSphere(const hr::Vector3f &sphereCenter, const float &sphereRadius, const hr::Vector3f &sweepDir) const;
+		bool testSweptSphere(const hr::Vector3f& sphereCenter, const float& sphereRadius, const hr::Vector3f& sweepDir) const;
 
 		float getZNear(void) const
 		{
@@ -68,19 +68,19 @@ namespace hr { namespace gl { namespace tools
 
 		void getCorners(hr::Vector3f points[8]) const;
 
-		IntersectionType classifyFrustum(const Frustum &frustum) const;
+		IntersectionType classifyFrustum(const Frustum& frustum) const;
 
 		float dotNormals(const PlaneIndex planeA, const PlaneIndex planeB) const;
 
 		void calculateFrustum(const hr::Matrix& transformation);
 		void calculateFrustum(const hr::Matrix& projection, const hr::Matrix& modelview);
-		void calculateFrustum(const hr::Matrix& modelView, const hr::Matrix& projection, const hr::Vector3f &pos, float zNear, float zFar);
+		void calculateFrustum(const hr::Matrix& modelView, const hr::Matrix& projection, const hr::Vector3f& pos, float zNear, float zFar);
 
-		void setIndividualPlane(const PlaneIndex planeIndex, const hr::Plane &plane);
-		void setFrustum(const hr::Vector3f &bboxMin, const hr::Vector3f &bboxMax);
-		void setFrustum(const hr::Vector3f &center, const float radius);
-		void setFrustum(const hr::BBox &bbox);
-		
+		void setIndividualPlane(const PlaneIndex planeIndex, const hr::Plane& plane);
+		void setFrustum(const hr::Vector3f& bboxMin, const hr::Vector3f& bboxMax);
+		void setFrustum(const hr::Vector3f& center, const float radius);
+		void setFrustum(const hr::BBox& bbox);
+
 		void setZNear(const float ZNear)
 		{
 			mZNear = ZNear;
@@ -96,9 +96,9 @@ namespace hr { namespace gl { namespace tools
 			mPosition.set(x, y, z);
 		}
 
-		void setCamPosition(const hr::Vector3f &pos)
+		void setCamPosition(const hr::Vector3f& pos)
 		{
 			mPosition.set(pos);
 		}
 	};
-} } }
+}
