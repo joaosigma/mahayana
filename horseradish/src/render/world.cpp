@@ -17,7 +17,6 @@
 #include <cstdint>
 #include <algorithm>
 #include <unordered_set>
-#include <experimental/filesystem>
 
 namespace hr { namespace render
 {
@@ -30,45 +29,45 @@ namespace hr { namespace render
 		{
 			unsigned char fileSig[FileBinSig.size()];
 			unsigned char version;
-			std::uint32_t numGeoms;
-			std::uint32_t numAnimSets;
-			std::uint32_t numAnims;
-			std::uint8_t reserved[1024];
+			uint32_t numGeoms;
+			uint32_t numAnimSets;
+			uint32_t numAnims;
+			uint8_t reserved[1024];
 		};
 
-		enum class GeomType : std::uint16_t { Static = 1, Animated = 2};
-		enum class GeomFlags : std::uint32_t { None = 0, AnimExtraBoneSet = (1<<0) };
+		enum class GeomType : uint16_t { Static = 1, Animated = 2};
+		enum class GeomFlags : uint32_t { None = 0, AnimExtraBoneSet = (1<<0) };
 
 		struct GeomChunkInfo
 		{
-			std::uint32_t id;
-			std::uint16_t type;
-			std::uint32_t flags;
-			std::uint32_t geomsOffset;
-			std::uint32_t size;
-			std::uint32_t numVertices;
-			std::uint32_t numIndices;
-			std::uint32_t animSetId;
+			uint32_t id;
+			uint16_t type;
+			uint32_t flags;
+			uint32_t geomsOffset;
+			uint32_t size;
+			uint32_t numVertices;
+			uint32_t numIndices;
+			uint32_t animSetId;
 		};
 
 		struct AnimSetChunkInfo
 		{
-			std::uint32_t id;
-			std::uint32_t flags;
-			std::uint32_t geomsOffset;
-			std::uint32_t size;
-			std::uint16_t numJoints;
+			uint32_t id;
+			uint32_t flags;
+			uint32_t geomsOffset;
+			uint32_t size;
+			uint16_t numJoints;
 		};
 
 		struct AnimChunkInfo
 		{
-			std::uint32_t id;
-			std::uint32_t flags;
-			std::uint32_t geomsOffset;
-			std::uint32_t size;
+			uint32_t id;
+			uint32_t flags;
+			uint32_t geomsOffset;
+			uint32_t size;
 			float frameRate;
-			std::uint32_t numFrames;
-			std::uint32_t animSetId;
+			uint32_t numFrames;
+			uint32_t animSetId;
 		};
 #pragma pack(pop)
 
@@ -430,16 +429,16 @@ namespace hr { namespace render
 		{
 			unsigned char fileSig[FileBinSig.size()];
 			unsigned char version;
-			std::uint32_t numGeoms;
+			uint32_t numGeoms;
 		};
 
 		struct GeomChunkInfoOld
 		{
-			std::uint32_t id;
-			std::uint32_t geomsOffset;
-			std::uint32_t size;
-			std::uint32_t numVertices;
-			std::uint32_t numIndices;
+			uint32_t id;
+			uint32_t geomsOffset;
+			uint32_t size;
+			uint32_t numVertices;
+			uint32_t numIndices;
 			float bboxMin[3], bboxMax[3];
 		};
 #pragma pack(pop)
@@ -491,8 +490,8 @@ namespace hr { namespace render
 			//create the new geom chunk
 			GeomChunkInfo newGeomChunk;
 			newGeomChunk.id = oldGeomChunk.id;
-			newGeomChunk.type = static_cast<std::uint16_t>(GeomType::Static);
-			newGeomChunk.flags = static_cast<std::uint32_t>(GeomFlags::None);
+			newGeomChunk.type = static_cast<uint16_t>(GeomType::Static);
+			newGeomChunk.flags = static_cast<uint32_t>(GeomFlags::None);
 			newGeomChunk.numVertices = oldGeomChunk.numVertices;
 			newGeomChunk.numIndices = oldGeomChunk.numIndices;
 			newGeomChunk.size = oldGeomChunk.size + (sizeof(float) * 6); //must add the bbox
@@ -562,8 +561,8 @@ namespace hr { namespace render
 
 		GeomChunkInfo newGeomChunk;
 		newGeomChunk.id = geomId;
-		newGeomChunk.type = static_cast<std::uint16_t>(GeomType::Static);
-		newGeomChunk.flags = static_cast<std::uint32_t>(GeomFlags::None);
+		newGeomChunk.type = static_cast<uint16_t>(GeomType::Static);
+		newGeomChunk.flags = static_cast<uint32_t>(GeomFlags::None);
 		newGeomChunk.numVertices = mesh.numVertices();
 		newGeomChunk.numIndices = mesh.numIndices();
 		newGeomChunk.size = 0;
@@ -634,8 +633,8 @@ namespace hr { namespace render
 
 		GeomChunkInfo newGeomChunk;
 		newGeomChunk.id = geomId;
-		newGeomChunk.type = static_cast<std::uint16_t>(GeomType::Animated);
-		newGeomChunk.flags = static_cast<std::uint32_t>((meshAnim.skinningType() == geom::MeshAnim::SkinningType::Vertex8Joints) ? GeomFlags::AnimExtraBoneSet : GeomFlags::None);
+		newGeomChunk.type = static_cast<uint16_t>(GeomType::Animated);
+		newGeomChunk.flags = static_cast<uint32_t>((meshAnim.skinningType() == geom::MeshAnim::SkinningType::Vertex8Joints) ? GeomFlags::AnimExtraBoneSet : GeomFlags::None);
 		newGeomChunk.numVertices = meshAnim.mesh().numVertices();
 		newGeomChunk.numIndices = meshAnim.mesh().numIndices();
 		newGeomChunk.size = 0;
@@ -710,7 +709,7 @@ namespace hr { namespace render
 		AnimSetChunkInfo newAnimSetChunk;
 		newAnimSetChunk.id = animSetId;
 		newAnimSetChunk.flags = 0;
-		newAnimSetChunk.numJoints = static_cast<std::uint16_t>(animSet.numJoints());
+		newAnimSetChunk.numJoints = static_cast<uint16_t>(animSet.numJoints());
 		newAnimSetChunk.size = 0;
 		newAnimSetChunk.geomsOffset = 0;
 
@@ -1004,7 +1003,7 @@ namespace hr { namespace render
 
 				if (geomChunkInfo.animSetId != animSetId)
 					continue;
-				if (geomChunkInfo.type != static_cast<std::uint16_t>(GeomType::Animated))
+				if (geomChunkInfo.type != static_cast<uint16_t>(GeomType::Animated))
 					continue;
 
 				geomChunkInfos.push_back(std::move(geomChunkInfo));
@@ -1023,7 +1022,7 @@ namespace hr { namespace render
 
 				stream.skip(sizeof(float) * 6); //bbox
 
-				if ((geomChunk.flags & static_cast<std::uint16_t>(GeomFlags::AnimExtraBoneSet)) != 0)
+				if ((geomChunk.flags & static_cast<uint16_t>(GeomFlags::AnimExtraBoneSet)) != 0)
 					meshAnim = hr::geom::MeshAnim(std::move(mesh), hr::geom::MeshAnim::SkinningType::Vertex8Joints);
 				else
 					meshAnim = hr::geom::MeshAnim(std::move(mesh), hr::geom::MeshAnim::SkinningType::Vertex4Joints);
@@ -1431,7 +1430,7 @@ namespace hr { namespace render
 								{
 									streamBin.seek(hr::streams::Stream::SeekOrigin::Begin, geomIt->second.geomsOffset);
 
-									object.anim.hasAnim = (geomIt->second.type == static_cast<std::uint16_t>(GeomType::Animated));
+									object.anim.hasAnim = (geomIt->second.type == static_cast<uint16_t>(GeomType::Animated));
 									if (object.anim.hasAnim)
 									{
 										object.anim.animSetId = geomIt->second.animSetId;
@@ -1457,7 +1456,7 @@ namespace hr { namespace render
 
 									if (object.anim.hasAnim)
 									{
-										if ((geomIt->second.flags & static_cast<std::uint16_t>(GeomFlags::AnimExtraBoneSet)) != 0)
+										if ((geomIt->second.flags & static_cast<uint16_t>(GeomFlags::AnimExtraBoneSet)) != 0)
 											object.anim.meshAnim = hr::geom::MeshAnim(object.anim.meshAnimated, hr::geom::MeshAnim::SkinningType::Vertex8Joints);
 										else
 											object.anim.meshAnim = hr::geom::MeshAnim(object.anim.meshAnimated, hr::geom::MeshAnim::SkinningType::Vertex4Joints);

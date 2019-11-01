@@ -19,8 +19,8 @@ namespace hr::geom
 #pragma pack(push, 1)
 		struct VertexJoint
 		{
-			std::uint16_t jointIndex;
-			std::uint16_t jointWeight;
+			uint16_t jointIndex;
+			uint16_t jointWeight;
 		};
 #pragma pack(pop)
 

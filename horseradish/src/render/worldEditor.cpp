@@ -22,8 +22,8 @@
 #include <array>
 #include <cstdint>
 #include <algorithm>
+#include <filesystem>
 #include <unordered_set>
-#include <experimental/filesystem>
 
 namespace hr::render
 {
@@ -141,10 +141,10 @@ namespace hr::render
 
 		//create "empty" files
 		{
-			if (std::experimental::filesystem::exists(std::string(scenePath)))
-				std::experimental::filesystem::remove(std::string(scenePath));
-			if (std::experimental::filesystem::exists(std::string(binPath)))
-				std::experimental::filesystem::remove(std::string(binPath));
+			if (std::filesystem::exists(std::string(scenePath)))
+				std::filesystem::remove(std::string(scenePath));
+			if (std::filesystem::exists(std::string(binPath)))
+				std::filesystem::remove(std::string(binPath));
 
 			{
 				hr::streams::FileStream streamScene(std::string(scenePath), false, true);
@@ -794,7 +794,6 @@ namespace hr::render
 			object.type = Object::Type::Static;
 			objectData.objectId = objectId;
 			
-
 			{
 				auto fullName = StringUtils::eraseCopy(md5Mesh.shader, '"');
 				auto slashIndex = fullName.find_last_of('/');
@@ -1470,7 +1469,7 @@ namespace hr::render
 
 		//now we take care of the binary data
 		{
-			std::experimental::filesystem::rename(areaData.pathBin, areaData.pathBin + ".tmp");
+			std::filesystem::rename(areaData.pathBin, areaData.pathBin + ".tmp");
 
 			{
 				hr::streams::FileStream geomFileStreamOld(areaData.pathBin + ".tmp", true, false);
@@ -1482,7 +1481,7 @@ namespace hr::render
 				geomFileRemoveGeom(geomFileStreamOld, geomFileStreamNew, std::move(finalObjectIds));
 			}
 
-			std::experimental::filesystem::remove(areaData.pathBin + ".tmp");
+			std::filesystem::remove(areaData.pathBin + ".tmp");
 		}
 	}
 
@@ -1523,8 +1522,8 @@ namespace hr::render
 		//the area is always exported whole, which means that we can destroy the old version completly
 		//also: we only need to save the scene (geom was already taken care of)
 
-		if (std::experimental::filesystem::exists(areaData.pathScene))
-			std::experimental::filesystem::remove(areaData.pathScene);
+		if (std::filesystem::exists(areaData.pathScene))
+			std::filesystem::remove(areaData.pathScene);
 
 		hr::streams::FileStream streamScene(areaData.pathScene, false, true);
 

@@ -663,7 +663,7 @@ namespace hr
 			constexpr EntityId& operator=(EntityId&&) = default;
 			~EntityId() = default;
 
-			constexpr explicit EntityId(std::uint32_t id, std::uint32_t version) noexcept
+			constexpr explicit EntityId(uint32_t id, uint32_t version) noexcept
 				: m_data{ ((version & 0xFFF) << 20) | (id & 0xFFFFF) }
 			{ }
 
@@ -682,18 +682,18 @@ namespace hr
 				return !operator==(rhs);
 			}
 
-			constexpr std::uint32_t id() const noexcept
+			constexpr uint32_t id() const noexcept
 			{
-				return static_cast<std::uint32_t>(m_data & 0xFFFFF);
+				return static_cast<uint32_t>(m_data & 0xFFFFF);
 			}
 
-			constexpr std::uint32_t version() const noexcept
+			constexpr uint32_t version() const noexcept
 			{
-				return static_cast<std::uint32_t>((m_data >> 20) & 0xFFF);
+				return static_cast<uint32_t>((m_data >> 20) & 0xFFF);
 			}
 
 		private:
-			std::uint32_t m_data{ 0 };
+			uint32_t m_data{ 0 };
 		};
 
 		template<class... TComponents>
