@@ -23,32 +23,32 @@
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>Horseradish</RootNamespace>
     <ProjectName>horseradish</ProjectName>
-    <WindowsTargetPlatformVersion>10.0.17134.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
@@ -89,7 +89,7 @@
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level4</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>HR_DEVEL;HR_PROFILLING;WIN32;_DEBUG;_WINDOWS;NOMINMAX;WINVER=0x0601;_WIN32_WINNT=0x0601;NTDDI_VERSION=0x06010000;WIN32_LEAN_AND_MEAN;NOGDICAPMASKS;NOMENUS;NOICONS;NOSYSCOMMANDS;NOSHOWWINDOW;NOCTLMGR;NOMEMMGR;NOOPENFILE;NOWH;NODEFERWINDOWPOS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>HR_DEVEL;HR_PROFILLING;WIN32;_DEBUG;_WINDOWS;NOMINMAX;WINVER=0x0601;_WIN32_WINNT=0x0601;NTDDI_VERSION=0x06010000;WIN32_LEAN_AND_MEAN;NOGDICAPMASKS;NOMENUS;NOICONS;NOSYSCOMMANDS;NOSHOWWINDOW;NOCTLMGR;NOMEMMGR;NOOPENFILE;NOWH;NODEFERWINDOWPOS;_ITERATOR_DEBUG_LEVEL=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions</EnableEnhancedInstructionSet>
       <AdditionalIncludeDirectories>$(SolutionDir)$(ProjectName)\src;$(SolutionDir)$(ProjectName)\external_includes\gl;$(SolutionDir)$(ProjectName)\external_includes\ffmpeg;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -111,7 +111,7 @@
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level4</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>HR_DEVEL;HR_PROFILLING;WIN32;_DEBUG;_WINDOWS;NOMINMAX;WINVER=0x0601;_WIN32_WINNT=0x0601;NTDDI_VERSION=0x06010000;WIN32_LEAN_AND_MEAN;NOGDICAPMASKS;NOMENUS;NOICONS;NOSYSCOMMANDS;NOSHOWWINDOW;NOCTLMGR;NOMEMMGR;NOOPENFILE;NOWH;NODEFERWINDOWPOS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>HR_DEVEL;HR_PROFILLING;WIN32;_DEBUG;_WINDOWS;NOMINMAX;WINVER=0x0601;_WIN32_WINNT=0x0601;NTDDI_VERSION=0x06010000;WIN32_LEAN_AND_MEAN;NOGDICAPMASKS;NOMENUS;NOICONS;NOSYSCOMMANDS;NOSHOWWINDOW;NOCTLMGR;NOMEMMGR;NOOPENFILE;NOWH;NODEFERWINDOWPOS;_ITERATOR_DEBUG_LEVEL=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions</EnableEnhancedInstructionSet>
       <AdditionalIncludeDirectories>$(SolutionDir)$(ProjectName)\src;$(SolutionDir)$(ProjectName)\external_includes\gl;$(SolutionDir)$(ProjectName)\external_includes\ffmpeg;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -210,6 +210,7 @@
     <ClCompile Include="..\..\src\engine\profiler.cpp" />
     <ClCompile Include="..\..\src\engine\runtime.cpp" />
     <ClCompile Include="..\..\src\libs\aes256\aes256.c" />
+    <ClCompile Include="..\..\src\libs\bc7\bc7enc16.c" />
     <ClCompile Include="..\..\src\libs\fmt\format.cc" />
     <ClCompile Include="..\..\src\libs\forsyth\forsythtriangleorderoptimizer.cpp" />
     <ClCompile Include="..\..\src\libs\libsquish\alpha.cpp" />
@@ -309,6 +310,7 @@
     <ClInclude Include="..\..\src\common\bareas.hpp" />
     <ClInclude Include="..\..\src\common\bvolumes.hpp" />
     <ClInclude Include="..\..\src\common\color.hpp" />
+    <ClInclude Include="..\..\src\common\ecs.hpp" />
     <ClInclude Include="..\..\src\common\encoders.hpp" />
     <ClInclude Include="..\..\src\common\fileSystem.hpp" />
     <ClInclude Include="..\..\src\common\hashing.hpp" />
@@ -334,6 +336,8 @@
     <ClInclude Include="..\..\src\common\ray.hpp" />
     <ClInclude Include="..\..\src\common\scopedAction.hpp" />
     <ClInclude Include="..\..\src\common\sorting.hpp" />
+    <ClInclude Include="..\..\src\common\sparseMap.hpp" />
+    <ClInclude Include="..\..\src\common\sparseSet.hpp" />
     <ClInclude Include="..\..\src\common\stream.hpp" />
     <ClInclude Include="..\..\src\common\stringUtils.hpp" />
     <ClInclude Include="..\..\src\common\timer.hpp" />
@@ -344,6 +348,7 @@
     <ClInclude Include="..\..\src\engine\profiler.hpp" />
     <ClInclude Include="..\..\src\engine\runtime.hpp" />
     <ClInclude Include="..\..\src\libs\aes256\aes256.h" />
+    <ClInclude Include="..\..\src\libs\bc7\bc7enc16.h" />
     <ClInclude Include="..\..\src\libs\fmt\core.h" />
     <ClInclude Include="..\..\src\libs\fmt\format-inl.h" />
     <ClInclude Include="..\..\src\libs\fmt\format.h" />

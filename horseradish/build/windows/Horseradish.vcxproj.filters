@@ -94,6 +94,9 @@
     <Filter Include="libs\meshoptimizer">
       <UniqueIdentifier>{bbbdf052-3b04-406d-94c3-78775cd9813f}</UniqueIdentifier>
     </Filter>
+    <Filter Include="libs\bc7">
+      <UniqueIdentifier>{87cb5282-b21b-4877-bebe-b953a385d160}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\common\opengl\openGLext.cpp">
@@ -465,6 +468,9 @@
     </ClCompile>
     <ClCompile Include="..\..\src\libs\meshoptimizer\vfetchoptimizer.cpp">
       <Filter>libs\meshoptimizer</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\libs\bc7\bc7enc16.c">
+      <Filter>libs\bc7</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -999,6 +1005,18 @@
     </ClInclude>
     <ClInclude Include="..\..\src\libs\meshoptimizer\meshoptimizer.h">
       <Filter>libs\meshoptimizer</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\common\ecs.hpp">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\common\sparseSet.hpp">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\common\sparseMap.hpp">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\libs\bc7\bc7enc16.h">
+      <Filter>libs\bc7</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
