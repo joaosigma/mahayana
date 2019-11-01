@@ -5,166 +5,174 @@
 #include "math.hpp"
 #include "encoders.hpp"
 
+#include <array>
 #include <type_traits>
 #include <xmmintrin.h>
 #include <emmintrin.h>
 
 namespace hr
 {
+	/******
+	* Implementation notes:
+	*	- unless otherwise specified, everything is linear (not SRGB)
+	*	- don't assume that SRGB is a linear pow(x, 2.2), because it isn't
+	*	- don't convert from uint8 SRGB to linear an then store it in uint8. This will lose precision in the blacks (because SRGB is not linear)
+	******/
+
 	class Color
 	{
-		static constexpr const unsigned char SRGB2Linear[] = { 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 5, 5, 5, 5, 6, 6, 6, 6, 7, 7, 7, 8, 8, 8, 8, 9, 9, 9, 10, 10, 10, 11, 11, 12, 12, 12, 13, 13, 13, 14, 14, 15, 15, 16, 16, 17, 17, 17, 18, 18, 19, 19, 20, 20, 21, 22, 22, 23, 23, 24, 24, 25, 25, 26, 27, 27, 28, 29, 29, 30, 30, 31, 32, 32, 33, 34, 35, 35, 36, 37, 37, 38, 39, 40, 41, 41, 42, 43, 44, 45, 45, 46, 47, 48, 49, 50, 51, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 76, 77, 78, 79, 80, 81, 82, 84, 85, 86, 87, 88, 90, 91, 92, 93, 95, 96, 97, 99, 100, 101, 103, 104, 105, 107, 108, 109, 111, 112, 114, 115, 116, 118, 119, 121, 122, 124, 125, 127, 128, 130, 131, 133, 134, 136, 138, 139, 141, 142, 144, 146, 147, 149, 151, 152, 154, 156, 157, 159, 161, 163, 164, 166, 168, 170, 171, 173, 175, 177, 179, 181, 183, 184, 186, 188, 190, 192, 194, 196, 198, 200, 202, 204, 206, 208, 210, 212, 214, 216, 218, 220, 222, 224, 226, 229, 231, 233, 235, 237, 239, 242, 244, 246, 248, 250, 253, 255 };
-
-		float mRGBA[4]{ 0.0f,0.0f,0.0f,0.0f };
+		static constexpr std::array<float, 256> TableSRGB2Linear{ 0.0, 0.00030f, 0.00061f, 0.00091f, 0.00121f, 0.00152f, 0.00182f, 0.00212f, 0.00243f, 0.00273f, 0.00304f, 0.00335f, 0.00368f, 0.00402f, 0.00439f, 0.00478f, 0.00518f, 0.00561f, 0.00605f, 0.00651f, 0.00700f, 0.00750f, 0.00802f, 0.00857f, 0.00913f, 0.00972f, 0.01033f, 0.01096f, 0.01161f, 0.01229f, 0.01298f, 0.01370f, 0.01444f, 0.01521f, 0.01600f, 0.01681f, 0.01764f, 0.01850f, 0.01938f, 0.02029f, 0.02122f, 0.02217f, 0.02315f, 0.02416f, 0.02519f, 0.02624f, 0.02732f, 0.02843f, 0.02956f, 0.03071f, 0.03190f, 0.03310f, 0.03434f, 0.03560f, 0.03689f, 0.03820f, 0.03955f, 0.04092f, 0.04231f, 0.04374f, 0.04519f, 0.04667f, 0.04817f, 0.04971f, 0.05127f, 0.05286f, 0.05448f, 0.05613f, 0.05781f, 0.05951f, 0.06125f, 0.06301f, 0.06480f, 0.06663f, 0.06848f, 0.07036f, 0.07227f, 0.07421f, 0.07619f, 0.07819f, 0.08022f, 0.08228f, 0.08438f, 0.08650f, 0.08866f, 0.09084f, 0.09306f, 0.09531f, 0.09759f, 0.09990f, 0.10224f, 0.10462f, 0.10702f, 0.10946f, 0.11193f, 0.11444f, 0.11697f, 0.11954f, 0.12214f, 0.12477f, 0.12744f, 0.13014f, 0.13287f, 0.13563f, 0.13843f, 0.14126f, 0.14413f, 0.14703f, 0.14996f, 0.15293f, 0.15593f, 0.15896f, 0.16203f, 0.16513f, 0.16827f, 0.17144f, 0.17465f, 0.17789f, 0.18116f, 0.18447f, 0.18782f, 0.19120f, 0.19462f, 0.19807f, 0.20156f, 0.20508f, 0.20864f, 0.21223f, 0.21586f, 0.21953f, 0.22323f, 0.22697f, 0.23074f, 0.23455f, 0.23840f, 0.24228f, 0.24620f, 0.25016f, 0.25415f, 0.25818f, 0.26225f, 0.26636f, 0.27050f, 0.27468f, 0.27889f, 0.28315f, 0.28744f, 0.29177f, 0.29614f, 0.30054f, 0.30499f, 0.30947f, 0.31399f, 0.31855f, 0.32314f, 0.32778f, 0.33245f, 0.33716f, 0.34191f, 0.34670f, 0.35153f, 0.35640f, 0.36131f, 0.36625f, 0.37124f, 0.37626f, 0.38133f, 0.38643f, 0.39157f, 0.39676f, 0.40198f, 0.40724f, 0.41254f, 0.41789f, 0.42327f, 0.42869f, 0.43415f, 0.43966f, 0.44520f, 0.45079f, 0.45641f, 0.46208f, 0.46778f, 0.47353f, 0.47932f, 0.48515f, 0.49102f, 0.49693f, 0.50289f, 0.50888f, 0.51492f, 0.52100f, 0.52712f, 0.53328f, 0.53948f, 0.54572f, 0.55201f, 0.55834f, 0.56471f, 0.57112f, 0.57758f, 0.58408f, 0.59062f, 0.59720f, 0.60383f, 0.61050f, 0.61721f, 0.62396f, 0.63076f, 0.63760f, 0.64448f, 0.65141f, 0.65837f, 0.66539f, 0.67244f, 0.67954f, 0.68669f, 0.69387f, 0.70110f, 0.70838f, 0.71569f, 0.72306f, 0.73046f, 0.73791f, 0.74540f, 0.75294f, 0.76052f, 0.76815f, 0.77582f, 0.78354f, 0.79130f, 0.79910f, 0.80695f, 0.81485f, 0.82279f, 0.83077f, 0.83880f, 0.84687f, 0.85499f, 0.86316f, 0.87137f, 0.87962f, 0.88792f, 0.89627f, 0.90466f, 0.91310f, 0.92158f, 0.93011f, 0.93869f, 0.94731f, 0.95597f, 0.96469f, 0.97345f, 0.98225f, 0.99110f, 1.0f };
+		
+		float mRGBA[4]{ 0.0f, 0.0f, 0.0f, 0.0f };
 
 	public:
 		class KnownColors
 		{
 		public:
-			static constexpr const unsigned char Transparent[] = { 255, 255, 255, 0 };
-			static constexpr const unsigned char PureRed[] = { 255, 0, 0, 255 };
-			static constexpr const unsigned char PureGreen[] = { 0, 255, 0, 255 };
-			static constexpr const unsigned char PureBlue[] = { 0, 0, 255, 255 };
-			static constexpr const unsigned char AliceBlue[] = { 240, 248, 255, 255 };
-			static constexpr const unsigned char AntiqueWhite[] = { 250, 235, 215, 255 };
-			static constexpr const unsigned char Aqua[] = { 0, 255, 255, 255 };
-			static constexpr const unsigned char Aquamarine[] = { 127, 255, 212, 255 };
-			static constexpr const unsigned char Azure[] = { 240, 255, 255, 255 };
-			static constexpr const unsigned char Beige[] = { 245, 245, 220, 255 };
-			static constexpr const unsigned char Bisque[] = { 255, 228, 196, 255 };
-			static constexpr const unsigned char Black[] = { 0, 0, 0, 255 };
-			static constexpr const unsigned char BlanchedAlmond[] = { 255, 235, 205, 255 };
-			static constexpr const unsigned char Blue[] = { 0, 0, 255, 255 };
-			static constexpr const unsigned char BlueViolet[] = { 138, 43, 226, 255 };
-			static constexpr const unsigned char Brown[] = { 165, 42, 42, 255 };
-			static constexpr const unsigned char BurlyWood[] = { 222, 184, 135, 255 };
-			static constexpr const unsigned char CadetBlue[] = { 95, 158, 160, 255 };
-			static constexpr const unsigned char Chartreuse[] = { 127, 255, 0, 255 };
-			static constexpr const unsigned char Chocolate[] = { 210, 105, 30, 255 };
-			static constexpr const unsigned char Coral[] = { 255, 127, 80, 255 };
-			static constexpr const unsigned char CornflowerBlue[] = { 100, 149, 237, 255 };
-			static constexpr const unsigned char Cornsilk[] = { 255, 248, 220, 255 };
-			static constexpr const unsigned char Crimson[] = { 220, 20, 60, 255 };
-			static constexpr const unsigned char Cyan[] = { 0, 255, 255, 255 };
-			static constexpr const unsigned char DarkBlue[] = { 0, 0, 139, 255 };
-			static constexpr const unsigned char DarkCyan[] = { 0, 139, 139, 255 };
-			static constexpr const unsigned char DarkGoldenrod[] = { 184, 134, 11, 255 };
-			static constexpr const unsigned char DarkGray[] = { 169, 169, 169, 255 };
-			static constexpr const unsigned char DarkGreen[] = { 0, 100, 0, 255 };
-			static constexpr const unsigned char DarkKhaki[] = { 189, 183, 107, 255 };
-			static constexpr const unsigned char DarkMagenta[] = { 139, 0, 139, 255 };
-			static constexpr const unsigned char DarkOliveGreen[] = { 85, 107, 47, 255 };
-			static constexpr const unsigned char DarkOrange[] = { 255, 140, 0, 255 };
-			static constexpr const unsigned char DarkOrchid[] = { 153, 50, 204, 255 };
-			static constexpr const unsigned char DarkRed[] = { 139, 0, 0, 255 };
-			static constexpr const unsigned char DarkSalmon[] = { 233, 150, 122, 255 };
-			static constexpr const unsigned char DarkSeaGreen[] = { 143, 188, 139, 255 };
-			static constexpr const unsigned char DarkSlateBlue[] = { 72, 61, 139, 255 };
-			static constexpr const unsigned char DarkSlateGray[] = { 47, 79, 79, 255 };
-			static constexpr const unsigned char DarkTurquoise[] = { 0, 206, 209, 255 };
-			static constexpr const unsigned char DarkViolet[] = { 148, 0, 211, 255 };
-			static constexpr const unsigned char DeepPink[] = { 255, 20, 147, 255 };
-			static constexpr const unsigned char DeepSkyBlue[] = { 0, 191, 255, 255 };
-			static constexpr const unsigned char DimGray[] = { 105, 105, 105, 255 };
-			static constexpr const unsigned char DodgerBlue[] = { 30, 144, 255, 255 };
-			static constexpr const unsigned char Firebrick[] = { 178, 34, 34, 255 };
-			static constexpr const unsigned char FloralWhite[] = { 255, 250, 240, 255 };
-			static constexpr const unsigned char ForestGreen[] = { 34, 139, 34, 255 };
-			static constexpr const unsigned char Fuchsia[] = { 255, 0, 255, 255 };
-			static constexpr const unsigned char Gainsboro[] = { 220, 220, 220, 255 };
-			static constexpr const unsigned char GhostWhite[] = { 248, 248, 255, 255 };
-			static constexpr const unsigned char Gold[] = { 255, 215, 0, 255 };
-			static constexpr const unsigned char Goldenrod[] = { 218, 165, 32, 255 };
-			static constexpr const unsigned char Gray[] = { 128, 128, 128, 255 };
-			static constexpr const unsigned char Green[] = { 0, 128, 0, 255 };
-			static constexpr const unsigned char GreenYellow[] = { 173, 255, 47, 255 };
-			static constexpr const unsigned char Honeydew[] = { 240, 255, 240, 255 };
-			static constexpr const unsigned char HotPink[] = { 255, 105, 180, 255 };
-			static constexpr const unsigned char IndianRed[] = { 205, 92, 92, 255 };
-			static constexpr const unsigned char Indigo[] = { 75, 0, 130, 255 };
-			static constexpr const unsigned char Ivory[] = { 255, 255, 240, 255 };
-			static constexpr const unsigned char Khaki[] = { 240, 230, 140, 255 };
-			static constexpr const unsigned char Lavender[] = { 230, 230, 250, 255 };
-			static constexpr const unsigned char LavenderBlush[] = { 255, 240, 245, 255 };
-			static constexpr const unsigned char LawnGreen[] = { 124, 252, 0, 255 };
-			static constexpr const unsigned char LemonChiffon[] = { 255, 250, 205, 255 };
-			static constexpr const unsigned char LightBlue[] = { 173, 216, 230, 255 };
-			static constexpr const unsigned char LightCoral[] = { 240, 128, 128, 255 };
-			static constexpr const unsigned char LightCyan[] = { 224, 255, 255, 255 };
-			static constexpr const unsigned char LightGoldenrodYellow[] = { 250, 250, 210, 255 };
-			static constexpr const unsigned char LightGreen[] = { 144, 238, 144, 255 };
-			static constexpr const unsigned char LightGray[] = { 211, 211, 211, 255 };
-			static constexpr const unsigned char LightPink[] = { 255, 182, 193, 255 };
-			static constexpr const unsigned char LightSalmon[] = { 255, 160, 122, 255 };
-			static constexpr const unsigned char LightSeaGreen[] = { 32, 178, 170, 255 };
-			static constexpr const unsigned char LightSkyBlue[] = { 135, 206, 250, 255 };
-			static constexpr const unsigned char LightSlateGray[] = { 119, 136, 153, 255 };
-			static constexpr const unsigned char LightSteelBlue[] = { 176, 196, 222, 255 };
-			static constexpr const unsigned char LightYellow[] = { 255, 255, 224, 255 };
-			static constexpr const unsigned char Lime[] = { 0, 255, 0, 255 };
-			static constexpr const unsigned char LimeGreen[] = { 50, 205, 50, 255 };
-			static constexpr const unsigned char Linen[] = { 250, 240, 230, 255 };
-			static constexpr const unsigned char Magenta[] = { 255, 0, 255, 255 };
-			static constexpr const unsigned char Maroon[] = { 128, 0, 0, 255 };
-			static constexpr const unsigned char MediumAquamarine[] = { 102, 205, 170, 255 };
-			static constexpr const unsigned char MediumBlue[] = { 0, 0, 205, 255 };
-			static constexpr const unsigned char MediumOrchid[] = { 186, 85, 211, 255 };
-			static constexpr const unsigned char MediumPurple[] = { 147, 112, 219, 255 };
-			static constexpr const unsigned char MediumSeaGreen[] = { 60, 179, 113, 255 };
-			static constexpr const unsigned char MediumSlateBlue[] = { 123, 104, 238, 255 };
-			static constexpr const unsigned char MediumSpringGreen[] = { 0, 250, 154, 255 };
-			static constexpr const unsigned char MediumTurquoise[] = { 72, 209, 204, 255 };
-			static constexpr const unsigned char MediumVioletRed[] = { 199, 21, 133, 255 };
-			static constexpr const unsigned char MidnightBlue[] = { 25, 25, 112, 255 };
-			static constexpr const unsigned char MintCream[] = { 245, 255, 250, 255 };
-			static constexpr const unsigned char MistyRose[] = { 255, 228, 225, 255 };
-			static constexpr const unsigned char Moccasin[] = { 255, 228, 181, 255 };
-			static constexpr const unsigned char NavajoWhite[] = { 255, 222, 173, 255 };
-			static constexpr const unsigned char Navy[] = { 0, 0, 128, 255 };
-			static constexpr const unsigned char OldLace[] = { 253, 245, 230, 255 };
-			static constexpr const unsigned char Olive[] = { 128, 128, 0, 255 };
-			static constexpr const unsigned char OliveDrab[] = { 107, 142, 35, 255 };
-			static constexpr const unsigned char Orange[] = { 255, 165, 0, 255 };
-			static constexpr const unsigned char OrangeRed[] = { 255, 69, 0, 255 };
-			static constexpr const unsigned char Orchid[] = { 218, 112, 214, 255 };
-			static constexpr const unsigned char PaleGoldenrod[] = { 238, 232, 170, 255 };
-			static constexpr const unsigned char PaleGreen[] = { 152, 251, 152, 255 };
-			static constexpr const unsigned char PaleTurquoise[] = { 175, 238, 238, 255 };
-			static constexpr const unsigned char PaleVioletRed[] = { 219, 112, 147, 255 };
-			static constexpr const unsigned char PapayaWhip[] = { 255, 239, 213, 255 };
-			static constexpr const unsigned char PeachPuff[] = { 255, 218, 185, 255 };
-			static constexpr const unsigned char Peru[] = { 205, 133, 63, 255 };
-			static constexpr const unsigned char Pink[] = { 255, 192, 203, 255 };
-			static constexpr const unsigned char Plum[] = { 221, 160, 221, 255 };
-			static constexpr const unsigned char PowderBlue[] = { 176, 224, 230, 255 };
-			static constexpr const unsigned char Purple[] = { 128, 0, 128, 255 };
-			static constexpr const unsigned char Red[] = { 255, 0, 0, 255 };
-			static constexpr const unsigned char RosyBrown[] = { 188, 143, 143, 255 };
-			static constexpr const unsigned char RoyalBlue[] = { 65, 105, 225, 255 };
-			static constexpr const unsigned char SaddleBrown[] = { 139, 69, 19, 255 };
-			static constexpr const unsigned char Salmon[] = { 250, 128, 114, 255 };
-			static constexpr const unsigned char SandyBrown[] = { 244, 164, 96, 255 };
-			static constexpr const unsigned char SeaGreen[] = { 46, 139, 87, 255 };
-			static constexpr const unsigned char SeaShell[] = { 255, 245, 238, 255 };
-			static constexpr const unsigned char Sienna[] = { 160, 82, 45, 255 };
-			static constexpr const unsigned char Silver[] = { 192, 192, 192, 255 };
-			static constexpr const unsigned char SkyBlue[] = { 135, 206, 235, 255 };
-			static constexpr const unsigned char SlateBlue[] = { 106, 90, 205, 255 };
-			static constexpr const unsigned char SlateGray[] = { 112, 128, 144, 255 };
-			static constexpr const unsigned char Snow[] = { 255, 250, 250, 255 };
-			static constexpr const unsigned char SpringGreen[] = { 0, 255, 127, 255 };
-			static constexpr const unsigned char SteelBlue[] = { 70, 130, 180, 255 };
-			static constexpr const unsigned char Tan[] = { 210, 180, 140, 255 };
-			static constexpr const unsigned char Teal[] = { 0, 128, 128, 255 };
-			static constexpr const unsigned char Thistle[] = { 216, 191, 216, 255 };
-			static constexpr const unsigned char Tomato[] = { 255, 99, 71, 255 };
-			static constexpr const unsigned char Turquoise[] = { 64, 224, 208, 255 };
-			static constexpr const unsigned char Violet[] = { 238, 130, 238, 255 };
-			static constexpr const unsigned char Wheat[] = { 245, 222, 179, 255 };
-			static constexpr const unsigned char White[] = { 255, 255, 255, 255 };
-			static constexpr const unsigned char WhiteSmoke[] = { 245, 245, 245, 255 };
-			static constexpr const unsigned char Yellow[] = { 255, 255, 0, 255 };
-			static constexpr const unsigned char YellowGreen[] = { 154, 205, 50, 255 };
+			static constexpr uint8_t Transparent[] = { 255, 255, 255, 0 };
+			static constexpr uint8_t PureRed[] = { 255, 0, 0, 255 };
+			static constexpr uint8_t PureGreen[] = { 0, 255, 0, 255 };
+			static constexpr uint8_t PureBlue[] = { 0, 0, 255, 255 };
+			static constexpr uint8_t AliceBlue[] = { 240, 248, 255, 255 };
+			static constexpr uint8_t AntiqueWhite[] = { 250, 235, 215, 255 };
+			static constexpr uint8_t Aqua[] = { 0, 255, 255, 255 };
+			static constexpr uint8_t Aquamarine[] = { 127, 255, 212, 255 };
+			static constexpr uint8_t Azure[] = { 240, 255, 255, 255 };
+			static constexpr uint8_t Beige[] = { 245, 245, 220, 255 };
+			static constexpr uint8_t Bisque[] = { 255, 228, 196, 255 };
+			static constexpr uint8_t Black[] = { 0, 0, 0, 255 };
+			static constexpr uint8_t BlanchedAlmond[] = { 255, 235, 205, 255 };
+			static constexpr uint8_t Blue[] = { 0, 0, 255, 255 };
+			static constexpr uint8_t BlueViolet[] = { 138, 43, 226, 255 };
+			static constexpr uint8_t Brown[] = { 165, 42, 42, 255 };
+			static constexpr uint8_t BurlyWood[] = { 222, 184, 135, 255 };
+			static constexpr uint8_t CadetBlue[] = { 95, 158, 160, 255 };
+			static constexpr uint8_t Chartreuse[] = { 127, 255, 0, 255 };
+			static constexpr uint8_t Chocolate[] = { 210, 105, 30, 255 };
+			static constexpr uint8_t Coral[] = { 255, 127, 80, 255 };
+			static constexpr uint8_t CornflowerBlue[] = { 100, 149, 237, 255 };
+			static constexpr uint8_t Cornsilk[] = { 255, 248, 220, 255 };
+			static constexpr uint8_t Crimson[] = { 220, 20, 60, 255 };
+			static constexpr uint8_t Cyan[] = { 0, 255, 255, 255 };
+			static constexpr uint8_t DarkBlue[] = { 0, 0, 139, 255 };
+			static constexpr uint8_t DarkCyan[] = { 0, 139, 139, 255 };
+			static constexpr uint8_t DarkGoldenrod[] = { 184, 134, 11, 255 };
+			static constexpr uint8_t DarkGray[] = { 169, 169, 169, 255 };
+			static constexpr uint8_t DarkGreen[] = { 0, 100, 0, 255 };
+			static constexpr uint8_t DarkKhaki[] = { 189, 183, 107, 255 };
+			static constexpr uint8_t DarkMagenta[] = { 139, 0, 139, 255 };
+			static constexpr uint8_t DarkOliveGreen[] = { 85, 107, 47, 255 };
+			static constexpr uint8_t DarkOrange[] = { 255, 140, 0, 255 };
+			static constexpr uint8_t DarkOrchid[] = { 153, 50, 204, 255 };
+			static constexpr uint8_t DarkRed[] = { 139, 0, 0, 255 };
+			static constexpr uint8_t DarkSalmon[] = { 233, 150, 122, 255 };
+			static constexpr uint8_t DarkSeaGreen[] = { 143, 188, 139, 255 };
+			static constexpr uint8_t DarkSlateBlue[] = { 72, 61, 139, 255 };
+			static constexpr uint8_t DarkSlateGray[] = { 47, 79, 79, 255 };
+			static constexpr uint8_t DarkTurquoise[] = { 0, 206, 209, 255 };
+			static constexpr uint8_t DarkViolet[] = { 148, 0, 211, 255 };
+			static constexpr uint8_t DeepPink[] = { 255, 20, 147, 255 };
+			static constexpr uint8_t DeepSkyBlue[] = { 0, 191, 255, 255 };
+			static constexpr uint8_t DimGray[] = { 105, 105, 105, 255 };
+			static constexpr uint8_t DodgerBlue[] = { 30, 144, 255, 255 };
+			static constexpr uint8_t Firebrick[] = { 178, 34, 34, 255 };
+			static constexpr uint8_t FloralWhite[] = { 255, 250, 240, 255 };
+			static constexpr uint8_t ForestGreen[] = { 34, 139, 34, 255 };
+			static constexpr uint8_t Fuchsia[] = { 255, 0, 255, 255 };
+			static constexpr uint8_t Gainsboro[] = { 220, 220, 220, 255 };
+			static constexpr uint8_t GhostWhite[] = { 248, 248, 255, 255 };
+			static constexpr uint8_t Gold[] = { 255, 215, 0, 255 };
+			static constexpr uint8_t Goldenrod[] = { 218, 165, 32, 255 };
+			static constexpr uint8_t Gray[] = { 128, 128, 128, 255 };
+			static constexpr uint8_t Green[] = { 0, 128, 0, 255 };
+			static constexpr uint8_t GreenYellow[] = { 173, 255, 47, 255 };
+			static constexpr uint8_t Honeydew[] = { 240, 255, 240, 255 };
+			static constexpr uint8_t HotPink[] = { 255, 105, 180, 255 };
+			static constexpr uint8_t IndianRed[] = { 205, 92, 92, 255 };
+			static constexpr uint8_t Indigo[] = { 75, 0, 130, 255 };
+			static constexpr uint8_t Ivory[] = { 255, 255, 240, 255 };
+			static constexpr uint8_t Khaki[] = { 240, 230, 140, 255 };
+			static constexpr uint8_t Lavender[] = { 230, 230, 250, 255 };
+			static constexpr uint8_t LavenderBlush[] = { 255, 240, 245, 255 };
+			static constexpr uint8_t LawnGreen[] = { 124, 252, 0, 255 };
+			static constexpr uint8_t LemonChiffon[] = { 255, 250, 205, 255 };
+			static constexpr uint8_t LightBlue[] = { 173, 216, 230, 255 };
+			static constexpr uint8_t LightCoral[] = { 240, 128, 128, 255 };
+			static constexpr uint8_t LightCyan[] = { 224, 255, 255, 255 };
+			static constexpr uint8_t LightGoldenrodYellow[] = { 250, 250, 210, 255 };
+			static constexpr uint8_t LightGreen[] = { 144, 238, 144, 255 };
+			static constexpr uint8_t LightGray[] = { 211, 211, 211, 255 };
+			static constexpr uint8_t LightPink[] = { 255, 182, 193, 255 };
+			static constexpr uint8_t LightSalmon[] = { 255, 160, 122, 255 };
+			static constexpr uint8_t LightSeaGreen[] = { 32, 178, 170, 255 };
+			static constexpr uint8_t LightSkyBlue[] = { 135, 206, 250, 255 };
+			static constexpr uint8_t LightSlateGray[] = { 119, 136, 153, 255 };
+			static constexpr uint8_t LightSteelBlue[] = { 176, 196, 222, 255 };
+			static constexpr uint8_t LightYellow[] = { 255, 255, 224, 255 };
+			static constexpr uint8_t Lime[] = { 0, 255, 0, 255 };
+			static constexpr uint8_t LimeGreen[] = { 50, 205, 50, 255 };
+			static constexpr uint8_t Linen[] = { 250, 240, 230, 255 };
+			static constexpr uint8_t Magenta[] = { 255, 0, 255, 255 };
+			static constexpr uint8_t Maroon[] = { 128, 0, 0, 255 };
+			static constexpr uint8_t MediumAquamarine[] = { 102, 205, 170, 255 };
+			static constexpr uint8_t MediumBlue[] = { 0, 0, 205, 255 };
+			static constexpr uint8_t MediumOrchid[] = { 186, 85, 211, 255 };
+			static constexpr uint8_t MediumPurple[] = { 147, 112, 219, 255 };
+			static constexpr uint8_t MediumSeaGreen[] = { 60, 179, 113, 255 };
+			static constexpr uint8_t MediumSlateBlue[] = { 123, 104, 238, 255 };
+			static constexpr uint8_t MediumSpringGreen[] = { 0, 250, 154, 255 };
+			static constexpr uint8_t MediumTurquoise[] = { 72, 209, 204, 255 };
+			static constexpr uint8_t MediumVioletRed[] = { 199, 21, 133, 255 };
+			static constexpr uint8_t MidnightBlue[] = { 25, 25, 112, 255 };
+			static constexpr uint8_t MintCream[] = { 245, 255, 250, 255 };
+			static constexpr uint8_t MistyRose[] = { 255, 228, 225, 255 };
+			static constexpr uint8_t Moccasin[] = { 255, 228, 181, 255 };
+			static constexpr uint8_t NavajoWhite[] = { 255, 222, 173, 255 };
+			static constexpr uint8_t Navy[] = { 0, 0, 128, 255 };
+			static constexpr uint8_t OldLace[] = { 253, 245, 230, 255 };
+			static constexpr uint8_t Olive[] = { 128, 128, 0, 255 };
+			static constexpr uint8_t OliveDrab[] = { 107, 142, 35, 255 };
+			static constexpr uint8_t Orange[] = { 255, 165, 0, 255 };
+			static constexpr uint8_t OrangeRed[] = { 255, 69, 0, 255 };
+			static constexpr uint8_t Orchid[] = { 218, 112, 214, 255 };
+			static constexpr uint8_t PaleGoldenrod[] = { 238, 232, 170, 255 };
+			static constexpr uint8_t PaleGreen[] = { 152, 251, 152, 255 };
+			static constexpr uint8_t PaleTurquoise[] = { 175, 238, 238, 255 };
+			static constexpr uint8_t PaleVioletRed[] = { 219, 112, 147, 255 };
+			static constexpr uint8_t PapayaWhip[] = { 255, 239, 213, 255 };
+			static constexpr uint8_t PeachPuff[] = { 255, 218, 185, 255 };
+			static constexpr uint8_t Peru[] = { 205, 133, 63, 255 };
+			static constexpr uint8_t Pink[] = { 255, 192, 203, 255 };
+			static constexpr uint8_t Plum[] = { 221, 160, 221, 255 };
+			static constexpr uint8_t PowderBlue[] = { 176, 224, 230, 255 };
+			static constexpr uint8_t Purple[] = { 128, 0, 128, 255 };
+			static constexpr uint8_t Red[] = { 255, 0, 0, 255 };
+			static constexpr uint8_t RosyBrown[] = { 188, 143, 143, 255 };
+			static constexpr uint8_t RoyalBlue[] = { 65, 105, 225, 255 };
+			static constexpr uint8_t SaddleBrown[] = { 139, 69, 19, 255 };
+			static constexpr uint8_t Salmon[] = { 250, 128, 114, 255 };
+			static constexpr uint8_t SandyBrown[] = { 244, 164, 96, 255 };
+			static constexpr uint8_t SeaGreen[] = { 46, 139, 87, 255 };
+			static constexpr uint8_t SeaShell[] = { 255, 245, 238, 255 };
+			static constexpr uint8_t Sienna[] = { 160, 82, 45, 255 };
+			static constexpr uint8_t Silver[] = { 192, 192, 192, 255 };
+			static constexpr uint8_t SkyBlue[] = { 135, 206, 235, 255 };
+			static constexpr uint8_t SlateBlue[] = { 106, 90, 205, 255 };
+			static constexpr uint8_t SlateGray[] = { 112, 128, 144, 255 };
+			static constexpr uint8_t Snow[] = { 255, 250, 250, 255 };
+			static constexpr uint8_t SpringGreen[] = { 0, 255, 127, 255 };
+			static constexpr uint8_t SteelBlue[] = { 70, 130, 180, 255 };
+			static constexpr uint8_t Tan[] = { 210, 180, 140, 255 };
+			static constexpr uint8_t Teal[] = { 0, 128, 128, 255 };
+			static constexpr uint8_t Thistle[] = { 216, 191, 216, 255 };
+			static constexpr uint8_t Tomato[] = { 255, 99, 71, 255 };
+			static constexpr uint8_t Turquoise[] = { 64, 224, 208, 255 };
+			static constexpr uint8_t Violet[] = { 238, 130, 238, 255 };
+			static constexpr uint8_t Wheat[] = { 245, 222, 179, 255 };
+			static constexpr uint8_t White[] = { 255, 255, 255, 255 };
+			static constexpr uint8_t WhiteSmoke[] = { 245, 245, 245, 255 };
+			static constexpr uint8_t Yellow[] = { 255, 255, 0, 255 };
+			static constexpr uint8_t YellowGreen[] = { 154, 205, 50, 255 };
 		};
 
 	public:
@@ -234,7 +242,35 @@ namespace hr
 			_mm_storeu_ps(valF, valFinal);
 		}
 
-		static Color parseFromHTML(const char *hexColor, bool gammaCorrect = true)
+		static constexpr float convertSRGB2Linear(uint8_t value) noexcept
+		{
+			//we could do the math here, but since we only have 256 possible values, we use a table, built like this:
+			//for (int i = 0; i < 256; i++)
+			//{
+			//	float c = (double)i * (1.0 / 255.0);
+			//	if (c <= 0.04045)
+			//		table[i] = c / 12.92;
+			//	else
+			//		table[i] = pow((c + 0.055) / 1.055, 2.4);
+			//}
+
+			return TableSRGB2Linear[value];
+		}
+
+		static constexpr float convertLinear2SRGB(float value) noexcept
+		{
+			if (!(value > 0.0f)) // also covers NaNs
+				return 0.0f;
+
+			if (value <= 0.0031308f)
+				return (12.92f * value);
+			if (value < 1.0f)
+				return (1.055f * std::pow(value, 1.0f / 2.4f) - 0.055f);
+
+			return 1.0f;
+		}
+
+		static Color parseFromHTML(const char *hexColor, bool gammaCorrect = true) noexcept
 		{
 			if (*hexColor == '#')
 				hexColor++;
@@ -242,9 +278,9 @@ namespace hr
 			Color color;
 			if (gammaCorrect)
 			{
-				color.mRGBA[0] = Color::gammaCorrect(Encoders::decodeHexByte(hexColor + 0));
-				color.mRGBA[1] = Color::gammaCorrect(Encoders::decodeHexByte(hexColor + 2));
-				color.mRGBA[2] = Color::gammaCorrect(Encoders::decodeHexByte(hexColor + 4));
+				color.mRGBA[0] = convertSRGB2Linear(Encoders::decodeHexByte(hexColor + 0));
+				color.mRGBA[1] = convertSRGB2Linear(Encoders::decodeHexByte(hexColor + 2));
+				color.mRGBA[2] = convertSRGB2Linear(Encoders::decodeHexByte(hexColor + 4));
 				color.mRGBA[3] = 255.0f;
 			}
 			else
@@ -258,11 +294,6 @@ namespace hr
 			_mm_storeu_ps(color.mRGBA, _mm_mul_ps(_mm_loadu_ps(color.mRGBA), Math::SIMD::fUByteMaxInv));
 
 			return color;
-		}
-
-		static unsigned char gammaCorrect(unsigned char value)
-		{
-			return SRGB2Linear[value];
 		}
 
 	public:

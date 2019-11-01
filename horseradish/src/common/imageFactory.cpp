@@ -8,7 +8,7 @@
 
 #include <memory>
 
-namespace hr { namespace imaging
+namespace hr::imaging
 {
 	namespace
 	{
@@ -31,46 +31,46 @@ namespace hr { namespace imaging
 		}
 	}
 
-	Image<unsigned char, ImageFormatRGB> Factory::readPNG(const hr::streams::StreamReader &streamReader)
+	Image<uint8_t, ImageFormatRGB> Factory::readPNG(const hr::streams::StreamReader &streamReader)
 	{
 		hr::streams::MemoryViewStream streamContent;
 		streamReader.stream().cloneAllContent(streamContent);
 
 		unsigned int outW = 0, outH = 0;
-		unsigned char* outBuffer = nullptr;
+		uint8_t* outBuffer = nullptr;
 
-		if (lodepng_decode24(&outBuffer, &outW, &outH, static_cast<const unsigned char *>(streamContent.data()), streamContent.length()) != 0)
-			return Image<unsigned char, ImageFormatRGB>();
+		if (lodepng_decode24(&outBuffer, &outW, &outH, static_cast<const uint8_t *>(streamContent.data()), streamContent.length()) != 0)
+			return Image<uint8_t, ImageFormatRGB>();
 
 		if (outBuffer)
-			return Image<unsigned char, ImageFormatRGB>(std::unique_ptr<unsigned char[]>(outBuffer), outW, outH);
+			return Image<uint8_t, ImageFormatRGB>(std::unique_ptr<uint8_t[]>(outBuffer), outW, outH);
 
-		return Image<unsigned char, ImageFormatRGB>();
+		return Image<uint8_t, ImageFormatRGB>();
 	}
 
-	Image<unsigned char, ImageFormatRGBA> Factory::readPNGWithAlpha(const hr::streams::StreamReader &streamReader)
+	Image<uint8_t, ImageFormatRGBA> Factory::readPNGWithAlpha(const hr::streams::StreamReader &streamReader)
 	{
 		hr::streams::MemoryViewStream streamContent;
 		streamReader.stream().cloneAllContent(streamContent);
 
 		unsigned int outW = 0, outH = 0;
-		unsigned char* outBuffer = nullptr;
+		uint8_t* outBuffer = nullptr;
 
-		if (lodepng_decode32(&outBuffer, &outW, &outH, static_cast<const unsigned char *>(streamContent.data()), streamContent.length()) != 0)
-			return Image<unsigned char, ImageFormatRGBA>();
+		if (lodepng_decode32(&outBuffer, &outW, &outH, static_cast<const uint8_t *>(streamContent.data()), streamContent.length()) != 0)
+			return Image<uint8_t, ImageFormatRGBA>();
 
 		if (outBuffer)
-			return Image<unsigned char, ImageFormatRGBA>(std::unique_ptr<unsigned char[]>(outBuffer), outW, outH);
+			return Image<uint8_t, ImageFormatRGBA>(std::unique_ptr<uint8_t[]>(outBuffer), outW, outH);
 
-		return Image<unsigned char, ImageFormatRGBA>();
+		return Image<uint8_t, ImageFormatRGBA>();
 	}
 
-	bool Factory::savePNG(hr::streams::StreamWriter &streamWriter, const ImageView<unsigned char, ImageFormatRGB>& imgView)
+	bool Factory::savePNG(hr::streams::StreamWriter &streamWriter, const ImageView<uint8_t, ImageFormatRGB>& imgView)
 	{
 		if (imgView.empty())
 			return false;
 
-		unsigned char *bufferOut = nullptr;
+		uint8_t *bufferOut = nullptr;
 		size_t bufferOutSize = 0;
 		lodepng_encode24(&bufferOut, &bufferOutSize, imgView.data(), imgView.width(), imgView.height());
 
@@ -84,12 +84,12 @@ namespace hr { namespace imaging
 		return true;
 	}
 
-	bool Factory::savePNG(hr::streams::StreamWriter &streamWriter, const ImageView<unsigned char, ImageFormatRGBA>& imgView)
+	bool Factory::savePNG(hr::streams::StreamWriter &streamWriter, const ImageView<uint8_t, ImageFormatRGBA>& imgView)
 	{
 		if (imgView.empty())
 			return false;
 
-		unsigned char *bufferOut = nullptr;
+		uint8_t *bufferOut = nullptr;
 		size_t bufferOutSize = 0;
 		lodepng_encode32(&bufferOut, &bufferOutSize, imgView.data(), imgView.width(), imgView.height());
 
@@ -103,7 +103,7 @@ namespace hr { namespace imaging
 		return true;
 	}
 
-	Image<unsigned char, ImageFormatRGBA> Factory::readTGA(hr::streams::StreamReader &streamReader)
+	Image<uint8_t, ImageFormatRGBA> Factory::readTGA(hr::streams::StreamReader &streamReader)
 	{
 		stbi_io_callbacks ioCbS;
 		ioCbS.read = stbIORead;
@@ -114,12 +114,12 @@ namespace hr { namespace imaging
 
 		auto imgData = stbi_load_from_callbacks(&ioCbS, &streamReader, &imgWidth, &imgHeight, &imgNumComponents, 4);
 		if (!imgData)
-			return Image<unsigned char, ImageFormatRGBA>();
+			return Image<uint8_t, ImageFormatRGBA>();
 
-		return Image<unsigned char, ImageFormatRGBA>(std::unique_ptr<unsigned char[]>(imgData), imgWidth, imgHeight);
+		return Image<uint8_t, ImageFormatRGBA>(std::unique_ptr<uint8_t[]>(imgData), imgWidth, imgHeight);
 	}
 
-	Image<unsigned char, ImageFormatRGB> Factory::readJPG(hr::streams::StreamReader &streamReader)
+	Image<uint8_t, ImageFormatRGB> Factory::readJPG(hr::streams::StreamReader &streamReader)
 	{
 		stbi_io_callbacks ioCbS;
 		ioCbS.read = stbIORead;
@@ -130,9 +130,9 @@ namespace hr { namespace imaging
 
 		auto imgData = stbi_load_from_callbacks(&ioCbS, &streamReader, &imgWidth, &imgHeight, &imgNumComponents, 3);
 		if (!imgData)
-			return Image<unsigned char, ImageFormatRGB>();
+			return Image<uint8_t, ImageFormatRGB>();
 
-		return Image<unsigned char, ImageFormatRGB>(std::unique_ptr<unsigned char[]>(imgData), imgWidth, imgHeight);
+		return Image<uint8_t, ImageFormatRGB>(std::unique_ptr<uint8_t[]>(imgData), imgWidth, imgHeight);
 	}
 
 	Image<float, ImageFormatRGB> Factory::readHDRI(hr::streams::StreamReader &streamReader)
@@ -166,4 +166,4 @@ namespace hr { namespace imaging
 
 		return Image<float, ImageFormatRGBA>(std::unique_ptr<float[]>(bufferOut), width, height);
 	}
-} }
+}

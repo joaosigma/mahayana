@@ -7,7 +7,7 @@
 #include <cassert>
 #include <type_traits>
 
-namespace hr { namespace imaging
+namespace hr::imaging
 {
 	//forward declaration of the two main types
 	template<typename TDataType, typename TDataFormat> class Image;
@@ -16,7 +16,7 @@ namespace hr { namespace imaging
 	template<typename TDataType, typename TDataFormat>
 	class ImageViewBase
 	{
-		static_assert(std::is_arithmetic_v<TDataType>, "Data type must be arithmetic (e.g.: float, unsigned char, etc.)");
+		static_assert(std::is_arithmetic_v<TDataType>, "Data type must be arithmetic (e.g.: float, uint8_t, etc.)");
 		static_assert(std::is_base_of_v<ImageFormat<TDataFormat>, TDataFormat>, "Data format must inherit from type ImageFormat");
 
 		template<typename, typename> friend class Image;
@@ -33,7 +33,7 @@ namespace hr { namespace imaging
 		ImageViewBase& operator=(const ImageViewBase&) = delete;
 
 		ImageViewBase(ImageViewBase&& imgView)
-		{ 
+		{
 			*this = std::move(imgView);
 		}
 
@@ -112,7 +112,7 @@ namespace hr { namespace imaging
 			{
 				auto sourcePos = ((curY + cropY) * srcRowSize) + (cropX * TDataFormat::size());
 				auto destPos = curY * destRowSize;
-				
+
 				memcpy(newImg.mDataPtr + destPos, mDataPtr + sourcePos, destRowSize * sizeof(TDataType));
 			}
 
@@ -133,7 +133,7 @@ namespace hr { namespace imaging
 			static_assert(std::is_base_of_v<ImageFormat<TNewDataFormat>, TNewDataFormat>, "Data format must inherit from type ImageFormat");
 
 			//special clone case
-			if constexpr (std::is_same_v<TDataType, TNewDataType> && std::is_same_v<TDataFormat, TNewDataFormat>)
+			if constexpr (std::is_same_v<TDataType, TNewDataType>&& std::is_same_v<TDataFormat, TNewDataFormat>)
 			{
 				return clone();
 			}
@@ -154,10 +154,10 @@ namespace hr { namespace imaging
 						}
 					}
 				}
-				//for float <-> unsigned char conversion
+				//for float <-> uint8_t conversion
 				else if constexpr (
-					(std::is_same_v<TDataType, unsigned char> && std::is_same_v<TNewDataType, float>) ||
-					(std::is_same_v<TDataType, float> && std::is_same_v<TNewDataType, unsigned char>))
+					(std::is_same_v<TDataType, uint8_t>&& std::is_same_v<TNewDataType, float>) ||
+					(std::is_same_v<TDataType, float> && std::is_same_v<TNewDataType, uint8_t>))
 				{
 					TDataType pixelIn[4];
 					TNewDataType pixelOut[4];
@@ -217,11 +217,11 @@ namespace hr { namespace imaging
 		ImageView() = default;
 	};
 
-	template<typename TDataFormat> // unsigned char specialization
-	class ImageView<unsigned char, TDataFormat>
-		: public ImageViewBase<unsigned char, TDataFormat>
+	template<typename TDataFormat> // uint8_t specialization
+	class ImageView<uint8_t, TDataFormat>
+		: public ImageViewBase<uint8_t, TDataFormat>
 	{
-		using BaseType = ImageViewBase<unsigned char, TDataFormat>;
+		using BaseType = ImageViewBase<uint8_t, TDataFormat>;
 
 		template<typename, typename> friend class Image;
 		template<typename, typename> friend class ImageBase;
@@ -229,38 +229,38 @@ namespace hr { namespace imaging
 		template<typename, typename> friend class ImageViewBase;
 
 	public:
-		ImageView(unsigned char* const data, size_t width, size_t height)
+		ImageView(uint8_t* const data, size_t width, size_t height)
 			: BaseType(data, width, height)
 		{ }
 
 		ImageView(ImageView&& imgView) = default;
 		ImageView& operator=(ImageView&& imgView) = default;
 
-		void getPixel(const size_t x, const size_t y, hr::Color &pixelValue) const
+		void getPixel(const size_t x, const size_t y, hr::Color& pixelValue) const
 		{
 			assert(mDataPtr);
 
-			unsigned char tmpPixel[4];
+			uint8_t tmpPixel[4];
 
-			TDataFormat::readRGBA<unsigned char>(mDataPtr + getPos(x, y), tmpPixel, 0, 255);
+			TDataFormat::readRGBA<uint8_t>(mDataPtr + getPos(x, y), tmpPixel, 0, 255);
 			pixelValue.Set(tmpPixel);
 		}
 
-		void getPixel(const size_t x, const size_t y, unsigned char* const pixelValue) const
+		void getPixel(const size_t x, const size_t y, uint8_t* const pixelValue) const
 		{
 			assert(mDataPtr);
 			assert(pixelValue);
 
-			TDataFormat::readRGBA<unsigned char>(mDataPtr + getPos(x, y), pixelValue, 0, 255);
+			TDataFormat::readRGBA<uint8_t>(mDataPtr + getPos(x, y), pixelValue, 0, 255);
 		}
 
 		template<typename TNewDataType, typename TNewDataFormat>
-		Image<TNewDataType, TNewDataFormat> convert(const unsigned char defaultColorValue, const unsigned char defaultAlphaValue) const
+		Image<TNewDataType, TNewDataFormat> convert(const uint8_t defaultColorValue, const uint8_t defaultAlphaValue) const
 		{
 			static_assert(std::is_base_of<ImageFormat<TNewDataFormat>, TNewDataFormat>::value, "Data format must inherit from type ImageFormat");
 
-			// { unsigned char -> float, same format } special case
-			if constexpr (std::is_same_v<float, TNewDataType> && std::is_same_v<TDataFormat, TNewDataFormat>)
+			// { uint8_t -> float, same format } special case
+			if constexpr (std::is_same_v<float, TNewDataType>&& std::is_same_v<TDataFormat, TNewDataFormat>)
 			{
 				Image<float, TDataFormat> newImg(mWidth, mHeight);
 
@@ -281,9 +281,9 @@ namespace hr { namespace imaging
 				return newImg;
 			}
 			// { same type, RGB -> RGBA } special case
-			else if constexpr (std::is_same_v<unsigned char, TNewDataType> && std::is_same_v<TDataFormat, ImageFormatRGB> && std::is_same_v<TNewDataFormat, ImageFormatRGBA>)
+			else if constexpr (std::is_same_v<uint8_t, TNewDataType>&& std::is_same_v<TDataFormat, ImageFormatRGB>&& std::is_same_v<TNewDataFormat, ImageFormatRGBA>)
 			{
-				Image<unsigned char, ImageFormatRGBA> newImg(mWidth, mHeight);
+				Image<uint8_t, ImageFormatRGBA> newImg(mWidth, mHeight);
 
 				{
 					auto numPixels = getArea();
@@ -302,9 +302,9 @@ namespace hr { namespace imaging
 				return newImg;
 			}
 			// { same type, RGBA -> RGB }
-			else if constexpr (std::is_same_v<unsigned char, TNewDataType> && std::is_same_v<TDataFormat, ImageFormatRGBA> && std::is_same_v<TNewDataFormat, ImageFormatRGB>)
+			else if constexpr (std::is_same_v<uint8_t, TNewDataType>&& std::is_same_v<TDataFormat, ImageFormatRGBA>&& std::is_same_v<TNewDataFormat, ImageFormatRGB>)
 			{
-				Image<unsigned char, ImageFormatRGB> newImg(mWidth, mHeight);
+				Image<uint8_t, ImageFormatRGB> newImg(mWidth, mHeight);
 
 				{
 					auto numPixels = getArea();
@@ -324,18 +324,18 @@ namespace hr { namespace imaging
 			else
 			{
 				//this takes care of all other cases
-				return ImageViewBase<unsigned char, TDataFormat>::template convert<TNewDataType, TNewDataFormat>(defaultColorValue, defaultAlphaValue);
+				return ImageViewBase<uint8_t, TDataFormat>::template convert<TNewDataType, TNewDataFormat>(defaultColorValue, defaultAlphaValue);
 			}
 		}
 
-		Image<unsigned char, TDataFormat> resize(size_t width, size_t height) const
+		Image<uint8_t, TDataFormat> resize(size_t width, size_t height, bool assumeSRGB) const
 		{
-			Image<unsigned char, TDataFormat> newImg(width, height);
+			Image<uint8_t, TDataFormat> newImg(width, height);
 
 			stbir_resize_uint8_generic(mDataPtr, BaseType::width(), BaseType::height(), 0,
 				newImg.mDataPtr, width, height, 0,
 				TDataFormat::size(), STBIR_ALPHA_CHANNEL_NONE,
-				STBIR_FLAG_ALPHA_PREMULTIPLIED, STBIR_EDGE_CLAMP, STBIR_FILTER_DEFAULT, STBIR_COLORSPACE_LINEAR, nullptr);
+				STBIR_FLAG_ALPHA_PREMULTIPLIED, STBIR_EDGE_CLAMP, STBIR_FILTER_DEFAULT, assumeSRGB ? STBIR_COLORSPACE_SRGB : STBIR_COLORSPACE_LINEAR, nullptr);
 
 			return newImg;
 		}
@@ -363,7 +363,7 @@ namespace hr { namespace imaging
 		ImageView(ImageView&& imgView) = default;
 		ImageView& operator=(ImageView&& imgView) = default;
 
-		void getPixel(const size_t x, const size_t y, hr::Color &pixelValue) const
+		void getPixel(const size_t x, const size_t y, hr::Color& pixelValue) const
 		{
 			assert(mDataPtr);
 
@@ -386,10 +386,10 @@ namespace hr { namespace imaging
 		{
 			static_assert(std::is_base_of<ImageFormat<TNewDataFormat>, TNewDataFormat>::value, "Data format must inherit from type ImageFormat");
 
-			// { float -> unsigned char, same format } special case
-			if constexpr (std::is_same_v<unsigned char, TNewDataType> && std::is_same_v<TDataFormat, TNewDataFormat>) 
+			// { float -> uint8_t, same format } special case
+			if constexpr (std::is_same_v<uint8_t, TNewDataType>&& std::is_same_v<TDataFormat, TNewDataFormat>)
 			{
-				Image<unsigned char, TDataFormat> newImg(mWidth, mHeight);
+				Image<uint8_t, TDataFormat> newImg(mWidth, mHeight);
 
 				{
 					size_t curPos = 0;
@@ -553,11 +553,11 @@ namespace hr { namespace imaging
 		Image& operator=(Image&& img) = default;
 	};
 
-	template<typename TDataFormat> // unsigned char specialization
-	class Image<unsigned char, TDataFormat>
-		: public ImageBase<unsigned char, TDataFormat>
+	template<typename TDataFormat> // uint8_t specialization
+	class Image<uint8_t, TDataFormat>
+		: public ImageBase<uint8_t, TDataFormat>
 	{
-		using BaseType = ImageBase<unsigned char, TDataFormat>;
+		using BaseType = ImageBase<uint8_t, TDataFormat>;
 
 		template<typename, typename> friend class Image;
 		template<typename, typename> friend class ImageBase;
@@ -571,7 +571,7 @@ namespace hr { namespace imaging
 			: BaseType(width, height)
 		{ }
 
-		Image(std::unique_ptr<unsigned char[]> data, size_t width, size_t height)
+		Image(std::unique_ptr<uint8_t[]> data, size_t width, size_t height)
 			: BaseType(std::move(data), width, height)
 		{ }
 
@@ -580,9 +580,9 @@ namespace hr { namespace imaging
 		Image(Image&& img) = default;
 		Image& operator=(Image&& img) = default;
 
-		void clear(const unsigned char r, const unsigned char g, const unsigned char b, const unsigned char a)
+		void clear(const uint8_t r, const uint8_t g, const uint8_t b, const uint8_t a)
 		{
-			unsigned char tmpPixel[] = { r, g, b, a };
+			uint8_t tmpPixel[] = { r, g, b, a };
 
 			size_t curPos = 0;
 			auto walkerPtr = mDataPtr;
@@ -615,18 +615,18 @@ namespace hr { namespace imaging
 			auto imgArea = getArea();
 
 			hr::Color pixelValue;
-			unsigned char tmpPixel[4];
+			uint8_t tmpPixel[4];
 
 			for (size_t curPos = 0; curPos < imgArea; curPos++)
 			{
-				TDataFormat::readRGBA<unsigned char>(walkerPtr, tmpPixel, 0, 255);
+				TDataFormat::readRGBA<uint8_t>(walkerPtr, tmpPixel, 0, 255);
 				if (tmpPixel[3] != 255)
 				{
 					pixelValue.Set(tmpPixel);
 					pixelValue.WeightRGB(pixelValue.a);
 					pixelValue.Write(tmpPixel);
 
-					TDataFormat::writeRGB<unsigned char>(walkerPtr, tmpPixel);
+					TDataFormat::writeRGB<uint8_t>(walkerPtr, tmpPixel);
 				}
 
 				walkerPtr += TDataFormat::size();
@@ -648,29 +648,29 @@ namespace hr { namespace imaging
 				auto walkerPtr = mDataPtr;
 				auto imgArea = getArea();
 
-				unsigned char tmpPixel[4];
+				uint8_t tmpPixel[4];
 				for (size_t curPos = 0; curPos < imgArea; curPos++)
 				{
-					TDataFormat::readRGB<unsigned char>(walkerPtr, tmpPixel, 0);
+					TDataFormat::readRGB<uint8_t>(walkerPtr, tmpPixel, 0);
 					tmpPixel[0] = Color::gammaCorrect(tmpPixel[0]);
 					tmpPixel[1] = Color::gammaCorrect(tmpPixel[1]);
 					tmpPixel[2] = Color::gammaCorrect(tmpPixel[2]);
-					TDataFormat::writeRGB<unsigned char>(walkerPtr, tmpPixel);
+					TDataFormat::writeRGB<uint8_t>(walkerPtr, tmpPixel);
 
 					walkerPtr += TDataFormat::size();
 				}
 			}
 		}
 
-		void setPixel(const size_t x, const size_t y, hr::Color &pixelValue)
+		void setPixel(const size_t x, const size_t y, hr::Color& pixelValue)
 		{
-			unsigned char tmpPixel[4];
+			uint8_t tmpPixel[4];
 			hr::Color::convertColor(hr::Color(r, g, b, a), tmpPixel, true);
 
 			TDataFormat::writeRGBA(mDataPtr + getPos(x, y), tmpPixel);
 		}
 
-		void setPixel(const size_t x, const size_t y, const unsigned char* const pixelValue)
+		void setPixel(const size_t x, const size_t y, const uint8_t* const pixelValue)
 		{
 			TDataFormat::writeRGBA(mDataPtr + getPos(x, y), pixelValue);
 		}
@@ -715,20 +715,20 @@ namespace hr { namespace imaging
 			auto walkerPtr = mDataPtr;
 			auto imgArea = getArea();
 
-			unsigned char tmpPixel[4];
+			uint8_t tmpPixel[4];
 			hr::Color pixelValue;
 
 			for (size_t curPos = 0; curPos < imgArea; curPos++)
 			{
-				TDataFormat::readRGBA<unsigned char>(walkerPtr, tmpPixel, 0, 255);
+				TDataFormat::readRGBA<uint8_t>(walkerPtr, tmpPixel, 0, 255);
 
 				pixelValue.Set(tmpPixel);
 				if (cb(pixelValue))
 				{
 					pixelValue.Write(tmpPixel);
-					TDataFormat::writeRGBA<unsigned char>(walkerPtr, tmpPixel);
+					TDataFormat::writeRGBA<uint8_t>(walkerPtr, tmpPixel);
 				}
-				
+
 				walkerPtr += TDataFormat::size();
 			}
 		}
@@ -787,7 +787,7 @@ namespace hr { namespace imaging
 			}
 		}
 
-		void setPixel(const size_t x, const size_t y, hr::Color &pixelValue)
+		void setPixel(const size_t x, const size_t y, hr::Color& pixelValue)
 		{
 			TDataFormat::writeRGBA(mDataPtr + getPos(x, y), pixelValue);
 		}
@@ -847,4 +847,4 @@ namespace hr { namespace imaging
 			}
 		}
 	};
-} }
+}

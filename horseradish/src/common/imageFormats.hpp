@@ -1,6 +1,6 @@
 #pragma once
 
-namespace hr { namespace imaging
+namespace hr::imaging
 {
 	template <class TFormat>
 	class ImageFormat
@@ -199,4 +199,4 @@ namespace hr { namespace imaging
 			std::memcpy(dataOut, pixelValue, sizeof(T) * 4);
 		}
 	};
-} }
+}

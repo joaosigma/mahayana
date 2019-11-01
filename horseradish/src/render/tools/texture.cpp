@@ -1,52 +1,53 @@
 #include "texture.hpp"
 
 #include "libs/stb/stb_dxt.h"
+#include "libs/bc7/bc7enc16.h"
 #include "libs/libsquish/squish.h"
 
-namespace hr { namespace render { namespace tools
+namespace hr::render::tools
 {
 	namespace
 	{
-		#pragma pack(push, 1)
-		std::array<unsigned char, 6> CTextureFileSig = { 'h', 'r', 'c', 't', 'e', 'x' };
+#pragma pack(push, 1)
+		std::array<uint8_t, 6> CTextureFileSig = { 'h', 'r', 'c', 't', 'e', 'x' };
 
 		struct CTextureHeader
 		{
-			unsigned char fileSig[CTextureFileSig.size()];
-			unsigned char version;
-			std::uint32_t width;
-			std::uint32_t height;
-			std::uint16_t compression; //[1, 3, 4, 5] corresponding to [BC1, BC3, BC4, BC5]
-			std::uint16_t numLevels; //num mipmaps
+			uint8_t fileSig[CTextureFileSig.size()];
+			uint8_t version;
+			uint32_t width;
+			uint32_t height;
+			uint16_t compression; //[1, 3, 4, 5, 6] corresponding to [BC1, BC3, BC4, BC5, BC7]
+			uint16_t numLevels; //num mipmaps
 		};
 
 		struct CTextureLevelInfo
 		{
-			std::uint16_t level;
-			std::uint32_t width;
-			std::uint32_t height;
-			std::uint32_t size;
+			uint16_t level;
+			uint32_t width;
+			uint32_t height;
+			uint32_t size;
 		};
-		#pragma pack(pop)
+#pragma pack(pop)
 
-		bool sampleR(const hr::imaging::ImageView<unsigned char, hr::imaging::ImageFormatRGBA>& image, size_t x, size_t y, unsigned char sample[1])
+		bool sampleR(const hr::imaging::ImageView<uint8_t, hr::imaging::ImageFormatRGBA>& image, size_t x, size_t y, uint8_t sample[1])
 		{
 			if ((x >= image.width()) || (y >= image.height()))
 				return false;
 
-			unsigned char sampleRGBA[4];
+			uint8_t sampleRGBA[4];
 			image.getPixel(x, y, sampleRGBA);
 
 			sample[0] = sampleRGBA[0];
 			return true;
 		}
 
-		bool sampleRG(const hr::imaging::ImageView<unsigned char, hr::imaging::ImageFormatRGBA>& image, size_t x, size_t y, unsigned char sample[2])
+		bool sampleRG(const hr::imaging::ImageView<uint8_t, hr::imaging::ImageFormatRGBA>& image, size_t x, size_t y, uint8_t sample[2])
 		{
 			if ((x >= image.width()) || (y >= image.height()))
 				return false;
 
-			unsigned char sampleRGBA[4];
+			uint8_t sampleRGBA[4];
 			image.getPixel(x, y, sampleRGBA);
 
 			sample[0] = sampleRGBA[0];
@@ -54,7 +55,7 @@ namespace hr { namespace render { namespace tools
 			return true;
 		}
 
-		bool sampleRGBA(const hr::imaging::ImageView<unsigned char, hr::imaging::ImageFormatRGBA>& image, size_t x, size_t y, unsigned char sample[4])
+		bool sampleRGBA(const hr::imaging::ImageView<uint8_t, hr::imaging::ImageFormatRGBA>& image, size_t x, size_t y, uint8_t sample[4])
 		{
 			if ((x >= image.width()) || (y >= image.height()))
 				return false;
@@ -63,7 +64,7 @@ namespace hr { namespace render { namespace tools
 			return true;
 		}
 
-		void sample4x4BlockR(const hr::imaging::ImageView<unsigned char, hr::imaging::ImageFormatRGBA>& image, size_t blockX, size_t blockY, unsigned char sample[16], int& pixelMask)
+		void sample4x4BlockR(const hr::imaging::ImageView<uint8_t, hr::imaging::ImageFormatRGBA>& image, size_t blockX, size_t blockY, uint8_t sample[16], int& pixelMask)
 		{
 			auto imageX = blockX * 4;
 			auto imageY = blockY * 4;
@@ -92,7 +93,7 @@ namespace hr { namespace render { namespace tools
 			pixelMask |= sampleRG(image, imageX + 3, imageY + 3, sample + 3) ? (1 << 15) : 0;
 		}
 
-		void sample4x4BlockRG(const hr::imaging::ImageView<unsigned char, hr::imaging::ImageFormatRGBA>& image, size_t blockX, size_t blockY, unsigned char sample[32], int& pixelMask)
+		void sample4x4BlockRG(const hr::imaging::ImageView<uint8_t, hr::imaging::ImageFormatRGBA>& image, size_t blockX, size_t blockY, uint8_t sample[32], int& pixelMask)
 		{
 			auto imageX = blockX * 4;
 			auto imageY = blockY * 4;
@@ -121,7 +122,7 @@ namespace hr { namespace render { namespace tools
 			pixelMask |= sampleRG(image, imageX + 3, imageY + 3, sample + 6) ? (1 << 15) : 0;
 		}
 
-		void sample4x4BlockRGBA(const hr::imaging::ImageView<unsigned char, hr::imaging::ImageFormatRGBA>& image, size_t blockX, size_t blockY, unsigned char sample[64], int& pixelMask)
+		void sample4x4BlockRGBA(const hr::imaging::ImageView<uint8_t, hr::imaging::ImageFormatRGBA>& image, size_t blockX, size_t blockY, uint8_t sample[64], int& pixelMask)
 		{
 			auto imageX = blockX * 4;
 			auto imageY = blockY * 4;
@@ -197,14 +198,24 @@ namespace hr { namespace render { namespace tools
 			return block;
 		}
 
-		std::unique_ptr<unsigned char[]> compressImageBC1(const CompressedBlock& compressBlock, const hr::imaging::ImageView<unsigned char, hr::imaging::ImageFormatRGBA>& image)
+		CompressedBlock compressInitBlockBC7(size_t imageWidth, size_t imageHeight)
+		{
+			CompressedBlock block;
+
+			block.width = imageWidth / 4 + (((imageWidth % 4) > 0) ? 1 : 0);
+			block.height = imageHeight / 4 + (((imageHeight % 4) > 0) ? 1 : 0);
+			block.perPixelBytes = 16;
+			return block;
+		}
+
+		std::unique_ptr<uint8_t[]> compressImageBC1(const CompressedBlock& compressBlock, const hr::imaging::ImageView<uint8_t, hr::imaging::ImageFormatRGBA>& image)
 		{
 			assert(compressBlock.perPixelBytes == 8);
-			auto compressedImg = std::unique_ptr<unsigned char[]>(new unsigned char[compressBlock.width * compressBlock.height * compressBlock.perPixelBytes]);
+			auto compressedImg = std::unique_ptr<uint8_t[]>(new uint8_t[compressBlock.width * compressBlock.height * compressBlock.perPixelBytes]);
 
 			int pixelMask;
-			std::array<unsigned char, 8> dstBlock;
-			std::array<unsigned char, 4 * 4 * 4> srcBlock; //4x4 RGBA
+			std::array<uint8_t, 8> dstBlock;
+			std::array<uint8_t, 4 * 4 * 4> srcBlock; //4x4 RGBA
 
 			for (size_t y = 0; y < compressBlock.height; ++y)
 			{
@@ -223,14 +234,14 @@ namespace hr { namespace render { namespace tools
 			return compressedImg;
 		}
 
-		std::unique_ptr<unsigned char[]> compressImageBC3(const CompressedBlock& compressBlock, const hr::imaging::ImageView<unsigned char, hr::imaging::ImageFormatRGBA>& image)
+		std::unique_ptr<uint8_t[]> compressImageBC3(const CompressedBlock& compressBlock, const hr::imaging::ImageView<uint8_t, hr::imaging::ImageFormatRGBA>& image)
 		{
 			assert(compressBlock.perPixelBytes == 16);
-			auto compressedImg = std::unique_ptr<unsigned char[]>(new unsigned char[compressBlock.width * compressBlock.height * compressBlock.perPixelBytes]);
+			auto compressedImg = std::unique_ptr<uint8_t[]>(new uint8_t[compressBlock.width * compressBlock.height * compressBlock.perPixelBytes]);
 
 			int pixelMask;
-			std::array<unsigned char, 16> dstBlock;
-			std::array<unsigned char, 4 * 4 * 4> srcBlock; //4x4 RGBA
+			std::array<uint8_t, 16> dstBlock;
+			std::array<uint8_t, 4 * 4 * 4> srcBlock; //4x4 RGBA
 
 			for (size_t y = 0; y < compressBlock.height; ++y)
 			{
@@ -249,14 +260,14 @@ namespace hr { namespace render { namespace tools
 			return compressedImg;
 		}
 
-		std::unique_ptr<unsigned char[]> compressImageBC5(const CompressedBlock& compressBlock, const hr::imaging::ImageView<unsigned char, hr::imaging::ImageFormatRGBA>& image)
+		std::unique_ptr<uint8_t[]> compressImageBC5(const CompressedBlock& compressBlock, const hr::imaging::ImageView<uint8_t, hr::imaging::ImageFormatRGBA>& image)
 		{
 			assert(compressBlock.perPixelBytes == 16);
-			auto compressedImg = std::unique_ptr<unsigned char[]>(new unsigned char[compressBlock.width * compressBlock.height * compressBlock.perPixelBytes]);
+			auto compressedImg = std::unique_ptr<uint8_t[]>(new uint8_t[compressBlock.width * compressBlock.height * compressBlock.perPixelBytes]);
 
 			int pixelMask;
-			std::array<unsigned char, 16> dstBlock;
-			std::array<unsigned char, 4 * 4 * 2> srcBlock; //4x4 RG
+			std::array<uint8_t, 16> dstBlock;
+			std::array<uint8_t, 4 * 4 * 2> srcBlock; //4x4 RG
 
 			for (size_t y = 0; y < compressBlock.height; ++y)
 			{
@@ -274,9 +285,40 @@ namespace hr { namespace render { namespace tools
 
 			return compressedImg;
 		}
+
+		std::unique_ptr<uint8_t[]> compressImageBC7(const CompressedBlock& compressBlock, const hr::imaging::ImageView<uint8_t, hr::imaging::ImageFormatRGBA>& image)
+		{
+			assert(compressBlock.perPixelBytes == 16);
+			auto compressedImg = std::unique_ptr<uint8_t[]>(new uint8_t[compressBlock.width * compressBlock.height * compressBlock.perPixelBytes]);
+
+			int pixelMask;
+			std::array<uint8_t, 16> dstBlock;
+			std::array<uint8_t, 4 * 4 * 4> srcBlock; //4x4 RGBA
+
+			bc7enc16_compress_block_init();
+
+			bc7enc16_compress_block_params bc7Params;
+			bc7enc16_compress_block_params_init(&bc7Params);
+
+			for (size_t y = 0; y < compressBlock.height; ++y)
+			{
+				for (size_t x = 0; x < compressBlock.width; ++x)
+				{
+					srcBlock.fill(0);
+					pixelMask = 0;
+					sample4x4BlockRGBA(image, x, y, srcBlock.data(), pixelMask);
+
+					auto hasAlpha = bc7enc16_compress_block(dstBlock.data(), srcBlock.data(), &bc7Params);
+
+					std::memcpy(compressedImg.get() + (y * compressBlock.width * compressBlock.perPixelBytes) + (x * compressBlock.perPixelBytes), dstBlock.data(), dstBlock.size());
+				}
+			}
+
+			return compressedImg;
+		}
 	}
 
-	bool TextureTools::uploadDiffuse(const hr::imaging::ImageView<unsigned char, hr::imaging::ImageFormatRGBA>& imageSrc, hr::gl::objects::Texture& textureDst)
+	bool TextureTools::uploadDiffuse(const hr::imaging::ImageView<uint8_t, hr::imaging::ImageFormatRGBA>& imageSrc, hr::gl::objects::Texture& textureDst)
 	{
 		if (imageSrc.empty())
 			return false;
@@ -293,13 +335,13 @@ namespace hr { namespace render { namespace tools
 				break;
 
 			curLevel++;
-			imageScaled = imageScaled.resize(std::max<size_t>(1, imageScaled.width() >> 1), std::max<size_t>(1, imageScaled.height() >> 1));
+			imageScaled = imageScaled.resize(std::max<size_t>(1, imageScaled.width() >> 1), std::max<size_t>(1, imageScaled.height() >> 1), true);
 		};
 
 		return true;
 	}
 
-	bool TextureTools::uploadDiffuse(const hr::imaging::ImageView<unsigned char, hr::imaging::ImageFormatRGB>& imageSrc, hr::gl::objects::Texture& textureDst)
+	bool TextureTools::uploadDiffuse(const hr::imaging::ImageView<uint8_t, hr::imaging::ImageFormatRGB>& imageSrc, hr::gl::objects::Texture& textureDst)
 	{
 		if (imageSrc.empty())
 			return false;
@@ -307,16 +349,16 @@ namespace hr { namespace render { namespace tools
 		textureDst.init(hr::gl::objects::Texture::Type::Tex2D, hr::gl::objects::Texture::StorageType::RGB_8, imageSrc.width(), imageSrc.height());
 
 		size_t curLevel = 0;
-		auto imageScaled = imageSrc.convert<unsigned char, hr::imaging::ImageFormatRGBA>(0, 255);
+		auto imageScaled = imageSrc.convert<uint8_t, hr::imaging::ImageFormatRGBA>(0, 255);
 
-		while(true)
+		while (true)
 		{
 			textureDst.uploadData(curLevel, 0, 0, imageScaled.width(), imageScaled.height(), hr::gl::objects::Texture::DataFormat::RGBA, hr::gl::objects::Texture::DataType::UBYTE, imageScaled.data());
 			if (imageScaled.getArea() <= 1)
 				break;
 
 			curLevel++;
-			imageScaled = imageScaled.resize(std::max<size_t>(1, imageScaled.width() >> 1), std::max<size_t>(1, imageScaled.height() >> 1));
+			imageScaled = imageScaled.resize(std::max<size_t>(1, imageScaled.width() >> 1), std::max<size_t>(1, imageScaled.height() >> 1), true);
 		};
 
 		return true;
@@ -353,12 +395,22 @@ namespace hr { namespace render { namespace tools
 		if (std::memcmp(ctexHeader.fileSig, CTextureFileSig.data(), sizeof(ctexHeader.fileSig)) != 0)
 			return false;
 
-		if (ctexHeader.compression != 1) //BC5
+		hr::gl::objects::Texture::StorageType storageType;
+		switch (ctexHeader.compression)
+		{
+		case 1: //BC1
+			storageType = hr::gl::objects::Texture::StorageType::COMPRESSED_SRGB_BC1;
+			break;
+		case 6: //BC7
+			storageType = hr::gl::objects::Texture::StorageType::COMPRESSED_SRGB_BC7;
+			break;
+		default:
 			return false;
+		}
 
-		textureDst.init(hr::gl::objects::Texture::Type::Tex2D, hr::gl::objects::Texture::StorageType::COMPRESSED_SRGB_BC1, ctexHeader.width, ctexHeader.height);
+		textureDst.init(hr::gl::objects::Texture::Type::Tex2D, storageType, ctexHeader.width, ctexHeader.height);
 
-		std::unique_ptr<unsigned char[]> tmpCompressedData;
+		std::unique_ptr<uint8_t[]> tmpCompressedData;
 		for (size_t curLevel = 0; curLevel < ctexHeader.numLevels; ++curLevel)
 		{
 			CTextureLevelInfo ctexLevelInfo;
@@ -366,27 +418,27 @@ namespace hr { namespace render { namespace tools
 				return false;
 
 			if (!tmpCompressedData)
-				tmpCompressedData = std::unique_ptr<unsigned char[]>(new unsigned char[ctexLevelInfo.size]);
+				tmpCompressedData = std::unique_ptr<uint8_t[]>(new uint8_t[ctexLevelInfo.size]);
 
 			if (streamIn.read(tmpCompressedData.get(), ctexLevelInfo.size) != ctexLevelInfo.size)
 				return false;
 
-			textureDst.uploadCompressedData(curLevel, 0, 0, ctexLevelInfo.width, ctexLevelInfo.height, hr::gl::objects::Texture::StorageType::COMPRESSED_BC1, ctexLevelInfo.size, tmpCompressedData.get());
+			textureDst.uploadCompressedData(curLevel, 0, 0, ctexLevelInfo.width, ctexLevelInfo.height, storageType, ctexLevelInfo.size, tmpCompressedData.get());
 		}
 
 		return true;
 	}
 
-	bool TextureTools::storeCompressedDiffuse(hr::streams::StreamWriter& streamOut, const hr::imaging::ImageView<unsigned char, hr::imaging::ImageFormatRGB>& imageSrc)
+	bool TextureTools::storeCompressedDiffuse(hr::streams::StreamWriter& streamOut, const hr::imaging::ImageView<uint8_t, hr::imaging::ImageFormatRGB>& imageSrc)
 	{
 		if (imageSrc.empty())
 			return false;
 
-		auto imageRGBA = imageSrc.convert<unsigned char, hr::imaging::ImageFormatRGBA>(0, 255); //we have to work with RGBA
+		auto imageRGBA = imageSrc.convert<uint8_t, hr::imaging::ImageFormatRGBA>(0, 255); //we have to work with RGBA
 		return TextureTools::storeCompressedDiffuse(streamOut, imageRGBA);
 	}
 
-	bool TextureTools::storeCompressedDiffuse(hr::streams::StreamWriter& streamOut, const hr::imaging::ImageView<unsigned char, hr::imaging::ImageFormatRGBA>& imageSrc)
+	bool TextureTools::storeCompressedDiffuse(hr::streams::StreamWriter& streamOut, const hr::imaging::ImageView<uint8_t, hr::imaging::ImageFormatRGBA>& imageSrc)
 	{
 		if (imageSrc.empty())
 			return false;
@@ -396,17 +448,17 @@ namespace hr { namespace render { namespace tools
 		ctexHeader.version = 1;
 		ctexHeader.width = imageSrc.width();
 		ctexHeader.height = imageSrc.height();
-		ctexHeader.compression = 1; // BC1
-		ctexHeader.numLevels = static_cast<std::uint16_t>(hr::gl::objects::Texture::calculateNumMipMaps(ctexHeader.width, ctexHeader.height));
+		ctexHeader.compression = 6; // BC7
+		ctexHeader.numLevels = static_cast<uint16_t>(hr::gl::objects::Texture::calculateNumMipMaps(ctexHeader.width, ctexHeader.height));
 		streamOut.write(&ctexHeader, sizeof(CTextureHeader));
 
-		std::uint16_t curLevel = 0;
+		uint16_t curLevel = 0;
 		auto imageScaled = imageSrc.clone();
 
 		while (true)
 		{
-			auto compressBlock = compressInitBlockBC1(imageScaled.width(), imageScaled.height());
-			auto compressedImg = compressImageBC1(compressBlock, imageScaled);
+			auto compressBlock = compressInitBlockBC7(imageScaled.width(), imageScaled.height());
+			auto compressedImg = compressImageBC7(compressBlock, imageScaled);
 
 			CTextureLevelInfo ctexLevelInfo;
 			ctexLevelInfo.level = curLevel;
@@ -421,7 +473,7 @@ namespace hr { namespace render { namespace tools
 				break;
 
 			curLevel++;
-			imageScaled = imageScaled.resize(std::max<size_t>(1, imageScaled.width() >> 1), std::max<size_t>(1, imageScaled.height() >> 1));
+			imageScaled = imageScaled.resize(std::max<size_t>(1, imageScaled.width() >> 1), std::max<size_t>(1, imageScaled.height() >> 1), true);
 		};
 
 		assert((curLevel + 1) == ctexHeader.numLevels);
@@ -431,7 +483,7 @@ namespace hr { namespace render { namespace tools
 		return true;
 	}
 
-	bool TextureTools::uploadNormal(const hr::imaging::ImageView<unsigned char, hr::imaging::ImageFormatRGB>& imageSrc, hr::gl::objects::Texture& textureDst)
+	bool TextureTools::uploadNormal(const hr::imaging::ImageView<uint8_t, hr::imaging::ImageFormatRGB>& imageSrc, hr::gl::objects::Texture& textureDst)
 	{
 		if (imageSrc.empty())
 			return false;
@@ -445,7 +497,7 @@ namespace hr { namespace render { namespace tools
 		{
 			auto imageNormals = imageScaled.clone();
 			imageNormals.renormalizeNormals(true);
-			auto imageByte = imageNormals.convert<unsigned char, hr::imaging::ImageFormatRGBA>(0.0f, 1.0f);
+			auto imageByte = imageNormals.convert<uint8_t, hr::imaging::ImageFormatRGBA>(0.0f, 1.0f);
 
 			textureDst.uploadData(curLevel, 0, 0, imageByte.width(), imageByte.height(), hr::gl::objects::Texture::DataFormat::RGBA, hr::gl::objects::Texture::DataType::UBYTE, imageByte.data());
 			if (imageByte.getArea() <= 1)
@@ -471,7 +523,7 @@ namespace hr { namespace render { namespace tools
 
 		textureDst.init(hr::gl::objects::Texture::Type::Tex2D, hr::gl::objects::Texture::StorageType::COMPRESSED_BC5, ctexHeader.width, ctexHeader.height);
 
-		std::unique_ptr<unsigned char[]> tmpCompressedData;
+		std::unique_ptr<uint8_t[]> tmpCompressedData;
 		for (size_t curLevel = 0; curLevel < ctexHeader.numLevels; ++curLevel)
 		{
 			CTextureLevelInfo ctexLevelInfo;
@@ -479,7 +531,7 @@ namespace hr { namespace render { namespace tools
 				return false;
 
 			if (!tmpCompressedData)
-				tmpCompressedData = std::unique_ptr<unsigned char[]>(new unsigned char[ctexLevelInfo.size]);
+				tmpCompressedData = std::unique_ptr<uint8_t[]>(new uint8_t[ctexLevelInfo.size]);
 
 			if (streamIn.read(tmpCompressedData.get(), ctexLevelInfo.size) != ctexLevelInfo.size)
 				return false;
@@ -490,16 +542,16 @@ namespace hr { namespace render { namespace tools
 		return true;
 	}
 
-	bool TextureTools::storeCompressedNormal(hr::streams::StreamWriter& streamOut, const hr::imaging::ImageView<unsigned char, hr::imaging::ImageFormatRGB>& imageSrc)
+	bool TextureTools::storeCompressedNormal(hr::streams::StreamWriter& streamOut, const hr::imaging::ImageView<uint8_t, hr::imaging::ImageFormatRGB>& imageSrc)
 	{
 		if (imageSrc.empty())
 			return false;
 
-		auto imageRGBA = imageSrc.convert<unsigned char, hr::imaging::ImageFormatRGBA>(0, 255); //we have to work with RGBA
+		auto imageRGBA = imageSrc.convert<uint8_t, hr::imaging::ImageFormatRGBA>(0, 255); //we have to work with RGBA
 		return TextureTools::storeCompressedNormal(streamOut, imageRGBA);
 	}
 
-	bool TextureTools::storeCompressedNormal(hr::streams::StreamWriter& streamOut, const hr::imaging::ImageView<unsigned char, hr::imaging::ImageFormatRGBA>& imageSrc)
+	bool TextureTools::storeCompressedNormal(hr::streams::StreamWriter& streamOut, const hr::imaging::ImageView<uint8_t, hr::imaging::ImageFormatRGBA>& imageSrc)
 	{
 		if (imageSrc.empty())
 			return false;
@@ -510,14 +562,14 @@ namespace hr { namespace render { namespace tools
 		ctexHeader.width = imageSrc.width();
 		ctexHeader.height = imageSrc.height();
 		ctexHeader.compression = 5; // BC5
-		ctexHeader.numLevels = static_cast<std::uint16_t>(hr::gl::objects::Texture::calculateNumMipMaps(ctexHeader.width, ctexHeader.height));
+		ctexHeader.numLevels = static_cast<uint16_t>(hr::gl::objects::Texture::calculateNumMipMaps(ctexHeader.width, ctexHeader.height));
 		streamOut.write(&ctexHeader, sizeof(CTextureHeader));
 
-		std::uint16_t curLevel = 0;
+		uint16_t curLevel = 0;
 
 		if (imageSrc.getArea() > (4096 * 4096)) //above this we have memory limitations because of converting to float
 		{
-			hr::imaging::Image<unsigned char, hr::imaging::ImageFormatRGBA> imageScaled;
+			hr::imaging::Image<uint8_t, hr::imaging::ImageFormatRGBA> imageScaled;
 			while (true)
 			{
 				auto imageNormals = imageScaled.empty() ? imageSrc.clone() : imageScaled.clone();
@@ -543,9 +595,9 @@ namespace hr { namespace render { namespace tools
 
 				curLevel++;
 				if (imageScaled.empty())
-					imageScaled = imageSrc.resize(std::max<size_t>(1, imageSrc.width() >> 1), std::max<size_t>(1, imageSrc.height() >> 1));
+					imageScaled = imageSrc.resize(std::max<size_t>(1, imageSrc.width() >> 1), std::max<size_t>(1, imageSrc.height() >> 1), true);
 				else
-					imageScaled = imageScaled.resize(std::max<size_t>(1, imageScaled.width() >> 1), std::max<size_t>(1, imageScaled.height() >> 1));
+					imageScaled = imageScaled.resize(std::max<size_t>(1, imageScaled.width() >> 1), std::max<size_t>(1, imageScaled.height() >> 1), true);
 			};
 		}
 		else
@@ -555,7 +607,7 @@ namespace hr { namespace render { namespace tools
 			{
 				auto imageNormals = imageScaled.clone();
 				imageNormals.renormalizeNormals(true);
-				auto imageByte = imageNormals.convert<unsigned char, hr::imaging::ImageFormatRGBA>(0.0f, 1.0f);
+				auto imageByte = imageNormals.convert<uint8_t, hr::imaging::ImageFormatRGBA>(0.0f, 1.0f);
 
 				auto compressBlock = compressInitBlockBC5(imageScaled.width(), imageScaled.height());
 				auto compressedImg = compressImageBC5(compressBlock, imageByte);
@@ -583,5 +635,4 @@ namespace hr { namespace render { namespace tools
 
 		return true;
 	}
-
-} } }
+}
