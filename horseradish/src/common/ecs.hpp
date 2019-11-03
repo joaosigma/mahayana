@@ -52,14 +52,17 @@ namespace hr
 			}
 		};
 
+		template <class TKey>
 		class ComponentStorageBase
 		{
 		public:
 			virtual ~ComponentStorageBase() = default;
+
+			virtual void removeKey(const TKey& key) = 0;
 		};
 
 		template<class TKey, class TValue, class THash = std::hash<TKey>, size_t TPageSize = 4096>
-		class ComponentStorage final : public ComponentStorageBase
+		class ComponentStorage final : public ComponentStorageBase<TKey>
 		{
 			template<class... TComponents>
 			friend class View;
@@ -249,6 +252,13 @@ namespace hr
 				}
 			}
 
+			const TKey* rawKeys() const noexcept
+			{
+				assert(std::is_empty_v<TValue> || (mDenseKeys.size() == mDenseValues.size()));
+
+				return mDenseKeys.data();
+			}
+
 			TValue* raw() noexcept
 			{
 				assert(std::is_empty_v<TValue> || (mDenseKeys.size() == mDenseValues.size()));
@@ -361,6 +371,11 @@ namespace hr
 
 				return true;
 			}
+
+			void removeKey(const TKey& key) override
+			{
+				remove(key);
+			}
 		};
 
 		template <class TKey>
@@ -370,6 +385,7 @@ namespace hr
 			virtual ~IndexBase() = default;
 
 			virtual bool processNewKey(const TKey& key) = 0;
+			virtual bool processDeletedKey(const TKey& key) = 0;
 		};
 
 		template<class TKey, class TKeyHash, class TIndexA, class TComponentB>
@@ -498,6 +514,11 @@ namespace hr
 				forEach(std::forward<TCallback>(cb), std::make_integer_sequence<size_t, std::tuple_size_v<TIndexA::TypeTuple>>{});
 			}
 
+			const TKey* rawKeys() const noexcept
+			{
+				return mKeys.data();
+			}
+
 			auto raw() noexcept
 			{
 				return std::tuple_cat(mIndexBase->raw(), std::make_tuple(mStorageB->raw()));
@@ -533,16 +554,28 @@ namespace hr
 				if (!has(key))
 					return false;
 
-				bool indexed{ false };
-				if (mIndexParent)
-					indexed = mIndexParent->processNewKey(key);
+				mKeys.push_back(key);
+				mIndexBase->changeKeyIndex(key, mKeys.size() - 1);
+				mStorageB->changeKeyIndex(key, mKeys.size() - 1);
 
-				if (!indexed)
-				{
-					mKeys.push_back(key);
-					mIndexBase->changeKeyIndex(key, mKeys.size() - 1);
-					mStorageB->changeKeyIndex(key, mKeys.size() - 1);
-				}
+				if (mIndexParent)
+					return mIndexParent->processNewKey(key);
+
+				return true;
+			}
+
+			bool processDeletedKey(const TKey& key) override
+			{
+				if (mIndexParent && mIndexParent->processDeletedKey(key)) //the change index request must come from the top most parent with the index
+					return true;
+
+				if (!has(key))
+					return false;
+				
+				if (mKeys.back() != key)
+					changeKeyIndex(key, mKeys.size() - 1);
+
+				mKeys.pop_back();
 
 				return true;
 			}
@@ -600,6 +633,11 @@ namespace hr
 				mStorage->forEach(std::forward<TCallback>(cb));
 			}
 
+			const TKey* rawKeys() const noexcept
+			{
+				return mStorage->rawKeys();
+			}
+
 			std::tuple<TComponent*> raw() noexcept
 			{
 				return { mStorage->raw() };
@@ -621,7 +659,15 @@ namespace hr
 				if (mIndexParent)
 					return mIndexParent->processNewKey(key);
 
-				return false;
+				return true;
+			}
+
+			bool processDeletedKey(const TKey& key) override
+			{
+				if (mIndexParent)
+					mIndexParent->processDeletedKey(key); //the change index request must come from the top most parent with the index
+
+				return true;
 			}
 		};
 
@@ -718,6 +764,80 @@ namespace hr
 			{ }
 
 		public:
+			class Iterator
+			{
+				const View& mView;
+				size_t mOffset{ 0 };
+				const std::vector<EntityId>* mCandidates{nullptr};
+
+			public:
+				// iterator traits
+				using iterator_category = std::forward_iterator_tag;
+				using value_type = std::tuple<EntityId, std::tuple<const TComponents&...>>;
+				using difference_type = ptrdiff_t;
+				using pointer = const value_type*;
+				using reference = const value_type&;
+
+			private:
+				void moveToNextValid() noexcept
+				{
+					for (; mOffset < mCandidates->size(); ++mOffset)
+					{
+						const auto& entt = mCandidates->operator[](mOffset);
+						if ((std::get<StorageType<TComponents>*>(mView.mPools)->has(entt) && ...))
+							break;
+					}
+				}
+
+			public:
+				explicit constexpr Iterator(const View& view) noexcept
+					: mView{ view }
+				{
+					mCandidates = mView.candidates();
+					mOffset = mCandidates->size();
+				}
+
+				explicit constexpr Iterator(const View& view, size_t offset) noexcept
+					: mView{ view }, mOffset{ offset }
+				{
+					mCandidates = mView.candidates();
+					assert(mCandidates && (mOffset < mCandidates->size()));
+
+					moveToNextValid();
+				}
+
+				bool operator==(const Iterator& other) const noexcept
+				{
+					return (mOffset == other.mOffset);
+				}
+
+				bool operator!=(const Iterator& other) const noexcept
+				{
+					return (mOffset != other.mOffset);
+				}
+
+				Iterator& operator++()
+				{
+					++mOffset;
+					moveToNextValid();
+					return *this;
+				}
+
+				Iterator operator++(int)
+				{
+					Iterator tmp(*this);
+					operator++();
+					return tmp;
+				}
+
+				std::tuple<EntityId, std::tuple<const TComponents &...>> operator*() const noexcept
+				{
+					const auto& entt = mCandidates->operator[](mOffset);
+					return { entt, {std::get<StorageType<TComponents>*>(mView.mPools)->value(entt) ...} };
+				};
+			};
+
+		public:
 			bool has(const EntityId& enttId) const noexcept
 			{
 				return ((std::get<StorageType<TComponents>*>(mPools)->has(enttId) && ...));
@@ -736,6 +856,18 @@ namespace hr
 					}
 				}
 			}
+
+			using const_iterator = Iterator;
+
+			const_iterator begin() const noexcept
+			{
+				return Iterator(*this, 0);
+			}
+
+			const_iterator end() const noexcept
+			{
+				return Iterator(*this);
+			}
 		};
 
 		template<class TComponent>
@@ -749,6 +881,69 @@ namespace hr
 			View(ComponentStorage<EntityId, TComponent, EntityId::Hash>* data)
 				: mData{ data }
 			{ }
+
+		public:
+			class Iterator
+			{
+				const EntityId* mWalkerKeys;
+				const TComponent* mWalkerData;
+
+			public:
+				// iterator traits
+				using iterator_category = std::forward_iterator_tag;
+				using value_type = std::tuple<EntityId, const TComponent&>;
+				using difference_type = ptrdiff_t;
+				using pointer = const value_type*;
+				using reference = const value_type&;				
+
+			public:
+				explicit constexpr Iterator(const View& view) noexcept
+				{
+					auto count = view.mData->size();
+					mWalkerKeys = view.mData->rawKeys() + count;
+					mWalkerData = view.mData->raw() + count;
+				}
+
+				explicit constexpr Iterator(const View& view, size_t offset) noexcept
+				{
+					auto count = view.mData->size();
+					assert(offset < count);
+					if (offset > count)
+						offset = count;
+
+					mWalkerKeys = view.mData->rawKeys() + offset;
+					mWalkerData = view.mData->raw() + offset;
+				}
+
+				bool operator==(const Iterator& other) const noexcept
+				{
+					return (mWalkerKeys == other.mWalkerKeys);
+				}
+
+				bool operator!=(const Iterator& other) const noexcept
+				{
+					return (mWalkerKeys != other.mWalkerKeys);
+				}
+
+				Iterator& operator++()
+				{
+					++mWalkerKeys;
+					++mWalkerData;
+					return *this;
+				}
+
+				Iterator operator++(int)
+				{
+					Iterator tmp(*this);
+					operator++();
+					return tmp;
+				}
+
+				std::tuple<EntityId, const TComponent&> operator*() const noexcept
+				{
+					return { *mWalkerKeys, *mWalkerData };
+				};
+			};
 
 		public:
 			size_t size() const noexcept
@@ -782,6 +977,18 @@ namespace hr
 			{
 				return mData->raw();
 			}
+
+			using const_iterator = Iterator;
+
+			const_iterator begin() const noexcept
+			{
+				return Iterator(*this, 0);
+			}
+
+			const_iterator end() const noexcept
+			{
+				return Iterator(*this);
+			}
 		};
 
 		template<class... TComponents>
@@ -797,6 +1004,73 @@ namespace hr
 			ViewIndexed(Index* index)
 				: mIndex{ index }
 			{ }
+
+		public:
+			class Iterator
+			{
+				size_t mOffset{ 0 };
+				const EntityId* mWalkerKeys{ nullptr };
+				std::tuple<const TComponents*...> mWalkerDatas;
+
+			public:
+				// iterator traits
+				using iterator_category = std::forward_iterator_tag;
+				using value_type = std::tuple<EntityId, std::tuple<const TComponents&...>>;
+				using difference_type = ptrdiff_t;
+				using pointer = const value_type*;
+				using reference = const value_type&;
+
+			private:
+				template<class... TComponents>
+				static std::tuple<const TComponents &...> getTupleRefs(std::tuple<const TComponents *...> tuplePointers, size_t index)
+				{
+					return { static_cast<const TComponents&>(std::get<const TComponents*>(tuplePointers)[index])... };
+				}
+
+			public:
+				explicit constexpr Iterator(const ViewIndexed& view) noexcept
+					: mWalkerKeys{ view.mIndex->rawKeys() }, mWalkerDatas{ view.mIndex->raw() }
+				{
+					mOffset = view.mIndex->size();
+				}
+
+				explicit constexpr Iterator(const ViewIndexed& view, size_t offset) noexcept
+					: mOffset{ offset }, mWalkerKeys{ view.mIndex->rawKeys() }, mWalkerDatas{ view.mIndex->raw() }
+				{
+					auto count = view.mIndex->size();
+					assert(mOffset < count);
+					if (mOffset > count)
+						mOffset = count;
+				}
+
+				bool operator==(const Iterator& other) const noexcept
+				{
+					return (mOffset == other.mOffset);
+				}
+
+				bool operator!=(const Iterator& other) const noexcept
+				{
+					return (mOffset != other.mOffset);
+				}
+
+				Iterator& operator++()
+				{
+					++mOffset;
+					return *this;
+				}
+
+				Iterator operator++(int)
+				{
+					Iterator tmp(*this);
+					operator++();
+					return tmp;
+				}
+
+				std::tuple<EntityId, std::tuple<const TComponents&...>> operator*() const noexcept
+				{
+					return { mWalkerKeys[mOffset], Iterator::getTupleRefs(mWalkerDatas, mOffset) };
+				};
+			};
 
 		public:
 			size_t size() const noexcept
@@ -831,6 +1105,18 @@ namespace hr
 			{
 				return mIndex->raw();
 			}
+
+			using const_iterator = Iterator;
+
+			const_iterator begin() const noexcept
+			{
+				return Iterator(*this, 0);
+			}
+
+			const_iterator end() const noexcept
+			{
+				return Iterator(*this);
+			}
 		};
 
 	private:
@@ -839,7 +1125,7 @@ namespace hr
 			size_t id{ 0 };
 			size_t indexOwnerId{ 0 };
 			IndexBase<EntityId>* indexOwner{ nullptr };
-			std::unique_ptr<ComponentStorageBase> storage;
+			std::unique_ptr<ComponentStorageBase<EntityId>> storage;
 		};
 
 		struct IndexData final
@@ -971,12 +1257,18 @@ namespace hr
 			if (!enttId || (index >= mEntities.ids.size()))
 				return;
 
-			auto& oldEnttId = mEntities.ids[index];
-			oldEnttId = EntityId{ oldEnttId.id(), oldEnttId.version() + 1 };
+			//remove from storage
+			remove(enttId);
 
-			std::swap(oldEnttId, mEntities.nextDeleted);
+			//recycle the entity
+			{
+				auto& oldEnttId = mEntities.ids[index];
+				oldEnttId = EntityId{ oldEnttId.id(), oldEnttId.version() + 1 };
 
-			mEntities.numDeleted++;
+				std::swap(oldEnttId, mEntities.nextDeleted);
+
+				mEntities.numDeleted++;
+			}
 		}
 
 		void reserve(size_t numEntities)
@@ -1030,12 +1322,26 @@ namespace hr
 				cStorage->reserve(numValues);
 		}
 
+		void remove(EntityId enttId) noexcept
+		{
+			for (auto& component : mComponents)
+			{
+				if (component.indexOwner)
+					component.indexOwner->processDeletedKey(enttId);
+
+				component.storage->removeKey(enttId);
+			}
+		}
+
 		template<class TComponent>
 		void remove(EntityId enttId) noexcept
 		{
-			auto cStorage = retrieveComponent<TComponent>();
-			if (cStorage)
-				cStorage->remove(enttId);
+			auto& component = assureComponentData<TComponent>();
+
+			if (component.indexOwner)
+				component.indexOwner->processDeletedKey(enttId);
+
+			component.storage->removeKey(enttId);
 		}
 
 		template<class TComponent>
@@ -1118,7 +1424,7 @@ namespace hr
 
 			auto index = reinterpret_cast<typename IndexPath<EntityId, EntityId::Hash, TComponents...>::Type*>(mIndices[iId].index.get());
 			if (index->hasParent())
-				return false; //can destroy if it's in use
+				return false; //can't destroy if it's in use
 
 			for (auto& component : mComponents)
 			{
