@@ -1,11 +1,6 @@
-﻿#include "platform/platform.hpp"
+﻿#include "engine/engine.hpp"
+#include "platform/platform.hpp"
 #include "common/stringUtils.hpp"
-
-#include "engine/engine.hpp"
-
-#if !defined(NDEBUG) && defined(HR_BUILD_WINDOWS)
-	#include <crtdbg.h>
-#endif
 
 int WINAPI wWinMain(HINSTANCE, HINSTANCE, PWSTR lpCmdLine, int)
 {
@@ -13,10 +8,6 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, PWSTR lpCmdLine, int)
 	static_assert(sizeof(unsigned char) == 1);
 	static_assert(sizeof(unsigned short) == 2);
 	static_assert(sizeof(unsigned int) == 4);
-
-#if !defined(NDEBUG) && defined(HR_BUILD_WINDOWS)
-	_CrtSetDbgFlag(_CRTDBG_LEAK_CHECK_DF); //calls _CrtDumpMemoryLeaks to check for memory leaks at the end of process execution
-#endif
 
 	//minimal checks
 	{
@@ -26,11 +17,13 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, PWSTR lpCmdLine, int)
 			return 0;
 		}
 
-		int isCleanBoot;
-		if (!hr::platform::Platform::systemInfo(hr::platform::Platform::SystemInfo::CleanBoot, isCleanBoot) || !isCleanBoot)
 		{
-			hr::platform::Window::MsgBoxWarn("The OS did not boot normally!\nFor security reasons the application will now exit.");
-			return 0;
+			int64_t isCleanBoot;
+			if (!hr::platform::Platform::systemInfo(hr::platform::Platform::SystemInfo::CleanBoot, isCleanBoot) || !isCleanBoot)
+			{
+				hr::platform::Window::MsgBoxWarn("The OS did not boot normally!\nFor security reasons the application will now exit.");
+				return 0;
+			}
 		}
 
 		if (hr::platform::Platform::SingleInstance().isAnotherRunning())

@@ -148,13 +148,13 @@ namespace hr::platform
 		int cpuInfo[4];
 		char cpuString[128];
 
-		memset(cpuInfo, 0, sizeof(cpuInfo));
+		std::memset(cpuInfo, 0, sizeof(cpuInfo));
 		__cpuid(cpuInfo, 0x0);
 
-		memset(cpuString, 0, sizeof(cpuString));
-		memcpy(cpuString + 0, cpuInfo + 1, sizeof(int));
-		memcpy(cpuString + 4, cpuInfo + 3, sizeof(int));
-		memcpy(cpuString + 8, cpuInfo + 2, sizeof(int));
+		std::memset(cpuString, 0, sizeof(cpuString));
+		std::memcpy(cpuString + 0, cpuInfo + 1, sizeof(int));
+		std::memcpy(cpuString + 4, cpuInfo + 3, sizeof(int));
+		std::memcpy(cpuString + 8, cpuInfo + 2, sizeof(int));
 
 		outputValue = cpuString;
 		return true;
@@ -165,7 +165,7 @@ namespace hr::platform
 		int cpuInfo[4];
 		char cpuString[128];
 
-		memset(cpuInfo, 0, sizeof(cpuInfo));
+		std::memset(cpuInfo, 0, sizeof(cpuInfo));
 		__cpuid(cpuInfo, 0x80000000);
 
 		if (cpuInfo[0] < 0x80000004)
@@ -174,7 +174,7 @@ namespace hr::platform
 			return true;
 		}
 
-		memset(cpuString, 0, sizeof(cpuString));
+		std::memset(cpuString, 0, sizeof(cpuString));
 
 		__cpuid(cpuInfo, 0x80000002);
 		memcpy(cpuString + 0, cpuInfo + 0, sizeof(int));
@@ -202,7 +202,7 @@ namespace hr::platform
 	{
 		int cpuInfo[4];
 
-		memset(cpuInfo, 0, sizeof(cpuInfo));
+		std::memset(cpuInfo, 0, sizeof(cpuInfo));
 		__cpuid(cpuInfo, 0x1);
 
 		if ((featuresCheck & CPUFeature::SSE) == CPUFeature::SSE)
@@ -234,7 +234,7 @@ namespace hr::platform
 
 	bool Platform::systemInfo(SystemInfo systemInfo, std::string& infoValue)
 	{
-		TCHAR bufferAux[32767];
+		TCHAR bufferAux[16338];
 		DWORD bufferAuxCharCount;
 
 		bufferAux[0] = '\0';
@@ -292,7 +292,7 @@ namespace hr::platform
 		{
 			OSVERSIONINFOEX versionInfo;
 
-			memset(&versionInfo, 0, sizeof(OSVERSIONINFOEX));
+			std::memset(&versionInfo, 0, sizeof(OSVERSIONINFOEX));
 			versionInfo.dwOSVersionInfoSize = sizeof(OSVERSIONINFOEX);
 			if (GetVersionEx((LPOSVERSIONINFOW)&versionInfo) == FALSE)
 				return false;
@@ -320,23 +320,24 @@ namespace hr::platform
 		return false;
 	}
 
-	bool Platform::systemInfo(SystemInfo systemInfo, int &infoValue)
+	bool Platform::systemInfo(SystemInfo systemInfo, int64_t& infoValue)
 	{
-		infoValue = -1;
+		infoValue = 0;
 
 		if ((systemInfo == SystemInfo::MemoryTotal) || (systemInfo == SystemInfo::MemoryFree))
 		{
-			MEMORYSTATUS memoryStatus;
-			GlobalMemoryStatus(&memoryStatus);
+			MEMORYSTATUSEX memoryStatus;
+			memoryStatus.dwLength = sizeof(memoryStatus);
+			GlobalMemoryStatusEx(&memoryStatus);
 
 			if (systemInfo == SystemInfo::MemoryTotal)
 			{
-				infoValue = memoryStatus.dwTotalPhys;
+				infoValue = memoryStatus.ullTotalPhys;
 				return true;
 			}
 			if (systemInfo == SystemInfo::MemoryFree)
 			{
-				infoValue = memoryStatus.dwAvailPhys;
+				infoValue = memoryStatus.ullAvailPhys;
 				return true;
 			}
 
@@ -347,7 +348,7 @@ namespace hr::platform
 		{
 			DEVMODE deviceMode;
 
-			memset(&deviceMode, 0, sizeof(DEVMODE));
+			std::memset(&deviceMode, 0, sizeof(DEVMODE));
 			deviceMode.dmSize = sizeof(DEVMODE);
 			if (EnumDisplaySettingsEx(nullptr, ENUM_REGISTRY_SETTINGS, &deviceMode, 0) == FALSE)
 				return false;
@@ -394,8 +395,8 @@ namespace hr::platform
 		if (!GetModuleFileName(nullptr, szFileName, MAX_PATH))
 			return false;
 
-		memset(&startInfo, 0, sizeof(STARTUPINFO));
-		memset(&processInfo, 0, sizeof(PROCESS_INFORMATION));
+		std::memset(&startInfo, 0, sizeof(STARTUPINFO));
+		std::memset(&processInfo, 0, sizeof(PROCESS_INFORMATION));
 		startInfo.cb = sizeof(STARTUPINFO);
 		startInfo.lpDesktop = L"";
 
@@ -533,7 +534,7 @@ namespace hr::platform
 		if (redirectData.pipeErr.read != nullptr)
 			CloseHandle(redirectData.pipeErr.read);
 
-		memset(&redirectData, 0, sizeof(RedirectData));
+		std::memset(&redirectData, 0, sizeof(RedirectData));
 		redirectData.osHandlePipeIn = -1;
 		redirectData.osHandlePipeOut = -1;
 		redirectData.osHandlePipeErr = -1;

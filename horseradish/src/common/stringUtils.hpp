@@ -181,6 +181,7 @@ namespace hr
 		static std::string reverseCopy(std::string_view str);
 
 		static std::string formatDuration(std::chrono::milliseconds duration);
-		static std::string formatSize(size_t bytes);
+		static std::string formatSize(uint64_t bytes);
+		static std::string formatSize(int64_t bytes);
 	};
 }

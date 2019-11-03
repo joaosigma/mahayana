@@ -57,7 +57,7 @@ namespace hr::platform
 		static bool cpuCheckFeatures(CPUFeature featuresCheck);
 
 		static bool systemInfo(SystemInfo systemInfo, std::string& infoValue);
-		static bool systemInfo(SystemInfo systemInfo, int &infoValue);
+		static bool systemInfo(SystemInfo systemInfo, int64_t& infoValue);
 
 		static bool spawnSelf();
 

@@ -12,8 +12,8 @@ namespace hr
 		// Copyright (c) 2008-2010 Bjoern Hoehrmann <bjoern@hoehrmann.de>
 		// See http://bjoern.hoehrmann.de/utf-8/decoder/dfa/ for details.
 
-		#define UTF8_ACCEPT 0
-		#define UTF8_REJECT 12
+#define UTF8_ACCEPT 0
+#define UTF8_REJECT 12
 
 		constexpr uint8_t utf8d[] = {
 			// The first part of the table maps bytes to character classes that
@@ -278,7 +278,7 @@ namespace hr
 			return 0;
 
 		mItNext = mIt;
-		
+
 		char32_t codepoint;
 		mItNext += ucodepointUTF16Decode(mItNext, mItEnd - mItNext, codepoint);
 		if (mItNext == mIt)
@@ -651,7 +651,7 @@ namespace hr
 		return fmt::format("{:.3f} days", remaining);
 	}
 
-	std::string StringUtils::formatSize(size_t bytes)
+	std::string StringUtils::formatSize(uint64_t bytes)
 	{
 		if (bytes < 1024)
 			return fmt::format("{} bytes", bytes);
@@ -660,11 +660,44 @@ namespace hr
 		if (remaining < 1024.0)
 			return fmt::format("{:.3f} KB", remaining);
 
-		remaining = static_cast<double>(remaining)* 0.0009765625;
+		remaining = static_cast<double>(remaining) * 0.0009765625;
 		if (remaining < 1024.0)
 			return fmt::format("{:.3f} MB", remaining);
 
-		remaining = static_cast<double>(remaining)* 0.0009765625;
-		return fmt::format("{:.3f} GB", remaining);
+		remaining = static_cast<double>(remaining) * 0.0009765625;
+		if (remaining < 1024.0)
+			return fmt::format("{:.3f} GB", remaining);
+
+		remaining = static_cast<double>(remaining) * 0.0009765625;
+		return fmt::format("{:.3f} TB", remaining);
+	}
+
+	std::string StringUtils::formatSize(int64_t bytes)
+	{
+		auto sign = "";
+
+		if (bytes < 0)
+		{
+			sign = "-";
+			bytes = -bytes;
+		}
+
+		if (bytes < 1024)
+			return fmt::format("{}{} bytes", sign, bytes);
+
+		double remaining = static_cast<double>(bytes) * 0.0009765625;
+		if (remaining < 1024.0)
+			return fmt::format("{}{:.3f} KB", sign, remaining);
+
+		remaining = static_cast<double>(remaining) * 0.0009765625;
+		if (remaining < 1024.0)
+			return fmt::format("{}{:.3f} MB", sign, remaining);
+
+		remaining = static_cast<double>(remaining) * 0.0009765625;
+		if (remaining < 1024.0)
+			return fmt::format("{}{:.3f} GB", sign, remaining);
+
+		remaining = static_cast<double>(remaining) * 0.0009765625;
+		return fmt::format("{}{:.3f} TB", sign, remaining);
 	}
 }

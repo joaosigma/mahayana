@@ -229,7 +229,6 @@ namespace hr { namespace engine
 	void Engine::logSysInfo()
 	{
 		std::string auxInfo;
-		int memTotal, memFree, displayWidth, displayHeight, displayColorBits, displayFrequency;
 
 		//misc info
 		mLoggerRuntimeCtx->info("${olive}->${default}System information:");
@@ -239,18 +238,25 @@ namespace hr { namespace engine
 		if (hr::platform::Platform::cpuGetProcessorName(auxInfo))
 			mLoggerRuntimeCtx->info("   CPU processor name: {0}", auxInfo);
 
-		
-		hr::platform::Platform::systemInfo(hr::platform::Platform::SystemInfo::MemoryTotal, memTotal);
- 		mLoggerRuntimeCtx->info("   Total physical memory: {0}", hr::StringUtils::formatSize(memTotal));
+		{
+			int64_t memTotal, memFree;
 
-		hr::platform::Platform::systemInfo(hr::platform::Platform::SystemInfo::MemoryFree, memFree);
-		mLoggerRuntimeCtx->info("   Free physical memory: {0}", hr::StringUtils::formatSize(memFree));
+			hr::platform::Platform::systemInfo(hr::platform::Platform::SystemInfo::MemoryTotal, memTotal);
+			hr::platform::Platform::systemInfo(hr::platform::Platform::SystemInfo::MemoryFree, memFree);
 
-		hr::platform::Platform::systemInfo(hr::platform::Platform::SystemInfo::DisplayWidth, displayWidth);
-		hr::platform::Platform::systemInfo(hr::platform::Platform::SystemInfo::DisplayHeight, displayHeight);
-		hr::platform::Platform::systemInfo(hr::platform::Platform::SystemInfo::DisplayColorBits, displayColorBits);
-		hr::platform::Platform::systemInfo(hr::platform::Platform::SystemInfo::DisplayFrequency, displayFrequency);
-		mLoggerRuntimeCtx->info("   Desktop resolution: {0}x{1}x{2}@{3}", displayWidth, displayHeight, displayColorBits, displayFrequency);
+			mLoggerRuntimeCtx->info("   Total physical memory: {0}", hr::StringUtils::formatSize(memTotal));
+			mLoggerRuntimeCtx->info("   Free physical memory: {0}", hr::StringUtils::formatSize(memFree));
+		}
+
+		{
+			int64_t displayWidth, displayHeight, displayColorBits, displayFrequency;
+
+			hr::platform::Platform::systemInfo(hr::platform::Platform::SystemInfo::DisplayWidth, displayWidth);
+			hr::platform::Platform::systemInfo(hr::platform::Platform::SystemInfo::DisplayHeight, displayHeight);
+			hr::platform::Platform::systemInfo(hr::platform::Platform::SystemInfo::DisplayColorBits, displayColorBits);
+			hr::platform::Platform::systemInfo(hr::platform::Platform::SystemInfo::DisplayFrequency, displayFrequency);
+			mLoggerRuntimeCtx->info("   Desktop resolution: {0}x{1}x{2}@{3}", displayWidth, displayHeight, displayColorBits, displayFrequency);
+		}
 
 		hr::platform::Platform::systemInfo(hr::platform::Platform::SystemInfo::OperatingSystemName, auxInfo);
 		mLoggerRuntimeCtx->info("   Operating system: {0}", auxInfo);
