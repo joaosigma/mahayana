@@ -1,6 +1,6 @@
 #include "logger.hpp"
 
-#include "common/stream.hpp"
+#include "libs/fmt/chrono.h"
 
 #include <ctime>
 
@@ -89,29 +89,27 @@ namespace hr { namespace engine
 		switch (entry.entryType)
 		{
 		case Logger::EntryType::Error:
-			streamWriter.writeString("error\t{");
+			streamWriter.writeString("error\t");
 			break;
 		case Logger::EntryType::Info:
-			streamWriter.writeString("info\t{");
+			streamWriter.writeString("info\t");
 			break;
 		case Logger::EntryType::Warning:
-			streamWriter.writeString("warning\t{");
+			streamWriter.writeString("warning\t");
 			break;
 		default:
-			streamWriter.writeString("????\t{");
+			streamWriter.writeString("????\t");
 			break;
 		}
 
 		{
-			char bufferTmp[256];
-
 			std::time_t tmT = std::chrono::system_clock::to_time_t(entry.timestamp);
-			std::tm* tmUTC = std::gmtime(&tmT);
 
-			strftime(bufferTmp, sizeof(bufferTmp), "%Y-%m-%d %H:%M:%S", tmUTC);
-
-			streamWriter.write(bufferTmp, strlen(bufferTmp) - 1);
-			streamWriter.writeString("}\t");
+			char buffer[32];
+			auto end = fmt::format_to(buffer, "{:%Y-%m-%d %H:%M:%S}", *std::localtime(&tmT));
+			
+			streamWriter.write(buffer, end - buffer);
+			streamWriter.writeString("\t");
 		}
 
 		if (!entry.isMsgFormated)

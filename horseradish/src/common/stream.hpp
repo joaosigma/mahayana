@@ -360,16 +360,12 @@ namespace hr { namespace streams
 			return bytesTotalWritten;
 		}
 
-		size_t writeString(const char* const str, bool includeTerminator = false)
+		size_t writeString(std::string_view str)
 		{
-			if (!str || !mStream.canWrite())
+			if (str.empty() || !mStream.canWrite())
 				return 0;
 
-			auto strLen = strlen(str);
-			if (includeTerminator)
-				strLen++;
-
-			return mStream.write(str, strLen);
+			return mStream.write(str.data(), str.size());
 		}
 
 		size_t position() const

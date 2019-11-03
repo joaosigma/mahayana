@@ -1018,6 +1018,12 @@
     <ClInclude Include="..\..\src\libs\bc7\bc7enc16.h">
       <Filter>libs\bc7</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\libs\fmt\chrono.h">
+      <Filter>libs\fmt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\libs\fmt\safe-duration-cast.h">
+      <Filter>libs\fmt</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\src\libs\libsquish\singlecolourlookup.inl">

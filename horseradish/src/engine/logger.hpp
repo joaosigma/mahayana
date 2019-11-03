@@ -1,8 +1,7 @@
 #pragma once
 
 #include "common/stream.hpp"
-
-#include <libs/fmt/format.h>
+#include "libs/fmt/format.h"
 
 #include <vector>
 #include <deque>
@@ -88,16 +87,15 @@ namespace hr { namespace engine
 		struct EntryData
 		{
 			std::string msg;
-			bool isMsgFormated = false;
-			EntryType entryType = EntryType::Error;
-			ModuleType moduleType = ModuleType::Misc;
+			bool isMsgFormated{ false };
+			EntryType entryType{ EntryType::Error };
+			ModuleType moduleType{ ModuleType::Misc };
 			std::chrono::time_point<std::chrono::system_clock> timestamp;
 
-			EntryData()
-			{ }
+			EntryData() = default;
 
-			EntryData(EntryType entryType, ModuleType moduleType)
-				: entryType(entryType), moduleType(moduleType)
+			EntryData(EntryType entryType, ModuleType moduleType) noexcept
+				: entryType{ entryType }, moduleType{ moduleType }
 			{ }
 		};
 

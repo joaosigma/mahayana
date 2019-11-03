@@ -349,9 +349,11 @@
     <ClInclude Include="..\..\src\engine\runtime.hpp" />
     <ClInclude Include="..\..\src\libs\aes256\aes256.h" />
     <ClInclude Include="..\..\src\libs\bc7\bc7enc16.h" />
+    <ClInclude Include="..\..\src\libs\fmt\chrono.h" />
     <ClInclude Include="..\..\src\libs\fmt\core.h" />
     <ClInclude Include="..\..\src\libs\fmt\format-inl.h" />
     <ClInclude Include="..\..\src\libs\fmt\format.h" />
+    <ClInclude Include="..\..\src\libs\fmt\safe-duration-cast.h" />
     <ClInclude Include="..\..\src\libs\forsyth\forsythtriangleorderoptimizer.h" />
     <ClInclude Include="..\..\src\libs\libsquish\alpha.h" />
     <ClInclude Include="..\..\src\libs\libsquish\clusterfit.h" />

@@ -230,30 +230,32 @@ namespace hr::render
 		if (mAreas.find(areaId) == mAreas.end())
 			return false;
 
-		tinyobj::attrib_t objVertexAttribs;
-		std::vector<tinyobj::shape_t> objShapes;
-		std::vector<tinyobj::material_t> objMaterials;
-
+		tinyobj::ObjReader objReader;
 		{
 			std::string fullPath;
 			fullPath.reserve(basePath.size() + fileName.size() + 1);
 			fullPath.append(basePath).append(fileName);
 
-			std::string errorDesc;
-			auto success = tinyobj::LoadObj(&objVertexAttribs, &objShapes, &objMaterials, &errorDesc, fullPath.c_str(), std::string(basePath).c_str());
-			if (!success)
-				return false;
+			tinyobj::ObjReaderConfig objConfig;
+			objConfig.triangulate = true;
+			objConfig.vertex_color = false;
+			objConfig.mtl_search_path = ""; //use the same folder as the obj file
+
+			objReader.ParseFromFile(fullPath.c_str(), objConfig);
 		}
 
-		if (objShapes.empty())
+		if (!objReader.Valid())
+			return false;
+
+		if (objReader.GetShapes().empty())
 			return true;
 
 		auto& area = mAreas[areaId];
 		auto& areaData = mAreasData[areaId];
 
-		area.mInstances.reserve(area.mInstances.size() + objShapes.size());
+		area.mInstances.reserve(area.mInstances.size() + objReader.GetShapes().size());
 
-		for (const auto& shape : objShapes)
+		for (const auto& shape : objReader.GetShapes())
 		{
 			//ignore empty shapes
 			if (shape.mesh.indices.empty())
@@ -337,6 +339,8 @@ namespace hr::render
 
 					for (const auto& keyValue : mapping)
 					{
+						auto& objVertexAttribs = objReader.GetAttrib();
+
 						auto vertexIndex = keyValue.second;
 
 						newMesh.vertices()[vertexIndex].pos[0] = objVertexAttribs.vertices[keyValue.first.vertex_index * 3 + 0];
@@ -381,6 +385,8 @@ namespace hr::render
 			//process material
 			if (!shape.mesh.material_ids.empty())
 			{
+				auto& objMaterials = objReader.GetMaterials();
+
 				auto materialId = shape.mesh.material_ids[0];
 				if ((materialId >= 0) && (materialId < objMaterials.size()))
 				{
@@ -1131,7 +1137,7 @@ namespace hr::render
 			tinygltf::TinyGLTF gltf_ctx;
 
 			bool ret = false;
-			if (std::experimental::filesystem::path(gltfPath.begin(), gltfPath.end()).extension().string() == "glb")
+			if (std::filesystem::path(gltfPath.begin(), gltfPath.end()).extension().string() == "glb")
 				ret = gltf_ctx.LoadBinaryFromFile(&gltfModel, &err, &warn, gltfPath.data());
 			else
 				ret = gltf_ctx.LoadASCIIFromFile(&gltfModel, &err, &warn, gltfPath.data());
@@ -1145,6 +1151,60 @@ namespace hr::render
 
 		auto& area = mAreas[areaId];
 		auto& areaData = mAreasData[areaId];
+
+		//aux stuff
+		struct Skin {
+			std::vector<size_t> jointsIndices;
+			std::vector<Matrix> inverseBindMats;
+		};
+		std::vector<Skin> skins;
+
+		//read the skins
+		{
+			skins.reserve(gltfModel.skins.size());
+			for (const auto& gltfSkin : gltfModel.skins)
+			{
+				Skin targetSkin;
+
+				targetSkin.jointsIndices.reserve(gltfSkin.joints.size());
+				targetSkin.inverseBindMats.reserve(gltfSkin.joints.size());
+
+				for (const auto& index : gltfSkin.joints)
+					targetSkin.jointsIndices.push_back(index);
+
+				{
+					const auto& gltfAccessor = gltfModel.accessors[gltfSkin.inverseBindMatrices];
+					if (gltfAccessor.bufferView < 0)
+						continue;
+
+					const auto& gltfBufferView = gltfModel.bufferViews[gltfAccessor.bufferView];
+					if (gltfBufferView.target != GL_ARRAY_BUFFER)
+						continue;
+
+					const auto& gltfBuffer = gltfModel.buffers[gltfBufferView.buffer];
+					if (gltfBuffer.data.empty())
+						continue;
+
+					auto gltfDataStride = gltfAccessor.ByteStride(gltfBufferView);
+					if (gltfDataStride < 0)
+						continue;
+
+					auto gltfData = gltfBuffer.data.data() + gltfBufferView.byteOffset + gltfAccessor.byteOffset;
+
+					for (size_t curIndex = 0; curIndex < targetSkin.jointsIndices.size(); curIndex++)
+					{
+						Matrix mat(reinterpret_cast<const float*>(gltfData));
+						gltfData += gltfDataStride;
+
+						targetSkin.inverseBindMats.push_back(std::move(mat));
+					}
+				}
+
+				skins.push_back(std::move(targetSkin));
+			}
+		}
+
+		//to recursively read all nodes
 
 		std::function<void(const tinygltf::Node&, const Matrix&)> recurNodes;
 		recurNodes = [&](const tinygltf::Node& gltfNode, const Matrix& previousTransform)
@@ -1175,11 +1235,13 @@ namespace hr::render
 					if ((gltfPrim.mode != TINYGLTF_MODE_TRIANGLES) || (gltfPrim.indices < 0))
 						continue;
 					
-					hr::geom::Mesh newMesh;
+					hr::geom::MeshAnim newMeshAnim;
 					bool hasPos = false;
 					bool hasNormal = false;
 					bool hasTangent = false;
 					bool hasTexCoords = false;
+					bool hasJoints = false;
+					bool hasJointsWheights = false;
 
 					//read indices and prepare mesh
 					{
@@ -1237,7 +1299,10 @@ namespace hr::render
 
 						numVertices++;
 						auto newVertices = std::unique_ptr<hr::geom::Mesh::VertexData[]>(new hr::geom::Mesh::VertexData[numVertices]);
-						newMesh = hr::geom::Mesh(std::move(newVertices), numVertices, std::move(newIndices), gltfAccessor.count);
+						
+						newMeshAnim = hr::geom::MeshAnim(
+							hr::geom::Mesh(std::move(newVertices), numVertices, std::move(newIndices), gltfAccessor.count),
+							hr::geom::MeshAnim::SkinningType::Vertex4Joints);
 					}
 
 					//read vertex data
@@ -1262,13 +1327,14 @@ namespace hr::render
 						if (gltfDataStride < 0)
 							continue;
 
-						auto vertexData = newMesh.vertices();
+						auto vertexData = newMeshAnim.mesh().vertices();
+						auto vertexJoints = newMeshAnim.verticesJoints();
 						auto gltfData = gltfBuffer.data.data() + gltfBufferView.byteOffset + gltfAccessor.byteOffset;
 
 						if ((gltfAttrib.first == "POSITION") && (gltfAccessor.type == TINYGLTF_TYPE_VEC3) && (gltfAccessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT))
 						{
 							hasPos = true;
-							for (size_t curIndex = 0; curIndex < newMesh.numVertices(); curIndex++)
+							for (size_t curIndex = 0; curIndex < newMeshAnim.mesh().numVertices(); curIndex++)
 							{
 								std::memcpy(vertexData[curIndex].pos, gltfData, sizeof(float) * 3);
 								gltfData += gltfDataStride;
@@ -1277,7 +1343,7 @@ namespace hr::render
 						else if ((gltfAttrib.first == "TEXCOORD_0") && (gltfAccessor.type == TINYGLTF_TYPE_VEC2) && (gltfAccessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT))
 						{
 							hasTexCoords = true;
-							for (size_t curIndex = 0; curIndex < newMesh.numVertices(); curIndex++)
+							for (size_t curIndex = 0; curIndex < newMeshAnim.mesh().numVertices(); curIndex++)
 							{
 								std::memcpy(vertexData[curIndex].uv, gltfData, sizeof(float) * 2);
 								gltfData += gltfDataStride;
@@ -1286,7 +1352,7 @@ namespace hr::render
 						else if ((gltfAttrib.first == "NORMAL") && (gltfAccessor.type == TINYGLTF_TYPE_VEC3) && (gltfAccessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT))
 						{
 							hasNormal = true;
-							for (size_t curIndex = 0; curIndex < newMesh.numVertices(); curIndex++)
+							for (size_t curIndex = 0; curIndex < newMeshAnim.mesh().numVertices(); curIndex++)
 							{
 								hr::geom::Mesh::pack(reinterpret_cast<const float*>(gltfData), vertexData[curIndex].normal, 3);
 								gltfData += gltfDataStride;
@@ -1295,25 +1361,82 @@ namespace hr::render
 						else if ((gltfAttrib.first == "TANGENT") && (gltfAccessor.type == TINYGLTF_TYPE_VEC4) && (gltfAccessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT))
 						{
 							hasTangent = true;
-							for (size_t curIndex = 0; curIndex < newMesh.numVertices(); curIndex++)
+							for (size_t curIndex = 0; curIndex < newMeshAnim.mesh().numVertices(); curIndex++)
 							{
 								hr::geom::Mesh::pack(reinterpret_cast<const float*>(gltfData), vertexData[curIndex].tangent, 4);
 								gltfData += gltfDataStride;
 							}
 						}
+						else if ((gltfAttrib.first == "JOINTS_0") && (gltfAccessor.type == TINYGLTF_TYPE_VEC4))
+						{
+							if (gltfAccessor.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE)
+							{
+								hasJoints = true;
+								for (size_t curIndex = 0; curIndex < newMeshAnim.mesh().numVertices(); curIndex++)
+								{
+									vertexJoints[(curIndex * 4) + 0].jointIndex = gltfData[0];
+									vertexJoints[(curIndex * 4) + 1].jointIndex = gltfData[1];
+									vertexJoints[(curIndex * 4) + 2].jointIndex = gltfData[2];
+									vertexJoints[(curIndex * 4) + 3].jointIndex = gltfData[3];
+									gltfData += gltfDataStride;
+								}
+							}
+							else if (gltfAccessor.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT)
+							{
+								hasJoints = true;
+								for (size_t curIndex = 0; curIndex < newMeshAnim.mesh().numVertices(); curIndex++)
+								{
+									auto dataPtr = reinterpret_cast<const unsigned short*>(gltfData);
+									vertexJoints[(curIndex * 4) + 0].jointIndex = dataPtr[0];
+									vertexJoints[(curIndex * 4) + 1].jointIndex = dataPtr[1];
+									vertexJoints[(curIndex * 4) + 2].jointIndex = dataPtr[2];
+									vertexJoints[(curIndex * 4) + 3].jointIndex = dataPtr[3];
+									gltfData += gltfDataStride;
+								}
+							}
+						}
+						else if ((gltfAttrib.first == "WEIGHTS_0") && (gltfAccessor.type == TINYGLTF_TYPE_VEC4))
+						{
+							if (gltfAccessor.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT)
+							{
+								hasJointsWheights = true;
+								for (size_t curIndex = 0; curIndex < newMeshAnim.mesh().numVertices(); curIndex++)
+								{
+									auto dataPtr = reinterpret_cast<const unsigned short*>(gltfData);
+									vertexJoints[(curIndex * 4) + 0].jointWeight = dataPtr[0];
+									vertexJoints[(curIndex * 4) + 1].jointWeight = dataPtr[1];
+									vertexJoints[(curIndex * 4) + 2].jointWeight = dataPtr[2];
+									vertexJoints[(curIndex * 4) + 3].jointWeight = dataPtr[3];
+									gltfData += gltfDataStride;
+								}
+							}
+							else if (gltfAccessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT)
+							{
+								hasJointsWheights = true;
+								for (size_t curIndex = 0; curIndex < newMeshAnim.mesh().numVertices(); curIndex++)
+								{
+									auto dataPtr = reinterpret_cast<const float*>(gltfData);
+									vertexJoints[(curIndex * 4) + 0].jointWeight = hr::geom::Mesh::pack(dataPtr[0]);
+									vertexJoints[(curIndex * 4) + 1].jointWeight = hr::geom::Mesh::pack(dataPtr[1]);
+									vertexJoints[(curIndex * 4) + 2].jointWeight = hr::geom::Mesh::pack(dataPtr[2]);
+									vertexJoints[(curIndex * 4) + 3].jointWeight = hr::geom::Mesh::pack(dataPtr[3]);
+									gltfData += gltfDataStride;
+								}
+							}
+						}
 					}
 
-					if (!newMesh.check() || !hasPos || !hasTexCoords)
+					if (!newMeshAnim.mesh().check() || !hasPos || !hasTexCoords)
 						continue;
 
 					if (!hasNormal)
-						newMesh.genNormals();
+						newMeshAnim.mesh().genNormals();
 					if (!hasTangent)
-						newMesh.genTangents4();
+						newMeshAnim.mesh().genTangents4();
 
-					newMesh.optimizeIndices();
+					newMeshAnim.mesh().optimizeIndices();
 
-					newMesh.transform(newTransform, Matrix3(newTransform));
+					newMeshAnim.mesh().transform(newTransform, Matrix3(newTransform));
 
 					//we can now create a new object
 					{
@@ -1325,17 +1448,17 @@ namespace hr::render
 						//we store new geometry immediately
 						{
 							hr::streams::FileStream geomFileStream(areaData.pathBin, true, true);
-							World::geomFileAddMesh(geomFileStream, objectId, newMesh);
+							World::geomFileAddMesh(geomFileStream, objectId, newMeshAnim.mesh());
 						}
 
 						//object can already be prepared
 						object.id = objectId;
 						object.type = Object::Type::Static;
-						object.bbox = newMesh.getBoundingBox();
+						object.bbox = newMeshAnim.mesh().getBoundingBox();
 						objectData.objectId = objectId;
 						objectData.name = gltfMesh.name;
-						objectData.geom.numVertices = newMesh.numVertices();
-						objectData.geom.numIndices = newMesh.numIndices();
+						objectData.geom.numVertices = newMeshAnim.mesh().numVertices();
+						objectData.geom.numIndices = newMeshAnim.mesh().numIndices();
 						{
 							hr::streams::FileStream geomFileStream(areaData.pathBin, true, true);
 							World::geomFileRetrieveOffsets(geomFileStream, objectId, objectData.geom.fstreamVertexOffset, objectData.geom.fstreamIndexOffset);
