@@ -212,7 +212,6 @@
     <ClCompile Include="..\..\src\libs\aes256\aes256.c" />
     <ClCompile Include="..\..\src\libs\bc7\bc7enc16.c" />
     <ClCompile Include="..\..\src\libs\fmt\format.cc" />
-    <ClCompile Include="..\..\src\libs\forsyth\forsythtriangleorderoptimizer.cpp" />
     <ClCompile Include="..\..\src\libs\libsquish\alpha.cpp" />
     <ClCompile Include="..\..\src\libs\libsquish\clusterfit.cpp" />
     <ClCompile Include="..\..\src\libs\libsquish\colourblock.cpp" />
@@ -354,7 +353,6 @@
     <ClInclude Include="..\..\src\libs\fmt\format-inl.h" />
     <ClInclude Include="..\..\src\libs\fmt\format.h" />
     <ClInclude Include="..\..\src\libs\fmt\safe-duration-cast.h" />
-    <ClInclude Include="..\..\src\libs\forsyth\forsythtriangleorderoptimizer.h" />
     <ClInclude Include="..\..\src\libs\libsquish\alpha.h" />
     <ClInclude Include="..\..\src\libs\libsquish\clusterfit.h" />
     <ClInclude Include="..\..\src\libs\libsquish\colourblock.h" />

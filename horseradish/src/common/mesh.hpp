@@ -7,31 +7,39 @@
 #include <limits>
 #include <memory>
 #include <cassert>
+#include <type_traits>
 
 namespace hr::geom
 {
-	class Mesh
+	namespace detail
 	{
-	public:
 		#pragma pack(push, 1)
 		struct VertexData
 		{
 			float pos[3];
 			float uv[2];
-			short normal[4]; //extra component at normal[3]
-			short tangent[4];
+			int16_t normal[4]; //extra component at normal[3]
+			int16_t tangent[4]; //tangent[3] is unused
 		};
 		#pragma pack(pop)
-		static_assert(sizeof(VertexData) == 36, "Mesh vertex data must be tightly packed: sizeof() == 36");
 
-		static short pack(const float value);
-		static float unpack(const short value);
-		static void pack(const float* const in, short* const out, size_t numValues);
-		static void unpack(const short* const in, float* const out, size_t numValues);
+		static_assert(std::is_trivial_v<VertexData>);
+		static_assert(sizeof(VertexData) == 36, "Mesh vertex data must be tightly packed: sizeof() == 36");
+	}
+
+	class Mesh
+	{
+	public:
+		using VertexData = detail::VertexData;
+
+		static int16_t pack(const float value);
+		static float unpack(const int16_t value);
+		static void pack(const float* const in, int16_t* const out, size_t numValues);
+		static void unpack(const int16_t* const in, float* const out, size_t numValues);
 
 		static constexpr size_t maxVertexCount()
 		{
-			return static_cast<size_t>(std::numeric_limits<unsigned short>::max());
+			return static_cast<size_t>(std::numeric_limits<uint16_t>::max());
 		}
 
 		static constexpr size_t sizeVertices(size_t numVertices)
@@ -41,7 +49,7 @@ namespace hr::geom
 
 		static constexpr size_t sizeIndices(size_t numIndices)
 		{
-			return (sizeof(unsigned short) * numIndices);
+			return (sizeof(uint16_t) * numIndices);
 		}
 
 		static Mesh genBox(size_t precision);
@@ -49,14 +57,14 @@ namespace hr::geom
 
 	private:
 		std::unique_ptr<VertexData[]> mData;
-		std::unique_ptr<unsigned short[]> mIndices;
+		std::unique_ptr<uint16_t[]> mIndices;
 		size_t mNumVertices = 0, mNumIndices = 0;
 
 	public:
 		Mesh() = default;
 
 		Mesh(size_t numVertices, size_t numIndices);
-		Mesh(std::unique_ptr<VertexData[]> vertices, size_t numVertices, std::unique_ptr<unsigned short[]> indices, size_t numIndices);
+		Mesh(std::unique_ptr<VertexData[]> vertices, size_t numVertices, std::unique_ptr<uint16_t[]> indices, size_t numIndices);
 
 		Mesh(const Mesh& mesh);
 		Mesh& operator=(const Mesh& mesh);
@@ -73,11 +81,11 @@ namespace hr::geom
 			return mData.get();
 		}
 
-		const unsigned short* indices() const
+		const uint16_t* indices() const
 		{
 			return mIndices.get();
 		}
-		unsigned short* indices()
+		uint16_t* indices()
 		{
 			return mIndices.get();
 		}

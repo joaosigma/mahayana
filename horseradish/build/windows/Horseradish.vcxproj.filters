@@ -40,9 +40,6 @@
     <Filter Include="libs\stb">
       <UniqueIdentifier>{96cea2fa-b4b9-4790-a97e-9590d5422d35}</UniqueIdentifier>
     </Filter>
-    <Filter Include="libs\forsyth">
-      <UniqueIdentifier>{1cfeb5fb-8b93-4a80-9cb8-ca9fd0cd1a4c}</UniqueIdentifier>
-    </Filter>
     <Filter Include="libs\rapidjson">
       <UniqueIdentifier>{a0fe0cdd-c992-49f0-b159-5513a0ae792f}</UniqueIdentifier>
     </Filter>
@@ -270,9 +267,6 @@
     </ClCompile>
     <ClCompile Include="..\..\src\common\opengl\tools\viewport.cpp">
       <Filter>common\opengl\tools</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\libs\forsyth\forsythtriangleorderoptimizer.cpp">
-      <Filter>libs\forsyth</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\common\stringUtils.cpp">
       <Filter>common</Filter>
@@ -660,9 +654,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\libs\stb\stb_image_resize.h">
       <Filter>libs\stb</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\libs\forsyth\forsythtriangleorderoptimizer.h">
-      <Filter>libs\forsyth</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\common\stringUtils.hpp">
       <Filter>common</Filter>

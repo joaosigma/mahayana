@@ -6,7 +6,6 @@
 
 #include "libs/mikktspace/mikktspace.h"
 #include "libs/meshoptimizer/meshoptimizer.h"
-#include "libs/forsyth/forsythtriangleorderoptimizer.h"
 
 #include <vector>
 #include <limits>
@@ -15,27 +14,27 @@ namespace hr::geom
 {
 	namespace
 	{
-		const float shortScaleFrom = 1.0f / static_cast<float>(std::numeric_limits<short>::max());
-		const float shortScaleTo = static_cast<float>(std::numeric_limits<short>::max());
+		constexpr float shortScaleFrom = 1.0f / static_cast<float>(std::numeric_limits<int16_t>::max());
+		constexpr float shortScaleTo = static_cast<float>(std::numeric_limits<int16_t>::max());
 	}
 
-	short Mesh::pack(const float value)
+	int16_t Mesh::pack(const float value)
 	{
-		return static_cast<short>(Math::fClamp(value, -1.0f, 1.0f) * shortScaleTo);
+		return static_cast<int16_t>(Math::fClamp(value, -1.0f, 1.0f) * shortScaleTo);
 	}
 
-	float Mesh::unpack(const short value)
+	float Mesh::unpack(const int16_t value)
 	{
 		return (static_cast<float>(value) * shortScaleFrom);
 	}
 
-	void Mesh::pack(const float* const in, short* const out, size_t numValues)
+	void Mesh::pack(const float* const in, int16_t* const out, size_t numValues)
 	{
 		for (size_t i = 0; i < numValues; i++)
 			out[i] = Mesh::pack(in[i]);
 	}
 
-	void Mesh::unpack(const short* const in, float* const out, size_t numValues)
+	void Mesh::unpack(const int16_t* const in, float* const out, size_t numValues)
 	{
 		for (size_t i = 0; i < numValues; i++)
 			out[i] = Mesh::unpack(in[i]);
@@ -56,12 +55,12 @@ namespace hr::geom
 			{
 				for (size_t x = 0; x < precision; x++)
 				{
-					indicesPtr[0] = static_cast<unsigned short>(indexOffset + (x + 0) + ((y + 0) * (precision + 1)));
-					indicesPtr[1] = static_cast<unsigned short>(indexOffset + (x + 1) + ((y + 1) * (precision + 1)));
-					indicesPtr[2] = static_cast<unsigned short>(indexOffset + (x + 0) + ((y + 1) * (precision + 1)));
+					indicesPtr[0] = static_cast<uint16_t>(indexOffset + (x + 0) + ((y + 0) * (precision + 1)));
+					indicesPtr[1] = static_cast<uint16_t>(indexOffset + (x + 1) + ((y + 1) * (precision + 1)));
+					indicesPtr[2] = static_cast<uint16_t>(indexOffset + (x + 0) + ((y + 1) * (precision + 1)));
 
 					indicesPtr[3] = indicesPtr[0];
-					indicesPtr[4] = static_cast<unsigned short>(indexOffset + (x + 1) + ((y + 0) * (precision + 1)));
+					indicesPtr[4] = static_cast<uint16_t>(indexOffset + (x + 1) + ((y + 0) * (precision + 1)));
 					indicesPtr[5] = indicesPtr[1];
 
 					indicesPtr += 6;
@@ -256,12 +255,12 @@ namespace hr::geom
 			{
 				for (size_t s = 0; s < (tDiv - 1); s++)
 				{
-					indicesPtr[0] = static_cast<unsigned short>((r + 1) * tDiv + s);
-					indicesPtr[1] = static_cast<unsigned short>(r * tDiv + (s + 1));
-					indicesPtr[2] = static_cast<unsigned short>(r * tDiv + s);
+					indicesPtr[0] = static_cast<uint16_t>((r + 1) * tDiv + s);
+					indicesPtr[1] = static_cast<uint16_t>(r * tDiv + (s + 1));
+					indicesPtr[2] = static_cast<uint16_t>(r * tDiv + s);
 
 					indicesPtr[3] = indicesPtr[0];
-					indicesPtr[4] = static_cast<unsigned short>((r + 1) * tDiv + (s + 1));
+					indicesPtr[4] = static_cast<uint16_t>((r + 1) * tDiv + (s + 1));
 					indicesPtr[5] = indicesPtr[1];
 
 					indicesPtr += 6;
@@ -280,13 +279,13 @@ namespace hr::geom
 		assert((numIndices % 3) == 0);
 
 		mData = std::unique_ptr<VertexData[]>(new VertexData[numVertices]);
-		mIndices = std::unique_ptr<unsigned short[]>(new unsigned short[numIndices]);
+		mIndices = std::unique_ptr<uint16_t[]>(new uint16_t[numIndices]);
 
 		std::memset(mData.get(), 0, sizeof(VertexData) * numVertices);
-		std::memset(mIndices.get(), 0, sizeof(unsigned short) * numIndices);
+		std::memset(mIndices.get(), 0, sizeof(uint16_t) * numIndices);
 	}
 
-	Mesh::Mesh(std::unique_ptr<VertexData[]> vertices, size_t numVertices, std::unique_ptr<unsigned short[]> indices, size_t numIndices)
+	Mesh::Mesh(std::unique_ptr<VertexData[]> vertices, size_t numVertices, std::unique_ptr<uint16_t[]> indices, size_t numIndices)
 		: mData(std::move(vertices)), mNumVertices(numVertices), mIndices(std::move(indices)), mNumIndices(numIndices)
 	{
 		assert((numVertices > 0) && (numIndices > 0));
@@ -300,10 +299,10 @@ namespace hr::geom
 		: mNumVertices(mesh.mNumVertices), mNumIndices(mesh.mNumIndices)
 	{
 		mData = std::unique_ptr<VertexData[]>(new VertexData[mNumVertices]);
-		mIndices = std::unique_ptr<unsigned short[]>(new unsigned short[mNumIndices]);
+		mIndices = std::unique_ptr<uint16_t[]>(new uint16_t[mNumIndices]);
 
 		std::memcpy(mData.get(), mesh.mData.get(), sizeof(VertexData) * mNumVertices);
-		std::memcpy(mIndices.get(), mesh.mIndices.get(), sizeof(unsigned short) * mNumIndices);
+		std::memcpy(mIndices.get(), mesh.mIndices.get(), sizeof(uint16_t) * mNumIndices);
 	}
 
 	Mesh& Mesh::operator=(const Mesh& mesh)
@@ -312,10 +311,10 @@ namespace hr::geom
 		mNumIndices = mesh.mNumIndices;
 
 		mData = std::unique_ptr<VertexData[]>(new VertexData[mNumVertices]);
-		mIndices = std::unique_ptr<unsigned short[]>(new unsigned short[mNumIndices]);
+		mIndices = std::unique_ptr<uint16_t[]>(new uint16_t[mNumIndices]);
 
 		std::memcpy(mData.get(), mesh.mData.get(), sizeof(VertexData) * mNumVertices);
-		std::memcpy(mIndices.get(), mesh.mIndices.get(), sizeof(unsigned short) * mNumIndices);
+		std::memcpy(mIndices.get(), mesh.mIndices.get(), sizeof(uint16_t) * mNumIndices);
 
 		return *this;
 	}
@@ -581,10 +580,10 @@ namespace hr::geom
 
 	void Mesh::optimizeIndices()
 	{
-		auto newIndices = std::unique_ptr<unsigned short[]>(new unsigned short[mNumIndices]);
+		auto newIndices = std::unique_ptr<uint16_t[]>(new uint16_t[mNumIndices]);
 
 		//this optimizes for the vertex cache (reads from mIndices and writes to newIndices)
-		Forsyth::OptimizeFaces(mIndices.get(), mNumIndices, mNumVertices, newIndices.get(), 32);
+		meshopt_optimizeVertexCache(newIndices.get(), mIndices.get(), mNumIndices, mNumVertices);
 
 		//this optimizes for overdraw (reads from newIndices and writes to mIndices)
 		meshopt_optimizeOverdraw(mIndices.get(), newIndices.get(), mNumIndices, mData.get()[0].pos, mNumVertices, sizeof(VertexData), 1.05f);
@@ -627,7 +626,7 @@ namespace hr::geom
 		{
 			size_t numIndices;
 			VertexData* vertexData;
-			const unsigned short* indices;
+			const uint16_t* indices;
 		};
 
 		SMikkTSpaceInterface inter;
