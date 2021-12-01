@@ -53,7 +53,7 @@ namespace hr { namespace streams
 		explicit MemoryStream(size_t reserveSize = 1024)
 		{
 			mDataSize = (reserveSize < 1024) ? 1024 : reserveSize;
-			mData = realloc(mData, mDataSize);
+			mData = std::realloc(mData, mDataSize);
 
 			mDataBegin = mDataWalker = reinterpret_cast<unsigned char*>(mData);
 			mDataEnd = mDataBegin + mDataSize;

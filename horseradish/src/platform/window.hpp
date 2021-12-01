@@ -41,8 +41,8 @@ namespace hr::platform
 
 		private:
 			MessageType mType{ MessageType::Void };
-			hr::hInt32 mParam{ 0 };
-			hr::hSplitUInt32 mFlags{ 0 };
+			int32_t mParam{ 0 };
+			hr::types::hSplitUInt32 mFlags{ 0 };
 
 		public:
 			Message() = default;
@@ -51,11 +51,11 @@ namespace hr::platform
 				: mType{ msgType }
 			{ }
 
-			Message(MessageType msgType, hr::hInt32 msgParam)
+			Message(MessageType msgType, int32_t msgParam)
 				: mType{ msgType }, mParam{ msgParam }
 			{ }
 
-			Message(MessageType msgType, hr::hInt32 msgParam, hr::hSplitUInt32 msgFlags)
+			Message(MessageType msgType, int32_t msgParam, hr::types::hSplitUInt32 msgFlags)
 				: mType{ msgType }, mParam{ msgParam }, mFlags{ msgFlags }
 			{ }
 			
@@ -69,12 +69,12 @@ namespace hr::platform
 				return (this->mType == msgType);
 			}
 
-			hr::hInt32 getParam() const
+			int32_t getParam() const
 			{
 				return mParam;
 			}
 
-			hr::hSplitUInt32 getFlags() const
+			hr::types::hSplitUInt32 getFlags() const
 			{
 				return mFlags;
 			}

@@ -7,7 +7,7 @@
 #include "../common/openGL/tools/viewport.hpp"
 #include "../common/openGL/tools/immediateMode.hpp"
 
-namespace hr { namespace render
+namespace hr::render
 {
 	class Renderer2D;
 	class RendererMain;
@@ -20,9 +20,9 @@ namespace hr { namespace render
 		hr::gl::tools::ImmediateMode mGlImmediateMode;
 
 		struct {
-			bool drawBBoxes = false;
-			bool drawNormals = false;
-			bool drawTris = false;
+			bool drawBBoxes{ false };
+			bool drawNormals{ false };
+			bool drawTris{ false };
 		} mOptions;
 
 		struct {
@@ -39,4 +39,4 @@ namespace hr { namespace render
 
 		void render(RendererMain& rendererMain, const tools::Camera& hrCamera, const hr::gl::tools::Viewport& hrViewport);
 	};
-} }
+}

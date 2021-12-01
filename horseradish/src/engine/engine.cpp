@@ -47,7 +47,7 @@ namespace hr { namespace engine
 		size_t totalPacks = 0;
 
 		//for every pack/zip/7zip file
-		hr::io::FileSystem::findFiles("d:/jogos/doom3/base/pak*.pk4", true, [&](const hr::io::Path &filePath, const hr::hUInt64 &)
+		hr::io::FileSystem::findFiles("d:/jogos/doom3/base/pak*.pk4", true, [&](const hr::io::Path &filePath, const uint64_t&)
 		{
 			size_t numFilesZip;
 

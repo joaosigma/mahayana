@@ -51,7 +51,7 @@ namespace hr::platform
 
 	private:
 		static LRESULT CALLBACK wndProc(HWND hWnd, UINT messageID, WPARAM wParam, LPARAM lParam);
-		static hr::hInt32 translateVirtualKeyCode(LPARAM nativeKeyCode);
+		static int32_t translateVirtualKeyCode(LPARAM nativeKeyCode);
 
 		void processRawInput(const RAWINPUT &inputData);
 

@@ -245,7 +245,7 @@ namespace hr::io
 		mMaxNumMounts = 0;
 	}
 
-	void FileSystem::findFiles(const std::string& baseFolderAndFilter, const bool returnFilesFullPath, std::function<void(const hr::io::Path &filePath, const hr::hUInt64 &fileSize)> actionFileFound)
+	void FileSystem::findFiles(const std::string& baseFolderAndFilter, const bool returnFilesFullPath, std::function<void(const hr::io::Path &filePath, const uint64_t &fileSize)> actionFileFound)
 	{
 		if (!actionFileFound || baseFolderAndFilter.empty())
 			return;
@@ -275,7 +275,7 @@ namespace hr::io
 			ULARGE_INTEGER ul;
 			ul.HighPart = findData.nFileSizeHigh;
 			ul.LowPart = findData.nFileSizeLow;
-			hr::hUInt64 fileSize = ul.QuadPart;
+			uint64_t fileSize = ul.QuadPart;
 
 			hr::io::Path fileFinalPath;
 

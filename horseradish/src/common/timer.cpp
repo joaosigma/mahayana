@@ -66,15 +66,15 @@ namespace hr
 		return elapsed;
 	}
 
-	hUInt64 Timer::getTimeIntS() const noexcept
+	uint64_t Timer::getTimeIntS() const noexcept
 	{
 		auto curTime = std::chrono::high_resolution_clock::now();
 		auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(curTime - mTimepoint).count();
 
-		return static_cast<hUInt64>(elapsed);
+		return static_cast<uint64_t>(elapsed);
 	}
 
-	hUInt64 Timer::getTimeIntS(const bool restart) noexcept
+	uint64_t Timer::getTimeIntS(const bool restart) noexcept
 	{
 		auto curTime = std::chrono::high_resolution_clock::now();
 		auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(curTime - mTimepoint).count();
@@ -82,18 +82,18 @@ namespace hr
 		if (restart)
 			mTimepoint = curTime;
 
-		return static_cast<hUInt64>(elapsed);
+		return static_cast<uint64_t>(elapsed);
 	}
 
-	hUInt64 Timer::getTimeIntMS() const noexcept
+	uint64_t Timer::getTimeIntMS() const noexcept
 	{
 		auto curTime = std::chrono::high_resolution_clock::now();
 		auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(curTime - mTimepoint).count();
 
-		return static_cast<hUInt64>(elapsed);
+		return static_cast<uint64_t>(elapsed);
 	}
 
-	hUInt64 Timer::getTimeIntMS(const bool restart) noexcept
+	uint64_t Timer::getTimeIntMS(const bool restart) noexcept
 	{
 		auto curTime = std::chrono::high_resolution_clock::now();
 		auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(curTime - mTimepoint).count();
@@ -101,10 +101,10 @@ namespace hr
 		if (restart)
 			mTimepoint = curTime;
 
-		return static_cast<hUInt64>(elapsed);
+		return static_cast<uint64_t>(elapsed);
 	}
 
-	void Timer::setS(const hUInt64 seconds) noexcept
+	void Timer::setS(const uint64_t seconds) noexcept
 	{
 		mTimepoint = std::chrono::high_resolution_clock::now();
 		mTimepoint -= std::chrono::seconds(seconds);
@@ -116,7 +116,7 @@ namespace hr
 		mTimepoint -= std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::duration<double, std::chrono::seconds::period>(seconds));
 	}
 
-	void Timer::setMS(const hUInt64 miliseconds) noexcept
+	void Timer::setMS(const uint64_t miliseconds) noexcept
 	{
 		mTimepoint = std::chrono::high_resolution_clock::now();
 		mTimepoint -= std::chrono::milliseconds(miliseconds);
@@ -128,7 +128,7 @@ namespace hr
 		mTimepoint -= std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::duration<double, std::chrono::milliseconds::period>(miliseconds));
 	}
 
-	void Timer::addS(const hInt64 seconds) noexcept
+	void Timer::addS(const int64_t seconds) noexcept
 	{
 		mTimepoint += std::chrono::seconds(seconds);
 	}
@@ -138,7 +138,7 @@ namespace hr
 		mTimepoint += std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::duration<double, std::chrono::seconds::period>(seconds));
 	}
 
-	void Timer::addMS(const hInt64 miliseconds) noexcept
+	void Timer::addMS(const int64_t miliseconds) noexcept
 	{
 		mTimepoint += std::chrono::milliseconds(miliseconds);
 	}

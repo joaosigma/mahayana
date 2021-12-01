@@ -1,6 +1,5 @@
 #pragma once
 
-#include "../common/types.hpp"
 #include "../common/timer.hpp"
 #include "../common/image.hpp"
 #include "../common/primitives2D.hpp"
@@ -63,8 +62,8 @@ namespace hr { namespace misc
 		bool goToBeginning();
 		bool goToTime(double seconds);
 
-		const void* getFrame(bool &clockIsBehind, hr::hInt64 &frameID, double &frameDurationS);
-		double getFrameDuration(const hr::hInt64 &frameID)  const;
+		const void* getFrame(bool &clockIsBehind, int64_t &frameID, double &frameDurationS);
+		double getFrameDuration(const int64_t& frameID)  const;
 
 		bool isValid() const;
 		bool hasAudio() const;

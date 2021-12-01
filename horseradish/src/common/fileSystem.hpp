@@ -100,7 +100,7 @@ namespace hr::io
 		FileSystem(size_t maxNumMounts);
 		~FileSystem();
 
-		static void findFiles(const std::string& baseFolderAndFilter, const bool returnFilesFullPath, std::function<void(const hr::io::Path &filePath, const hr::hUInt64 &fileSize)> actionFileFound);
+		static void findFiles(const std::string& baseFolderAndFilter, const bool returnFilesFullPath, std::function<void(const hr::io::Path &filePath, const uint64_t &fileSize)> actionFileFound);
 		static bool fileExists(std::string_view filePath);
 
 		bool mountPath(const hr::io::Path &baseFolder, std::string_view mountPoint);

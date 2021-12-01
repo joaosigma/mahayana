@@ -335,7 +335,7 @@ namespace hr { namespace engine
 		template<typename T>
 		static void vmPushStackValue(HSQUIRRELVM sqvm, const std::vector<T> &values)
 		{
-			sq_newarray(mSqvm, values.size());
+			sq_newarray(sqvm, values.size());
 
 			int curIndex = 0;
 			for (const auto& value : values)

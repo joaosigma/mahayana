@@ -1,49 +1,79 @@
 #pragma once
 
+#include <cstdint>
+#include <type_traits>
 #include <xmmintrin.h>
 
 #define HRESTRICT __restrict
 #define HFUNC_RESTRICT __declspec(restrict)
 
-namespace hr
+namespace hr::types
 {
-	typedef size_t hSize;
-	typedef ptrdiff_t hPrtDiff;
+	namespace detail
+	{
+		void pack(const float* const in, int16_t* const out, size_t numValues);
+		void pack(const float* const in, uint16_t* const out, size_t numValues);
+		void unpack(const int16_t* const in, float* const out, size_t numValues);
+		void unpack(const uint16_t* const in, float* const out, size_t numValues);
+	}
 
 	typedef signed char hChar;
 
-	typedef signed __int8 hInt8;
-	typedef signed __int16 hInt16;
-	typedef signed __int32 hInt32;
-	typedef signed __int64 hInt64;
-
-	typedef unsigned __int8 hUInt8;
-	typedef unsigned __int16 hUInt16;
-	typedef unsigned __int32 hUInt32;
-	typedef unsigned __int64 hUInt64;
-
-	typedef float hFloat;
-	typedef double hDouble;
-
 	union hSplitUInt32{
 		struct PacketBytes{
-			hUInt8 byte0;
-			hUInt8 byte1;
-			hUInt8 byte2;
-			hUInt8 byte3;
+			uint8_t byte0;
+			uint8_t byte1;
+			uint8_t byte2;
+			uint8_t byte3;
 		} piecesBytes;
 
 		struct PacketShorts{
-			hUInt16 short0;
-			hUInt16 short1;
+			uint16_t short0;
+			uint16_t short1;
 		} piecesShort;
 
-		hUInt32 valueWord;
+		uint32_t valueWord;
 
-		hSplitUInt32(hUInt32 valueWord)
+		hSplitUInt32(uint32_t valueWord)
 			: valueWord(valueWord)
 		{ }
 	};
+
+	template<typename T>
+	T packFloat(const float value)
+	{
+		static_assert(std::is_arithmetic_v<T>);
+
+		T out;
+		detail::pack(&value, &out, 1);
+
+		return out;
+	}
+
+	template<typename T>
+	float unpackFloat(const T value)
+	{
+		static_assert(std::is_arithmetic_v<T>);
+
+		float out;
+		detail::unpack(&value, &out, 1);
+
+		return out;
+	}
+
+	template<typename T>
+	void packFloat(const float* const in, T* const out, size_t numValues)
+	{
+		static_assert(std::is_arithmetic_v<T>);
+		detail::pack(in, out, numValues);
+	}
+
+	template<typename T>
+	void unpackFloat(const T* const in, float* const out, size_t numValues)
+	{
+		static_assert(std::is_arithmetic_v<T>);
+		detail::unpack(in, out, numValues);
+	}
 
 #pragma warning( push )
 #pragma warning( disable : 4324)

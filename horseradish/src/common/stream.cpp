@@ -92,7 +92,7 @@ namespace hr { namespace streams
 				mDataSize = mDataSize + (1024 * 1024);
 
 			auto oldPtr = mData;
-			mData = realloc(mData, mDataSize);
+			mData = std::realloc(mData, mDataSize);
 			if (mData != oldPtr)
 			{
 				mDataBegin = reinterpret_cast<unsigned char*>(mData);

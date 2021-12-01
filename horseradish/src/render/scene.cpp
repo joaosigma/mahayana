@@ -57,7 +57,7 @@ namespace hr { namespace render
 		if (std::chrono::milliseconds(mVideoData.frameTimer.getTimeIntMS()) >= mVideoData.waitDuration)
 		{
 			bool frameIsAhead;
-			hr::hInt64 frameID;
+			int64_t frameID;
 			double frameDurationS;
 
 			auto frameData = mVideoData.stream->getFrame(frameIsAhead, frameID, frameDurationS);

@@ -1,8 +1,7 @@
 #pragma once
 
-#include "types.hpp"
-
 #include <chrono>
+#include <cstdint>
 
 namespace hr
 {
@@ -26,19 +25,19 @@ namespace hr
 		double getTimeS(const bool restart) noexcept;
 		double getTimeMS() const noexcept;
 		double getTimeMS(const bool restart) noexcept;
-		hUInt64 getTimeIntS() const noexcept;
-		hUInt64 getTimeIntS(const bool restart) noexcept;
-		hUInt64 getTimeIntMS() const noexcept;
-		hUInt64 getTimeIntMS(const bool restart) noexcept;
+		uint64_t getTimeIntS() const noexcept;
+		uint64_t getTimeIntS(const bool restart) noexcept;
+		uint64_t getTimeIntMS() const noexcept;
+		uint64_t getTimeIntMS(const bool restart) noexcept;
 
-		void setS(const hUInt64 seconds) noexcept;
+		void setS(const uint64_t seconds) noexcept;
 		void setS(const double seconds) noexcept;
-		void setMS(const hUInt64 miliseconds) noexcept;
+		void setMS(const uint64_t miliseconds) noexcept;
 		void setMS(const double miliseconds) noexcept;
 
-		void addS(const hInt64 seconds) noexcept;
+		void addS(const int64_t seconds) noexcept;
 		void addS(const double seconds) noexcept;
-		void addMS(const hInt64 miliseconds) noexcept;
+		void addMS(const int64_t miliseconds) noexcept;
 		void addMS(const double miliseconds) noexcept;
 	};
 }

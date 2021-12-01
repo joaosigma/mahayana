@@ -314,7 +314,7 @@ namespace hr { namespace misc
 		return true;
 	}
 
-	const void* VideoStream::getFrame(bool &clockIsBehind, hr::hInt64 &frameID, double &frameDurationS)
+	const void* VideoStream::getFrame(bool &clockIsBehind, int64_t& frameID, double &frameDurationS)
 	{
 		clockIsBehind = false;
 		frameID = -1;
@@ -365,7 +365,7 @@ namespace hr { namespace misc
 		}
 	}
 
-	double VideoStream::getFrameDuration(const hr::hInt64 &frameID) const
+	double VideoStream::getFrameDuration(const int64_t& frameID) const
 	{
 		if (mVideoQueueActive <= 0)
 			return 0.0;

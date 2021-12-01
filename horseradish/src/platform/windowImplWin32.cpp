@@ -114,7 +114,7 @@ namespace hr::platform
 
 			if ((messageID == WM_CHAR) || (messageID == WM_KEYDOWN))
 			{
-				hr::hSplitUInt32 flags(0);
+				hr::types::hSplitUInt32 flags(0);
 
 				flags.piecesShort.short0 = (lParam & 0xFFFF);
 				flags.piecesShort.short1 |= ((GetKeyState(VK_CONTROL) & 0x8000) != 0) ? static_cast<unsigned int>(Window::Message::MessageFlags::ControlKey) : 0;
@@ -127,7 +127,7 @@ namespace hr::platform
 			}			
 			else if (messageID == WM_MOUSEWHEEL)
 			{
-				hr::hSplitUInt32 flags(0), params(0);
+				hr::types::hSplitUInt32 flags(0), params(0);
 
 				flags.piecesShort.short0 = static_cast<signed short>(GET_WHEEL_DELTA_WPARAM(wParam) / 120);
 				flags.piecesShort.short1 |= ((GET_KEYSTATE_WPARAM(wParam) & MK_CONTROL) != 0) ? static_cast<unsigned int>(Window::Message::MessageFlags::ControlKey) : 0;
@@ -152,9 +152,9 @@ namespace hr::platform
 		{
 			if ((window->mDisplayInfo.resizeWidth != window->mDisplayInfo.width) || (window->mDisplayInfo.resizeHeight != window->mDisplayInfo.height))
 			{
-				hr::hSplitUInt32 params(0);
-				params.piecesShort.short0 = static_cast<hUInt16>(window->mDisplayInfo.resizeWidth);
-				params.piecesShort.short1 = static_cast<hUInt16>(window->mDisplayInfo.resizeHeight);
+				hr::types::hSplitUInt32 params(0);
+				params.piecesShort.short0 = static_cast<uint16_t>(window->mDisplayInfo.resizeWidth);
+				params.piecesShort.short1 = static_cast<uint16_t>(window->mDisplayInfo.resizeHeight);
 
 				window->mDisplayInfo.width = window->mDisplayInfo.resizeWidth;
 				window->mDisplayInfo.height = window->mDisplayInfo.resizeHeight;
@@ -168,17 +168,17 @@ namespace hr::platform
 		return DefWindowProc(hWnd, messageID, wParam, lParam);
 	}
 
-	hr::hInt32 WindowImpl::translateVirtualKeyCode(LPARAM nativeKeyCode)
+	int32_t WindowImpl::translateVirtualKeyCode(LPARAM nativeKeyCode)
 	{
 		Window::VirtualKeys virtuakKey;
 
 		if ((nativeKeyCode >= 0x30) && (nativeKeyCode <= 0x39))
-			return static_cast<hr::hInt32>(nativeKeyCode); //0-9
+			return static_cast<int32_t>(nativeKeyCode); //0-9
 		if ((nativeKeyCode >= 0x41) && (nativeKeyCode <= 0x5A))
-			return static_cast<hr::hInt32>(nativeKeyCode); //A-Z
+			return static_cast<int32_t>(nativeKeyCode); //A-Z
 
 		if ((nativeKeyCode >= 0x70) && (nativeKeyCode <= 0x7B))
-			return (static_cast<hr::hInt32>(Window::VirtualKeys::F1) + (nativeKeyCode - 0x70)); //F1-F12
+			return (static_cast<int32_t>(Window::VirtualKeys::F1) + (nativeKeyCode - 0x70)); //F1-F12
 
 		switch (nativeKeyCode)
 		{
@@ -224,7 +224,7 @@ namespace hr::platform
 				virtuakKey = Window::VirtualKeys::Invalid; break;
 		}
 
-		return static_cast<hr::hInt32>(virtuakKey);
+		return static_cast<int32_t>(virtuakKey);
 	}
 
 	void WindowImpl::processRawInput(const RAWINPUT &inputData)

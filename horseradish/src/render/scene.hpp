@@ -12,12 +12,12 @@
 #include <chrono>
 #include <string>
 
-namespace hr { namespace misc
+namespace hr::misc
 {
 	class VideoStream;
-}}
+}
 
-namespace hr { namespace render
+namespace hr::render
 {
 	class Scene
 	{
@@ -33,7 +33,7 @@ namespace hr { namespace render
 			bool streamEnded = false;
 			Timer frameTimer;
 			std::unique_ptr<misc::VideoStream> stream;
-			hr::hInt64 frameLastID = -1;
+			int64_t frameLastID = -1;
 			std::chrono::milliseconds waitDuration = std::chrono::milliseconds::zero();
 			hr::Size<size_t> frameSize;
 		} mVideoData;
@@ -44,17 +44,17 @@ namespace hr { namespace render
 			hr::Size<int> windowSize;
 			hr::gl::tools::ImmediateMode imode;
 			hr::gl::objects::Texture texVideo;
-			
+
 			hr::gl::objects::Buffer bufferPBO;
 			hr::gl::objects::Sampler sampler;
 			hr::gl::objects::ShaderProgram progVertex;
 			hr::gl::objects::ShaderProgram progFragment;
 			hr::gl::objects::ProgramPipeline progPipeline;
 		} mRenderData;
-		
+
 
 	public:
-		Scene(engine::Runtime& runtime, engine::Logger::Context& logger, hr::io::FileSystem& fileSystem, hr::gl::objects::Context &glCtx, const std::string& name, const std::string& filePath, size_t renderWidth, size_t renderHeight);
+		Scene(engine::Runtime& runtime, engine::Logger::Context& logger, hr::io::FileSystem& fileSystem, hr::gl::objects::Context& glCtx, const std::string& name, const std::string& filePath, size_t renderWidth, size_t renderHeight);
 		~Scene();
 
 		Scene(const Scene&) = delete;
@@ -69,4 +69,4 @@ namespace hr { namespace render
 			return mName;
 		}
 	};
-} }
+}

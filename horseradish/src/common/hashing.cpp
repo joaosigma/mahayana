@@ -5,7 +5,7 @@
 
 #include <cstring>
 
-#define SUPERFAST_GET16BITS(d) (*((const hUInt16 *) (d)))
+#define SUPERFAST_GET16BITS(d) (*((const uint16_t *) (d)))
 
 namespace hr
 {
@@ -85,12 +85,12 @@ namespace hr
 		};
 	}
 
-	hUInt8 Hashing::calculateCRC8(const void * const buffer, size_t bufferSize)
+	uint8_t Hashing::calculateCRC8(const void * const buffer, size_t bufferSize) noexcept
 	{
 		if (!buffer || (bufferSize == 0))
 			return 0;
 
-		hUInt8 crc = 0x0000;
+		uint8_t crc = 0x0000;
 
 		auto bufferWalker = reinterpret_cast<const unsigned char *>(buffer);
 		while (bufferSize--)
@@ -100,12 +100,12 @@ namespace hr
 		return crc;
 	}
 
-	hUInt16 Hashing::calculateCRC16(const void * const buffer, size_t bufferSize)
+	uint16_t Hashing::calculateCRC16(const void * const buffer, size_t bufferSize) noexcept
 	{
 		if (!buffer || (bufferSize == 0))
 			return 0;
 
-		hUInt16 crc = 0xFFFF;
+		uint16_t crc = 0xFFFF;
 
 		auto bufferWalker = reinterpret_cast<const unsigned char *>(buffer);
 		while (bufferSize--)
@@ -115,12 +115,12 @@ namespace hr
 		return crc;
 	}
 
-	hUInt32 Hashing::calculateCRC32(const void * const buffer, size_t bufferSize)
+	uint32_t Hashing::calculateCRC32(const void * const buffer, size_t bufferSize) noexcept
 	{
 		if (!buffer || (bufferSize == 0))
 			return 0;
 
-		hUInt32 crc = 0xffffffffL;
+		uint32_t crc = 0xffffffffL;
 
 		auto bufferWalker = reinterpret_cast<const unsigned char *>(buffer);
 		while (bufferSize--)
@@ -130,7 +130,7 @@ namespace hr
 		return crc;
 	}
 
-	void Hashing::calculateMD5(const void * const buffer, size_t bufferSize, hData128 * const hash)
+	void Hashing::calculateMD5(const void * const buffer, size_t bufferSize, types::hData128 * const hash) noexcept
 	{
 		if (!hash || !buffer || (bufferSize == 0))
 			return;
@@ -141,7 +141,7 @@ namespace hr
 		MD5Close(&context, reinterpret_cast<unsigned char*>(hash));
 	}
 
-	void Hashing::calculateSHA256(const void * const buffer, size_t bufferSize, hData128 * const hash)
+	void Hashing::calculateSHA256(const void * const buffer, size_t bufferSize, types::hData128 * const hash) noexcept
 	{
 		if (!hash || !buffer || (bufferSize == 0))
 			return;
@@ -152,24 +152,24 @@ namespace hr
 		sha256_done(&context, reinterpret_cast<uint8_t *>(hash));
 	}
 
-	unsigned int Hashing::superFastHash(const void * const buffer, size_t bufferSize)
+	unsigned int Hashing::superFastHash(const void * const buffer, size_t bufferSize) noexcept
 	{
 		if (!buffer || (bufferSize <= 0))
 			return 0;
 
-		hUInt32 hash = static_cast<hUInt32>(bufferSize);
+		uint32_t hash = static_cast<uint32_t>(bufferSize);
 		int rem = static_cast<int>(bufferSize & 3);
 		bufferSize >>= 2;
 
 		auto bufferWalker = reinterpret_cast<const unsigned char *>(buffer);
 
-		hUInt32 tmp;
+		uint32_t tmp;
 		for (; bufferSize > 0; bufferSize--)
 		{
 			hash += SUPERFAST_GET16BITS(bufferWalker);
 			tmp = (SUPERFAST_GET16BITS(bufferWalker + 2) << 11) ^ hash;
 			hash = (hash << 16) ^ tmp;
-			bufferWalker += 2 * sizeof(hUInt16);
+			bufferWalker += 2 * sizeof(uint16_t);
 			hash += hash >> 11;
 		}
 
@@ -178,7 +178,7 @@ namespace hr
 		case 3:
 			hash += SUPERFAST_GET16BITS(bufferWalker);
 			hash ^= hash << 16;
-			hash ^= bufferWalker[sizeof(hUInt16)] << 18;
+			hash ^= bufferWalker[sizeof(uint16_t)] << 18;
 			hash += hash >> 11;
 			break;
 		case 2:
