@@ -3,6 +3,28 @@
 	[
 		{
 			"path": "src"
-		}
-	]
+		},
+		{
+			"file_include_patterns":
+			[
+				"CMakeLists.txt",
+				"engine.md",
+				"gen_build_proj.ps1"
+			],
+			"folder_exclude_patterns":
+			[
+				"**/**"
+			],
+			"path": ".",
+			"name": "."
+		},
+	],
+	"settings":
+	{
+		"default_encoding": "UTF-8",
+		"default_line_ending": "unix",
+		"ensure_newline_at_eof_on_save": true,
+		"tab_size": 4,
+		"trim_trailing_white_space_on_save": true
+	}
 }

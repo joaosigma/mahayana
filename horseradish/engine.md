@@ -27,7 +27,7 @@ The list of available functions:
 * engine.runtime.forceCrash (only in debug builds)
 
 Profiling support (TODO):
-* engine.profiler.recordStart("<path ficheiro>")
+* engine.profiler.recordStart("<path file>")
 * engine.profiler.recordStop()
 * engine.profiler.sample("nome")
 	returns the minimum, current value and maximum value of a sample in an array: [min, cur, max]
