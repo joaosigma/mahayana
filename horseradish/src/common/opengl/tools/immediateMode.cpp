@@ -219,7 +219,7 @@ namespace hr::gl::tools
 
 	void ImmediateMode::setColorF(const float& rgb)
 	{
-		mState.color[0] = Color::convertColor(rgb);
+		mState.color[0] = Colorf::convertColor(rgb);
 		mState.color[1] = mState.color[0];
 		mState.color[2] = mState.color[0];
 		mState.color[3] = 255;
@@ -227,26 +227,26 @@ namespace hr::gl::tools
 
 	void ImmediateMode::setColorF(const float& rgb, const float& a)
 	{
-		mState.color[0] = Color::convertColor(rgb);
+		mState.color[0] = Colorf::convertColor(rgb);
 		mState.color[1] = mState.color[0];
 		mState.color[2] = mState.color[0];
-		mState.color[3] = Color::convertColor(a);
+		mState.color[3] = Colorf::convertColor(a);
 	}
 
 	void ImmediateMode::setColorF(const float& r, const float& g, const float& b)
 	{
-		mState.color[0] = Color::convertColor(r);
-		mState.color[1] = Color::convertColor(g);
-		mState.color[2] = Color::convertColor(b);
+		mState.color[0] = Colorf::convertColor(r);
+		mState.color[1] = Colorf::convertColor(g);
+		mState.color[2] = Colorf::convertColor(b);
 		mState.color[3] = 255;
 	}
 
 	void ImmediateMode::setColorF(const float& r, const float& g, const float& b, const float& a)
 	{
-		mState.color[0] = Color::convertColor(r);
-		mState.color[1] = Color::convertColor(g);
-		mState.color[2] = Color::convertColor(b);
-		mState.color[3] = Color::convertColor(a);
+		mState.color[0] = Colorf::convertColor(r);
+		mState.color[1] = Colorf::convertColor(g);
+		mState.color[2] = Colorf::convertColor(b);
+		mState.color[3] = Colorf::convertColor(a);
 	}
 
 	void ImmediateMode::setColorRGB(const unsigned char* const values)
@@ -259,9 +259,9 @@ namespace hr::gl::tools
 
 	void ImmediateMode::setColorRGB(const float* const values)
 	{
-		mState.color[0] = hr::Color::convertColor(values[0]);
-		mState.color[1] = hr::Color::convertColor(values[1]);
-		mState.color[2] = hr::Color::convertColor(values[2]);
+		mState.color[0] = hr::Colorf::convertColor(values[0]);
+		mState.color[1] = hr::Colorf::convertColor(values[1]);
+		mState.color[2] = hr::Colorf::convertColor(values[2]);
 		mState.color[3] = 255;
 	}
 

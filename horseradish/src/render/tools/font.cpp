@@ -162,7 +162,7 @@ namespace hr { namespace render { namespace tools
 				mCharMap[key] = value;
 		}
 
-		int texWidth = hr::Math::iProxPowerOfTwo(hr::Math::ftoi(hr::Math::sqrt(totalArea)));
+		int texWidth = hr::Math::iProxPowerOfTwo(hr::Math::ftoi(hr::Math::sqrt(static_cast<double>(totalArea))));
 		int texHeight = 0;
 
 		int texLastWidth = 0, texMaxLineHeight = 0;
@@ -646,7 +646,7 @@ namespace hr { namespace render { namespace tools
 		mState.stateColor.set(color);
 	}
 
-	void Font::setColor(const Color &color)
+	void Font::setColor(const Colorf &color)
 	{
 		mState.stateColor.set(color);
 	}

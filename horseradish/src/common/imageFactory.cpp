@@ -1,5 +1,3 @@
-#pragma once
-
 #include "common/imageFactory.hpp"
 
 #include "libs/stb/stb_image.h"

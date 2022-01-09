@@ -3,7 +3,6 @@
 #include "renderer.hpp"
 
 #include "tools/camera.hpp"
-#include "../common/mesh.hpp"
 #include "../common/random.hpp"
 #include "../common/fileSystem.hpp"
 #include "../common/openGL/tools/viewport.hpp"
@@ -29,14 +28,14 @@ namespace hr::render
 		{
 			struct Object
 			{
-				int meshVBOStartPos = 0;
-				int meshVBOVertexOffset = 0;
-				unsigned int meshDrawIndirectOffset = 0;
-				void *meshTriListOffset = nullptr;
+				int meshVBOStartPos{ 0 };
+				int meshVBOVertexOffset{ 0 };
+				unsigned int meshDrawIndirectOffset{ 0 };
+				void* meshTriListOffset{ nullptr };
 
 				hr::gl::objects::Texture texDiffuse, texNormal;
 
-				hr::BBox bbox;
+				hr::BBox<> bbox;
 			};
 			std::unordered_map<size_t, Object> mObjects;
 

@@ -283,7 +283,7 @@ namespace hr { namespace render
 								continue;
 
 							if (value[0] == '#')
-								guiFont->setColor(Color::parseFromHTML(value.c_str()));
+								guiFont->setColor(Colorf::parseFromHTML(value.c_str()));
 							else if (value == "red")
 								guiFont->setColor(1.0f, 0.0f, 0.0f, 1.0f);
 							else if (value == "green")
@@ -319,7 +319,7 @@ namespace hr { namespace render
 		auto& glImmediateMode = mRenderer.mGlImmediateMode;
 
 		glImmediateMode.beginDraw(hr::gl::tools::ImmediateMode::GeometryType::Quads);
-			glImmediateMode.setColor(0, 0, 0, hr::Color::convertColor(bkgAlpha));
+			glImmediateMode.setColor(0, 0, 0, hr::Colorf::convertColor(bkgAlpha));
 			glImmediateMode.addQuad(mViewRect.x, mViewRect.y, mViewRect.width, mViewRect.height);
 		glImmediateMode.endDraw();
 

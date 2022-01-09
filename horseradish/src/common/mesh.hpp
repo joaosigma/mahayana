@@ -1,5 +1,7 @@
 #pragma once
 
+#include "ray.hpp"
+#include "types.hpp"
 #include "vector.hpp"
 #include "matrix.hpp"
 #include "bvolumes.hpp"
@@ -7,132 +9,258 @@
 #include <limits>
 #include <memory>
 #include <cassert>
+#include <optional>
 #include <type_traits>
 
 namespace hr::geom
 {
-	namespace detail
+#pragma pack(push, 1)
+	struct VertexFull
 	{
-		#pragma pack(push, 1)
-		struct VertexData
-		{
-			float pos[3];
-			float uv[2];
-			int16_t normal[4]; //extra component at normal[3]
-			int16_t tangent[4]; //tangent[3] is unused
-		};
-		#pragma pack(pop)
+		float pos[3];
+		float uv[2];
+		float normal[3];
+		float tangent[4];
+	};
 
-		static_assert(std::is_trivial_v<VertexData>);
-		static_assert(sizeof(VertexData) == 36, "Mesh vertex data must be tightly packed: sizeof() == 36");
-	}
+	static_assert(sizeof(VertexFull) == 48);
+	static_assert(std::is_trivial_v<VertexFull>);
 
-	class Mesh
+	struct VertexShading
 	{
+		float pos[3];
+		uint16_t uv[2]; //65535 pixels precision
+		uint32_t normal; //GL_INT_2_10_10_10_REV (alpha is unused)
+		uint32_t tangent; //GL_INT_2_10_10_10_REV (alpha is either -1.0 or 1.0 to recover the sign when calculating TBN: cross(normal, tangent) * sign)
+	};
+
+	static_assert(sizeof(VertexShading) == 24);
+	static_assert(std::is_trivial_v<VertexShading>);
+#pragma pack(pop)
+
+	template<class TVertex, class TIndex>
+	class MeshBase
+	{
+		static_assert(std::is_trivial_v<TVertex>, "Vertex layout type must be trivial");
+		static_assert(std::is_same_v<uint16_t, TIndex> || std::is_same_v<uint32_t, TIndex>, "Indices must either be uint16_t or uint32_t");
+
+		template<typename, typename> friend class Mesh;
+
 	public:
-		using VertexData = detail::VertexData;
-
-		static int16_t pack(const float value);
-		static float unpack(const int16_t value);
-		static void pack(const float* const in, int16_t* const out, size_t numValues);
-		static void unpack(const int16_t* const in, float* const out, size_t numValues);
+		using VertexType = TVertex;
+		using IndexType = TIndex;
 
 		static constexpr size_t maxVertexCount()
 		{
-			return static_cast<size_t>(std::numeric_limits<uint16_t>::max());
+			return static_cast<size_t>(std::numeric_limits<TIndex>::max());
 		}
 
 		static constexpr size_t sizeVertices(size_t numVertices)
 		{
-			return (sizeof(VertexData) * numVertices);
+			return (sizeof(TVertex) * numVertices);
 		}
 
 		static constexpr size_t sizeIndices(size_t numIndices)
 		{
-			return (sizeof(uint16_t) * numIndices);
+			return (sizeof(TIndex) * numIndices);
 		}
-
-		static Mesh genBox(size_t precision);
-		static Mesh genSphere(size_t sDiv, size_t tDiv);
 
 	private:
-		std::unique_ptr<VertexData[]> mData;
-		std::unique_ptr<uint16_t[]> mIndices;
-		size_t mNumVertices = 0, mNumIndices = 0;
+		std::unique_ptr<TVertex[]> mData;
+		std::unique_ptr<TIndex[]> mIndices;
+		size_t mNumVertices{ 0 }, mNumIndices{ 0 };
 
 	public:
-		Mesh() = default;
+		MeshBase() = default;
 
-		Mesh(size_t numVertices, size_t numIndices);
-		Mesh(std::unique_ptr<VertexData[]> vertices, size_t numVertices, std::unique_ptr<uint16_t[]> indices, size_t numIndices);
+		MeshBase(size_t numVertices, size_t numIndices)
+			: mNumVertices{ numVertices }, mNumIndices{ numIndices }
+		{
+			assert((numVertices > 0) && (numIndices > 0));
+			assert(numVertices < MeshBase::maxVertexCount());
+			assert((numIndices % 3) == 0);
 
-		Mesh(const Mesh& mesh);
-		Mesh& operator=(const Mesh& mesh);
+			mData = std::unique_ptr<TVertex[]>(new TVertex[numVertices]);
+			mIndices = std::unique_ptr<TIndex[]>(new TIndex[numIndices]);
 
-		Mesh(Mesh&& mesh) = default;
-		Mesh& operator=(Mesh&& mesh) = default;
+			std::memset(mData.get(), 0, sizeof(TVertex)* numVertices);
+			std::memset(mIndices.get(), 0, sizeof(TIndex)* numIndices);
+		}
 
-		const VertexData* vertices() const
+		MeshBase(std::unique_ptr<TVertex[]> vertices, size_t numVertices, std::unique_ptr<TIndex[]> indices, size_t numIndices)
+			: mData{ std::move(vertices) }, mNumVertices{ numVertices }, mIndices{ std::move(indices) }, mNumIndices{ numIndices }
+		{
+			assert((numVertices > 0) && (numIndices > 0));
+			assert(numVertices < MeshBase::maxVertexCount());
+			assert((numIndices % 3) == 0);
+
+			assert(mData&& mIndices);
+		}
+
+		MeshBase(const MeshBase& mesh)
+			: mNumVertices{ mesh.mNumVertices }, mNumIndices{ mesh.mNumIndices }
+		{
+			mData = std::unique_ptr<TVertex[]>(new TVertex[mNumVertices]);
+			mIndices = std::unique_ptr<TIndex[]>(new TIndex[mNumIndices]);
+
+			std::memcpy(mData.get(), mesh.mData.get(), sizeof(TVertex)* mNumVertices);
+			std::memcpy(mIndices.get(), mesh.mIndices.get(), sizeof(TIndex)* mNumIndices);
+		}
+
+		MeshBase& operator=(const MeshBase& mesh)
+		{
+			mNumVertices = mesh.mNumVertices;
+			mNumIndices = mesh.mNumIndices;
+
+			mData = std::unique_ptr<TVertex[]>(new TVertex[mNumVertices]);
+			mIndices = std::unique_ptr<TIndex[]>(new TIndex[mNumIndices]);
+
+			std::memcpy(mData.get(), mesh.mData.get(), sizeof(TVertex) * mNumVertices);
+			std::memcpy(mIndices.get(), mesh.mIndices.get(), sizeof(TIndex) * mNumIndices);
+
+			return *this;
+		}
+
+		MeshBase(MeshBase&& mesh) = default;
+		MeshBase& operator=(MeshBase&& mesh) = default;
+
+	public:
+		const TVertex* vertices() const noexcept
 		{
 			return mData.get();
 		}
-		VertexData* vertices()
+		TVertex* vertices() noexcept
 		{
 			return mData.get();
 		}
 
-		const uint16_t* indices() const
+		const TIndex* indices() const noexcept
 		{
 			return mIndices.get();
 		}
-		uint16_t* indices()
+		TIndex* indices() noexcept
 		{
 			return mIndices.get();
 		}
 
-		size_t sizeVertices() const
+		size_t sizeVertices() const noexcept
 		{
-			return Mesh::sizeVertices(mNumVertices);
+			return MeshBase::sizeVertices(mNumVertices);
 		}
-		size_t sizeIndices() const
+		size_t sizeIndices() const noexcept
 		{
-			return Mesh::sizeIndices(mNumIndices);
+			return MeshBase::sizeIndices(mNumIndices);
 		}
 
-		size_t numIndices() const
+		size_t numIndices() const noexcept
 		{
 			return mNumIndices;
 		}
-		size_t numVertices() const
+		size_t numVertices() const noexcept
 		{
 			return mNumVertices;
 		}
-		size_t numTris() const
+		size_t numTris() const noexcept
 		{
 			return mNumIndices / 3;
 		}
 
-		bool check() const;
+		bool check() const noexcept
+		{
+			if (!mData || !mIndices || (mNumVertices <= 0) || (mNumVertices > MeshBase::maxVertexCount()) || (mNumIndices <= 0) || ((mNumIndices % 3) != 0))
+				return false;
 
-		BBox getBoundingBox() const;
-		float getIndicesCacheRatio(size_t cacheSize) const;
-		bool getRayIntersect(const Vector3f& rayOrigin, const Vector3f& rayDir, float& hitDistance) const;
+			for (size_t i = 0; i < mNumIndices; i++)
+			{
+				if (mIndices[i] >= mNumVertices)
+					return false;
+			}
 
-		void flipUV();
-		void mirrorUV();
-		void scaleUV(float scaleAmount);
-		void scaleUV(float scaleU, float scaleV);
+			return true;
+		}
+	};
 
-		void scale(float scaleAmount);
-		void translate(const Vector3f& translate);
-		void centerMass(const Vector3f& center);
-		void confine(float maxAxis);
-		void transform(const Matrix& matFull, const Matrix3& matRot);
+	template<class TVertex, class TIndex>
+	class Mesh
+		: public MeshBase<TVertex, TIndex>
+	{
+		using BaseType = MeshBase<TVertex, TIndex>;
 
-		void invertTriWinding();
-		void optimizeIndices();
+	public:
+		using BaseType::MeshBase;
+	};
 
-		void genNormals();
-		void genTangents4();
+	template<>
+	class Mesh<VertexFull, uint32_t>
+		: public MeshBase<VertexFull, uint32_t>
+	{
+		using BaseType = MeshBase<VertexFull, uint32_t>;
+
+	public:
+		struct Hit {
+			double rayT;
+			size_t triIndex;
+			float barycentricU, barycentricV;
+		};
+
+		static Mesh genBox(size_t precision);
+		static Mesh genSphere(size_t sDiv, size_t tDiv);
+
+		static Mesh convertMesh(const Mesh<VertexShading, uint16_t>& source);
+
+	public:
+		using BaseType::MeshBase;
+
+		BBox<> bbox() const noexcept;
+		float indicesCacheRatio(size_t cacheSize) const noexcept;
+
+		bool intersects(const Ray<Vector3d>& ray, double rayDistMin, double rayDistMax, Hit& hit) const noexcept;
+
+		Vector3f triNormal(size_t triIndex, float baryU, float baryV) const noexcept;
+
+		void flipUV() noexcept;
+		void mirrorUV() noexcept;
+
+		void scaleUV(float scaleAmount) noexcept;
+		void scaleUV(float scaleU, float scaleV) noexcept;
+		void scale(float scaleAmount) noexcept;
+
+		void translate(const Vector3f& translate) noexcept;
+		void centerMass(const Vector3f& center) noexcept;
+		void confine(float maxAxis) noexcept;
+
+		void transform(const Matrix& matFull, const Matrix3& matRot) noexcept;
+
+		void invertTriWinding() noexcept;
+
+		void optimizeIndices() noexcept;
+		void genNormals() noexcept;
+		void genTangents4() noexcept;
+	};
+
+	template<>
+	class Mesh<VertexShading, uint16_t>
+		: public MeshBase<VertexShading, uint16_t>
+	{
+		using BaseType = MeshBase<VertexShading, uint16_t>;
+
+	public:
+		static Mesh convertMesh(const Mesh<VertexFull, uint32_t>& source);
+
+	public:
+		using BaseType::MeshBase;
+
+		BBox<> getBoundingBox() const noexcept;
+
+		Vector3f getPos(size_t vertexIndex) const noexcept;
+		Vector3f getNormal(size_t vertexIndex) const noexcept;
+		Vector4f getTangent(size_t vertexIndex) const noexcept;
+
+		void setPos(size_t vertexIndex, Vector3f pos) noexcept;
+		void setUV(size_t vertexIndex, float u, float v) noexcept;
+		void setNormal(size_t vertexIndex, Vector3f normal) noexcept;
+		void setTangent(size_t vertexIndex, Vector4f tangent) noexcept;
+
+		void transform(const Matrix& matFull, const Matrix3& matRot) noexcept;
 	};
 }

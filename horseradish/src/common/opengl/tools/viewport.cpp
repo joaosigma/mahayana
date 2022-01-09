@@ -4,9 +4,9 @@ namespace hr::gl::tools
 {
 	namespace
 	{
-		void funcProjection(hr::Matrix& mat, double fovy, double aspectRatio, double znear)
+		void funcProjection(hr::Matrix& mat, double fovy, double aspectRatio, double znear) noexcept
 		{
-			/*double ymax = near * tan(fov * 0.00872664625997164788461845384); //0.008726646259971 = pi / 180.0 / 2.0
+			/*double ymax = near * std::tan(fov * 0.00872664625997164788461845384); //0.008726646259971 = pi / 180.0 / 2.0
 			double ymin = -ymax;
 			double xmin = ymin * aspectRatio;
 			double xmax = ymax * aspectRatio;
@@ -20,7 +20,7 @@ namespace hr::gl::tools
 			mat[11] = -1.0f;
 			mat[14] = -static_cast<float>((2.0 * far * near) / (far - near));*/
 
-			double f = 1.0 / tan(fovy / 2.0);
+			double f = 1.0 / std::tan(fovy / 2.0);
 
 			mat.set(0.0f);
 			mat[0] = static_cast<float>(f / aspectRatio);
@@ -29,7 +29,7 @@ namespace hr::gl::tools
 			mat[14] = static_cast<float>(znear);
 		};
 
-		void funcOrtho(hr::Matrix& mat, double left, double right, double bottom, double top, double near, double far)
+		void funcOrtho(hr::Matrix& mat, double left, double right, double bottom, double top, double near, double far) noexcept
 		{
 			mat.set(0.0f);
 			mat[0] = static_cast<float>(2.0 / (right - left));
@@ -49,10 +49,10 @@ namespace hr::gl::tools
 		return mat;
 	}
 
-	void Viewport::calcMatrices()
+	void Viewport::calcMatrices() noexcept
 	{
-		funcProjection(mMatrices.mp3D, mFovY, static_cast<double>(mWidth) / static_cast<double>(mHeight), mZNear);
-		funcOrtho(mMatrices.mp2D, 0.0, mWidth, 0.0, mHeight, 1.0, -1.0);
+		funcProjection(mMatrices.mp3D, mYFov, mDims.aspectRatio, mZNear);
+		funcOrtho(mMatrices.mp2D, 0.0, mDims.width, 0.0, mDims.height, 1.0, -1.0);
 	}
 
 	const hr::Matrix& Viewport::getProjection(ProjectionType projectionType) const
@@ -66,13 +66,6 @@ namespace hr::gl::tools
 		};
 
 		return mMatrices.mp3D;
-	}
-
-	void Viewport::pointOnZNear(hr::Vector3f& center) const
-	{
-		center[0] = mZNear * tan(mFovY * 0.5f);
-		center[1] = (center[1]) * static_cast<float>(mWidth) / static_cast<float>(mHeight);
-		center[2] = mZNear;
 	}
 
 	void Viewport::projectPoint(ProjectionType projType, const hr::Matrix& modelView, hr::Vector3f* const listPoints, size_t numPoints) const
@@ -94,8 +87,8 @@ namespace hr::gl::tools
 		}
 		transMat *= modelView;
 
-		auto winX = static_cast<float>(mWidth);
-		auto winY = static_cast<float>(mHeight);
+		auto winX = static_cast<float>(mDims.width);
+		auto winY = static_cast<float>(mDims.height);
 
 		float depthRange[2] = { 0.0f, 1.0f }; //unless changed with glDepthRange
 

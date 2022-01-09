@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <type_traits>
 #include <xmmintrin.h>
+#include <immintrin.h>
 
 #define HRESTRICT __restrict
 #define HFUNC_RESTRICT __declspec(restrict)
@@ -97,12 +98,16 @@ namespace hr::types
 	typedef union 
 	{
 		float               f32[8];
+		double              d64[4];
 		__int8              i8[32];
 		__int16             i16[16];
 		__int32             i32[8];
+		__int64             i64[4];
 		unsigned __int8     ui8[32];
 		unsigned __int16    ui16[16];
 		unsigned __int32    ui32[8];
+		unsigned __int64    ui64[4];
+		__m256              m256;
 	} hData256;
 	static_assert(sizeof(hData256) == 32);
 

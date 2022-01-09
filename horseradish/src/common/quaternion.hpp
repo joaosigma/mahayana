@@ -4,9 +4,25 @@
 
 namespace hr
 {
+	/*
+	Implementation details:
+		- the layout is x, y, z, w
+		- product (multiplication) order: (q1 * q2) means apply rotation of q1 and then the rotation of q2
+		- rotations are left-handed, which means positive rotation is clockwise about the axis of rotation (as pointing towards the negative values)
+			- plus X points right, plus Y points up and plus Z points forward (to the horizon)
+			- this is the same as in matrices
+		- almost every operation assumes that the quaternion is normalized (unit quaternion)
+	*/
 	class Quaternion
 	{
 		float mData[4]{ 0.0f, 0.0f, 0.0f, 1.0f };
+
+	public:
+		enum class AxisOrder { XYZ, XZY, YXZ, YZX, ZXY, ZYX };
+
+	public:
+		static Quaternion genAxisAngle(const Vector3f& unitVec, const float angleDeg);
+		static Quaternion genAxisAngle(const float unitVecX, const float unitVecY, const float unitVecZ, const float angleDeg);
 
 	public:
 		constexpr Quaternion() = default;
@@ -15,73 +31,86 @@ namespace hr
 		constexpr Quaternion(Quaternion&&) = default;
 		constexpr Quaternion& operator=(Quaternion&&) = default;
 
-		explicit constexpr Quaternion(const float quat[4])
+		explicit constexpr Quaternion(const float quat[4]) noexcept
 			: mData{ quat[0], quat[1], quat[2], quat[3] }
 		{ }
 		
-		explicit constexpr Quaternion(const double quat[4])
+		explicit constexpr Quaternion(const double quat[4]) noexcept
 			: mData{ static_cast<float>(quat[0]), static_cast<float>(quat[1]), static_cast<float>(quat[2]), static_cast<float>(quat[3]) }
 		{ }
 
-		explicit constexpr Quaternion(const float qx, const float qy, const float qz, const float qw)
+		explicit constexpr Quaternion(const float qx, const float qy, const float qz, const float qw) noexcept
 			: mData{ qx, qy, qz, qw }
 		{ }
 
-		constexpr float* data()
+		explicit constexpr Quaternion(const double qx, const double qy, const double qz, const double qw) noexcept
+			: mData{ static_cast<float>(qx), static_cast<float>(qy), static_cast<float>(qz), static_cast<float>(qw) }
+		{ }
+
+		constexpr float* data() noexcept
 		{
 			return mData;
 		}
 
-		constexpr const float* data() const
+		constexpr const float* data() const noexcept
 		{
 			return mData;
 		}
 
-		constexpr float& operator[] (const size_t index)
+		constexpr float& operator[] (const size_t index) noexcept
 		{
 			return mData[index % 4];
 		}
 
-		constexpr const float& operator[] (const size_t index) const
+		constexpr const float& operator[] (const size_t index) const noexcept
 		{
 			return mData[index % 4];
 		}
 
-		void operator+=(const Quaternion &quat);
-		void operator-=(const Quaternion &quat);
-		void operator*=(const Quaternion &quat);
-		void operator*=(const float &scalar);
-		void operator/=(const Quaternion &quat);
+		Quaternion& operator+=(const Quaternion &quat) noexcept;
+		Quaternion& operator-=(const Quaternion &quat) noexcept;
+		Quaternion& operator*=(const Quaternion &quat) noexcept;
+		Quaternion& operator*=(const float &scalar) noexcept;
+		Quaternion& operator/=(const Quaternion &quat) noexcept;
 
-		Quaternion& setAxisAngle(const float &vx, const float &vy, const float &vz, const float &angleDeg);
-		Quaternion& setAxisAngle(const Vector3f &unitVec, const float &angleDeg);
-		Quaternion& setFromMatrix3x3(const float * const matrix);
-		Quaternion& setFromMatrix4x4(const float * const matrix);
-		Quaternion& setFromEuler(const float &angX, const float &angY, const float &angZ);
-		Quaternion& setSLerp(const Quaternion &from, const Quaternion &to, float t);
-		Quaternion& setNLerp(const Quaternion &from, const Quaternion &to, float t);
-		Quaternion& set(const float &nx, const float &ny, const float &nz, const float &nw);
-		Quaternion& set(const Vector3f &vec, const float &nw);
-		Quaternion& set(const Quaternion &quat);
-		Quaternion& setAngle(const float &nx, const float &ny, const float &nz, const float &angleDeg);
-		Quaternion& setAngle(const Vector3f &vec, const float &angleDeg);
-		Quaternion& setFromVectors(const Vector3f &v1, const Vector3f &v2);
-		Quaternion& setIdentity();
+		Quaternion operator+(const Quaternion& quat) const noexcept;
+		Quaternion operator-(const Quaternion &quat) const noexcept;
+		Quaternion operator*(const Quaternion &quat) const noexcept;
+		Quaternion operator*(const float& scalar) const noexcept;
+		Quaternion operator/(const Quaternion &quat) const noexcept;
 
-		Quaternion& scaleAngle(float scale);
-		Quaternion& conjugate();
-		Quaternion& normalize();
-		Quaternion& expandWNormalized();
+		bool isEqual(const Quaternion& quat, const float precision) const noexcept
+		{
+			return ((std::abs(mData[0] - quat.mData[0]) < precision) && (std::abs(mData[1] - quat.mData[1]) < precision) && (std::abs(mData[2] - quat.mData[2]) < precision) && (std::abs(mData[3] - quat.mData[3]) < precision));
+		}
 
-		float getMagnitude() const;
-		float getMagnitudeSquared() const;
-		float getDot(const Quaternion &quat) const;
+		Quaternion& setAxisAngle(const float unitVecX, const float unitVecY, const float unitVecZ, const float angleDeg) noexcept;
+		Quaternion& setAxisAngle(const Vector3f &unitVec, const float angleDeg) noexcept;
+		Quaternion& setFromMatrix3x3(const float * const matrix) noexcept;
+		Quaternion& setFromMatrix4x4(const float * const matrix) noexcept;
+		Quaternion& setFromEuler(const float angX, const float angY, const float angZ, AxisOrder axisOrder) noexcept;
+		Quaternion& setSLerp(const Quaternion &from, const Quaternion &to, float t) noexcept;
+		Quaternion& setNLerp(const Quaternion &from, const Quaternion &to, float t) noexcept;
+		Quaternion& set(const Quaternion &quat) noexcept;
+		Quaternion& setFromVectors(const Vector3f &from, const Vector3f &to) noexcept;
+		Quaternion& setIdentity() noexcept;
 
-		void getAxisAngle(float* const vecX, float* const vecY, float* const vecZ, float* const ang) const;
-		void getAxisAngle(Vector3f &vec, float * const ang) const;
-		void getEulerAngles(float * const angX, float * const angY, float * const angZ) const;
+		Quaternion& scaleAngle(float scale) noexcept;
+		Quaternion& conjugate() noexcept;
+		Quaternion& normalize() noexcept;
+		Quaternion& expandWNormalized() noexcept;
 
-		Vector3f unitRotate(const Vector3f &vec) const;
-		void unitRotate(const Vector3f &vec, Vector3f &dest) const;
+		Quaternion getConjugate() const noexcept;
+
+		float getMagnitude() const noexcept;
+		float getMagnitudeSquared() const noexcept;
+		float getDot(const Quaternion &quat) const noexcept;
+
+		void getAxisAngle(float& vecX, float& vecY, float& vecZ, float& ang) const noexcept;
+		void getAxisAngle(Vector3f& vec, float& ang) const noexcept;
+		void getEulerAngles(float& angX, float& angY, float& angZ) const noexcept;
+
+		Vector3f unitRotate(const Vector3f &vec) const noexcept;
+		void unitRotate(const Vector3f &vec, Vector3f &dest) const noexcept;
 	};
 }

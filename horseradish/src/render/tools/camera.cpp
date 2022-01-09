@@ -2,41 +2,43 @@
 
 #include "common/quaternion.hpp"
 
-static
-void evalPointListCatmullRom(const hr::Vector3f * const pList, const int pNum, float nrmTime, hr::Vector3f& pWrite)
+namespace
 {
-	if (!pList || pNum < 4)
-		return;
 
-	float tPos = hr::Math::fClamp(nrmTime, 0.0f, 1.0f);
-	float step = (float)(pNum - 3);
+	void evalPointListCatmullRom(const hr::Vector3f* const pList, const int pNum, float nrmTime, hr::Vector3f& pWrite)
+	{
+		if (!pList || pNum < 4)
+			return;
 
-	int start = hr::Math::ftoi((tPos*step) - (fmod(tPos, 1.0f / step)*step));
-	start = std::min(std::max(start, 0), pNum - 4);
+		float tPos = hr::Math::fClamp(nrmTime, 0.0f, 1.0f);
+		float step = (float)(pNum - 3);
 
-	tPos = tPos*step - ((float)start);
+		int start = hr::Math::ftoi((tPos * step) - (fmod(tPos, 1.0f / step) * step));
+		start = std::min(std::max(start, 0), pNum - 4);
 
-	pWrite = hr::Vector3f::evalSplineCatmullRom(pList[start + 0], pList[start + 1], pList[start + 2], pList[start + 3], tPos);
+		tPos = tPos * step - ((float)start);
+
+		pWrite = hr::Vector3f::evalSplineCatmullRom(pList[start + 0], pList[start + 1], pList[start + 2], pList[start + 3], tPos);
+	}
+
+	void evalPointListHermite(const hr::Vector3f* const pList, const int pNum, float nrmTime, hr::Vector3f& pWrite)
+	{
+		if (!pList || pNum < 4)
+			return;
+
+		float tPos = hr::Math::fClamp(nrmTime, 0.0f, 1.0f);
+		float step = (float)(pNum - 3);
+
+		int start = hr::Math::ftoi((tPos * step) - (fmod(tPos, 1.0f / step) * step));
+		start = std::min(std::max(start, 0), pNum - 4);
+
+		tPos = tPos * step - ((float)start);
+
+		pWrite = hr::Vector3f::evalSplineHermite(pList[start + 0], pList[start + 1], pList[start + 2], pList[start + 3], tPos);
+	}
 }
 
-static
-void evalPointListHermite(const hr::Vector3f * const pList, const int pNum, float nrmTime, hr::Vector3f& pWrite)
-{
-	if (!pList || pNum < 4)
-		return;
-
-	float tPos = hr::Math::fClamp(nrmTime, 0.0f, 1.0f);
-	float step = (float)(pNum - 3);
-
-	int start = hr::Math::ftoi((tPos*step) - (fmod(tPos, 1.0f / step)*step));
-	start = std::min(std::max(start, 0), pNum - 4);
-
-	tPos = tPos*step - ((float)start);
-
-	pWrite = hr::Vector3f::evalSplineHermite(pList[start + 0], pList[start + 1], pList[start + 2], pList[start + 3], tPos);
-}
-
-namespace hr { namespace render { namespace tools
+namespace hr::render::tools
 {
 	void CameraFPS::commitInput(CameraAction actionBitfield, float mouseDeltaX, float mouseDeltaY, bool updatePosition, float timeDeltaS)
 	{
@@ -116,10 +118,10 @@ namespace hr { namespace render { namespace tools
 		hr::Vector3f newDir;
 
 		float angX = mouseDeltaX * mScale.mouse;
-		float angY = mouseDeltaY * mScale.mouse*(-1.0f);
+		float angY = mouseDeltaY * mScale.mouse * (-1.0f);
 
 		newDir.set(0.0f, 0.0f, -1.0f);
-		quat.setFromEuler(angX, -angY, 0.0f);
+		quat.setFromEuler(angX, -angY, 0.0f, Quaternion::AxisOrder::XYZ);
 		newDir = quat.unitRotate(newDir);
 		newDir.normalize();
 
@@ -248,7 +250,7 @@ namespace hr { namespace render { namespace tools
 		}
 	}
 
-	void CameraPath::pathAdd(CameraComponent component, const hr::Vector3f &vec)
+	void CameraPath::pathAdd(CameraComponent component, const hr::Vector3f& vec)
 	{
 		if ((component == Position) && !mPointsPos && (mNumPos < CameraPath::MaxNumPoints))
 		{
@@ -261,5 +263,4 @@ namespace hr { namespace render { namespace tools
 			mNumTarget++;
 		}
 	}
-
-} } }
+}

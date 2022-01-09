@@ -218,7 +218,7 @@ namespace hr::gl::tools
 		mPlanes[PlaneFar].set(0.0f, 0.0f, 1.0f, -(center[2] - radius));
 	}
 
-	void Frustum::setFrustum(const hr::BBox& bbox)
+	void Frustum::setFrustum(const hr::BBox<>& bbox)
 	{
 		setFrustum(bbox.min(), bbox.max());
 	}
@@ -300,7 +300,7 @@ namespace hr::gl::tools
 		return true;
 	}
 
-	bool Frustum::testBox(const hr::BBox& bbox) const
+	bool Frustum::testBox(const hr::BBox<>& bbox) const
 	{
 		return testBox(bbox.min(), bbox.max());
 	}
@@ -316,12 +316,12 @@ namespace hr::gl::tools
 		return true;
 	}
 
-	bool Frustum::testSphere(const hr::BSphere& bsphere) const
+	bool Frustum::testSphere(const hr::BSphere<hr::Vector3f>& bsphere) const
 	{
 		return testSphere(bsphere.center(), bsphere.radius());
 	}
 
-	bool Frustum::testSphereBox(const hr::BSphere& bsphere, const hr::BBox& bbox) const
+	bool Frustum::testSphereBox(const hr::BSphere<hr::Vector3f>& bsphere, const hr::BBox<>& bbox) const
 	{
 		if (!testSphere(bsphere))
 			return false;

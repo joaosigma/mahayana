@@ -36,10 +36,10 @@ namespace hr::gl::tools
 
 		bool testCube(const hr::Vector3f& point, const float& size) const;
 		bool testBox(const hr::Vector3f& min, const hr::Vector3f& max) const;
-		bool testBox(const hr::BBox& bbox) const;
+		bool testBox(const hr::BBox<>& bbox) const;
 		bool testSphere(const hr::Vector3f& center, const float& radius) const;
-		bool testSphere(const hr::BSphere& bsphere) const;
-		bool testSphereBox(const hr::BSphere& bsphere, const hr::BBox& bbox) const;
+		bool testSphere(const hr::BSphere<hr::Vector3f>& bsphere) const;
+		bool testSphereBox(const hr::BSphere<hr::Vector3f>& bsphere, const hr::BBox<>& bbox) const;
 		bool testPoint(const hr::Vector3f& point) const;
 		bool testPolygon(const hr::Vector3f* const points, size_t numPoints) const;
 		bool testSquare(const hr::Vector3f points[4]) const;
@@ -79,7 +79,7 @@ namespace hr::gl::tools
 		void setIndividualPlane(const PlaneIndex planeIndex, const hr::Plane& plane);
 		void setFrustum(const hr::Vector3f& bboxMin, const hr::Vector3f& bboxMax);
 		void setFrustum(const hr::Vector3f& center, const float radius);
-		void setFrustum(const hr::BBox& bbox);
+		void setFrustum(const hr::BBox<>& bbox);
 
 		void setZNear(const float ZNear)
 		{

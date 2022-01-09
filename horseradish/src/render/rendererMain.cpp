@@ -1,6 +1,8 @@
 #include "rendererMain.hpp"
 
 #include "rendererDebug.hpp"
+#include "common/timer.hpp"
+#include "common/mesh.hpp"
 #include "common/stringUtils.hpp"
 #include "common/imageFactory.hpp"
 #include "tools/texture.hpp"
@@ -27,10 +29,10 @@ namespace hr::render
 			scene.mRenderData.vaoMesh.bind();
 
 			scene.mRenderData.vboIndirectDraw.bind();
+			
 			for (auto& curObject : scene.mRenderData.objects)
-			{
 				hr::gl::glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_SHORT, reinterpret_cast<void*>(curObject->meshDrawIndirectOffset), 1, 0);
-			}
+
 			scene.mRenderData.vboIndirectDraw.unbind();
 		}
 	}
@@ -64,7 +66,7 @@ namespace hr::render
 			else
 				mTexDefaultAlbedo.bind(0);
 
-			hr::gl::glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_SHORT, reinterpret_cast<void*>(curObject->meshDrawIndirectOffset), 1, 0);
+			hr::gl::glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_SHORT, reinterpret_cast<void*>(curObject->meshDrawIndirectOffset), 1, 0);			
 		}
 		scene.mRenderData.vboIndirectDraw.unbind();
 	}
@@ -166,8 +168,8 @@ namespace hr::render
 		size_t vboMeshSize = 0, vboMeshIndexSize = 0;
 		manager.iterateObjects([&vboMeshSize, &vboMeshIndexSize](IRenderObject& obj)
 		{
-			vboMeshSize += hr::geom::Mesh::sizeVertices(obj.numVertices());
-			vboMeshIndexSize += hr::geom::Mesh::sizeIndices(obj.numIndices());
+			vboMeshSize += hr::geom::Mesh<hr::geom::VertexShading, uint16_t>::sizeVertices(obj.numVertices());
+			vboMeshIndexSize += hr::geom::Mesh<hr::geom::VertexShading, uint16_t>::sizeIndices(obj.numIndices());
 		});
 
 		assert((vboMeshSize > 0) && (vboMeshIndexSize > 0));
@@ -187,10 +189,11 @@ namespace hr::render
 			mesh.meshVBOVertexOffset = baseVertexOffset;
 			mesh.meshTriListOffset = (void*)poolIndex;
 
+			auto sizeVertices = hr::geom::Mesh<hr::geom::VertexShading, uint16_t>::sizeVertices(obj.numVertices());
+			auto sizeIndices = hr::geom::Mesh<hr::geom::VertexShading, uint16_t>::sizeIndices(obj.numIndices());
+			
 			//vertices
 			{
-				auto sizeVertices = hr::geom::Mesh::sizeVertices(obj.numVertices());
-
 				scene.mRenderData.vboMeshData.writeData([&obj](void* const destBuffer, size_t requestedDataSize)
 				{
 					auto bytesRead = obj.readVertices(destBuffer, requestedDataSize);
@@ -204,8 +207,6 @@ namespace hr::render
 
 			//indices
 			{
-				auto sizeIndices = hr::geom::Mesh::sizeIndices(obj.numIndices());
-
 				scene.mRenderData.vboMeshIndexData.writeData([&obj](void* const destBuffer, size_t requestedDataSize)
 				{
 					auto bytesRead = obj.readIndices(destBuffer, requestedDataSize);
@@ -228,7 +229,7 @@ namespace hr::render
 				drawIndirect.baseInstance = 0;
 				drawIndirect.baseVertex = mesh.meshVBOVertexOffset;
 				drawIndirect.count = obj.numIndices();
-				drawIndirect.firstIndex = ((unsigned int)mesh.meshTriListOffset) / sizeof(unsigned short);
+				drawIndirect.firstIndex = ((GLuint)mesh.meshTriListOffset) / sizeof(uint16_t);
 				drawIndirect.instanceCount = 1;
 
 				mesh.meshDrawIndirectOffset = sizeof(gl::objects::Buffer::DrawElementsIndirectCommand) * numGeoms;
@@ -254,13 +255,13 @@ namespace hr::render
 		hr::gl::glVertexArrayAttribBinding(scene.mRenderData.vaoMesh.id(), 2, 0);
 		hr::gl::glVertexArrayAttribBinding(scene.mRenderData.vaoMesh.id(), 3, 0);
 
-		hr::gl::glVertexArrayAttribFormat(scene.mRenderData.vaoMesh.id(), 0, 3, GL_FLOAT, false, offsetof(hr::geom::Mesh::VertexData, pos));
-		hr::gl::glVertexArrayAttribFormat(scene.mRenderData.vaoMesh.id(), 1, 2, GL_FLOAT, false, offsetof(hr::geom::Mesh::VertexData, uv));
-		hr::gl::glVertexArrayAttribFormat(scene.mRenderData.vaoMesh.id(), 2, 3, GL_SHORT, true, offsetof(hr::geom::Mesh::VertexData, normal));
-		hr::gl::glVertexArrayAttribFormat(scene.mRenderData.vaoMesh.id(), 3, 4, GL_SHORT, true, offsetof(hr::geom::Mesh::VertexData, tangent));
+		hr::gl::glVertexArrayAttribFormat(scene.mRenderData.vaoMesh.id(), 0, 3, GL_FLOAT, false, offsetof(hr::geom::VertexShading, pos));
+		hr::gl::glVertexArrayAttribFormat(scene.mRenderData.vaoMesh.id(), 1, 2, GL_UNSIGNED_SHORT, true, offsetof(hr::geom::VertexShading, uv));
+		hr::gl::glVertexArrayAttribFormat(scene.mRenderData.vaoMesh.id(), 2, 4, GL_INT_2_10_10_10_REV, true, offsetof(hr::geom::VertexShading, normal));
+		hr::gl::glVertexArrayAttribFormat(scene.mRenderData.vaoMesh.id(), 3, 4, GL_INT_2_10_10_10_REV, true, offsetof(hr::geom::VertexShading, tangent));
 
 		hr::gl::glVertexArrayElementBuffer(scene.mRenderData.vaoMesh.id(), scene.mRenderData.vboMeshIndexData.id());
-		hr::gl::glVertexArrayVertexBuffer(scene.mRenderData.vaoMesh.id(), 0, scene.mRenderData.vboMeshData.id(), 0, sizeof(hr::geom::Mesh::VertexData));
+		hr::gl::glVertexArrayVertexBuffer(scene.mRenderData.vaoMesh.id(), 0, scene.mRenderData.vboMeshData.id(), 0, sizeof(hr::geom::VertexShading));
 	}
 
 	void RendererMain::loadDiffuse(std::string_view texFilePath, hr::gl::objects::Texture& targetTexture, bool compress)
@@ -562,13 +563,14 @@ namespace hr::render
 		mShaders.forwardPassBuffers.fence.wait();
 
 			//uniform buffer common to every pass is prepared/set here
-			uint32_t numLights = 3;
+			static uint32_t numLights = 1;
 			{
 				hr::Matrix matrixModelView, matrixTransform;
 
 				matrixModelView.set(hrCamera.modelView());
-				matrixTransform = hrViewport.getProjection(hr::gl::tools::Viewport::ProjectionType::Proj3D);
-				matrixTransform *= matrixModelView;
+
+				matrixTransform.set(hrCamera.modelView());
+				matrixTransform *= hrViewport.getProjection(hr::gl::tools::Viewport::ProjectionType::Proj3D);
 
 				Shaders::UniformLayout uniformData;
 				matrixTransform.write(uniformData.matTrans);
@@ -582,6 +584,10 @@ namespace hr::render
 			//shader storage buffer common to every pass is prepared/set here
 			{
 				static bool done = false;
+				static auto animLightIndex = numLights / 2;
+				static hr::Timer animTimer;
+				static Shaders::LightLayout animLight;
+
 				if (!done)
 				{
 					done = true;
@@ -589,7 +595,7 @@ namespace hr::render
 					std::array<Shaders::LightLayout, Shaders::LightLayoutMaxElements> storageData;
 					for (uint32_t i = 0; i < numLights; i++)
 					{
-						Vector3f dir(mRand.nextDouble(-1.0, 1.0), mRand.nextDouble(0.0, 1.0), mRand.nextDouble(0.5, 1.0));
+						Vector3f dir(mRand.nextDouble(-20.0, 20.0), mRand.nextDouble(10.0, 50.0), mRand.nextDouble(10.0, 50.0));
 						dir.normalize();
 						dir.write(storageData[i].dir);
 						storageData[i].dir[3] = 0.0f;
@@ -599,8 +605,35 @@ namespace hr::render
 						storageData[i].diffuse[3] = 1.0f;
 					}
 
+					animLight = storageData[animLightIndex];
+					animTimer.reStart();
+
 					mShaders.forwardPassBuffers.storage.writeData(storageData.data(), sizeof(Shaders::LightLayout) * numLights, 0);
 					hr::gl::glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, mShaders.forwardPassBuffers.storage.id());
+				}
+				else
+				{
+					auto t = animTimer.getTimeS() / 20.0;
+					if (t > 1.0)
+					{
+						t = 1.0;
+						animTimer.reStart();
+					}
+					else if (t > 0.5)
+						t = 2.0 - (t * 2.0);
+					else
+						t *= 2.0;
+
+					auto vec = Vector3f::calcLinear(
+						Vector3f{ animLight.dir[0] - 10.0f, animLight.dir[1], animLight.dir[2] },
+						Vector3f{ animLight.dir[0] + 10.0f, animLight.dir[1], animLight.dir[2] },
+						t);
+
+					Shaders::LightLayout newLight{ animLight };
+					vec.write(newLight.dir);
+					newLight.dir[3] = 1.0f;
+
+					mShaders.forwardPassBuffers.storage.writeData(&newLight, sizeof(Shaders::LightLayout), sizeof(Shaders::LightLayout) * animLightIndex);
 				}
 			}
 
@@ -634,15 +667,16 @@ namespace hr::render
 		manager.iterateObjects([&scene](IRenderObject& obj)
 		{
 			auto& mesh = scene.mObjects[obj.id()];
-
 			mesh.bbox = obj.bbox();
+			
+			auto sizeVertices = hr::geom::Mesh<hr::geom::VertexShading, uint16_t>::sizeVertices(obj.numVertices());
 
 			scene.mRenderData.vboMeshData.writeData([&obj](void* const destBuffer, size_t requestedDataSize)
 			{
 				auto bytesRead = obj.readVertices(destBuffer, requestedDataSize);
 				assert(bytesRead == requestedDataSize);
 
-			}, hr::geom::Mesh::sizeVertices(obj.numVertices()), mesh.meshVBOStartPos);
+			}, sizeVertices, mesh.meshVBOStartPos);
 		});
 	}
 

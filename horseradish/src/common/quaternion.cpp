@@ -8,66 +8,114 @@ namespace hr
 {
 	static_assert(std::is_trivially_copyable<Quaternion>::value);
 
-	void Quaternion::operator+=(const Quaternion &quat)
+	Quaternion Quaternion::genAxisAngle(const Vector3f& unitVec, const float angleDeg)
 	{
-		_mm_storeu_ps(mData, _mm_add_ps(_mm_loadu_ps(mData), _mm_loadu_ps(quat.mData)));
+		return Quaternion::genAxisAngle(unitVec[0], unitVec[1], unitVec[2], angleDeg);
 	}
 
-	void Quaternion::operator-=(const Quaternion &quat)
+	Quaternion Quaternion::genAxisAngle(const float unitVecX, const float unitVecY, const float unitVecZ, const float angleDeg)
 	{
-		_mm_storeu_ps(mData, _mm_sub_ps(_mm_loadu_ps(mData), _mm_loadu_ps(quat.mData)));
-	}
+		Quaternion ret;
 
-	void Quaternion::operator*=(const Quaternion &quat)
-	{
-		float qX = mData[0];
-		float qY = mData[1];
-		float qZ = mData[2];
-
-		mData[0] = (mData[3] * quat.mData[0]) + (qX * quat.mData[3]) + (qY * quat.mData[2]) - (qZ * quat.mData[1]);
-		mData[1] = (mData[3] * quat.mData[1]) - (qX * quat.mData[2]) + (qY * quat.mData[3]) + (qZ * quat.mData[0]);
-		mData[2] = (mData[3] * quat.mData[2]) + (qX * quat.mData[1]) - (qY * quat.mData[0]) + (qZ * quat.mData[3]);
-		mData[3] = (mData[3] * quat.mData[3]) - (qX * quat.mData[0]) - (qY * quat.mData[1]) - (qZ * quat.mData[2]);
-	}
-
-	void Quaternion::operator*=(const float &scalar)
-	{
-		_mm_storeu_ps(mData, _mm_mul_ps(_mm_loadu_ps(mData), _mm_load_ps1(&scalar)));
-	}
-
-	void Quaternion::operator/=(const Quaternion &quat)
-	{
-		auto mag = 1.0f / quat.getMagnitudeSquared();
-
-		Quaternion inv;
-		inv[0] = -quat[0] * mag;
-		inv[1] = -quat[1] * mag;
-		inv[2] = -quat[2] * mag;
-		inv[3] = quat[3] * mag;
-
-		operator*=(inv);
-	}
-
-	Quaternion& Quaternion::setAxisAngle(const float &unitVecX, const float &unitVecY, const float &unitVecZ, const float &angleDeg)
-	{
-		float angleRad = (angleDeg * 0.017453292519943295f) * 0.5f;
+		auto angleRad = Math::Deg2Rad<float> * angleDeg * 0.5f;
 
 		float sin;
-		Math::sinCos(angleRad, sin, mData[3]);
+		Math::sinCos(angleRad, sin, ret.mData[3]);
 
-		mData[0] = unitVecX * sin;
-		mData[1] = unitVecY * sin;
-		mData[2] = unitVecZ * sin;
+		ret.mData[0] = unitVecX * sin;
+		ret.mData[1] = unitVecY * sin;
+		ret.mData[2] = unitVecZ * sin;
+
+		return ret;
+	}
+
+	Quaternion& Quaternion::operator+=(const Quaternion &quat) noexcept
+	{
+		_mm_storeu_ps(mData, _mm_add_ps(_mm_loadu_ps(mData), _mm_loadu_ps(quat.mData)));
+		return *this;
+	}
+
+	Quaternion& Quaternion::operator-=(const Quaternion &quat) noexcept
+	{
+		_mm_storeu_ps(mData, _mm_sub_ps(_mm_loadu_ps(mData), _mm_loadu_ps(quat.mData)));
+		return *this;
+	}
+
+	Quaternion& Quaternion::operator*=(const Quaternion &quat) noexcept
+	{
+		Quaternion thiz{ *this };
+
+		mData[0] = (quat.mData[3] * thiz.mData[0]) + (quat.mData[0] * thiz.mData[3]) + (quat.mData[1] * thiz.mData[2]) - (quat.mData[2] * thiz.mData[1]);
+		mData[1] = (quat.mData[3] * thiz.mData[1]) - (quat.mData[0] * thiz.mData[2]) + (quat.mData[1] * thiz.mData[3]) + (quat.mData[2] * thiz.mData[0]);
+		mData[2] = (quat.mData[3] * thiz.mData[2]) + (quat.mData[0] * thiz.mData[1]) - (quat.mData[1] * thiz.mData[0]) + (quat.mData[2] * thiz.mData[3]);
+		mData[3] = (quat.mData[3] * thiz.mData[3]) - (quat.mData[0] * thiz.mData[0]) - (quat.mData[1] * thiz.mData[1]) - (quat.mData[2] * thiz.mData[2]);
 
 		return *this;
 	}
 
-	Quaternion& Quaternion::setAxisAngle(const Vector3f &unitVec, const float &angleDeg)
+	Quaternion& Quaternion::operator*=(const float &scalar) noexcept
 	{
-		return setAxisAngle(unitVec[0], unitVec[1], unitVec[2], angleDeg);
+		_mm_storeu_ps(mData, _mm_mul_ps(_mm_loadu_ps(mData), _mm_load_ps1(&scalar)));
+		return *this;
 	}
 
-	Quaternion& Quaternion::setFromMatrix3x3(const float * const matrix)
+	Quaternion& Quaternion::operator/=(const Quaternion &quat) noexcept
+	{
+		auto mag = 1.0f / quat.getMagnitudeSquared();
+
+		Quaternion inv{ -quat[0] * mag, -quat[1] * mag, -quat[2] * mag, quat[3] * mag };
+
+		return operator*=(inv);
+	}
+
+	Quaternion Quaternion::operator+(const Quaternion& quat) const noexcept
+	{
+		auto res = *this;
+		res += quat;
+		return res;
+	}
+
+	Quaternion Quaternion::operator-(const Quaternion& quat) const noexcept
+	{
+		auto res = *this;
+		res -= quat;
+		return res;
+	}
+
+	Quaternion Quaternion::operator*(const Quaternion& quat) const noexcept
+	{
+		auto res = *this;
+		res *= quat;
+		return res;
+	}
+
+	Quaternion Quaternion::operator*(const float& scalar) const noexcept
+	{
+		auto res = *this;
+		res *= scalar;
+		return res;
+	}
+
+	Quaternion Quaternion::operator/(const Quaternion& quat) const noexcept
+	{
+		auto res = *this;
+		res /= quat;
+		return res;
+	}
+
+	Quaternion& Quaternion::setAxisAngle(const float unitVecX, const float unitVecY, const float unitVecZ, const float angleDeg) noexcept
+	{
+		*this = Quaternion::genAxisAngle(unitVecX, unitVecY, unitVecZ, angleDeg);
+		return *this;
+	}
+
+	Quaternion& Quaternion::setAxisAngle(const Vector3f &unitVec, const float angleDeg) noexcept
+	{
+		*this = Quaternion::genAxisAngle(unitVec, angleDeg);
+		return *this;
+	}
+
+	Quaternion& Quaternion::setFromMatrix3x3(const float * const matrix) noexcept
 	{
 		float s = matrix[0] + matrix[4] + matrix[8];
 		if (s > 0.0f)
@@ -120,7 +168,7 @@ namespace hr
 		return *this;
 	}
 
-	Quaternion& Quaternion::setFromMatrix4x4(const float * const matrix)
+	Quaternion& Quaternion::setFromMatrix4x4(const float * const matrix) noexcept
 	{
 		float s = matrix[0] + matrix[5] + matrix[10];
 		if (s > 0.0f)
@@ -173,27 +221,53 @@ namespace hr
 		return *this;
 	}
 
-	Quaternion& Quaternion::setFromEuler(const float &angX, const float &angY, const float &angZ)
+	Quaternion& Quaternion::setFromEuler(const float angX, const float angY, const float angZ, AxisOrder axisOrder) noexcept
 	{
-		float cosR, cosP, cosY, sinR, sinP, sinY, cpcy, spsy;
+		auto xRot = Quaternion::genAxisAngle(1.0f, 0.0f, 0.0f, angX);
+		auto yRot = Quaternion::genAxisAngle(0.0f, 1.0f, 0.0f, angY);
+		auto zRot = Quaternion::genAxisAngle(0.0f, 0.0f, 1.0f, angZ);
 
-		Math::sinCos(angX*0.0087266462599716478846184f, sinR, cosR);
-		Math::sinCos(angY*0.0087266462599716478846184f, sinP, cosP);
-		Math::sinCos(angZ*0.0087266462599716478846184f, sinY, cosY);
-		spsy = sinP * sinY;
-		cpcy = cosP * cosY;
+		switch (axisOrder)
+		{
+		case AxisOrder::XYZ:
+			*this = xRot;
+			*this *= yRot;
+			*this *= zRot;
+			return *this;
+		case AxisOrder::XZY:
+			*this = xRot;
+			*this *= zRot;
+			*this *= yRot;
+			return *this;
+		case AxisOrder::YXZ:
+			*this = yRot;
+			*this *= xRot;
+			*this *= zRot;
+			return *this;
+		case AxisOrder::YZX:
+			*this = yRot;
+			*this *= zRot;
+			*this *= xRot;
+			return *this;
+		case AxisOrder::ZXY:
+			*this = zRot;
+			*this *= xRot;
+			*this *= yRot;
+			return *this;
+		case AxisOrder::ZYX:
+			*this = zRot;
+			*this *= yRot;
+			*this *= xRot;
+			return *this;
+		default:
+			break;
+		}
 
-		mData[3] = cosR * cpcy + sinR * spsy;
-		mData[0] = sinR * cpcy - cosR * spsy;
-		mData[1] = cosR * sinP * cosY + sinR * cosP * sinY;
-		mData[2] = cosR * cosP * sinY - sinR * sinP * cosY;
-
-		normalize();
-
+		setIdentity();
 		return *this;
 	}
 
-	Quaternion& Quaternion::setSLerp(const Quaternion &from, const Quaternion &to, float t)
+	Quaternion& Quaternion::setSLerp(const Quaternion &from, const Quaternion &to, float t) noexcept
 	{
 		Quaternion v1 = to;
 
@@ -220,7 +294,7 @@ namespace hr
 		}
 
 		// Since dot is in range [0, DOT_THRESHOLD], acos is safe
-		double theta_0 = acos(dot);        // theta_0 = angle between input vectors
+		double theta_0 = std::acos(dot);        // theta_0 = angle between input vectors
 		double theta = theta_0 * t;          // theta = angle between v0 and result
 		double sin_theta = std::sin(theta);     // compute this value only once
 		double sin_theta_0 = std::sin(theta_0) + 0.0000001; // compute this value only once
@@ -237,7 +311,7 @@ namespace hr
 		return *this;
 	}
 
-	Quaternion& Quaternion::setNLerp(const Quaternion &from, const Quaternion &to, float t)
+	Quaternion& Quaternion::setNLerp(const Quaternion &from, const Quaternion &to, float t) noexcept
 	{
 		float t0 = 1.0f - t;
 
@@ -260,67 +334,35 @@ namespace hr
 		return *this;
 	}
 
-	Quaternion& Quaternion::set(const float &nx, const float &ny, const float &nz, const float &nw)
+	Quaternion& Quaternion::set(const Quaternion& quat) noexcept
 	{
-		mData[0] = nx;
-		mData[1] = ny;
-		mData[2] = nz;
-		mData[3] = nw;
-
+		std::memcpy(mData, quat.mData, sizeof(float) * 4);
 		return *this;
 	}
 
-	Quaternion& Quaternion::set(const Vector3f &vec, const float &nw)
+	Quaternion& Quaternion::setFromVectors(const Vector3f &from, const Vector3f &to) noexcept
 	{
-		mData[0] = vec[0];
-		mData[1] = vec[1];
-		mData[2] = vec[2];
-		mData[3] = nw;
+		//!untested!
 
-		return *this;
-	}
+		//this only works if both vectors are normalized
 
-	Quaternion& Quaternion::setAngle(const float &nx, const float &ny, const float &nz, const float &angleDeg)
-	{
-		mData[0] = nx;
-		mData[1] = ny;
-		mData[2] = nz;
-		mData[3] = cos(angleDeg*0.00872664625997164788461845384f);	//also divides by 2
-
-		return *this;
-	}
-
-	Quaternion& Quaternion::setAngle(const Vector3f &vec, const float &angleDeg)
-	{
-		setAngle(vec[0], vec[1], vec[2], angleDeg);
-		return *this;
-	}
-
-	Quaternion& Quaternion::setFromVectors(const Vector3f &v1, const Vector3f &v2)
-	{
-		Vector3f t;
-
-		// get dot product of two vectors
-		float cost = Vector3f::calcDot(v1, v2);
-
-		// check if parallel
-		if (cost > 0.99999f)
+		float cost = Vector3f::calcDot(from, to);
+		if (cost > 0.99999f) //they're parallel
 		{
 			mData[0] = mData[1] = mData[2] = 0.0f;
 			mData[3] = 1.0f;
 
 			return *this;
 		}
-		// check if opposite
-		else if (cost < -0.99999f)
+		else if (cost < -0.99999f) //they're opposite
 		{
-			// check if we can use cross product of from vector with [1, 0, 0]
-			t.set(0.0, v1[0], -v1[1]);
+			//check if we can use cross product of from vector with [1, 0, 0]
+			Vector3f t{ 0.0, from[0], -from[1] };
 
 			if (t.getDot() < 1e-6) // nope! we need cross product of from vector with [0, 1, 0]
-				t.set(-v1[2], 0.0, v1[0]);
+				t.set(-from[2], 0.0, from[0]);
 
-			// normalize
+			//normalize
 			t.normalize();
 
 			mData[0] = t[0];
@@ -331,26 +373,26 @@ namespace hr
 			return *this;
 		}
 
-		// ... else we can just cross two vectors
-		t = v1.crossProduct(v2);
+		//... else we can just cross two vectors
+		auto t = from.crossProduct(to);
 		t.normalize();
 
-		// we have to use half-angle formulae (sin^2 t = ( 1 - cos (2t) ) /2)
-		t *= sqrt(0.5f * (1.0f - cost));
+		//we have to use half-angle formulae (sin^2 t = ( 1 - cos (2t) ) /2)
+		t *= std::sqrt(0.5f * (1.0f - cost));
 
-		// scale the axis to get the normalized quaternion
+		//scale the axis to get the normalized quaternion
 		mData[0] = t[0];
 		mData[1] = t[1];
 		mData[2] = t[2];
 
-		// cos^2 t = ( 1 + cos (2t) ) / 2
-		// w part is cosine of half the rotation angle
-		mData[3] = sqrt(0.5f * (1.0f + cost));
+		//cos^2 t = ( 1 + cos (2t) ) / 2
+		//w part is cosine of half the rotation angle
+		mData[3] = std::sqrt(0.5f * (1.0f + cost));
 
 		return *this;
 	}
 
-	Quaternion& Quaternion::setIdentity()
+	Quaternion& Quaternion::setIdentity() noexcept
 	{
 		mData[0] = mData[1] = mData[2] = 0.0f;
 		mData[3] = 1.0f;
@@ -358,21 +400,14 @@ namespace hr
 		return *this;
 	}
 
-	Quaternion& Quaternion::set(const Quaternion &quat)
-	{
-		std::memcpy(mData, quat.mData, sizeof(float) * 4);
-
-		return *this;
-	}
-
-	Quaternion& Quaternion::scaleAngle(float scale)
+	Quaternion& Quaternion::scaleAngle(float scale) noexcept
 	{
 		mData[3] *= scale;
 
 		return *this;
 	}
 
-	Quaternion& Quaternion::conjugate()
+	Quaternion& Quaternion::conjugate() noexcept
 	{
 		mData[0] = -mData[0];
 		mData[1] = -mData[1];
@@ -381,7 +416,7 @@ namespace hr
 		return *this;
 	}
 
-	Quaternion& Quaternion::normalize()
+	Quaternion& Quaternion::normalize() noexcept
 	{
 		__m128 vecTmp = _mm_loadu_ps(mData);
 		__m128 vecMag = _mm_rsqrt_ps(_mm_dp_ps(vecTmp, vecTmp, 0xF0 | 0xF));
@@ -390,7 +425,7 @@ namespace hr
 		return *this;
 	}
 
-	Quaternion& Quaternion::expandWNormalized()
+	Quaternion& Quaternion::expandWNormalized() noexcept
 	{
 		//we can only expand (calculate) W if we assume the quaternion is of unit length, which means the final quaternion is already normalized
 
@@ -400,7 +435,15 @@ namespace hr
 		return *this;
 	}
 
-	float Quaternion::getMagnitude() const
+	Quaternion Quaternion::getConjugate() const noexcept
+	{
+		Quaternion res{ *this };
+		res.conjugate();
+
+		return res;
+	}
+
+	float Quaternion::getMagnitude() const noexcept
 	{
 		float mag;
 
@@ -410,7 +453,7 @@ namespace hr
 		return mag;
 	}
 
-	float Quaternion::getMagnitudeSquared() const
+	float Quaternion::getMagnitudeSquared() const noexcept
 	{
 		float mag;
 
@@ -420,7 +463,7 @@ namespace hr
 		return mag;
 	}
 
-	float Quaternion::getDot(const Quaternion &quat) const
+	float Quaternion::getDot(const Quaternion &quat) const noexcept
 	{
 		float dot;
 
@@ -428,32 +471,17 @@ namespace hr
 		return dot;
 	}
 
-	void Quaternion::getAxisAngle(float* const vecX, float* const vecY, float* const vecZ, float* const ang) const
+	void Quaternion::getAxisAngle(float& vecX, float& vecY, float& vecZ, float& ang) const noexcept
 	{
-		float len = mData[0] * mData[0] + mData[1] * mData[1] + mData[2] * mData[2];
-		if (len == 0.0f)
-		{
-			*vecX = 0.0f;
-			*vecY = 0.0f;
-			*vecZ = 1.0f;
-			*ang = 0.0f;
-			return;
-		}
+		Vector3f vec;
+		getAxisAngle(vec, ang);
 
-		len = 1.0f / len;
-		float auxX = mData[0] * len;
-		float auxY = mData[1] * len;
-		float auxZ = mData[2] * len;
-
-		len = 1.0f / std::sqrt(auxX*auxX + auxY*auxY + auxZ*auxZ);
-		*vecX = auxX*len;
-		*vecY = auxY*len;
-		*vecZ = auxZ*len;
-
-		*ang = ((float)acos(mData[3]))*114.5915590261646417f; // 180/pi=57.295779513082320876f * 2.0f
+		vecX = vec[0];
+		vecY = vec[1];
+		vecZ = vec[2];
 	}
 
-	void Quaternion::getAxisAngle(Vector3f &vec, float * const ang) const
+	void Quaternion::getAxisAngle(Vector3f &vec, float& ang) const noexcept
 	{
 		float len = mData[0] * mData[0] + mData[1] * mData[1] + mData[2] * mData[2];
 		if (len == 0.0f)
@@ -461,7 +489,7 @@ namespace hr
 			vec[0] = 0.0f;
 			vec[1] = 0.0f;
 			vec[2] = 1.0f;
-			*ang = 0.0f;
+			ang = 0.0f;
 			return;
 		}
 
@@ -469,17 +497,25 @@ namespace hr
 		vec *= (1.0f / len);
 		vec.normalize();
 
-		*ang = std::acos(mData[3]) * 114.5915590261646417f; // 180/pi=57.295779513082320876f * 2.0f
+		ang = std::acos(mData[3]) * 114.5915590261646417f; // 180/pi=57.295779513082320876f * 2.0f
 	}
 
-	void Quaternion::getEulerAngles(float * const angX, float * const angY, float * const angZ) const
+	void Quaternion::getEulerAngles(float& angX, float& angY, float& angZ) const noexcept
 	{
 		//TODO
 	}
 
-	Vector3f Quaternion::unitRotate(const Vector3f &vec) const
+	Vector3f Quaternion::unitRotate(const Vector3f& vec) const noexcept
 	{
-		Vector3f u(mData[0], mData[1], mData[2]);
+		//this only works if this quaternion is normalized (a unit quaternion)
+
+		/*Quaternion qrotated{ *this };
+		qrotated *= Quaternion{ vec[0], vec[1], vec[2], 0.f };
+		qrotated *= getConjugate();
+
+		return Vector3f{ qrotated.mData[0], qrotated.mData[1], qrotated.mData[2] };*/
+
+		Vector3f u{ mData[0], mData[1], mData[2] };
 
 		Vector3f res;
 		res = u * 2.0f * u.getDot(vec);
@@ -489,7 +525,7 @@ namespace hr
 		return res;
 	}
 
-	void Quaternion::unitRotate(const Vector3f &vec, Vector3f &dest) const
+	void Quaternion::unitRotate(const Vector3f &vec, Vector3f &dest) const noexcept
 	{
 		dest = unitRotate(vec);
 	}

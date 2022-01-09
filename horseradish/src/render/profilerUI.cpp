@@ -13,66 +13,66 @@ namespace hr { namespace render
 	};
 
 	static
-	hr::Color retrieveColor(hr::engine::Profiler::StatId statId)
+	hr::Colorf retrieveColor(hr::engine::Profiler::StatId statId)
 	{
 		const unsigned char *targetColor;
 
 		switch (statId)
 		{
 		case hr::engine::Profiler::StatId::FrameTotal:
-			targetColor = hr::Color::KnownColors::CadetBlue;
+			targetColor = hr::Colorf::KnownColors::CadetBlue;
 			break;
 		case hr::engine::Profiler::StatId::FrameLogic:
-			targetColor = hr::Color::KnownColors::BurlyWood;
+			targetColor = hr::Colorf::KnownColors::BurlyWood;
 			break;
 		case hr::engine::Profiler::StatId::FrameDraw:
-			targetColor = hr::Color::KnownColors::Firebrick;
+			targetColor = hr::Colorf::KnownColors::Firebrick;
 			break;
 		case hr::engine::Profiler::StatId::FrameGPU:
-			targetColor = hr::Color::KnownColors::Coral;
+			targetColor = hr::Colorf::KnownColors::Coral;
 			break;
 		case hr::engine::Profiler::StatId::GPUTimeElapsed:
-			targetColor = hr::Color::KnownColors::DarkSalmon;
+			targetColor = hr::Colorf::KnownColors::DarkSalmon;
 			break;
 		case hr::engine::Profiler::StatId::GPUSamples:
-			targetColor = hr::Color::KnownColors::OliveDrab;
+			targetColor = hr::Colorf::KnownColors::OliveDrab;
 			break;
 		case hr::engine::Profiler::StatId::GPUVerticesSubmitted:
-			targetColor = hr::Color::KnownColors::Wheat;
+			targetColor = hr::Colorf::KnownColors::Wheat;
 			break;
 		case hr::engine::Profiler::StatId::GPUPrimitivesSubmitted:
-			targetColor = hr::Color::KnownColors::Sienna;
+			targetColor = hr::Colorf::KnownColors::Sienna;
 			break;
 		case hr::engine::Profiler::StatId::GPUVertexShaderInvocations:
-			targetColor = hr::Color::KnownColors::PeachPuff;
+			targetColor = hr::Colorf::KnownColors::PeachPuff;
 			break;
 		case hr::engine::Profiler::StatId::GPUFragmentShaderInvocations:
-			targetColor = hr::Color::KnownColors::BlanchedAlmond;
+			targetColor = hr::Colorf::KnownColors::BlanchedAlmond;
 			break;
 		case hr::engine::Profiler::StatId::GPUClipInputPrimitives:
-			targetColor = hr::Color::KnownColors::Cornsilk;
+			targetColor = hr::Colorf::KnownColors::Cornsilk;
 			break;
 		case hr::engine::Profiler::StatId::GPUClipOutputPrimitives:
-			targetColor = hr::Color::KnownColors::MediumAquamarine;
+			targetColor = hr::Colorf::KnownColors::MediumAquamarine;
 			break;
 		case hr::engine::Profiler::StatId::MemTotal:
-			targetColor = hr::Color::KnownColors::Lavender;
+			targetColor = hr::Colorf::KnownColors::Lavender;
 			break;
 		case hr::engine::Profiler::StatId::MemScripts:
-			targetColor = hr::Color::KnownColors::Tan;
+			targetColor = hr::Colorf::KnownColors::Tan;
 			break;
 		case hr::engine::Profiler::StatId::MemObjects:
-			targetColor = hr::Color::KnownColors::Plum;
+			targetColor = hr::Colorf::KnownColors::Plum;
 			break;
 		case hr::engine::Profiler::StatId::MemAnimations:
-			targetColor = hr::Color::KnownColors::DodgerBlue;
+			targetColor = hr::Colorf::KnownColors::DodgerBlue;
 			break;
 		default:
-			targetColor = hr::Color::KnownColors::DarkMagenta;
+			targetColor = hr::Colorf::KnownColors::DarkMagenta;
 			break;
 		}
 
-		hr::Color color;
+		hr::Colorf color;
 		color.set(targetColor);
 
 		return color;
@@ -205,7 +205,7 @@ namespace hr { namespace render
 		auto& glImmediateMode = mRenderer.mGlImmediateMode;
 
 		glImmediateMode.beginDraw(hr::gl::tools::ImmediateMode::GeometryType::Quads);
-		glImmediateMode.setColor(0, 0, 0, hr::Color::convertColor(bkgAlpha));
+		glImmediateMode.setColor(0, 0, 0, hr::Colorf::convertColor(bkgAlpha));
 		glImmediateMode.addQuad(viewRect.x, viewRect.y, viewRect.width, viewRect.height);
 		glImmediateMode.endDraw();
 

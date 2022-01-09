@@ -16,16 +16,16 @@ namespace hr { namespace render { namespace tools
 		} mAxis;
 		float mAbsFocus;
 	
-	protected:
-		Camera()
+	public:
+		Camera() noexcept
 		{
 			mAxis.pos.set(0.0f, 0.0f, 1.0f);
 			mAxis.dir.set(0.0f, 0.0f, 0.0f);
 			mAxis.up.set(0.0f, 1.0f, 0.0f);
+			mAbsFocus = 0.0f;
 			mModelView.setIdentity();
 		}
 
-	public:
 		void setPos(const hr::Vector3f &pos)
 		{
 			mAxis.pos.set(pos);
@@ -68,7 +68,7 @@ namespace hr { namespace render { namespace tools
 			mModelView.setGLModelView(mAxis.pos, getTarget(), mAxis.up);
 		}
 
-		void setAbsoluteFocus(float focus)
+		void setFocalDist(float focus)
 		{
 			mAbsFocus = focus;
 		}
@@ -78,14 +78,19 @@ namespace hr { namespace render { namespace tools
 			return mAxis.pos;
 		}
 
-		hr::Ray getRay() const
-		{
-			return hr::Ray(mAxis.pos, mAxis.dir);
-		}
-
 		hr::Vector3f getTarget() const
 		{
 			return ((mAxis.dir * mAbsFocus) + mAxis.pos);
+		}
+
+		hr::Vector3f getUp() const
+		{
+			return mAxis.up;
+		}
+
+		hr::Ray<Vector3f> getRayViewDir() const
+		{
+			return hr::Ray(mAxis.pos, mAxis.dir);
 		}
 
 		hr::Vector3f getViewDir() const

@@ -13,40 +13,46 @@ namespace hr::gl::tools
 		static hr::Matrix genMatrix2DProj(size_t width, size_t height);
 
 	private:
-		float mFovY, mZNear;
-		size_t mWidth, mHeight;
+		double mYFov, mZNear;
+		struct {
+			double aspectRatio;
+			size_t width, height;
+		} mDims;
+		
 		struct {
 			hr::Matrix mp2D, mp3D;
 		} mMatrices;
 
-		void calcMatrices();
+		void calcMatrices()  noexcept;
 
 	public:
 		Viewport() = delete;
 
-		explicit Viewport(const size_t width, const size_t height)
-			: Viewport(90.0f, width, height)
+		explicit Viewport(const size_t width, const size_t height) noexcept
+			: Viewport(Math::Deg2Rad<double> * 90.0, width, height)
 		{ }
 
-		explicit Viewport(const float fovY, const size_t width, const size_t height)
-			: Viewport(fovY, width, height, 0.1f)
+		explicit Viewport(const double yfov, const size_t width, const size_t height) noexcept
+			: Viewport(yfov, width, height, 0.1)
 		{ }
 
-		explicit Viewport(const float fovY, const size_t width, const size_t height, const float zNear)
-			: mFovY(fovY), mZNear(zNear), mWidth(width ? width : 1), mHeight(height ? height : 1)
+		explicit Viewport(const double yfov, const size_t width, const size_t height, const double zNear) noexcept
+			: mYFov(yfov), mZNear(zNear)
 		{
+			mDims.width = width ? width : 1;
+			mDims.height = height ? height : 1;
+			mDims.aspectRatio = (static_cast<double>(mDims.width) / static_cast<double>(mDims.height));
 			calcMatrices();
 		}
 
 		const hr::Matrix& getProjection(ProjectionType projectionType) const;
 
-		float fovY() const { return mFovY; }
-		float znear() const { return mZNear; }
+		double yfov() const { return mYFov; }
+		double znear() const { return mZNear; }
 
-		size_t width() const { return mWidth; }
-		size_t height() const { return mHeight; }
-
-		void pointOnZNear(hr::Vector3f& center) const;
+		size_t width() const { return mDims.width; }
+		size_t height() const { return mDims.height; }
+		double aspectRatio() const { return mDims.aspectRatio; }
 
 		void projectPoint(ProjectionType projType, const hr::Matrix& modelView, hr::Vector3f* const listPoints, size_t numPoints) const;
 	};

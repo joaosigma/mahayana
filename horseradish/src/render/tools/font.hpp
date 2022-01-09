@@ -75,7 +75,7 @@ namespace hr { namespace render { namespace tools
 		{
 			float scale = 1.0f;
 			bool paintStarted = false;
-			hr::Color stateColor;
+			hr::Colorf stateColor;
 
 			size_t numCharWritten = 0;
 			std::array<VertexDataLayout, Font::sMumMaxChar * 4> charData;
@@ -127,7 +127,7 @@ namespace hr { namespace render { namespace tools
 		void setColor(const float r, const float g, const float b, const float a);
 		void setColor(const float r, const float g, const float b);
 		void setColor(const float * const color);
-		void setColor(const Color &color);
+		void setColor(const Colorf &color);
 	};
 
 } } }

@@ -20,7 +20,7 @@ namespace hr::render
 
 		virtual ObjectId id() const = 0;
 
-		virtual BBox bbox() const = 0;
+		virtual BBox<> bbox() const = 0;
 
 		virtual size_t numVertices() const = 0;
 		virtual size_t readVertices(void* const destBuffer, size_t requestedDataSize) const = 0;

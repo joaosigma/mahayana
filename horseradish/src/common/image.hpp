@@ -95,7 +95,7 @@ namespace hr::imaging
 			assert(mDataPtr);
 			assert(pixelValue);
 
-			TDataFormat::readRGBA<TDataType>(mDataPtr + getPos(x, y), pixelValue, defaultColorValue, defaultAlphaValue);
+			TDataFormat::template readRGBA<TDataType>(mDataPtr + getPos(x, y), pixelValue, defaultColorValue, defaultAlphaValue);
 		}
 
 		Image<TDataType, TDataFormat> crop(size_t cropX, size_t cropY, size_t cropWidth, size_t cropHeight) const
@@ -113,7 +113,7 @@ namespace hr::imaging
 				auto sourcePos = ((curY + cropY) * srcRowSize) + (cropX * TDataFormat::size());
 				auto destPos = curY * destRowSize;
 
-				memcpy(newImg.mDataPtr + destPos, mDataPtr + sourcePos, destRowSize * sizeof(TDataType));
+				std::memcpy(newImg.mDataPtr + destPos, mDataPtr + sourcePos, destRowSize * sizeof(TDataType));
 			}
 
 			return newImg;
@@ -149,8 +149,8 @@ namespace hr::imaging
 					{
 						for (size_t x = 0; x < mWidth; ++x)
 						{
-							TDataFormat::readRGBA<TDataType>(mDataPtr + getPos(x, y), pixel, defaultColorValue, defaultAlphaValue);
-							TNewDataFormat::writeRGBA<TNewDataType>(newImg.mDataPtr + newImg.getPos(x, y), pixel);
+							TDataFormat::template readRGBA<TDataType>(mDataPtr + getPos(x, y), pixel, defaultColorValue, defaultAlphaValue);
+							TNewDataFormat::template writeRGBA<TNewDataType>(newImg.mDataPtr + newImg.getPos(x, y), pixel);
 						}
 					}
 				}
@@ -165,9 +165,9 @@ namespace hr::imaging
 					{
 						for (size_t x = 0; x < mWidth; ++x)
 						{
-							TDataFormat::readRGBA<TDataType>(mDataPtr + getPos(x, y), pixelIn, defaultColorValue, defaultAlphaValue);
-							hr::Color::convertColor(pixelOut, pixelIn, true);
-							TNewDataFormat::writeRGBA<TNewDataType>(newImg.mDataPtr + newImg.getPos(x, y), pixelOut);
+							TDataFormat::template readRGBA<TDataType>(mDataPtr + getPos(x, y), pixelIn, defaultColorValue, defaultAlphaValue);
+							hr::Colorf::convertColor(pixelOut, pixelIn, true);
+							TNewDataFormat::template writeRGBA<TNewDataType>(newImg.mDataPtr + newImg.getPos(x, y), pixelOut);
 						}
 					}
 				}
@@ -190,8 +190,8 @@ namespace hr::imaging
 		}
 
 	private:
-		TDataType* mDataPtr = nullptr;
-		size_t mWidth = 0, mHeight = 0;
+		TDataType* mDataPtr{ nullptr };
+		size_t mWidth{ 0 }, mHeight{ 0 };
 	};
 
 	template<typename TDataType, typename TDataFormat> // generic ImageView (any type supported)
@@ -236,13 +236,13 @@ namespace hr::imaging
 		ImageView(ImageView&& imgView) = default;
 		ImageView& operator=(ImageView&& imgView) = default;
 
-		void getPixel(const size_t x, const size_t y, hr::Color& pixelValue) const
+		void getPixel(const size_t x, const size_t y, hr::Colorf& pixelValue) const
 		{
 			assert(mDataPtr);
 
 			uint8_t tmpPixel[4];
 
-			TDataFormat::readRGBA<uint8_t>(mDataPtr + getPos(x, y), tmpPixel, 0, 255);
+			TDataFormat::template readRGBA<uint8_t>(mDataPtr + getPos(x, y), tmpPixel, 0, 255);
 			pixelValue.Set(tmpPixel);
 		}
 
@@ -251,7 +251,7 @@ namespace hr::imaging
 			assert(mDataPtr);
 			assert(pixelValue);
 
-			TDataFormat::readRGBA<uint8_t>(mDataPtr + getPos(x, y), pixelValue, 0, 255);
+			TDataFormat::template readRGBA<uint8_t>(mDataPtr + getPos(x, y), pixelValue, 0, 255);
 		}
 
 		template<typename TNewDataType, typename TNewDataFormat>
@@ -272,10 +272,10 @@ namespace hr::imaging
 					auto countBlock = (count / 4) * 4;
 
 					for (; curPos < countBlock; curPos += 4, walker += 4, walkerOut += 4)
-						hr::Color::convertColor(walkerOut, walker, true);
+						hr::Colorf::convertColor(walkerOut, walker, true);
 
 					for (; curPos < count; curPos++, walker++, walkerOut++)
-						*walkerOut = hr::Color::convertColor(*walker);
+						*walkerOut = hr::Colorf::convertColor(*walker);
 				}
 
 				return newImg;
@@ -363,13 +363,13 @@ namespace hr::imaging
 		ImageView(ImageView&& imgView) = default;
 		ImageView& operator=(ImageView&& imgView) = default;
 
-		void getPixel(const size_t x, const size_t y, hr::Color& pixelValue) const
+		void getPixel(const size_t x, const size_t y, hr::Colorf& pixelValue) const
 		{
 			assert(mDataPtr);
 
 			float tmpPixel[4];
 
-			TDataFormat::readRGBA<float>(mDataPtr + getPos(x, y), tmpPixel, 0.0f, 1.0f);
+			TDataFormat::template readRGBA<float>(mDataPtr + getPos(x, y), tmpPixel, 0.0f, 1.0f);
 			pixelValue.Set(tmpPixel);
 		}
 
@@ -378,7 +378,7 @@ namespace hr::imaging
 			assert(mDataPtr);
 			assert(pixelValue);
 
-			TDataFormat::readRGBA<float>(mDataPtr + getPos(x, y), pixelValue, 0.0f, 1.0f);
+			TDataFormat::template readRGBA<float>(mDataPtr + getPos(x, y), pixelValue, 0.0f, 1.0f);
 		}
 
 		template<typename TNewDataType, typename TNewDataFormat>
@@ -399,10 +399,10 @@ namespace hr::imaging
 					auto countBlock = (count / 4) * 4;
 
 					for (; curPos < countBlock; curPos += 4, walker += 4, walkerOut += 4)
-						hr::Color::convertColor(walkerOut, walker, true);
+						hr::Colorf::convertColor(walkerOut, walker, true);
 
 					for (; curPos < count; curPos++, walker++, walkerOut++)
-						*walkerOut = hr::Color::convertColor(*walker);
+						*walkerOut = hr::Colorf::convertColor(*walker);
 				}
 
 				return newImg;
@@ -614,7 +614,7 @@ namespace hr::imaging
 			auto walkerPtr = mDataPtr;
 			auto imgArea = getArea();
 
-			hr::Color pixelValue;
+			hr::Colorf pixelValue;
 			uint8_t tmpPixel[4];
 
 			for (size_t curPos = 0; curPos < imgArea; curPos++)
@@ -662,10 +662,10 @@ namespace hr::imaging
 			}
 		}
 
-		void setPixel(const size_t x, const size_t y, hr::Color& pixelValue)
+		void setPixel(const size_t x, const size_t y, const hr::Colorf& pixelValue)
 		{
 			uint8_t tmpPixel[4];
-			hr::Color::convertColor(hr::Color(r, g, b, a), tmpPixel, true);
+			hr::Colorf::convertColor(tmpPixel, pixelValue.data(), true);
 
 			TDataFormat::writeRGBA(mDataPtr + getPos(x, y), tmpPixel);
 		}
@@ -689,9 +689,9 @@ namespace hr::imaging
 				{
 					Vector3f vec;
 
-					hr::Color::convertColor(vec.data(), walkerPtr, false);
+					hr::Colorf::convertColor(vec.data(), walkerPtr, false);
 					vec.mad(2.0f, -1.0f).normalize().mad(0.5f, 0.5f);
-					hr::Color::convertColor(walkerPtr, vec.data(), false);
+					hr::Colorf::convertColor(walkerPtr, vec.data(), false);
 				}
 			}
 			else
@@ -700,14 +700,14 @@ namespace hr::imaging
 				{
 					Vector3f vec;
 
-					hr::Color::convertColor(vec.data(), walkerPtr, false);
+					hr::Colorf::convertColor(vec.data(), walkerPtr, false);
 					vec.normalize();
-					hr::Color::convertColor(walkerPtr, vec.data(), false);
+					hr::Colorf::convertColor(walkerPtr, vec.data(), false);
 				}
 			}
 		}
 
-		void transform(std::function<bool(hr::Color&)> cb)
+		void transform(std::function<bool(hr::Colorf&)> cb)
 		{
 			if (empty() || !cb)
 				return;
@@ -716,7 +716,7 @@ namespace hr::imaging
 			auto imgArea = getArea();
 
 			uint8_t tmpPixel[4];
-			hr::Color pixelValue;
+			hr::Colorf pixelValue;
 
 			for (size_t curPos = 0; curPos < imgArea; curPos++)
 			{
@@ -787,9 +787,9 @@ namespace hr::imaging
 			}
 		}
 
-		void setPixel(const size_t x, const size_t y, hr::Color& pixelValue)
+		void setPixel(const size_t x, const size_t y, const hr::Colorf& pixelValue)
 		{
-			TDataFormat::writeRGBA(mDataPtr + getPos(x, y), pixelValue);
+			TDataFormat::writeRGBA(mDataPtr + getPos(x, y), pixelValue.data());
 		}
 
 		void setPixel(const size_t x, const size_t y, const float* const pixelValue)
@@ -797,7 +797,7 @@ namespace hr::imaging
 			TDataFormat::writeRGBA(mDataPtr + getPos(x, y), pixelValue);
 		}
 
-		void transform(const std::function<bool(hr::Color&)>& cb)
+		void transform(const std::function<bool(hr::Colorf&)>& cb)
 		{
 			if (empty() || !cb)
 				return;
@@ -806,17 +806,17 @@ namespace hr::imaging
 			auto imgArea = getArea();
 
 			float tmpPixel[4];
-			hr::Color pixelValue;
+			hr::Colorf pixelValue;
 
 			for (size_t curPos = 0; curPos < imgArea; curPos++, walkerPtr += TDataFormat::size())
 			{
-				TDataFormat::readRGBA<float>(walkerPtr, tmpPixel, 0.0f, 1.0f);
+				TDataFormat::template readRGBA<float>(walkerPtr, tmpPixel, 0.0f, 1.0f);
 
 				pixelValue.set(tmpPixel);
 				if (cb(pixelValue))
 				{
 					pixelValue.write(tmpPixel);
-					TDataFormat::writeRGBA<float>(walkerPtr, tmpPixel);
+					TDataFormat::template writeRGBA<float>(walkerPtr, tmpPixel);
 				}
 			}
 		}

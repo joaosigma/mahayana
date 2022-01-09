@@ -5,7 +5,6 @@ target_sources(horseradish
 		avl-tree.hpp
 		bareas.cpp
 		bareas.hpp
-		bvolumes.cpp
 		bvolumes.hpp
 		color.hpp
 		ecs.hpp
@@ -36,7 +35,6 @@ target_sources(horseradish
 		quaternion.hpp
 		random.cpp
 		random.hpp
-		ray.cpp
 		ray.hpp
 		scopedAction.hpp
 		sorting.cpp

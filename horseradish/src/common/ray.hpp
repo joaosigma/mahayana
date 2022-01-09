@@ -2,77 +2,67 @@
 
 #include "vector.hpp"
 
+#include <type_traits>
+
 namespace hr
 {
+	/*
+	The ray class represents a unit ray, which means that the direction is always normalized.
+
+	NOTE: any direction supplied to the object should already be normalized.
+	*/
+
+	template<typename TVectorType = Vector3f>
 	class Ray
 	{
-		Vector3f mOrigin{ 0.0f }, mDirection{ 0.0f };
-		float mLength{ 0.0f };
+		static_assert(std::is_same_v<TVectorType, Vector3f> || std::is_same_v<TVectorType, Vector3d>, "Base type must be either Vector3f or Vector3d");
+		static_assert(std::is_trivially_copyable_v<TVectorType>, "For performance reasons, the vector type should be trivially copyable");
+
+		TVectorType mOrigin, mDirection;
+
+	public:
+		using DataType = typename TVectorType;
 
 	public:
 		constexpr Ray() = default;
-		constexpr Ray(const Ray&) = default;
-		constexpr Ray& operator=(const Ray&) = default;
-		constexpr Ray(Ray&&) = default;
-		constexpr Ray& operator=(Ray&&) = default;
 
-		explicit Ray(const Vector3f& origin, const Vector3f& direction)
+		constexpr explicit Ray(const TVectorType& origin, const TVectorType& direction) noexcept
 			: mOrigin{ origin }
 			, mDirection{ direction }
-		{
-			mDirection.normalize();
-			mLength = direction.getMagnitude();
-		}
+		{ }
 
-		Ray& setOrigin(float x, float y, float z);
-		Ray& setOrigin(const Vector3f& origin);
-		Ray& setDirection(float x, float y, float z);
-		Ray& setDirection(const Vector3f& direction);
-		Ray& setLength(float length);
-		Ray& setSizedDirection(float x, float y, float z);
-		Ray& setSizedDirection(const Vector3f& sizedDirection);
-
-		const Vector3f& origin() const
+		constexpr TVectorType& origin() noexcept
 		{
 			return mOrigin;
 		}
 
-		const Vector3f& direction() const
+		constexpr const TVectorType& origin() const noexcept
+		{
+			return mOrigin;
+		}
+
+		constexpr TVectorType& direction() noexcept
 		{
 			return mDirection;
 		}
 
-		float length() const
+		constexpr const TVectorType& direction() const noexcept
 		{
-			return mLength;
+			return mDirection;
 		}
 
-		Vector3f pointOn(float t) const
+		constexpr TVectorType pointAt(typename TVectorType::DataType t) const noexcept
 		{
-			return (mOrigin + (mDirection * t));
+			return TVectorType::calcPointAt(mOrigin, mDirection, t);
 		}
 
-		float getDotOrigin(float x, float y, float z) const
+		template<typename TTargetVectorType>
+		Ray<TTargetVectorType> convert() const noexcept
 		{
-			return mOrigin.getDot(x, y, z);
+			return Ray<TTargetVectorType>{ mOrigin.convert<TTargetVectorType::DataType>(), mDirection.convert<TTargetVectorType::DataType>() };
 		}
 
-		float getDotOrigin(const Vector3f& vec) const
-		{
-			return mOrigin.getDot(vec);
-		}
-
-		float getDotDirection(float x, float y, float z) const
-		{
-			mDirection.getDot(x, y, z);
-		}
-
-		float getDotDirection(const Vector3f& vec) const
-		{
-			return vec.getDot(mDirection);
-		}
-
-		void negateDir()
+		constexpr void negateDir() noexcept
 		{
 			mDirection *= -1.0f;
 		}

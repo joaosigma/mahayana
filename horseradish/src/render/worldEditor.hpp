@@ -2,8 +2,8 @@
 
 #include "world.hpp"
 
-#include "common/mesh.hpp"
 #include "common/stream.hpp"
+#include "common/mesh.hpp"
 #include "common/OpenGL/tools/frustum.hpp"
 #include "common/OpenGL/tools/viewport.hpp"
 
@@ -60,13 +60,13 @@ namespace hr::render
 
 		AreaId newArea(std::string_view scenePath, std::string_view binPath);
 
-		bool importMesh(AreaId areaId, std::string_view name, const hr::geom::Mesh& mesh);
+		bool importMesh(AreaId areaId, std::string_view name, const hr::geom::Mesh<geom::VertexFull, uint32_t>& mesh);
 		bool importObj(AreaId areaId, std::string_view basePath, std::string_view fileName);
 		bool importMD5(AreaId areaId, std::string_view md5Path, std::string newAnimSetName);
 		bool importMD5Anim(AreaId areaId, std::string_view animSetParentName, std::string_view md5AnimPath, std::string newAnimName);
 		bool importGLTF(AreaId areaId, std::string_view gltfPath);
 
-		void processMesh(AreaId areaId, const std::vector<size_t>& objectIds, const std::function<void(hr::geom::Mesh&)>& cb);
+		void processMesh(AreaId areaId, const std::vector<size_t>& objectIds, const std::function<void(geom::Mesh<geom::VertexFull, uint32_t>&)>& cb);
 
 		std::vector<size_t> unusedObjects(AreaId areaId) const;
 		void removeObjects(AreaId areaId, const std::vector<std::string_view>& objectsNames);
