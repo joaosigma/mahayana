@@ -8,26 +8,26 @@ namespace hr::gl::tools
 {
 	void Frustum::extractPlanes(const hr::Vector4f& col1, const hr::Vector4f& col2, const hr::Vector4f& col3, const hr::Vector4f& col4)
 	{
-		mPlanes[PlaneLeft].set(col4[0] + col1[0], col4[1] + col1[1], col4[2] + col1[2], col4[3] + col1[3]);
-		mPlanes[PlaneRight].set(col4[0] - col1[0], col4[1] - col1[1], col4[2] - col1[2], col4[3] - col1[3]);
+		mPlanes[static_cast<size_t>(PlaneIndex::Left)].set(col4[0] + col1[0], col4[1] + col1[1], col4[2] + col1[2], col4[3] + col1[3]);
+		mPlanes[static_cast<size_t>(PlaneIndex::Right)].set(col4[0] - col1[0], col4[1] - col1[1], col4[2] - col1[2], col4[3] - col1[3]);
 
-		mPlanes[PlaneTop].set(col4[0] - col2[0], col4[1] - col2[1], col4[2] - col2[2], col4[3] - col2[3]);
-		mPlanes[PlaneBottom].set(col4[0] + col2[0], col4[1] + col2[1], col4[2] + col2[2], col4[3] + col2[3]);
+		mPlanes[static_cast<size_t>(PlaneIndex::Top)].set(col4[0] - col2[0], col4[1] - col2[1], col4[2] - col2[2], col4[3] - col2[3]);
+		mPlanes[static_cast<size_t>(PlaneIndex::Bottom)].set(col4[0] + col2[0], col4[1] + col2[1], col4[2] + col2[2], col4[3] + col2[3]);
 
-		mPlanes[PlaneLeft].normalize();
-		mPlanes[PlaneRight].normalize();
-		mPlanes[PlaneBottom].normalize();
-		mPlanes[PlaneTop].normalize();
+		mPlanes[static_cast<size_t>(PlaneIndex::Left)].normalize();
+		mPlanes[static_cast<size_t>(PlaneIndex::Right)].normalize();
+		mPlanes[static_cast<size_t>(PlaneIndex::Bottom)].normalize();
+		mPlanes[static_cast<size_t>(PlaneIndex::Top)].normalize();
 
-		mPlanes[PlaneNear].set(col4[0] + col3[0], col4[1] + col3[1], col4[2] + col3[2], 0.0f);
-		mPlanes[PlaneFar].set(col4[0] - col3[0], col4[1] - col3[1], col4[2] - col3[2], 0.0f);
-		mPlanes[PlaneNear].normalizeNormal();
-		mPlanes[PlaneFar].normalizeNormal();
-		mPlanes[PlaneNear].setD(-(mPlanes[PlaneNear].getDotNormal(mPosition) + mZNear));
-		mPlanes[PlaneFar].setD(-(mPlanes[PlaneNear].getDotNormal(mPosition) - mZFar));
+		mPlanes[static_cast<size_t>(PlaneIndex::Near)].set(col4[0] + col3[0], col4[1] + col3[1], col4[2] + col3[2], 0.0f);
+		mPlanes[static_cast<size_t>(PlaneIndex::Far)].set(col4[0] - col3[0], col4[1] - col3[1], col4[2] - col3[2], 0.0f);
+		mPlanes[static_cast<size_t>(PlaneIndex::Near)].normalizeNormal();
+		mPlanes[static_cast<size_t>(PlaneIndex::Far)].normalizeNormal();
+		mPlanes[static_cast<size_t>(PlaneIndex::Near)].setD(-(mPlanes[static_cast<size_t>(PlaneIndex::Near)].getDotNormal(mPosition) + mZNear));
+		mPlanes[static_cast<size_t>(PlaneIndex::Far)].setD(-(mPlanes[static_cast<size_t>(PlaneIndex::Near)].getDotNormal(mPosition) - mZFar));
 	}
 
-	bool Frustum::sweptSpherePlaneIntersect(float& t0, float& t1, const hr::Plane& plane, const hr::Vector3f& sphereCenter, const float& sphereRadius, const hr::Vector3f& sweepDir) const
+	bool Frustum::sweptSpherePlaneIntersect(float& t0, float& t1, const hr::Plane<float>& plane, const hr::Vector3f& sphereCenter, const float& sphereRadius, const hr::Vector3f& sweepDir) const
 	{
 		float b_dot_n, d_dot_n, tmp0, tmp1;
 
@@ -78,15 +78,15 @@ namespace hr::gl::tools
 		if (!points)
 			return;
 
-		mPlanes[PlaneNear].testIntersectPlanes(mPlanes[PlaneLeft], mPlanes[PlaneBottom], points[0]);
-		mPlanes[PlaneNear].testIntersectPlanes(mPlanes[PlaneRight], mPlanes[PlaneBottom], points[1]);
-		mPlanes[PlaneNear].testIntersectPlanes(mPlanes[PlaneRight], mPlanes[PlaneTop], points[2]);
-		mPlanes[PlaneNear].testIntersectPlanes(mPlanes[PlaneLeft], mPlanes[PlaneTop], points[3]);
+		mPlanes[static_cast<size_t>(PlaneIndex::Near)].intersects(mPlanes[static_cast<size_t>(PlaneIndex::Left)], mPlanes[static_cast<size_t>(PlaneIndex::Bottom)], points[0]);
+		mPlanes[static_cast<size_t>(PlaneIndex::Near)].intersects(mPlanes[static_cast<size_t>(PlaneIndex::Right)], mPlanes[static_cast<size_t>(PlaneIndex::Bottom)], points[1]);
+		mPlanes[static_cast<size_t>(PlaneIndex::Near)].intersects(mPlanes[static_cast<size_t>(PlaneIndex::Right)], mPlanes[static_cast<size_t>(PlaneIndex::Top)], points[2]);
+		mPlanes[static_cast<size_t>(PlaneIndex::Near)].intersects(mPlanes[static_cast<size_t>(PlaneIndex::Left)], mPlanes[static_cast<size_t>(PlaneIndex::Top)], points[3]);
 
-		mPlanes[PlaneFar].testIntersectPlanes(mPlanes[PlaneLeft], mPlanes[PlaneBottom], points[4]);
-		mPlanes[PlaneFar].testIntersectPlanes(mPlanes[PlaneRight], mPlanes[PlaneBottom], points[5]);
-		mPlanes[PlaneFar].testIntersectPlanes(mPlanes[PlaneRight], mPlanes[PlaneTop], points[6]);
-		mPlanes[PlaneFar].testIntersectPlanes(mPlanes[PlaneLeft], mPlanes[PlaneTop], points[7]);
+		mPlanes[static_cast<size_t>(PlaneIndex::Far)].intersects(mPlanes[static_cast<size_t>(PlaneIndex::Left)], mPlanes[static_cast<size_t>(PlaneIndex::Bottom)], points[4]);
+		mPlanes[static_cast<size_t>(PlaneIndex::Far)].intersects(mPlanes[static_cast<size_t>(PlaneIndex::Right)], mPlanes[static_cast<size_t>(PlaneIndex::Bottom)], points[5]);
+		mPlanes[static_cast<size_t>(PlaneIndex::Far)].intersects(mPlanes[static_cast<size_t>(PlaneIndex::Right)], mPlanes[static_cast<size_t>(PlaneIndex::Top)], points[6]);
+		mPlanes[static_cast<size_t>(PlaneIndex::Far)].intersects(mPlanes[static_cast<size_t>(PlaneIndex::Left)], mPlanes[static_cast<size_t>(PlaneIndex::Top)], points[7]);
 	}
 
 	Frustum::IntersectionType Frustum::classifyFrustum(const Frustum& frustum) const
@@ -113,14 +113,14 @@ namespace hr::gl::tools
 
 		for (size_t i = 0; i < 6; i++)
 		{
-			if (mPlanes[i].classifyPoint(corners[0]) != hr::Plane::Position::Behind)	continue;
-			if (mPlanes[i].classifyPoint(corners[1]) != hr::Plane::Position::Behind)	continue;
-			if (mPlanes[i].classifyPoint(corners[2]) != hr::Plane::Position::Behind)	continue;
-			if (mPlanes[i].classifyPoint(corners[3]) != hr::Plane::Position::Behind)	continue;
-			if (mPlanes[i].classifyPoint(corners[4]) != hr::Plane::Position::Behind)	continue;
-			if (mPlanes[i].classifyPoint(corners[5]) != hr::Plane::Position::Behind)	continue;
-			if (mPlanes[i].classifyPoint(corners[6]) != hr::Plane::Position::Behind)	continue;
-			if (mPlanes[i].classifyPoint(corners[7]) != hr::Plane::Position::Behind)	continue;
+			if (mPlanes[i].classifyPoint(corners[0]) != hr::Plane<float>::Position::Behind)	continue;
+			if (mPlanes[i].classifyPoint(corners[1]) != hr::Plane<float>::Position::Behind)	continue;
+			if (mPlanes[i].classifyPoint(corners[2]) != hr::Plane<float>::Position::Behind)	continue;
+			if (mPlanes[i].classifyPoint(corners[3]) != hr::Plane<float>::Position::Behind)	continue;
+			if (mPlanes[i].classifyPoint(corners[4]) != hr::Plane<float>::Position::Behind)	continue;
+			if (mPlanes[i].classifyPoint(corners[5]) != hr::Plane<float>::Position::Behind)	continue;
+			if (mPlanes[i].classifyPoint(corners[6]) != hr::Plane<float>::Position::Behind)	continue;
+			if (mPlanes[i].classifyPoint(corners[7]) != hr::Plane<float>::Position::Behind)	continue;
 
 			return IntersectionType::FullOutside;
 		}
@@ -131,14 +131,14 @@ namespace hr::gl::tools
 
 		for (size_t i = 0; i < 6; i++)
 		{
-			if (frustum.mPlanes[i].classifyPoint(corners[0]) != hr::Plane::Position::Behind)	continue;
-			if (frustum.mPlanes[i].classifyPoint(corners[1]) != hr::Plane::Position::Behind)	continue;
-			if (frustum.mPlanes[i].classifyPoint(corners[2]) != hr::Plane::Position::Behind)	continue;
-			if (frustum.mPlanes[i].classifyPoint(corners[3]) != hr::Plane::Position::Behind)	continue;
-			if (frustum.mPlanes[i].classifyPoint(corners[4]) != hr::Plane::Position::Behind)	continue;
-			if (frustum.mPlanes[i].classifyPoint(corners[5]) != hr::Plane::Position::Behind)	continue;
-			if (frustum.mPlanes[i].classifyPoint(corners[6]) != hr::Plane::Position::Behind)	continue;
-			if (frustum.mPlanes[i].classifyPoint(corners[7]) != hr::Plane::Position::Behind)	continue;
+			if (frustum.mPlanes[i].classifyPoint(corners[0]) != hr::Plane<float>::Position::Behind)	continue;
+			if (frustum.mPlanes[i].classifyPoint(corners[1]) != hr::Plane<float>::Position::Behind)	continue;
+			if (frustum.mPlanes[i].classifyPoint(corners[2]) != hr::Plane<float>::Position::Behind)	continue;
+			if (frustum.mPlanes[i].classifyPoint(corners[3]) != hr::Plane<float>::Position::Behind)	continue;
+			if (frustum.mPlanes[i].classifyPoint(corners[4]) != hr::Plane<float>::Position::Behind)	continue;
+			if (frustum.mPlanes[i].classifyPoint(corners[5]) != hr::Plane<float>::Position::Behind)	continue;
+			if (frustum.mPlanes[i].classifyPoint(corners[6]) != hr::Plane<float>::Position::Behind)	continue;
+			if (frustum.mPlanes[i].classifyPoint(corners[7]) != hr::Plane<float>::Position::Behind)	continue;
 
 			return IntersectionType::FullOutside;
 		}
@@ -148,11 +148,14 @@ namespace hr::gl::tools
 
 	float Frustum::dotNormals(const PlaneIndex planeA, const PlaneIndex planeB) const
 	{
-		if ((planeA > 5) || (planeB > 5))
+		auto pa = static_cast<size_t>(planeA);
+		auto pb = static_cast<size_t>(planeB);
+
+		if ((pa > 5) || (pb > 5))
 			return 0.0f;
 
-		hr::Vector3f normalB = mPlanes[planeB].normal();
-		return mPlanes[planeA].getDotNormal(normalB);
+		auto normalB = mPlanes[pb].normal();
+		return mPlanes[pa].getDotNormal(normalB);
 	}
 
 	void Frustum::calculateFrustum(const hr::Matrix& transformation)
@@ -191,31 +194,31 @@ namespace hr::gl::tools
 		extractPlanes(col1, col2, col3, col4);
 	}
 
-	void Frustum::setIndividualPlane(const PlaneIndex planeIndex, const hr::Plane& plane)
+	void Frustum::setIndividualPlane(PlaneIndex planeIndex, const hr::Plane<float>& plane)
 	{
-		if (planeIndex > 5)
+		if (static_cast<size_t>(planeIndex) > 5)
 			return;
-		mPlanes[planeIndex] = plane;
+		mPlanes[static_cast<size_t>(planeIndex)] = plane;
 	}
 
 	void Frustum::setFrustum(const hr::Vector3f& bboxMin, const hr::Vector3f& bboxMax)
 	{
-		mPlanes[PlaneLeft].set(1.0f, 0.0f, 0.0f, -bboxMin[0]);
-		mPlanes[PlaneRight].set(-1.0f, 0.0f, 0.0f, bboxMax[0]);
-		mPlanes[PlaneTop].set(0.0f, -1.0f, 0.0f, bboxMax[1]);
-		mPlanes[PlaneBottom].set(0.0f, 1.0f, 0.0f, -bboxMin[1]);
-		mPlanes[PlaneNear].set(0.0f, 0.0f, -1.0f, bboxMax[2]);
-		mPlanes[PlaneFar].set(0.0f, 0.0f, 1.0f, -bboxMin[2]);
+		mPlanes[static_cast<size_t>(PlaneIndex::Left)].set(1.0f, 0.0f, 0.0f, -bboxMin[0]);
+		mPlanes[static_cast<size_t>(PlaneIndex::Right)].set(-1.0f, 0.0f, 0.0f, bboxMax[0]);
+		mPlanes[static_cast<size_t>(PlaneIndex::Top)].set(0.0f, -1.0f, 0.0f, bboxMax[1]);
+		mPlanes[static_cast<size_t>(PlaneIndex::Bottom)].set(0.0f, 1.0f, 0.0f, -bboxMin[1]);
+		mPlanes[static_cast<size_t>(PlaneIndex::Near)].set(0.0f, 0.0f, -1.0f, bboxMax[2]);
+		mPlanes[static_cast<size_t>(PlaneIndex::Far)].set(0.0f, 0.0f, 1.0f, -bboxMin[2]);
 	}
 
 	void Frustum::setFrustum(const hr::Vector3f& center, const float radius)
 	{
-		mPlanes[PlaneLeft].set(1.0f, 0.0f, 0.0f, -(center[0] - radius));
-		mPlanes[PlaneRight].set(-1.0f, 0.0f, 0.0f, center[0] + radius);
-		mPlanes[PlaneTop].set(0.0f, -1.0f, 0.0f, center[1] + radius);
-		mPlanes[PlaneBottom].set(0.0f, 1.0f, 0.0f, -(center[1] - radius));
-		mPlanes[PlaneNear].set(0.0f, 0.0f, -1.0f, center[2] + radius);
-		mPlanes[PlaneFar].set(0.0f, 0.0f, 1.0f, -(center[2] - radius));
+		mPlanes[static_cast<size_t>(PlaneIndex::Left)].set(1.0f, 0.0f, 0.0f, -(center[0] - radius));
+		mPlanes[static_cast<size_t>(PlaneIndex::Right)].set(-1.0f, 0.0f, 0.0f, center[0] + radius);
+		mPlanes[static_cast<size_t>(PlaneIndex::Top)].set(0.0f, -1.0f, 0.0f, center[1] + radius);
+		mPlanes[static_cast<size_t>(PlaneIndex::Bottom)].set(0.0f, 1.0f, 0.0f, -(center[1] - radius));
+		mPlanes[static_cast<size_t>(PlaneIndex::Near)].set(0.0f, 0.0f, -1.0f, center[2] + radius);
+		mPlanes[static_cast<size_t>(PlaneIndex::Far)].set(0.0f, 0.0f, 1.0f, -(center[2] - radius));
 	}
 
 	void Frustum::setFrustum(const hr::BBox<>& bbox)

@@ -10,15 +10,15 @@ namespace hr::gl::tools
 	{
 	public:
 		enum class IntersectionType { FullInside, FullOutside, FrustumIntersect };
-		enum PlaneIndex : size_t { PlaneLeft = 0, PlaneRight = 1, PlaneTop = 2, PlaneBottom = 3, PlaneNear = 4, PlaneFar = 5 };
+		enum class PlaneIndex : size_t { Left = 0, Right = 1, Top = 2, Bottom = 3, Near = 4, Far = 5 };
 
 	private:
-		hr::Plane mPlanes[6];
+		hr::Plane<float> mPlanes[6];
 		hr::Vector3f mPosition;
 		float mZNear{ 0.0f }, mZFar{ 0.0f };
 
 		void extractPlanes(const hr::Vector4f& col1, const hr::Vector4f& col2, const hr::Vector4f& col3, const hr::Vector4f& col4);
-		bool sweptSpherePlaneIntersect(float& t0, float& t1, const hr::Plane& plane, const hr::Vector3f& sphereCenter, const float& sphereRadius, const hr::Vector3f& sweepDir) const;
+		bool sweptSpherePlaneIntersect(float& t0, float& t1, const hr::Plane<float>& plane, const hr::Vector3f& sphereCenter, const float& sphereRadius, const hr::Vector3f& sweepDir) const;
 
 	public:
 		Frustum() = default;
@@ -61,9 +61,9 @@ namespace hr::gl::tools
 			return mPosition;
 		}
 
-		const hr::Plane& getPlane(const PlaneIndex planeIndex) const
+		const hr::Plane<float>& getPlane(PlaneIndex planeIndex) const
 		{
-			return mPlanes[planeIndex];
+			return mPlanes[static_cast<size_t>(planeIndex)];
 		}
 
 		void getCorners(hr::Vector3f points[8]) const;
@@ -76,7 +76,7 @@ namespace hr::gl::tools
 		void calculateFrustum(const hr::Matrix& projection, const hr::Matrix& modelview);
 		void calculateFrustum(const hr::Matrix& modelView, const hr::Matrix& projection, const hr::Vector3f& pos, float zNear, float zFar);
 
-		void setIndividualPlane(const PlaneIndex planeIndex, const hr::Plane& plane);
+		void setIndividualPlane(const PlaneIndex planeIndex, const hr::Plane<float>& plane);
 		void setFrustum(const hr::Vector3f& bboxMin, const hr::Vector3f& bboxMax);
 		void setFrustum(const hr::Vector3f& center, const float radius);
 		void setFrustum(const hr::BBox<>& bbox);

@@ -67,18 +67,23 @@ namespace hr
 			return ((mMinPt + mMaxPt) * 0.5);
 		}
 
-		void dims(TVectorType& point) const
+		TVectorType dims() const
 		{
-			point = mMaxPt - mMinPt;
+			return (mMaxPt - mMinPt);
 		}
 
-		typename TVectorType::DataType radius(void) const
+		typename TVectorType::DataType surfaceArea() const
 		{
-			auto center = center();
-			return center.getDistance(mMinPt);
+			auto dims = mMaxPt - mMinPt;
+			return 2.0 * ((dims[0] * dims[1]) + (dims[0] * dims[2]) + (dims[1] * dims[2]));
 		}
 
-		typename TVectorType::DataType radiusMinimum(void) const
+		typename TVectorType::DataType radius() const
+		{
+			return center().getDistance(mMinPt);
+		}
+
+		typename TVectorType::DataType radiusMinimum() const
 		{
 			auto center = center();
 
@@ -87,9 +92,10 @@ namespace hr
 			return std::fmin(minDist, std::abs(mMinPt[2] - center[2]));
 		}
 		
-		typename TVectorType::DataType volume(void) const
+		typename TVectorType::DataType volume() const
 		{
-			return ((mMaxPt[0] - mMinPt[0]) * (mMaxPt[1] - mMinPt[1]) * (mMaxPt[2] - mMinPt[2]));
+			auto dims = mMaxPt - mMinPt;
+			return (dims[0] * dims[1] * dims[2]);
 		}
 
 		//
@@ -127,7 +133,7 @@ namespace hr
 			return BSphere<TVectorType>(center, center.getDistance(mMinPt));
 		}
 
-		typename TVectorType::DataType planeDistance(const Plane &plane) const
+		typename TVectorType::DataType planeDistance(const Plane<TVectorType> &plane) const
 		{
 			auto center = center();
 
@@ -367,42 +373,15 @@ namespace hr
 
 		bool intersects(const TVectorType& lineStart, const TVectorType& lineEnd) const
 		{
-			TVectorType::DataType ld[3];
-
-			auto center = (mMinPt + mMaxPt) * 0.5f;
-			auto extents = mMaxPt - center;
-			auto lineDir = (lineEnd - lineStart) * 0.5f;
-			auto lineCenter = lineStart + lineDir;
-			auto dir = lineCenter - center;
-
-			ld[0] = std::abs(lineDir[0]);
-			if (std::abs(dir[0]) > (extents[0] + ld[0]))
-				return false;
-
-			ld[1] = std::abs(lineDir[1]);
-			if (std::abs(dir[1]) > (extents[1] + ld[1]))
-				return false;
-
-			ld[2] = std::abs(lineDir[2]);
-			if (std::abs(dir[2]) > (extents[2] + ld[2]))
-				return false;
-
-			auto cross = lineDir.crossProduct(dir);
-
-			if (std::abs(cross[0]) > (extents[1] * ld[2] + extents[2] * ld[1]))
-				return false;
-			if (std::abs(cross[1]) > (extents[0] * ld[2] + extents[2] * ld[0]))
-				return false;
-			if (std::abs(cross[2]) > (extents[0] * ld[1] + extents[1] * ld[0]))
-				return false;
-			return true;
+			Ray<TVectorType> ray{ lineStart, TVectorType::calcNormalize(lineEnd - lineStart) };
+			return intersects(ray, -std::numeric_limits<TVectorType::DataType>::infinity(), TVectorType::calcDistance(lineStart, lineEnd));
 		}
 
 		bool intersects(const Ray<TVectorType>& ray) const
 		{
-			TVectorType::DataType hitDistanceMin = -std::numeric_limits<TVectorType::DataType>::infinity();
-			TVectorType::DataType hitDistanceMax = std::numeric_limits<TVectorType::DataType>::infinity();
-			return intersects(ray, hitDistanceMin, hitDistanceMax);
+			auto hitDistMin = -std::numeric_limits<TVectorType::DataType>::infinity();
+			auto hitDistMax = std::numeric_limits<TVectorType::DataType>::infinity();
+			return intersects(ray, hitDistMin, hitDistMax);
 		}
 
 		bool intersects(const Ray<TVectorType>& ray, typename TVectorType::DataType& hitDistanceMin, typename TVectorType::DataType& hitDistanceMax) const
@@ -474,7 +453,7 @@ namespace hr
 
 		void operator+=(const BSphere& bsphere)
 		{
-			mRadius = std::fmax(mRadius, BSphere::calcDist(sphere) + sphere.mRadius);
+			mRadius = std::fmax(mRadius, BSphere::calcDist(bsphere) + bsphere.mRadius);
 		}
 
 		typename TVectorType::DataType radius() const
@@ -573,7 +552,7 @@ namespace hr
 
 		bool containsPoint(typename TVectorType::DataType x, typename TVectorType::DataType y, typename TVectorType::DataType z) const
 		{
-			return containsPoint(TVectorType{ px, py, pz });
+			return containsPoint(TVectorType{ x, y, z });
 		}
 
 		bool intersects(const BSphere& bsphere) const

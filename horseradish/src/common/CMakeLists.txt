@@ -28,7 +28,6 @@ target_sources(horseradish
 		meshAnim.hpp
 		path.cpp
 		path.hpp
-		plane.cpp
 		plane.hpp
 		primitives2D.hpp
 		quaternion.cpp
@@ -45,6 +44,7 @@ target_sources(horseradish
 		stream.hpp
 		stringUtils.cpp
 		stringUtils.hpp
+		triangle.hpp
 		timer.cpp
 		timer.hpp
 		types.cpp

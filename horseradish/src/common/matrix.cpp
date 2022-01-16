@@ -804,7 +804,7 @@ namespace hr
 		Matrix::genMatScale(*this, vec[0], vec[1], vec[2]);
 	}
 
-	void Matrix::setReflect(const Plane &plane) noexcept
+	void Matrix::setReflect(const Plane<float> &plane) noexcept
 	{
 		Vector3f pNormal = plane.normal();
 		float d = plane.d();

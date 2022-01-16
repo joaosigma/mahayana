@@ -210,7 +210,7 @@ namespace hr
 		void setScale(float scale) noexcept;
 		void setScale(float x, float y, float z) noexcept;
 		void setScale(const Vector3f &vec) noexcept;
-		void setReflect(const Plane &plane) noexcept;
+		void setReflect(const Plane<float> &plane) noexcept;
 		void setRotationX(const float angleDeg) noexcept;
 		void setRotationY(const float angleDeg) noexcept;
 		void setRotationZ(const float angleDeg) noexcept;

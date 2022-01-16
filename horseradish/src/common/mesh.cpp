@@ -4,6 +4,7 @@
 
 #include "math.hpp"
 #include "vector.hpp"
+#include "triangle.hpp"
 
 #include "libs/mikktspace/mikktspace.h"
 #include "libs/meshoptimizer/meshoptimizer.h"
@@ -399,38 +400,22 @@ namespace hr::geom
 
 		for (size_t i = 0; i < mNumIndices; i += 3)
 		{
-			Vector3d v0(Vector3f{ mData[mIndices[i + 0]].pos });
-			Vector3d v1(Vector3f{ mData[mIndices[i + 1]].pos });
-			Vector3d v2(Vector3f{ mData[mIndices[i + 2]].pos });
+			Triangle<Vector3d> tri{
+				Vector3f{ mData[mIndices[i + 0]].pos }.convert<double>(),
+				Vector3f{ mData[mIndices[i + 1]].pos }.convert<double>(),
+				Vector3f{ mData[mIndices[i + 2]].pos }.convert<double>() };
 
-			auto v0v1 = v1 - v0;
-			auto v0v2 = v2 - v0;
-			auto pvec = ray.direction().crossProduct(v0v2);
-			auto det = v0v1.getDot(pvec);
-			if (det <= 1e-6) //cull back face
+			Triangle<Vector3d>::Hit triHit;
+			if (!tri.intersects(ray, rayDistMin, rayDistMax, triHit))
 				continue;
 
-			double invDet = 1 / det;
-
-			auto tvec = ray.origin() - v0;
-			auto u = tvec.getDot(pvec) * invDet;
-			if ((u < 0.0) || (u > 1.0))
+			if (triHit.rayT >= hit.rayT)
 				continue;
 
-			auto qvec = tvec.crossProduct(v0v1);
-			auto v = ray.direction().getDot(qvec) * invDet;
-			if ((v < 0.0) || ((u + v) > 1.0))
-				continue;
-
-			auto t = v0v2.getDot(qvec) * invDet;
-
-			if ((t < rayDistMin) || (t >= rayDistMax) || (t >= hit.rayT))
-				continue;
-
-			hit.rayT = t;
+			hit.rayT = triHit.rayT;
 			hit.triIndex = i / 3;
-			hit.barycentricU = static_cast<float>(u);
-			hit.barycentricV = static_cast<float>(v);
+			hit.barycentricU = static_cast<float>(triHit.barycentricU);
+			hit.barycentricV = static_cast<float>(triHit.barycentricV);
 			wasHit = true;
 		}
 
@@ -561,8 +546,7 @@ namespace hr::geom
 			auto i2 = mIndices[i + 1];
 			auto i3 = mIndices[i + 2];
 
-			Vector3f faceNormal;
-			faceNormal.storeNormal(mData[i1].pos, mData[i2].pos, mData[i3].pos);
+			auto faceNormal = Triangle<Vector3f>::calcNormal(mData[i1].pos, mData[i2].pos, mData[i3].pos);
 
 			normals[i1] += faceNormal;
 			normals[i2] += faceNormal;

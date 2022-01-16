@@ -837,27 +837,6 @@ namespace hr
 			return *this;
 		}
 
-		void storeNormal(const Vector &v1, const Vector &v2, const Vector &v3)
-		{
-			__m128 vec1, vec2, tmp1, tmp2;
-
-			tmp1 = _mm_load_ps(v1.mData);
-			vec1 = _mm_sub_ps(_mm_load_ps(v2.mData), tmp1);
-			vec2 = _mm_sub_ps(_mm_load_ps(v3.mData), tmp1);
-
-			tmp1 = _mm_mul_ps(_mm_shuffle_ps(vec1, vec1, _MM_SHUFFLE(3, 0, 2, 1)), _mm_shuffle_ps(vec2, vec2, _MM_SHUFFLE(3, 1, 0, 2)));
-			tmp2 = _mm_mul_ps(_mm_shuffle_ps(vec1, vec1, _MM_SHUFFLE(3, 1, 0, 2)), _mm_shuffle_ps(vec2, vec2, _MM_SHUFFLE(3, 0, 2, 1)));
-			vec1 = _mm_sub_ps(tmp1, tmp2);
-
-			vec2 = _mm_rsqrt_ps(_mm_dp_ps(vec1, vec1, 0x70 | 0xF));
-			_mm_store_ps(mData, _mm_mul_ps(vec1, vec2));
-		}
-
-		void storeNormal(const float vec1[3], const float vec2[3], const float vec3[3])
-		{
-			storeNormal(Vector(vec1), Vector(vec2), Vector(vec3));
-		}
-
 		Vector crossProduct(const Vector &vec) const
 		{
 			Vector result;
@@ -1766,7 +1745,7 @@ namespace hr
 		if constexpr (std::is_same_v<TTargetType, float>)
 		{
 			Vector<float, 3> newVec;
-			_mm_store_ps(newColor.data(), _mm_load_ps(mData));
+			_mm_store_ps(newVec.data(), _mm_load_ps(mData));
 
 			return newVec;
 		}
@@ -1790,7 +1769,7 @@ namespace hr
 		if constexpr (std::is_same_v<TTargetType, double>)
 		{
 			Vector<double, 3> newVec;
-			_mm256_storeu_pd(newColor.data(), _mm256_load_pd(mData));
+			_mm256_storeu_pd(newVec.data(), _mm256_load_pd(mData));
 
 			return newVec;
 		}

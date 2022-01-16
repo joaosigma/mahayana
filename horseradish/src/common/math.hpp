@@ -51,10 +51,21 @@ namespace hr
 			return _mm_cvtss_f32(_mm_sqrt_ss(_mm_set_ss(x)));
 		}
 
+		static float sqrtInv(const float x)
+		{
+			return _mm_cvtss_f32(_mm_rsqrt_ss(_mm_set_ss(x)));
+		}
+
 		static double sqrt(const double x)
 		{
 			auto temp = _mm_set1_pd(x);
 			return _mm_cvtsd_f64(_mm_sqrt_sd(temp, temp));
+		}
+
+		static double sqrtInv(const double x)
+		{
+			auto temp = _mm_set1_pd(x);
+			return _mm_cvtsd_f64(_mm_rsqrt28_sd(temp, temp));
 		}
 
 		static float sin(const float radians)
@@ -106,15 +117,17 @@ namespace hr
 			static_assert(std::is_integral_v<T>, "Target must must be either [u]int32_t or [u]int64_t");
 
 			if constexpr(std::is_same_v<T, uint32_t>)
-				return _mm_cvtss_ui32(_mm_set_ss(f));
+				return _mm_cvtss_u32(_mm_set_ss(f));
 			else if constexpr (std::is_same_v<T, int32_t>)
 				return _mm_cvtss_si32(_mm_set_ss(f));
+#if defined (_M_X64)
 			else if constexpr (std::is_same_v<T, uint64_t>)
 				return _mm_cvtss_u64(_mm_set_ss(f));
 			else if constexpr (std::is_same_v<T, int64_t>)
 				return _mm_cvtss_si64(_mm_set_ss(f));
+#endif
 
-			static_assert(std::is_same_v<T, uint32_t> || std::is_same_v<T, int64_t> || std::is_same_v<T, uint64_t> || std::is_same_v<T, int64_t>)
+			static_assert(std::is_same_v<T, uint32_t> || std::is_same_v<T, int64_t> || std::is_same_v<T, uint64_t> || std::is_same_v<T, int64_t>);
 		}
 		static int64_t ftoi(const double d)
 		{

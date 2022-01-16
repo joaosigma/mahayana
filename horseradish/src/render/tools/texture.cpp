@@ -331,7 +331,7 @@ namespace hr::render::tools
 		while (true)
 		{
 			textureDst.uploadData(curLevel, 0, 0, imageScaled.width(), imageScaled.height(), hr::gl::objects::Texture::DataFormat::RGBA, hr::gl::objects::Texture::DataType::UBYTE, imageScaled.data());
-			if (imageScaled.getArea() <= 1)
+			if (imageScaled.area() <= 1)
 				break;
 
 			curLevel++;
@@ -354,7 +354,7 @@ namespace hr::render::tools
 		while (true)
 		{
 			textureDst.uploadData(curLevel, 0, 0, imageScaled.width(), imageScaled.height(), hr::gl::objects::Texture::DataFormat::RGBA, hr::gl::objects::Texture::DataType::UBYTE, imageScaled.data());
-			if (imageScaled.getArea() <= 1)
+			if (imageScaled.area() <= 1)
 				break;
 
 			curLevel++;
@@ -377,11 +377,11 @@ namespace hr::render::tools
 		while (true)
 		{
 			textureDst.uploadData(curLevel, 0, 0, imageScaled.width(), imageScaled.height(), hr::gl::objects::Texture::DataFormat::RGB, hr::gl::objects::Texture::DataType::FLOAT, imageScaled.data());
-			if (imageScaled.getArea() <= 1)
+			if (imageScaled.area() <= 1)
 				break;
 
 			curLevel++;
-			imageScaled = imageScaled.resize(std::max<size_t>(1, imageScaled.width() >> 1), std::max<size_t>(1, imageScaled.height() >> 1));
+			imageScaled = imageScaled.resize(std::max<size_t>(1, imageScaled.width() >> 1), std::max<size_t>(1, imageScaled.height() >> 1), false);
 		};
 
 		return true;
@@ -469,7 +469,7 @@ namespace hr::render::tools
 
 			streamOut.write(compressedImg.get(), ctexLevelInfo.size);
 
-			if (imageScaled.getArea() <= 1)
+			if (imageScaled.area() <= 1)
 				break;
 
 			curLevel++;
@@ -500,11 +500,11 @@ namespace hr::render::tools
 			auto imageByte = imageNormals.convert<uint8_t, hr::imaging::ImageFormatRGBA>(0.0f, 1.0f);
 
 			textureDst.uploadData(curLevel, 0, 0, imageByte.width(), imageByte.height(), hr::gl::objects::Texture::DataFormat::RGBA, hr::gl::objects::Texture::DataType::UBYTE, imageByte.data());
-			if (imageByte.getArea() <= 1)
+			if (imageByte.area() <= 1)
 				break;
 
 			curLevel++;
-			imageScaled = imageScaled.resize(std::max<size_t>(1, imageScaled.width() >> 1), std::max<size_t>(1, imageScaled.height() >> 1));
+			imageScaled = imageScaled.resize(std::max<size_t>(1, imageScaled.width() >> 1), std::max<size_t>(1, imageScaled.height() >> 1), false);
 		};
 
 		return true;
@@ -567,7 +567,7 @@ namespace hr::render::tools
 
 		uint16_t curLevel = 0;
 
-		if (imageSrc.getArea() > (4096 * 4096)) //above this we have memory limitations because of converting to float
+		if (imageSrc.area() > (4096 * 4096)) //above this we have memory limitations because of converting to float
 		{
 			hr::imaging::Image<uint8_t, hr::imaging::ImageFormatRGBA> imageScaled;
 			while (true)
@@ -621,11 +621,11 @@ namespace hr::render::tools
 
 				streamOut.write(compressedImg.get(), ctexLevelInfo.size);
 
-				if (imageScaled.getArea() <= 1)
+				if (imageScaled.area() <= 1)
 					break;
 
 				curLevel++;
-				imageScaled = imageScaled.resize(std::max<size_t>(1, imageScaled.width() >> 1), std::max<size_t>(1, imageScaled.height() >> 1));
+				imageScaled = imageScaled.resize(std::max<size_t>(1, imageScaled.width() >> 1), std::max<size_t>(1, imageScaled.height() >> 1), false);
 			};
 		}
 

@@ -249,9 +249,9 @@ namespace hr
 
 		Color& set(const TDataType* const rgb, const TDataType a)
 		{
-			mRGBA[0] = color[0];
-			mRGBA[1] = color[1];
-			mRGBA[2] = color[2];
+			mRGBA[0] = rgb[0];
+			mRGBA[1] = rgb[1];
+			mRGBA[2] = rgb[2];
 			mRGBA[3] = a;
 			return *this;
 		}
@@ -1712,14 +1712,14 @@ namespace hr
 		if constexpr (std::is_same_v<TTargetType, float>)
 		{
 			Color<float> newColor;
-			_mm_store_ps(newColor.data(), _mm_load_ps(mData));
+			_mm_store_ps(newColor.data(), _mm_load_ps(mRGBA));
 
 			return newColor;
 		}
 		else if constexpr (std::is_same_v<TTargetType, double>)
 		{
 			Color<double> newColor;
-			_mm256_store_pd(newColor.data(), _mm256_cvtps_pd(_mm_load_ps(mData)));
+			_mm256_store_pd(newColor.data(), _mm256_cvtps_pd(_mm_load_ps(mRGBA)));
 
 			return newColor;
 		}
