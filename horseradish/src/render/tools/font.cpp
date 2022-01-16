@@ -17,7 +17,7 @@ namespace hr { namespace render { namespace tools
 		constexpr unsigned short sdfBufferMargin = 2;
 
 		constexpr std::array<std::pair<uint32_t, uint32_t>, 6> validFontCharacters{ { {32,126}, {192,255}, {880,1008}, {7936,8176}, {1536,1791}, {1040,1299} } };
-		constexpr const char* validAditionalFontCharacters{ u8"¥§©®±µ€" };
+		constexpr auto validAditionalFontCharacters{ u8"¥§©®±µ€" };
 	}
 
 	void Font::commitGL()

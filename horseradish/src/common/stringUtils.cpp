@@ -221,7 +221,7 @@ namespace hr
 		: mStr{ std::move(str) }
 	{ }
 
-	StringUtils::utf8Wrapper::utf8Wrapper(std::string_view str, size_t skipCodepoints)
+	StringUtils::utf8Wrapper::utf8Wrapper(std::string_view str, size_t skipCodepoints) noexcept
 		: mStr{ std::move(str) }
 	{
 		if (skipCodepoints <= 0)

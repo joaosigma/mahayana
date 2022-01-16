@@ -250,13 +250,17 @@ namespace hr { namespace streams
 
 	class StreamReader
 	{
-		Stream &mStream;
+		Stream& mStream;
 
 	public:
-
-		StreamReader(Stream &stream)
+		explicit StreamReader(Stream& stream) noexcept
 			: mStream(stream)
 		{ }
+
+		Stream& stream()
+		{
+			return mStream;
+		}
 
 		const Stream& stream() const
 		{
@@ -305,13 +309,18 @@ namespace hr { namespace streams
 
 	class StreamWriter
 	{
-		Stream &mStream;
+		Stream& mStream;
 
 	public:
 
-		StreamWriter(Stream &stream)
+		explicit StreamWriter(Stream &stream) noexcept
 			: mStream(stream)
 		{ }
+
+		Stream& stream()
+		{
+			return mStream;
+		}
 
 		const Stream& stream() const
 		{
@@ -386,13 +395,18 @@ namespace hr { namespace streams
 
 	class TextWriter
 	{
-		Stream &mStream;
+		Stream& mStream;
 
 	public:
 
-		TextWriter(Stream &stream)
+		explicit TextWriter(Stream &stream) noexcept
 			: mStream(stream)
 		{ }
+
+		Stream& stream()
+		{
+			return mStream;
+		}
 
 		const Stream& stream() const
 		{

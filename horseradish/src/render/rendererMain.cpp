@@ -278,7 +278,8 @@ namespace hr::render
 			if (!fileStream)
 				return;
 
-			tools::TextureTools::uploadCompressedDiffuse(hr::streams::StreamReader(*fileStream), targetTexture);
+			hr::streams::StreamReader reader(*fileStream);
+			tools::TextureTools::uploadCompressedDiffuse(reader, targetTexture);
 			return;
 		}
 
@@ -289,7 +290,8 @@ namespace hr::render
 
 		if (hr::StringUtils::endsWith(texFilePath, ".hdr"))
 		{
-			auto targetImg = hr::imaging::Factory::readHDRI(hr::streams::StreamReader(*fileStream));
+			hr::streams::StreamReader reader(*fileStream);
+			auto targetImg = hr::imaging::Factory::readHDRI(reader);
 			if (targetImg.empty())
 				return;
 
@@ -301,7 +303,8 @@ namespace hr::render
 		}
 		else if (hr::StringUtils::endsWith(texFilePath, ".tga"))
 		{
-			auto targetImg = hr::imaging::Factory::readTGA(hr::streams::StreamReader(*fileStream));
+			hr::streams::StreamReader reader(*fileStream);
+			auto targetImg = hr::imaging::Factory::readTGA(reader);
 			if (targetImg.empty())
 				return;
 
@@ -331,10 +334,12 @@ namespace hr::render
 		{
 			hr::imaging::Image<unsigned char, hr::imaging::ImageFormatRGB> targetImg;
 
+			hr::streams::StreamReader reader(*fileStream);
+
 			if (hr::StringUtils::endsWith(texFilePath, ".jpg") || hr::StringUtils::endsWith(texFilePath, ".jpeg"))
-				targetImg = hr::imaging::Factory::readJPG(hr::streams::StreamReader(*fileStream));
+				targetImg = hr::imaging::Factory::readJPG(reader);
 			else if (hr::StringUtils::endsWith(texFilePath, ".png"))
-				targetImg = hr::imaging::Factory::readPNG(hr::streams::StreamReader(*fileStream));
+				targetImg = hr::imaging::Factory::readPNG(reader);
 
 			if (targetImg.empty())
 				return;
@@ -377,7 +382,8 @@ namespace hr::render
 			if (!fileStream)
 				return;
 
-			tools::TextureTools::uploadCompressedNormal(hr::streams::StreamReader(*fileStream), targetTexture);
+			hr::streams::StreamReader reader(*fileStream);
+			tools::TextureTools::uploadCompressedNormal(reader, targetTexture);
 			return;
 		}
 
@@ -388,10 +394,12 @@ namespace hr::render
 
 		hr::imaging::Image<unsigned char, hr::imaging::ImageFormatRGB> targetImg;
 
+		hr::streams::StreamReader reader(*fileStream);
+
 		if (hr::StringUtils::endsWith(texFilePath, ".jpg") || hr::StringUtils::endsWith(texFilePath, ".jpeg"))
-			targetImg = hr::imaging::Factory::readJPG(hr::streams::StreamReader(*fileStream));
+			targetImg = hr::imaging::Factory::readJPG(reader);
 		else if (hr::StringUtils::endsWith(texFilePath, ".png"))
-			targetImg = hr::imaging::Factory::readPNG(hr::streams::StreamReader(*fileStream));
+			targetImg = hr::imaging::Factory::readPNG(reader);
 
 		if (targetImg.empty())
 			return;

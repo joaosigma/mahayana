@@ -55,8 +55,14 @@ namespace hr
 			using const_iterator = utf8Iterator;
 
 			explicit utf8Wrapper(std::string_view str) noexcept;
-			explicit utf8Wrapper(std::string_view str, size_t skipCodepoints);
-
+			explicit utf8Wrapper(std::string_view str, size_t skipCodepoints) noexcept;
+			explicit utf8Wrapper(std::u8string_view str) noexcept
+				: utf8Wrapper(std::string_view{ reinterpret_cast<const char*>(str.data()), str.size() })
+			{ }
+			explicit utf8Wrapper(std::u8string_view str, size_t skipCodepoints) noexcept
+				: utf8Wrapper(std::string_view{ reinterpret_cast<const char*>(str.data()), str.size() }, skipCodepoints)
+			{ }
+			
 			const_iterator begin() const noexcept
 			{
 				auto start = reinterpret_cast<const uint8_t*>(mStr.data());

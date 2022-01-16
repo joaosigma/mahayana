@@ -184,11 +184,11 @@ namespace hr { namespace engine
 		entry.isMsgFormated = hasFormattedText;
 		entry.timestamp = std::chrono::system_clock::now();
 
-		std::lock_guard<std::mutex> lock(mASyncLock);
+		std::lock_guard lock(mASyncLock);
 
 		if (mMaxBufferSize > 0)
 		{
-			std::lock_guard<std::mutex> lock(mBufferLock);
+			std::lock_guard lockB(mBufferLock);
 
 			if (mBuffer.size() >= mMaxBufferSize)
 				mBuffer.pop_back();

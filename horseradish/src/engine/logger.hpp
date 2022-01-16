@@ -141,13 +141,13 @@ namespace hr { namespace engine
 		template<typename... TValues>
 		void log(const EntryType entryType, const ModuleType moduleType, const char * const entryData, TValues&&... params)
 		{
-			log(entryType, moduleType, fmt::format(entryData, std::forward<TValues>(params)...));
+			log(entryType, moduleType, fmt::format(fmt::runtime(entryData), std::forward<TValues>(params)...));
 		}
 
 		template<typename... TValues>
 		void log(const EntryType entryType, const ModuleType moduleType, const std::string &entryData, TValues&&... params)
 		{
-			log(entryType, moduleType, fmt::format(entryData, std::forward<TValues>(params)...));
+			log(entryType, moduleType, fmt::format(fmt::runtime(entryData), std::forward<TValues>(params)...));
 		}
 
 		template<typename... TValues>

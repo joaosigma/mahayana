@@ -398,7 +398,6 @@ namespace hr::platform
 		std::memset(&startInfo, 0, sizeof(STARTUPINFO));
 		std::memset(&processInfo, 0, sizeof(PROCESS_INFORMATION));
 		startInfo.cb = sizeof(STARTUPINFO);
-		startInfo.lpDesktop = L"";
 
 		CreateProcess(nullptr, szFileName, nullptr, nullptr, FALSE, 0, nullptr, nullptr, &startInfo, &processInfo);
 

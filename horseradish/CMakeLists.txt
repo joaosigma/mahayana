@@ -62,7 +62,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 add_executable(horseradish WIN32 "")
 
 target_compile_features(horseradish PRIVATE c_std_11)
-target_compile_features(horseradish PRIVATE cxx_std_17)
+target_compile_features(horseradish PRIVATE cxx_std_20)
 
 target_compile_definitions(horseradish
 	PRIVATE
