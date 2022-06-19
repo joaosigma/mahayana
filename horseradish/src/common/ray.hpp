@@ -26,7 +26,7 @@ namespace hr
 	public:
 		constexpr Ray() = default;
 
-		constexpr explicit Ray(const TVectorType& origin, const TVectorType& direction) noexcept
+		constexpr explicit Ray(TVectorType origin, TVectorType direction) noexcept
 			: mOrigin{ origin }
 			, mDirection{ direction }
 		{ }

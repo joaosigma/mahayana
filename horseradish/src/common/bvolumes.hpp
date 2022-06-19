@@ -321,6 +321,16 @@ namespace hr
 			merge(bsphere.center(), bsphere.radius());
 		}
 
+		template<class TElement, class... TElements>
+		void mergeAll(const TElement& element, const TElements&... elements)
+		{
+			static_assert(std::is_same_v<TElement, TVectorType> || std::is_same_v<TElement, BBox> || std::is_same_v<TElement, BSphere<TVectorType>>, "Only certain types are permitted.");
+
+			merge(element);
+			if constexpr (sizeof...(TElements) > 0)
+				mergeAll(elements...);
+		}
+
 		void setMin(const TVectorType& min)
 		{
 			mMinPt.set(min);
@@ -406,14 +416,10 @@ namespace hr
 			if ((bbox.mMinPt[2] > mMaxPt[2]) || (bbox.mMaxPt[2] < mMinPt[2]))
 				return Position::Outside;
 
-			if ((bbox.mMinPt[0] > mMinPt[0]) && (bbox.mMaxPt[0] < mMaxPt[0]))
-			{
-				if ((bbox.mMinPt[1] > mMinPt[1]) && (bbox.mMaxPt[1] < mMaxPt[1]))
-				{
-					if ((bbox.mMinPt[2] > mMinPt[2]) && (bbox.mMaxPt[2] < mMaxPt[2]))
-						return Position::Inside;
-				}
-			}
+			if ((bbox.mMinPt[0] > mMinPt[0]) && (bbox.mMaxPt[0] < mMaxPt[0]) &&
+				(bbox.mMinPt[1] > mMinPt[1]) && (bbox.mMaxPt[1] < mMaxPt[1]) &&
+				(bbox.mMinPt[2] > mMinPt[2]) && (bbox.mMaxPt[2] < mMaxPt[2]))
+				return Position::Inside;
 
 			return Position::Intersect;
 		}
@@ -593,7 +599,7 @@ namespace hr
 			return true;
 		}
 
-		bool intersects(const Ray<TVectorType>& ray, typename TVectorType::DataType rayDistMin, typename TVectorType::DataType rayDistMax, typename TVectorType::DataType& hitDistance) const
+		bool intersects(const Ray<TVectorType>& ray, const typename TVectorType::DataType rayDistMin, const typename TVectorType::DataType rayDistMax, typename TVectorType::DataType& hitDistance) const
 		{
 			auto oc = ray.origin() - TVectorType(mCenter[0], mCenter[1], mCenter[2]);
 			auto a = ray.direction().getDot();

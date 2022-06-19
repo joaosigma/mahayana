@@ -22,7 +22,6 @@ namespace hr
 		static_assert(std::is_trivially_copyable_v<TVectorType>, "For performance reasons, the vector type should be trivially copyable");
 
 		TVectorType mPoints[3];
-		TVectorType mNormal;
 
 	public:
 		using DataType = typename TVectorType;
@@ -90,18 +89,55 @@ namespace hr
 
 		constexpr explicit Triangle(const TVectorType& p1, const TVectorType& p2, const TVectorType& p3)
 			: mPoints{ p1, p2, p3 }
+		{ }
+
+		const TVectorType& operator[] (const size_t index) const
 		{
-			mNormal = calcNormal(p1, p2, p3);
+			return mPoints[index % 3];
 		}
 
 		TVectorType normal() const noexcept
 		{
-			return mNormal;
+			return calcNormal(mPoints[0], mPoints[1], mPoints[2]);
+		}
+
+		TVectorType orthocenter() const noexcept
+		{
+			return (mPoints[0] + mPoints[1] + mPoints[2]) / 3;
 		}
 
 		PlaneType plane() const noexcept
 		{
-			return PlaneType{ mNormal[0], mNormal[1] , mNormal[2], -mNormal.getDot(mPoints[0])};
+			auto normal = calcNormal(mPoints[0], mPoints[1], mPoints[2]);
+			return PlaneType{ normal[0], normal[1], normal[2], -normal.getDot(mPoints[0])};
+		}
+
+		bool intersects(const Ray<Vector3d>& ray, Hit& hit) const noexcept
+		{
+			auto v0v1 = mPoints[1] - mPoints[0];
+			auto v0v2 = mPoints[2] - mPoints[0];
+			auto pvec = ray.direction().crossProduct(v0v2);
+			auto det = v0v1.getDot(pvec);
+			if (det <= 1e-6) //cull back face
+				return false;
+
+			auto invDet = 1 / det;
+
+			auto tvec = ray.origin() - mPoints[0];
+			auto u = tvec.getDot(pvec) * invDet;
+			if ((u < 0) || (u > 1))
+				return false;
+
+			auto qvec = tvec.crossProduct(v0v1);
+			auto v = ray.direction().getDot(qvec) * invDet;
+			if ((v < 0) || ((u + v) > 1))
+				return false;
+
+			hit.rayT = v0v2.getDot(qvec) * invDet;
+			hit.barycentricU = static_cast<float>(u);
+			hit.barycentricV = static_cast<float>(v);
+
+			return true;
 		}
 
 		bool intersects(const Ray<Vector3d>& ray, const typename TVectorType::DataType rayDistMin, const typename TVectorType::DataType rayDistMax, Hit& hit) const noexcept

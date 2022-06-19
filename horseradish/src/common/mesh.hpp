@@ -215,8 +215,37 @@ namespace hr::geom
 		float indicesCacheRatio(size_t cacheSize) const noexcept;
 
 		bool intersects(const Ray<Vector3d>& ray, double rayDistMin, double rayDistMax, Hit& hit) const noexcept;
+		bool intersects(const Ray<Vector3d>& ray, Hit& hit) const noexcept
+		{
+			auto tMin = -std::numeric_limits<double>::infinity();
+			auto tMax = std::numeric_limits<double>::infinity();
+			return intersects(ray, tMin, tMax, hit);
+		}
+
+		bool intersects(size_t triIndex, const Ray<Vector3d>& ray, double rayDistMin, double rayDistMax, Hit& hit) const noexcept;
+		bool intersects(size_t triIndex, const Ray<Vector3d>& ray, Hit& hit) const noexcept
+		{
+			auto tMin = -std::numeric_limits<double>::infinity();
+			auto tMax = std::numeric_limits<double>::infinity();
+			return intersects(triIndex, ray, tMin, tMax, hit);
+		}
 
 		Vector3f triNormal(size_t triIndex, float baryU, float baryV) const noexcept;
+
+		template<class TCallback>
+		size_t iterateTris(TCallback&& cb) const noexcept
+		{
+			static_assert(std::is_invocable_r_v<bool, TCallback, size_t, const VertexFull&, const VertexFull&, const VertexFull>);
+
+			size_t count{ 0 };
+			for (size_t i = 0; i < mNumIndices; i += 3, count++)
+			{
+				if (!cb(count, mData[mIndices[i + 0]], mData[mIndices[i + 1]], mData[mIndices[i + 2]]))
+					break;
+			}
+
+			return count;
+		}
 
 		void flipUV() noexcept;
 		void mirrorUV() noexcept;

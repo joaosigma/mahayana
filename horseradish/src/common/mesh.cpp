@@ -396,8 +396,6 @@ namespace hr::geom
 	{
 		auto wasHit{ false };
 
-		hit.rayT = std::numeric_limits<double>::infinity();
-
 		for (size_t i = 0; i < mNumIndices; i += 3)
 		{
 			Triangle<Vector3d> tri{
@@ -409,8 +407,7 @@ namespace hr::geom
 			if (!tri.intersects(ray, rayDistMin, rayDistMax, triHit))
 				continue;
 
-			if (triHit.rayT >= hit.rayT)
-				continue;
+			rayDistMax = triHit.rayT;
 
 			hit.rayT = triHit.rayT;
 			hit.triIndex = i / 3;
@@ -422,6 +419,27 @@ namespace hr::geom
 		return wasHit;
 	}
 
+	bool Mesh<VertexFull, uint32_t>::intersects(size_t triIndex, const Ray<Vector3d>& ray, double rayDistMin, double rayDistMax, Hit& hit) const noexcept
+	{
+		if ((triIndex * 3) >= mNumIndices)
+			return false;
+
+		Triangle<Vector3d> tri{
+				Vector3f{ mData[mIndices[(triIndex * 3) + 0]].pos }.convert<double>(),
+				Vector3f{ mData[mIndices[(triIndex * 3) + 1]].pos }.convert<double>(),
+				Vector3f{ mData[mIndices[(triIndex * 3) + 2]].pos }.convert<double>() };
+
+		Triangle<Vector3d>::Hit triHit;
+		if (!tri.intersects(ray, rayDistMin, rayDistMax, triHit))
+			return false;
+
+		hit.rayT = triHit.rayT;
+		hit.triIndex = triIndex;
+		hit.barycentricU = static_cast<float>(triHit.barycentricU);
+		hit.barycentricV = static_cast<float>(triHit.barycentricV);
+		return true;
+	}
+
 	Vector3f Mesh<VertexFull, uint32_t>::triNormal(size_t triIndex, float baryU, float baryV) const noexcept
 	{
 		if ((triIndex * 3) >= mNumIndices)
@@ -429,9 +447,9 @@ namespace hr::geom
 
 		auto baryW = 1.0f - baryU - baryV;
 
-		Vector3f n1(mData[mIndices[triIndex * 3 + 0]].normal);
-		Vector3f n2(mData[mIndices[triIndex * 3 + 1]].normal);
-		Vector3f n3(mData[mIndices[triIndex * 3 + 2]].normal);
+		Vector3f n1(mData[mIndices[(triIndex * 3) + 0]].normal);
+		Vector3f n2(mData[mIndices[(triIndex * 3) + 1]].normal);
+		Vector3f n3(mData[mIndices[(triIndex * 3) + 2]].normal);
 
 		return Vector3f::calcNormalize((n1 * baryU) + (n2 * baryV) + (n3 * baryW));
 	}
