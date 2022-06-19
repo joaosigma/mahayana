@@ -6,6 +6,8 @@ target_sources(horseradish
 		consoleUI.hpp
 		profilerUI.cpp
 		profilerUI.hpp
+		raytracer.hpp
+		raytracer.cpp
 		renderer.hpp
 		renderer2D.cpp
 		renderer2D.hpp
