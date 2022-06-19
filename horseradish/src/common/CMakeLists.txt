@@ -45,6 +45,7 @@ target_sources(horseradish
 		stringUtils.cpp
 		stringUtils.hpp
 		triangle.hpp
+		taggedPointer.hpp
 		timer.cpp
 		timer.hpp
 		types.cpp
