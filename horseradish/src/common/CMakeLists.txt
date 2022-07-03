@@ -24,6 +24,8 @@ target_sources(horseradish
 		matrix.hpp
 		mesh.cpp
 		mesh.hpp
+		meshFactory.cpp
+		meshFactory.hpp
 		meshAnim.cpp
 		meshAnim.hpp
 		path.cpp

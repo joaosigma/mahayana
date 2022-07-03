@@ -133,7 +133,18 @@ namespace hr::geom
 		{
 			return mData.get();
 		}
-
+		
+		const TVertex& vertex(size_t index) const noexcept
+		{
+			assert(index < mNumVertices);
+			return mData[index];
+		}
+		TVertex& vertex(size_t index) noexcept
+		{
+			assert(index < mNumVertices);
+			return mData[index];
+		}
+		
 		const TIndex* indices() const noexcept
 		{
 			return mIndices.get();
@@ -202,9 +213,6 @@ namespace hr::geom
 			size_t triIndex;
 			float barycentricU, barycentricV;
 		};
-
-		static Mesh genBox(size_t precision);
-		static Mesh genSphere(size_t sDiv, size_t tDiv);
 
 		static Mesh convertMesh(const Mesh<VertexShading, uint16_t>& source);
 
