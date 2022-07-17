@@ -6,7 +6,6 @@
 
 #include "libs/lz4/lz4.h"
 #include "libs/lz4/lz4hc.h"
-#include "libs/fmt/format.h"
 #include "libs/rapidjson/document.h"
 #include "libs/rapidjson/rapidjson.h"
 #include "libs/rapidjson/prettywriter.h"

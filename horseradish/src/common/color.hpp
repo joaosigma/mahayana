@@ -579,7 +579,7 @@ namespace hr
 				color.mRGBA[0] = convertSRGB2Linear(Encoders::decodeHexByte(hexColor + 0));
 				color.mRGBA[1] = convertSRGB2Linear(Encoders::decodeHexByte(hexColor + 2));
 				color.mRGBA[2] = convertSRGB2Linear(Encoders::decodeHexByte(hexColor + 4));
-				color.mRGBA[3] = 255.0f;
+				color.mRGBA[3] = 1.0f;
 			}
 			else
 			{
@@ -587,9 +587,9 @@ namespace hr
 				color.mRGBA[1] = Encoders::decodeHexByte(hexColor + 2);
 				color.mRGBA[2] = Encoders::decodeHexByte(hexColor + 4);
 				color.mRGBA[3] = 255.0f;
-			}
 
-			_mm_store_ps(color.mRGBA, _mm_mul_ps(_mm_load_ps(color.mRGBA), _mm_set_ps1(Math::UByteMaxInv<float>)));
+				_mm_store_ps(color.mRGBA, _mm_mul_ps(_mm_load_ps(color.mRGBA), _mm_set_ps1(Math::UByteMaxInv<float>)));
+			}
 
 			return color;
 		}

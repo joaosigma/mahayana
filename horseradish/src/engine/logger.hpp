@@ -1,23 +1,23 @@
 #pragma once
 
 #include "common/stream.hpp"
-#include "libs/fmt/format.h"
 
 #include <vector>
 #include <deque>
 #include <mutex>
 #include <chrono>
+#include <format>
 #include <thread>
 #include <atomic>
+#include <string_view>
 #include <condition_variable>
 
-namespace hr { namespace engine
+namespace hr::engine
 {
-	class Logger
+	class Logger final
 	{
 	public:
 		enum class EntryType { Info, Warning, Error };
-
 		enum class ModuleType { SysRuntime, FileSystem, Graphics, Audio, Network, PlayRuntime, Misc };
 
 		class Context
@@ -31,51 +31,27 @@ namespace hr { namespace engine
 			Context& operator=(const Context&) = delete;
 
 			template<typename... TValues>
-			void log(const EntryType entryType, const char * const entryData, TValues&&... params)
+			void log(const EntryType entryType, std::string_view entryData, TValues&&... params)
 			{
 				mLogger.log(entryType, mTargetModule, entryData, std::forward<TValues>(params)...);
 			}
 
 			template<typename... TValues>
-			void info(const char * const entryData, TValues&&... params)
+			void info(std::string_view entryData, TValues&&... params)
 			{
 				mLogger.logInfo(mTargetModule, entryData, std::forward<TValues>(params)...);
 			}
 
 			template<typename... TValues>
-			void warn(const char * const entryData, TValues&&... params)
+			void warn(std::string_view entryData, TValues&&... params)
 			{
 				mLogger.logWarning(mTargetModule, entryData, std::forward<TValues>(params)...);
 			}
 
 			template<typename... TValues>
-			void error(const char * const entryData, TValues&&... params)
+			void error(std::string_view entryData, TValues&&... params)
 			{
 				mLogger.logError(mTargetModule, entryData, std::forward<TValues>(params)...);
-			}
-
-			template<typename... TValues>
-			void log(const EntryType entryType, const std::string &entryData, TValues&&... params)
-			{
-				log(entryType, entryData.c_str(), std::forward<TValues>(params)...);
-			}
-
-			template<typename... TValues>
-			void info(const std::string &entryData, TValues&&... params)
-			{
-				info(entryData.c_str(), std::forward<TValues>(params)...);
-			}
-
-			template<typename... TValues>
-			void warn(const std::string &entryData, TValues&&... params)
-			{
-				warn(entryData.c_str(), std::forward<TValues>(params)...);
-			}
-
-			template<typename... TValues>
-			void error(const std::string &entryData, TValues&&... params)
-			{
-				error(entryData.c_str(), std::forward<TValues>(params)...);
 			}
 
 		private:
@@ -99,7 +75,7 @@ namespace hr { namespace engine
 			{ }
 		};
 
-		static bool checkEntryData(const char * const entryData, bool &hasFormattedText, size_t &dataSize);
+		static bool checkEntryData(std::string_view entryData, bool &hasFormattedText) noexcept;
 
 		mutable std::mutex mASyncLock;
 		mutable std::mutex mBufferLock;
@@ -117,7 +93,7 @@ namespace hr { namespace engine
 		void processAsyncBuffer();
 		void writeToFile(const EntryData& entry);
 		void threadFlushFunc();
-		bool addEntry(const EntryType entryType, const ModuleType moduleType, const char * const entryData);
+		bool addEntry(const EntryType entryType, const ModuleType moduleType, std::string_view entryData);
 
 	public:
 		Logger(size_t asyncMaxEntries);
@@ -128,64 +104,35 @@ namespace hr { namespace engine
 		Logger(const Logger&) = delete;
 		Logger& operator=(const Logger&) = delete;
 
-		void log(const EntryType entryType, const ModuleType moduleType, const char * const entryData)
+		void log(const EntryType entryType, const ModuleType moduleType, std::string_view entryData)
 		{
 			addEntry(entryType, moduleType, entryData);
 		}
-
-		void log(const EntryType entryType, const ModuleType moduleType, const std::string& entryData)
-		{
-			addEntry(entryType, moduleType, entryData.c_str());
-		}
 		
 		template<typename... TValues>
-		void log(const EntryType entryType, const ModuleType moduleType, const char * const entryData, TValues&&... params)
+		void log(const EntryType entryType, const ModuleType moduleType, std::string_view entryData, TValues&&... params)
 		{
-			log(entryType, moduleType, fmt::format(fmt::runtime(entryData), std::forward<TValues>(params)...));
+			log(entryType, moduleType, std::vformat(entryData, std::make_format_args(std::forward<TValues>(params)...)));
 		}
 
 		template<typename... TValues>
-		void log(const EntryType entryType, const ModuleType moduleType, const std::string &entryData, TValues&&... params)
-		{
-			log(entryType, moduleType, fmt::format(fmt::runtime(entryData), std::forward<TValues>(params)...));
-		}
-
-		template<typename... TValues>
-		void logInfo(const ModuleType moduleType, const char * const entryData, TValues&&... params)
+		void logInfo(const ModuleType moduleType, std::string_view entryData, TValues&&... params)
 		{
 			log(EntryType::Info, moduleType, entryData, std::forward<TValues>(params)...);
 		}
 
 		template<typename... TValues>
-		void logInfo(const ModuleType moduleType, const std::string &entryData, TValues&&... params)
-		{
-			log(EntryType::Info, moduleType, entryData.c_str(), std::forward<TValues>(params)...);
-		}
-
-		template<typename... TValues>
-		void logWarning(const ModuleType moduleType, const char * const entryData, TValues&&... params)
+		void logWarning(const ModuleType moduleType, std::string_view entryData, TValues&&... params)
 		{
 			log(EntryType::Warning, moduleType, entryData, std::forward<TValues>(params)...);
 		}
 
 		template<typename... TValues>
-		void logWarning(const ModuleType moduleType, const std::string &entryData, TValues&&... params)
-		{
-			log(EntryType::Warning, moduleType, entryData.c_str(), std::forward<TValues>(params)...);
-		}
-
-		template<typename... TValues>
-		void logError(const ModuleType moduleType, const char * const entryData, TValues&&... params)
+		void logError(const ModuleType moduleType, std::string_view entryData, TValues&&... params)
 		{
 			log(EntryType::Error, moduleType, entryData, std::forward<TValues>(params)...);
 		}
 
-		template<typename... TValues>
-		void logError(const ModuleType moduleType, const std::string &entryData, TValues&&... params)
-		{
-			log(EntryType::Error, moduleType, entryData.c_str(), std::forward<TValues>(params)...);
-		}
-
-		void iterateBuffer(std::function<bool(const EntryType, const ModuleType, const bool, const std::string&)> logEntryCb, size_t offset) const;
+		void iterateBuffer(const std::function<bool(const EntryType, const ModuleType, const bool, std::string_view)>& logEntryCb, size_t offset) const;
 	};
-} }
+}

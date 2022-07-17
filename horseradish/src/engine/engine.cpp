@@ -3,8 +3,7 @@
 #include "common/opengl/openGL.hpp"
 #include "../build.hpp"
 
-#include <libs/fmt/format.h>
-
+#include <format>
 #include <cassert>
 
 namespace hr { namespace engine
@@ -316,7 +315,7 @@ namespace hr { namespace engine
 				var<std::string>("sys.info.cpuVendor", strAux);
 			if (hr::platform::Platform::cpuGetProcessorName(strAux))
 				var<std::string>("sys.info.cpuName", strAux);
-			var<std::string>("sys.info.build", fmt::format("Horseradish v1.0.0 (alpha build {0})", BuildNumber));
+			var<std::string>("sys.info.build", std::format("Horseradish v1.0.0 (alpha build {0})", BuildNumber));
 		}
 
 		//first entries
@@ -480,7 +479,7 @@ namespace hr { namespace engine
 				if (windowErrorMsg.empty())
 					exit(ExitAction::Nothing, "Unable to create main window");
 				else
-					exit(ExitAction::Nothing, fmt::format("Unable to create main window: {0}", windowErrorMsg).c_str());
+					exit(ExitAction::Nothing, std::format("Unable to create main window: {0}", windowErrorMsg).c_str());
 
 				return false;
 			}

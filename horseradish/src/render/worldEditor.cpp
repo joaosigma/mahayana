@@ -7,8 +7,6 @@
 #include "common/quaternion.hpp"
 #include "common/stringUtils.hpp"
 
-#include "libs/fmt/format.h"
-
 #include "libs/rapidjson/document.h"
 #include "libs/rapidjson/rapidjson.h"
 #include "libs/rapidjson/prettywriter.h"

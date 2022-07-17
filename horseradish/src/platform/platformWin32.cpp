@@ -5,11 +5,12 @@
 #include "../common/stringUtils.hpp"
 #include "../common/scopedAction.hpp"
 
-#include <libs/fmt/format.h>
-
 #include <io.h>
 #include <regex>
+#include <format>
+
 #include <fcntl.h>
+#include <intrin.h>
 
 #include <windows.h>
 #include <shellapi.h>
@@ -298,20 +299,20 @@ namespace hr::platform
 				return false;
 
 			if ((versionInfo.dwMajorVersion == 6) && (versionInfo.dwMinorVersion == 1) && (versionInfo.wProductType == VER_NT_WORKSTATION))
-				infoValue = fmt::format("Windows 7 ({0}.{1})", versionInfo.dwMajorVersion, versionInfo.dwMinorVersion);
+				infoValue = std::format("Windows 7 ({0}.{1})", versionInfo.dwMajorVersion, versionInfo.dwMinorVersion);
 			else if ((versionInfo.dwMajorVersion == 6) && (versionInfo.dwMinorVersion == 0) && (versionInfo.wProductType != VER_NT_WORKSTATION))
-				infoValue = fmt::format("Windows Vista ({0}.{1})", versionInfo.dwMajorVersion, versionInfo.dwMinorVersion);
+				infoValue = std::format("Windows Vista ({0}.{1})", versionInfo.dwMajorVersion, versionInfo.dwMinorVersion);
 			else if ((versionInfo.dwMajorVersion == 5) && (versionInfo.dwMinorVersion == 1))
-				infoValue = fmt::format("Windows XP ({0}.{1})", versionInfo.dwMajorVersion, versionInfo.dwMinorVersion);
+				infoValue = std::format("Windows XP ({0}.{1})", versionInfo.dwMajorVersion, versionInfo.dwMinorVersion);
 			else
-				infoValue = fmt::format("Windows ({0}.{1})", versionInfo.dwMajorVersion, versionInfo.dwMinorVersion);
+				infoValue = std::format("Windows ({0}.{1})", versionInfo.dwMajorVersion, versionInfo.dwMinorVersion);
 
 			if (versionInfo.wServicePackMajor > 0)
 			{
 				if (versionInfo.wServicePackMinor > 0)
-					infoValue += fmt::format(" SP{0}.{1}", versionInfo.wServicePackMajor, versionInfo.wServicePackMinor);
+					infoValue += std::format(" SP{0}.{1}", versionInfo.wServicePackMajor, versionInfo.wServicePackMinor);
 				else
-					infoValue += fmt::format(" SP{0}", versionInfo.wServicePackMajor);
+					infoValue += std::format(" SP{0}", versionInfo.wServicePackMajor);
 			}
 
 			return true;

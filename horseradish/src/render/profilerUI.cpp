@@ -2,7 +2,7 @@
 
 #include "../common/color.hpp"
 
-#include <libs/fmt/format.h>
+#include <format>
 
 namespace hr { namespace render
 {
@@ -176,18 +176,18 @@ namespace hr { namespace render
 
 			std::string msg;
 			if (curSample.value > 1000000000)
-				msg = fmt::format("{0:.2f} G", curSample.value * 0.000000001);
+				msg = std::format("{0:.2f} G", curSample.value * 0.000000001);
 			else if (curSample.value > 1000000)
-				msg = fmt::format("{0:.2f} M", curSample.value * 0.000001);
+				msg = std::format("{0:.2f} M", curSample.value * 0.000001);
 			else if (curSample.value > 1000)
-				msg = fmt::format("{0:.2f} K", curSample.value * 0.001);
+				msg = std::format("{0:.2f} K", curSample.value * 0.001);
 			else
-				msg = fmt::format("{0:.2f}", curSample.value);
+				msg = std::format("{0:.2f}", curSample.value);
 
 			guiFont.setColor(color[0], color[1], color[2]);
 			guiFont.write(graphRect.x + graphRect.width + 5.0f, curSample.posY - (guiFont.getMaxHeight(textSize) * 0.5f), msg);
 
-			msg = fmt::format("{0}: {1}", hr::engine::Profiler::translateStatId(curSample.statId), msg);
+			msg = std::format("{0}: {1}", hr::engine::Profiler::translateStatId(curSample.statId), msg);
 			guiFont.write(posX, graphRect.y + 5.0f - (textPreviewHeight + 10.0f), msg);
 
 			posX += 5.0f;
@@ -255,7 +255,7 @@ namespace hr { namespace render
 		auto gpuPercent = static_cast<unsigned int>((frameGPU / frameTotal) * 100.0);
 		auto cpuPercent = static_cast<unsigned int>(((frameLogic + frameDraw) / frameTotal) * 100.0);
 
-		mInfoStr = fmt::format("FPS: {0} (CPU {1}%, GPU {2}%)", fps, gpuPercent, cpuPercent);
+		mInfoStr = std::format("FPS: {0} (CPU {1}%, GPU {2}%)", fps, gpuPercent, cpuPercent);
 
 		mTimer.reStart();
 	}

@@ -1,5 +1,7 @@
 #include "engine.hpp"
 
+#include <format>
+
 #include "profiler.hpp"
 
 #include "../common/timer.hpp"
@@ -15,9 +17,7 @@
 #include "../render/rendererDebug.hpp"
 #include "../render/renderer2D.hpp"
 
-#include <libs/fmt/format.h>
-
-namespace hr { namespace engine
+namespace hr::engine
 {
 	namespace
 	{
@@ -259,7 +259,7 @@ namespace hr { namespace engine
 				if (errorMsg.empty())
 					exit(ExitAction::Nothing, "Unable to create OpenGL context");
 				else
-					exit(ExitAction::Nothing, fmt::format("Unable to create OpenGL context: {0}", errorMsg).c_str());
+					exit(ExitAction::Nothing, std::format("Unable to create OpenGL context: {0}", errorMsg).c_str());
 
 				return;
 			}
@@ -568,4 +568,4 @@ namespace hr { namespace engine
 
 		glContext.reset();
 	}
-} }
+}

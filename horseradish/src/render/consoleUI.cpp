@@ -201,9 +201,9 @@ namespace hr { namespace render
 				return;
 
 			logMsgs.reserve(maxLines);
-			mLogger.iterateBuffer([&](const engine::Logger::EntryType entryType, const engine::Logger::ModuleType moduleType, const bool isMsgFormatted, const std::string& msg)
+			mLogger.iterateBuffer([&](const engine::Logger::EntryType entryType, const engine::Logger::ModuleType moduleType, const bool isMsgFormatted, std::string_view msg)
 			{
-				logMsgs.push_back({ entryType, isMsgFormatted,  msg });
+				logMsgs.push_back({ entryType, isMsgFormatted, std::string{ msg } });
 
 				maxLines--;
 				return (maxLines > 0);

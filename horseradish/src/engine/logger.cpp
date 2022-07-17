@@ -1,44 +1,40 @@
 #include "logger.hpp"
 
-#include "libs/fmt/chrono.h"
-
 #include <ctime>
 
 namespace hr { namespace engine
 {
-	bool Logger::checkEntryData(const char * const entryData, bool &hasFormattedText, size_t &dataSize)
+	bool Logger::checkEntryData(std::string_view entryData, bool &hasFormattedText) noexcept
 	{
-		dataSize = 0;
 		hasFormattedText = false;
 
-		bool insideSection = false;
-		const char *walker = entryData;
-		for (; *walker != '\0'; walker++)
+		auto walker = entryData.begin();
+		for (; walker != entryData.end(); ++walker)
 		{
-			if (insideSection && ((walker[0] == '$') || (walker[0] == '{')))
-				return false; //invalid chars inside section
+			if (*walker != '$') continue;
 
-			if (insideSection && (walker[0] == '}'))
+			++walker;
+			if (walker == entryData.end()) return true;
+
+			if (*walker == '$') continue; //escaped
+			if (*walker != '{') continue; //not section
+
+			//we're inside a section
+			hasFormattedText |= true;
+
+			for (++walker; walker != entryData.end(); ++walker)
 			{
-				insideSection = false;
-				continue;
+				//invalid chars inside section
+				if (*walker == '$') return false;
+				if (*walker == '{') return false;
+
+				if (*walker == '}') break; //exit section
 			}
 
-			if ((walker[0] == '$') && (walker[1] == '{'))
-			{
-				if ((walker != entryData) && (walker[-1] == '$'))
-					continue;
-
-				walker++;
-				insideSection = true;
-				hasFormattedText |= true;
-			}
+			//section wasn't closed
+			if (walker == entryData.end()) return false;
 		}
 
-		if (insideSection)
-			return false;
-
-		dataSize = (walker - entryData) + 1; //empty strings are logged
 		return true;
 	}
 
@@ -103,12 +99,10 @@ namespace hr { namespace engine
 		}
 
 		{
-			std::time_t tmT = std::chrono::system_clock::to_time_t(entry.timestamp);
-
-			char buffer[32];
-			auto end = fmt::format_to(buffer, "{:%Y-%m-%d %H:%M:%S}", *std::localtime(&tmT));
+			char buffer[64];
+			const auto result = std::format_to_n(buffer, std::size(buffer) - 1, "{:%Y-%m-%d %H:%M:%S}", entry.timestamp);
 			
-			streamWriter.write(buffer, end - buffer);
+			streamWriter.write(buffer, result.size);
 			streamWriter.writeString("\t");
 		}
 
@@ -169,18 +163,14 @@ namespace hr { namespace engine
 		}
 	}
 
-	bool Logger::addEntry(const EntryType entryType, const ModuleType moduleType, const char * const entryData)
+	bool Logger::addEntry(const EntryType entryType, const ModuleType moduleType, std::string_view entryData)
 	{
-		if (!entryData)
-			return true;
-
 		bool hasFormattedText;
-		size_t entryDataSize;
-		if (!Logger::checkEntryData(entryData, hasFormattedText, entryDataSize))
+		if (!Logger::checkEntryData(entryData, hasFormattedText))
 			return false;
 
 		EntryData entry(entryType, moduleType);
-		entry.msg = std::string(entryData, entryDataSize);
+		entry.msg = std::string{ entryData };
 		entry.isMsgFormated = hasFormattedText;
 		entry.timestamp = std::chrono::system_clock::now();
 
@@ -252,7 +242,7 @@ namespace hr { namespace engine
 		}
 	}
 
-	void Logger::iterateBuffer(std::function<bool(const EntryType, const ModuleType, const bool, const std::string&)> logEntryCb, size_t offset) const
+	void Logger::iterateBuffer(const std::function<bool(const EntryType, const ModuleType, const bool, std::string_view)>& logEntryCb, size_t offset) const
 	{
 		if ((mMaxBufferSize == 0) || !logEntryCb)
 			return;
