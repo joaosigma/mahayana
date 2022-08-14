@@ -315,7 +315,7 @@ namespace hr { namespace engine
 				var<std::string>("sys.info.cpuVendor", strAux);
 			if (hr::platform::Platform::cpuGetProcessorName(strAux))
 				var<std::string>("sys.info.cpuName", strAux);
-			var<std::string>("sys.info.build", std::format("Horseradish v1.0.0 (alpha build {0})", BuildNumber));
+			var<std::string>("sys.info.build", std::format("Horseradish v1.0.0 ({})", hr::build::Hash));
 		}
 
 		//first entries

@@ -35,6 +35,31 @@ if (CMAKE_GENERATOR MATCHES "^Visual Studio")
 endif()
 
 #######################
+### configure / update some files
+
+execute_process(
+	COMMAND git rev-parse --verify HEAD
+	WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}
+	OUTPUT_VARIABLE HR_BUILD_HASH
+	OUTPUT_STRIP_TRAILING_WHITESPACE
+	COMMAND_ERROR_IS_FATAL ANY
+)
+execute_process(
+	COMMAND git rev-parse --short --verify HEAD
+	WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}
+	OUTPUT_VARIABLE HR_BUILD_HASH_SHORT
+	OUTPUT_STRIP_TRAILING_WHITESPACE
+	COMMAND_ERROR_IS_FATAL ANY
+)
+
+configure_file (
+    "${CMAKE_CURRENT_LIST_DIR}/src/build.hpp.in"
+    "${CMAKE_CURRENT_LIST_DIR}/src/build.hpp"
+    @ONLY
+    NEWLINE_STYLE UNIX
+)
+
+#######################
 ### the project
 
 project(Mustard VERSION 0.9 LANGUAGES C CXX)
