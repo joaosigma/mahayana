@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.17.3 FATAL_ERROR)
 
 #######################
-### declare all vars and options
+### declare all vars and global options
 
 get_property(BUILD_IS_MULTI_CONFIG GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
 
@@ -35,24 +35,6 @@ if (CMAKE_GENERATOR MATCHES "^Visual Studio")
 endif()
 
 #######################
-### set project-wide settings
-
-#if (CMAKE_GENERATOR MATCHES "^Visual Studio")
-#
-#	if ("${CMAKE_GENERATOR_PLATFORM}" STREQUAL "Win32")
-#
-#		set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG "${CMAKE_CURRENT_LIST_DIR}/../sandbox/bin_x86")
-#		set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE "${CMAKE_CURRENT_LIST_DIR}/../sandbox/bin_x86")
-#
-#	else ()
-#
-#		set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG "${CMAKE_CURRENT_LIST_DIR}/../sandbox/bin_x64")
-#		set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE "${CMAKE_CURRENT_LIST_DIR}/../sandbox/bin_x64")
-#
-#	endif()
-#endif()
-
-#######################
 ### the project
 
 project(Mustard VERSION 0.9 LANGUAGES C CXX)
@@ -64,53 +46,6 @@ add_executable(horseradish WIN32 "")
 target_compile_features(horseradish PRIVATE c_std_11)
 target_compile_features(horseradish PRIVATE cxx_std_20)
 
-target_compile_definitions(horseradish
-	PRIVATE
-		WINVER=0x0601 # Windows 7
-		_WIN32_WINNT=0x0601 # Windows 7
-		NTDDI_VERSION=0x06010000
-
-		_UNICODE #default Windows APIs to Unicode
-		UNICODE
-
-		WIN32_LEAN_AND_MEAN
-		VC_EXTRALEAN
-
-		NOMINMAX
-		NOGDICAPMASKS
-		NOMENUS
-		NOICONS
-		NOSYSCOMMANDS
-		NORASTEROPS
-		NOSHOWWINDOW
-		OEMRESOURCE
-		NOATOM
-		NOCOLOR
-		NOCTLMGR
-		NODRAWTEXT
-		NOMEMMGR
-		NOMETAFILE
-		NOMINMAX
-		NOOPENFILE
-		NOSCROLL
-		NOSERVICE
-		NOSOUND
-		NOTEXTMETRIC
-		NOWH
-		NOCOMM
-		NOKANJI
-		NOHELP
-		NOPROFILER
-		NODEFERWINDOWPOS
-		NOMCX
-
-		_ITERATOR_DEBUG_LEVEL=0
-
-		_CRT_SECURE_NO_WARNINGS
-		#_SCL_SECURE_NO_WARNINGS
-		_WINSOCK_DEPRECATED_NO_WARNINGS
-)
-
 if (HR_ENABLE_DEVEL)
 	target_compile_definitions(horseradish PRIVATE HR_DEVEL)
 endif()
@@ -121,21 +56,72 @@ if (HR_ENABLE_PROFILLING)
 	target_compile_definitions(horseradish PRIVATE HR_PROFILLING)
 endif()
 
-target_compile_options(horseradish
-	PRIVATE
-		/GR- # disable RTTI
-		/utf-8
-		# /permissive- # make sure we keep up with standards conformance
-		/W4 # warning level
-		#/WX # treat warnings as errors
-		/MP # enable parallel builds
-		/Bv # print toolchain info
-		#/Bt # print time spent in the compiler
+# compiler specific
 
-		/arch:AVX
-)
+if (CMAKE_GENERATOR MATCHES "^Visual Studio")
+	target_compile_definitions(horseradish
+		PRIVATE
+			WINVER=0x0601 # Windows 7
+			_WIN32_WINNT=0x0601 # Windows 7
+			NTDDI_VERSION=0x06010000
 
-target_link_options(horseradish PRIVATE "$<$<C_COMPILER_ID:MSVC>:-SAFESEH:NO>")
+			_UNICODE #default Windows APIs to Unicode
+			UNICODE
+
+			WIN32_LEAN_AND_MEAN
+			VC_EXTRALEAN
+
+			NOMINMAX
+			NOGDICAPMASKS
+			NOMENUS
+			NOICONS
+			NOSYSCOMMANDS
+			NORASTEROPS
+			NOSHOWWINDOW
+			OEMRESOURCE
+			NOATOM
+			NOCOLOR
+			NOCTLMGR
+			NODRAWTEXT
+			NOMEMMGR
+			NOMETAFILE
+			NOMINMAX
+			NOOPENFILE
+			NOSCROLL
+			NOSERVICE
+			NOSOUND
+			NOTEXTMETRIC
+			NOWH
+			NOCOMM
+			NOKANJI
+			NOHELP
+			NOPROFILER
+			NODEFERWINDOWPOS
+			NOMCX
+
+			_ITERATOR_DEBUG_LEVEL=0
+
+			_CRT_SECURE_NO_WARNINGS
+			#_SCL_SECURE_NO_WARNINGS
+			_WINSOCK_DEPRECATED_NO_WARNINGS
+	)
+
+	target_compile_options(horseradish
+		PRIVATE
+			/GR- # disable RTTI
+			/utf-8
+			/permissive- # make sure we keep up with standards conformance
+			/W4 # warning level
+			#/WX # treat warnings as errors
+			/MP # enable parallel builds
+			/Bv # print toolchain info
+			#/Bt # print time spent in the compiler
+
+			/arch:AVX
+	)
+
+	target_link_options(horseradish PRIVATE "$<$<C_COMPILER_ID:MSVC>:-SAFESEH:NO>")
+endif()
 
 #######################
 ### the sub-projects
