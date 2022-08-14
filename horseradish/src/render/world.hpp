@@ -1,284 +1,115 @@
 #pragma once
 
-#include "common\Mesh.hpp"
-#include "common\MeshFactory.hpp"
-#include "common\FileSystem.hpp"
-#include "common\OpenGL\objects.hpp"
-#include "common\OpenGL\tools.hpp"
+#include "tools/camera.hpp"
 
-#include "console\console.hpp"
+#include "renderer.hpp"
 
+#include "common/mesh.hpp"
+#include "common/meshAnim.hpp"
+#include "common/stream.hpp"
+#include "common/OpenGL/tools/frustum.hpp"
+#include "common/OpenGL/tools/viewport.hpp"
+
+#include <map>
+#include <atomic>
 #include <vector>
 
-namespace HorseRadish
+namespace hr::render
 {
-	namespace Render
+	class World
 	{
-		class Light;
-		class Geometry;
-		class TextureSet;
-		class Surface;
-		class Material;
-		class MaterialLibrary;
-		class Brush;
-		class World;
+	public:
+		typedef size_t AreaId;
 
-		class Light
+		static constexpr AreaId InvalidAreaId = 0;
+
+		struct Timestep
 		{
-		public:
-			enum LightType { Omni = 0xfab1, Spot = 0xfab2, Direct = 0xfab3 };
-
-		public:
-			LightType type;
-			HorseRadish::Vector position, lastPos, target, color;
-			bool active, insideCamera, noShadows;
-			HorseRadish::OpenGL::Tools::Frustum frustum;
-			unsigned int scissor[4];
-
-			struct Matrices{
-				HorseRadish::Matrix mView, mProj, mInvView, mInvProj, mTrans, mInvTrans, mSBiasScale;
-			}matrices;
-
-			struct Textures{
-				const HorseRadish::OpenGL::Objects::ObjectGL *spotTex, *attenTex, *cubeEnvTex;
-			}textures;
-
-		public:
-			Light();
-			~Light();
+			float t = 0.0f;
 		};
 
-		class Geometry
+	protected:
+		class Object
 		{
 		public:
-			enum GeometryType
-			{
-				Static1 = 0xfaa3,	//pos(3f), uv1(2f), uv2(2f), cor(4b) = 32 bytes
-				Static2 = 0xfaa4,	//pos(3f), uv1(2f), uv2(2f), cor(4b), normal(3f), tangentB(4f), extra(1f) = 64 bytes
-				Static3 = 0xfaa5,	//pos(3f), uv(2f), normal(3f), tangentB(4f), extra(4f) = 64 bytes
-				Anim1 = 0xfaa1,		//pos(3f), uv(2f), bIndex(4b), bWeight(4b), cor(4b) = 32 bytes
-				Anim2 = 0xfaa2		//pos(3f), uv(2f), bIndex(4b), bWeight(4b), cor(4b), normal(3f), tangentB(4f), extra(1f) = 64 bytes
-			};
+			enum class Type : unsigned int { Static = 1 };
 
-		public:
-			int id;
-			GeometryType type;
-			HorseRadish::Geometry::Mesh mesh;
-			HorseRadish::BBox bbox;
-			HorseRadish::BSphere bsphere;
-			int renderVBOVertexOffset;
-			void *renderTriListOffset;
+			Type type = Type::Static;
+			size_t id = 0;
+			hr::BBox bbox;
 
-		public:
-			Geometry();
-			~Geometry();
+			struct {
+				bool hasAnim = false;
+				size_t animSetId = 0;
+				geom::MeshAnim meshAnim;
+				geom::Mesh meshAnimated;
+			} anim;
 		};
 
-		class TextureSet
+		class Instance
 		{
 		public:
-			int id;
+			enum class Type : unsigned int { Static = 1, Instance = 2 };
 
-			struct Texture{
-				int type, format, filter, flags;
-				HorseRadish::String filePath;
-			};
-			std::vector<Texture> texs;
+			Type type = Type::Static;
+			size_t objectId = 0;
+			hr::BBox bbox;
 
-		public:
-			TextureSet();
-			~TextureSet();
+			//instance data: [{quat, translate}, ...]
 		};
 
-		class Surface
+		class AnimationSet
 		{
 		public:
-			enum SurfaceType { Static = 0xfac1, Matrix = 0xfac2, Instance = 0xfac3, Anim = 0xfac4 };
-
-			int id;
-			SurfaceType type;
-
-			std::vector<Surface*> childs;
-
-			Material *material;
-			Geometry *geometry;
-
-			TextureSet *texSet;
-			union TextureData
-			{
-				struct Lighting
-				{
-					const HorseRadish::OpenGL::Objects::Texture *diffuse;
-					const HorseRadish::OpenGL::Objects::Texture *normal;
-					const HorseRadish::OpenGL::Objects::Texture *spec;
-					const HorseRadish::OpenGL::Objects::Texture *misc;
-				}lighting;
-
-				struct General
-				{
-					const HorseRadish::OpenGL::Objects::Texture *tex0;
-					const HorseRadish::OpenGL::Objects::Texture *tex1;
-					const HorseRadish::OpenGL::Objects::Texture *tex2;
-					const HorseRadish::OpenGL::Objects::Texture *tex3;
-				}general;
-			}texData;
-
-			struct RenderValues{
-				float distToCam;
-			}renderValues;
-
-			Surface();
-			~Surface();
+			size_t id = 0;
+			geom::MeshAnimSet animationSet;
 		};
 
-		class Material
+		struct Area
 		{
-		public:
-			enum MaterialProperties
-			{
-				ShadowCaster = (1 << 0),
-				ShadowReceiver = (1 << 1),
-				ShadowTwoSided = (1 << 2),
-				TwoSided = (1 << 3),
-				PerformLighting = (1 << 4),
-				PerformParallax = (1 << 5),
-				Transparent = (1 << 6),
-				PerformShadering = (1 << 7),
-				IsDecal = (1 << 8),
-				IsInfinite = (1 << 9),
-				PerformAlphaTest = (1 << 10),
-				IsSolid = (1 << 11),
-				Debug = (1 << 12)
-			};
+			AreaId id;
+			IRenderer::SceneId sceneId;
 
-		public:
-			struct Shadering{
-				const HorseRadish::OpenGL::Objects::ObjectGL **shaderMapTex;
-				const HorseRadish::OpenGL::Objects::ObjectGL *progGLSL;
-				int numShaderMaps;
-			};
+			std::map<size_t, Object> mObjects;
+			std::vector<Instance> mInstances;
 
-			struct Lighting{
-				float specPow, parallaxScale, parallaxBias;
-				const HorseRadish::OpenGL::Objects::ObjectGL *texNormal, *texSpec, *texDiffuse, *texAux;
-			};
-
-			const MaterialLibrary *materialLib;
-
-			Shadering dataShadering;
-			Lighting dataLighting;
-			MaterialProperties matProperties;
-			float alphaTestValue;
-
-		public:
-			Material();
-			~Material();
+			std::map<size_t, AnimationSet> mAnimationSets;
 		};
 
-		class MaterialLibrary
-		{
+	public:
+		static bool migrateBinData(const std::string& binPathOld, const std::string& binPathNew);
 
-		public:
-			struct Shadering
-			{
-				struct ShaderMap{
-					HorseRadish::String name, mapName;
-					unsigned short mapFlagType, mapFlagFormat, mapFlagBit, mapFlagWrap, mapFlagFilter;
-				};
-				struct ShaderParam
-				{
-					HorseRadish::String name, paramName;
-					float paramValue;
-				};
+	protected:
+		static bool geomFileCreate(hr::streams::FileStream& fstream);
+		static bool geomFileAddMesh(hr::streams::FileStream& fstream, size_t geomId, const hr::geom::Mesh& mesh);
+		static bool geomFileAddMeshAnim(hr::streams::FileStream& fstream, size_t geomId, const hr::geom::MeshAnim& meshAnim, size_t animSetId);
+		static bool geomFileAddAnimationSet(hr::streams::FileStream& fstream, size_t animSetId, const hr::geom::MeshAnimSet& animSet);
+		static bool geomFileAddAnimation(hr::streams::FileStream& fstream, size_t animId, size_t animSetId, float frameRate, const std::vector<hr::geom::MeshAnimSet::Frame>& animation);
 
-				int shaderingNeeds;
-				HorseRadish::String progVertex, progFragment;
-				int blendSFactor, blendDFactor;
-				std::vector<ShaderMap> shaderMaps;
-				std::vector<ShaderParam> shaderParams;
-			};
+		static bool geomFileTransformMeshes(hr::streams::FileStream& fstream, const std::vector<size_t>& geomIds, const std::function<void(hr::geom::Mesh&)>& cb);
 
-			struct Lighting{
-				HorseRadish::String nomeBump, nomeNormal, nomeSpec, nomeColor, nomeOcclusion;
-				float specPow, heightScale, parallaxScale, parallaxBias;
-			};
+		static bool geomFileRetrieveOffsets(hr::streams::FileStream& fstream, size_t geomId, size_t& vertexOffset, size_t& indexOffset);
 
-			HorseRadish::String nomeMaterial, nomeFicheiro, descMaterial;
-			unsigned int nomeMaterialMD5;
-			Shadering dataShadering;
-			Lighting dataLighting;
-			unsigned int flags, flagsCollision;
-			float alphaTestValue;
+		static bool geomFileRemoveGeom(hr::streams::FileStream& fstreamOld, hr::streams::FileStream& fstreamNew, std::vector<size_t> geomIds);
 
-		public:
-			MaterialLibrary();
-			~MaterialLibrary();
-		};
+		static bool loadAnimationSets(hr::streams::FileStream& fstream, size_t animSetId, geom::MeshAnimSet& meshAnimSet);
+		static bool loadAnimationSetMeshes(hr::streams::FileStream& fstream, size_t animSetId, std::vector<hr::geom::MeshAnim>& meshes);
 
-		class Brush
-		{
+	protected:
+		std::unordered_map<AreaId, Area> mAreas;
+		std::atomic<AreaId> mGenAreaIds{ 1 };
 
-		public:
-			Brush();
-			~Brush();
-		};
+	public:
+		World();
+		virtual ~World();
 
-		class World
-		{
-		public:
-			static const int HRFChunckTextureSetsID;
-			static const int HRFChunckGeometriesID;
-			static const int HRFChunckSurfacesID;
+		AreaId loadArea(IRenderer& renderer, const std::string& scenePath, const std::string& binPath);
+		void unloadArea(AreaId areaId);
 
-		private:
-			int genGeometryID, genSurfaceID;
+		void prepareNextFrame(Timestep& timestep, IRenderer& renderer, const tools::Camera& hrCamera, const hr::gl::tools::Viewport& hrViewport);
 
-		public:
-			std::vector<Light> lights;
-			std::vector<Geometry> geometries;
-			std::vector<Material> materials;
-			std::vector<TextureSet> textureSets;
-
-			std::vector<Surface> surfacesTotal;
-			std::vector<Surface*> surfacesRoot;
-
-			struct RenderContent{
-				std::vector<Surface*> surfaces;
-				std::vector<Light *> lights;
-
-			}renderContent;
-
-			static bool prepareMeshForType(HorseRadish::Geometry::Mesh * const modelMesh, const Geometry::GeometryType geomType);
-
-			void arranjaPonteirosGeom(const Geometry * const originalList);
-			void arranjaPonteirosSurf(const Surface * const originalList);
-			Geometry* createGeometry(HorseRadish::Geometry::Mesh * const modelMesh, const Geometry::GeometryType geomType);
-			int processModel(HorseRadish::Geometry::Model * const modelo, const Geometry::GeometryType geomType, const bool joinModels);
-
-			bool writeGeometries(HorseRadish::Streams::StreamWriter * const streamWriter);
-			bool readGeometries(HorseRadish::Streams::StreamReader * const streamReader);
-			bool writeTextureSets(HorseRadish::Streams::StreamWriter * const streamWriter);
-			bool readTextureSets(HorseRadish::Streams::StreamReader * const streamReader);
-			bool writeSurfaces(HorseRadish::Streams::StreamWriter * const streamWriter);
-			bool readSurfaces(HorseRadish::Streams::StreamReader * const streamReader);
-
-		public:
-			World();
-			~World();
-
-			void Cleanup();
-
-			int ImportHRF(HorseRadish::Streams::Stream &fileStream);
-			int ExportHRF(HorseRadish::Streams::Stream &fileStream);
-
-			int CreateGeometry3DS(HorseRadish::Streams::StreamReader &streamReader, const Geometry::GeometryType geomType, const bool joinModels);
-			int CreateGeometryOBJ(HorseRadish::Streams::StreamReader &streamReader, const Geometry::GeometryType geomType, const bool joinModels);
-			int CreateGeometryCOLLADA(HorseRadish::Streams::StreamReader &streamReader, const Geometry::GeometryType geomType, const bool joinModels);
-			int CreateSurface(const Surface::SurfaceType surfType, int surfaceParentID, Material * const material, Geometry * const geometry);
-
-			void LoadData(HorseRadish::OpenGL::Objects::ObjectsManager *glObjectManager, HorseRadish::IO::FileSystem * const fileSystem, HorseRadish::OpenGL::Objects::ObjectsManager* const textureManager);
-			void PrepareNextFrame(const HorseRadish::OpenGL::Tools::Camera * const hrCamera, const HorseRadish::OpenGL::Tools::Viewport * const hrViewport);
-		};
-
-	} //Render
-} //HorseRadish
+	private:
+		bool loadAnimations(hr::streams::StreamReader& sreader, Area& area);
+		bool load(IRenderer& renderer, Area& area, const std::string& scenePath, const std::string& binPath);
+	};
+}

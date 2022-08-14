@@ -1,621 +1,1731 @@
 #pragma once
-#ifndef __HOPENGL_OBJECTS__
-#define __HOPENGL_OBJECTS__
 
+#include "context.hpp"
 #include "openGL.hpp"
 #include "openGLext.hpp"
-#include "common\Image.hpp"
-#include "common\Mesh.hpp"
-#include "common\Stream.hpp"
-#include "common\FileSystem.hpp"
 
-namespace HorseRadish
+#include "common/math.hpp"
+
+#include <array>
+#include <vector>
+#include <cassert>
+#include <functional>
+#include <initializer_list>
+
+namespace hr::gl::objects
 {
-
-namespace OpenGL
-{
-
-namespace Objects
-{
-
-//algumas definições
-class ObjectsManager;
-class Context;
-
-//§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§
-//§§§§§§   Classe ObjectGL	§§§§§
-//§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§
-class ObjectGL
-{
-private:
-	virtual void objectDestroy() = 0;
-
-	friend class ObjectsManager;
-
-public:
-	unsigned int glID;
-
-public:
-	ObjectGL()
-		: glID(0)
-	{ }
-};
-
-//§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§
-//§§§§§§   Classe Sampler	§§§§§
-//§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§
-class Sampler : public ObjectGL
-{
-public:
-	enum FilterType { Point, Linear, PointMipPoint, PointMipLinear, LinearMipPoint, LinearMipLinear };
-	enum CompareMode { CompareRefToTexture, None };
-	enum CompareFunc { LesserEqual, GreaterEqual, Lesser, Greater, Equal, NotEqual, Always, Never };
-	enum WrapType { Repeat, ClampEdge };
-
-private:
-	void objectDestroy()
+	class ObjectGL
 	{
-		HorseRadish::OpenGL::glDeleteSamplers(1, &this->glID);
-	}
+	protected:
+		GLuint mId = 0;
 
-public:
-	Sampler()
-		: ObjectGL()
-	{
-		HorseRadish::OpenGL::glCreateSamplers(1, &this->glID);
-	}
+		ObjectGL() = default;
+		ObjectGL(const ObjectGL&) = delete;
+		ObjectGL& operator=(const ObjectGL&) = delete;
+		ObjectGL(ObjectGL&&) = default;
+		ObjectGL& operator=(ObjectGL&&) = default;
 
-	static void UnBind(const int textureUnit)
-	{
-		if ((textureUnit < 0) || (textureUnit > 31))
-			return;
-
-		HorseRadish::OpenGL::glBindSampler(textureUnit, 0);
-	}
-
-	void Bind(const int textureUnit) const
-	{
-		if ((textureUnit < 0) || (textureUnit > 31))
-			return;
-
-		HorseRadish::OpenGL::glBindSampler(textureUnit, this->glID);
-	}
-
-	void SetMinFilter(const FilterType &filterType) const
-	{
-		if (filterType == Point)
-			HorseRadish::OpenGL::glSamplerParameteri(this->glID, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-		else if (filterType == Linear)
-			HorseRadish::OpenGL::glSamplerParameteri(this->glID, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		else if (filterType == LinearMipPoint)
-			HorseRadish::OpenGL::glSamplerParameteri(this->glID, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
-		else if (filterType == LinearMipLinear)
-			HorseRadish::OpenGL::glSamplerParameteri(this->glID, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-		else if (filterType == PointMipPoint)
-			HorseRadish::OpenGL::glSamplerParameteri(this->glID, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
-		else if (filterType == PointMipLinear)
-			HorseRadish::OpenGL::glSamplerParameteri(this->glID, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR);
-	}
-	void SetMagFilter(const FilterType &filterType) const
-	{
-		if (filterType == Point)
-			HorseRadish::OpenGL::glSamplerParameteri(this->glID, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-		else if (filterType == Linear)
-			HorseRadish::OpenGL::glSamplerParameteri(this->glID, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	}
-
-	void SetWrap(const WrapType &wrapType) const
-	{
-		if (wrapType == Repeat)
+	public:
+		GLuint id() const
 		{
-			HorseRadish::OpenGL::glSamplerParameteri(this->glID, GL_TEXTURE_WRAP_S, GL_REPEAT);
-			HorseRadish::OpenGL::glSamplerParameteri(this->glID, GL_TEXTURE_WRAP_T, GL_REPEAT);
-			HorseRadish::OpenGL::glSamplerParameteri(this->glID, GL_TEXTURE_WRAP_R, GL_REPEAT);
+			return mId;
 		}
-		else if (wrapType == ClampEdge)
+
+		explicit operator bool() const noexcept
 		{
-			HorseRadish::OpenGL::glSamplerParameteri(this->glID, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-			HorseRadish::OpenGL::glSamplerParameteri(this->glID, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-			HorseRadish::OpenGL::glSamplerParameteri(this->glID, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+			return (mId != 0);
 		}
-	}
 
-	void SetBorderColor(const float &r, const float &g, const float &b, const float &a) const
-	{
-		float borderColor[] = { r, g, b, a };
-		HorseRadish::OpenGL::glSamplerParameterfv(this->glID, GL_TEXTURE_BORDER_COLOR, borderColor);
-	}
-
-	void SetBorderColor(const float * const borderColor) const
-	{
-		if (borderColor == nullptr)
-			return;
-
-		HorseRadish::OpenGL::glSamplerParameterfv(this->glID, GL_TEXTURE_BORDER_COLOR, borderColor);
-	}
-
-	void SetLOD(const float &minLOD, const float &maxLOD) const
-	{
-		HorseRadish::OpenGL::glSamplerParameterf(this->glID, GL_TEXTURE_MIN_LOD, minLOD);
-		HorseRadish::OpenGL::glSamplerParameterf(this->glID, GL_TEXTURE_MAX_LOD, maxLOD);
-	}
-
-	void SetLODBias(const float &lodBias) const
-	{
-		HorseRadish::OpenGL::glSamplerParameterf(this->glID, GL_TEXTURE_LOD_BIAS, lodBias);
-	}
-
-	void SetCompare(const CompareMode &compareMode, const CompareFunc &compareFunc) const
-	{
-		if (compareMode == CompareRefToTexture)
-			HorseRadish::OpenGL::glSamplerParameteri(this->glID, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
-		else
-			HorseRadish::OpenGL::glSamplerParameteri(this->glID, GL_TEXTURE_COMPARE_MODE, GL_NONE);
-
-		if (compareFunc == LesserEqual)
-			HorseRadish::OpenGL::glSamplerParameteri(this->glID, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL);
-		else if (compareFunc == GreaterEqual)
-			HorseRadish::OpenGL::glSamplerParameteri(this->glID, GL_TEXTURE_COMPARE_FUNC, GL_GEQUAL);
-		else if (compareFunc == Lesser)
-			HorseRadish::OpenGL::glSamplerParameteri(this->glID, GL_TEXTURE_COMPARE_FUNC, GL_LESS);
-		else if (compareFunc == Greater)
-			HorseRadish::OpenGL::glSamplerParameteri(this->glID, GL_TEXTURE_COMPARE_FUNC, GL_GREATER);
-		else if (compareFunc == Equal)
-			HorseRadish::OpenGL::glSamplerParameteri(this->glID, GL_TEXTURE_COMPARE_FUNC, GL_EQUAL);
-		else if (compareFunc == NotEqual)
-			HorseRadish::OpenGL::glSamplerParameteri(this->glID, GL_TEXTURE_COMPARE_FUNC, GL_NOTEQUAL);
-		else if (compareFunc == Always)
-			HorseRadish::OpenGL::glSamplerParameteri(this->glID, GL_TEXTURE_COMPARE_FUNC, GL_ALWAYS);
-		else  if (compareFunc == Never)
-			HorseRadish::OpenGL::glSamplerParameteri(this->glID, GL_TEXTURE_COMPARE_FUNC, GL_NEVER);
-		else
-			HorseRadish::OpenGL::glSamplerParameteri(this->glID, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL);
-	}
-};
-
-//§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§
-//§§§§§§   Classe Texture	§§§§§
-//§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§
-class Texture : public ObjectGL
-{
-public:
-	enum FilterType { Point, Linear, PointMipPoint, PointMipLinear, LinearMipPoint, LinearMipLinear };
-	enum WrapType { Repeat, ClampEdge };
-
-	unsigned int glTarget;
-	unsigned short width, height, depth;
-
-private:
-	void objectDestroy()
-	{
-		HorseRadish::OpenGL::glDeleteTextures(1, &this->glID);
-	}
-
-public:
-	static int CalculateNumMipMaps(const int width);
-	static int CalculateNumMipMaps(const int width, const int height);
-	static int CalculateNumMipMaps(const int width, const int height, const int depth);
-
-public:
-	Texture()
-		: ObjectGL()
-		, glTarget(0), width(0), height(0), depth(0)
-	{
-	}
-
-	Texture(unsigned int glTarget)
-		: ObjectGL()
-		, glTarget(glTarget), width(0), height(0), depth(0)
-	{
-		HorseRadish::OpenGL::glCreateTextures(glTarget, 1, &this->glID);
-	}
-
-	void Bind(const int textureUnit) const
-	{
-		if ((textureUnit < 0) || (textureUnit > 31))
-			return;
-		HorseRadish::OpenGL::glBindTextureUnit(textureUnit, this->glID);
-	}
-};
-
-//§§§§§§§§§§§§§§§§§§§§§§§§§§§
-//§§§§§§   Classe Query	§§§§§
-//§§§§§§§§§§§§§§§§§§§§§§§§§§§
-class Query : public ObjectGL
-{
-private:
-	void objectDestroy()
-	{
-		HorseRadish::OpenGL::glDeleteQueries(1, &this->glID);
-	}
-
-public:
-	Query()
-		: ObjectGL()
-	{
-		HorseRadish::OpenGL::glGenQueries(1, &this->glID);
-	}
-
-	void BeginQuery() const
-	{
-		HorseRadish::OpenGL::glBeginQuery(GL_SAMPLES_PASSED, this->glID);
-	}
-
-	void EndQuery() const
-	{
-		HorseRadish::OpenGL::glEndQuery(GL_SAMPLES_PASSED);
-	}
-
-	unsigned int GetResult() const
-	{
-		unsigned int queryResult;
-
-		HorseRadish::OpenGL::glGetQueryObjectuiv(this->glID, GL_QUERY_RESULT, &queryResult);
-		return queryResult;
-	}
-
-	bool ResultAvailable() const
-	{
-		int queryResult;
-
-		HorseRadish::OpenGL::glGetQueryObjectiv(this->glID, GL_QUERY_RESULT_AVAILABLE, &queryResult);
-		return (queryResult != 0);
-	}
-};
-
-//§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§
-//§§§§§§   Classe VertexBuffer	§§§§§
-//§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§
-class VertexBuffer : public ObjectGL
-{
-public:
-	unsigned int glTarget;
-
-public:
-	enum UsageType{
-		Stream,
-		Static,
-		Dynamic
+		bool isValid() const
+		{
+			return operator bool();
+		}
 	};
 
-private:
-	void objectDestroy()
+	class Texture final : public ObjectGL
 	{
-		HorseRadish::OpenGL::glDeleteBuffers(1, &this->glID);
-	}
+	public:
+		enum class Type { Tex1D, Tex2D, Tex3D, TexRectangle, TexCubemap, Tex1DArray, Tex2DArray };
+		enum class StorageType
+		{
+			R_8, R_16F, R_32F, R_8I, R_8UI, R_16I, R_16UI, R_32I, R_32UI,
+			RG_8, RG_16F, RG_32F, RG_8I, RG_8UI, RG_16I, RG_16UI, RG_32I, RG_32UI,
+			RGB_8, RGB_16F, RGB_32F, RGB_8I, RGB_8UI, RGB_16I, RGB_16UI, RGB_32I, RGB_32UI,
+			RGBA_8, RGBA_16F, RGBA_32F, RGBA_8I, RGBA_8UI, RGBA_16I, RGBA_16UI, RGBA_32I, RGBA_32UI,
+			DEPTH_16, DEPTH_24, DEPTH_24_STENCIL_8, DEPTH_32F,
 
-public:
-	VertexBuffer(unsigned int glTarget)
-		: ObjectGL()
-		, glTarget(glTarget)
-	{
-		HorseRadish::OpenGL::glCreateBuffers(1, &this->glID);
-	}
+			COMPRESSED_BC1, COMPRESSED_SRGB_BC1, //RGB
+			COMPRESSED_BC3, COMPRESSED_SRGB_BC3, //RGBA
+			COMPRESSED_BC4, //Mono (grayscale)
+			COMPRESSED_BC5, //Dual (2xgrayscale)
+			COMPRESSED_BC7, COMPRESSED_SRGB_BC7 //RGB and RGBA (best if A correlates to RGB)
+		};
+		enum class DataType { BYTE, UBYTE, SHORT, USHORT, INT, UINT, FLOAT };
+		enum class DataFormat { R, G, B, RG, RGB, RGBA, BGR, BGRA };
+		enum class CubemapFace { PosX, NegX, PosY, NegY, PosZ, NegZ };
 
-	bool LoadBuffer(const void * const data, const int &dataSize, const UsageType &usage) const;
-	bool LoadMeshData(HorseRadish::Geometry::Mesh * const mesh, const UsageType &usage) const;
-	bool LoadMeshIndex(HorseRadish::Geometry::Mesh * const mesh, const UsageType &usage) const;
-	bool UpdateBuffer(const void * const data, const int &dataSize, const int &startOffset) const;
-	void Unbind() const;
+	private:
+		GLenum mType = 0;
+		GLenum mStorageType = 0;
+		GLuint mWidth = 0, mHeight = 0, mDepth = 0;
 
-	void Bind() const
-	{
-		HorseRadish::OpenGL::glBindBuffer(this->glTarget, this->glID);
-	}
-};
+		static GLenum translate(Type type)
+		{
+			switch (type)
+			{
+			case Type::Tex1D:
+				return GL_TEXTURE_1D;
+			case Type::Tex2D:
+				return GL_TEXTURE_2D;
+			case Type::Tex3D:
+				return GL_TEXTURE_3D;
+			case Type::TexRectangle:
+				return GL_TEXTURE_RECTANGLE;
+			case Type::TexCubemap:
+				return GL_TEXTURE_CUBE_MAP;
+			case Type::Tex1DArray:
+				return GL_TEXTURE_1D_ARRAY;
+			case Type::Tex2DArray:
+				return GL_TEXTURE_2D_ARRAY;
+			};
 
-//§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§
-//§§§§§§   Classe PixelBuffer	§§§§§
-//§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§
-class PixelBuffer : public ObjectGL
-{
-public:
-	unsigned int glTarget;
+			assert(false);
+			return GL_TEXTURE_2D;
+		}
 
-public:
-	enum UsageType{
-		Stream,
-		Static,
-		Dynamic
+		static GLenum translate(StorageType storageType)
+		{
+			switch (storageType)
+			{
+			case StorageType::R_8:
+				return GL_R8;
+			case StorageType::R_16F:
+				return GL_R16F;
+			case StorageType::R_32F:
+				return GL_R32F;
+			case StorageType::R_8I:
+				return GL_R8I;
+			case StorageType::R_8UI:
+				return GL_R8UI;
+			case StorageType::R_16I:
+				return GL_R16I;
+			case StorageType::R_16UI:
+				return GL_R16UI;
+			case StorageType::R_32I:
+				return GL_R32I;
+			case StorageType::R_32UI:
+				return GL_R32UI;
+			
+			case StorageType::RG_8:
+				return GL_RG8;
+			case StorageType::RG_16F:
+				return GL_RG16F;
+			case StorageType::RG_32F:
+				return GL_RG32F;
+			case StorageType::RG_8I:
+				return GL_RG8I;
+			case StorageType::RG_8UI:
+				return GL_RG8UI;
+			case StorageType::RG_16I:
+				return GL_RG16I;
+			case StorageType::RG_16UI:
+				return GL_RG16UI;
+			case StorageType::RG_32I:
+				return GL_RG32I;
+			case StorageType::RG_32UI:
+				return GL_RG32UI;
+			
+			case StorageType::RGB_8:
+				return GL_RGB8;
+			case StorageType::RGB_16F:
+				return GL_RGB16F;
+			case StorageType::RGB_32F:
+				return GL_RGB32F;
+			case StorageType::RGB_8I:
+				return GL_RGB8I;
+			case StorageType::RGB_8UI:
+				return GL_RGB8UI;
+			case StorageType::RGB_16I:
+				return GL_RGB16I;
+			case StorageType::RGB_16UI:
+				return GL_RGB16UI;
+			case StorageType::RGB_32I:
+				return GL_RGB32I;
+			case StorageType::RGB_32UI:
+				return GL_RGB32UI;
+			
+			case StorageType::RGBA_8:
+				return GL_RGBA8;
+			case StorageType::RGBA_16F:
+				return GL_RGBA16F;
+			case StorageType::RGBA_32F:
+				return GL_RGBA32F;
+			case StorageType::RGBA_8I:
+				return GL_RGBA8I;
+			case StorageType::RGBA_8UI:
+				return GL_RGBA8UI;
+			case StorageType::RGBA_16I:
+				return GL_RGBA16I;
+			case StorageType::RGBA_16UI:
+				return GL_RGBA16UI;
+			case StorageType::RGBA_32I:
+				return GL_RGBA32I;
+			case StorageType::RGBA_32UI:
+				return GL_RGBA32UI;
+
+			case StorageType::DEPTH_16:
+				return GL_DEPTH_COMPONENT16;
+			case StorageType::DEPTH_24:
+				return GL_DEPTH_COMPONENT24;
+			case StorageType::DEPTH_24_STENCIL_8:
+				return GL_DEPTH24_STENCIL8;
+			case StorageType::DEPTH_32F:
+				return GL_DEPTH_COMPONENT32F;
+
+			case StorageType::COMPRESSED_BC1:
+				return GL_COMPRESSED_RGB_S3TC_DXT1_EXT;
+			case StorageType::COMPRESSED_SRGB_BC1:
+				return GL_COMPRESSED_SRGB_S3TC_DXT1_EXT;
+			case StorageType::COMPRESSED_BC3:
+				return GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
+			case StorageType::COMPRESSED_SRGB_BC3:
+				return GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT;
+			case StorageType::COMPRESSED_BC4:
+				return GL_COMPRESSED_RED_RGTC1;
+			case StorageType::COMPRESSED_BC5:
+				return GL_COMPRESSED_RG_RGTC2;
+			case StorageType::COMPRESSED_BC7:
+				return GL_COMPRESSED_RGBA_BPTC_UNORM;
+			case StorageType::COMPRESSED_SRGB_BC7:
+				return GL_COMPRESSED_SRGB_ALPHA_BPTC_UNORM;
+			};
+
+			assert(false);
+			return GL_RGBA8;
+		}
+
+		static GLenum translate(DataType dataType)
+		{
+			switch (dataType)
+			{
+			case DataType::BYTE:
+				return GL_BYTE;
+			case DataType::UBYTE:
+				return GL_UNSIGNED_BYTE;
+			case DataType::SHORT:
+				return GL_SHORT;
+			case DataType::USHORT:
+				return GL_UNSIGNED_SHORT;
+			case DataType::INT:
+				return GL_INT;
+			case DataType::UINT:
+				return GL_UNSIGNED_INT;
+			case DataType::FLOAT:
+				return GL_FLOAT;
+			};
+
+			assert(false);
+			return GL_UNSIGNED_BYTE;
+		}
+
+		static GLenum translate(DataFormat dataFormat)
+		{
+			switch (dataFormat)
+			{
+			case DataFormat::R:
+				return GL_RED;
+			case DataFormat::G:
+				return GL_GREEN;
+			case DataFormat::B:
+				return GL_BLUE;
+			case DataFormat::RG:
+				return GL_RG;
+			case DataFormat::RGB:
+				return GL_RGB;
+			case DataFormat::RGBA:
+				return GL_RGBA;
+			case DataFormat::BGR:
+				return GL_BGR;
+			case DataFormat::BGRA:
+				return GL_BGRA;
+			};
+
+			assert(false);
+			return GL_RGBA;
+		}
+
+	public:
+		static size_t calculateNumMipMaps(GLuint width)
+		{
+			return static_cast<size_t>(std::floor(std::log2(width))) + 1;
+		}
+
+		static size_t calculateNumMipMaps(GLuint width, GLuint height)
+		{
+			return calculateNumMipMaps(std::max(width, height));
+		}
+
+		static size_t calculateNumMipMaps(GLuint width, GLuint height, GLuint depth)
+		{
+			return calculateNumMipMaps(std::max(std::max(width, height), depth));
+		}
+
+	public:
+		Texture() = default;
+
+		~Texture()
+		{
+			reset();
+		}
+
+		void init(Type type, StorageType storageType, GLuint width)
+		{
+			init(type, storageType, width, 0);
+		}
+
+		void init(Type type, StorageType storageType, GLuint width, GLuint height)
+		{
+			init(type, storageType, width, height, 0);
+		}
+
+		void init(Type type, StorageType storageType, GLuint width, GLuint height, GLuint depth)
+		{
+			if (isValid())
+				return;
+
+			switch (type)
+			{
+			case Type::Tex1D:
+				assert((width > 0) && (height == 0) && (depth == 0));
+				assert(Texture::translate(type) == GL_TEXTURE_1D);
+
+				mType = Texture::translate(type);
+				mStorageType = Texture::translate(storageType);
+				mWidth = width;
+				mHeight = height;
+				mDepth = depth;
+
+				glCreateTextures(mType, 1, &mId);
+				glTextureStorage1D(mId, Texture::calculateNumMipMaps(width), mStorageType, width);
+				break;
+
+			case Type::Tex2D:
+				assert((width > 0) && (height > 0) && (depth == 0));
+				assert(Texture::translate(type) == GL_TEXTURE_2D);
+
+				mType = Texture::translate(type);
+				mStorageType = Texture::translate(storageType);
+				mWidth = width;
+				mHeight = height;
+				mDepth = depth;
+				
+				glCreateTextures(mType, 1, &mId);
+				glTextureStorage2D(mId, Texture::calculateNumMipMaps(width, height), mStorageType, width, height);
+				break;
+
+			case Type::Tex3D:
+				assert((width > 0) && (height > 0) && (depth > 0));
+				assert(Texture::translate(type) == GL_TEXTURE_3D);
+
+				mType = Texture::translate(type);
+				mStorageType = Texture::translate(storageType);
+				mWidth = width;
+				mHeight = height;
+				mDepth = depth;
+
+				glCreateTextures(mType, 1, &mId);
+				glTextureStorage3D(mId, Texture::calculateNumMipMaps(width, height, depth), mStorageType, width, height, depth);
+				break;
+
+			case Type::TexRectangle:
+				assert((width > 0) && (height > 0) && (depth == 0));
+				assert(Texture::translate(type) == GL_TEXTURE_RECTANGLE);
+
+				mType = Texture::translate(type);
+				mStorageType = Texture::translate(storageType);
+				mWidth = width;
+				mHeight = height;
+				mDepth = depth;
+
+				glCreateTextures(mType, 1, &mId);
+				glTextureStorage2D(mId, 1, mStorageType, width, height);
+				break;
+
+			case Type::TexCubemap:
+				assert((width > 0) && (height > 0) && (depth == 0));
+				assert(Texture::translate(type) == GL_TEXTURE_CUBE_MAP);
+
+				mType = Texture::translate(type);
+				mStorageType = Texture::translate(storageType);
+				mWidth = width;
+				mHeight = height;
+				mDepth = depth;
+
+				glCreateTextures(mType, 1, &mId);
+				glTextureStorage2D(mId, Texture::calculateNumMipMaps(width, height), mStorageType, width, height);
+				break;
+
+			case Type::Tex1DArray:
+				assert((width > 0) && (height > 0) && (depth == 0));
+				assert(Texture::translate(type) == GL_TEXTURE_1D_ARRAY);
+
+				mType = Texture::translate(type);
+				mStorageType = Texture::translate(storageType);
+				mWidth = width;
+				mHeight = height;
+				mDepth = depth;
+
+				glCreateTextures(mType, 1, &mId);
+				glTextureStorage2D(mId, Texture::calculateNumMipMaps(width), mStorageType, width, height);
+				break;
+
+			case Type::Tex2DArray:
+				assert((width > 0) && (height > 0) && (depth > 0));
+				assert(Texture::translate(type) == GL_TEXTURE_2D_ARRAY);
+
+				mType = Texture::translate(type);
+				mStorageType = Texture::translate(storageType);
+				mWidth = width;
+				mHeight = height;
+				mDepth = depth;
+
+				glCreateTextures(mType, 1, &mId);
+				glTextureStorage3D(mId, Texture::calculateNumMipMaps(width, height), mStorageType, width, height, depth);
+				break;
+
+			default:
+				return;
+			}
+		}
+
+		void reset()
+		{
+			if (!isValid())
+				return;
+
+			glDeleteTextures(1, &mId);
+			mId = 0;
+
+			mType = 0;
+			mStorageType = 0;
+			mWidth = mHeight = mDepth = 0;
+		}
+
+		size_t width() const
+		{
+			return mWidth;
+		}
+
+		size_t height() const
+		{
+			return mHeight;
+		}
+
+		size_t depth() const
+		{
+			return mDepth;
+		}
+
+		void bind(const GLuint textureUnit) const
+		{
+			if (!isValid())
+				return;
+
+			glBindTextureUnit(textureUnit, mId);
+		}
+
+		void clear(float r, float g, float b, float a) const
+		{
+			clear(0, r, g, b, a);
+		}
+
+		void clear(GLint mipLevel, float r, float g, float b, float a) const
+		{
+			if (!isValid())
+				return;
+
+			float colorVec[] = { r, g, b, a };
+			glClearTexImage(mId, mipLevel, GL_RGBA, GL_FLOAT, colorVec);
+		}
+
+		bool isRenderable() const
+		{
+			if (!isValid())
+				return false;
+
+			switch (mStorageType)
+			{
+			case GL_R8:
+			case GL_R16F:
+			case GL_R32F:
+			case GL_R8I:
+			case GL_R8UI:
+			case GL_R16I:
+			case GL_R16UI:
+			case GL_R32I:
+			case GL_R32UI:
+			
+			case GL_RG8:
+			case GL_RG16F:
+			case GL_RG32F:
+			case GL_RG8I:
+			case GL_RG8UI:
+			case GL_RG16I:
+			case GL_RG16UI:
+			case GL_RG32I:
+			case GL_RG32UI:
+			
+			case GL_RGBA8:
+			case GL_RGBA16F:
+			case GL_RGBA32F:
+			case GL_RGBA8I:
+			case GL_RGBA8UI:
+			case GL_RGBA16I:
+			case GL_RGBA16UI:
+			case GL_RGBA32I:
+			case GL_RGBA32UI:
+
+			case GL_DEPTH_COMPONENT16:
+			case GL_DEPTH_COMPONENT24:
+			case GL_DEPTH24_STENCIL8:
+			case GL_DEPTH_COMPONENT32F:
+				return true;
+			};
+
+			return false;
+		}
+
+		bool isCompressed() const
+		{
+			if (!isValid())
+				return false;
+
+			switch (mStorageType)
+			{
+			case GL_COMPRESSED_RGB_S3TC_DXT1_EXT:
+			case GL_COMPRESSED_SRGB_S3TC_DXT1_EXT:
+			case GL_COMPRESSED_RGBA_S3TC_DXT5_EXT:
+			case GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT:
+			case GL_COMPRESSED_RED_RGTC1:
+			case GL_COMPRESSED_RG_RGTC2:
+			case GL_COMPRESSED_RGBA_BPTC_UNORM:
+			case GL_COMPRESSED_SRGB_ALPHA_BPTC_UNORM:
+				return true;
+			};
+
+			return false;
+		}
+
+		bool isType(Type type) const
+		{
+			if (!isValid())
+				return false;
+
+			return (mType == (Texture::translate(type)));
+		}
+
+		void genMipmaps() const
+		{
+			if (!isValid() || (mType == GL_TEXTURE_RECTANGLE) || isCompressed())
+				return;
+
+			glGenerateTextureMipmap(mId);
+		}
+
+		bool uploadData(GLint level, GLint xOffset, GLint width, DataFormat dataFormat, DataType dataType, const void* const data)
+		{
+			if (!isValid() || (mType != GL_TEXTURE_1D) || isCompressed())
+				return false;
+
+			glTextureSubImage1D(mId, level, xOffset, width, Texture::translate(dataFormat), Texture::translate(dataType), data);
+			return true;
+		}
+
+		bool uploadData(GLint level, GLint xOffset, GLint yOffset, GLint width, GLint height, DataFormat dataFormat, DataType dataType, const void* const data)
+		{
+			if (!isValid() || ((mType != GL_TEXTURE_2D) && (mType != GL_TEXTURE_1D_ARRAY) && (mType != GL_TEXTURE_RECTANGLE)) || isCompressed())
+				return false;
+
+			glTextureSubImage2D(mId, level, xOffset, yOffset, width, height, Texture::translate(dataFormat), Texture::translate(dataType), data);
+			return true;
+		}
+
+		bool uploadData(GLint level, GLint xOffset, GLint yOffset, GLint zOffset, GLint width, GLint height, GLint depth, DataFormat dataFormat, DataType dataType, const void* const data)
+		{
+			if (!isValid() || ((mType != GL_TEXTURE_3D) && (mType != GL_TEXTURE_2D_ARRAY)) || isCompressed())
+				return false;
+
+			glTextureSubImage3D(mId, level, xOffset, yOffset, zOffset, width, height, depth, Texture::translate(dataFormat), Texture::translate(dataType), data);
+			return true;
+		}
+
+		bool uploadCubemapData(CubemapFace face, GLint level, GLint xOffset, GLint yOffset, GLint width, GLint height, DataFormat dataFormat, DataType dataType, const void* const data)
+		{
+			if (!isValid() || (mType != GL_TEXTURE_CUBE_MAP) || isCompressed())
+				return false;
+
+			GLint faceIndex;
+			switch (face)
+			{
+			case CubemapFace::PosX:
+				faceIndex = 0;
+			case CubemapFace::NegX:
+				faceIndex = 1;
+			case CubemapFace::PosY:
+				faceIndex = 2;
+			case CubemapFace::NegY:
+				faceIndex = 3;
+			case CubemapFace::PosZ:
+				faceIndex = 4;
+			case CubemapFace::NegZ:
+				faceIndex = 5;
+			default:
+				return false;
+			}
+
+			glTextureSubImage3D(mId, level, xOffset, yOffset, faceIndex, width, height, 0, Texture::translate(dataFormat), Texture::translate(dataType), data);
+			return true;
+		}
+
+		bool uploadCompressedData(GLint level, GLint xOffset, GLint yOffset, GLint width, GLint height, StorageType storageType, GLsizei dataSize, const void* const data)
+		{
+			if (!isValid() || ((mType != GL_TEXTURE_2D) && (mType != GL_TEXTURE_1D_ARRAY)) || !isCompressed())
+				return false;
+
+			auto internalStorageType = Texture::translate(storageType);
+
+			//compress types must match with the exception of SRGB types (only the internal type is SRGB)
+			auto isValid = (internalStorageType == mStorageType);
+			if (!isValid)
+			{
+				isValid = (mStorageType == GL_COMPRESSED_SRGB_S3TC_DXT1_EXT) && (internalStorageType == GL_COMPRESSED_RGB_S3TC_DXT1_EXT);
+				isValid |= (mStorageType == GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT) && (internalStorageType == GL_COMPRESSED_RGBA_S3TC_DXT5_EXT);
+			}
+
+			if (!isValid)
+				return false;
+
+			glCompressedTextureSubImage2D(mId, level, xOffset, yOffset, width, height, mStorageType, dataSize, data);
+			return true;
+		}
 	};
 
-private:
-	void objectDestroy()
+	class Sampler final : public ObjectGL
 	{
-		HorseRadish::OpenGL::glDeleteBuffers(1, &this->glID);
-	}
+	public:
+		enum class FilterType { Point, Linear, PointMipPoint, PointMipLinear, LinearMipPoint, LinearMipLinear };
+		enum class CompareMode { CompareRefToTexture, None };
+		enum class CompareFunc { LesserEqual, GreaterEqual, Lesser, Greater, Equal, NotEqual, Always, Never };
+		enum class WrapType { Repeat, ClampBorder, ClampEdge };
 
-public:
-	PixelBuffer(unsigned int glTarget)
-		: ObjectGL()
-		, glTarget(glTarget)
+	public:
+		static void unbind(GLuint textureUnit)
+		{
+			glBindSampler(textureUnit, 0);
+		}
+
+	public:
+		Sampler() = default;
+
+		~Sampler()
+		{
+			reset();
+		}
+
+		void init()
+		{
+			if (isValid())
+				return;
+
+			glCreateSamplers(1, &mId);
+		}
+
+		void init(const FilterType magFilter, const FilterType minFilter)
+		{
+			if (isValid())
+				return;
+
+			init();
+			setMagFilter(magFilter);
+			setMinFilter(minFilter);
+		}
+
+		void init(const FilterType magFilter, const FilterType minFilter, const WrapType wrapType)
+		{
+			if (isValid())
+				return;
+
+			init();
+			setMagFilter(magFilter);
+			setMinFilter(minFilter);
+			setWrap(wrapType);
+		}
+
+		void reset()
+		{
+			if (!isValid())
+				return;
+
+			glDeleteSamplers(1, &mId);
+			mId = 0;
+		}
+
+		void bind(const GLuint textureUnit) const
+		{
+			if (!isValid())
+				return;
+
+			glBindSampler(textureUnit, mId);
+		}
+
+		bool setAnisotropy(const Context &mCtx, const float &anisotropyLevel) const
+		{
+			if (!isValid())
+				return false;
+
+			float maxAnisoLevel;
+			if (!mCtx.info(Context::InformationType::MaxAnisotropicLevel, maxAnisoLevel))
+				return false;
+
+			hr::gl::glSamplerParameterf(mId, GL_TEXTURE_MAX_ANISOTROPY, hr::Math::fClamp(anisotropyLevel, 1.0f, maxAnisoLevel));
+			return true;
+		}
+
+		void setMinFilter(const FilterType filterType) const
+		{
+			if (!isValid())
+				return;
+
+			switch (filterType)
+			{
+			case FilterType::Point:
+				glSamplerParameteri(mId, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+				break;
+			case FilterType::Linear:
+				glSamplerParameteri(mId, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+				break;
+			case FilterType::LinearMipPoint:
+				glSamplerParameteri(mId, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
+				break;
+			case FilterType::LinearMipLinear:
+				glSamplerParameteri(mId, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+				break;
+			case FilterType::PointMipPoint:
+				glSamplerParameteri(mId, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
+				break;
+			case FilterType::PointMipLinear:
+				glSamplerParameteri(mId, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR);
+				break;
+			}
+		}
+		void setMagFilter(const FilterType filterType) const
+		{
+			if (!isValid())
+				return;
+
+			switch (filterType)
+			{
+			case FilterType::Point:
+				glSamplerParameteri(mId, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+				break;
+			case FilterType::Linear:
+				glSamplerParameteri(mId, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+				break;
+			}
+		}
+
+		void setWrap(const WrapType wrapType) const
+		{
+			if (!isValid())
+				return;
+
+			switch (wrapType)
+			{
+			case WrapType::Repeat:
+				glSamplerParameteri(mId, GL_TEXTURE_WRAP_S, GL_REPEAT);
+				glSamplerParameteri(mId, GL_TEXTURE_WRAP_T, GL_REPEAT);
+				glSamplerParameteri(mId, GL_TEXTURE_WRAP_R, GL_REPEAT);
+				break;
+			case WrapType::ClampBorder:
+				glSamplerParameteri(mId, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+				glSamplerParameteri(mId, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+				glSamplerParameteri(mId, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_BORDER);
+				break;
+			case WrapType::ClampEdge:
+				glSamplerParameteri(mId, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+				glSamplerParameteri(mId, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+				glSamplerParameteri(mId, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+				break;
+			}
+		}
+
+		void setBorderColor(const float &r, const float &g, const float &b, const float &a) const
+		{
+			if (!isValid())
+				return;
+
+			float borderColor[] = { r, g, b, a };
+			glSamplerParameterfv(mId, GL_TEXTURE_BORDER_COLOR, borderColor);
+		}
+
+		void setBorderColor(const float * const borderColor) const
+		{
+			if (!borderColor || !isValid())
+				return;
+
+			glSamplerParameterfv(mId, GL_TEXTURE_BORDER_COLOR, borderColor);
+		}
+
+		void setLOD(const float &minLOD, const float &maxLOD) const
+		{
+			if (!isValid())
+				return;
+
+			glSamplerParameterf(mId, GL_TEXTURE_MIN_LOD, minLOD);
+			glSamplerParameterf(mId, GL_TEXTURE_MAX_LOD, maxLOD);
+		}
+
+		void setLODMax(const float &maxLOD) const
+		{
+			if (!isValid())
+				return;
+
+			glSamplerParameterf(mId, GL_TEXTURE_MAX_LOD, maxLOD);
+		}
+
+		void setLODMin(const float &minLOD) const
+		{
+			if (!isValid())
+				return;
+
+			glSamplerParameterf(mId, GL_TEXTURE_MIN_LOD, minLOD);
+		}
+
+		void setLODBias(const float &lodBias) const
+		{
+			if (!isValid())
+				return;
+
+			glSamplerParameterf(mId, GL_TEXTURE_LOD_BIAS, lodBias);
+		}
+
+		void setCompare(const CompareMode &compareMode, const CompareFunc &compareFunc) const
+		{
+			if (!isValid())
+				return;
+
+			switch (compareMode)
+			{
+			case CompareMode::CompareRefToTexture:
+				glSamplerParameteri(mId, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
+				break;
+			case CompareMode::None:
+				glSamplerParameteri(mId, GL_TEXTURE_COMPARE_MODE, GL_NONE);
+				break;
+			}
+
+			switch (compareFunc)
+			{
+			case CompareFunc::LesserEqual:
+				glSamplerParameteri(mId, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL);
+				break;
+			case CompareFunc::GreaterEqual:
+				glSamplerParameteri(mId, GL_TEXTURE_COMPARE_FUNC, GL_GEQUAL);
+				break;
+			case CompareFunc::Lesser:
+				glSamplerParameteri(mId, GL_TEXTURE_COMPARE_FUNC, GL_LESS);
+				break;
+			case CompareFunc::Greater:
+				glSamplerParameteri(mId, GL_TEXTURE_COMPARE_FUNC, GL_GREATER);
+				break;
+			case CompareFunc::Equal:
+				glSamplerParameteri(mId, GL_TEXTURE_COMPARE_FUNC, GL_EQUAL);
+				break;
+			case CompareFunc::NotEqual:
+				glSamplerParameteri(mId, GL_TEXTURE_COMPARE_FUNC, GL_NOTEQUAL);
+				break;
+			case CompareFunc::Always:
+				glSamplerParameteri(mId, GL_TEXTURE_COMPARE_FUNC, GL_ALWAYS);
+				break;
+			case CompareFunc::Never:
+				glSamplerParameteri(mId, GL_TEXTURE_COMPARE_FUNC, GL_NEVER);
+				break;
+			}
+		}
+	};
+
+	class Buffer final : public ObjectGL
 	{
-		HorseRadish::OpenGL::glCreateBuffers(1, &this->glID);
-	}
+	public:
+		enum class Type { ArrayBuffer, ElementArrayBuffer, PixelPackBuffer, PixelUnpackBuffer, TextureBuffer, UniformBuffer, ShaderStorage, DrawIndirect };
+		enum class UsageType { ServerStatic, OnlyRead, OnlyWrite, PersistentOnlyRead, PersistentOnlyWrite};
 
-	bool LoadBuffer(const void * const data, const int &dataSize, const UsageType &usage) const;
-	bool UpdateBuffer(const void * const data, const int &dataSize, const int &startOffset) const;
-	void Unbind() const;
+		struct DrawElementsIndirectCommand {
+			GLuint count;
+			GLuint instanceCount;
+			GLuint firstIndex;
+			GLuint baseVertex;
+			GLuint baseInstance;
+		};
+		static_assert(sizeof(DrawElementsIndirectCommand) == 20, "DrawElementsIndirectCommand must be tightly packed: sizeof() == 20");
 
-	void Bind() const
+	private:
+		GLenum mType = 0;
+		void* mMappedPtr = nullptr;
+		UsageType mUsageType = UsageType::ServerStatic;
+		
+	public:
+		Buffer() = default;
+
+		~Buffer()
+		{
+			reset();
+		}
+
+		bool init(Type type, size_t datasize, UsageType usageType)
+		{
+			return init(type, nullptr, datasize, usageType);
+		}
+
+		bool init(Type type, const void* const dataPtr, size_t dataSize, UsageType usageType)
+		{
+			if (isValid() || (dataSize <= 0))
+				return false;
+
+			switch (usageType)
+			{
+			case UsageType::ServerStatic:
+				glCreateBuffers(1, &mId);
+				glNamedBufferStorage(mId, dataSize, dataPtr, 0);
+				break;
+			case UsageType::OnlyRead:
+				glCreateBuffers(1, &mId);
+				glNamedBufferStorage(mId, dataSize, dataPtr, GL_MAP_READ_BIT);
+				break;
+			case UsageType::OnlyWrite:
+				glCreateBuffers(1, &mId);
+				glNamedBufferStorage(mId, dataSize, dataPtr, GL_MAP_WRITE_BIT);
+				break;
+			case UsageType::PersistentOnlyRead:
+				glCreateBuffers(1, &mId);
+				glNamedBufferStorage(mId, dataSize, dataPtr, GL_MAP_READ_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
+				mMappedPtr = glMapNamedBufferRange(mId, 0, dataSize, GL_MAP_READ_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
+				break;
+			case UsageType::PersistentOnlyWrite:
+				glCreateBuffers(1, &mId);
+				glNamedBufferStorage(mId, dataSize, dataPtr, GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
+				mMappedPtr = glMapNamedBufferRange(mId, 0, dataSize, GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
+				break;
+			default:
+				return false;
+			}
+
+			switch (type)
+			{
+			case Type::ArrayBuffer:
+				mType = GL_ARRAY_BUFFER;
+				break;
+			case Type::ElementArrayBuffer:
+				mType = GL_ELEMENT_ARRAY_BUFFER;
+				break;
+			case Type::PixelPackBuffer:
+				mType = GL_PIXEL_PACK_BUFFER;
+				break;
+			case Type::PixelUnpackBuffer:
+				mType = GL_PIXEL_UNPACK_BUFFER;
+				break;
+			case Type::TextureBuffer:
+				mType = GL_TEXTURE_BUFFER;
+				break;
+			case Type::UniformBuffer:
+				mType = GL_UNIFORM_BUFFER;
+				break;
+			case Type::ShaderStorage:
+				mType = GL_SHADER_STORAGE_BUFFER;
+				break;
+			case Type::DrawIndirect:
+				mType = GL_DRAW_INDIRECT_BUFFER;
+				break;
+			default:
+				return false;
+			}
+
+			mUsageType = usageType;
+			return true;
+		}
+
+		void reset()
+		{
+			if (!isValid())
+				return;
+
+			if (mMappedPtr)
+			{
+				glUnmapNamedBuffer(mId);
+				mMappedPtr = nullptr;
+			}
+
+			glDeleteBuffers(1, &mId);
+			mId = 0;
+
+			mType = 0;
+			mUsageType = UsageType::ServerStatic;
+		}
+
+		void bind() const
+		{
+			if (!isValid())
+				return;
+
+			glBindBuffer(mType, mId);
+		}
+
+		void unbind()
+		{
+			if (!isValid())
+				return;
+
+			glBindBuffer(mType, 0);
+		}
+
+		bool flush(const size_t bufferOffset, const size_t dataSize)
+		{
+			if (!isValid())
+				return false;
+
+			if (mUsageType != UsageType::PersistentOnlyWrite)
+				return false;
+
+			glFlushMappedNamedBufferRange(mId, bufferOffset, dataSize);
+			return true;
+		}
+
+		bool copyTo(const GLuint targetBufferId, const size_t bufferReadOffset, const size_t bufferWriteOffset, const size_t copyDataSize)
+		{
+			if (!isValid() || (targetBufferId == 0) || (copyDataSize <= 0))
+				return false;
+
+			glCopyNamedBufferSubData(mId, targetBufferId, bufferReadOffset, bufferWriteOffset, copyDataSize);
+			return true;
+		}
+
+		bool clearData(const size_t bufferOffset, const size_t bufferSize, const float* dataPtr, const size_t dataNumComponents) const
+		{
+			if (!isValid() || (bufferSize <= 0) || !dataPtr)
+				return false;
+
+			switch (dataNumComponents)
+			{
+			case 0:
+				glClearNamedBufferSubData(mId, GL_R32F, bufferOffset, bufferSize, GL_RED, GL_FLOAT, dataPtr);
+				return true;
+			case 1:
+				glClearNamedBufferSubData(mId, GL_RG32F, bufferOffset, bufferSize, GL_RG, GL_FLOAT, dataPtr);
+				return true;
+			case 2:
+				glClearNamedBufferSubData(mId, GL_RGB32F, bufferOffset, bufferSize, GL_RGB, GL_FLOAT, dataPtr);
+				return true;
+			}
+
+			return false;
+		}
+
+		bool writeData(const void* const dataPtr, const size_t dataSize, const size_t bufferOffset) const
+		{
+			if (!dataPtr || (dataSize <= 0) || !isValid())
+				return false;
+
+			if ((mUsageType != UsageType::OnlyWrite) && (mUsageType != UsageType::PersistentOnlyWrite))
+				return false;
+
+			if (mMappedPtr)
+			{
+				memcpy(reinterpret_cast<unsigned char*>(mMappedPtr) + bufferOffset, dataPtr, dataSize);
+			}
+			else
+			{
+				auto mappedPtr = glMapNamedBufferRange(mId, bufferOffset, dataSize, GL_MAP_WRITE_BIT);
+				memcpy(mappedPtr, dataPtr, dataSize);
+				glUnmapNamedBuffer(mId);
+			}
+
+			return true;
+		}
+
+		bool writeData(std::function<void(void*, size_t)> writeOp, const size_t dataSize, const size_t bufferOffset) const
+		{
+			if (!writeOp || (dataSize <= 0) || !isValid())
+				return false;
+
+			if ((mUsageType != UsageType::OnlyWrite) && (mUsageType != UsageType::PersistentOnlyWrite))
+				return false;
+
+			if (mMappedPtr)
+			{
+				writeOp(reinterpret_cast<unsigned char*>(mMappedPtr) + bufferOffset, dataSize);
+			}
+			else
+			{
+				auto mappedPtr = glMapNamedBufferRange(mId, bufferOffset, dataSize, GL_MAP_WRITE_BIT);
+				writeOp(mappedPtr, dataSize);
+				glUnmapNamedBuffer(mId);
+			}
+
+			return true;
+		}
+
+		bool readData(const size_t bufferOffset, const size_t dataSize, void* const dataPtr) const
+		{
+			if (!dataPtr || (dataSize <= 0) || !isValid())
+				return false;
+
+			if ((mUsageType != UsageType::OnlyRead) && (mUsageType != UsageType::PersistentOnlyRead))
+				return false;
+
+			if (mMappedPtr)
+			{
+				memcpy(dataPtr, reinterpret_cast<unsigned char*>(mMappedPtr) + bufferOffset, dataSize);
+			}
+			else
+			{
+				auto mappedPtr = glMapNamedBufferRange(mId, bufferOffset, dataSize, GL_MAP_READ_BIT);
+				memcpy(dataPtr, mappedPtr, dataSize);
+				glUnmapNamedBuffer(mId);
+			}
+
+			return true;
+		}
+	};
+
+	class Query final : public ObjectGL
 	{
-		HorseRadish::OpenGL::glBindBuffer(this->glTarget, this->glID);
-	}
-};
-
-//§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§
-//§§§§§§   Classe VertexArray	§§§§§
-//§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§
-class VertexArray : public ObjectGL
-{
-private:
-	void objectDestroy()
-	{
-		HorseRadish::OpenGL::glDeleteVertexArrays(1, &this->glID);
-	}
-
-public:
-	VertexArray()
-		: ObjectGL()
-	{
-		HorseRadish::OpenGL::glCreateVertexArrays(1, &this->glID);
-	}
-
-	void Bind() const
-	{
-		HorseRadish::OpenGL::glBindVertexArray(this->glID);
-	}
-};
-
-//§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§
-//§§§§§§   Classe RenderBuffer	§§§§§
-//§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§
-class RenderBuffer : public ObjectGL
-{
-private:
-	void objectDestroy()
-	{
-		HorseRadish::OpenGL::glDeleteRenderbuffers(1, &this->glID);
-	}
-
-public:
-	RenderBuffer()
-		: ObjectGL()
-	{
-		HorseRadish::OpenGL::glCreateRenderbuffers(1, &this->glID);
-	}
-
-	void Init(const int &format, const int &width, const int &height) const;
-};
-
-//§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§
-//§§§§§§   Classe FrameBuffer	§§§§§
-//§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§
-class FrameBuffer : public ObjectGL
-{
-private:
-	void objectDestroy()
-	{
-		HorseRadish::OpenGL::glDeleteFramebuffers(1, &this->glID);
-	}
-
-public:
-	FrameBuffer()
-		: ObjectGL()
-	{
-		HorseRadish::OpenGL::glCreateFramebuffers(1, &this->glID);
-	}
-
-	bool GetStatusComplete() const;
-	void AttachTColor(const Texture * const textureToAttach, const int attachUnit) const;
-	void AttachTColor(const Texture * const textureToAttach, const int attachUnit, const int cubemapFaceIndex) const;
-	void AttachTDepth(const Texture * const textureToAttach) const;
-	void AttachRColor(const RenderBuffer * const renderbufferToAttach, const int attachUnit) const;
-	void AttachRDepth(const RenderBuffer * const renderbufferToAttach) const;
-
-	void Bind() const
-	{
-		HorseRadish::OpenGL::glBindFramebuffer(GL_FRAMEBUFFER, this->glID);
-	}
-};
-
-//§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§
-//§§§§§§   Classe Shader	§§§§§
-//§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§
-class Shader : public ObjectGL
-{
-public:
-	unsigned int glTarget;
-
-public:
-	enum ShaderType{
-		Vertex, Fragment
+	public:
+		enum class Type {
+			SamplesPassed, AnySamplePassed, AnySamplePassedConservative, TimeElapsed,
+			VerticesSubmitted, PrimitivesSubmitted, VertexShaderInvocations, FragmentShaderInvocations, ClippingInputPrimitives, ClippingOutputPrimitives
 		};
 
-private:
-	ShaderType shaderType;
+		template<int N>
+		class Group
+		{
+			static_assert(N > 0, "A query group must have at least one query");
 
-	void objectDestroy()
-	{
-		HorseRadish::OpenGL::glDeleteShader(this->glID);
-	}
+			Query mQueries[N];
 
-public:
-	Shader(const ShaderType &shaderType)
-		: ObjectGL()
-		, shaderType(shaderType), glTarget(0)
-	{
-		if (this->shaderType == Vertex)
-			this->glTarget = GL_VERTEX_SHADER;
-		else if (this->shaderType == Fragment)
-			this->glTarget = GL_FRAGMENT_SHADER;
-		else
-			return;
+		public:
+			Group(std::initializer_list<Type> types)
+			{
+				assert(types.size() == N);
 
-		this->glID = HorseRadish::OpenGL::glCreateShader(this->glTarget);
-	}
+				int index = 0;
+				for (const auto& queryType : types)
+					mQueries[index++].init(queryType);
+			}
 
-	bool SupplyCode(const char * const sourceCode) const;
-	bool SupplyCode(const char * const sourceCode, const char * const textDefines) const;
-	bool SupplyCodeFile(const HorseRadish::Streams::Stream *fileStream) const;
-	bool SupplyCodeFile(const HorseRadish::Streams::Stream *fileStream, const char * const textDefines) const;
-	bool Compile(char ** const writeOutput) const;
-};
+			Group(const Group&) = delete;
+			Group& operator=(const Group&) = delete;
 
-//§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§
-//§§§§§§   Classe Program	§§§§§
-//§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§
-class Program : public ObjectGL
-{
-private:
-	void objectDestroy()
-	{
-		HorseRadish::OpenGL::glDeleteProgram(this->glID);
-	}
+			void queriesBegin() const
+			{
+				for (int i = 0; i < N; i++)
+					mQueries[i].queryBegin();
+			}
 
-public:
-	Program()
-		: ObjectGL()
-	{
-		this->glID = HorseRadish::OpenGL::glCreateProgram();
-	}
+			void queriesEnd() const
+			{
+				for (int i = 0; i < N; i++)
+					mQueries[i].queryEnd();
+			}
 
-	bool Link(char ** const writeOutput) const;
-	void AttachShaders(const Shader * const shader) const;
+			template<int Index>
+			GLuint getResult(bool wait = true) const
+			{
+				static_assert((Index >= 0) && (Index < N), "Query index must be positive and less than N");
 
-	void Bind() const
-	{
-		HorseRadish::OpenGL::glUseProgram(this->glID);
-	}
-};
+				return mQueries[Index].getResult(wait);
+			}
 
-//§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§
-//§§§§§§   Classe ObjectsManager	§§§§§
-//§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§
+			template<int Index>
+			GLuint64 getResultI64(bool wait = true) const
+			{
+				static_assert((Index >= 0) && (Index < N), "Query index must be positive and less than N");
 
-#define STEXTURE_COMPRESS			(1<<0)
-#define STEXTURE_NO_MIPMAPS			(1<<1)
-#define STEXTURE_NORMAL_MAP_MIPS	(1<<2)
-
-struct TexData;
-struct ImgData;
-
-class ObjectsManager
-{
-public:
-	enum ObjectType{
-		ArrayBuffer, ElementBuffer, PixelUnpackBuffer, PixelPackBuffer, VertexArray, Sampler, Texture1D, Texture2D, Texture3D, TextureCubeMap, TextureRect, QuerySamples, Program, ShaderVertex, ShaderFragment, FrameBuffer, RenderBuffer
+				return mQueries[Index].getResultI64(wait);
+			}
 		};
 
-private:
-	struct OBJECT_STRUCT
-	{
-		ObjectGL *data;
-		OBJECT_STRUCT *prox,*prev;
+	private:
+		Type mType = Type::SamplesPassed;
+
+	public:
+		Query() = default;
+
+		~Query()
+		{
+			reset();
+		}
+
+		void init(Type queryType = Type::SamplesPassed)
+		{
+			if (isValid())
+				return;
+
+			mType = queryType;
+			glGenQueries(1, &mId);
+		}
+
+		void reset()
+		{
+			if (!isValid())
+				return;
+
+			glDeleteQueries(1, &mId);
+			mId = 0;
+
+			mType = Type::SamplesPassed;
+		}
+
+		void queryBegin() const
+		{
+			if (!isValid())
+				return;
+
+			switch (mType)
+			{
+			case Type::SamplesPassed:
+				glBeginQuery(GL_SAMPLES_PASSED, mId);
+				break;
+			case Type::AnySamplePassed:
+				glBeginQuery(GL_ANY_SAMPLES_PASSED, mId);
+				break;
+			case Type::AnySamplePassedConservative:
+				glBeginQuery(GL_ANY_SAMPLES_PASSED_CONSERVATIVE, mId);
+				break;
+			case Type::TimeElapsed:
+				glBeginQuery(GL_TIME_ELAPSED, mId);
+				break;
+
+			case Type::VerticesSubmitted:
+				glBeginQuery(GL_VERTICES_SUBMITTED, mId);
+				break;
+			case Type::PrimitivesSubmitted:
+				glBeginQuery(GL_PRIMITIVES_SUBMITTED, mId);
+				break;
+			case Type::VertexShaderInvocations:
+				glBeginQuery(GL_VERTEX_SHADER_INVOCATIONS, mId);
+				break;
+			case Type::FragmentShaderInvocations:
+				glBeginQuery(GL_FRAGMENT_SHADER_INVOCATIONS, mId);
+				break;
+			case Type::ClippingInputPrimitives:
+				glBeginQuery(GL_CLIPPING_INPUT_PRIMITIVES, mId);
+				break;
+			case Type::ClippingOutputPrimitives:
+				glBeginQuery(GL_CLIPPING_OUTPUT_PRIMITIVES, mId);
+				break;
+			}
+		}
+
+		void queryEnd() const
+		{
+			if (!isValid())
+				return;
+
+			switch (mType)
+			{
+			case Type::SamplesPassed:
+				glEndQuery(GL_SAMPLES_PASSED);
+				break;
+			case Type::AnySamplePassed:
+				glEndQuery(GL_ANY_SAMPLES_PASSED);
+				break;
+			case Type::AnySamplePassedConservative:
+				glEndQuery(GL_ANY_SAMPLES_PASSED_CONSERVATIVE);
+				break;
+			case Type::TimeElapsed:
+				glEndQuery(GL_TIME_ELAPSED);
+				break;
+
+			case Type::VerticesSubmitted:
+				glEndQuery(GL_VERTICES_SUBMITTED);
+				break;
+			case Type::PrimitivesSubmitted:
+				glEndQuery(GL_PRIMITIVES_SUBMITTED);
+				break;
+			case Type::VertexShaderInvocations:
+				glEndQuery(GL_VERTEX_SHADER_INVOCATIONS);
+				break;
+			case Type::FragmentShaderInvocations:
+				glEndQuery(GL_FRAGMENT_SHADER_INVOCATIONS);
+				break;
+			case Type::ClippingInputPrimitives:
+				glEndQuery(GL_CLIPPING_INPUT_PRIMITIVES);
+				break;
+			case Type::ClippingOutputPrimitives:
+				glEndQuery(GL_CLIPPING_OUTPUT_PRIMITIVES);
+				break;
+			}
+		}
+
+		GLuint getResult(bool wait = true) const
+		{
+			if (!isValid())
+				return 0;
+
+			GLuint queryResult = 0;
+
+			glGetQueryObjectuiv(mId, wait ? GL_QUERY_RESULT : GL_QUERY_RESULT_NO_WAIT, &queryResult);
+			return queryResult;
+		}
+
+		GLuint64 getResultI64(bool wait = true) const
+		{
+			if (!isValid())
+				return 0;
+
+			GLuint64 queryResult = 0;
+
+			glGetQueryObjectui64v(mId, wait ? GL_QUERY_RESULT : GL_QUERY_RESULT_NO_WAIT, &queryResult);
+			return queryResult;
+		}
+
+		bool isResultAvailable() const
+		{
+			if (!isValid())
+				return 0;
+
+			GLint queryResult;
+
+			glGetQueryObjectiv(mId, GL_QUERY_RESULT_AVAILABLE, &queryResult);
+			return (queryResult != 0);
+		}
 	};
 
-	OBJECT_STRUCT *listaObjectos, *listaUltimo;
-	const Context *context;
-	int logID;
+	class QueryCounter final : public ObjectGL
+	{
+	public:
+		enum class Type { Timestamp };
 
-	OBJECT_STRUCT* criaObject();
-	void destroiObject(OBJECT_STRUCT * const object);
-	OBJECT_STRUCT* procuraObject(const ObjectGL * const object);
-	void writeConsola(const char * const logData);
-	void writeLog(const char * const logData);
+	private:
+		Type mType = Type::Timestamp;
 
-public:
-	ObjectsManager(const Context * const context);
-	~ObjectsManager();
-	
-	//criação e remoção
-	const Objects::ObjectGL* ObjectCreate(const int &type);
-	void ObjectDelete(const Objects::ObjectGL * const object);
-	void Clear(void);
+	public:
+		QueryCounter() = default;
 
-	//coisas para GLSLang
-	bool ShadersRead(HorseRadish::IO::FileSystem * const fileSystem, const Objects::Program *program, const char * const fileVertexShader, const char * const fileFragmentShader, const char * const textDefines);
-	const Objects::Shader* ShaderCreate(const int type, const HorseRadish::Streams::Stream *fileStream);
-	const Objects::Shader* ShaderCreate(const int type, const HorseRadish::Streams::Stream *fileStream, const char * const textDefines);
-	const Objects::Program* ProgramCreate(const Objects::Shader *vertexShader, const Objects::Shader *fragmentShader);
+		~QueryCounter()
+		{
+			reset();
+		}
 
-	//coisas para os samplers
-	void SamplerSetAnisotropy(const Objects::Sampler * const sampler, const float &anisotropyLevel) const;
-	
-public:
-	enum TargetType {Alpha8, RGBA16, RGBA32, RGBA64, RGBA128, Depth16, Depth24, DepthStencil, Red32};
+		void init(Type queryType = Type::Timestamp)
+		{
+			if (isValid())
+				return;
 
-	const Objects::Texture* create1D(const ImgData * const img, const TargetType targetType, const int flag);
-	const Objects::Texture* Create1D(const HorseRadish::IO::Path &path, const TargetType targetType, const int flag);
-	const Objects::Texture* Create1D(const unsigned char * const data, const int comp, const TargetType targetType, const int flag);
-	const Objects::Texture* Create1D(const HorseRadish::Imaging::Image * const img, const TargetType targetType, const int flag);
+			mType = queryType;
+			glGenQueries(1, &mId);
+		}
 
-	const Objects::Texture* create2D(const ImgData * const img, const TargetType targetType, const int flag);
-	const Objects::Texture* Create2D(const HorseRadish::IO::Path &path, const TargetType targetType, const int flag);
-	const Objects::Texture* Create2D(const unsigned char * const data, const int comp, const int larg, const TargetType targetType, const int flag);
-	const Objects::Texture* Create2D(const HorseRadish::Imaging::Image * const img, const TargetType targetType, const int flag);
+		void reset()
+		{
+			if (!isValid())
+				return;
 
-	const Objects::Texture* Create3D(const unsigned char * const data, const int comp, const int larg, const int depth, const TargetType targetType, const int flag);
+			glDeleteQueries(1, &mId);
+			mId = 0;
 
-	const Objects::Texture* CreateCube(const unsigned int faceSize, const TargetType targetType, const int flag);
-	const Objects::Texture* CreateCube(const HorseRadish::IO::Path &path, const TargetType targetType, const int flag);
+			mType = Type::Timestamp;
+		}
 
-	const Objects::Texture* createRect(const bool immutable, const ImgData * const img, const TargetType targetType);
-	const Objects::Texture* CreateRect(const bool immutable, const HorseRadish::IO::Path &path, const TargetType targetType);
-	const Objects::Texture* CreateRect(const bool immutable, const unsigned char * const data, const int comp, const int larg, const TargetType targetType);
-	const Objects::Texture* CreateRect(const bool immutable, const HorseRadish::Imaging::Image * const img, const TargetType targetType);
+		void query() const
+		{
+			if (!isValid())
+				return;
 
-	const Objects::Texture* LoadDDS(const HorseRadish::IO::Path &path);
-};
+			switch (mType)
+			{
+			case Type::Timestamp:
+				glQueryCounter(mId, GL_TIMESTAMP);
+				break;
+			}
+		}
 
-//§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§
-//§§§§§§   Classe Context	§§§§§
-//§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§
-class Context
-{
-public:
-	enum Extensions {FilterAnisotropic = (1<<0), CompressionS3 = (1<<1), CompressionVTC = (1<<2)};
-	enum InformationType {Version, Vendor, Renderer, GLSLVersion, MaxDrawBuffers, MaxColorAttachments, MaxTextureSize, MaxTexture3DSize, MaxTextureCubemapSize, MaxTextureRectSize};
-	enum CounterType {Frames, Triangles, Vertices};
+		GLuint64 getResultI64(bool wait = true) const
+		{
+			if (!isValid())
+				return 0;
 
-private:
-	struct Info{
-		String version, vendor, renderer, glslVersion;
-		int versionMajor, versionMinor;
-		int maxDrawBuffers, maxColorAttachments, maxTextureSize, maxTexture3DSize, maxTextureCubemapSize, maxTextureRectSize;
-		float maxAnisotropy;
-	} info;
-	struct Stats{
-		unsigned int frameCount, triangleCount, vertexCount;
-	} stats;
+			GLuint64 queryResult = 0;
 
-	int extensionsAvailable;
+			glGetQueryObjectui64v(mId, wait ? GL_QUERY_RESULT : GL_QUERY_RESULT_NO_WAIT, &queryResult);
+			return queryResult;
+		}
 
-	friend class ObjectsManager;
+		bool isResultAvailable() const
+		{
+			if (!isValid())
+				return 0;
 
-protected:
-	bool contextCreated;
+			GLint queryResult;
 
-public:
-	Context();
-	virtual ~Context();
+			glGetQueryObjectiv(mId, GL_QUERY_RESULT_AVAILABLE, &queryResult);
+			return (queryResult != 0);
+		}
+	};
 
-	void InitializeContext();
-	bool IsContextCreated() const;
-	bool IsExtensionPresent(const Extensions &extension) const;
-	bool IsExtensionPresent(const char * const extensionName) const;
-	void DispatchDebugMessages() const;
+	class VertexArray final : public ObjectGL
+	{
+	public:
+		VertexArray() = default;
 
-	void CounterReset(const CounterType &counterType);
-	void CounterIncrease(const CounterType &counterType, unsigned int amount = 1);
-	unsigned int CounterGetValue(const CounterType &counterType) const;
+		~VertexArray()
+		{
+			reset();
+		}
 
-	bool GetInformation(const InformationType &informationType, String &infoValue) const;
-	bool GetInformation(const InformationType &informationType, int &infoValue) const;
-};
+		void init()
+		{
+			if (isValid())
+				return;
 
-}//namespace Objects
-}//namespace OpenGL
-}//namespace HorseRadish
+			glCreateVertexArrays(1, &mId);
+		}
 
-#endif
+		void reset()
+		{
+			if (!isValid())
+				return;
+
+			glDeleteVertexArrays(1, &mId);
+			mId = 0;
+		}
+
+		void bind() const
+		{
+			if (!isValid())
+				return;
+
+			glBindVertexArray(mId);
+		}
+	};
+
+	class FrameBuffer final : public ObjectGL
+	{
+	public:
+		enum class Status { Complete, Unsupported, Incomplete, Unknown };
+
+	public:
+		static void unbind()
+		{
+			glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		}
+
+	public:
+		FrameBuffer() = default;
+
+		~FrameBuffer()
+		{
+			reset();
+		}
+
+		void init()
+		{
+			if (isValid())
+				return;
+
+			glCreateFramebuffers(1, &mId);
+		}
+
+		void reset()
+		{
+			if (!isValid())
+				return;
+
+			glDeleteFramebuffers(1, &mId);
+			mId = 0;
+		}
+
+		void bind() const
+		{
+			glBindFramebuffer(GL_FRAMEBUFFER, mId);
+		}
+
+		bool isStatusComplete() const
+		{
+			return (getStatus() == Status::Complete);
+		}
+
+		Status getStatus() const
+		{
+			switch (glCheckNamedFramebufferStatus(mId, GL_FRAMEBUFFER))
+			{
+			case GL_FRAMEBUFFER_COMPLETE:
+				return Status::Complete;
+
+			case GL_FRAMEBUFFER_UNSUPPORTED:
+				return Status::Unsupported;
+
+			case GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT:
+			case GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT:
+			case GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER:
+			case GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER:
+			case GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS:
+				return Status::Incomplete;
+			}
+
+			return Status::Unknown;
+		}
+
+		template<int NBuffers>
+		void drawBuffers(std::array<GLenum, NBuffers> buffers)
+		{
+			hr::gl::glNamedFramebufferDrawBuffers(mId, NBuffers, buffers.data());
+		}
+
+		const FrameBuffer& attachTColor(const Texture& textureToAttach, GLuint attachUnit) const
+		{
+			if (!isValid() || !textureToAttach.isRenderable() || (!textureToAttach.isType(Texture::Type::Tex2D) && !textureToAttach.isType(Texture::Type::TexRectangle)))
+				return *this;
+
+			hr::gl::glNamedFramebufferTexture(mId, GL_COLOR_ATTACHMENT0 + attachUnit, textureToAttach.id(), 0);
+
+			return *this;
+		}
+
+		const FrameBuffer& attachTColor(const Texture& textureToAttach, GLuint attachUnit, Texture::CubemapFace cubemapFace) const
+		{
+			if (!isValid() || !textureToAttach.isRenderable() || !textureToAttach.isType(Texture::Type::TexCubemap))
+				return *this;
+
+			switch (cubemapFace)
+			{
+			case Texture::CubemapFace::PosX:
+				hr::gl::glNamedFramebufferTextureLayer(mId, GL_COLOR_ATTACHMENT0 + attachUnit, textureToAttach.id(), 0, GL_TEXTURE_CUBE_MAP_POSITIVE_X);
+			case Texture::CubemapFace::NegX:
+				hr::gl::glNamedFramebufferTextureLayer(mId, GL_COLOR_ATTACHMENT0 + attachUnit, textureToAttach.id(), 0, GL_TEXTURE_CUBE_MAP_NEGATIVE_X);
+			case Texture::CubemapFace::PosY:
+				hr::gl::glNamedFramebufferTextureLayer(mId, GL_COLOR_ATTACHMENT0 + attachUnit, textureToAttach.id(), 0, GL_TEXTURE_CUBE_MAP_POSITIVE_Y);
+			case Texture::CubemapFace::NegY:
+				hr::gl::glNamedFramebufferTextureLayer(mId, GL_COLOR_ATTACHMENT0 + attachUnit, textureToAttach.id(), 0, GL_TEXTURE_CUBE_MAP_NEGATIVE_Y);
+			case Texture::CubemapFace::PosZ:
+				hr::gl::glNamedFramebufferTextureLayer(mId, GL_COLOR_ATTACHMENT0 + attachUnit, textureToAttach.id(), 0, GL_TEXTURE_CUBE_MAP_POSITIVE_Z);
+			case Texture::CubemapFace::NegZ:
+				hr::gl::glNamedFramebufferTextureLayer(mId, GL_COLOR_ATTACHMENT0 + attachUnit, textureToAttach.id(), 0, GL_TEXTURE_CUBE_MAP_NEGATIVE_Z);
+			}
+			
+			return *this;
+		}
+
+		const FrameBuffer& attachTDepth(const Texture& textureToAttach) const
+		{
+			if (!isValid() || !textureToAttach.isRenderable() || (!textureToAttach.isType(Texture::Type::Tex2D) && !textureToAttach.isType(Texture::Type::TexRectangle)))
+				return *this;
+
+			hr::gl::glNamedFramebufferTexture(mId, GL_DEPTH_ATTACHMENT, textureToAttach.id(), 0);
+
+			return *this;
+		}
+	};
+
+	class ShaderProgram final : public ObjectGL
+	{
+		friend class ProgramPipeline;
+
+		GLenum mType = 0;
+
+	public:
+		enum class Type{ Vertex, Fragment, Compute };
+
+		ShaderProgram() = default;
+
+		~ShaderProgram()
+		{
+			reset();
+		}
+
+		bool init(Type type, const std::string& sourceCode)
+		{
+			if (sourceCode.empty())
+				return false;
+
+			return init(type, sourceCode.c_str());
+		}
+
+		bool init(Type type, const char* const sourceCode)
+		{
+			if (!sourceCode || (sourceCode[0] == '\0') || isValid())
+				return false;
+
+			switch (type)
+			{
+			case Type::Vertex:
+			{
+				mType = GL_VERTEX_SHADER;
+				mId = glCreateShaderProgramv(GL_VERTEX_SHADER, 1, &sourceCode);
+
+				break;
+			}
+			case Type::Fragment:
+			{
+				mType = GL_FRAGMENT_SHADER;
+				mId = glCreateShaderProgramv(GL_FRAGMENT_SHADER, 1, &sourceCode);
+
+				break;
+			}
+			case Type::Compute:
+			{
+				mType = GL_COMPUTE_SHADER;
+				mId = glCreateShaderProgramv(GL_COMPUTE_SHADER, 1, &sourceCode);
+
+				break;
+			}
+			default:
+				return false;
+			}
+
+			GLint isLinked = 0;
+			glGetProgramiv(mId, GL_LINK_STATUS, &isLinked);
+
+			return (isLinked == GL_FALSE);
+		}
+
+		void reset()
+		{
+			if (!isValid())
+				return;
+
+			glDeleteProgram(mId);
+			mId = 0;
+		}
+
+		std::string getInfoLog() const
+		{
+			if (!isValid())
+				return std::string();
+
+			GLint maxLength = 0;
+			glGetProgramiv(mId, GL_INFO_LOG_LENGTH, &maxLength);
+			if (maxLength <= 0)
+				return std::string();
+
+			std::vector<GLchar> infoLog(maxLength);
+			glGetProgramInfoLog(mId, maxLength, &maxLength, infoLog.data());
+
+			return std::string(&infoLog[0]);
+		}
+
+		GLint getUniformLocation(const char* const uniformName)
+		{
+			if (!isValid())
+				return -1;
+
+			return glGetUniformLocation(mId, uniformName);
+		}
+	};
+
+	class ProgramPipeline final : public ObjectGL
+	{
+	public:
+		ProgramPipeline() = default;
+
+		~ProgramPipeline()
+		{
+			reset();
+		}
+
+		void init()
+		{
+			if (isValid())
+				return;
+
+			glGenProgramPipelines(1, &mId);
+		}
+
+		void reset()
+		{
+			if (!isValid())
+				return;
+
+			glDeleteProgramPipelines(1, &mId);
+			mId = 0;
+		}
+
+		bool setStage(const ShaderProgram &program)
+		{
+			if (!isValid() || !program.isValid())
+				return false;
+
+			GLbitfield stageMask = 0;
+			switch (program.mType)
+			{
+			case GL_VERTEX_SHADER:
+				stageMask |= GL_VERTEX_SHADER_BIT;
+				break;
+			case GL_FRAGMENT_SHADER:
+				stageMask |= GL_FRAGMENT_SHADER_BIT;
+				break;
+			case GL_COMPUTE_SHADER:
+				stageMask |= GL_COMPUTE_SHADER_BIT;
+				break;
+			}
+			
+			if (stageMask != 0)
+				glUseProgramStages(mId, stageMask, program.mId);
+
+			return true;
+		}
+
+		std::string getInfoLog() const
+		{
+			if (!isValid())
+				return std::string();
+
+			GLint maxLength = 0;
+			glGetProgramPipelineiv(mId, GL_INFO_LOG_LENGTH, &maxLength);
+			if (maxLength <= 0)
+				return std::string();
+
+			std::vector<GLchar> infoLog(maxLength);
+			glGetProgramPipelineInfoLog(mId, maxLength, &maxLength, infoLog.data());
+
+			return std::string(&infoLog[0]);
+		}
+	};
+
+	//a glFenceSync is not considered a GL object
+	class FenceSync
+	{
+		GLsync mSync = 0;
+
+	public:
+		FenceSync() = default;
+
+		~FenceSync()
+		{
+			glDeleteSync(mSync);
+			mSync = 0;
+		}
+
+		void place()
+		{
+			glDeleteSync(mSync);
+			mSync = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+		}
+
+		void wait() const
+		{
+			if (!mSync)
+				return;
+
+			while (true)
+			{
+				switch (glClientWaitSync(mSync, GL_SYNC_FLUSH_COMMANDS_BIT, 1))
+				{
+				case GL_ALREADY_SIGNALED:
+				case GL_CONDITION_SATISFIED:
+					return;
+				}
+			}
+		}
+	};
+}

@@ -1,88 +1,28 @@
 #include "renderer2D.hpp"
 
-#include "common\ImageFactory.hpp"
+#include "../common/imageFactory.hpp"
 
-namespace HorseRadish
+namespace hr { namespace render
 {
-	namespace Render
+	void Renderer2D::initialize(size_t renderWidth, size_t renderHeight, hr::io::FileSystem * const fileSystem, const char* const textFont)
 	{
-		Renderer2D::Renderer2D(HorseRadish::OpenGL::Objects::Context * const glContext)
-			: Renderer(glContext)
-		{
-			this->glObjectManager = new HorseRadish::OpenGL::Objects::ObjectsManager(glContext);
-			//this->glTextureManager = new HorseRadish::OpenGL::Objects::ObjectsManager(glContext);
-			this->glUniformCache = new HorseRadish::OpenGL::Tools::UniformCache();
-			this->glImmediateMode = new HorseRadish::OpenGL::Tools::ImmediateMode(102);
-		}
+		mRenderWidth = renderWidth;
+		mRenderHeight = renderHeight;
 
-		Renderer2D::~Renderer2D()
-		{
-			this->glObjectManager->ObjectDelete(this->shaders.prog2DDrawNoTex);
-			this->glObjectManager->ObjectDelete(this->shaders.prog2DDrawTex);
-			this->glObjectManager->ObjectDelete(this->shaders.prog2DText);
-			this->glObjectManager->ObjectDelete(this->shaders.progDeferredDebug);
-			this->glObjectManager->ObjectDelete(this->shaders.progPPSimpleColor);
-			this->glObjectManager->ObjectDelete(this->shaders.progDebugTex);
-			this->glObjectManager->ObjectDelete(this->shaders.renderZPass);
-			this->shaders.prog2DDrawNoTex = nullptr;
-			this->shaders.prog2DDrawTex = nullptr;
-			this->shaders.progDeferredDebug = nullptr;
-			this->shaders.prog2DText = nullptr;
-			this->shaders.progPPSimpleColor = nullptr;
-			this->shaders.progDebugTex = nullptr;
-			this->shaders.renderZPass = nullptr;
+		mShaders.drawNoTex.progVertex.init(hr::gl::objects::ShaderProgram::Type::Vertex, fileSystem->readFileAsString("shaders/2dDraw.vshader"));
+		mShaders.drawNoTex.progFragment.init(hr::gl::objects::ShaderProgram::Type::Fragment, fileSystem->readFileAsString("shaders/2dDraw.fshader"));
 
-			delete this->gui.fontManager;
-			this->gui.font = nullptr;
-			this->gui.fontConsole = nullptr;
-			this->gui.fontManager = nullptr;
+		mShaders.drawNoTex.progPipeline.init();
+		mShaders.drawNoTex.progPipeline.setStage(mShaders.drawNoTex.progVertex);
+		mShaders.drawNoTex.progPipeline.setStage(mShaders.drawNoTex.progFragment);
 
-			delete this->glObjectManager;
-			//delete this->glTextureManager;
-			delete this->glUniformCache;
-			delete this->glImmediateMode;
+		mShaders.text.progVertex.init(hr::gl::objects::ShaderProgram::Type::Vertex, fileSystem->readFileAsString("shaders/2dText.vshader"));
+		mShaders.text.progFragment.init(hr::gl::objects::ShaderProgram::Type::Fragment, fileSystem->readFileAsString("shaders/2dText.fshader"));
 
-			this->glObjectManager = nullptr;
-			//this->glTextureManager = nullptr;
-			this->glUniformCache = nullptr;
-			this->glImmediateMode = nullptr;
-		}
+		mShaders.text.progPipeline.init();
+		mShaders.text.progPipeline.setStage(mShaders.text.progVertex);
+		mShaders.text.progPipeline.setStage(mShaders.text.progFragment);
 
-		void Renderer2D::Initialize(const int &renderWidth, const int &renderHeight, HorseRadish::IO::FileSystem * const fileSystem, HorseRadish::Console::Console *mainConsole)
-		{
-			int textSize;
-			const char* textFont;
-
-			textFont = mainConsole->VarGetDataS("sys_consoleTextFont");
-			textSize = mainConsole->VarGetDataI("sys_consoleTextSize");
-
-			this->renderWidth = renderWidth;
-			this->renderHeight = renderHeight;
-
-			this->shaders.prog2DDrawNoTex = (const HorseRadish::OpenGL::Objects::Program*)this->glObjectManager->ObjectCreate(HorseRadish::OpenGL::Objects::ObjectsManager::Program);
-			this->shaders.prog2DDrawTex = (const HorseRadish::OpenGL::Objects::Program*)this->glObjectManager->ObjectCreate(HorseRadish::OpenGL::Objects::ObjectsManager::Program);
-			this->glObjectManager->ShadersRead(fileSystem, this->shaders.prog2DDrawNoTex, "shaders/2dDraw.vshader", "shaders/2dDraw.fshader", nullptr);
-			this->glObjectManager->ShadersRead(fileSystem, this->shaders.prog2DDrawTex, "shaders/2dDraw.vshader", "shaders/2dDrawTex.fshader", nullptr);
-
-			this->shaders.prog2DText = (const HorseRadish::OpenGL::Objects::Program*)this->glObjectManager->ObjectCreate(HorseRadish::OpenGL::Objects::ObjectsManager::Program);
-			this->glObjectManager->ShadersRead(fileSystem, this->shaders.prog2DText, "shaders/2dText.vshader", "shaders/2dText.fshader", nullptr);
-
-			this->shaders.progDeferredDebug = (const HorseRadish::OpenGL::Objects::Program*)this->glObjectManager->ObjectCreate(HorseRadish::OpenGL::Objects::ObjectsManager::Program);
-			this->glObjectManager->ShadersRead(fileSystem, this->shaders.progDeferredDebug, "shaders/deferred_gbufferDebug.vshader", "shaders/deferred_gbufferDebug.fshader", nullptr);
-
-			this->shaders.progPPSimpleColor = (const HorseRadish::OpenGL::Objects::Program*)this->glObjectManager->ObjectCreate(HorseRadish::OpenGL::Objects::ObjectsManager::Program);
-			this->glObjectManager->ShadersRead(fileSystem, this->shaders.progPPSimpleColor, "shaders/ppSimpleColor.vshader", "shaders/ppSimpleColor.fshader", nullptr);
-
-			this->shaders.progDebugTex = (const HorseRadish::OpenGL::Objects::Program*)this->glObjectManager->ObjectCreate(HorseRadish::OpenGL::Objects::ObjectsManager::Program);
-			this->glObjectManager->ShadersRead(fileSystem, this->shaders.progDebugTex, "shaders/2dDrawDebug.vshader", "shaders/2dDrawDebug.fshader", nullptr);
-
-			this->shaders.renderZPass = (const HorseRadish::OpenGL::Objects::Program*)this->glObjectManager->ObjectCreate(HorseRadish::OpenGL::Objects::ObjectsManager::Program);
-			this->glObjectManager->ShadersRead(fileSystem, this->shaders.renderZPass, "shaders/rZPass.vshader", "shaders/rZPass.fshader", nullptr);
-
-			this->gui.fontManager = new HorseRadish::OpenGL::Tools::FontManager();
-			this->gui.font = this->gui.fontManager->CreateFont(textSize, textFont, this->shaders.prog2DText->glID);
-			this->gui.fontConsole = this->gui.fontManager->CreateFont(9, "C:\\Windows\\Fonts\\verdanab.ttf", this->shaders.prog2DText->glID);
-		}
-
-	} //Render
-} //HorseRadish
+		mGui.font = std::make_unique<tools::Font>(textFont, mShaders.text.progVertex.id(), mShaders.text.progFragment.id(), mShaders.text.progPipeline.id());
+	}
+} }
