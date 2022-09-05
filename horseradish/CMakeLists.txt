@@ -67,9 +67,13 @@ project(Mustard VERSION 0.9 LANGUAGES C CXX)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 add_executable(horseradish WIN32 "")
+add_executable(horseradish-utests "")
 
 target_compile_features(horseradish PRIVATE c_std_11)
 target_compile_features(horseradish PRIVATE cxx_std_20)
+
+target_compile_features(horseradish-utests PRIVATE c_std_11)
+target_compile_features(horseradish-utests PRIVATE cxx_std_20)
 
 if (HR_ENABLE_DEVEL)
 	target_compile_definitions(horseradish PRIVATE HR_DEVEL)
@@ -84,68 +88,75 @@ endif()
 # compiler specific
 
 if (CMAKE_GENERATOR MATCHES "^Visual Studio")
-	target_compile_definitions(horseradish
-		PRIVATE
-			WINVER=0x0601 # Windows 7
-			_WIN32_WINNT=0x0601 # Windows 7
-			NTDDI_VERSION=0x06010000
 
-			_UNICODE #default Windows APIs to Unicode
-			UNICODE
+	set(HR_COMPILER_DEFS
 
-			WIN32_LEAN_AND_MEAN
-			VC_EXTRALEAN
+		WINVER=0x0601 # Windows 7
+		_WIN32_WINNT=0x0601 # Windows 7
+		NTDDI_VERSION=0x06010000
 
-			NOMINMAX
-			NOGDICAPMASKS
-			NOMENUS
-			NOICONS
-			NOSYSCOMMANDS
-			NORASTEROPS
-			NOSHOWWINDOW
-			OEMRESOURCE
-			NOATOM
-			NOCOLOR
-			NOCTLMGR
-			NODRAWTEXT
-			NOMEMMGR
-			NOMETAFILE
-			NOMINMAX
-			NOOPENFILE
-			NOSCROLL
-			NOSERVICE
-			NOSOUND
-			NOTEXTMETRIC
-			NOWH
-			NOCOMM
-			NOKANJI
-			NOHELP
-			NOPROFILER
-			NODEFERWINDOWPOS
-			NOMCX
+		_UNICODE #default Windows APIs to Unicode
+		UNICODE
 
-			_ITERATOR_DEBUG_LEVEL=0
+		WIN32_LEAN_AND_MEAN
+		VC_EXTRALEAN
 
-			_CRT_SECURE_NO_WARNINGS
-			#_SCL_SECURE_NO_WARNINGS
-			_WINSOCK_DEPRECATED_NO_WARNINGS
+		NOMINMAX
+		NOGDICAPMASKS
+		NOMENUS
+		NOICONS
+		NOSYSCOMMANDS
+		NORASTEROPS
+		NOSHOWWINDOW
+		OEMRESOURCE
+		NOATOM
+		NOCOLOR
+		NOCTLMGR
+		NODRAWTEXT
+		NOMEMMGR
+		NOMETAFILE
+		NOMINMAX
+		NOOPENFILE
+		NOSCROLL
+		NOSERVICE
+		NOSOUND
+		NOTEXTMETRIC
+		NOWH
+		NOCOMM
+		NOKANJI
+		NOHELP
+		NOPROFILER
+		NODEFERWINDOWPOS
+		NOMCX
+
+		_ITERATOR_DEBUG_LEVEL=0
+
+		_CRT_SECURE_NO_WARNINGS
+		#_SCL_SECURE_NO_WARNINGS
+		_WINSOCK_DEPRECATED_NO_WARNINGS
 	)
 
-	target_compile_options(horseradish
-		PRIVATE
-			/GR- # disable RTTI
-			/utf-8
-			/permissive- # make sure we keep up with standards conformance
-			/W4 # warning level
-			#/WX # treat warnings as errors
-			/MP # enable parallel builds
-			/Bv # print toolchain info
-			#/Bt # print time spent in the compiler
+	set(HR_COMPILER_OPTIONS
 
-			/arch:AVX
+		/GR- # disable RTTI
+		/utf-8
+		/permissive- # make sure we keep up with standards conformance
+		/W4 # warning level
+		#/WX # treat warnings as errors
+		/MP # enable parallel builds
+		/Bv # print toolchain info
+		#/Bt # print time spent in the compiler
+
+		/arch:AVX
 	)
 
+	target_compile_definitions(horseradish PRIVATE ${HR_COMPILER_DEFS})
+	target_compile_options(horseradish PRIVATE ${HR_COMPILER_OPTIONS})
 	target_link_options(horseradish PRIVATE "$<$<C_COMPILER_ID:MSVC>:-SAFESEH:NO>")
+
+	target_compile_definitions(horseradish-utests PRIVATE ${HR_COMPILER_DEFS})
+	target_compile_options(horseradish-utests PRIVATE ${HR_COMPILER_OPTIONS})
+	target_link_options(horseradish-utests PRIVATE "$<$<C_COMPILER_ID:MSVC>:-SAFESEH:NO>")
 endif()
 
 #######################
@@ -160,6 +171,10 @@ target_include_directories(horseradish PUBLIC ${CMAKE_CURRENT_LIST_DIR}/src)
 target_include_directories(horseradish PUBLIC ${CMAKE_CURRENT_LIST_DIR}/external_includes/gl)
 target_include_directories(horseradish PUBLIC ${CMAKE_CURRENT_LIST_DIR}/external_includes/ffmpeg)
 
+target_include_directories(horseradish-utests PUBLIC ${CMAKE_CURRENT_LIST_DIR}/src)
+target_include_directories(horseradish-utests PUBLIC ${CMAKE_CURRENT_LIST_DIR}/external_includes/gl)
+target_include_directories(horseradish-utests PUBLIC ${CMAKE_CURRENT_LIST_DIR}/external_includes/ffmpeg)
+
 if (CMAKE_GENERATOR MATCHES "^Visual Studio")
 
 	if ("${CMAKE_GENERATOR_PLATFORM}" STREQUAL "Win32")
@@ -171,6 +186,13 @@ if (CMAKE_GENERATOR MATCHES "^Visual Studio")
 		target_link_libraries(horseradish PRIVATE ${CMAKE_CURRENT_LIST_DIR}/external_libs/x86/ffmpeg/avutil.lib)
 		target_link_libraries(horseradish PRIVATE ${CMAKE_CURRENT_LIST_DIR}/external_libs/x86/ffmpeg/swscale.lib)
 
+		set_target_properties(horseradish-utests PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_CURRENT_LIST_DIR}/../sandbox/bin_x86")
+
+		target_link_libraries(horseradish-utests PRIVATE ${CMAKE_CURRENT_LIST_DIR}/external_libs/x86/ffmpeg/avcodec.lib)
+		target_link_libraries(horseradish-utests PRIVATE ${CMAKE_CURRENT_LIST_DIR}/external_libs/x86/ffmpeg/avformat.lib)
+		target_link_libraries(horseradish-utests PRIVATE ${CMAKE_CURRENT_LIST_DIR}/external_libs/x86/ffmpeg/avutil.lib)
+		target_link_libraries(horseradish-utests PRIVATE ${CMAKE_CURRENT_LIST_DIR}/external_libs/x86/ffmpeg/swscale.lib)
+
 	else ()
 
 		set_target_properties(horseradish PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_CURRENT_LIST_DIR}/../sandbox/bin_x64")
@@ -180,11 +202,23 @@ if (CMAKE_GENERATOR MATCHES "^Visual Studio")
 		target_link_libraries(horseradish PRIVATE ${CMAKE_CURRENT_LIST_DIR}/external_libs/x64/ffmpeg/avutil.lib)
 		target_link_libraries(horseradish PRIVATE ${CMAKE_CURRENT_LIST_DIR}/external_libs/x64/ffmpeg/swscale.lib)
 
+		set_target_properties(horseradish-utests PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_CURRENT_LIST_DIR}/../sandbox/bin_x64")
+
+		target_link_libraries(horseradish-utests PRIVATE ${CMAKE_CURRENT_LIST_DIR}/external_libs/x64/ffmpeg/avcodec.lib)
+		target_link_libraries(horseradish-utests PRIVATE ${CMAKE_CURRENT_LIST_DIR}/external_libs/x64/ffmpeg/avformat.lib)
+		target_link_libraries(horseradish-utests PRIVATE ${CMAKE_CURRENT_LIST_DIR}/external_libs/x64/ffmpeg/avutil.lib)
+		target_link_libraries(horseradish-utests PRIVATE ${CMAKE_CURRENT_LIST_DIR}/external_libs/x64/ffmpeg/swscale.lib)
+
 	endif()
 
 endif()
 
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT horseradish)
 
+# just to make things pretty in IDEs
+
 get_property(HR_SOURCES TARGET horseradish PROPERTY SOURCES)
+source_group(TREE "${CMAKE_CURRENT_LIST_DIR}/src" FILES ${HR_SOURCES})
+
+get_property(HR_SOURCES TARGET horseradish-utests PROPERTY SOURCES)
 source_group(TREE "${CMAKE_CURRENT_LIST_DIR}/src" FILES ${HR_SOURCES}) # just to make things pretty in IDEs

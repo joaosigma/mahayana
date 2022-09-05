@@ -5,13 +5,13 @@
 namespace hr
 {
 	/*
-	Implementation details:
-		- the layout is x, y, z, w
-		- product (multiplication) order: (q1 * q2) means apply rotation of q1 and then the rotation of q2
-		- rotations are left-handed, which means positive rotation is clockwise about the axis of rotation (as pointing towards the negative values)
-			- plus X points right, plus Y points up and plus Z points forward (to the horizon)
-			- this is the same as in matrices
-		- almost every operation assumes that the quaternion is normalized (unit quaternion)
+	* Implementation details:
+	*   - the layout is x, y, z, w
+	*   - product (multiplication) order: (q1 * q2) means apply rotation of q1 and then the rotation of q2
+	*   - rotations are left-handed, which means positive rotation is clockwise about the axis of rotation (as pointing towards the negative values)
+	*     - plus X points right, plus Y points up and plus Z points forward (to the horizon)
+	*     - this is the same as in matrices
+	*   - almost every operation assumes that the quaternion is normalized (unit quaternion)
 	*/
 	class Quaternion
 	{

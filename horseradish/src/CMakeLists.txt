@@ -6,6 +6,11 @@ target_sources(horseradish
 		main.cpp
 )
 
+target_sources(horseradish-utests
+	PRIVATE
+		main_t.cpp
+)
+
 add_subdirectory(common)
 add_subdirectory(engine)
 add_subdirectory(libs)

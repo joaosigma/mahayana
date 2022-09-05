@@ -9,18 +9,18 @@
 namespace hr
 {
 	/*
-	The matrix classes uses a row-major mathematical convention and layout
-		row 0 is indices [0 ... 3]
-		row 1 is indices [4 ... 7]
-		...
-	This means that the layout reads as: [Xx Xy Xz 0.0 Yx Yy Yz 0.0 Zx Zy Zz 0.0 Tx Ty Tz 1.0]
-
-	So in order for multiplication with vectors to work, they must be read as a "column with 4 rows" and are transformed like: v*M (left of pre-multiplication)
-	This also means that product (multiplication) order, if you want to translate and *then* rotate, is: res = translation * rotation
-
-	Rotations are left-handed, which means positive rotation is clockwise about the axis of rotation (as pointing towards the negative values):
-		- plus X points right, plus Y points up and plus Z points forward (to the horizon)
-		- this is the same as in quaternions
+	* The matrix classes uses a row-major mathematical convention and layout
+	*   row 0 is indices [0 ... 3]
+	*   row 1 is indices [4 ... 7]
+	*   ...
+	* This means that the layout reads as: [Xx Xy Xz 0.0 Yx Yy Yz 0.0 Zx Zy Zz 0.0 Tx Ty Tz 1.0]
+	*
+	* So in order for multiplication with vectors to work, they must be read as a "column with 4 rows" and are transformed like: v*M (left of pre-multiplication)
+	* This also means that product (multiplication) order, if you want to translate and *then* rotate, is: res = translation * rotation
+	*
+	* Rotations are left-handed, which means positive rotation is clockwise about the axis of rotation (as pointing towards the negative values):
+	*   - plus X points right, plus Y points up and plus Z points forward (to the horizon)
+	*   - this is the same as in quaternions
 	*/
 
 	class Matrix

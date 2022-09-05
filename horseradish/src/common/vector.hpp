@@ -24,6 +24,7 @@ namespace hr
 
 	public:
 		using DataType = TDataType;
+		static constexpr size_t NumComponents = NComponents;
 
 	public:
 		//static methods
@@ -47,6 +48,7 @@ namespace hr
 		}
 
 		//instance methods
+
 		Vector() = default;
 
 		explicit Vector(const TDataType scalar)
@@ -366,6 +368,7 @@ namespace hr
 
 	public:
 		using DataType = float;
+		static constexpr size_t NumComponents{3};
 
 	public:
 		//static methods
@@ -932,6 +935,7 @@ namespace hr
 
 	public:
 		using DataType = double;
+		static constexpr size_t NumComponents{3};
 
 	public:
 		//static methods
@@ -1462,6 +1466,7 @@ namespace hr
 
 	public:
 		using DataType = float;
+		static constexpr size_t NumComponents{4};
 
 	public:
 

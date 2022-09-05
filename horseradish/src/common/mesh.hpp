@@ -176,6 +176,62 @@ namespace hr::geom
 			return mNumIndices / 3;
 		}
 
+		template<class TCallback>
+		size_t iterateVertices(TCallback&& cb) noexcept
+		{
+			static_assert(std::is_invocable_r_v<bool, TCallback, size_t, TVertex&>);
+
+			size_t i = 0;
+			for (; i < mNumVertices; i++)
+			{
+				if (!cb(i, mData[i])) break;
+			}
+
+			return i;
+		}
+
+		template<class TCallback>
+		size_t iterateVertices(TCallback&& cb) const noexcept
+		{
+			static_assert(std::is_invocable_r_v<bool, TCallback, size_t, const TVertex&>);
+
+			size_t i = 0;
+			for (; i < mNumVertices; i++)
+			{
+				if (!cb(i, mData[i])) break;
+			}
+
+			return i;
+		}
+
+		template<class TCallback>
+		size_t iterateTris(TCallback&& cb) noexcept
+		{
+			static_assert(std::is_invocable_r_v<bool, TCallback, size_t, TVertex&, TVertex&, TVertex>);
+
+			size_t count{0};
+			for (size_t i = 0; i < mNumIndices; i += 3, count++)
+			{
+				if (!cb(count, mData[mIndices[i + 0]], mData[mIndices[i + 1]], mData[mIndices[i + 2]])) break;
+			}
+
+			return count;
+		}
+
+		template<class TCallback>
+		size_t iterateTris(TCallback&& cb) const noexcept
+		{
+			static_assert(std::is_invocable_r_v<bool, TCallback, size_t, const TVertex&, const TVertex&, const TVertex>);
+
+			size_t count{0};
+			for (size_t i = 0; i < mNumIndices; i += 3, count++)
+			{
+				if (!cb(count, mData[mIndices[i + 0]], mData[mIndices[i + 1]], mData[mIndices[i + 2]])) break;
+			}
+
+			return count;
+		}
+
 		bool check() const noexcept
 		{
 			if (!mData || !mIndices || (mNumVertices <= 0) || (mNumVertices > MeshBase::maxVertexCount()) || (mNumIndices <= 0) || ((mNumIndices % 3) != 0))
@@ -239,21 +295,6 @@ namespace hr::geom
 		}
 
 		Vector3f triNormal(size_t triIndex, float baryU, float baryV) const noexcept;
-
-		template<class TCallback>
-		size_t iterateTris(TCallback&& cb) const noexcept
-		{
-			static_assert(std::is_invocable_r_v<bool, TCallback, size_t, const VertexFull&, const VertexFull&, const VertexFull>);
-
-			size_t count{ 0 };
-			for (size_t i = 0; i < mNumIndices; i += 3, count++)
-			{
-				if (!cb(count, mData[mIndices[i + 0]], mData[mIndices[i + 1]], mData[mIndices[i + 2]]))
-					break;
-			}
-
-			return count;
-		}
 
 		void flipUV() noexcept;
 		void mirrorUV() noexcept;
