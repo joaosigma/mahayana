@@ -27,8 +27,6 @@ set(HR_SOURCES
 	meshFactory.hpp
 	meshAnim.cpp
 	meshAnim.hpp
-	path.cpp
-	path.hpp
 	plane.hpp
 	primitives2D.hpp
 	quaternion.cpp

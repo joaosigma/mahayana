@@ -235,87 +235,80 @@ namespace hr::platform
 
 	bool Platform::systemInfo(SystemInfo systemInfo, std::string& infoValue)
 	{
-		TCHAR bufferAux[16338];
-		DWORD bufferAuxCharCount;
-
-		bufferAux[0] = '\0';
-		bufferAuxCharCount = sizeof(bufferAux) / sizeof(TCHAR);
-
-		if (systemInfo == Platform::SystemInfo::ExecutableFullPath)
+		switch (systemInfo)
 		{
-			auto result = GetModuleFileName(0, bufferAux, bufferAuxCharCount);
-			if ((result == 0) || (result > bufferAuxCharCount))
-				return false;
-
-			infoValue = hr::StringUtils::conv2UTF8(bufferAux);
-			return true;
-		}
-
-		if (systemInfo == Platform::SystemInfo::CurrentFolder)
-		{
-			auto result = GetCurrentDirectory(bufferAuxCharCount, bufferAux);
-			if ((result == 0) || (result > bufferAuxCharCount))
-				return false;
-
-			infoValue = hr::StringUtils::conv2UTF8(bufferAux);
-			return true;
-		}
-
-		if (systemInfo == Platform::SystemInfo::SystemFolder)
-		{
-			auto result = GetSystemDirectory(bufferAux, bufferAuxCharCount);
-			if ((result == 0) || (result > bufferAuxCharCount))
-				return false;
-
-			infoValue = hr::StringUtils::conv2UTF8(bufferAux);
-			return true;
-		}
-
-		if (systemInfo == Platform::SystemInfo::MachineName)
-		{
-			if (GetComputerName(bufferAux, &bufferAuxCharCount) == FALSE)
-				return false;
-
-			infoValue = hr::StringUtils::conv2UTF8(bufferAux);
-			return true;
-		}
-
-		if (systemInfo == Platform::SystemInfo::CurrentUsername)
-		{
-			if (GetUserName(bufferAux, &bufferAuxCharCount) == FALSE)
-				return false;
-
-			infoValue = hr::StringUtils::conv2UTF8(bufferAux);
-			return true;
-		}
-
-		if (systemInfo == Platform::SystemInfo::OperatingSystemName)
-		{
-			OSVERSIONINFOEX versionInfo;
-
-			std::memset(&versionInfo, 0, sizeof(OSVERSIONINFOEX));
-			versionInfo.dwOSVersionInfoSize = sizeof(OSVERSIONINFOEX);
-			if (GetVersionEx((LPOSVERSIONINFOW)&versionInfo) == FALSE)
-				return false;
-
-			if ((versionInfo.dwMajorVersion == 6) && (versionInfo.dwMinorVersion == 1) && (versionInfo.wProductType == VER_NT_WORKSTATION))
-				infoValue = std::format("Windows 7 ({0}.{1})", versionInfo.dwMajorVersion, versionInfo.dwMinorVersion);
-			else if ((versionInfo.dwMajorVersion == 6) && (versionInfo.dwMinorVersion == 0) && (versionInfo.wProductType != VER_NT_WORKSTATION))
-				infoValue = std::format("Windows Vista ({0}.{1})", versionInfo.dwMajorVersion, versionInfo.dwMinorVersion);
-			else if ((versionInfo.dwMajorVersion == 5) && (versionInfo.dwMinorVersion == 1))
-				infoValue = std::format("Windows XP ({0}.{1})", versionInfo.dwMajorVersion, versionInfo.dwMinorVersion);
-			else
-				infoValue = std::format("Windows ({0}.{1})", versionInfo.dwMajorVersion, versionInfo.dwMinorVersion);
-
-			if (versionInfo.wServicePackMajor > 0)
+			case Platform::SystemInfo::ExecutableFullPath:
 			{
-				if (versionInfo.wServicePackMinor > 0)
-					infoValue += std::format(" SP{0}.{1}", versionInfo.wServicePackMajor, versionInfo.wServicePackMinor);
-				else
-					infoValue += std::format(" SP{0}", versionInfo.wServicePackMajor);
+				TCHAR bufferAux[16338];
+				DWORD bufferAuxCharCount;
+
+				bufferAux[0] = '\0';
+				bufferAuxCharCount = sizeof(bufferAux) / sizeof(TCHAR);
+
+				auto result = GetModuleFileName(0, bufferAux, bufferAuxCharCount);
+				if ((result == 0) || (result > bufferAuxCharCount)) return false;
+
+				infoValue = hr::StringUtils::conv2UTF8(bufferAux);
+				return true;
 			}
 
-			return true;
+			case Platform::SystemInfo::MachineName:
+			{
+				TCHAR bufferAux[16338];
+				DWORD bufferAuxCharCount;
+
+				bufferAux[0] = '\0';
+				bufferAuxCharCount = sizeof(bufferAux) / sizeof(TCHAR);
+
+				if (GetComputerName(bufferAux, &bufferAuxCharCount) == FALSE) return false;
+
+				infoValue = hr::StringUtils::conv2UTF8(bufferAux);
+				return true;
+			}
+
+			case Platform::SystemInfo::CurrentUsername:
+			{
+				TCHAR bufferAux[16338];
+				DWORD bufferAuxCharCount;
+
+				bufferAux[0] = '\0';
+				bufferAuxCharCount = sizeof(bufferAux) / sizeof(TCHAR);
+
+				if (GetUserName(bufferAux, &bufferAuxCharCount) == FALSE) return false;
+
+				infoValue = hr::StringUtils::conv2UTF8(bufferAux);
+				return true;
+			}
+
+			case Platform::SystemInfo::OperatingSystemName:
+			{
+				OSVERSIONINFOEX versionInfo;
+
+				std::memset(&versionInfo, 0, sizeof(OSVERSIONINFOEX));
+				versionInfo.dwOSVersionInfoSize = sizeof(OSVERSIONINFOEX);
+				if (GetVersionEx((LPOSVERSIONINFOW)&versionInfo) == FALSE) return false;
+
+				if ((versionInfo.dwMajorVersion == 6) && (versionInfo.dwMinorVersion == 1) && (versionInfo.wProductType == VER_NT_WORKSTATION))
+					infoValue = std::format("Windows 7 ({0}.{1})", versionInfo.dwMajorVersion, versionInfo.dwMinorVersion);
+				else if ((versionInfo.dwMajorVersion == 6) && (versionInfo.dwMinorVersion == 0) && (versionInfo.wProductType != VER_NT_WORKSTATION))
+					infoValue = std::format("Windows Vista ({0}.{1})", versionInfo.dwMajorVersion, versionInfo.dwMinorVersion);
+				else if ((versionInfo.dwMajorVersion == 5) && (versionInfo.dwMinorVersion == 1))
+					infoValue = std::format("Windows XP ({0}.{1})", versionInfo.dwMajorVersion, versionInfo.dwMinorVersion);
+				else
+					infoValue = std::format("Windows ({0}.{1})", versionInfo.dwMajorVersion, versionInfo.dwMinorVersion);
+
+				if (versionInfo.wServicePackMajor > 0)
+				{
+					if (versionInfo.wServicePackMinor > 0)
+						infoValue += std::format(" SP{0}.{1}", versionInfo.wServicePackMajor, versionInfo.wServicePackMinor);
+					else
+						infoValue += std::format(" SP{0}", versionInfo.wServicePackMajor);
+				}
+
+				return true;
+			}
+			default:
+				break;
 		}
 
 		return false;
@@ -325,63 +318,81 @@ namespace hr::platform
 	{
 		infoValue = 0;
 
-		if ((systemInfo == SystemInfo::MemoryTotal) || (systemInfo == SystemInfo::MemoryFree))
+		switch (systemInfo)
 		{
-			MEMORYSTATUSEX memoryStatus;
-			memoryStatus.dwLength = sizeof(memoryStatus);
-			GlobalMemoryStatusEx(&memoryStatus);
-
-			if (systemInfo == SystemInfo::MemoryTotal)
+			case SystemInfo::MemoryTotal:
+			case SystemInfo::MemoryFree:
 			{
-				infoValue = memoryStatus.ullTotalPhys;
-				return true;
-			}
-			if (systemInfo == SystemInfo::MemoryFree)
-			{
-				infoValue = memoryStatus.ullAvailPhys;
-				return true;
-			}
+				MEMORYSTATUSEX memoryStatus;
+				memoryStatus.dwLength = sizeof(memoryStatus);
+				GlobalMemoryStatusEx(&memoryStatus);
 
-			return false;
-		}
+				switch (systemInfo)
+				{
+					case SystemInfo::MemoryTotal:
+					{
+						infoValue = memoryStatus.ullTotalPhys;
+						return true;
+					}
+					case SystemInfo::MemoryFree:
+					{
+						infoValue = memoryStatus.ullAvailPhys;
+						return true;
+					}
+					default:
+						break;
+				}
 
-		if ((systemInfo == SystemInfo::DisplayWidth) || (systemInfo == SystemInfo::DisplayHeight) || (systemInfo == SystemInfo::DisplayColorBits) || (systemInfo == SystemInfo::DisplayFrequency))
-		{
-			DEVMODE deviceMode;
-
-			std::memset(&deviceMode, 0, sizeof(DEVMODE));
-			deviceMode.dmSize = sizeof(DEVMODE);
-			if (EnumDisplaySettingsEx(nullptr, ENUM_REGISTRY_SETTINGS, &deviceMode, 0) == FALSE)
 				return false;
-
-			if (systemInfo == SystemInfo::DisplayWidth)
-			{
-				infoValue = deviceMode.dmPelsWidth;
-				return true;
-			}
-			if (systemInfo == SystemInfo::DisplayHeight)
-			{
-				infoValue = deviceMode.dmPelsHeight;
-				return true;
-			}
-			if (systemInfo == SystemInfo::DisplayColorBits)
-			{
-				infoValue = deviceMode.dmBitsPerPel;
-				return true;
-			}
-			if (systemInfo == SystemInfo::DisplayFrequency)
-			{
-				infoValue = deviceMode.dmDisplayFrequency;
-				return true;
 			}
 
-			return false;
-		}
+			case SystemInfo::DisplayWidth:
+			case SystemInfo::DisplayHeight:
+			case SystemInfo::DisplayColorBits:
+			case SystemInfo::DisplayFrequency:
+			{
+				DEVMODE deviceMode;
 
-		if (systemInfo == SystemInfo::CleanBoot)
-		{
-			infoValue = (GetSystemMetrics(SM_CLEANBOOT) == 0) ? 1 : 0;
-			return true;
+				std::memset(&deviceMode, 0, sizeof(DEVMODE));
+				deviceMode.dmSize = sizeof(DEVMODE);
+				if (EnumDisplaySettingsEx(nullptr, ENUM_REGISTRY_SETTINGS, &deviceMode, 0) == FALSE) return false;
+
+				switch (systemInfo)
+				{
+					case SystemInfo::DisplayWidth:
+					{
+						infoValue = deviceMode.dmPelsWidth;
+						return true;
+					}
+					case SystemInfo::DisplayHeight:
+					{
+						infoValue = deviceMode.dmPelsHeight;
+						return true;
+					}
+					case SystemInfo::DisplayColorBits:
+					{
+						infoValue = deviceMode.dmBitsPerPel;
+						return true;
+					}
+					case SystemInfo::DisplayFrequency:
+					{
+						infoValue = deviceMode.dmDisplayFrequency;
+						return true;
+					}
+					default:
+						break;
+				}
+
+				return false;
+			}
+
+			case SystemInfo::CleanBoot:
+			{
+				infoValue = (GetSystemMetrics(SM_CLEANBOOT) == 0) ? 1 : 0;
+				return true;
+			}
+			default:
+				break;
 		}
 
 		return false;

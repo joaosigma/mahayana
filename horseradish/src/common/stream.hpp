@@ -2,10 +2,10 @@
 
 #include "types.hpp"
 #include "math.hpp"
-#include "path.hpp"
 #include "../platform/platform.hpp"
 
 #include <memory>
+#include <filesystem>
 #include <type_traits>
 
 #include <windows.h>
@@ -59,7 +59,7 @@ namespace hr { namespace streams
 			mDataEnd = mDataBegin + mDataSize;
 		}
 
-		~MemoryStream()
+		~MemoryStream() noexcept
 		{
 			close();
 		}
@@ -67,12 +67,12 @@ namespace hr { namespace streams
 		MemoryStream(const MemoryStream&) = delete;
 		const MemoryStream& operator=(const MemoryStream&) = delete;
 
-		MemoryStream(MemoryStream&& stream)
+		MemoryStream(MemoryStream&& stream) noexcept
 		{
 			*this = std::move(stream);
 		}
 
-		MemoryStream& operator=(MemoryStream&& stream)
+		MemoryStream& operator=(MemoryStream&& stream) noexcept
 		{
 			if (this != &stream)
 			{
@@ -119,13 +119,13 @@ namespace hr { namespace streams
 		MemoryViewStream() = default;
 
 		MemoryViewStream(std::shared_ptr<unsigned char> data, size_t dataSize)
-			: MemoryViewStream(data, 0, dataSize)
+			: MemoryViewStream(std::move(data), 0, dataSize)
 		{ }
 
 		MemoryViewStream(std::shared_ptr<unsigned char> data, size_t dataOffset, size_t dataSize)
 		{
-			mDataShared = data;
-			mData = data.get();
+			mDataShared = std::move(data);
+			mData = mDataShared.get();
 			mDataBegin = mDataWalker = reinterpret_cast<const unsigned char*>(mData) + dataOffset;
 			mDataEnd = mDataBegin + dataSize;
 		}
@@ -133,12 +133,12 @@ namespace hr { namespace streams
 		MemoryViewStream(const MemoryViewStream&) = delete;
 		const MemoryViewStream& operator=(const MemoryViewStream&) = delete;
 
-		MemoryViewStream(MemoryViewStream&& stream)
+		MemoryViewStream(MemoryViewStream&& stream) noexcept
 		{
 			*this = std::move(stream);
 		}
 
-		MemoryViewStream& operator=(MemoryViewStream&& stream)
+		MemoryViewStream& operator=(MemoryViewStream&& stream) noexcept
 		{
 			if (this != &stream)
 			{
@@ -186,17 +186,17 @@ namespace hr { namespace streams
 		HANDLE mFileHandle = nullptr;
 		bool mCanRead = false, mCanWrite = false, mClosed = false;
 
-		bool openFile(const std::string& filePath, bool toRead, bool toWrite);
+		bool openFile(const std::filesystem::path& filePath, bool toRead, bool toWrite);
 
 	public:
-		static std::unique_ptr<MemoryViewStream> readEntireFile(const std::string& filePath);
-		static std::string readEntireFileAsString(const std::string& filePath);
-		static bool streamDump(Stream& stream, const std::string& filePath);
+		static std::unique_ptr<MemoryViewStream> readEntireFile(const std::filesystem::path& filePath);
+		static std::string readEntireFileAsString(const std::filesystem::path& filePath);
+		static bool streamDump(Stream& stream, const std::filesystem::path& filePath);
 
 	public:
 		FileStream() = default;
 
-		FileStream(const std::string& filePath, bool toRead, bool toWrite)
+		FileStream(const std::filesystem::path& filePath, bool toRead, bool toWrite)
 		{
 			openFile(filePath, toRead, toWrite);
 		}
@@ -210,12 +210,12 @@ namespace hr { namespace streams
 		FileStream(const FileStream&) = delete;
 		const FileStream& operator=(const FileStream&) = delete;
 
-		FileStream(FileStream&& stream)
+		FileStream(FileStream&& stream) noexcept
 		{
 			*this = std::move(stream);
 		}
 
-		FileStream& operator=(FileStream&& stream)
+		FileStream& operator=(FileStream&& stream) noexcept
 		{
 			if (this != &stream)
 			{
@@ -248,7 +248,7 @@ namespace hr { namespace streams
 		bool cloneAllContent(std::shared_ptr<unsigned char>& buffer, size_t& bufferSize, std::function<std::shared_ptr<unsigned char>(size_t)> allocatorFunc = nullptr) const override;
 	};
 
-	class StreamReader
+	class StreamReader final
 	{
 		Stream& mStream;
 
@@ -307,7 +307,7 @@ namespace hr { namespace streams
 		}
 	};
 
-	class StreamWriter
+	class StreamWriter final
 	{
 		Stream& mStream;
 
@@ -393,7 +393,7 @@ namespace hr { namespace streams
 		}
 	};
 
-	class TextWriter
+	class TextWriter final
 	{
 		Stream& mStream;
 

@@ -449,11 +449,12 @@ namespace hr::render
 		loadDiffuse(R"(media\skies\archesPineTree.hdr)", mTexSky, false);
 		loadNormal(R"(media\default_normal.png)", mTexDefaultNormals, true);
 	
-		hr::io::Path pathShaders;
-		pathShaders.set(hr::io::Path::KnownPath::CurrentFolder);
-		pathShaders.combine("shaders");
+		{
+			auto pathShaders = std::filesystem::current_path();
+			pathShaders /= "shaders";
 
-		mShadersWatchFolderID = mFileSystem.watchChangeCreate(pathShaders.str().c_str(), false, hr::io::FileSystem::FileLastWrite);
+			mShadersWatchFolderID = mFileSystem.watchChangeCreate(pathShaders, false, hr::io::FileSystem::FileLastWrite);
+		}
 
 		//FBOs
 		mFBOs.texLighting.init(hr::gl::objects::Texture::Type::TexRectangle, hr::gl::objects::Texture::StorageType::RGBA_16F, renderWidth, renderHeight);

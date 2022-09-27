@@ -9,6 +9,7 @@
 #include <format>
 #include <thread>
 #include <atomic>
+#include <filesystem>
 #include <string_view>
 #include <condition_variable>
 
@@ -98,7 +99,7 @@ namespace hr::engine
 	public:
 		Logger(size_t asyncMaxEntries);
 		Logger(size_t asyncMaxEntries, size_t maxBufferedEntries);
-		Logger(size_t asyncMaxEntries, size_t maxBufferedEntries, const hr::io::Path &filePath);
+		Logger(size_t asyncMaxEntries, size_t maxBufferedEntries, const std::filesystem::path& filePath);
 		~Logger();
 
 		Logger(const Logger&) = delete;

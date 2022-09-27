@@ -6,7 +6,7 @@
 #include <memory>
 #include <cstring>
 
-namespace hr { namespace streams
+namespace hr::streams
 {
 	void MemoryStream::close()
 	{
@@ -308,7 +308,7 @@ namespace hr { namespace streams
 		return finalStr;
 	}
 
-	bool FileStream::openFile(const std::string& filePath, bool toRead, bool toWrite)
+	bool FileStream::openFile(const std::filesystem::path& filePath, bool toRead, bool toWrite)
 	{
 		mCanRead = toRead;
 		mCanWrite = toWrite;
@@ -319,14 +319,12 @@ namespace hr { namespace streams
 		if (!toRead && !toWrite)
 			return false;
 
-		auto filePathWChar = hr::StringUtils::conv2Native(filePath);
-
 		if (toRead && toWrite)
-			mFileHandle = CreateFile(filePathWChar.c_str(), GENERIC_READ | GENERIC_WRITE, 0, nullptr, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
+			mFileHandle = CreateFile(filePath.c_str(), GENERIC_READ | GENERIC_WRITE, 0, nullptr, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
 		else if (toRead)
-			mFileHandle = CreateFile(filePathWChar.c_str(), GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+			mFileHandle = CreateFile(filePath.c_str(), GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
 		else if (toWrite)
-			mFileHandle = CreateFile(filePathWChar.c_str(), GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
+			mFileHandle = CreateFile(filePath.c_str(), GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
 
 		if (mFileHandle == INVALID_HANDLE_VALUE)
 		{
@@ -337,19 +335,14 @@ namespace hr { namespace streams
 		return true;
 	}
 
-	std::unique_ptr<MemoryViewStream> FileStream::readEntireFile(const std::string& filePath)
+	std::unique_ptr<MemoryViewStream> FileStream::readEntireFile(const std::filesystem::path& filePath)
 	{
 		if (filePath.empty())
 			return std::unique_ptr<MemoryViewStream>();
 
-		HANDLE fileHandle;
-		{
-			auto filePathWChar = hr::StringUtils::conv2Native(filePath);
-
-			fileHandle = CreateFile(filePathWChar.c_str(), GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
-			if (fileHandle == INVALID_HANDLE_VALUE)
-				return std::unique_ptr<MemoryViewStream>();
-		}
+		auto fileHandle = CreateFile(filePath.c_str(), GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+		if (fileHandle == INVALID_HANDLE_VALUE)
+			return std::unique_ptr<MemoryViewStream>();
 
 		ScopedAction scopedAction([&]()
 		{
@@ -369,21 +362,14 @@ namespace hr { namespace streams
 		return std::unique_ptr<MemoryViewStream>(new MemoryViewStream(outBuffer, outBufferSize));
 	}
 
-	std::string FileStream::readEntireFileAsString(const std::string& filePath)
+	std::string FileStream::readEntireFileAsString(const std::filesystem::path& filePath)
 	{
-		HANDLE fileHandle;
-		DWORD bytesRead;
-
 		if (filePath.empty())
 			return std::string();
 
-		{
-			auto filePathWChar = hr::StringUtils::conv2Native(filePath);
-
-			fileHandle = CreateFile(filePathWChar.c_str(), GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
-			if (fileHandle == INVALID_HANDLE_VALUE)
-				return std::string();
-		}
+		auto fileHandle = CreateFile(filePath.c_str(), GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+		if (fileHandle == INVALID_HANDLE_VALUE)
+			return std::string();
 
 		ScopedAction scopedAction([&]()
 		{
@@ -394,25 +380,21 @@ namespace hr { namespace streams
 
 		std::unique_ptr<char[]> tmpBuffer(new char[outBufferSize]);
 
+		DWORD bytesRead;
 		if ((ReadFile(fileHandle, tmpBuffer.get(), outBufferSize, &bytesRead, nullptr) == 0) || (outBufferSize != bytesRead))
 			return std::string();
 
 		return std::string(tmpBuffer.get(), outBufferSize);
 	}
 
-	bool FileStream::streamDump(Stream& stream, const std::string& filePath)
+	bool FileStream::streamDump(Stream& stream, const std::filesystem::path& filePath)
 	{			
 		if (!stream.canRead() || (filePath.empty()))
 			return false;
 
-		HANDLE fileHandle;
-		{
-			auto filePathWChar = hr::StringUtils::conv2Native(filePath);
-
-			fileHandle = CreateFile(filePathWChar.c_str(), GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
-			if (!fileHandle)
-				return false;
-		}
+		auto fileHandle = CreateFile(filePath.c_str(), GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
+		if (!fileHandle)
+			return false;
 
 		auto filePos = stream.position();
 		stream.seek(SeekOrigin::Begin, 0);
@@ -600,4 +582,4 @@ namespace hr { namespace streams
 		bufferSize = outBufferSize;
 		return true;
 	}
-} }
+}

@@ -33,25 +33,27 @@ namespace hr { namespace engine
 		mFileSystem = std::make_shared<hr::io::FileSystem>(10);
 
 		//mount current and previous directory
-		auto currentFolder = hr::io::Path(hr::io::Path::KnownPath::CurrentFolder);
-		mFileSystem->mountPath(currentFolder, {});
-		currentFolder.removeLastComponent();
-		mFileSystem->mountPath(currentFolder, {});
+		{
+			auto currentPath = std::filesystem::current_path();
+		
+			mFileSystem->mountPath(currentPath, {});
+			mFileSystem->mountPath(currentPath.parent_path(), {});
+		}
 
 		//mount main game resource directory
-		mFileSystem->mountPath(hr::io::Path("d:/jogos/doom3/base/"), {});
+		mFileSystem->mountPath(std::filesystem::path{"d:/jogos/doom3/base/"}, {});
 		mLoggerRuntimeCtx->info("${olive}->${default}Path set to: \"d:/jogos/doom3/base/\"");
 
 		size_t totalFich = 0;
 		size_t totalPacks = 0;
 
 		//for every pack/zip/7zip file
-		hr::io::FileSystem::findFiles("d:/jogos/doom3/base/pak*.pk4", true, [&](const hr::io::Path &filePath, const uint64_t&)
+		hr::io::FileSystem::findFiles("d:/jogos/doom3/base/pak*.pk4", true, [&](const std::filesystem::path &path, const uint64_t&)
 		{
 			size_t numFilesZip;
 
 			//mount the zip file as a directoty
-			if (mFileSystem->mountZip(filePath, {}, &numFilesZip))
+			if (mFileSystem->mountZip(path, {}, &numFilesZip))
 			{
 				totalPacks += 1;
 				totalFich += numFilesZip;
@@ -282,7 +284,7 @@ namespace hr { namespace engine
 		: mDevMode(devMode)
 	{
 		//initiate logger
-		mLogger = std::make_shared<Logger>(10, 500, hr::io::Path("../logs/log.txt"));
+		mLogger = std::make_shared<Logger>(10, 500, "../logs/log.txt");
 		mLoggerRenderCtx = std::make_shared<Logger::Context>(*mLogger, Logger::ModuleType::Graphics);
 		mLoggerRuntimeCtx = std::make_shared<Logger::Context>(*mLogger, Logger::ModuleType::SysRuntime);
 

@@ -35,7 +35,7 @@ namespace hr::platform
 
 		enum class PriorityType { Normal, High, Highest };
 		enum class OperatingSystemType { Windows, Linux, Android, iOS, OSX };
-		enum class SystemInfo { DisplayWidth, DisplayHeight, DisplayColorBits, DisplayFrequency, OperatingSystemName, SystemFolder, MachineName, CurrentUsername, MemoryTotal, MemoryFree, CleanBoot, CurrentFolder, ExecutableFullPath };
+		enum class SystemInfo { DisplayWidth, DisplayHeight, DisplayColorBits, DisplayFrequency, OperatingSystemName, MachineName, CurrentUsername, MemoryTotal, MemoryFree, CleanBoot, ExecutableFullPath };
 
 	public:
 		static const char* NewLine;
