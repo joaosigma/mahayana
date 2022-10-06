@@ -57,6 +57,7 @@ target_sources(horseradish PRIVATE ${HR_SOURCES})
 target_sources(horseradish-utests PRIVATE ${HR_SOURCES})
 target_sources(horseradish-utests
 	PRIVATE
+		quaternion_t.cpp
 		vector_t.cpp
 )
 

@@ -8,12 +8,12 @@ namespace hr
 	* Implementation details:
 	*   - the layout is x, y, z, w
 	*   - product (multiplication) order: (q1 * q2) means apply rotation of q1 and then the rotation of q2
-	*   - rotations are left-handed, which means positive rotation is clockwise about the axis of rotation (as pointing towards the negative values)
+	*   - rotations are left-handed, which means positive rotation is clockwise about the axis of rotation (as looking to the origin of axis)
 	*     - plus X points right, plus Y points up and plus Z points forward (to the horizon)
 	*     - this is the same as in matrices
 	*   - almost every operation assumes that the quaternion is normalized (unit quaternion)
 	*/
-	class Quaternion
+	class alignas(16) Quaternion
 	{
 		float mData[4]{ 0.0f, 0.0f, 0.0f, 1.0f };
 
@@ -43,8 +43,16 @@ namespace hr
 			: mData{ qx, qy, qz, qw }
 		{ }
 
+		explicit constexpr Quaternion(const Vector3f& vec, const float qw) noexcept
+			: mData{vec[0], vec[1], vec[2], qw}
+		{ }
+
 		explicit constexpr Quaternion(const double qx, const double qy, const double qz, const double qw) noexcept
 			: mData{ static_cast<float>(qx), static_cast<float>(qy), static_cast<float>(qz), static_cast<float>(qw) }
+		{ }
+
+		explicit constexpr Quaternion(const Vector3d& vec, const double qw) noexcept
+			: mData{ static_cast<float>(vec[0]), static_cast<float>(vec[1]), static_cast<float>(vec[2]), static_cast<float>(qw) }
 		{ }
 
 		constexpr float* data() noexcept
@@ -70,13 +78,13 @@ namespace hr
 		Quaternion& operator+=(const Quaternion &quat) noexcept;
 		Quaternion& operator-=(const Quaternion &quat) noexcept;
 		Quaternion& operator*=(const Quaternion &quat) noexcept;
-		Quaternion& operator*=(const float &scalar) noexcept;
+		Quaternion& operator*=(float scalar) noexcept;
 		Quaternion& operator/=(const Quaternion &quat) noexcept;
 
 		Quaternion operator+(const Quaternion& quat) const noexcept;
 		Quaternion operator-(const Quaternion &quat) const noexcept;
 		Quaternion operator*(const Quaternion &quat) const noexcept;
-		Quaternion operator*(const float& scalar) const noexcept;
+		Quaternion operator*(float scalar) const noexcept;
 		Quaternion operator/(const Quaternion &quat) const noexcept;
 
 		bool isEqual(const Quaternion& quat, const float precision) const noexcept
@@ -92,13 +100,12 @@ namespace hr
 		Quaternion& setSLerp(const Quaternion &from, const Quaternion &to, float t) noexcept;
 		Quaternion& setNLerp(const Quaternion &from, const Quaternion &to, float t) noexcept;
 		Quaternion& set(const Quaternion &quat) noexcept;
-		Quaternion& setFromVectors(const Vector3f &from, const Vector3f &to) noexcept;
+		Quaternion& setFromVectors(const Vector3f& from, const Vector3f& to) noexcept;
 		Quaternion& setIdentity() noexcept;
 
 		Quaternion& scaleAngle(float scale) noexcept;
 		Quaternion& conjugate() noexcept;
 		Quaternion& normalize() noexcept;
-		Quaternion& expandWNormalized() noexcept;
 
 		Quaternion getConjugate() const noexcept;
 
