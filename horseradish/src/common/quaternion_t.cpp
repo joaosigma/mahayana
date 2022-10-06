@@ -46,7 +46,8 @@ namespace hr::utests
 
 			bool match(const Quaternion& q) const
 			{
-				//set epsilon to allowed a 0.1% difference and a margin to allow (0.0f == -0.0f) to pass
+				// set epsilon to allowed a 0.1% difference and a margin to allow (0.0f == -0.0f) to pass
+
 				return (q[0] == Catch::Approx(m_quat[0]).epsilon(0.001).margin(0.0000001)) 
 					&& (q[1] == Catch::Approx(m_quat[1]).epsilon(0.001).margin(0.0000001))
 					&& (q[2] == Catch::Approx(m_quat[2]).epsilon(0.001).margin(0.0000001))
@@ -80,7 +81,8 @@ namespace hr::utests
 
 			bool match(const Vector3f& v) const
 			{
-				//set epsilon to allowed a 0.1% difference and a margin to allow (0.0f == -0.0f) to pass
+				// set epsilon to allowed a 0.1% difference and a margin to allow (0.0f == -0.0f) to pass
+
 				return (v[0] == Catch::Approx(m_x).epsilon(0.001).margin(0.0000001))
 					&& (v[1] == Catch::Approx(m_y).epsilon(0.001).margin(0.0000001))
 					&& (v[2] == Catch::Approx(m_z).epsilon(0.001).margin(0.0000001));

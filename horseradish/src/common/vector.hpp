@@ -438,8 +438,10 @@ namespace hr
 			return { resultMin , resultMax };
 		}
 
-		static Vector calcPointAt(const Vector& origin, const Vector& direction, const float& t)
+		static Vector calcPointAt(const Vector& origin, const Vector& direction, const float t)
 		{
+			assert(t >= 0.0f && t <= 1.0f);
+
 			Vector result;
 			__m128 tmp;
 
@@ -450,8 +452,10 @@ namespace hr
 			return result;
 		}
 
-		static Vector calcLinear(const Vector &from, const Vector &to, const float &t)
+		static Vector calcLinear(const Vector &from, const Vector &to, const float t)
 		{
+			assert(t >= 0.0f && t <= 1.0f);
+
 			Vector result;
 			__m128 tmp;
 
@@ -459,6 +463,67 @@ namespace hr
 			tmp = _mm_add_ps(tmp, _mm_mul_ps(_mm_load_ps(to.mData), _mm_load_ps1(&t)));
 
 			_mm_store_ps(result.mData, tmp);
+			return result;
+		}
+
+		static Vector calcProject(const Vector& vecA, const Vector& vecB)
+		{
+			// returns the vector projection of vecA onto vecB
+
+			auto m = vecB.getMagnitude();
+			m = vecA.getDot(vecB) / (m * m);
+			return (vecB * m);
+		}
+
+		static Vector calcReflect(const Vector& vec, const Vector& planeNormal)
+		{
+			return vec - (calcProject(vec, planeNormal) * 2.0f);
+		}
+
+		static Vector calcCrossProduct(const Vector& p, const Vector& q)
+		{
+			__m128 vec1 = _mm_load_ps(p.mData);
+			__m128 vec2 = _mm_load_ps(q.mData);
+
+			__m128 xa = _mm_mul_ps(_mm_shuffle_ps(vec1, vec1, _MM_SHUFFLE(3, 0, 2, 1)), _mm_shuffle_ps(vec2, vec2, _MM_SHUFFLE(3, 1, 0, 2)));
+			__m128 xb = _mm_mul_ps(_mm_shuffle_ps(vec1, vec1, _MM_SHUFFLE(3, 1, 0, 2)), _mm_shuffle_ps(vec2, vec2, _MM_SHUFFLE(3, 0, 2, 1)));
+
+			Vector result;
+			_mm_store_ps(result.mData, _mm_sub_ps(xa, xb));
+			return result;
+		}
+
+		static Vector calcLerp(const Vector& from, const Vector& to, const float t)
+		{
+			assert(t >= 0.0f && t <= 1.0f);
+
+			__m128 tmp;
+
+			tmp = _mm_mul_ps(_mm_load_ps(from.mData), _mm_set_ps1(1.0f - t));
+			tmp = _mm_add_ps(tmp, _mm_mul_ps(_mm_load_ps(to.mData), _mm_load_ps1(&t)));
+
+			Vector result;
+			_mm_store_ps(result.mData, tmp);
+			return result;
+		}
+
+		static Vector fromSpherical(float rad, float theta, float phi)
+		{
+			/*
+			* This uses the ISO convention: radius r, inclination theta (radians) and azimuth phi (also radians)
+			* Also:
+			*	- theta: the angle in the XY plane from the X axis
+			*	- phi: the angle from the positive Z axis to the vector
+			*/
+
+			auto thetaTrig = Math::sinCos(theta);
+			auto phiTrig = Math::sinCos(phi);
+
+			Vector result;
+			result.mData[0] = rad * std::get<0>(thetaTrig) * std::get<1>(phiTrig);
+			result.mData[1] = rad * std::get<0>(thetaTrig) * std::get<0>(phiTrig);
+			result.mData[2] = rad * std::get<1>(thetaTrig);
+
 			return result;
 		}
 
@@ -840,6 +905,16 @@ namespace hr
 			return *this;
 		}
 
+		Vector project(const Vector& vec) const
+		{
+			return Vector::calcProject(*this, vec);
+		}
+
+		Vector reflect(const Vector& planeNormal) const
+		{
+			return Vector::calcReflect(*this, planeNormal);
+		}
+
 		Vector crossProduct(const Vector &vec) const
 		{
 			Vector result;
@@ -852,36 +927,6 @@ namespace hr
 
 			_mm_store_ps(result.mData, _mm_sub_ps(xa, xb));
 			return result;
-		}
-
-		void storeCrossProduct(const Vector &p, const Vector &q)
-		{
-			__m128 vec1 = _mm_load_ps(p.mData);
-			__m128 vec2 = _mm_load_ps(q.mData);
-
-			__m128 xa = _mm_mul_ps(_mm_shuffle_ps(vec1, vec1, _MM_SHUFFLE(3, 0, 2, 1)), _mm_shuffle_ps(vec2, vec2, _MM_SHUFFLE(3, 1, 0, 2)));
-			__m128 xb = _mm_mul_ps(_mm_shuffle_ps(vec1, vec1, _MM_SHUFFLE(3, 1, 0, 2)), _mm_shuffle_ps(vec2, vec2, _MM_SHUFFLE(3, 0, 2, 1)));
-
-			_mm_store_ps(mData, _mm_sub_ps(xa, xb));
-		}
-
-		void storeCrossProduct(const float p[3], const float q[3])
-		{
-			storeCrossProduct(Vector(p), Vector(q));
-		}
-
-		void storeInterpolate(const Vector &from, const Vector &to, const float t)
-		{
-			__m128 tmp;
-
-			tmp = _mm_mul_ps(_mm_load_ps(from.mData), _mm_set_ps1(1.0f - t));
-			tmp = _mm_add_ps(tmp, _mm_mul_ps(_mm_load_ps(to.mData), _mm_load_ps1(&t)));
-			_mm_store_ps(mData, tmp);
-		}
-
-		void storeInterpolate(const float from[3], const float to[3], const float t)
-		{
-			storeInterpolate(Vector(from), Vector(to), t);
 		}
 
 		void storeInterpolate(const Vector &to, const float t)
@@ -1016,6 +1061,8 @@ namespace hr
 
 		static Vector calcPointAt(const Vector& origin, const Vector& direction, const double t)
 		{
+			assert(t >= 0.0 && t <= 1.0);
+
 			Vector result;
 			__m256d tmp;
 
@@ -1026,8 +1073,10 @@ namespace hr
 			return result;
 		}
 
-		static Vector calcLinear(const Vector& from, const Vector& to, const double& t)
+		static Vector calcLinear(const Vector& from, const Vector& to, const double t)
 		{
+			assert(t >= 0.0 && t <= 1.0);
+
 			Vector result;
 			__m256d tmp;
 
@@ -1035,6 +1084,67 @@ namespace hr
 			tmp = _mm256_add_pd(tmp, _mm256_mul_pd(_mm256_load_pd(to.mData), _mm256_set1_pd(t)));
 
 			_mm256_storeu_pd(result.mData, tmp);
+			return result;
+		}
+
+		static Vector calcProject(const Vector& vecA, const Vector& vecB)
+		{
+			// returns the vector projection of vecA onto vecB
+
+			auto m = vecB.getMagnitude();
+			m = vecA.getDot(vecB) / (m * m);
+			return (vecB * m);
+		}
+
+		static Vector calcReflect(const Vector& vec, const Vector& planeNormal)
+		{
+			return vec - (calcProject(vec, planeNormal) * 2.0);
+		}
+
+		static Vector calcCrossProduct(const Vector& p, const Vector& q)
+		{
+			__m256d vec1 = _mm256_load_pd(p.mData);
+			__m256d vec2 = _mm256_load_pd(q.mData);
+
+			__m256d xa = _mm256_mul_pd(_mm256_permute4x64_pd(vec1, _MM_SHUFFLE(3, 0, 2, 1)), _mm256_permute4x64_pd(vec2, _MM_SHUFFLE(3, 1, 0, 2)));
+			__m256d xb = _mm256_mul_pd(_mm256_permute4x64_pd(vec1, _MM_SHUFFLE(3, 1, 0, 2)), _mm256_permute4x64_pd(vec2, _MM_SHUFFLE(3, 0, 2, 1)));
+
+			Vector result;
+			_mm256_storeu_pd(result.mData, _mm256_sub_pd(xa, xb));
+			return result;
+		}
+
+		static Vector calcLerp(const Vector& from, const Vector& to, const double t)
+		{
+			assert(t >= 0.0 && t <= 1.0);
+
+			__m256d tmp;
+
+			tmp = _mm256_mul_pd(_mm256_load_pd(from.mData), _mm256_set1_pd(1.0 - t));
+			tmp = _mm256_add_pd(tmp, _mm256_mul_pd(_mm256_load_pd(to.mData), _mm256_set1_pd(t)));
+
+			Vector result;
+			_mm256_storeu_pd(result.mData, tmp);
+			return result;
+		}
+
+		static Vector fromSpherical(double rad, double theta, double phi)
+		{
+			/*
+			* This uses the ISO convention: radius r, inclination theta (radians) and azimuth phi (also radians)
+			* Also:
+			*	- theta: the angle in the XY plane from the X axis
+			*	- phi: the angle from the positive Z axis to the vector
+			*/
+
+			auto thetaTrig = std::make_tuple(Math::sin(theta), Math::cos(theta));
+			auto phiTrig = std::make_tuple(Math::sin(phi), Math::cos(phi));
+
+			Vector result;
+			result.mData[0] = rad * std::get<0>(thetaTrig) * std::get<1>(phiTrig);
+			result.mData[1] = rad * std::get<0>(thetaTrig) * std::get<0>(phiTrig);
+			result.mData[2] = rad * std::get<1>(thetaTrig);
+
 			return result;
 		}
 
@@ -1371,6 +1481,16 @@ namespace hr
 			return *this;
 		}
 
+		Vector project(const Vector& vec) const
+		{
+			return Vector::calcProject(*this, vec);
+		}
+
+		Vector reflect(const Vector& planeNormal) const
+		{
+			return Vector::calcReflect(*this, planeNormal);
+		}
+
 		Vector crossProduct(const Vector& vec) const
 		{
 			Vector result;
@@ -1383,36 +1503,6 @@ namespace hr
 
 			_mm256_storeu_pd(result.mData, _mm256_sub_pd(xa, xb));
 			return result;
-		}
-
-		void storeCrossProduct(const Vector& p, const Vector& q)
-		{
-			__m256d vec1 = _mm256_load_pd(p.mData);
-			__m256d vec2 = _mm256_load_pd(q.mData);
-
-			__m256d xa = _mm256_mul_pd(_mm256_permute4x64_pd(vec1, _MM_SHUFFLE(3, 0, 2, 1)), _mm256_permute4x64_pd(vec2, _MM_SHUFFLE(3, 1, 0, 2)));
-			__m256d xb = _mm256_mul_pd(_mm256_permute4x64_pd(vec1, _MM_SHUFFLE(3, 1, 0, 2)), _mm256_permute4x64_pd(vec2, _MM_SHUFFLE(3, 0, 2, 1)));
-
-			_mm256_storeu_pd(mData, _mm256_sub_pd(xa, xb));
-		}
-
-		void storeCrossProduct(const double p[3], const double q[3])
-		{
-			storeCrossProduct(Vector(p), Vector(q));
-		}
-
-		void storeInterpolate(const Vector& from, const Vector& to, const double t)
-		{
-			__m256d tmp;
-
-			tmp = _mm256_mul_pd(_mm256_load_pd(from.mData), _mm256_set1_pd(1.0 - t));
-			tmp = _mm256_add_pd(tmp, _mm256_mul_pd(_mm256_load_pd(to.mData), _mm256_set1_pd(t)));
-			_mm256_storeu_pd(mData, tmp);
-		}
-
-		void storeInterpolate(const double from[3], const double to[3], const double t)
-		{
-			storeInterpolate(Vector(from), Vector(to), t);
 		}
 
 		void storeInterpolate(const Vector& to, const double t)

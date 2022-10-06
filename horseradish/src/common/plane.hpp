@@ -197,15 +197,15 @@ namespace hr
 			pNormal.set(mA, mB, mC);
 			p2Normal.set(p2.mA, p2.mB, p2.mC);
 			p3Normal.set(p3.mA, p3.mB, p3.mC);
-			tmp1.storeCrossProduct(p2Normal, p3Normal);
+			tmp1 = VectorType::calcCrossProduct(p2Normal, p3Normal);
 
 			auto denominator = pNormal.getDot(tmp1);
 			if (Math::isZero(denominator))
 				return false;
 
-			tmp1.storeCrossProduct(p2Normal, p3Normal);
-			tmp2.storeCrossProduct(p3Normal, pNormal);
-			tmp3.storeCrossProduct(pNormal, p2Normal);
+			tmp1 = Vector3f::calcCrossProduct(p2Normal, p3Normal);
+			tmp2 = Vector3f::calcCrossProduct(p3Normal, pNormal);
+			tmp3 = Vector3f::calcCrossProduct(pNormal, p2Normal);
 			tmp1 *= mD;
 			tmp2 *= p2.mD;
 			tmp3 *= p3.mD;

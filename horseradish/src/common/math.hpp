@@ -96,6 +96,13 @@ namespace hr
 			c = _mm_cvtss_f32(mmCos);
 		}
 
+		static std::tuple<float, float> sinCos(float radians)
+		{
+			float s, c;
+			Math::sinCos(radians, s, c);
+			return {s, c};
+		}
+
 		static float floor(const float f)
 		{
 			return std::floor(f);
