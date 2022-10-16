@@ -80,12 +80,8 @@ namespace hr::render
 		hr::gl::glDepthMask(GL_FALSE);
 		hr::gl::glDepthFunc(GL_GREATER);
 
-		hr::Matrix matrixProjection;
-		hr::Matrix matrixModelView;
-		{
-			matrixModelView = hrCamera.modelView();
-			matrixProjection = hrViewport.getProjection(hr::gl::tools::Viewport::ProjectionType::Proj3D);
-		}
+		auto matrixModelView = hrCamera.modelView();
+		auto matrixProjection = hrViewport.getProjection(hr::gl::tools::Viewport::ProjectionType::Proj3D);
 
 		hr::gl::glProgramUniformMatrix4fv(mShaders.forwardPassSky.vertex.id(), mShaders.forwardPassSky.vertex.getUniformLocation("modelviewMatrix"), 1, false, matrixModelView.data());
 		hr::gl::glProgramUniformMatrix4fv(mShaders.forwardPassSky.vertex.id(), mShaders.forwardPassSky.vertex.getUniformLocation("projectionMatrix"), 1, false, matrixProjection.data());
@@ -574,11 +570,9 @@ namespace hr::render
 			//uniform buffer common to every pass is prepared/set here
 			static uint32_t numLights = 1;
 			{
-				hr::Matrix matrixModelView, matrixTransform;
+			    auto matrixModelView = hrCamera.modelView();
+			    auto matrixTransform = hrCamera.modelView();
 
-				matrixModelView.set(hrCamera.modelView());
-
-				matrixTransform.set(hrCamera.modelView());
 				matrixTransform *= hrViewport.getProjection(hr::gl::tools::Viewport::ProjectionType::Proj3D);
 
 				Shaders::UniformLayout uniformData;

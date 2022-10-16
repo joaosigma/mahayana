@@ -20,7 +20,8 @@ namespace hr::gl::tools
 		} mDims;
 		
 		struct {
-			hr::Matrix mp2D, mp3D;
+			hr::Matrix mp2D = hr::Matrix::identity();
+			hr::Matrix mp3D = hr::Matrix::identity();
 		} mMatrices;
 
 		void calcMatrices()  noexcept;

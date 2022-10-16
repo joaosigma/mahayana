@@ -288,7 +288,7 @@ namespace hr::geom
 		scale(maxAxis / std::fmax(std::fmax(distance[0], distance[1]), distance[2]));
 	}
 	
-	void Mesh<VertexFull, uint32_t>::transform(const Matrix& matFull, const Matrix3& matRot) noexcept
+	void Mesh<VertexFull, uint32_t>::transform(const Matrix& matFull, const Matrix3f& matRot) noexcept
 	{
 		auto vertexData = mData.get();
 		for (size_t i = 0; i < mNumVertices; i++, vertexData++)
@@ -508,7 +508,7 @@ namespace hr::geom
 		mData[vertexIndex].tangent = packedWriteTangent(tangent.data());
 	}
 
-	void Mesh<VertexShading, uint16_t>::transform(const Matrix& matFull, const Matrix3& matRot) noexcept
+	void Mesh<VertexShading, uint16_t>::transform(const Matrix& matFull, const Matrix3f& matRot) noexcept
 	{
 		auto vertexData = mData.get();
 		for (size_t i = 0; i < mNumVertices; i++, vertexData++)

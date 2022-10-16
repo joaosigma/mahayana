@@ -5,7 +5,7 @@
 
 #include <memory>
 
-namespace hr { namespace render { namespace tools
+namespace hr::render::tools
 {
 	class Camera
 	{
@@ -18,24 +18,24 @@ namespace hr { namespace render { namespace tools
 	
 	public:
 		Camera() noexcept
+		  : mModelView{ hr::Matrix::identity() }
 		{
 			mAxis.pos.set(0.0f, 0.0f, 1.0f);
 			mAxis.dir.set(0.0f, 0.0f, 0.0f);
 			mAxis.up.set(0.0f, 1.0f, 0.0f);
 			mAbsFocus = 0.0f;
-			mModelView.setIdentity();
 		}
 
 		void setPos(const hr::Vector3f &pos)
 		{
 			mAxis.pos.set(pos);
-			mModelView.setGLModelView(mAxis.pos, getTarget(), mAxis.up);
+			mModelView = Matrix::glModelView(mAxis.pos, getTarget(), mAxis.up);
 		}
 
 		void setPos(float x, float y, float z)
 		{
 			mAxis.pos.set(x, y, z);
-			mModelView.setGLModelView(mAxis.pos, getTarget(), mAxis.up);
+			mModelView = Matrix::glModelView(mAxis.pos, getTarget(), mAxis.up);
 		}
 
 		void setTarget(const hr::Vector3f &target)
@@ -43,7 +43,7 @@ namespace hr { namespace render { namespace tools
 			mAxis.dir = target - mAxis.pos;
 			mAxis.dir.normalize();
 			mAbsFocus = target.getDistance(mAxis.pos);
-			mModelView.setGLModelView(mAxis.pos, getTarget(), mAxis.up);
+			mModelView = Matrix::glModelView(mAxis.pos, getTarget(), mAxis.up);
 		}
 
 		void setTarget(float x, float y, float z)
@@ -51,21 +51,21 @@ namespace hr { namespace render { namespace tools
 			mAxis.dir = hr::Vector3f(x, y, z) - mAxis.pos;
 			mAxis.dir.normalize();
 			mAbsFocus = mAxis.pos.getDistance(x, y, z);
-			mModelView.setGLModelView(mAxis.pos, getTarget(), mAxis.up);
+			mModelView = Matrix::glModelView(mAxis.pos, getTarget(), mAxis.up);
 		}
 
 		void setDir(const hr::Vector3f &direction)
 		{
 			mAxis.dir.set(direction);
 			mAxis.dir.normalize();
-			mModelView.setGLModelView(mAxis.pos, getTarget(), mAxis.up);
+			mModelView = Matrix::glModelView(mAxis.pos, getTarget(), mAxis.up);
 		}
 
 		void setDir(float x, float y, float z)
 		{
 			mAxis.dir.set(x, y, z);
 			mAxis.dir.normalize();
-			mModelView.setGLModelView(mAxis.pos, getTarget(), mAxis.up);
+			mModelView = Matrix::glModelView(mAxis.pos, getTarget(), mAxis.up);
 		}
 
 		void setFocalDist(float focus)
@@ -197,6 +197,5 @@ namespace hr { namespace render { namespace tools
 		void pathAdd(CameraComponent component, float x, float y, float z);
 		void pathAdd(CameraComponent component, const hr::Vector3f &vec);
 	};
-
-} } }
+}
 

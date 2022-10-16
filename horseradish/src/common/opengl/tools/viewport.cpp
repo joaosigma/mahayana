@@ -4,7 +4,7 @@ namespace hr::gl::tools
 {
 	namespace
 	{
-		void funcProjection(hr::Matrix& mat, double fovy, double aspectRatio, double znear) noexcept
+		hr::Matrix funcProjection(double fovy, double aspectRatio, double znear) noexcept
 		{
 			/*double ymax = near * std::tan(fov * 0.00872664625997164788461845384); //0.008726646259971 = pi / 180.0 / 2.0
 			double ymin = -ymax;
@@ -20,18 +20,21 @@ namespace hr::gl::tools
 			mat[11] = -1.0f;
 			mat[14] = -static_cast<float>((2.0 * far * near) / (far - near));*/
 
-			double f = 1.0 / std::tan(fovy / 2.0);
+			auto mat = hr::Matrix::zero();
 
-			mat.set(0.0f);
+			double f = 1.0 / std::tan(fovy / 2.0);
 			mat[0] = static_cast<float>(f / aspectRatio);
 			mat[5] = static_cast<float>(f);
 			mat[11] = -1.0f;
 			mat[14] = static_cast<float>(znear);
+
+			return mat;
 		};
 
-		void funcOrtho(hr::Matrix& mat, double left, double right, double bottom, double top, double near, double far) noexcept
+		hr::Matrix funcOrtho(double left, double right, double bottom, double top, double near, double far) noexcept
 		{
-			mat.set(0.0f);
+			auto mat = hr::Matrix::zero();
+
 			mat[0] = static_cast<float>(2.0 / (right - left));
 			mat[5] = static_cast<float>(2.0 / (top - bottom));
 			mat[10] = static_cast<float>(-2.0 / (far - near));
@@ -39,20 +42,20 @@ namespace hr::gl::tools
 			mat[13] = static_cast<float>(-(top + bottom) / (top - bottom));
 			mat[14] = static_cast<float>(-(far + near) / (far - near));
 			mat[15] = 1.0f;
+
+			return mat;
 		};
 	}
 
 	hr::Matrix Viewport::genMatrix2DProj(size_t width, size_t height)
 	{
-		hr::Matrix mat;
-		funcOrtho(mat, 0.0, width, 0.0, height, 1.0, -1.0);
-		return mat;
+		return funcOrtho(0.0, width, 0.0, height, 1.0, -1.0);
 	}
 
 	void Viewport::calcMatrices() noexcept
 	{
-		funcProjection(mMatrices.mp3D, mYFov, mDims.aspectRatio, mZNear);
-		funcOrtho(mMatrices.mp2D, 0.0, mDims.width, 0.0, mDims.height, 1.0, -1.0);
+		mMatrices.mp3D = funcProjection(mYFov, mDims.aspectRatio, mZNear);
+		mMatrices.mp2D = funcOrtho(0.0, mDims.width, 0.0, mDims.height, 1.0, -1.0);
 	}
 
 	const hr::Matrix& Viewport::getProjection(ProjectionType projectionType) const
@@ -73,7 +76,7 @@ namespace hr::gl::tools
 		if (!listPoints || numPoints <= 0)
 			return;
 
-		hr::Matrix transMat;
+		auto transMat = hr::Matrix::identity();
 		switch (projType)
 		{
 		case ProjectionType::Proj2D:
