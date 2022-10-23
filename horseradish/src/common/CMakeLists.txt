@@ -60,6 +60,7 @@ target_sources(horseradish-utests
 		matrix_t.cpp
 		quaternion_t.cpp
 		vector_t.cpp
+		utils_t.hpp
 )
 
 add_subdirectory(opengl)

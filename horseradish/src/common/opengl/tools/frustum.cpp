@@ -158,7 +158,7 @@ namespace hr::gl::tools
 		return mPlanes[pa].getDotNormal(normalB);
 	}
 
-	void Frustum::calculateFrustum(const hr::Matrix& transformation)
+	void Frustum::calculateFrustum(const hr::Matrix4f& transformation)
 	{
 		hr::Vector4f col1 = transformation.getColumn(0);
 		hr::Vector4f col2 = transformation.getColumn(1);
@@ -168,7 +168,7 @@ namespace hr::gl::tools
 		extractPlanes(col1, col2, col3, col4);
 	}
 
-	void Frustum::calculateFrustum(const hr::Matrix& projection, const hr::Matrix& modelview)
+	void Frustum::calculateFrustum(const hr::Matrix4f& projection, const hr::Matrix4f& modelview)
 	{
 		auto matTrans = projection * modelview;
 		hr::Vector4f col1 = matTrans.getColumn(0);
@@ -179,7 +179,7 @@ namespace hr::gl::tools
 		extractPlanes(col1, col2, col3, col4);
 	}
 
-	void Frustum::calculateFrustum(const hr::Matrix& modelView, const hr::Matrix& projection, const hr::Vector3f& pos, float zNear, float zFar)
+	void Frustum::calculateFrustum(const hr::Matrix4f& modelView, const hr::Matrix4f& projection, const hr::Vector3f& pos, float zNear, float zFar)
 	{
 		mPosition = pos;
 		mZNear = zNear;

@@ -70,7 +70,7 @@ namespace hr
 
 		static float sin(const float radians)
 		{
-			return Math::cos(Math::PiHalf<float> -radians);
+			return Math::cos(Math::PiHalf<float> - radians);
 		}
 
 		static float cos(const float radians)
@@ -80,7 +80,7 @@ namespace hr
 
 		static double sin(const double radians)
 		{
-			return Math::cos(Math::PiHalf<float> -radians);
+			return Math::cos(Math::PiHalf<float> - radians);
 		}
 
 		static double cos(const double radians)
@@ -96,9 +96,24 @@ namespace hr
 			c = _mm_cvtss_f32(mmCos);
 		}
 
+		static void sinCos(double radians, double& s, double& c)
+		{
+			__m128d mmCos;
+			__m128d mmSin = _mm_sincos_pd(&mmCos, _mm_set1_pd(radians));
+			s = _mm_cvtsd_f64(mmSin);
+			c = _mm_cvtsd_f64(mmCos);
+		}
+
 		static std::tuple<float, float> sinCos(float radians)
 		{
 			float s, c;
+			Math::sinCos(radians, s, c);
+			return {s, c};
+		}
+
+		static std::tuple<double, double> sinCos(double radians)
+		{
+			double s, c;
 			Math::sinCos(radians, s, c);
 			return {s, c};
 		}

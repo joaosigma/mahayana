@@ -10,7 +10,7 @@ namespace hr::render::tools
 	class Camera
 	{
 	protected:
-		hr::Matrix mModelView;
+		hr::Matrix4f mModelView;
 		struct {
 			hr::Vector3f pos, dir, up;
 		} mAxis;
@@ -18,7 +18,7 @@ namespace hr::render::tools
 	
 	public:
 		Camera() noexcept
-		  : mModelView{ hr::Matrix::identity() }
+		  : mModelView{hr::Matrix4f::identity()}
 		{
 			mAxis.pos.set(0.0f, 0.0f, 1.0f);
 			mAxis.dir.set(0.0f, 0.0f, 0.0f);
@@ -29,13 +29,13 @@ namespace hr::render::tools
 		void setPos(const hr::Vector3f &pos)
 		{
 			mAxis.pos.set(pos);
-			mModelView = Matrix::glModelView(mAxis.pos, getTarget(), mAxis.up);
+			mModelView = Matrix4f::glModelView(mAxis.pos, getTarget(), mAxis.up);
 		}
 
 		void setPos(float x, float y, float z)
 		{
 			mAxis.pos.set(x, y, z);
-			mModelView = Matrix::glModelView(mAxis.pos, getTarget(), mAxis.up);
+			mModelView = Matrix4f::glModelView(mAxis.pos, getTarget(), mAxis.up);
 		}
 
 		void setTarget(const hr::Vector3f &target)
@@ -43,7 +43,7 @@ namespace hr::render::tools
 			mAxis.dir = target - mAxis.pos;
 			mAxis.dir.normalize();
 			mAbsFocus = target.getDistance(mAxis.pos);
-			mModelView = Matrix::glModelView(mAxis.pos, getTarget(), mAxis.up);
+			mModelView = Matrix4f::glModelView(mAxis.pos, getTarget(), mAxis.up);
 		}
 
 		void setTarget(float x, float y, float z)
@@ -51,21 +51,21 @@ namespace hr::render::tools
 			mAxis.dir = hr::Vector3f(x, y, z) - mAxis.pos;
 			mAxis.dir.normalize();
 			mAbsFocus = mAxis.pos.getDistance(x, y, z);
-			mModelView = Matrix::glModelView(mAxis.pos, getTarget(), mAxis.up);
+			mModelView = Matrix4f::glModelView(mAxis.pos, getTarget(), mAxis.up);
 		}
 
 		void setDir(const hr::Vector3f &direction)
 		{
 			mAxis.dir.set(direction);
 			mAxis.dir.normalize();
-			mModelView = Matrix::glModelView(mAxis.pos, getTarget(), mAxis.up);
+			mModelView = Matrix4f::glModelView(mAxis.pos, getTarget(), mAxis.up);
 		}
 
 		void setDir(float x, float y, float z)
 		{
 			mAxis.dir.set(x, y, z);
 			mAxis.dir.normalize();
-			mModelView = Matrix::glModelView(mAxis.pos, getTarget(), mAxis.up);
+			mModelView = Matrix4f::glModelView(mAxis.pos, getTarget(), mAxis.up);
 		}
 
 		void setFocalDist(float focus)
@@ -114,7 +114,7 @@ namespace hr::render::tools
 			return mAbsFocus;
 		}
 
-		const hr::Matrix& modelView() const
+		const hr::Matrix4f &modelView() const
 		{
 			return mModelView;
 		}

@@ -1,113 +1,13 @@
 #pragma once
 
-#include "quaternion.hpp"
+#include "utils_t.hpp"
 
-#include <format>
-#include <optional>
+#include "quaternion.hpp"
 
 #include "libs/catch2/catch.hpp"
 
-namespace Catch
-{
-	template<>
-	struct StringMaker<hr::Quaternion>
-	{
-		static std::string convert(hr::Quaternion const& q)
-		{
-			return std::format("Quaternion is: {{{}, {}, {}, {}}}", q[0], q[1], q[2], q[3]);
-		}
-	};
-
-	template<>
-	struct StringMaker<hr::Vector3f>
-	{
-		static std::string convert(hr::Vector3f const& v)
-		{
-			return std::format("Vector is: {{{}, {}, {}}}", v[0], v[1], v[2]);
-		}
-	};
-}
-
 namespace hr::utests
 {
-	namespace
-	{
-		struct QuaternionEqualsMatcher : Catch::Matchers::MatcherGenericBase
-		{
-			QuaternionEqualsMatcher(Quaternion q)
-			{
-				m_quat = std::move(q);
-			}
-
-			QuaternionEqualsMatcher(const float qx, const float qy, const float qz, const float qw)
-			{ 
-				m_quat = Quaternion{qx, qy, qz, qw};
-			}
-
-			bool match(const Quaternion& q) const
-			{
-				// set epsilon to allowed a 0.1% difference and a margin to allow (0.0f == -0.0f) to pass
-
-				return (q[0] == Catch::Approx(m_quat[0]).epsilon(0.001).margin(0.0000001)) 
-					&& (q[1] == Catch::Approx(m_quat[1]).epsilon(0.001).margin(0.0000001))
-					&& (q[2] == Catch::Approx(m_quat[2]).epsilon(0.001).margin(0.0000001))
-					&& (q[3] == Catch::Approx(m_quat[3]).epsilon(0.001).margin(0.0000001));
-			}
-
-			std::string describe() const override
-			{
-				return std::format("Quaternion is: {{{}, {}, {}, {}}}", m_quat[0], m_quat[1], m_quat[2], m_quat[3]);
-			}
-
-		private:
-			Quaternion m_quat;
-		};
-
-		auto QuaternionEquals(const float qx, const float qy, const float qz, const float qw) -> QuaternionEqualsMatcher
-		{
-			return QuaternionEqualsMatcher{qx, qy, qz, qw};
-		}
-
-		auto QuaternionEquals(Quaternion q) -> QuaternionEqualsMatcher
-		{
-			return QuaternionEqualsMatcher{std::move(q)};
-		}
-
-		struct VectorEqualsMatcher : Catch::Matchers::MatcherGenericBase
-		{
-			VectorEqualsMatcher(float x, float y, float z)
-			  : m_x{x}, m_y{y}, m_z{z}
-			{ }
-
-			bool match(const Vector3f& v) const
-			{
-				// set epsilon to allowed a 0.1% difference and a margin to allow (0.0f == -0.0f) to pass
-
-				return (v[0] == Catch::Approx(m_x).epsilon(0.001).margin(0.0000001))
-					&& (v[1] == Catch::Approx(m_y).epsilon(0.001).margin(0.0000001))
-					&& (v[2] == Catch::Approx(m_z).epsilon(0.001).margin(0.0000001));
-			}
-
-			std::string describe() const override
-			{
-				return std::format("Vector is: {{{}, {}, {}}}", m_x, m_y, m_z);
-			}
-
-		private:
-			float m_x, m_y, m_z;
-		};
-
-		auto VectorEquals(const float vx, const float vy, const float vz) -> VectorEqualsMatcher
-		{
-			return VectorEqualsMatcher{vx, vy, vz};
-		}
-
-		auto VectorEquals(const Vector3f& v) -> VectorEqualsMatcher
-		{
-			return VectorEqualsMatcher{v[0], v[1], v[2]};
-		}
-	}
-
 	TEST_CASE("Quaternion init", "[common][quaternion]")
 	{
 		SECTION("init")

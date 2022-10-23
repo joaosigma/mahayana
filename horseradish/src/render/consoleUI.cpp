@@ -130,7 +130,7 @@ namespace hr { namespace render
 		}
 	}
 
-	void ConsoleUI::drawContent(size_t textSize, const hr::Matrix &transformMatrix) const
+	void ConsoleUI::drawContent(size_t textSize, const hr::Matrix4f& transformMatrix) const
 	{
 		if (!mRenderer.mGui.font)
 			return;
@@ -311,7 +311,7 @@ namespace hr { namespace render
 		}
 	}
 
-	void ConsoleUI::drawBackground(const hr::Matrix &transformMatrix, float bkgAlpha) const
+	void ConsoleUI::drawBackground(const hr::Matrix4f& transformMatrix, float bkgAlpha) const
 	{
 		hr::gl::glBindProgramPipeline(mRenderer.mShaders.drawNoTex.progPipeline.id());
 		hr::gl::glProgramUniformMatrix4fv(mRenderer.mShaders.drawNoTex.progVertex.id(), mRenderer.mShaders.drawNoTex.progVertex.getUniformLocation("transformationMatrix"), 1, false, transformMatrix.data());
@@ -346,7 +346,7 @@ namespace hr { namespace render
 		if (!isVisible())
 			return;
 
-		hr::Matrix transformMatrix = viewport.getProjection(hr::gl::tools::Viewport::ProjectionType::Proj2D);
+		hr::Matrix4f transformMatrix = viewport.getProjection(hr::gl::tools::Viewport::ProjectionType::Proj2D);
 
 		drawBackground(transformMatrix, 0.8f);
 		drawContent(textSize, transformMatrix);

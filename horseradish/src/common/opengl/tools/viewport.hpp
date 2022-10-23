@@ -10,7 +10,7 @@ namespace hr::gl::tools
 	public:
 		enum class ProjectionType { Proj3D, Proj2D };
 
-		static hr::Matrix genMatrix2DProj(size_t width, size_t height);
+		static hr::Matrix4f genMatrix2DProj(size_t width, size_t height);
 
 	private:
 		double mYFov, mZNear;
@@ -20,8 +20,8 @@ namespace hr::gl::tools
 		} mDims;
 		
 		struct {
-			hr::Matrix mp2D = hr::Matrix::identity();
-			hr::Matrix mp3D = hr::Matrix::identity();
+			hr::Matrix4f mp2D = hr::Matrix4f::identity();
+			hr::Matrix4f mp3D = hr::Matrix4f::identity();
 		} mMatrices;
 
 		void calcMatrices()  noexcept;
@@ -46,7 +46,7 @@ namespace hr::gl::tools
 			calcMatrices();
 		}
 
-		const hr::Matrix& getProjection(ProjectionType projectionType) const;
+		const hr::Matrix4f& getProjection(ProjectionType projectionType) const;
 
 		double yfov() const { return mYFov; }
 		double znear() const { return mZNear; }
@@ -55,6 +55,6 @@ namespace hr::gl::tools
 		size_t height() const { return mDims.height; }
 		double aspectRatio() const { return mDims.aspectRatio; }
 
-		void projectPoint(ProjectionType projType, const hr::Matrix& modelView, hr::Vector3f* const listPoints, size_t numPoints) const;
+		void projectPoint(ProjectionType projType, const hr::Matrix4f& modelView, hr::Vector3f* const listPoints, size_t numPoints) const;
 	};
 }

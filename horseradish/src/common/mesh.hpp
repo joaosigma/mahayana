@@ -307,7 +307,7 @@ namespace hr::geom
 		void centerMass(const Vector3f& center) noexcept;
 		void confine(float maxAxis) noexcept;
 
-		void transform(const Matrix& matFull, const Matrix3f& matRot) noexcept;
+		void transform(const Matrix4f& matFull, const Matrix3f& matRot) noexcept;
 
 		void invertTriWinding() noexcept;
 
@@ -339,6 +339,6 @@ namespace hr::geom
 		void setNormal(size_t vertexIndex, Vector3f normal) noexcept;
 		void setTangent(size_t vertexIndex, Vector4f tangent) noexcept;
 
-		void transform(const Matrix& matFull, const Matrix3f& matRot) noexcept;
+		void transform(const Matrix4f& matFull, const Matrix3f& matRot) noexcept;
 	};
 }

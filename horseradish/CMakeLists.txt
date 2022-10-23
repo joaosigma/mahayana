@@ -147,7 +147,7 @@ if (CMAKE_GENERATOR MATCHES "^Visual Studio")
 		/Bv # print toolchain info
 		#/Bt # print time spent in the compiler
 
-		/arch:AVX
+		/arch:AVX2
 	)
 
 	target_compile_definitions(horseradish PRIVATE ${HR_COMPILER_DEFS})

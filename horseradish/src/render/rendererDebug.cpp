@@ -31,7 +31,7 @@ namespace hr { namespace render
 		hr::gl::glDepthMask(GL_FALSE);
 		hr::gl::glDepthFunc(GL_GREATER);
 
-		hr::Matrix matrixTransform = hrViewport.getProjection(hr::gl::tools::Viewport::ProjectionType::Proj3D);
+		hr::Matrix4f matrixTransform = hrViewport.getProjection(hr::gl::tools::Viewport::ProjectionType::Proj3D);
 		matrixTransform *= hrCamera.modelView();
 
 		if (mOptions.drawBBoxes || mOptions.drawNormals)

@@ -40,7 +40,7 @@ namespace hr::render
 		struct RenderData {
 			bool fading = false;
 			float fadingAlpha = 1.0f;
-			hr::Matrix proj2D = hr::Matrix::identity();
+			hr::Matrix4f proj2D = hr::Matrix4f::identity();
 			hr::Size<int> windowSize;
 			hr::gl::tools::ImmediateMode imode;
 			hr::gl::objects::Texture texVideo;

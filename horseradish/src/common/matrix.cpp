@@ -2,6 +2,7 @@
 
 #include "math.hpp"
 
+#include <array>
 #include <cstring>
 #include <type_traits>
 #include <immintrin.h>
@@ -13,15 +14,13 @@ namespace hr
 	{
 		void asmMat4x4Vec3(float *vecWrite, const float *vecRead, float wCompMul, size_t stride, const float *mat, size_t numVec)
 		{
-			unsigned int leftOver;
-			__m128 mat1, mat2, mat3, mat4, final;
+			__m128 mat1 = _mm_load_ps(mat + 0);
+			__m128 mat2 = _mm_load_ps(mat + 4);
+			__m128 mat3 = _mm_load_ps(mat + 8);
+			__m128 mat4 = _mm_mul_ps(_mm_load_ps(mat + 12), _mm_load_ps1(&wCompMul));
+			__m128 final;
 
-			mat1 = _mm_loadu_ps(mat + 0);
-			mat2 = _mm_loadu_ps(mat + 4);
-			mat3 = _mm_loadu_ps(mat + 8);
-			mat4 = _mm_mul_ps(_mm_loadu_ps(mat + 12), _mm_load_ps1(&wCompMul));
-
-			leftOver = numVec;
+			auto leftOver = numVec;
 			for (; leftOver >= 4; leftOver -= 4)
 			{
 				final = _mm_mul_ps(_mm_load_ps1(vecRead + 0), mat1);
@@ -79,17 +78,92 @@ namespace hr
 			}
 		}
 
+		void asmMat4x4Vec3(double* vecWrite, const double* vecRead, double wCompMul, size_t stride, const double* mat, size_t numVec)
+		{
+			__m256d mat1 = _mm256_load_pd(mat + 0);
+			__m256d mat2 = _mm256_load_pd(mat + 4);
+			__m256d mat3 = _mm256_load_pd(mat + 8);
+			__m256d mat4 = _mm256_mul_pd(_mm256_load_pd(mat + 12), _mm256_broadcast_sd(&wCompMul));
+			__m256d final;
+			double alignas(32) res[4];
+
+			auto leftOver = numVec;
+			for (; leftOver >= 4; leftOver -= 4)
+			{
+				final = _mm256_mul_pd(_mm256_broadcast_sd(vecRead + 0), mat1);
+				final = _mm256_add_pd(final, _mm256_mul_pd(_mm256_broadcast_sd(vecRead + 1), mat2));
+				final = _mm256_add_pd(final, _mm256_mul_pd(_mm256_broadcast_sd(vecRead + 2), mat3));
+				final = _mm256_add_pd(final, mat4);
+				_mm256_storeu_pd(res, final);
+				vecWrite[0] = res[0];
+				vecWrite[1] = res[1];
+				vecWrite[2] = res[2];
+
+				vecRead = (double*)(((unsigned char*)vecRead) + stride);
+				vecWrite = (double*)(((unsigned char*)vecWrite) + stride);
+
+				final = _mm256_mul_pd(_mm256_broadcast_sd(vecRead + 0), mat1);
+				final = _mm256_add_pd(final, _mm256_mul_pd(_mm256_broadcast_sd(vecRead + 1), mat2));
+				final = _mm256_add_pd(final, _mm256_mul_pd(_mm256_broadcast_sd(vecRead + 2), mat3));
+				final = _mm256_add_pd(final, mat4);
+				_mm256_storeu_pd(res, final);
+				vecWrite[0] = res[0];
+				vecWrite[1] = res[1];
+				vecWrite[2] = res[2];
+
+				vecRead = (double*)(((unsigned char*)vecRead) + stride);
+				vecWrite = (double*)(((unsigned char*)vecWrite) + stride);
+
+				final = _mm256_mul_pd(_mm256_broadcast_sd(vecRead + 0), mat1);
+				final = _mm256_add_pd(final, _mm256_mul_pd(_mm256_broadcast_sd(vecRead + 1), mat2));
+				final = _mm256_add_pd(final, _mm256_mul_pd(_mm256_broadcast_sd(vecRead + 2), mat3));
+				final = _mm256_add_pd(final, mat4);
+				_mm256_storeu_pd(res, final);
+				vecWrite[0] = res[0];
+				vecWrite[1] = res[1];
+				vecWrite[2] = res[2];
+
+				vecRead = (double*)(((unsigned char*)vecRead) + stride);
+				vecWrite = (double*)(((unsigned char*)vecWrite) + stride);
+
+				final = _mm256_mul_pd(_mm256_broadcast_sd(vecRead + 0), mat1);
+				final = _mm256_add_pd(final, _mm256_mul_pd(_mm256_broadcast_sd(vecRead + 1), mat2));
+				final = _mm256_add_pd(final, _mm256_mul_pd(_mm256_broadcast_sd(vecRead + 2), mat3));
+				final = _mm256_add_pd(final, mat4);
+				_mm256_storeu_pd(res, final);
+				vecWrite[0] = res[0];
+				vecWrite[1] = res[1];
+				vecWrite[2] = res[2];
+
+				vecRead = (double*)(((unsigned char*)vecRead) + stride);
+				vecWrite = (double*)(((unsigned char*)vecWrite) + stride);
+			}
+
+			for (; leftOver > 0; leftOver--)
+			{
+				final = _mm256_mul_pd(_mm256_broadcast_sd(vecRead + 0), mat1);
+				final = _mm256_add_pd(final, _mm256_mul_pd(_mm256_broadcast_sd(vecRead + 1), mat2));
+				final = _mm256_add_pd(final, _mm256_mul_pd(_mm256_broadcast_sd(vecRead + 2), mat3));
+				final = _mm256_add_pd(final, mat4);
+				_mm256_storeu_pd(res, final);
+				vecWrite[0] = res[0];
+				vecWrite[1] = res[1];
+				vecWrite[2] = res[2];
+
+				vecRead = (double*)(((unsigned char*)vecRead) + stride);
+				vecWrite = (double*)(((unsigned char*)vecWrite) + stride);
+			}
+		}
+
 		void asmMat4x4Vec4(float *vecWrite, const float *vecRead, size_t stride, const float *mat, size_t numVec)
 		{
-			unsigned int leftOver;
-			__m128 mat1, mat2, mat3, mat4, final, curVec;
+			__m128 mat1 = _mm_load_ps(mat + 0);
+			__m128 mat2 = _mm_load_ps(mat + 4);
+			__m128 mat3 = _mm_load_ps(mat + 8);
+			__m128 mat4 = _mm_load_ps(mat + 12);
+			__m128 final, curVec;
 
-			mat1 = _mm_loadu_ps(mat + 0);
-			mat2 = _mm_loadu_ps(mat + 4);
-			mat3 = _mm_loadu_ps(mat + 8);
-			mat4 = _mm_loadu_ps(mat + 12);
-
-			leftOver = numVec;
+			auto leftOver = numVec;
 
 			if ((reinterpret_cast<uintptr_t>(vecWrite) % 16 == 0) && (reinterpret_cast<uintptr_t>(vecRead) % 16 == 0) && (stride % 16 == 0))
 			{
@@ -125,6 +199,19 @@ namespace hr
 					vecRead = (float*)(((unsigned char*)vecRead) + stride);
 					vecWrite = (float*)(((unsigned char*)vecWrite) + stride);
 
+					curVec = _mm_load_ps(vecRead);
+					final = _mm_mul_ps(_mm_shuffle_ps(curVec, curVec, 0x00), mat1);
+					final = _mm_add_ps(final, _mm_mul_ps(_mm_shuffle_ps(curVec, curVec, 0x55), mat2));
+					final = _mm_add_ps(final, _mm_mul_ps(_mm_shuffle_ps(curVec, curVec, 0xAA), mat3));
+					final = _mm_add_ps(final, _mm_mul_ps(_mm_shuffle_ps(curVec, curVec, 0xFF), mat4));
+					_mm_store_ps(vecWrite, final);
+
+					vecRead = (float*)(((unsigned char*)vecRead) + stride);
+					vecWrite = (float*)(((unsigned char*)vecWrite) + stride);
+				}
+
+				for (; leftOver > 0; leftOver--)
+				{
 					curVec = _mm_load_ps(vecRead);
 					final = _mm_mul_ps(_mm_shuffle_ps(curVec, curVec, 0x00), mat1);
 					final = _mm_add_ps(final, _mm_mul_ps(_mm_shuffle_ps(curVec, curVec, 0x55), mat2));
@@ -180,65 +267,225 @@ namespace hr
 					vecRead = (float*)(((unsigned char*)vecRead) + stride);
 					vecWrite = (float*)(((unsigned char*)vecWrite) + stride);
 				}
+
+				for (; leftOver > 0; leftOver--)
+				{
+					curVec = _mm_loadu_ps(vecRead);
+					final = _mm_mul_ps(_mm_shuffle_ps(curVec, curVec, 0x00), mat1);
+					final = _mm_add_ps(final, _mm_mul_ps(_mm_shuffle_ps(curVec, curVec, 0x55), mat2));
+					final = _mm_add_ps(final, _mm_mul_ps(_mm_shuffle_ps(curVec, curVec, 0xAA), mat3));
+					final = _mm_add_ps(final, _mm_mul_ps(_mm_shuffle_ps(curVec, curVec, 0xFF), mat4));
+					_mm_storeu_ps(vecWrite, final);
+
+					vecRead = (float*)(((unsigned char*)vecRead) + stride);
+					vecWrite = (float*)(((unsigned char*)vecWrite) + stride);
+				}
+			}
+		}
+
+		void asmMat4x4Vec4(double* vecWrite, const double* vecRead, size_t stride, const double* mat, size_t numVec)
+		{
+			__m256d mat1 = _mm256_load_pd(mat + 0);
+			__m256d mat2 = _mm256_load_pd(mat + 4);
+			__m256d mat3 = _mm256_load_pd(mat + 8);
+			__m256d mat4 = _mm256_load_pd(mat + 12);
+			__m256d final, curVec;
+
+			auto leftOver = numVec;
+
+			if ((reinterpret_cast<uintptr_t>(vecWrite) % 32 == 0) && (reinterpret_cast<uintptr_t>(vecRead) % 32 == 0) && (stride % 32 == 0))
+			{
+				for (; leftOver >= 4; leftOver -= 4)
+				{
+					curVec = _mm256_load_pd(vecRead);
+					final = _mm256_mul_pd(_mm256_shuffle_pd(curVec, curVec, 0x00), mat1);
+					final = _mm256_add_pd(final, _mm256_mul_pd(_mm256_shuffle_pd(curVec, curVec, 0x55), mat2));
+					final = _mm256_add_pd(final, _mm256_mul_pd(_mm256_shuffle_pd(curVec, curVec, 0xAA), mat3));
+					final = _mm256_add_pd(final, _mm256_mul_pd(_mm256_shuffle_pd(curVec, curVec, 0xFF), mat4));
+					_mm256_store_pd(vecWrite, final);
+
+					vecRead = (double*)(((unsigned char*)vecRead) + stride);
+					vecWrite = (double*)(((unsigned char*)vecWrite) + stride);
+
+					curVec = _mm256_load_pd(vecRead);
+					final = _mm256_mul_pd(_mm256_shuffle_pd(curVec, curVec, 0x00), mat1);
+					final = _mm256_add_pd(final, _mm256_mul_pd(_mm256_shuffle_pd(curVec, curVec, 0x55), mat2));
+					final = _mm256_add_pd(final, _mm256_mul_pd(_mm256_shuffle_pd(curVec, curVec, 0xAA), mat3));
+					final = _mm256_add_pd(final, _mm256_mul_pd(_mm256_shuffle_pd(curVec, curVec, 0xFF), mat4));
+					_mm256_store_pd(vecWrite, final);
+
+					vecRead = (double*)(((unsigned char*)vecRead) + stride);
+					vecWrite = (double*)(((unsigned char*)vecWrite) + stride);
+
+					curVec = _mm256_load_pd(vecRead);
+					final = _mm256_mul_pd(_mm256_shuffle_pd(curVec, curVec, 0x00), mat1);
+					final = _mm256_add_pd(final, _mm256_mul_pd(_mm256_shuffle_pd(curVec, curVec, 0x55), mat2));
+					final = _mm256_add_pd(final, _mm256_mul_pd(_mm256_shuffle_pd(curVec, curVec, 0xAA), mat3));
+					final = _mm256_add_pd(final, _mm256_mul_pd(_mm256_shuffle_pd(curVec, curVec, 0xFF), mat4));
+					_mm256_store_pd(vecWrite, final);
+
+					vecRead = (double*)(((unsigned char*)vecRead) + stride);
+					vecWrite = (double*)(((unsigned char*)vecWrite) + stride);
+
+					curVec = _mm256_load_pd(vecRead);
+					final = _mm256_mul_pd(_mm256_shuffle_pd(curVec, curVec, 0x00), mat1);
+					final = _mm256_add_pd(final, _mm256_mul_pd(_mm256_shuffle_pd(curVec, curVec, 0x55), mat2));
+					final = _mm256_add_pd(final, _mm256_mul_pd(_mm256_shuffle_pd(curVec, curVec, 0xAA), mat3));
+					final = _mm256_add_pd(final, _mm256_mul_pd(_mm256_shuffle_pd(curVec, curVec, 0xFF), mat4));
+					_mm256_store_pd(vecWrite, final);
+
+					vecRead = (double*)(((unsigned char*)vecRead) + stride);
+					vecWrite = (double*)(((unsigned char*)vecWrite) + stride);
+				}
+			}
+			else
+			{
+				for (; leftOver >= 4; leftOver -= 4)
+				{
+					curVec = _mm256_load_pd(vecRead);
+					final = _mm256_mul_pd(_mm256_shuffle_pd(curVec, curVec, 0x00), mat1);
+					final = _mm256_add_pd(final, _mm256_mul_pd(_mm256_shuffle_pd(curVec, curVec, 0x55), mat2));
+					final = _mm256_add_pd(final, _mm256_mul_pd(_mm256_shuffle_pd(curVec, curVec, 0xAA), mat3));
+					final = _mm256_add_pd(final, _mm256_mul_pd(_mm256_shuffle_pd(curVec, curVec, 0xFF), mat4));
+					_mm256_store_pd(vecWrite, final);
+
+					vecRead = (double*)(((unsigned char*)vecRead) + stride);
+					vecWrite = (double*)(((unsigned char*)vecWrite) + stride);
+
+					curVec = _mm256_load_pd(vecRead);
+					final = _mm256_mul_pd(_mm256_shuffle_pd(curVec, curVec, 0x00), mat1);
+					final = _mm256_add_pd(final, _mm256_mul_pd(_mm256_shuffle_pd(curVec, curVec, 0x55), mat2));
+					final = _mm256_add_pd(final, _mm256_mul_pd(_mm256_shuffle_pd(curVec, curVec, 0xAA), mat3));
+					final = _mm256_add_pd(final, _mm256_mul_pd(_mm256_shuffle_pd(curVec, curVec, 0xFF), mat4));
+					_mm256_store_pd(vecWrite, final);
+
+					vecRead = (double*)(((unsigned char*)vecRead) + stride);
+					vecWrite = (double*)(((unsigned char*)vecWrite) + stride);
+
+					curVec = _mm256_load_pd(vecRead);
+					final = _mm256_mul_pd(_mm256_shuffle_pd(curVec, curVec, 0x00), mat1);
+					final = _mm256_add_pd(final, _mm256_mul_pd(_mm256_shuffle_pd(curVec, curVec, 0x55), mat2));
+					final = _mm256_add_pd(final, _mm256_mul_pd(_mm256_shuffle_pd(curVec, curVec, 0xAA), mat3));
+					final = _mm256_add_pd(final, _mm256_mul_pd(_mm256_shuffle_pd(curVec, curVec, 0xFF), mat4));
+					_mm256_store_pd(vecWrite, final);
+
+					vecRead = (double*)(((unsigned char*)vecRead) + stride);
+					vecWrite = (double*)(((unsigned char*)vecWrite) + stride);
+
+					curVec = _mm256_load_pd(vecRead);
+					final = _mm256_mul_pd(_mm256_shuffle_pd(curVec, curVec, 0x00), mat1);
+					final = _mm256_add_pd(final, _mm256_mul_pd(_mm256_shuffle_pd(curVec, curVec, 0x55), mat2));
+					final = _mm256_add_pd(final, _mm256_mul_pd(_mm256_shuffle_pd(curVec, curVec, 0xAA), mat3));
+					final = _mm256_add_pd(final, _mm256_mul_pd(_mm256_shuffle_pd(curVec, curVec, 0xFF), mat4));
+					_mm256_store_pd(vecWrite, final);
+
+					vecRead = (double*)(((unsigned char*)vecRead) + stride);
+					vecWrite = (double*)(((unsigned char*)vecWrite) + stride);
+				}
 			}
 
 			for (; leftOver > 0; leftOver--)
 			{
-				curVec = _mm_loadu_ps(vecRead);
-				final = _mm_mul_ps(_mm_shuffle_ps(curVec, curVec, 0x00), mat1);
-				final = _mm_add_ps(final, _mm_mul_ps(_mm_shuffle_ps(curVec, curVec, 0x55), mat2));
-				final = _mm_add_ps(final, _mm_mul_ps(_mm_shuffle_ps(curVec, curVec, 0xAA), mat3));
-				final = _mm_add_ps(final, _mm_mul_ps(_mm_shuffle_ps(curVec, curVec, 0xFF), mat4));
-				_mm_storeu_ps(vecWrite, final);
+				curVec = _mm256_load_pd(vecRead);
+				final = _mm256_mul_pd(_mm256_shuffle_pd(curVec, curVec, 0x00), mat1);
+				final = _mm256_add_pd(final, _mm256_mul_pd(_mm256_shuffle_pd(curVec, curVec, 0x55), mat2));
+				final = _mm256_add_pd(final, _mm256_mul_pd(_mm256_shuffle_pd(curVec, curVec, 0xAA), mat3));
+				final = _mm256_add_pd(final, _mm256_mul_pd(_mm256_shuffle_pd(curVec, curVec, 0xFF), mat4));
+				_mm256_store_pd(vecWrite, final);
 
-				vecRead = (float*)(((unsigned char*)vecRead) + stride);
-				vecWrite = (float*)(((unsigned char*)vecWrite) + stride);
+				vecRead = (double*)(((unsigned char*)vecRead) + stride);
+				vecWrite = (double*)(((unsigned char*)vecWrite) + stride);
 			}
 		}
-
+		
 		void fastMat4x4Mult(float * const result, const float * const mat1, const float * const mat2)
 		{
 			_mm256_zeroupper();
 
-			__m256 a0, a1;
-			a0 = _mm256_loadu_ps(mat1 + 0);
-			a1 = _mm256_loadu_ps(mat1 + 8);
+			__m256 a0 = _mm256_load_ps(mat1 + 0);
+			__m256 a1 = _mm256_load_ps(mat1 + 8);
 
-			__m128 b0, b1, b2, b3;
-			b0 = _mm_loadu_ps(mat2 + 0);
-			b1 = _mm_loadu_ps(mat2 + 4);
-			b2 = _mm_loadu_ps(mat2 + 8);
-			b3 = _mm_loadu_ps(mat2 + 12);
+			__m128 b0 = _mm_load_ps(mat2 + 0);
+			__m128 b1 = _mm_load_ps(mat2 + 4);
+			__m128 b2 = _mm_load_ps(mat2 + 8);
+			__m128 b3 = _mm_load_ps(mat2 + 12);
 
-			__m256 out0;
-			out0 = _mm256_mul_ps(_mm256_shuffle_ps(a0, a0, 0x00), _mm256_broadcast_ps(&b0));
+			__m256 out0 = _mm256_mul_ps(_mm256_shuffle_ps(a0, a0, 0x00), _mm256_broadcast_ps(&b0));
 			out0 = _mm256_add_ps(out0, _mm256_mul_ps(_mm256_shuffle_ps(a0, a0, 0x55), _mm256_broadcast_ps(&b1)));
 			out0 = _mm256_add_ps(out0, _mm256_mul_ps(_mm256_shuffle_ps(a0, a0, 0xaa), _mm256_broadcast_ps(&b2)));
 			out0 = _mm256_add_ps(out0, _mm256_mul_ps(_mm256_shuffle_ps(a0, a0, 0xff), _mm256_broadcast_ps(&b3)));
 
-			__m256 out1;
-			out1 = _mm256_mul_ps(_mm256_shuffle_ps(a1, a1, 0x00), _mm256_broadcast_ps(&b0));
+			__m256 out1 = _mm256_mul_ps(_mm256_shuffle_ps(a1, a1, 0x00), _mm256_broadcast_ps(&b0));
 			out1 = _mm256_add_ps(out1, _mm256_mul_ps(_mm256_shuffle_ps(a1, a1, 0x55), _mm256_broadcast_ps(&b1)));
 			out1 = _mm256_add_ps(out1, _mm256_mul_ps(_mm256_shuffle_ps(a1, a1, 0xaa), _mm256_broadcast_ps(&b2)));
 			out1 = _mm256_add_ps(out1, _mm256_mul_ps(_mm256_shuffle_ps(a1, a1, 0xff), _mm256_broadcast_ps(&b3)));
 
-			_mm256_storeu_ps(result + 0, out0);
-			_mm256_storeu_ps(result + 8, out1);
+			_mm256_store_ps(result + 0, out0);
+			_mm256_store_ps(result + 8, out1);
+		}
+
+		void fastMat4x4Mult(double* const result, const double* const mat1, const double* const mat2)
+		{
+			__m256d ymm[4];
+
+			__m256d mat2Row0 = _mm256_load_pd(mat2 + 0);
+			__m256d mat2Row1 = _mm256_load_pd(mat2 + 4);
+			__m256d mat2Row2 = _mm256_load_pd(mat2 + 8);
+			__m256d mat2Row3 = _mm256_load_pd(mat2 + 12);
+
+			for (int i = 0; i < 4; i++)
+			{
+				ymm[0] = _mm256_broadcast_sd(mat1 + (i * 4) + 0);
+				ymm[1] = _mm256_broadcast_sd(mat1 + (i * 4) + 1);
+				ymm[2] = _mm256_broadcast_sd(mat1 + (i * 4) + 2);
+				ymm[3] = _mm256_broadcast_sd(mat1 + (i * 4) + 3);
+
+				ymm[0] = _mm256_mul_pd(ymm[0], mat2Row0);
+				ymm[1] = _mm256_mul_pd(ymm[1], mat2Row1);
+				ymm[0] = _mm256_add_pd(ymm[0], ymm[1]);
+				ymm[2] = _mm256_mul_pd(ymm[2], mat2Row2);
+				ymm[3] = _mm256_mul_pd(ymm[3], mat2Row3);
+				ymm[2] = _mm256_add_pd(ymm[2], ymm[3]);
+				_mm256_store_pd(result + (i * 4), _mm256_add_pd(ymm[0], ymm[2]));
+			}
 		}
 
 		void fastMat4x4Transpose(float * const result, const float * const mat)
 		{
-			__m128 row1, row2, row3, row4;
-
-			row1 = _mm_loadu_ps(mat + 0);
-			row2 = _mm_loadu_ps(mat + 4);
-			row3 = _mm_loadu_ps(mat + 8);
-			row4 = _mm_loadu_ps(mat + 12);
+			__m128 row1 = _mm_load_ps(mat + 0);
+			__m128 row2 = _mm_load_ps(mat + 4);
+			__m128 row3 = _mm_load_ps(mat + 8);
+			__m128 row4 = _mm_load_ps(mat + 12);
 			_MM_TRANSPOSE4_PS(row1, row2, row3, row4);
-			_mm_storeu_ps(result + 0, row1);
-			_mm_storeu_ps(result + 4, row2);
-			_mm_storeu_ps(result + 8, row3);
-			_mm_storeu_ps(result + 12, row4);
+			_mm_store_ps(result + 0, row1);
+			_mm_store_ps(result + 4, row2);
+			_mm_store_ps(result + 8, row3);
+			_mm_store_ps(result + 12, row4);
+		}
+
+		void fastMat4x4Transpose(double* const result, const double* const mat)
+		{
+			__m256d row0 = _mm256_load_pd(mat + 0);
+			__m256d row1 = _mm256_load_pd(mat + 4);
+			__m256d row2 = _mm256_load_pd(mat + 8);
+			__m256d row3 = _mm256_load_pd(mat + 12);
+
+			{
+				__m256d tmp0 = _mm256_shuffle_pd(row0, row1, 0x0);
+				__m256d tmp2 = _mm256_shuffle_pd(row0, row1, 0xF);
+				__m256d tmp1 = _mm256_shuffle_pd(row2, row3, 0x0);
+				__m256d tmp3 = _mm256_shuffle_pd(row2, row3, 0xF);
+
+				row0 = _mm256_permute2f128_pd(tmp0, tmp1, 0x20);
+				row1 = _mm256_permute2f128_pd(tmp2, tmp3, 0x20);
+				row2 = _mm256_permute2f128_pd(tmp0, tmp1, 0x31);
+				row3 = _mm256_permute2f128_pd(tmp2, tmp3, 0x31);
+			}
+
+			_mm256_store_pd(result + 0, row0);
+			_mm256_store_pd(result + 4, row1);
+			_mm256_store_pd(result + 8, row2);
+			_mm256_store_pd(result + 12, row3);
 		}
 
 		template<typename T>
@@ -281,318 +528,542 @@ namespace hr
 		}
 	}
 
-	void Matrix::operator*=(const float s) noexcept
+	template<typename TDataType>
+	void Matrix4<TDataType>::operator*=(const TDataType s) noexcept
 	{
-		__m128 scalar = _mm_load_ps1(&s);
+		if constexpr (std::is_same_v<TDataType, float>)
+		{
+			__m128 scalar = _mm_load_ps1(&s);
 
-		_mm_storeu_ps(m +  0, _mm_mul_ps(_mm_loadu_ps(m +  0), scalar));
-		_mm_storeu_ps(m +  4, _mm_mul_ps(_mm_loadu_ps(m +  4), scalar));
-		_mm_storeu_ps(m +  8, _mm_mul_ps(_mm_loadu_ps(m +  8), scalar));
-		_mm_storeu_ps(m + 12, _mm_mul_ps(_mm_loadu_ps(m + 12), scalar));
+			_mm_store_ps(m + 0, _mm_mul_ps(_mm_load_ps(m + 0), scalar));
+			_mm_store_ps(m + 4, _mm_mul_ps(_mm_load_ps(m + 4), scalar));
+			_mm_store_ps(m + 8, _mm_mul_ps(_mm_load_ps(m + 8), scalar));
+			_mm_store_ps(m + 12, _mm_mul_ps(_mm_load_ps(m + 12), scalar));
+		}
+		else
+		{
+			__m256d scalar = _mm256_broadcast_sd(&s);
+
+			_mm256_store_pd(m + 0, _mm256_mul_pd(_mm256_load_pd(m + 0), scalar));
+			_mm256_store_pd(m + 4, _mm256_mul_pd(_mm256_load_pd(m + 4), scalar));
+			_mm256_store_pd(m + 8, _mm256_mul_pd(_mm256_load_pd(m + 8), scalar));
+			_mm256_store_pd(m + 12, _mm256_mul_pd(_mm256_load_pd(m + 12), scalar));
+		}
 	}
 
-	void Matrix::operator*=(const Matrix &s) noexcept
+	template<typename TDataType>
+	void Matrix4<TDataType>::operator*=(const Matrix4& mat) noexcept
 	{
-		fastMat4x4Mult(this->m, this->m, s.m);
+		fastMat4x4Mult(this->m, this->m, mat.m);
 	}
 
-	void Matrix::operator*=(const Matrix3f &s) noexcept
+	template<typename TDataType>
+	void Matrix4<TDataType>::operator*=(const Matrix3<TDataType>& mat) noexcept
 	{
-		auto mat4 = s.convertToMat4();
+		auto mat4 = mat.convert<Matrix4, TDataType>();
 		fastMat4x4Mult(this->m, this->m, mat4.m);
 	}
 
-	void Matrix::operator*=(const float src[16]) noexcept
+	template<typename TDataType>
+	void Matrix4<TDataType>::operator*=(std::span<const TDataType> mat) noexcept
 	{
-		fastMat4x4Mult(m, m, src);
+		assert(mat.size() == 16);
+		fastMat4x4Mult(m, m, mat.data());
 	}
 
-	void Matrix::operator*=(const Quaternion &unitQuaternion) noexcept
+	template<typename TDataType>
+	void Matrix4<TDataType>::operator*=(const Quaternion& unitQuaternion) noexcept
 	{
-		auto mat = Matrix::from(unitQuaternion);
-		fastMat4x4Mult(m, m, mat.m);
+		if constexpr (std::is_same_v<TDataType, float>)
+		{
+			auto mat = Matrix4::from(unitQuaternion);
+			fastMat4x4Mult(m, m, mat.m);
+		}
+		else
+		{
+		}
 	}
 
-	void Matrix::operator+=(const Matrix &s) noexcept
+	template<typename TDataType>
+	void Matrix4<TDataType>::operator+=(const Matrix4& mat) noexcept
 	{
-		_mm_storeu_ps(m +  0, _mm_add_ps(_mm_loadu_ps(m +  0), _mm_loadu_ps(s.m +  0)));
-		_mm_storeu_ps(m +  4, _mm_add_ps(_mm_loadu_ps(m +  4), _mm_loadu_ps(s.m +  4)));
-		_mm_storeu_ps(m +  8, _mm_add_ps(_mm_loadu_ps(m +  8), _mm_loadu_ps(s.m +  8)));
-		_mm_storeu_ps(m + 12, _mm_add_ps(_mm_loadu_ps(m + 12), _mm_loadu_ps(s.m + 12)));
+		if constexpr (std::is_same_v<TDataType, float>)
+		{
+			_mm_store_ps(m + 0, _mm_add_ps(_mm_load_ps(m + 0), _mm_load_ps(mat.m + 0)));
+			_mm_store_ps(m + 4, _mm_add_ps(_mm_load_ps(m + 4), _mm_load_ps(mat.m + 4)));
+			_mm_store_ps(m + 8, _mm_add_ps(_mm_load_ps(m + 8), _mm_load_ps(mat.m + 8)));
+			_mm_store_ps(m + 12, _mm_add_ps(_mm_load_ps(m + 12), _mm_load_ps(mat.m + 12)));
+		}
+		else
+		{
+			_mm256_store_pd(m + 0, _mm256_add_pd(_mm256_load_pd(m + 0), _mm256_load_pd(mat.m + 0)));
+			_mm256_store_pd(m + 4, _mm256_add_pd(_mm256_load_pd(m + 4), _mm256_load_pd(mat.m + 4)));
+			_mm256_store_pd(m + 8, _mm256_add_pd(_mm256_load_pd(m + 8), _mm256_load_pd(mat.m + 8)));
+			_mm256_store_pd(m + 12, _mm256_add_pd(_mm256_load_pd(m + 12), _mm256_load_pd(mat.m + 12)));
+		}
 	}
 
-	void Matrix::operator+=(const float src[16]) noexcept
+	template<typename TDataType>
+	void Matrix4<TDataType>::operator+=(std::span<const TDataType> mat) noexcept
 	{
-		_mm_storeu_ps(m +  0, _mm_add_ps(_mm_loadu_ps(m +  0), _mm_loadu_ps(src +  0)));
-		_mm_storeu_ps(m +  4, _mm_add_ps(_mm_loadu_ps(m +  4), _mm_loadu_ps(src +  4)));
-		_mm_storeu_ps(m +  8, _mm_add_ps(_mm_loadu_ps(m +  8), _mm_loadu_ps(src +  8)));
-		_mm_storeu_ps(m + 12, _mm_add_ps(_mm_loadu_ps(m + 12), _mm_loadu_ps(src + 12)));
+		if constexpr (std::is_same_v<TDataType, float>)
+		{
+			assert(mat.size() == 16);
+			_mm_store_ps(m +  0, _mm_add_ps(_mm_load_ps(m +  0), _mm_load_ps(mat.data() + 0)));
+			_mm_store_ps(m +  4, _mm_add_ps(_mm_load_ps(m +  4), _mm_load_ps(mat.data() + 4)));
+			_mm_store_ps(m +  8, _mm_add_ps(_mm_load_ps(m +  8), _mm_load_ps(mat.data() + 8)));
+			_mm_store_ps(m + 12, _mm_add_ps(_mm_load_ps(m + 12), _mm_load_ps(mat.data() + 12)));
+		}
+		else
+		{
+			assert(mat.size() == 16);
+			_mm256_store_pd(m + 0, _mm256_add_pd(_mm256_load_pd(m + 0), _mm256_load_pd(mat.data() + 0)));
+			_mm256_store_pd(m + 4, _mm256_add_pd(_mm256_load_pd(m + 4), _mm256_load_pd(mat.data() + 4)));
+			_mm256_store_pd(m + 8, _mm256_add_pd(_mm256_load_pd(m + 8), _mm256_load_pd(mat.data() + 8)));
+			_mm256_store_pd(m + 12, _mm256_add_pd(_mm256_load_pd(m + 12), _mm256_load_pd(mat.data() + 12)));
+		}
 	}
 
-	void Matrix::operator-=(const Matrix &s) noexcept
+	template<typename TDataType>
+	void Matrix4<TDataType>::operator-=(const Matrix4& mat) noexcept
 	{
-		_mm_storeu_ps(m +  0, _mm_sub_ps(_mm_loadu_ps(m +  0), _mm_loadu_ps(s.m +  0)));
-		_mm_storeu_ps(m +  4, _mm_sub_ps(_mm_loadu_ps(m +  4), _mm_loadu_ps(s.m +  4)));
-		_mm_storeu_ps(m +  8, _mm_sub_ps(_mm_loadu_ps(m +  8), _mm_loadu_ps(s.m +  8)));
-		_mm_storeu_ps(m + 12, _mm_sub_ps(_mm_loadu_ps(m + 12), _mm_loadu_ps(s.m + 12)));
+		if constexpr (std::is_same_v<TDataType, float>)
+		{
+			_mm_store_ps(m +  0, _mm_sub_ps(_mm_load_ps(m +  0), _mm_load_ps(mat.m + 0)));
+			_mm_store_ps(m +  4, _mm_sub_ps(_mm_load_ps(m +  4), _mm_load_ps(mat.m + 4)));
+			_mm_store_ps(m +  8, _mm_sub_ps(_mm_load_ps(m +  8), _mm_load_ps(mat.m + 8)));
+			_mm_store_ps(m + 12, _mm_sub_ps(_mm_load_ps(m + 12), _mm_load_ps(mat.m + 12)));
+		}
+		else
+		{
+			_mm256_store_pd(m + 0, _mm256_sub_pd(_mm256_load_pd(m + 0), _mm256_load_pd(mat.m + 0)));
+			_mm256_store_pd(m + 4, _mm256_sub_pd(_mm256_load_pd(m + 4), _mm256_load_pd(mat.m + 4)));
+			_mm256_store_pd(m + 8, _mm256_sub_pd(_mm256_load_pd(m + 8), _mm256_load_pd(mat.m + 8)));
+			_mm256_store_pd(m + 12, _mm256_sub_pd(_mm256_load_pd(m + 12), _mm256_load_pd(mat.m + 12)));
+		}
 	}
 
-	void Matrix::operator-=(const float src[16]) noexcept
+	template<typename TDataType>
+	void Matrix4<TDataType>::operator-=(std::span<const TDataType> mat) noexcept
 	{
-		_mm_storeu_ps(m +  0, _mm_sub_ps(_mm_loadu_ps(m +  0), _mm_loadu_ps(src +  0)));
-		_mm_storeu_ps(m +  4, _mm_sub_ps(_mm_loadu_ps(m +  4), _mm_loadu_ps(src +  4)));
-		_mm_storeu_ps(m +  8, _mm_sub_ps(_mm_loadu_ps(m +  8), _mm_loadu_ps(src +  8)));
-		_mm_storeu_ps(m + 12, _mm_sub_ps(_mm_loadu_ps(m + 12), _mm_loadu_ps(src + 12)));
+		if constexpr (std::is_same_v<TDataType, float>)
+		{
+			assert(mat.size() == 16);
+			_mm_store_ps(m + 0, _mm_sub_ps(_mm_load_ps(m + 0), _mm_load_ps(mat.data() + 0)));
+			_mm_store_ps(m + 4, _mm_sub_ps(_mm_load_ps(m + 4), _mm_load_ps(mat.data() + 4)));
+			_mm_store_ps(m + 8, _mm_sub_ps(_mm_load_ps(m + 8), _mm_load_ps(mat.data() + 8)));
+			_mm_store_ps(m + 12, _mm_sub_ps(_mm_load_ps(m + 12), _mm_load_ps(mat.data() + 12)));
+		}
+		else
+		{
+			assert(mat.size() == 16);
+			_mm256_store_pd(m + 0, _mm256_sub_pd(_mm256_load_pd(m + 0), _mm256_load_pd(mat.data() + 0)));
+			_mm256_store_pd(m + 4, _mm256_sub_pd(_mm256_load_pd(m + 4), _mm256_load_pd(mat.data() + 4)));
+			_mm256_store_pd(m + 8, _mm256_sub_pd(_mm256_load_pd(m + 8), _mm256_load_pd(mat.data() + 8)));
+			_mm256_store_pd(m + 12, _mm256_sub_pd(_mm256_load_pd(m + 12), _mm256_load_pd(mat.data() + 12)));
+		}
 	}
 
-	Matrix Matrix::operator*(const Matrix &s) const noexcept
+	template<typename TDataType>
+	Matrix4<TDataType> Matrix4<TDataType>::operator*(const Matrix4& mat) const noexcept
 	{
-		Matrix res;
-		fastMat4x4Mult(res.m, m, s.m);
+		Matrix4 res;
+		fastMat4x4Mult(res.m, m, mat.m);
 		return res;
 	}
 
-	Matrix Matrix::operator+(const Matrix &s) const noexcept
+	template<typename TDataType>
+	Matrix4<TDataType> Matrix4<TDataType>::operator+(const Matrix4& mat) const noexcept
 	{
-		Matrix res;
-		_mm_storeu_ps(res.m +  0, _mm_add_ps(_mm_loadu_ps(m +  0), _mm_loadu_ps(s.m +  0)));
-		_mm_storeu_ps(res.m +  4, _mm_add_ps(_mm_loadu_ps(m +  4), _mm_loadu_ps(s.m +  4)));
-		_mm_storeu_ps(res.m +  8, _mm_add_ps(_mm_loadu_ps(m +  8), _mm_loadu_ps(s.m +  8)));
-		_mm_storeu_ps(res.m + 12, _mm_add_ps(_mm_loadu_ps(m + 12), _mm_loadu_ps(s.m + 12)));
-		return res;
-	}
+		Matrix4 res;
 
-	Matrix Matrix::operator-(const Matrix &s) const noexcept
-	{
-		Matrix res;
-		_mm_storeu_ps(res.m +  0, _mm_sub_ps(_mm_loadu_ps(m +  0), _mm_loadu_ps(s.m +  0)));
-		_mm_storeu_ps(res.m +  4, _mm_sub_ps(_mm_loadu_ps(m +  4), _mm_loadu_ps(s.m +  4)));
-		_mm_storeu_ps(res.m +  8, _mm_sub_ps(_mm_loadu_ps(m +  8), _mm_loadu_ps(s.m +  8)));
-		_mm_storeu_ps(res.m + 12, _mm_sub_ps(_mm_loadu_ps(m + 12), _mm_loadu_ps(s.m + 12)));
-		return res;
-	}
-
-	Matrix Matrix::operator*(const float s) const noexcept
-	{
-		Matrix res;
-
-		__m128 scalar = _mm_load_ps1(&s);
-		_mm_storeu_ps(res.m +  0, _mm_mul_ps(_mm_loadu_ps(m +  0), scalar));
-		_mm_storeu_ps(res.m +  4, _mm_mul_ps(_mm_loadu_ps(m +  4), scalar));
-		_mm_storeu_ps(res.m +  8, _mm_mul_ps(_mm_loadu_ps(m +  8), scalar));
-		_mm_storeu_ps(res.m + 12, _mm_mul_ps(_mm_loadu_ps(m + 12), scalar));
+		if constexpr (std::is_same_v<TDataType, float>)
+		{
+			_mm_store_ps(res.m + 0, _mm_add_ps(_mm_load_ps(m + 0), _mm_load_ps(mat.m + 0)));
+			_mm_store_ps(res.m + 4, _mm_add_ps(_mm_load_ps(m + 4), _mm_load_ps(mat.m + 4)));
+			_mm_store_ps(res.m + 8, _mm_add_ps(_mm_load_ps(m + 8), _mm_load_ps(mat.m + 8)));
+			_mm_store_ps(res.m + 12, _mm_add_ps(_mm_load_ps(m + 12), _mm_load_ps(mat.m + 12)));
+		}
+		else
+		{
+			_mm256_store_pd(res.m + 0, _mm256_sub_pd(_mm256_load_pd(m + 0), _mm256_load_pd(mat.m + 0)));
+			_mm256_store_pd(res.m + 4, _mm256_sub_pd(_mm256_load_pd(m + 4), _mm256_load_pd(mat.m + 4)));
+			_mm256_store_pd(res.m + 8, _mm256_sub_pd(_mm256_load_pd(m + 8), _mm256_load_pd(mat.m + 8)));
+			_mm256_store_pd(res.m + 12, _mm256_sub_pd(_mm256_load_pd(m + 12), _mm256_load_pd(mat.m + 12)));
+		}
 
 		return res;
 	}
 
-	void Matrix::transform(float vec[3]) const noexcept
+	template<typename TDataType>
+	Matrix4<TDataType> Matrix4<TDataType>::operator-(const Matrix4& mat) const noexcept
 	{
-		float vecX = vec[0];
-		float vecY = vec[1];
-		float vecZ = vec[2];
+		Matrix4 res;
 
-		vec[0] = vecX*m[0] + vecY*m[4] + vecZ*m[8] + m[12];
-		vec[1] = vecX*m[1] + vecY*m[5] + vecZ*m[9] + m[13];
-		vec[2] = vecX*m[2] + vecY*m[6] + vecZ*m[10] + m[14];
+		if constexpr (std::is_same_v<TDataType, float>)
+		{
+			_mm_store_ps(res.m + 0, _mm_sub_ps(_mm_load_ps(m + 0), _mm_load_ps(mat.m + 0)));
+			_mm_store_ps(res.m + 4, _mm_sub_ps(_mm_load_ps(m + 4), _mm_load_ps(mat.m + 4)));
+			_mm_store_ps(res.m + 8, _mm_sub_ps(_mm_load_ps(m + 8), _mm_load_ps(mat.m + 8)));
+			_mm_store_ps(res.m + 12, _mm_sub_ps(_mm_load_ps(m + 12), _mm_load_ps(mat.m + 12)));
+		}
+		else
+		{
+			_mm256_store_pd(res.m + 0, _mm256_sub_pd(_mm256_load_pd(m + 0), _mm256_load_pd(mat.m + 0)));
+			_mm256_store_pd(res.m + 4, _mm256_sub_pd(_mm256_load_pd(m + 4), _mm256_load_pd(mat.m + 4)));
+			_mm256_store_pd(res.m + 8, _mm256_sub_pd(_mm256_load_pd(m + 8), _mm256_load_pd(mat.m + 8)));
+			_mm256_store_pd(res.m + 12, _mm256_sub_pd(_mm256_load_pd(m + 12), _mm256_load_pd(mat.m + 12)));
+		}
+
+		return res;
 	}
 
-	void Matrix::transform(Vector3f& vec) const noexcept
+	template<typename TDataType>
+	Matrix4<TDataType> Matrix4<TDataType>::operator*(const TDataType s) const noexcept
 	{
-		__m128 row1, row2, row3;
+		Matrix4 res;
 
-		row1 = _mm_mul_ps(_mm_load_ps1(&vec[0]), _mm_loadu_ps(m));
-		row2 = _mm_mul_ps(_mm_load_ps1(&vec[1]), _mm_loadu_ps(m + 4));
-		row3 = _mm_mul_ps(_mm_load_ps1(&vec[2]), _mm_loadu_ps(m + 8));
-		_mm_storeu_ps(vec.data(), _mm_add_ps(_mm_add_ps(row1, row2), _mm_add_ps(row3, _mm_loadu_ps(m + 12))));
+		if constexpr (std::is_same_v<TDataType, float>)
+		{
+			__m128 scalar = _mm_load_ps1(&s);
+			_mm_store_ps(res.m + 0, _mm_mul_ps(_mm_load_ps(m + 0), scalar));
+			_mm_store_ps(res.m + 4, _mm_mul_ps(_mm_load_ps(m + 4), scalar));
+			_mm_store_ps(res.m + 8, _mm_mul_ps(_mm_load_ps(m + 8), scalar));
+			_mm_store_ps(res.m + 12, _mm_mul_ps(_mm_load_ps(m + 12), scalar));
+		}
+		else
+		{
+			__m256d scalar = _mm256_broadcast_sd(&s);
+			_mm256_store_pd(res.m + 0, _mm256_mul_pd(_mm256_load_pd(m + 0), scalar));
+			_mm256_store_pd(res.m + 4, _mm256_mul_pd(_mm256_load_pd(m + 4), scalar));
+			_mm256_store_pd(res.m + 8, _mm256_mul_pd(_mm256_load_pd(m + 8), scalar));
+			_mm256_store_pd(res.m + 12, _mm256_mul_pd(_mm256_load_pd(m + 12), scalar));
+		}
+
+		return res;
 	}
 
-	void Matrix::transform(const Vector3f& vec, Vector3f& result) const noexcept
+	template<typename TDataType>
+	void Matrix4<TDataType>::transform(std::span<TDataType> vec) const noexcept
 	{
-		__m128 row1, row2, row3;
+		assert((vec.size() == 3) || (vec.size() == 4));
 
-		row1 = _mm_mul_ps(_mm_load_ps1(&vec[0]), _mm_loadu_ps(m));
-		row2 = _mm_mul_ps(_mm_load_ps1(&vec[1]), _mm_loadu_ps(m + 4));
-		row3 = _mm_mul_ps(_mm_load_ps1(&vec[2]), _mm_loadu_ps(m + 8));
-		_mm_storeu_ps(result.data(), _mm_add_ps(_mm_add_ps(row1, row2), _mm_add_ps(row3, _mm_loadu_ps(m + 12))));
+		if (vec.size() == 3)
+		{
+			auto vecX = vec[0];
+			auto vecY = vec[1];
+			auto vecZ = vec[2];
+
+			vec[0] = vecX * m[0] + vecY * m[4] + vecZ * m[8] + m[12];
+			vec[1] = vecX * m[1] + vecY * m[5] + vecZ * m[9] + m[13];
+			vec[2] = vecX * m[2] + vecY * m[6] + vecZ * m[10] + m[14];
+		}
+		else
+		{
+			auto vecData = vec.data();
+
+			if constexpr (std::is_same_v<TDataType, float>)
+			{
+				__m128 row1 = _mm_mul_ps(_mm_load_ps1(vecData + 0), _mm_load_ps(m));
+				__m128 row2 = _mm_mul_ps(_mm_load_ps1(vecData + 1), _mm_load_ps(m + 4));
+				__m128 row3 = _mm_mul_ps(_mm_load_ps1(vecData + 2), _mm_load_ps(m + 8));
+				__m128 row4 = _mm_mul_ps(_mm_load_ps1(vecData + 3), _mm_load_ps(m + 12));
+				_mm_store_ps(vec.data(), _mm_add_ps(_mm_add_ps(row1, row2), _mm_add_ps(row3, row4)));
+			}
+			else
+			{
+				__m256d row1 = _mm256_mul_pd(_mm256_broadcast_sd(vecData + 0), _mm256_load_pd(m));
+				__m256d row2 = _mm256_mul_pd(_mm256_broadcast_sd(vecData + 1), _mm256_load_pd(m + 4));
+				__m256d row3 = _mm256_mul_pd(_mm256_broadcast_sd(vecData + 2), _mm256_load_pd(m + 8));
+				__m256d row4 = _mm256_mul_pd(_mm256_broadcast_sd(vecData + 3), _mm256_load_pd(m + 12));
+				_mm256_store_pd(vec.data(), _mm256_add_pd(_mm256_add_pd(row1, row2), _mm256_add_pd(row3, row4)));
+			}
+		}
 	}
 
-	void Matrix::transform(Vector3f* const vec, size_t numVec) const noexcept
+	template<typename TDataType>
+	void Matrix4<TDataType>::transform(Vector3Type& vec) const noexcept
 	{
-		asmMat4x4Vec3((float*)vec, (float*)vec, 1.0f, sizeof(Vector3f), m, numVec);
+		if constexpr (std::is_same_v<TDataType, float>)
+		{
+			__m128 row1 = _mm_mul_ps(_mm_load_ps1(&vec[0]), _mm_load_ps(m));
+			__m128 row2 = _mm_mul_ps(_mm_load_ps1(&vec[1]), _mm_load_ps(m + 4));
+			__m128 row3 = _mm_mul_ps(_mm_load_ps1(&vec[2]), _mm_load_ps(m + 8));
+			_mm_store_ps(vec.data(), _mm_add_ps(_mm_add_ps(row1, row2), _mm_add_ps(row3, _mm_load_ps(m + 12))));
+		}
+		else
+		{
+			__m256d row1 = _mm256_mul_pd(_mm256_broadcast_sd(&vec[0]), _mm256_load_pd(m));
+			__m256d row2 = _mm256_mul_pd(_mm256_broadcast_sd(&vec[1]), _mm256_load_pd(m + 4));
+			__m256d row3 = _mm256_mul_pd(_mm256_broadcast_sd(&vec[2]), _mm256_load_pd(m + 8));
+			_mm256_store_pd(vec.data(), _mm256_add_pd(_mm256_add_pd(row1, row2), _mm256_add_pd(row3, _mm256_load_pd(m + 12))));
+		}
 	}
 
-	void Matrix::transform(Vector4f& vec) const noexcept
+	template<typename TDataType>
+	void Matrix4<TDataType>::transform(const Vector3Type& vec, Vector3Type& result) const noexcept
 	{
-		__m128 row1, row2, row3, row4;
-
-		row1 = _mm_mul_ps(_mm_load_ps1(&vec[0]), _mm_loadu_ps(m));
-		row2 = _mm_mul_ps(_mm_load_ps1(&vec[1]), _mm_loadu_ps(m + 4));
-		row3 = _mm_mul_ps(_mm_load_ps1(&vec[2]), _mm_loadu_ps(m + 8));
-		row4 = _mm_mul_ps(_mm_load_ps1(&vec[3]), _mm_loadu_ps(m + 12));
-		_mm_storeu_ps(vec.data(), _mm_add_ps(_mm_add_ps(row1, row2), _mm_add_ps(row3, row4)));
+		if constexpr (std::is_same_v<TDataType, float>)
+		{
+			__m128 row1 = _mm_mul_ps(_mm_load_ps1(&vec[0]), _mm_load_ps(m));
+			__m128 row2 = _mm_mul_ps(_mm_load_ps1(&vec[1]), _mm_load_ps(m + 4));
+			__m128 row3 = _mm_mul_ps(_mm_load_ps1(&vec[2]), _mm_load_ps(m + 8));
+			_mm_store_ps(result.data(), _mm_add_ps(_mm_add_ps(row1, row2), _mm_add_ps(row3, _mm_load_ps(m + 12))));
+		}
+		else
+		{
+			__m256d row1 = _mm256_mul_pd(_mm256_broadcast_sd(&vec[0]), _mm256_load_pd(m));
+			__m256d row2 = _mm256_mul_pd(_mm256_broadcast_sd(&vec[1]), _mm256_load_pd(m + 4));
+			__m256d row3 = _mm256_mul_pd(_mm256_broadcast_sd(&vec[2]), _mm256_load_pd(m + 8));
+			_mm256_store_pd(result.data(), _mm256_add_pd(_mm256_add_pd(row1, row2), _mm256_add_pd(row3, _mm256_load_pd(m + 12))));
+		}
 	}
 
-	void Matrix::transform(const Vector4f& vec, Vector4f& result) const noexcept
+	template<typename TDataType>
+	void Matrix4<TDataType>::transform(std::span<Vector3Type> vecs) const noexcept
 	{
-		__m128 row1, row2, row3, row4;
-
-		row1 = _mm_mul_ps(_mm_load_ps1(&vec[0]), _mm_loadu_ps(m));
-		row2 = _mm_mul_ps(_mm_load_ps1(&vec[1]), _mm_loadu_ps(m + 4));
-		row3 = _mm_mul_ps(_mm_load_ps1(&vec[2]), _mm_loadu_ps(m + 8));
-		row4 = _mm_mul_ps(_mm_load_ps1(&vec[3]), _mm_loadu_ps(m + 12));
-		_mm_storeu_ps(result.data(), _mm_add_ps(_mm_add_ps(row1, row2), _mm_add_ps(row3, row4)));
+		asmMat4x4Vec3(vecs.data()->data(), vecs.data()->data(), kOne<TDataType>, sizeof(Vector3Type), m, vecs.size());
 	}
 
-	void Matrix::transform(Vector4f* const vec, size_t numVec) const noexcept
+	template<typename TDataType>
+	void Matrix4<TDataType>::transform(Vector4Type& vec) const noexcept
 	{
-		asmMat4x4Vec4((float*)vec, (float*)vec, sizeof(Vector4f), m, numVec);
+		transform({vec.data(), 3});
 	}
 
-	void Matrix::transform(BBox<>& bbox) const noexcept
+	template<typename TDataType>
+	void Matrix4<TDataType>::transform(const Vector4Type& vec, Vector4Type& result) const noexcept
 	{
-		Vector3f pts[8];
+		if constexpr (std::is_same_v<TDataType, float>)
+		{
+			__m128 row1 = _mm_mul_ps(_mm_load_ps1(&vec[0]), _mm_load_ps(m));
+			__m128 row2 = _mm_mul_ps(_mm_load_ps1(&vec[1]), _mm_load_ps(m + 4));
+			__m128 row3 = _mm_mul_ps(_mm_load_ps1(&vec[2]), _mm_load_ps(m + 8));
+			__m128 row4 = _mm_mul_ps(_mm_load_ps1(&vec[3]), _mm_load_ps(m + 12));
+			_mm_store_ps(result.data(), _mm_add_ps(_mm_add_ps(row1, row2), _mm_add_ps(row3, row4)));
+		}
+		else
+		{
+			__m256d row1 = _mm256_mul_pd(_mm256_broadcast_sd(&vec[0]), _mm256_load_pd(m));
+			__m256d row2 = _mm256_mul_pd(_mm256_broadcast_sd(&vec[1]), _mm256_load_pd(m + 4));
+			__m256d row3 = _mm256_mul_pd(_mm256_broadcast_sd(&vec[2]), _mm256_load_pd(m + 8));
+			__m256d row4 = _mm256_mul_pd(_mm256_broadcast_sd(&vec[3]), _mm256_load_pd(m + 12));
+			_mm256_store_pd(result.data(), _mm256_add_pd(_mm256_add_pd(row1, row2), _mm256_add_pd(row3, row4)));
+		}
+	}
 
-		bbox.corners(pts);
-		transform(pts, 8);
+	template<typename TDataType>
+	void Matrix4<TDataType>::transform(std::span<Vector4Type> vecs) const noexcept
+	{
+		asmMat4x4Vec4(vecs.data()->data(), vecs.data()->data(), sizeof(Vector4Type), m, vecs.size());
+	}
+
+	template<typename TDataType>
+	void Matrix4<TDataType>::transform(BBox<Vector3Type>& bbox) const noexcept
+	{
+		std::array<Vector3Type, 8> pts;
+
+		bbox.corners(pts.data());
+		transform(pts);
 
 		bbox.reset();
-		bbox.merge(pts, 8);
+		bbox.merge(pts.data(), 8);
 	}
 
-	void Matrix::transform(const BBox<>& bbox, BBox<>& bboxDest) const noexcept
+	template<typename TDataType>
+	void Matrix4<TDataType>::transform(const BBox<Vector3Type>& bbox, BBox<Vector3Type>& bboxDest) const noexcept
 	{
-		Vector3f pts[8];
+		std::array<Vector3Type, 8> pts;
 
-		bbox.corners(pts);
-		transform(pts, 8);
+		bbox.corners(pts.data());
+		transform(pts);
 
 		bboxDest.reset();
-		bboxDest.merge(pts, 8);
+		bboxDest.merge(pts.data(), 8);
 	}
 
-	Vector4f Matrix::getColumn(size_t columnIndex) const noexcept
+	template<typename TDataType>
+	Matrix4<TDataType>::Vector4Type Matrix4<TDataType>::getColumn(size_t columnIndex) const noexcept
 	{
 		columnIndex = columnIndex % 4;
-		return Vector4f(m[columnIndex], m[columnIndex + 4], m[columnIndex + 8], m[columnIndex + 12]);
+		if constexpr (std::is_same_v<TDataType, float>)
+		{
+			return Vector4Type(m[columnIndex], m[columnIndex + 4], m[columnIndex + 8], m[columnIndex + 12]);
+		}
+		else
+		{
+			return {};
+		}
 	}
 
-	Vector4f Matrix::getRow(size_t rowIndex) const noexcept
+	template<typename TDataType>
+	Matrix4<TDataType>::Vector4Type Matrix4<TDataType>::getRow(size_t rowIndex) const noexcept
 	{
-		return Vector4f(m + ((rowIndex % 4) * 4));
+		if constexpr (std::is_same_v<TDataType, float>)
+		{
+			return Vector4Type(m + ((rowIndex % 4) * 4));
+		}
+		else
+		{
+			return {};
+		}
 	}
 
-	void Matrix::write(float dest[16]) const noexcept
+	template<typename TDataType>
+	void Matrix4<TDataType>::write(TDataType dest[16]) const noexcept
 	{
-		std::memcpy(dest, m, sizeof(float) * 16);
+		std::memcpy(dest, m, sizeof(TDataType) * 16);
 	}
 
-	Matrix Matrix::getTranspose() const noexcept
+	template<typename TDataType>
+	Matrix4<TDataType> Matrix4<TDataType>::clone(CloneTransform transform) const noexcept
 	{
-		Matrix result;
-		fastMat4x4Transpose(result.m, m);
-		return result;
+		switch (transform)
+		{
+			case CloneTransform::Transpose:
+			{
+				Matrix4 mat;
+				fastMat4x4Transpose(mat.m, m);
+				return mat;
+			}
+			case CloneTransform::Inverse:
+			{
+				Matrix4 mat(*this);
+				mat.inverse();
+				return mat;
+			}
+			case CloneTransform::InverseTranspose:
+			{
+				Matrix4 mat(*this);
+				mat.inverseTranspose();
+				return mat;
+			}
+			case CloneTransform::InverseHomogenous:
+			{
+				Matrix4 mat(*this);
+				mat.inverseHomogenous();
+				return mat;
+			}
+			case CloneTransform::None:
+			default:
+				break;
+		}
+
+		//just copy
+		return Matrix4{*this};
 	}
 
-	Matrix& Matrix::transpose() noexcept
+	template<typename TDataType>
+	Matrix4<TDataType>& Matrix4<TDataType>::transpose() noexcept
 	{
 		fastMat4x4Transpose(m, m);
 		return *this;
 	}
 
-	Matrix Matrix::getInverse() const noexcept
+	template<typename TDataType>
+	Matrix4<TDataType>& Matrix4<TDataType>::inverse() noexcept
 	{
-		Matrix result(*this);
-		result.inverse();
-		return result;
-	}
+		if constexpr (std::is_same_v<TDataType, float>)
+		{
+			float tmp[12], result[16], det;
 
-	Matrix& Matrix::inverse() noexcept
-	{
-		float tmp[12], result[16], det;
+			//calculate pairs for first 8 elements (cofactors)
+			tmp[0] = m[10] * m[15];
+			tmp[1] = m[11] * m[14];
+			tmp[2] = m[9] * m[15];
+			tmp[3] = m[11] * m[13];
+			tmp[4] = m[9] * m[14];
+			tmp[5] = m[10] * m[13];
+			tmp[6] = m[8] * m[15];
+			tmp[7] = m[11] * m[12];
+			tmp[8] = m[8] * m[14];
+			tmp[9] = m[10] * m[12];
+			tmp[10] = m[8] * m[13];
+			tmp[11] = m[9] * m[12];
 
-		//calculate pairs for first 8 elements (cofactors)
-		tmp[0] = m[10] * m[15];	tmp[1] = m[11] * m[14];
-		tmp[2] = m[9] * m[15];	tmp[3] = m[11] * m[13];
-		tmp[4] = m[9] * m[14];	tmp[5] = m[10] * m[13];
-		tmp[6] = m[8] * m[15];	tmp[7] = m[11] * m[12];
-		tmp[8] = m[8] * m[14];	tmp[9] = m[10] * m[12];
-		tmp[10] = m[8] * m[13];	tmp[11] = m[9] * m[12];
+			//calculate first 8 elements (cofactors)
+			result[0] = tmp[0] * m[5] + tmp[3] * m[6] + tmp[4] * m[7] - tmp[1] * m[5] - tmp[2] * m[6] - tmp[5] * m[7];
+			result[4] = tmp[1] * m[4] + tmp[6] * m[6] + tmp[9] * m[7] - tmp[0] * m[4] - tmp[7] * m[6] - tmp[8] * m[7];
+			result[8] = tmp[2] * m[4] + tmp[7] * m[5] + tmp[10] * m[7] - tmp[3] * m[4] - tmp[6] * m[5] - tmp[11] * m[7];
+			result[12] = tmp[5] * m[4] + tmp[8] * m[5] + tmp[11] * m[6] - tmp[4] * m[4] - tmp[9] * m[5] - tmp[10] * m[6];
+			result[1] = tmp[1] * m[1] + tmp[2] * m[2] + tmp[5] * m[3] - tmp[0] * m[1] - tmp[3] * m[2] - tmp[4] * m[3];
+			result[5] = tmp[0] * m[0] + tmp[7] * m[2] + tmp[8] * m[3] - tmp[1] * m[0] - tmp[6] * m[2] - tmp[9] * m[3];
+			result[9] = tmp[3] * m[0] + tmp[6] * m[1] + tmp[11] * m[3] - tmp[2] * m[0] - tmp[7] * m[1] - tmp[10] * m[3];
+			result[13] = tmp[4] * m[0] + tmp[9] * m[1] + tmp[10] * m[2] - tmp[5] * m[0] - tmp[8] * m[1] - tmp[11] * m[2];
 
-		//calculate first 8 elements (cofactors)
-		result[0] = tmp[0] * m[5] + tmp[3] * m[6] + tmp[4] * m[7] - tmp[1] * m[5] - tmp[2] * m[6] - tmp[5] * m[7];
-		result[4] = tmp[1] * m[4] + tmp[6] * m[6] + tmp[9] * m[7] - tmp[0] * m[4] - tmp[7] * m[6] - tmp[8] * m[7];
-		result[8] = tmp[2] * m[4] + tmp[7] * m[5] + tmp[10] * m[7] - tmp[3] * m[4] - tmp[6] * m[5] - tmp[11] * m[7];
-		result[12] = tmp[5] * m[4] + tmp[8] * m[5] + tmp[11] * m[6] - tmp[4] * m[4] - tmp[9] * m[5] - tmp[10] * m[6];
-		result[1] = tmp[1] * m[1] + tmp[2] * m[2] + tmp[5] * m[3] - tmp[0] * m[1] - tmp[3] * m[2] - tmp[4] * m[3];
-		result[5] = tmp[0] * m[0] + tmp[7] * m[2] + tmp[8] * m[3] - tmp[1] * m[0] - tmp[6] * m[2] - tmp[9] * m[3];
-		result[9] = tmp[3] * m[0] + tmp[6] * m[1] + tmp[11] * m[3] - tmp[2] * m[0] - tmp[7] * m[1] - tmp[10] * m[3];
-		result[13] = tmp[4] * m[0] + tmp[9] * m[1] + tmp[10] * m[2] - tmp[5] * m[0] - tmp[8] * m[1] - tmp[11] * m[2];
+			//calculate pairs for second 8 elements (cofactors)
+			tmp[0] = m[2] * m[7];
+			tmp[1] = m[3] * m[6];
+			tmp[2] = m[1] * m[7];
+			tmp[3] = m[3] * m[5];
+			tmp[4] = m[1] * m[6];
+			tmp[5] = m[2] * m[5];
+			tmp[6] = m[0] * m[7];
+			tmp[7] = m[3] * m[4];
+			tmp[8] = m[0] * m[6];
+			tmp[9] = m[2] * m[4];
+			tmp[10] = m[0] * m[5];
+			tmp[11] = m[1] * m[4];
 
-		//calculate pairs for second 8 elements (cofactors)
-		tmp[0] = m[2] * m[7];		tmp[1] = m[3] * m[6];
-		tmp[2] = m[1] * m[7];		tmp[3] = m[3] * m[5];
-		tmp[4] = m[1] * m[6];		tmp[5] = m[2] * m[5];
-		tmp[6] = m[0] * m[7];		tmp[7] = m[3] * m[4];
-		tmp[8] = m[0] * m[6];		tmp[9] = m[2] * m[4];
-		tmp[10] = m[0] * m[5];		tmp[11] = m[1] * m[4];
+			//calculate second 8 elements (cofactors)
+			result[2] = tmp[0] * m[13] + tmp[3] * m[14] + tmp[4] * m[15] - tmp[1] * m[13] - tmp[2] * m[14] - tmp[5] * m[15];
+			result[6] = tmp[1] * m[12] + tmp[6] * m[14] + tmp[9] * m[15] - tmp[0] * m[12] - tmp[7] * m[14] - tmp[8] * m[15];
+			result[10] = tmp[2] * m[12] + tmp[7] * m[13] + tmp[10] * m[15] - tmp[3] * m[12] - tmp[6] * m[13] - tmp[11] * m[15];
+			result[14] = tmp[5] * m[12] + tmp[8] * m[13] + tmp[11] * m[14] - tmp[4] * m[12] - tmp[9] * m[13] - tmp[10] * m[14];
+			result[3] = tmp[2] * m[10] + tmp[5] * m[11] + tmp[1] * m[9] - tmp[4] * m[11] - tmp[0] * m[9] - tmp[3] * m[10];
+			result[7] = tmp[8] * m[11] + tmp[0] * m[8] + tmp[7] * m[10] - tmp[6] * m[10] - tmp[9] * m[11] - tmp[1] * m[8];
+			result[11] = tmp[6] * m[9] + tmp[11] * m[11] + tmp[3] * m[8] - tmp[10] * m[11] - tmp[2] * m[8] - tmp[7] * m[9];
+			result[15] = tmp[10] * m[10] + tmp[4] * m[8] + tmp[9] * m[9] - tmp[8] * m[9] - tmp[11] * m[10] - tmp[5] * m[8];
 
-		//calculate second 8 elements (cofactors)
-		result[2] = tmp[0] * m[13] + tmp[3] * m[14] + tmp[4] * m[15] - tmp[1] * m[13] - tmp[2] * m[14] - tmp[5] * m[15];
-		result[6] = tmp[1] * m[12] + tmp[6] * m[14] + tmp[9] * m[15] - tmp[0] * m[12] - tmp[7] * m[14] - tmp[8] * m[15];
-		result[10] = tmp[2] * m[12] + tmp[7] * m[13] + tmp[10] * m[15] - tmp[3] * m[12] - tmp[6] * m[13] - tmp[11] * m[15];
-		result[14] = tmp[5] * m[12] + tmp[8] * m[13] + tmp[11] * m[14] - tmp[4] * m[12] - tmp[9] * m[13] - tmp[10] * m[14];
-		result[3] = tmp[2] * m[10] + tmp[5] * m[11] + tmp[1] * m[9] - tmp[4] * m[11] - tmp[0] * m[9] - tmp[3] * m[10];
-		result[7] = tmp[8] * m[11] + tmp[0] * m[8] + tmp[7] * m[10] - tmp[6] * m[10] - tmp[9] * m[11] - tmp[1] * m[8];
-		result[11] = tmp[6] * m[9] + tmp[11] * m[11] + tmp[3] * m[8] - tmp[10] * m[11] - tmp[2] * m[8] - tmp[7] * m[9];
-		result[15] = tmp[10] * m[10] + tmp[4] * m[8] + tmp[9] * m[9] - tmp[8] * m[9] - tmp[11] * m[10] - tmp[5] * m[8];
+			// calculate determinant
+			det = m[0] * result[0] + m[1] * result[4] + m[2] * result[8] + m[3] * result[12];
+			if (Math::isZero(det)) return *this;
 
-		// calculate determinant
-		det = m[0] * result[0] + m[1] * result[4] + m[2] * result[8] + m[3] * result[12];
-		if (Math::isZero(det))
-			return *this;
+			//multiplicar tudo pelo determinante
+			det = 1.0f / det;
+			result[0] *= det;
+			result[1] *= det;
+			result[2] *= det;
+			result[3] *= det;
+			result[4] *= det;
+			result[5] *= det;
+			result[6] *= det;
+			result[7] *= det;
+			result[8] *= det;
+			result[9] *= det;
+			result[10] *= det;
+			result[11] *= det;
+			result[12] *= det;
+			result[13] *= det;
+			result[14] *= det;
+			result[15] *= det;
 
-		//multiplicar tudo pelo determinante
-		det = 1.0f / det;
-		result[0] *= det;		result[1] *= det;		result[2] *= det;		result[3] *= det;
-		result[4] *= det;		result[5] *= det;		result[6] *= det;		result[7] *= det;
-		result[8] *= det;		result[9] *= det;		result[10] *= det;	result[11] *= det;
-		result[12] *= det;	result[13] *= det;	result[14] *= det;	result[15] *= det;
+			std::memcpy(m, result, sizeof(float) * 16);
+		}
+		else
+		{
+		}
 
-		std::memcpy(m, result, sizeof(float) * 16);
 		return *this;
 	}
 
-	Matrix Matrix::getInverseTranspose() const noexcept
-	{
-		Matrix result(*this);
-		result.inverseTranspose();
-		return result;
-	}
-
-	Matrix& Matrix::inverseTranspose() noexcept
+	template<typename TDataType>
+	Matrix4<TDataType>& Matrix4<TDataType>::inverseTranspose() noexcept
 	{
 		inverse();
 		transpose();
 		return *this;
 	}
 
-	Matrix Matrix::getInverseHomogenous() const noexcept
+	template<typename TDataType>
+	Matrix4<TDataType>& Matrix4<TDataType>::inverseHomogenous() noexcept
 	{
-		Matrix result(*this);
-		result.inverseHomogenous();
-		return result;
-	}
+		std::swap(m[1], m[4]);
+		std::swap(m[2], m[8]);
+		std::swap(m[6], m[9]);
 
-	Matrix& Matrix::inverseHomogenous() noexcept
-	{
-		float aux1, aux2;
-
-		aux1 = m[1];	m[1] = m[4];	m[4] = aux1;
-		aux1 = m[2];	m[2] = m[8];	m[8] = aux1;
-		aux1 = m[6];	m[6] = m[9];	m[9] = aux1;
-
-		aux1 = -(m[0] * m[12] + m[4] * m[13] + m[8] * m[14]);
-		aux2 = -(m[1] * m[12] + m[5] * m[13] + m[9] * m[14]);
+		auto aux1 = -(m[0] * m[12] + m[4] * m[13] + m[8] * m[14]);
+		auto aux2 = -(m[1] * m[12] + m[5] * m[13] + m[9] * m[14]);
 		m[14] = -(m[2] * m[12] + m[6] * m[13] + m[10] * m[14]);
 		m[13] = aux2;
 		m[12] = aux1;
@@ -600,14 +1071,16 @@ namespace hr
 		return *this;
 	}
 
-	Vector3f Matrix::extractTranslation() const noexcept
+	template<typename TDataType>
+	Matrix4<TDataType>::Vector3Type Matrix4<TDataType>::extractTranslation() const noexcept
 	{
-		return Vector3f{ m[12], m[13], m[14] };
+		return Vector3Type{m[12], m[13], m[14]};
 	}
 
-	Vector3f Matrix::extractScale() const noexcept
+	template<typename TDataType>
+	Matrix4<TDataType>::Vector3Type Matrix4<TDataType>::extractScale() const noexcept
 	{
-		Vector3f scaling;
+		Vector3Type scaling;
 		scaling[0] = m[15] * std::sqrt((m[0] * m[0]) + (m[1] * m[1]) + (m[2] * m[2]));
 		scaling[1] = m[15] * std::sqrt((m[4] * m[4]) + (m[5] * m[5]) + (m[6] * m[6]));
 		scaling[2] = m[15] * std::sqrt((m[8] * m[8]) + (m[9] * m[9]) + (m[10] * m[10]));
@@ -615,9 +1088,10 @@ namespace hr
 		return scaling;
 	}
 
-	Quaternion Matrix::extractRotation() const noexcept
+	template<typename TDataType>
+	Quaternion Matrix4<TDataType>::extractRotation() const noexcept
 	{
-		Matrix tmp{ *this };
+		Matrix4 tmp{ *this };
 
 		//remove scaling
 		{
@@ -643,99 +1117,18 @@ namespace hr
 			}
 		}
 
-		Quaternion quat; 
-		quat.setFromMatrix4x4(tmp.data());
-		
+		if constexpr (std::is_same_v<TDataType, float>)
+		{
+			Quaternion quat;
+			quat.setFromMatrix4x4(tmp.data());
+		}
+		else
+		{
+			
+		}
+
+		Quaternion quat;
 		return quat;
-	}
-
-	void Matrix::setTranspose(const float src[16]) noexcept
-	{
-		fastMat4x4Transpose(m, src);
-	}
-
-	void Matrix::setTranspose(const Matrix &mat) noexcept
-	{
-		fastMat4x4Transpose(m, mat.m);
-	}
-
-	void Matrix::setReflect(const Plane<float> &plane) noexcept
-	{
-		Vector3f pNormal = plane.normal();
-		float d = plane.d();
-		pNormal.normalize();
-
-		m[0] = -2.0f * pNormal[0] * pNormal[0] + 1.0f;
-		m[1] = -2.0f * pNormal[1] * pNormal[0];
-		m[2] = -2.0f * pNormal[2] * pNormal[0];
-		m[3] = 0.0f;
-
-		m[4] = -2.0f * pNormal[0] * pNormal[1];
-		m[5] = -2.0f * pNormal[1] * pNormal[1] + 1.0f;
-		m[6] = -2.0f * pNormal[2] * pNormal[1];
-		m[7] = 0.0f;
-
-		m[8] = -2.0f * pNormal[0] * pNormal[2];
-		m[9] = -2.0f * pNormal[1] * pNormal[2];
-		m[10] = -2.0f * pNormal[2] * pNormal[2] + 1.0f;
-		m[11] = 0.0f;
-
-		m[12] = -2.0f * pNormal[0] * d;
-		m[13] = -2.0f * pNormal[1] * d;
-		m[14] = -2.0f * pNormal[2] * d;
-		m[15] = 1.0f;
-	}
-
-	void Matrix::setSaturation(const float sat) noexcept
-	{
-		float minusS, posS;
-
-		posS = Math::fClamp(sat, -1.0f, 1.0f);
-		minusS = 1.0f - posS;
-
-		m[0] = minusS*0.3086f + posS;
-		m[1] = m[2] = minusS*0.3086f;
-		m[4] = m[6] = minusS*0.6094f;
-		m[5] = minusS*0.6094f + posS;
-		m[8] = m[9] = minusS*0.0820f;
-		m[10] = minusS*0.0820f + posS;
-
-		m[3] = m[7] = m[11] = m[12] = m[13] = m[14] = 0.0f;
-		m[15] = 1.0f;
-	}
-
-	template<typename TDataType>
-	Matrix3<TDataType>& Matrix3<TDataType>::operator=(const Matrix& mat) noexcept
-	{
-		m[0] = mat.m[0];
-		m[1] = mat.m[1];
-		m[2] = mat.m[2];
-		m[3] = mat.m[4];
-		m[4] = mat.m[5];
-		m[5] = mat.m[6];
-		m[6] = mat.m[8];
-		m[7] = mat.m[9];
-		m[8] = mat.m[10];
-		return *this;
-	}
-
-	template<typename TDataType>
-	void Matrix3<TDataType>::operator*=(const Matrix& s) noexcept
-	{
-		TDataType matAux[9];
-		std::memcpy(matAux, m, sizeof(TDataType) * 9);
-
-		m[0] = (matAux[0] * s.m[0]) + (matAux[1] * s.m[4]) + (matAux[2] * s.m[8]);
-		m[1] = (matAux[0] * s.m[1]) + (matAux[1] * s.m[5]) + (matAux[2] * s.m[9]);
-		m[2] = (matAux[0] * s.m[2]) + (matAux[1] * s.m[6]) + (matAux[2] * s.m[10]);
-
-		m[3] = (matAux[3] * s.m[0]) + (matAux[4] * s.m[4]) + (matAux[5] * s.m[8]);
-		m[4] = (matAux[3] * s.m[1]) + (matAux[4] * s.m[5]) + (matAux[5] * s.m[9]);
-		m[5] = (matAux[3] * s.m[2]) + (matAux[4] * s.m[6]) + (matAux[5] * s.m[10]);
-
-		m[6] = (matAux[6] * s.m[0]) + (matAux[7] * s.m[4]) + (matAux[8] * s.m[8]);
-		m[7] = (matAux[6] * s.m[1]) + (matAux[7] * s.m[5]) + (matAux[8] * s.m[9]);
-		m[8] = (matAux[6] * s.m[2]) + (matAux[7] * s.m[6]) + (matAux[8] * s.m[10]);
 	}
 
 	template<typename TDataType>
@@ -867,44 +1260,35 @@ namespace hr
 	}
 
 	template<typename TDataType>
-	Matrix3<TDataType> Matrix3<TDataType>::getTranspose() const noexcept
+	Matrix3<TDataType> Matrix3<TDataType>::clone(CloneTransform transform) const noexcept
 	{
-		Matrix3 newMat;
+		switch (transform)
+		{
+			case CloneTransform::Transpose:
+			{
+				Matrix3 mat;
+				mat.m[0] = m[0];
+				mat.m[1] = m[3];
+				mat.m[2] = m[6];
+				mat.m[3] = m[1];
+				mat.m[4] = m[4];
+				mat.m[5] = m[7];
+				mat.m[6] = m[2];
+				mat.m[7] = m[5];
+				mat.m[8] = m[8];
+				return mat;
+			}
+			case CloneTransform::None:
+			default:
+				break;
+		}
 
-		newMat.m[0] = m[0];
-		newMat.m[1] = m[3];
-		newMat.m[2] = m[6];
-		newMat.m[3] = m[1];
-		newMat.m[4] = m[4];
-		newMat.m[5] = m[7];
-		newMat.m[6] = m[2];
-		newMat.m[7] = m[5];
-		newMat.m[8] = m[8];
-
-		return newMat;
+		//just copy
+		return Matrix3{*this};
 	}
 
-	template<typename TDataType>
-	Matrix Matrix3<TDataType>::convertToMat4() const noexcept
-	{
-		Matrix mat4;
-
-		mat4[0] = static_cast<float>(m[0]);
-		mat4[1] = static_cast<float>(m[1]);
-		mat4[2] = static_cast<float>(m[2]);
-		mat4[3] = 0.;
-		mat4[4] = static_cast<float>(m[3]);
-		mat4[5] = static_cast<float>(m[4]);
-		mat4[6] = static_cast<float>(m[5]);
-		mat4[7] = 0.;
-		mat4[8] = static_cast<float>(m[6]);
-		mat4[9] = static_cast<float>(m[7]);
-		mat4[10] = static_cast<float>(m[8]);
-		mat4[11] = mat4[12] = mat4[13] = mat4[14] = 0.;
-		mat4[15] = 1.;
-
-		return mat4;
-	}
+	template class Matrix4<float>;
+	template class Matrix4<double>;
 
 	template class Matrix3<float>;
 	template class Matrix3<double>;

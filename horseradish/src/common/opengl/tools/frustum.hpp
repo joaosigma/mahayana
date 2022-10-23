@@ -72,9 +72,9 @@ namespace hr::gl::tools
 
 		float dotNormals(const PlaneIndex planeA, const PlaneIndex planeB) const;
 
-		void calculateFrustum(const hr::Matrix& transformation);
-		void calculateFrustum(const hr::Matrix& projection, const hr::Matrix& modelview);
-		void calculateFrustum(const hr::Matrix& modelView, const hr::Matrix& projection, const hr::Vector3f& pos, float zNear, float zFar);
+		void calculateFrustum(const hr::Matrix4f& transformation);
+		void calculateFrustum(const hr::Matrix4f& projection, const hr::Matrix4f& modelview);
+		void calculateFrustum(const hr::Matrix4f& modelView, const hr::Matrix4f& projection, const hr::Vector3f& pos, float zNear, float zFar);
 
 		void setIndividualPlane(const PlaneIndex planeIndex, const hr::Plane<float>& plane);
 		void setFrustum(const hr::Vector3f& bboxMin, const hr::Vector3f& bboxMax);

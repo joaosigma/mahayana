@@ -79,7 +79,7 @@ namespace hr::render::tools
 				mAxis.pos[1] -= movementScale;
 		}
 
-		mModelView = Matrix::glModelView(mAxis.pos, getTarget(), mAxis.up);
+		mModelView = Matrix4f::glModelView(mAxis.pos, getTarget(), mAxis.up);
 	}
 
 	void CameraFPS::setMovementScale(CameraInput input, float scale)
@@ -138,7 +138,7 @@ namespace hr::render::tools
 		mAbsFocus = hr::Math::fClamp(mAbsFocus, mOnSphereMinDist, mOnSphereMaxDist);
 		mAxis.pos = curTarget - (newDir * mAbsFocus);
 
-		mModelView = Matrix::glModelView(mAxis.pos, getTarget(), mAxis.up);
+		mModelView = Matrix4f::glModelView(mAxis.pos, getTarget(), mAxis.up);
 	}
 
 	void CameraTarget::setMovementScale(CameraInput input, float scale)

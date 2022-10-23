@@ -4,7 +4,7 @@ namespace hr::gl::tools
 {
 	namespace
 	{
-		hr::Matrix funcProjection(double fovy, double aspectRatio, double znear) noexcept
+		hr::Matrix4f funcProjection(double fovy, double aspectRatio, double znear) noexcept
 		{
 			/*double ymax = near * std::tan(fov * 0.00872664625997164788461845384); //0.008726646259971 = pi / 180.0 / 2.0
 			double ymin = -ymax;
@@ -20,7 +20,7 @@ namespace hr::gl::tools
 			mat[11] = -1.0f;
 			mat[14] = -static_cast<float>((2.0 * far * near) / (far - near));*/
 
-			auto mat = hr::Matrix::zero();
+			auto mat = hr::Matrix4f::zero();
 
 			double f = 1.0 / std::tan(fovy / 2.0);
 			mat[0] = static_cast<float>(f / aspectRatio);
@@ -31,9 +31,9 @@ namespace hr::gl::tools
 			return mat;
 		};
 
-		hr::Matrix funcOrtho(double left, double right, double bottom, double top, double near, double far) noexcept
+		hr::Matrix4f funcOrtho(double left, double right, double bottom, double top, double near, double far) noexcept
 		{
-			auto mat = hr::Matrix::zero();
+			auto mat = hr::Matrix4f::zero();
 
 			mat[0] = static_cast<float>(2.0 / (right - left));
 			mat[5] = static_cast<float>(2.0 / (top - bottom));
@@ -47,7 +47,7 @@ namespace hr::gl::tools
 		};
 	}
 
-	hr::Matrix Viewport::genMatrix2DProj(size_t width, size_t height)
+	hr::Matrix4f Viewport::genMatrix2DProj(size_t width, size_t height)
 	{
 		return funcOrtho(0.0, width, 0.0, height, 1.0, -1.0);
 	}
@@ -58,7 +58,7 @@ namespace hr::gl::tools
 		mMatrices.mp2D = funcOrtho(0.0, mDims.width, 0.0, mDims.height, 1.0, -1.0);
 	}
 
-	const hr::Matrix& Viewport::getProjection(ProjectionType projectionType) const
+	const hr::Matrix4f& Viewport::getProjection(ProjectionType projectionType) const
 	{
 		switch (projectionType)
 		{
@@ -71,12 +71,12 @@ namespace hr::gl::tools
 		return mMatrices.mp3D;
 	}
 
-	void Viewport::projectPoint(ProjectionType projType, const hr::Matrix& modelView, hr::Vector3f* const listPoints, size_t numPoints) const
+	void Viewport::projectPoint(ProjectionType projType, const hr::Matrix4f& modelView, hr::Vector3f* const listPoints, size_t numPoints) const
 	{
 		if (!listPoints || numPoints <= 0)
 			return;
 
-		auto transMat = hr::Matrix::identity();
+		auto transMat = hr::Matrix4f::identity();
 		switch (projType)
 		{
 		case ProjectionType::Proj2D:

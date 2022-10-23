@@ -1,189 +1,33 @@
 #pragma once
 
-#include "matrix.hpp"
-#include "random.hpp"
+#include "utils_t.hpp"
 
-#include <format>
-#include <optional>
+#include "matrix.hpp"
 
 #include "libs/catch2/catch.hpp"
 
-namespace Catch
-{
-	template<>
-	struct StringMaker<hr::Matrix>
-	{
-		static std::string convert(hr::Matrix const& m)
-		{
-			return std::format("Matrix is: {{{{{}, {}, {}, {}}}, {{{}, {}, {}, {}}}, {{{}, {}, {}, {}}}, {{{}, {}, {}, {}}}}}", m[0], m[1], m[2], m[3], m[4], m[5], m[6], m[7], m[8], m[9], m[10], m[11], m[12], m[13], m[14], m[15]);
-		}
-	};
-
-	template<>
-	struct StringMaker<hr::Matrix3f>
-	{
-		static std::string convert(hr::Matrix3f const& m)
-		{
-			return std::format("Matrix is: {{{{{}, {}, {}}}, {{{}, {}, {}}}, {{{}, {}, {}}}}}", m[0], m[1], m[2], m[3], m[4], m[5], m[6], m[7], m[8]);
-		}
-	};
-
-	template<>
-	struct StringMaker<hr::Matrix3d>
-	{
-		static std::string convert(hr::Matrix3d const& m)
-		{
-			return std::format("Matrix is: {{{{{}, {}, {}}}, {{{}, {}, {}}}, {{{}, {}, {}}}}}", m[0], m[1], m[2], m[3], m[4], m[5], m[6], m[7], m[8]);
-		}
-	};
-
-	template<>
-	struct StringMaker<hr::Vector3f>
-	{
-		static std::string convert(hr::Vector3f const& v)
-		{
-			return std::format("Vector is: {{{}, {}, {}}}", v[0], v[1], v[2]);
-		}
-	};
-}
-
 namespace hr::utests
 {
-	namespace
-	{
-		template<typename TType>
-		struct Matrix4EqualsMatcher : Catch::Matchers::MatcherGenericBase
-		{
-			Matrix4EqualsMatcher(const TType mat[16])
-			{ 
-				std::memcpy(m_mat, mat, sizeof(TType) * 16);
-			}
-
-			bool match(const Matrix& m) const
-			{
-				for (int i = 0; i < 16; i++)
-				{
-					if (m[i] != Catch::Approx(m_mat[i])) return false;
-				}
-
-				return true;
-			}
-
-			std::string describe() const override
-			{
-				return std::format("Matrix4x4 is: {{{{{}, {}, {}, {}}}, {{{}, {}, {}, {}}}, {{{}, {}, {}, {}}}, {{{}, {}, {}, {}}}}}", m_mat[0], m_mat[1], m_mat[2],
-				  m_mat[3], m_mat[4], m_mat[5], m_mat[6], m_mat[7], m_mat[8], m_mat[9], m_mat[10], m_mat[11], m_mat[12], m_mat[13], m_mat[14], m_mat[15]);
-			}
-
-		private:
-			TType m_mat[16];
-		};
-
-		auto Matrix4Equals(const float mat[16]) -> Matrix4EqualsMatcher<float>
-		{
-			return Matrix4EqualsMatcher<float>{mat};
-		}
-
-		auto Matrix4Equals(const Matrix& mat) -> Matrix4EqualsMatcher<float>
-		{
-			return Matrix4EqualsMatcher<float>{mat.data()};
-		}
-
-		template<typename TType>
-		struct Matrix3EqualsMatcher : Catch::Matchers::MatcherGenericBase
-		{
-			Matrix3EqualsMatcher(const TType mat[9])
-			{
-				std::memcpy(m_mat, mat, sizeof(TType) * 9);
-			}
-
-			bool match(const Matrix3<TType> & m) const
-			{
-				for (int i = 0; i < 9; i++)
-				{
-					if (m[i] != Catch::Approx(m_mat[i])) return false;
-				}
-
-				return true;
-			}
-
-			std::string describe() const override
-			{
-				return std::format("Matrix3x3 is: {{{{{}, {}, {}}}, {{{}, {}, {}}}, {{{}, {}, {}}}}}", m_mat[0], m_mat[1], m_mat[2], m_mat[3], m_mat[4], m_mat[5], m_mat[6], m_mat[7], m_mat[8]);
-			}
-
-		private:
-			TType m_mat[9];
-		};
-
-		auto Matrix3Equals(const float mat[9]) -> Matrix3EqualsMatcher<float>
-		{
-			return Matrix3EqualsMatcher<float>{mat};
-		}
-
-		auto Matrix3Equals(const double mat[9]) -> Matrix3EqualsMatcher<double>
-		{
-			return Matrix3EqualsMatcher<double>{mat};
-		}
-
-		auto Matrix3Equals(const Matrix3f& mat) -> Matrix3EqualsMatcher<float>
-		{
-			return Matrix3EqualsMatcher<float>{mat.data()};
-		}
-
-		auto Matrix3Equals(const Matrix3d& mat) -> Matrix3EqualsMatcher<double>
-		{
-			return Matrix3EqualsMatcher<double>{mat.data()};
-		}
-
-		struct VectorEqualsMatcher : Catch::Matchers::MatcherGenericBase
-		{
-			VectorEqualsMatcher(float x, float y, float z)
-			  : m_x{x} , m_y{y} , m_z{z}
-			{ }
-
-			bool match(const Vector3f& v) const
-			{
-				// set epsilon to allowed a 0.1% difference and a margin to allow (0.0f == -0.0f) to pass
-
-				return (v[0] == Catch::Approx(m_x).epsilon(0.001).margin(0.0000001)) && (v[1] == Catch::Approx(m_y).epsilon(0.001).margin(0.0000001))
-				  && (v[2] == Catch::Approx(m_z).epsilon(0.001).margin(0.0000001));
-			}
-
-			std::string describe() const override
-			{
-				return std::format("Vector is: {{{}, {}, {}}}", m_x, m_y, m_z);
-			}
-
-		private:
-			float m_x, m_y, m_z;
-		};
-
-		auto VectorEquals(const float vx, const float vy, const float vz) -> VectorEqualsMatcher
-		{
-			return VectorEqualsMatcher{vx, vy, vz};
-		}
-
-		auto VectorEquals(const Vector3f& v) -> VectorEqualsMatcher
-		{
-			return VectorEqualsMatcher{v[0], v[1], v[2]};
-		}
-
-		Vector3f randomVector3f()
-		{
-			Random r;
-			return Vector3f(r.nextDouble(-10.0f, 10.0f), r.nextDouble(-10.0f, 10.0f), r.nextDouble(-10.0f, 10.0f));
-		}
-	}
-
 	TEST_CASE("Matrix 4x4 of type float", "[common][matrix][matrix4x4f]")
 	{
 		SECTION("init")
 		{
-			const float matIdentity[]{ 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f };
+			const float matIdentityF[]{ 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f };
+			REQUIRE_THAT(Matrix4f::identity(), Matrix4Equals(matIdentityF));
 
-			REQUIRE_THAT(Matrix::identity(), Matrix4Equals(matIdentity));
-			
+			const double matIdentityD[]{1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0};
+			REQUIRE_THAT(Matrix4d::identity(), Matrix4Equals(matIdentityD));
+		}
+
+		SECTION("convert")
+		{
+			const float matData4[]{0.6f, 0.2f, 0.3f, 0.4f, 0.2f, 0.7f, 0.5f, 0.3f, 0.3f, 0.5f, 0.7f, 0.2f, 0.4f, 0.3f, 0.2f, 0.6f};
+			const float matData3[]{0.6f, 0.2f, 0.3f, 0.2f, 0.7f, 0.5f, 0.3f, 0.5f, 0.7f};
+			auto m4 = Matrix4f::from(std::span<const float>(matData4, 16));
+			auto m3 = m4.convert<Matrix3, float>();
+
+			REQUIRE_THAT(m4, Matrix4Equals(matData4));
+			REQUIRE_THAT(m3, Matrix3Equals(matData3));
 		}
 
 		/*
@@ -224,6 +68,18 @@ namespace hr::utests
 			const float* mat3 = mat2;
 			REQUIRE_THAT(Matrix3f::from<float>(mat2), Matrix3Equals(mat2));
 			REQUIRE_THAT(Matrix3f::from(std::span{mat3, 9}), Matrix3Equals(mat3));
+		}
+
+		SECTION("convert")
+		{
+			const float matData3[]{0.6f, 0.2f, 0.3f, 0.2f, 0.7f, 0.5f, 0.3f, 0.5f, 0.7f};
+			const float matData4[]{0.6f, 0.2f, 0.3f, 0.0f, 0.2f, 0.7f, 0.5f, 0.0f, 0.3f, 0.5f, 0.7f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f};
+
+			auto m3 = Matrix3f::from(std::span<const float>(matData3, 9));
+			auto m4 = m3.convert<Matrix4, float>();
+
+			REQUIRE_THAT(m3, Matrix3Equals(matData3));
+			REQUIRE_THAT(m4, Matrix4Equals(matData4));
 		}
 
 		SECTION("matrix plus matrix")
