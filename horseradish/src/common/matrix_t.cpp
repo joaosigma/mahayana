@@ -182,55 +182,55 @@ namespace hr::utests
 		SECTION("matrix from quaternion")
 		{
 			//identity
-			Quaternion q;
+			auto q = Quaternionf::identity();
 			auto m = Matrix3f::from(q);
 			REQUIRE_THAT(q.unitRotate(Vector3f{1.0f, 1.0f, 1.0f}), VectorEquals(1.0f, 1.0f, 1.0f));
 			REQUIRE_THAT(m.transform(Vector3f{1.0f, 1.0f, 1.0f}), VectorEquals(1.0f, 1.0f, 1.0f));
 
 			//along the X axis
-			q = Quaternion::genAxisAngle(Vector3f{1.0f, 0.0f, 0.0f}, 90.0f);
+			q = Quaternionf::fromAxisAngle(Vector3f{1.0f, 0.0f, 0.0f}, 90.0f);
 			m = Matrix3f::from(q);
 			REQUIRE_THAT(q.unitRotate(Vector3f{0.0f, 1.0f, 0.0f}), VectorEquals(0.0f, 0.0f, 1.0f));
 			REQUIRE_THAT(m.transform(Vector3f{0.0f, 1.0f, 0.0f}), VectorEquals(0.0f, 0.0f, 1.0f));
 
-			q = Quaternion::genAxisAngle(Vector3f{1.0f, 0.0f, 0.0f}, 180.0f);
+			q = Quaternionf::fromAxisAngle(Vector3f{1.0f, 0.0f, 0.0f}, 180.0f);
 			m = Matrix3f::from(q);
 			REQUIRE_THAT(q.unitRotate(Vector3f{0.0f, 1.0f, 0.0f}), VectorEquals(0.0f, -1.0f, 0.0f));
 			REQUIRE_THAT(m.transform(Vector3f{0.0f, 1.0f, 0.0f}), VectorEquals(0.0f, -1.0f, 0.0f));
 
-			q = Quaternion::genAxisAngle(Vector3f{1.0f, 0.0f, 0.0f}, 270.0f);
+			q = Quaternionf::fromAxisAngle(Vector3f{1.0f, 0.0f, 0.0f}, 270.0f);
 			m = Matrix3f::from(q);
 			REQUIRE_THAT(q.unitRotate(Vector3f{0.0f, 1.0f, 0.0f}), VectorEquals(0.0f, 0.0f, -1.0f));
 			REQUIRE_THAT(m.transform(Vector3f{0.0f, 1.0f, 0.0f}), VectorEquals(0.0f, 0.0f, -1.0f));
 
 			//along the Y axis
-			q = Quaternion::genAxisAngle(Vector3f{0.0f, 1.0f, 0.0f}, 90.0f);
+			q = Quaternionf::fromAxisAngle(Vector3f{0.0f, 1.0f, 0.0f}, 90.0f);
 			m = Matrix3f::from(q);
 			REQUIRE_THAT(q.unitRotate(Vector3f{1.0f, 0.0f, 0.0f}), VectorEquals(0.0f, 0.0f, -1.0f));
 			REQUIRE_THAT(m.transform(Vector3f{1.0f, 0.0f, 0.0f}), VectorEquals(0.0f, 0.0f, -1.0f));
 
-			q = Quaternion::genAxisAngle(Vector3f{0.0f, 1.0f, 0.0f}, 180.0f);
+			q = Quaternionf::fromAxisAngle(Vector3f{0.0f, 1.0f, 0.0f}, 180.0f);
 			m = Matrix3f::from(q);
 			REQUIRE_THAT(q.unitRotate(Vector3f{1.0f, 0.0f, 0.0f}), VectorEquals(-1.0f, 0.0f, 0.0f));
 			REQUIRE_THAT(m.transform(Vector3f{1.0f, 0.0f, 0.0f}), VectorEquals(-1.0f, 0.0f, 0.0f));
 
-			q = Quaternion::genAxisAngle(Vector3f{0.0f, 1.0f, 0.0f}, 270.0f);
+			q = Quaternionf::fromAxisAngle(Vector3f{0.0f, 1.0f, 0.0f}, 270.0f);
 			m = Matrix3f::from(q);
 			REQUIRE_THAT(q.unitRotate(Vector3f{1.0f, 0.0f, 0.0f}), VectorEquals(0.0f, 0.0f, 1.0f));
 			REQUIRE_THAT(m.transform(Vector3f{1.0f, 0.0f, 0.0f}), VectorEquals(0.0f, 0.0f, 1.0f));
 
 			//along the Z axis
-			q = Quaternion::genAxisAngle(Vector3f{0.0f, 0.0f, 1.0f}, 90.0f);
+			q = Quaternionf::fromAxisAngle(Vector3f{0.0f, 0.0f, 1.0f}, 90.0f);
 			m = Matrix3f::from(q);
 			REQUIRE_THAT(q.unitRotate(Vector3f{0.0f, 1.0f, 0.0f}), VectorEquals(-1.0f, 0.0f, 0.0f));
 			REQUIRE_THAT(m.transform(Vector3f{0.0f, 1.0f, 0.0f}), VectorEquals(-1.0f, 0.0f, 0.0f));
 
-			q = Quaternion::genAxisAngle(Vector3f{0.0f, 0.0f, 1.0f}, 180.0f);
+			q = Quaternionf::fromAxisAngle(Vector3f{0.0f, 0.0f, 1.0f}, 180.0f);
 			m = Matrix3f::from(q);
 			REQUIRE_THAT(q.unitRotate(Vector3f{0.0f, 1.0f, 0.0f}), VectorEquals(0.0f, -1.0f, 0.0f));
 			REQUIRE_THAT(m.transform(Vector3f{0.0f, 1.0f, 0.0f}), VectorEquals(0.0f, -1.0f, 0.0f));
 
-			q = Quaternion::genAxisAngle(Vector3f{0.0f, 0.0f, 1.0f}, 270.0f);
+			q = Quaternionf::fromAxisAngle(Vector3f{0.0f, 0.0f, 1.0f}, 270.0f);
 			m = Matrix3f::from(q);
 			REQUIRE_THAT(q.unitRotate(Vector3f{0.0f, 1.0f, 0.0f}), VectorEquals(1.0f, 0.0f, 0.0f));
 			REQUIRE_THAT(m.transform(Vector3f{0.0f, 1.0f, 0.0f}), VectorEquals(1.0f, 0.0f, 0.0f));
@@ -238,8 +238,8 @@ namespace hr::utests
 
 		SECTION("matrix multiplication order")
 		{
-			auto q1 = Quaternion::genAxisAngle(Vector3f{0.0f, 1.0f, 0.0f}, 90.0f);
-			auto q2 = Quaternion::genAxisAngle(Vector3f{1.0f, 0.0f, 0.0f}, 90.0f);
+			auto q1 = Quaternionf::fromAxisAngle(Vector3f{0.0f, 1.0f, 0.0f}, 90.0f);
+			auto q2 = Quaternionf::fromAxisAngle(Vector3f{1.0f, 0.0f, 0.0f}, 90.0f);
 
 			auto m = Matrix3f::from(q1) * Matrix3f::from(q2);
 			REQUIRE_THAT(m.transform(Vector3f{1.0f, 0.0f, 0.0f}), VectorEquals(0.0f, 1.0f, 0.0f));

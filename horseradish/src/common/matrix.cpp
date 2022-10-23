@@ -572,16 +572,10 @@ namespace hr
 	}
 
 	template<typename TDataType>
-	void Matrix4<TDataType>::operator*=(const Quaternion& unitQuaternion) noexcept
+	void Matrix4<TDataType>::operator*=(const Quaternion<TDataType>& unitQuaternion) noexcept
 	{
-		if constexpr (std::is_same_v<TDataType, float>)
-		{
-			auto mat = Matrix4::from(unitQuaternion);
-			fastMat4x4Mult(m, m, mat.m);
-		}
-		else
-		{
-		}
+		auto mat = Matrix4::from(unitQuaternion);
+		fastMat4x4Mult(m, m, mat.m);
 	}
 
 	template<typename TDataType>
@@ -1089,7 +1083,7 @@ namespace hr
 	}
 
 	template<typename TDataType>
-	Quaternion Matrix4<TDataType>::extractRotation() const noexcept
+	Quaternion<TDataType> Matrix4<TDataType>::extractRotation() const noexcept
 	{
 		Matrix4 tmp{ *this };
 
@@ -1117,18 +1111,7 @@ namespace hr
 			}
 		}
 
-		if constexpr (std::is_same_v<TDataType, float>)
-		{
-			Quaternion quat;
-			quat.setFromMatrix4x4(tmp.data());
-		}
-		else
-		{
-			
-		}
-
-		Quaternion quat;
-		return quat;
+		return Quaternion<TDataType>::fromMatrix4x4(tmp.data());
 	}
 
 	template<typename TDataType>

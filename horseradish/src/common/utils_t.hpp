@@ -38,9 +38,18 @@ namespace Catch
 	};
 
 	template<>
-	struct StringMaker<hr::Quaternion>
+	struct StringMaker<hr::Quaternionf>
 	{
-		static std::string convert(hr::Quaternion const& q)
+		static std::string convert(hr::Quaternionf const& q)
+		{
+			return std::format("Quaternion is: {{{}, {}, {}, {}}}", q[0], q[1], q[2], q[3]);
+		}
+	};
+
+	template<>
+	struct StringMaker<hr::Quaterniond>
+	{
+		static std::string convert(hr::Quaterniond const& q)
 		{
 			return std::format("Quaternion is: {{{}, {}, {}, {}}}", q[0], q[1], q[2], q[3]);
 		}
@@ -178,19 +187,20 @@ namespace hr::utests
 		return Vector4EqualsMatcher<float>{vec[0], vec[1], vec[2], vec[3]};
 	}
 
+	template<typename TType>
 	struct QuaternionEqualsMatcher : Catch::Matchers::MatcherGenericBase
 	{
-		QuaternionEqualsMatcher(Quaternion q)
-		{
-			m_quat = std::move(q);
-		}
+		static_assert(std::is_same_v<float, TType> || std::is_same_v<double, TType>);
 
-		QuaternionEqualsMatcher(const float qx, const float qy, const float qz, const float qw)
-		{
-			m_quat = Quaternion{qx, qy, qz, qw};
-		}
+		QuaternionEqualsMatcher(Quaternion<TType> q)
+		  : m_quat{std::move(q)}
+		{ }
 
-		bool match(const Quaternion& q) const
+		QuaternionEqualsMatcher(const TType qx, const TType qy, const TType qz, const TType qw)
+			: m_quat{Quaternion<TType>::from(qx, qy, qz, qw)}
+		{ }
+		
+		bool match(const Quaternion<TType>& q) const
 		{
 			// set epsilon to allowed a 0.1% difference and a margin to allow (0.0f == -0.0f) to pass
 
@@ -206,17 +216,23 @@ namespace hr::utests
 		}
 
 	private:
-		Quaternion m_quat;
+		Quaternion<TType> m_quat;
 	};
 
-	inline auto QuaternionEquals(const float qx, const float qy, const float qz, const float qw)
+	template<typename TType>
+	inline auto QuaternionEquals(const TType qx, const TType qy, const TType qz, const TType qw)
 	{
-		return QuaternionEqualsMatcher{qx, qy, qz, qw};
+		return QuaternionEqualsMatcher<TType>{qx, qy, qz, qw};
 	}
 
-	inline auto QuaternionEquals(Quaternion q)
+	inline auto QuaternionEquals(Quaternionf q)
 	{
-		return QuaternionEqualsMatcher{std::move(q)};
+		return QuaternionEqualsMatcher<float>{std::move(q)};
+	}
+
+	inline auto QuaternionEquals(Quaterniond q)
+	{
+		return QuaternionEqualsMatcher<double>{std::move(q)};
 	}
 
 	template<typename TType>

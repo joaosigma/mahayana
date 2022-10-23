@@ -50,7 +50,7 @@ namespace hr
 		template<class T>
 		static constexpr T kOne = T(1.0L);
 		template<class T>
-		static constexpr T kTwo = T(1.0L);
+		static constexpr T kTwo = T(2.0L);
 
 	public:
 		using DataType = typename TDataType;
@@ -154,49 +154,29 @@ namespace hr
 			return Matrix4::translation(amount[0], amount[1], amount[2]);
 		}
 
-		static constexpr Matrix4 from(const Quaternion &unitQuaternion) noexcept
+		static constexpr Matrix4 from(const Quaternion<TDataType> &unitQuaternion) noexcept
 		{
 			Matrix4 mat;
 
-			if constexpr (std::is_same_v<TDataType, float>)
-			{
-				mat.m[0] = 1.0f - 2.0f * (unitQuaternion[1] * unitQuaternion[1] + unitQuaternion[2] * unitQuaternion[2]);
-				mat.m[4] = 2.0f * (unitQuaternion[0] * unitQuaternion[1] - unitQuaternion[2] * unitQuaternion[3]);
-				mat.m[8] = 2.0f * (unitQuaternion[0] * unitQuaternion[2] + unitQuaternion[1] * unitQuaternion[3]);
+			mat.m[0] = kOne<TDataType> - kTwo<TDataType> * (unitQuaternion[1] * unitQuaternion[1] + unitQuaternion[2] * unitQuaternion[2]);
+			mat.m[4] = kTwo<TDataType> * (unitQuaternion[0] * unitQuaternion[1] - unitQuaternion[2] * unitQuaternion[3]);
+			mat.m[8] = kTwo<TDataType> * (unitQuaternion[0] * unitQuaternion[2] + unitQuaternion[1] * unitQuaternion[3]);
 
-				mat.m[1] = 2.0f * (unitQuaternion[0] * unitQuaternion[1] + unitQuaternion[2] * unitQuaternion[3]);
-				mat.m[5] = 1.0f - 2.0f * (unitQuaternion[0] * unitQuaternion[0] + unitQuaternion[2] * unitQuaternion[2]);
-				mat.m[9] = 2.0f * (unitQuaternion[1] * unitQuaternion[2] - unitQuaternion[0] * unitQuaternion[3]);
+			mat.m[1] = kTwo<TDataType> * (unitQuaternion[0] * unitQuaternion[1] + unitQuaternion[2] * unitQuaternion[3]);
+			mat.m[5] = kOne<TDataType> - kTwo<TDataType> * (unitQuaternion[0] * unitQuaternion[0] + unitQuaternion[2] * unitQuaternion[2]);
+			mat.m[9] = kTwo<TDataType> * (unitQuaternion[1] * unitQuaternion[2] - unitQuaternion[0] * unitQuaternion[3]);
 
-				mat.m[2] = 2.0f * (unitQuaternion[0] * unitQuaternion[2] - unitQuaternion[1] * unitQuaternion[3]);
-				mat.m[6] = 2.0f * (unitQuaternion[1] * unitQuaternion[2] + unitQuaternion[0] * unitQuaternion[3]);
-				mat.m[10] = 1.0f - 2.0f * (unitQuaternion[0] * unitQuaternion[0] + unitQuaternion[1] * unitQuaternion[1]);
+			mat.m[2] = kTwo<TDataType> * (unitQuaternion[0] * unitQuaternion[2] - unitQuaternion[1] * unitQuaternion[3]);
+			mat.m[6] = kTwo<TDataType> * (unitQuaternion[1] * unitQuaternion[2] + unitQuaternion[0] * unitQuaternion[3]);
+			mat.m[10] = kOne<TDataType> - kTwo<TDataType> * (unitQuaternion[0] * unitQuaternion[0] + unitQuaternion[1] * unitQuaternion[1]);
 
-				mat.m[3] = mat.m[7] = mat.m[11] = mat.m[12] = mat.m[13] = mat.m[14] = kZero<TDataType>;
-				mat.m[15] = kOne<TDataType>;
-			}
-			else
-			{
-				mat.m[0] = 1.0 - 2.0 * (unitQuaternion[1] * unitQuaternion[1] + unitQuaternion[2] * unitQuaternion[2]);
-				mat.m[4] = 2.0 * (unitQuaternion[0] * unitQuaternion[1] - unitQuaternion[2] * unitQuaternion[3]);
-				mat.m[8] = 2.0 * (unitQuaternion[0] * unitQuaternion[2] + unitQuaternion[1] * unitQuaternion[3]);
-
-				mat.m[1] = 2.0 * (unitQuaternion[0] * unitQuaternion[1] + unitQuaternion[2] * unitQuaternion[3]);
-				mat.m[5] = 1.0 - 2.0 * (unitQuaternion[0] * unitQuaternion[0] + unitQuaternion[2] * unitQuaternion[2]);
-				mat.m[9] = 2.0 * (unitQuaternion[1] * unitQuaternion[2] - unitQuaternion[0] * unitQuaternion[3]);
-
-				mat.m[2] = 2.0 * (unitQuaternion[0] * unitQuaternion[2] - unitQuaternion[1] * unitQuaternion[3]);
-				mat.m[6] = 2.0 * (unitQuaternion[1] * unitQuaternion[2] + unitQuaternion[0] * unitQuaternion[3]);
-				mat.m[10] = 1.0 - 2.0 * (unitQuaternion[0] * unitQuaternion[0] + unitQuaternion[1] * unitQuaternion[1]);
-
-				mat.m[3] = mat.m[7] = mat.m[11] = mat.m[12] = mat.m[13] = mat.m[14] = kZero<TDataType>;
-				mat.m[15] = kOne<TDataType>;
-			}
+			mat.m[3] = mat.m[7] = mat.m[11] = mat.m[12] = mat.m[13] = mat.m[14] = kZero<TDataType>;
+			mat.m[15] = kOne<TDataType>;
 
 			return mat;
 		}
 
-		static constexpr Matrix4 rotation(const Quaternion &unitQuaternion) noexcept
+		static constexpr Matrix4 rotation(const Quaternion<TDataType> &unitQuaternion) noexcept
 		{
 			return Matrix4::from(unitQuaternion);
 		}
@@ -433,7 +413,7 @@ namespace hr
 		void operator*=(const Matrix4 &mat) noexcept;
 		void operator*=(const Matrix3<TDataType> &mat) noexcept;
 		void operator*=(std::span<const TDataType> mat) noexcept;
-		void operator*=(const Quaternion &unitQuaternion) noexcept;
+		void operator*=(const Quaternion<TDataType> &unitQuaternion) noexcept;
 
 		void operator+=(const Matrix4 &mat) noexcept;
 		void operator+=(std::span<const TDataType> mat) noexcept;
@@ -493,7 +473,7 @@ namespace hr
 
 		Vector3Type extractTranslation() const noexcept;
 		Vector3Type extractScale() const noexcept;
-		Quaternion extractRotation() const noexcept;
+		Quaternion<TDataType> extractRotation() const noexcept;
 
 		template<template<typename> typename TNewType, typename TNewDataType>
 		TNewType<TNewDataType> convert() const noexcept
@@ -561,6 +541,8 @@ namespace hr
 		static constexpr T kZero = T(0.0L);
 		template<class T>
 		static constexpr T kOne = T(1.0L);
+		template<class T>
+		static constexpr T kTwo = T(2.0L);
 
 	public:
 		using DataType = typename TDataType;
@@ -649,43 +631,26 @@ namespace hr
 			return mat;
 		}
 
-		static constexpr Matrix3 from(const Quaternion &unitQuaternion) noexcept
+		static constexpr Matrix3 from(const Quaternion<TDataType> &unitQuaternion) noexcept
 		{
 			Matrix3 mat;
 
-			if constexpr (std::is_same_v<TDataType, float>)
-			{
-				mat.m[0] = 1.0f - 2.0f * (unitQuaternion[1] * unitQuaternion[1] + unitQuaternion[2] * unitQuaternion[2]);
-				mat.m[3] = 2.0f * (unitQuaternion[0] * unitQuaternion[1] - unitQuaternion[2] * unitQuaternion[3]);
-				mat.m[6] = 2.0f * (unitQuaternion[0] * unitQuaternion[2] + unitQuaternion[1] * unitQuaternion[3]);
+			mat.m[0] = kOne<TDataType> - kTwo<TDataType> * (unitQuaternion[1] * unitQuaternion[1] + unitQuaternion[2] * unitQuaternion[2]);
+			mat.m[3] = kTwo<TDataType> * (unitQuaternion[0] * unitQuaternion[1] - unitQuaternion[2] * unitQuaternion[3]);
+			mat.m[6] = kTwo<TDataType> * (unitQuaternion[0] * unitQuaternion[2] + unitQuaternion[1] * unitQuaternion[3]);
 
-				mat.m[1] = 2.0f * (unitQuaternion[0] * unitQuaternion[1] + unitQuaternion[2] * unitQuaternion[3]);
-				mat.m[4] = 1.0f - 2.0f * (unitQuaternion[0] * unitQuaternion[0] + unitQuaternion[2] * unitQuaternion[2]);
-				mat.m[7] = 2.0f * (unitQuaternion[1] * unitQuaternion[2] - unitQuaternion[0] * unitQuaternion[3]);
+			mat.m[1] = kTwo<TDataType> * (unitQuaternion[0] * unitQuaternion[1] + unitQuaternion[2] * unitQuaternion[3]);
+			mat.m[4] = kOne<TDataType> - kTwo<TDataType> * (unitQuaternion[0] * unitQuaternion[0] + unitQuaternion[2] * unitQuaternion[2]);
+			mat.m[7] = kTwo<TDataType> * (unitQuaternion[1] * unitQuaternion[2] - unitQuaternion[0] * unitQuaternion[3]);
 
-				mat.m[2] = 2.0f * (unitQuaternion[0] * unitQuaternion[2] - unitQuaternion[1] * unitQuaternion[3]);
-				mat.m[5] = 2.0f * (unitQuaternion[1] * unitQuaternion[2] + unitQuaternion[0] * unitQuaternion[3]);
-				mat.m[8] = 1.0f - 2.0f * (unitQuaternion[0] * unitQuaternion[0] + unitQuaternion[1] * unitQuaternion[1]);
-			}
-			else
-			{
-				mat.m[0] = 1.0 - 2.0 * (unitQuaternion[1] * unitQuaternion[1] + unitQuaternion[2] * unitQuaternion[2]);
-				mat.m[3] = 2.0 * (unitQuaternion[0] * unitQuaternion[1] - unitQuaternion[2] * unitQuaternion[3]);
-				mat.m[6] = 2.0 * (unitQuaternion[0] * unitQuaternion[2] + unitQuaternion[1] * unitQuaternion[3]);
-
-				mat.m[1] = 2.0 * (unitQuaternion[0] * unitQuaternion[1] + unitQuaternion[2] * unitQuaternion[3]);
-				mat.m[4] = 1.0 - 2.0 * (unitQuaternion[0] * unitQuaternion[0] + unitQuaternion[2] * unitQuaternion[2]);
-				mat.m[7] = 2.0 * (unitQuaternion[1] * unitQuaternion[2] - unitQuaternion[0] * unitQuaternion[3]);
-
-				mat.m[2] = 2.0 * (unitQuaternion[0] * unitQuaternion[2] - unitQuaternion[1] * unitQuaternion[3]);
-				mat.m[5] = 2.0 * (unitQuaternion[1] * unitQuaternion[2] + unitQuaternion[0] * unitQuaternion[3]);
-				mat.m[8] = 1.0 - 2.0 * (unitQuaternion[0] * unitQuaternion[0] + unitQuaternion[1] * unitQuaternion[1]);
-			}
+			mat.m[2] = kTwo<TDataType> * (unitQuaternion[0] * unitQuaternion[2] - unitQuaternion[1] * unitQuaternion[3]);
+			mat.m[5] = kTwo<TDataType> * (unitQuaternion[1] * unitQuaternion[2] + unitQuaternion[0] * unitQuaternion[3]);
+			mat.m[8] = kOne<TDataType> - kTwo<TDataType> * (unitQuaternion[0] * unitQuaternion[0] + unitQuaternion[1] * unitQuaternion[1]);
 
 			return mat;
 		}
 
-		static constexpr Matrix3 rotation(const Quaternion &unitQuaternion) noexcept
+		static constexpr Matrix3 rotation(const Quaternion<TDataType> &unitQuaternion) noexcept
 		{
 			return Matrix3::from(unitQuaternion);
 		}

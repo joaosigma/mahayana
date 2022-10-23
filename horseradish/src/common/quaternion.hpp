@@ -2,6 +2,8 @@
 
 #include "vector.hpp"
 
+#include <span>
+
 namespace hr
 {
 	/*
@@ -13,64 +15,141 @@ namespace hr
 	*     - this is the same as in matrices
 	*   - almost every operation assumes that the quaternion is normalized (unit quaternion)
 	*/
-	class alignas(16) Quaternion
+	template<typename TDataType>
+	class alignas(alignof(TDataType) * 4) Quaternion
 	{
-		float mData[4]{ 0.0f, 0.0f, 0.0f, 1.0f };
+		TDataType mData[4];
+
+		using Vector3Type = typename Vector<TDataType, 3>;
+		using Vector4Type = typename Vector<TDataType, 4>;
+
+		template<class T>
+		static constexpr T kHalf = T(0.5L);
+		template<class T>
+		static constexpr T kZero = T(0.0L);
+		template<class T>
+		static constexpr T kOne = T(1.0L);
+		template<class T>
+		static constexpr T kTwo = T(2.0L);
 
 	public:
+		using DataType = typename TDataType;
+
 		enum class AxisOrder { XYZ, XZY, YXZ, YZX, ZXY, ZYX };
 
-	public:
-		static Quaternion genAxisAngle(const Vector3f& unitVec, const float angleDeg);
-		static Quaternion genAxisAngle(const float unitVecX, const float unitVecY, const float unitVecZ, const float angleDeg);
+		static constexpr Quaternion identity() noexcept
+		{
+			Quaternion quat;
+			quat.mData[0] = quat.mData[1] = quat.mData[2] = kZero<TDataType>;
+			quat.mData[3] = kOne<TDataType>;
+
+			return quat;
+		}
+
+		static constexpr Quaternion zero()
+		{
+			Quaternion quat;
+			quat.mData[0] = quat.mData[1] = quat.mData[2] = quat.mData[3] = kZero<TDataType>;
+
+			return quat;
+		}
+
+		template<typename TType>
+		static constexpr Quaternion from(std::span<const TType> data) noexcept
+		{
+			static_assert(std::is_same_v<TType, float> || std::is_same_v<TType, double>, "Type must be either float or double");
+
+			assert(data.size() == 4);
+			if (data.size() != 4) return Quaternion::identity();
+
+			Quaternion quat;
+
+			if constexpr (std::is_same_v<TDataType, TType>)
+			{
+				for (int i = 0; i < 4; i++)
+					quat.mData[i] = data[i];
+			}
+			else
+			{
+				for (int i = 0; i < 4; i++)
+					quat.mData[i] = static_cast<TDataType>(data[i]);
+			}
+
+			return quat;
+		}
+
+		static constexpr Quaternion from(const TDataType qx, const TDataType qy, const TDataType qz, const TDataType qw)
+		{
+			Quaternion quat;
+			quat.mData[0] = qx;
+			quat.mData[1] = qy;
+			quat.mData[2] = qz;
+			quat.mData[3] = qw;
+
+			return quat;
+		}
+
+		static constexpr Quaternion from(const Vector3Type &vec, const TDataType qw)
+		{
+			Quaternion quat;
+			quat.mData[0] = vec[0];
+			quat.mData[1] = vec[1];
+			quat.mData[2] = vec[2];
+			quat.mData[3] = qw;
+
+			return quat;
+		}
+
+		static constexpr Quaternion from(const Vector4Type &vec)
+		{
+			Quaternion quat;
+			quat.mData[0] = vec[0];
+			quat.mData[1] = vec[1];
+			quat.mData[2] = vec[2];
+			quat.mData[3] = vec[3];
+
+			return quat;
+		}
+
+		static Quaternion fromAxisAngle(const Vector3Type& unitVec, const TDataType angleDeg);
+		static Quaternion fromAxisAngle(const TDataType unitVecX, const TDataType unitVecY, const TDataType unitVecZ, const TDataType angleDeg);
+
+		static Quaternion fromMatrix3x3(const TDataType* const matrix) noexcept;
+		static Quaternion fromMatrix4x4(const TDataType* const matrix) noexcept;
+		static Quaternion fromEuler(const TDataType angX, const TDataType angY, const TDataType angZ, AxisOrder axisOrder) noexcept;
+		static Quaternion fromVectors(const Vector3Type& from, const Vector3Type& to) noexcept;
+
+		static Quaternion sLerp(const Quaternion& from, const Quaternion& to, const TDataType t) noexcept;
+		static Quaternion nLerp(const Quaternion& from, const Quaternion& to, const TDataType t) noexcept;
 
 	public:
-		constexpr Quaternion() = default;
+		constexpr Quaternion() noexcept
+		{
+			mData[0] = mData[1] = mData[2] = kZero<TDataType>;
+			mData[3] = kOne<TDataType>;
+		}
+
 		constexpr Quaternion(const Quaternion&) = default;
 		constexpr Quaternion& operator=(const Quaternion&) = default;
 		constexpr Quaternion(Quaternion&&) = default;
 		constexpr Quaternion& operator=(Quaternion&&) = default;
 
-		explicit constexpr Quaternion(const float quat[4]) noexcept
-			: mData{ quat[0], quat[1], quat[2], quat[3] }
-		{ }
-		
-		explicit constexpr Quaternion(const double quat[4]) noexcept
-			: mData{ static_cast<float>(quat[0]), static_cast<float>(quat[1]), static_cast<float>(quat[2]), static_cast<float>(quat[3]) }
-		{ }
-
-		explicit constexpr Quaternion(const float qx, const float qy, const float qz, const float qw) noexcept
-			: mData{ qx, qy, qz, qw }
-		{ }
-
-		explicit constexpr Quaternion(const Vector3f& vec, const float qw) noexcept
-			: mData{vec[0], vec[1], vec[2], qw}
-		{ }
-
-		explicit constexpr Quaternion(const double qx, const double qy, const double qz, const double qw) noexcept
-			: mData{ static_cast<float>(qx), static_cast<float>(qy), static_cast<float>(qz), static_cast<float>(qw) }
-		{ }
-
-		explicit constexpr Quaternion(const Vector3d& vec, const double qw) noexcept
-			: mData{ static_cast<float>(vec[0]), static_cast<float>(vec[1]), static_cast<float>(vec[2]), static_cast<float>(qw) }
-		{ }
-
-		constexpr float* data() noexcept
+		constexpr TDataType* data() noexcept
 		{
 			return mData;
 		}
 
-		constexpr const float* data() const noexcept
+		constexpr const TDataType* data() const noexcept
 		{
 			return mData;
 		}
 
-		constexpr float& operator[] (const size_t index) noexcept
+		constexpr TDataType& operator[](const size_t index) noexcept
 		{
 			return mData[index % 4];
 		}
 
-		constexpr const float& operator[] (const size_t index) const noexcept
+		constexpr const TDataType& operator[](const size_t index) const noexcept
 		{
 			return mData[index % 4];
 		}
@@ -78,13 +157,13 @@ namespace hr
 		Quaternion& operator+=(const Quaternion &quat) noexcept;
 		Quaternion& operator-=(const Quaternion &quat) noexcept;
 		Quaternion& operator*=(const Quaternion &quat) noexcept;
-		Quaternion& operator*=(float scalar) noexcept;
+		Quaternion& operator*=(const TDataType scalar) noexcept;
 		Quaternion& operator/=(const Quaternion &quat) noexcept;
 
 		Quaternion operator+(const Quaternion& quat) const noexcept;
 		Quaternion operator-(const Quaternion &quat) const noexcept;
 		Quaternion operator*(const Quaternion &quat) const noexcept;
-		Quaternion operator*(float scalar) const noexcept;
+		Quaternion operator*(const TDataType scalar) const noexcept;
 		Quaternion operator/(const Quaternion &quat) const noexcept;
 
 		bool isEqual(const Quaternion& quat, const float precision) const noexcept
@@ -92,32 +171,32 @@ namespace hr
 			return ((std::abs(mData[0] - quat.mData[0]) < precision) && (std::abs(mData[1] - quat.mData[1]) < precision) && (std::abs(mData[2] - quat.mData[2]) < precision) && (std::abs(mData[3] - quat.mData[3]) < precision));
 		}
 
-		Quaternion& setAxisAngle(const float unitVecX, const float unitVecY, const float unitVecZ, const float angleDeg) noexcept;
-		Quaternion& setAxisAngle(const Vector3f &unitVec, const float angleDeg) noexcept;
-		Quaternion& setFromMatrix3x3(const float * const matrix) noexcept;
-		Quaternion& setFromMatrix4x4(const float * const matrix) noexcept;
-		Quaternion& setFromEuler(const float angX, const float angY, const float angZ, AxisOrder axisOrder) noexcept;
-		Quaternion& setSLerp(const Quaternion &from, const Quaternion &to, float t) noexcept;
-		Quaternion& setNLerp(const Quaternion &from, const Quaternion &to, float t) noexcept;
-		Quaternion& set(const Quaternion &quat) noexcept;
-		Quaternion& setFromVectors(const Vector3f& from, const Vector3f& to) noexcept;
-		Quaternion& setIdentity() noexcept;
-
-		Quaternion& scaleAngle(float scale) noexcept;
+		Quaternion& scaleAngle(const TDataType scale) noexcept;
 		Quaternion& conjugate() noexcept;
 		Quaternion& normalize() noexcept;
 
 		Quaternion getConjugate() const noexcept;
 
-		float getMagnitude() const noexcept;
-		float getMagnitudeSquared() const noexcept;
-		float getDot(const Quaternion &quat) const noexcept;
+		TDataType getMagnitude() const noexcept;
+		TDataType getMagnitudeSquared() const noexcept;
+		TDataType getDot(const Quaternion &quat) const noexcept;
 
-		void getAxisAngle(float& vecX, float& vecY, float& vecZ, float& ang) const noexcept;
-		void getAxisAngle(Vector3f& vec, float& ang) const noexcept;
-		void getEulerAngles(float& angX, float& angY, float& angZ) const noexcept;
+		void getAxisAngle(TDataType& vecX, TDataType& vecY, TDataType& vecZ, TDataType& ang) const noexcept;
+		void getAxisAngle(Vector3Type& vec, TDataType& ang) const noexcept;
+		void getEulerAngles(TDataType& angX, TDataType& angY, TDataType& angZ) const noexcept;
 
-		Vector3f unitRotate(const Vector3f &vec) const noexcept;
-		void unitRotate(const Vector3f &vec, Vector3f &dest) const noexcept;
+		Vector3Type unitRotate(const Vector3Type& vec) const noexcept;
+		void unitRotate(const Vector3Type& vec, Vector3Type& dest) const noexcept;
 	};
+
+	using Quaternionf = Quaternion<float>;
+	using Quaterniond = Quaternion<double>;
+
+	static_assert(alignof(Quaternionf) == 16, "For performance reasons, this class must be aligned to a 16 byte boundary");
+	static_assert(alignof(Quaterniond) == 32, "For performance reasons, this class must be aligned to a 32 byte boundary");
+	static_assert(std::is_trivially_copyable_v<Quaternionf>, "For performance reasons, this class should be trivially copyable");
+	static_assert(std::is_trivially_copyable_v<Quaterniond>, "For performance reasons, this class should be trivially copyable");
+
+	extern template class Quaternion<float>;
+	extern template class Quaternion<double>;
 }

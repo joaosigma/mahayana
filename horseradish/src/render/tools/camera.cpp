@@ -42,7 +42,6 @@ namespace hr::render::tools
 {
 	void CameraFPS::commitInput(CameraAction actionBitfield, float mouseDeltaX, float mouseDeltaY, bool updatePosition, float timeDeltaS)
 	{
-		hr::Quaternion quat;
 		hr::Vector3f viewDir;
 
 		float angX = mouseDeltaX * mScale.mouse;
@@ -51,10 +50,11 @@ namespace hr::render::tools
 		auto axis = mAxis.dir.crossProduct(mAxis.up);
 		axis.normalize();
 
-		quat.setAxisAngle(axis, angY);
+		auto quat = Quaternionf::fromAxisAngle(axis, angY);
 		viewDir = quat.unitRotate(mAxis.dir);
 		viewDir.normalize();
-		quat.setAxisAngle(0.0f, 1.0f, 0.0f, -angX);
+
+		quat = Quaternionf::fromAxisAngle(0.0f, 1.0f, 0.0f, -angX);
 		viewDir = quat.unitRotate(viewDir);
 
 		mAxis.dir = viewDir;
@@ -114,14 +114,13 @@ namespace hr::render::tools
 
 	void CameraTarget::commitInput(CameraAction actionBitfield, float mouseDeltaX, float mouseDeltaY, float timeDeltaS)
 	{
-		hr::Quaternion quat;
 		hr::Vector3f newDir;
 
 		float angX = mouseDeltaX * mScale.mouse;
 		float angY = mouseDeltaY * mScale.mouse * (-1.0f);
 
 		newDir.set(0.0f, 0.0f, -1.0f);
-		quat.setFromEuler(angX, -angY, 0.0f, Quaternion::AxisOrder::XYZ);
+		auto quat = Quaternionf::fromEuler(angX, -angY, 0.0f, Quaternionf::AxisOrder::XYZ);
 		newDir = quat.unitRotate(newDir);
 		newDir.normalize();
 
