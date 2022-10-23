@@ -64,8 +64,12 @@ namespace hr
 
 		static double sqrtInv(const double x)
 		{
+			/* AVX512
 			auto temp = _mm_set1_pd(x);
 			return _mm_cvtsd_f64(_mm_rsqrt28_sd(temp, temp));
+			*/
+
+			return 1.0 / std::sqrt(x);
 		}
 
 		static float sin(const float radians)
@@ -118,43 +122,65 @@ namespace hr
 			return {s, c};
 		}
 
-		static float floor(const float f)
+		static float floor(const float val)
 		{
-			return std::floor(f);
+			return std::floor(val);
 		}
 
-		static float ceil(const float f)
+		static double floor(const double val)
 		{
-			return std::ceil(f);
+			return std::floor(val);
 		}
 
-		static float nearestInt(const float f)
+		static float ceil(const float val)
 		{
-			return std::floor(f + 0.5f);
+			return std::ceil(val);
+		}
+
+		static double ceil(const double val)
+		{
+			return std::ceil(val);
+		}
+
+		static float nearestInt(const float val)
+		{
+			return std::floor(val + 0.5f);
+		}
+
+		static double nearestInt(const double val)
+		{
+			return std::floor(val + 0.5);
 		}
 
 		template<typename T>
-		static T ftoi(const float f)
+		static T ftoi(const float val)
 		{
 			static_assert(std::is_integral_v<T>, "Target must must be either [u]int32_t or [u]int64_t");
 
+			/* AVX512
 			if constexpr(std::is_same_v<T, uint32_t>)
-				return _mm_cvtss_u32(_mm_set_ss(f));
-			else if constexpr (std::is_same_v<T, int32_t>)
-				return _mm_cvtss_si32(_mm_set_ss(f));
+				return _mm_cvtss_u32(_mm_set_ss(val));
+			*/
+			if constexpr (std::is_same_v<T, int32_t>)
+				return _mm_cvtss_si32(_mm_set_ss(val));
 #if defined (_M_X64)
+			/* AVX512
 			else if constexpr (std::is_same_v<T, uint64_t>)
-				return _mm_cvtss_u64(_mm_set_ss(f));
+				return _mm_cvtss_u64(_mm_set_ss(val));
+			*/
 			else if constexpr (std::is_same_v<T, int64_t>)
-				return _mm_cvtss_si64(_mm_set_ss(f));
+				return _mm_cvtss_si64(_mm_set_ss(val));
 #endif
 
-			static_assert(std::is_same_v<T, uint32_t> || std::is_same_v<T, int64_t> || std::is_same_v<T, uint64_t> || std::is_same_v<T, int64_t>);
+			static_assert(std::is_same_v<T, uint32_t> || std::is_same_v<T, int32_t> || std::is_same_v<T, uint64_t> || std::is_same_v<T, int64_t>);
 		}
-		static int64_t ftoi(const double d)
+		static int64_t ftoi(const double val)
 		{
-			//return _mm_cvtsd_i64(_mm_set_sd(d));
-			return static_cast<int64_t>(d);
+			/* AVX512
+			return _mm_cvtsd_i64(_mm_set_sd(val));
+			*/
+
+			return static_cast<int64_t>(std::llround(val));
 		}
 
 		static bool isZero(const double d)
