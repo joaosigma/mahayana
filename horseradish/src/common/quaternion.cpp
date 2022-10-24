@@ -221,8 +221,8 @@ namespace hr
 		/*
 		* This is a faster version, but doesn't take into account opposite vectors...
 		* 
-		* Quaternion q(from.crossProduct(to), from.getDot(to));
-		* q[3] += q.getMagnitude();
+		* Quaternion q(from.crossProduct(to), from.dot(to));
+		* q[3] += q.magnitude();
 		* q.normalize();
 		* 
 		* return q;
@@ -265,7 +265,7 @@ namespace hr
 
 		double n2;
 		double n0;
-		double dot = from.getDot(to);
+		double dot = from.dot(to);
 
 		// if the dot product is negative, slerp won't take the shorter path. Since a quaternion is equivalent if
 		// all compoents are negated, fix by reversing one quaternion.
@@ -303,7 +303,7 @@ namespace hr
 		if (t >= kOne<TDataType>) return to;
 
 		Quaternion ret;
-		if (from.getDot(to) >= kZero<TDataType>)
+		if (from.dot(to) >= kZero<TDataType>)
 			ret = (from * (kOne<TDataType> - t)) + (to * t);
 		else
 			ret = (from * (kOne<TDataType> - t)) - (to * t);
@@ -373,7 +373,7 @@ namespace hr
 	template<typename TDataType>
 	Quaternion<TDataType>& Quaternion<TDataType>::operator/=(const Quaternion& quat) noexcept
 	{
-		auto mag = kOne<TDataType> / quat.getMagnitudeSquared();
+		auto mag = kOne<TDataType> / quat.magnitudeSquared();
 
 		Quaternion inv;
 		inv[0] = -quat[0] * mag;
@@ -472,7 +472,7 @@ namespace hr
 	}
 
 	template<typename TDataType>
-	TDataType Quaternion<TDataType>::getMagnitude() const noexcept
+	TDataType Quaternion<TDataType>::magnitude() const noexcept
 	{
 		if constexpr (std::is_same_v<TDataType, float>)
 		{
@@ -491,7 +491,7 @@ namespace hr
 	}
 
 	template<typename TDataType>
-	TDataType Quaternion<TDataType>::getMagnitudeSquared() const noexcept
+	TDataType Quaternion<TDataType>::magnitudeSquared() const noexcept
 	{
 		if constexpr (std::is_same_v<TDataType, float>)
 		{
@@ -509,7 +509,7 @@ namespace hr
 	}
 
 	template<typename TDataType>
-	TDataType Quaternion<TDataType>::getDot(const Quaternion& quat) const noexcept
+	TDataType Quaternion<TDataType>::dot(const Quaternion& quat) const noexcept
 	{
 		if constexpr (std::is_same_v<TDataType, float>)
 		{

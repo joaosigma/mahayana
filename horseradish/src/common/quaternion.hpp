@@ -177,9 +177,9 @@ namespace hr
 
 		Quaternion getConjugate() const noexcept;
 
-		TDataType getMagnitude() const noexcept;
-		TDataType getMagnitudeSquared() const noexcept;
-		TDataType getDot(const Quaternion &quat) const noexcept;
+		TDataType magnitude() const noexcept;
+		TDataType magnitudeSquared() const noexcept;
+		TDataType dot(const Quaternion &quat) const noexcept;
 
 		void getAxisAngle(TDataType& vecX, TDataType& vecY, TDataType& vecZ, TDataType& ang) const noexcept;
 		void getAxisAngle(Vector3Type& vec, TDataType& ang) const noexcept;
@@ -187,6 +187,22 @@ namespace hr
 
 		Vector3Type unitRotate(const Vector3Type& vec) const noexcept;
 		void unitRotate(const Vector3Type& vec, Vector3Type& dest) const noexcept;
+
+		template<typename TNewDataType>
+		Quaternion<TNewDataType> convert() const noexcept
+		{
+			static_assert(std::is_same_v<TNewDataType, float> || std::is_same_v<TNewDataType, double>, "New data type must be either float or double");
+
+			if constexpr (std::is_same_v<TNewDataType, TDataType>)
+			{
+				return Quaternion{*this}; //it's just a copy
+			}
+			else
+			{
+				return Quaternion<TNewDataType>::from(static_cast<TNewDataType>(mData[0]), static_cast<TNewDataType>(mData[1]),
+					static_cast<TNewDataType>(mData[2]), static_cast<TNewDataType>(mData[3]));
+			}
+		}
 	};
 
 	using Quaternionf = Quaternion<float>;

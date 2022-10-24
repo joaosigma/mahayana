@@ -988,17 +988,25 @@ namespace hr
 		static double calcDot(const Vector& vec)
 		{
 			__m256d data = _mm256_load_pd(vec.mData);
-			__m256d tmp = _mm256_mul_pd(data, data);
-			tmp = _mm256_hadd_pd(tmp, tmp);
-			__m128d dot = _mm_add_pd(_mm256_castpd256_pd128(tmp), _mm256_extractf128_pd(tmp, 1));
+			data = _mm256_mul_pd(data, data);
+
+			__m128d low = _mm256_castpd256_pd128(data);
+			__m128d high = _mm_shuffle_pd(_mm256_extractf128_pd(data, 1), _mm_setzero_pd(), 0b10); //must zero out w
+
+			__m128d sum = _mm_add_pd(low, high);
+			__m128d dot = _mm_add_pd(sum, _mm_shuffle_pd(sum, sum, 0b01));
 			return _mm_cvtsd_f64(dot);
 		}
 
 		static double calcDot(const Vector& vec1, const Vector& vec2)
 		{
-			__m256d tmp = _mm256_mul_pd(_mm256_load_pd(vec1.mData), _mm256_load_pd(vec2.mData));
-			tmp = _mm256_hadd_pd(tmp, tmp);
-			__m128d dot = _mm_add_pd(_mm256_castpd256_pd128(tmp), _mm256_extractf128_pd(tmp, 1));
+			__m256d data = _mm256_mul_pd(_mm256_load_pd(vec1.mData), _mm256_load_pd(vec2.mData));
+
+			__m128d low = _mm256_castpd256_pd128(data);
+			__m128d high = _mm_shuffle_pd(_mm256_extractf128_pd(data, 1), _mm_setzero_pd(), 0b10); //must zero out w
+
+			__m128d sum = _mm_add_pd(low, high);
+			__m128d dot = _mm_add_pd(sum, _mm_shuffle_pd(sum, sum, 0b01));
 			return _mm_cvtsd_f64(dot);
 		}
 
