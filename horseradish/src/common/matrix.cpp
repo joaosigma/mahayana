@@ -880,27 +880,14 @@ namespace hr
 	Matrix4<TDataType>::Vector4Type Matrix4<TDataType>::getColumn(size_t columnIndex) const noexcept
 	{
 		columnIndex = columnIndex % 4;
-		if constexpr (std::is_same_v<TDataType, float>)
-		{
-			return Vector4Type(m[columnIndex], m[columnIndex + 4], m[columnIndex + 8], m[columnIndex + 12]);
-		}
-		else
-		{
-			return {};
-		}
+		return Vector4Type(m[columnIndex], m[columnIndex + 4], m[columnIndex + 8], m[columnIndex + 12]);
 	}
 
 	template<typename TDataType>
 	Matrix4<TDataType>::Vector4Type Matrix4<TDataType>::getRow(size_t rowIndex) const noexcept
 	{
-		if constexpr (std::is_same_v<TDataType, float>)
-		{
-			return Vector4Type(m + ((rowIndex % 4) * 4));
-		}
-		else
-		{
-			return {};
-		}
+		auto row = m + ((rowIndex % 4) * 4);
+		return Vector4Type(row[0], row[1], row[2], row[3]);
 	}
 
 	template<typename TDataType>

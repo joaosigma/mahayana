@@ -229,8 +229,8 @@ namespace hr
 		* 
 		*/
 
-		TDataType norm_u_norm_v = std::sqrt(from.getDot(from) * to.getDot(to));
-		TDataType real_part = norm_u_norm_v + from.getDot(to);
+		TDataType norm_u_norm_v = std::sqrt(from.dot(from) * to.dot(to));
+		TDataType real_part = norm_u_norm_v + from.dot(to);
 		Vector3Type axis;
 
 		if (real_part < (1.e-6f * norm_u_norm_v))
@@ -548,7 +548,7 @@ namespace hr
 			return;
 		}
 
-		vec.set(mData[0], mData[1], mData[2]);
+		vec = Vector3Type{mData[0], mData[1], mData[2]};
 		vec *= (kOne<TDataType> / len);
 		vec.normalize();
 
@@ -622,8 +622,8 @@ namespace hr
 		Vector3Type u{mData[0], mData[1], mData[2]};
 
 		Vector3Type res;
-		res = u * kTwo<TDataType> * u.getDot(vec);
-		res += vec * ((mData[3] * mData[3]) - u.getDot(u));
+		res = u * kTwo<TDataType> * u.dot(vec);
+		res += vec * ((mData[3] * mData[3]) - u.dot(u));
 		res += u.crossProduct(vec) * (kTwo<TDataType> * mData[3]);
 
 		return res;

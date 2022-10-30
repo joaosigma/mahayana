@@ -50,7 +50,7 @@ namespace hr::render
 		private:
 			static Vector3d reflect(const Vector3d& vec, const Vector3d& normal)
 			{
-				return vec - (normal * 2.0 * vec.getDot(normal));
+				return vec - (normal * 2.0 * vec.dot(normal));
 			}
 
 		private:
@@ -64,7 +64,7 @@ namespace hr::render
 				while (true) //algo: just pick a random point inside the "unit cube" and reject if outside the sphere
 				{
 					inUnitSphere = Vector3d{ randDist(mRandGen), randDist(mRandGen), randDist(mRandGen) };
-					if (inUnitSphere.getDot() < 1.0)
+					if (inUnitSphere.dot() < 1.0)
 						return inUnitSphere;
 				}
 			}
@@ -121,7 +121,7 @@ namespace hr::render
 						scattered = Ray<Vector3d>{ hit.rayPoint, reflected };
 					attenuation = mAlbedo;
 
-					return (scattered.direction().getDot(hit.normal) > 0.0);
+					return (scattered.direction().dot(hit.normal) > 0.0);
 				}
 				case Type::None:
 				default:
@@ -145,14 +145,14 @@ namespace hr::render
 				auto viewport_height = 2.0 * h;
 				auto viewport_width = mViewport.aspectRatio() * viewport_height;
 
-				auto w = Vector3d::calcNormalize(Vector3d{ mCamera.getPos() - mCamera.getTarget()});
-				auto u = Vector3d::calcNormalize(Vector3d{ mCamera.getUp() }.crossProduct(w));
+				auto w = Vector3d::calcNormalize((mCamera.getPos() - mCamera.getTarget()).convert<double, 3>());
+				auto u = Vector3d::calcNormalize(mCamera.getUp().convert<double, 3>().crossProduct(w));
 				auto v = w.crossProduct(u);
 
 				mData.horizontal = u * viewport_width;
 				mData.vertical = v * viewport_height;
-				mData.lower_left_corner = Vector3d{ mCamera.getPos() } - (mData.horizontal / 2) - (mData.vertical / 2) - w;
-				mData.rayOrigin = Vector3d{ mCamera.getPos() };
+				mData.lower_left_corner = mCamera.getPos().convert<double, 3>() - (mData.horizontal / 2) - (mData.vertical / 2) - w;
+				mData.rayOrigin = mCamera.getPos().convert<double, 3>();
 			}
 
 		public:
@@ -328,7 +328,7 @@ namespace hr::render
 							auto outNormal = (curHit.rayPoint - obj.center()) / obj.radius();
 							outNormal.normalize();
 
-							curHit.frontFace = (ray.direction().getDot(outNormal) < 0.0);
+							curHit.frontFace = (ray.direction().dot(outNormal) < 0.0);
 							curHit.normal = hit.frontFace ? outNormal : -outNormal; //normal is always out (as if the ray hit from the outside)
 
 							curHit.mat = mat;
@@ -373,9 +373,12 @@ namespace hr::render
 						hit.mat = std::get<1>(targetObj);
 						hit.rayPoint = ray.pointAt(hit.rayT);
 
-						auto outNormal = Vector3d{ std::get<0>(targetObj).triNormal(meshHit->primitive_index, static_cast<float>(meshHit->intersection.u), static_cast<float>(meshHit->intersection.v)) };
+						auto outNormal =
+						  std::get<0>(targetObj)
+						  .triNormal(meshHit->primitive_index, static_cast<float>(meshHit->intersection.u), static_cast<float>(meshHit->intersection.v))
+						  .convert<double, 3>();
 
-						hit.frontFace = (ray.direction().getDot(outNormal) < 0.0);
+						hit.frontFace = (ray.direction().dot(outNormal) < 0.0);
 						hit.normal = hit.frontFace ? outNormal : -outNormal; //normal is always out (as if the ray hit from the outside)
 
 					}
@@ -445,11 +448,11 @@ namespace hr::render
 		while (true) //algo: just pick a random point inside the "unit cube" and reject if outside the sphere
 		{
 			inUnitSphere = Vector3d{ randDist(mRandGen), randDist(mRandGen), randDist(mRandGen) };
-			if (inUnitSphere.getDot() < 1.0)
+			if (inUnitSphere.dot() < 1.0)
 				break;
 		}
 
-		if (normal.getDot(inUnitSphere) > 0.0)
+		if (normal.dot(inUnitSphere) > 0.0)
 			return inUnitSphere;
 		return -inUnitSphere;
 	}

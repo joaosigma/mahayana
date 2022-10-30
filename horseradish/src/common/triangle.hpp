@@ -145,23 +145,23 @@ namespace hr
 			auto v0v1 = mPoints[1] - mPoints[0];
 			auto v0v2 = mPoints[2] - mPoints[0];
 			auto pvec = ray.direction().crossProduct(v0v2);
-			auto det = v0v1.getDot(pvec);
+			auto det = v0v1.dot(pvec);
 			if (det <= 1e-6) //cull back face
 				return false;
 
 			auto invDet = 1 / det;
 
 			auto tvec = ray.origin() - mPoints[0];
-			auto u = tvec.getDot(pvec) * invDet;
+			auto u = tvec.dot(pvec) * invDet;
 			if ((u < 0) || (u > 1))
 				return false;
 
 			auto qvec = tvec.crossProduct(v0v1);
-			auto v = ray.direction().getDot(qvec) * invDet;
+			auto v = ray.direction().dot(qvec) * invDet;
 			if ((v < 0) || ((u + v) > 1))
 				return false;
 
-			auto t = v0v2.getDot(qvec) * invDet;
+			auto t = v0v2.dot(qvec) * invDet;
 			if ((t < rayDistMin) || (t >= rayDistMax))
 				return false;
 

@@ -627,7 +627,7 @@ namespace hr::render
 					else
 						t *= 2.0;
 
-					auto vec = Vector3f::calcLinear(
+					auto vec = Vector3f::calcLerp(
 						Vector3f{ animLight.dir[0] - 10.0f, animLight.dir[1], animLight.dir[2] },
 						Vector3f{ animLight.dir[0] + 10.0f, animLight.dir[1], animLight.dir[2] },
 						t);

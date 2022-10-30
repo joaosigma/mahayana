@@ -80,7 +80,7 @@ namespace hr
 
 		typename TVectorType::DataType radius() const
 		{
-			return center().getDistance(mMinPt);
+			return center().distance(mMinPt);
 		}
 
 		typename TVectorType::DataType radiusMinimum() const
@@ -117,14 +117,14 @@ namespace hr
 		//
 		void corners(TVectorType points[8]) const
 		{
-			points[0].set(mMinPt[0], mMinPt[1], mMinPt[2]);
-			points[1].set(mMinPt[0], mMinPt[1], mMaxPt[2]);
-			points[2].set(mMinPt[0], mMaxPt[1], mMinPt[2]);
-			points[3].set(mMinPt[0], mMaxPt[1], mMaxPt[2]);
-			points[4].set(mMaxPt[0], mMinPt[1], mMinPt[2]);
-			points[5].set(mMaxPt[0], mMinPt[1], mMaxPt[2]);
-			points[6].set(mMaxPt[0], mMaxPt[1], mMinPt[2]);
-			points[7].set(mMaxPt[0], mMaxPt[1], mMaxPt[2]);
+			points[0] = TVectorType{mMinPt[0], mMinPt[1], mMinPt[2]};
+			points[1] = TVectorType{mMinPt[0], mMinPt[1], mMaxPt[2]};
+			points[2] = TVectorType{mMinPt[0], mMaxPt[1], mMinPt[2]};
+			points[3] = TVectorType{mMinPt[0], mMaxPt[1], mMaxPt[2]};
+			points[4] = TVectorType{mMaxPt[0], mMinPt[1], mMinPt[2]};
+			points[5] = TVectorType{mMaxPt[0], mMinPt[1], mMaxPt[2]};
+			points[6] = TVectorType{mMaxPt[0], mMaxPt[1], mMinPt[2]};
+			points[7] = TVectorType{mMaxPt[0], mMaxPt[1], mMaxPt[2]};
 		}
 
 		BSphere<TVectorType> boundingSphere() const
@@ -333,24 +333,24 @@ namespace hr
 
 		void setMin(const TVectorType& min)
 		{
-			mMinPt.set(min);
+			mMinPt = min;
 		}
 
 		void setMax(const TVectorType& max)
 		{
-			mMaxPt.set(max);
+			mMaxPt = max;
 		}
 
 		void setMinMax(const typename TVectorType::DataType min[3], const typename TVectorType::DataType max[3])
 		{
-			mMinPt.set(min);
-			mMaxPt.set(max);
+			mMinPt = min;
+			mMaxPt = max;
 		}
 
 		void setMinMax(const TVectorType& min, const TVectorType& max)
 		{
-			mMinPt.set(min);
-			mMaxPt.set(max);
+			mMinPt = min;
+			mMaxPt = max;
 		}
 
 		void reset()
@@ -602,9 +602,9 @@ namespace hr
 		bool intersects(const Ray<TVectorType>& ray, const typename TVectorType::DataType rayDistMin, const typename TVectorType::DataType rayDistMax, typename TVectorType::DataType& hitDistance) const
 		{
 			auto oc = ray.origin() - TVectorType(mCenter[0], mCenter[1], mCenter[2]);
-			auto a = ray.direction().getDot();
-			auto b = ray.direction().getDot(oc);
-			auto c = oc.getDot() - (mRadius * mRadius);
+			auto a = ray.direction().dot();
+			auto b = ray.direction().dot(oc);
+			auto c = oc.dot() - (mRadius * mRadius);
 			auto d = (b * b) - (c * a);
 
 			if (d < 0.0)

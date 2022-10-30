@@ -93,12 +93,12 @@ namespace hr::gl::tools
 
 		void setCamPosition(const float x, const float y, const float z)
 		{
-			mPosition.set(x, y, z);
+			mPosition = Vector3f{x, y, z};
 		}
 
 		void setCamPosition(const hr::Vector3f& pos)
 		{
-			mPosition.set(pos);
+			mPosition = pos;
 		}
 	};
 }

@@ -230,14 +230,14 @@ namespace hr::gl::tools
 	{
 		hr::Vector3f pCubo[8];
 
-		pCubo[0].set(point);
-		pCubo[1].set(pCubo[0]);	pCubo[1][2] += size;
-		pCubo[2].set(pCubo[1]);	pCubo[2][1] += size;
-		pCubo[3].set(pCubo[0]);	pCubo[3][1] += size;
-		pCubo[4].set(pCubo[0]);	pCubo[4][0] += size;
-		pCubo[5].set(pCubo[4]);	pCubo[5][2] += size;
-		pCubo[6].set(pCubo[5]);	pCubo[6][1] += size;
-		pCubo[7].set(pCubo[4]);	pCubo[7][1] += size;
+		pCubo[0] = point;
+		pCubo[1] = pCubo[0];	pCubo[1][2] += size;
+		pCubo[2] = pCubo[1];	pCubo[2][1] += size;
+		pCubo[3] = pCubo[0];	pCubo[3][1] += size;
+		pCubo[4] = pCubo[0];	pCubo[4][0] += size;
+		pCubo[5] = pCubo[4];	pCubo[5][2] += size;
+		pCubo[6] = pCubo[5];	pCubo[6][1] += size;
+		pCubo[7] = pCubo[4];	pCubo[7][1] += size;
 
 		for (int iCurPlane = 0; iCurPlane < 6; iCurPlane++)
 		{
@@ -268,15 +268,15 @@ namespace hr::gl::tools
 	{
 		hr::Vector3f pBox[8];
 
-		pBox[0].set(min);
-		pBox[1].set(min);	pBox[1][2] = max[2];
-		pBox[2].set(min);	pBox[2][1] = max[1];
-		pBox[3].set(max);	pBox[3][0] = min[0];
+		pBox[0] = min;
+		pBox[1] = min;	pBox[1][2] = max[2];
+		pBox[2] = min;	pBox[2][1] = max[1];
+		pBox[3] = max;	pBox[3][0] = min[0];
 
-		pBox[4].set(min);	pBox[4][0] = max[0];
-		pBox[5].set(max);	pBox[5][1] = min[1];
-		pBox[6].set(max);	pBox[6][2] = min[2];
-		pBox[7].set(max);
+		pBox[4] = min;	pBox[4][0] = max[0];
+		pBox[5] = max;	pBox[5][1] = min[1];
+		pBox[6] = max;	pBox[6][2] = min[2];
+		pBox[7] = max;
 
 		for (auto iPlane = 0; iPlane < 6; iPlane++)
 		{

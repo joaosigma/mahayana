@@ -140,7 +140,8 @@ namespace hr::utests
 		template<typename TVector>
 		bool match(const TVector& v) const
 		{
-			static_assert(std::is_same_v<TVector, hr::Vector4f>);
+			static_assert(std::is_same_v<TVector, hr::Vector4f> || std::is_same_v<TVector, hr::Vector4d>);
+			static_assert(std::is_same_v<TVector::DataType, TType>);
 			static_assert(TVector::NumComponents == 4);
 
 			// set epsilon to allowed a 0.1% difference and a margin to allow (0.0f == -0.0f) to pass

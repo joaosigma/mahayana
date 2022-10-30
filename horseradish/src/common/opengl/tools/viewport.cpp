@@ -97,7 +97,7 @@ namespace hr::gl::tools
 
 		for (size_t i = 0; i < numPoints; i++)
 		{
-			hr::Vector4f result(listPoints[i], 1.0f);
+			auto result = listPoints->convert<float, 4>(1.0f);
 			transMat.transform(result);
 
 			float rhw = 1.0f / result[3];
@@ -106,7 +106,7 @@ namespace hr::gl::tools
 			float projY = winY - ((1.0f - result[1] * rhw) * winY * 0.5f);
 			float projZ = (result[2] * rhw) * (depthRange[1] - depthRange[0]) + depthRange[0];
 
-			listPoints[i].set(projX, projY, projZ);
+			listPoints[i] = Vector3f{projX, projY, projZ};
 		}
 	}
 }

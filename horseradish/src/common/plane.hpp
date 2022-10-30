@@ -124,12 +124,12 @@ namespace hr
 
 		void calcD(const VectorType& pointOnPlane)
 		{
-			mD = -pointOnPlane.getDot(mA, mB, mC);
+			mD = -pointOnPlane.dot(mA, mB, mC);
 		}
 
 		TDataType distance(const VectorType& point) const
 		{
-			return (point.getDot(mA, mB, mC) + mD);
+			return (point.dot(mA, mB, mC) + mD);
 		}
 
 		VectorType normal() const
@@ -149,29 +149,29 @@ namespace hr
 
 		TDataType getDotNormal(const VectorType& point) const
 		{
-			return (point.getDot(mA, mB, mC));
+			return point.dot(mA, mB, mC);
 		}
 
 		bool intersects(const RayType& ray) const
 		{
 			TDataType hitDistance;
-			return intersects(ray);
+			return intersects(ray, hitDistance);
 		}
 
 		bool intersects(const RayType& ray, TDataType& hitDistance) const
 		{
-			auto dot = ray.dir().getDot(mA, mB, mC);
+			auto dot = ray.dir().dot(mA, mB, mC);
 			if (Math::isZero(dot))
 				return false;
 
-			hitDistance = -(ray.origin().getDot(mA, mB, mC) + mD) / dot;
+			hitDistance = -(ray.origin().dot(mA, mB, mC) + mD) / dot;
 			return (hitDistance >= 0.0f);
 		}
 
 		bool intersects(const VectorType& lineStart, const VectorType& lineEnd) const
 		{
-			TDataType hitDistance;
-			return intersects(lineStart, lineEnd);
+			VectorType result;
+			return intersects(lineStart, lineEnd, result);
 		}
 
 		bool intersects(const VectorType& lineStart, const VectorType& lineEnd, VectorType& result) const
@@ -182,7 +182,7 @@ namespace hr
 			if (!intersects(ray, hitDistance))
 				return false;
 
-			if (hitDistance > VectorType::calcDistance(lineStart, lineEnd))
+			if (hitDistance > lineStart.distance(lineEnd))
 				return false;
 
 			result = ray.pointAt(hitDistance);
@@ -192,14 +192,14 @@ namespace hr
 
 		bool intersects(const Plane& p2, const Plane& p3, VectorType& result) const
 		{
-			VectorType pNormal, p2Normal, p3Normal, tmp1, tmp2, tmp3;
+			VectorType tmp1, tmp2, tmp3;
 
-			pNormal.set(mA, mB, mC);
-			p2Normal.set(p2.mA, p2.mB, p2.mC);
-			p3Normal.set(p3.mA, p3.mB, p3.mC);
+			VectorType pNormal{mA, mB, mC};
+			VectorType p2Normal{p2.mA, p2.mB, p2.mC};
+			VectorType p3Normal{p3.mA, p3.mB, p3.mC};
 			tmp1 = VectorType::calcCrossProduct(p2Normal, p3Normal);
 
-			auto denominator = pNormal.getDot(tmp1);
+			auto denominator = pNormal.dot(tmp1);
 			if (Math::isZero(denominator))
 				return false;
 
@@ -218,7 +218,7 @@ namespace hr
 
 		Position classifyPoint(const VectorType& point) const
 		{
-			auto calcDot = point.getDot(mA, mB, mC) + mD;
+			auto calcDot = point.dot(mA, mB, mC) + mD;
 
 			if (Math::isZero(calcDot))
 				return Plane::Position::CoPlanar;

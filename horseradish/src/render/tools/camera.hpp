@@ -20,21 +20,21 @@ namespace hr::render::tools
 		Camera() noexcept
 		  : mModelView{hr::Matrix4f::identity()}
 		{
-			mAxis.pos.set(0.0f, 0.0f, 1.0f);
-			mAxis.dir.set(0.0f, 0.0f, 0.0f);
-			mAxis.up.set(0.0f, 1.0f, 0.0f);
+			mAxis.pos = Vector3f{0.0f, 0.0f, 1.0f};
+			mAxis.dir = Vector3f{0.0f, 0.0f, 0.0f};
+			mAxis.up = Vector3f{0.0f, 1.0f, 0.0f};
 			mAbsFocus = 0.0f;
 		}
 
 		void setPos(const hr::Vector3f &pos)
 		{
-			mAxis.pos.set(pos);
+			mAxis.pos = pos;
 			mModelView = Matrix4f::glModelView(mAxis.pos, getTarget(), mAxis.up);
 		}
 
 		void setPos(float x, float y, float z)
 		{
-			mAxis.pos.set(x, y, z);
+			mAxis.pos = Vector3f{x, y, z};
 			mModelView = Matrix4f::glModelView(mAxis.pos, getTarget(), mAxis.up);
 		}
 
@@ -42,7 +42,7 @@ namespace hr::render::tools
 		{
 			mAxis.dir = target - mAxis.pos;
 			mAxis.dir.normalize();
-			mAbsFocus = target.getDistance(mAxis.pos);
+			mAbsFocus = target.distance(mAxis.pos);
 			mModelView = Matrix4f::glModelView(mAxis.pos, getTarget(), mAxis.up);
 		}
 
@@ -50,20 +50,20 @@ namespace hr::render::tools
 		{
 			mAxis.dir = hr::Vector3f(x, y, z) - mAxis.pos;
 			mAxis.dir.normalize();
-			mAbsFocus = mAxis.pos.getDistance(x, y, z);
+			mAbsFocus = mAxis.pos.distance(x, y, z);
 			mModelView = Matrix4f::glModelView(mAxis.pos, getTarget(), mAxis.up);
 		}
 
 		void setDir(const hr::Vector3f &direction)
 		{
-			mAxis.dir.set(direction);
+			mAxis.dir = direction;
 			mAxis.dir.normalize();
 			mModelView = Matrix4f::glModelView(mAxis.pos, getTarget(), mAxis.up);
 		}
 
 		void setDir(float x, float y, float z)
 		{
-			mAxis.dir.set(x, y, z);
+			mAxis.dir = Vector3f{x, y, z};
 			mAxis.dir.normalize();
 			mModelView = Matrix4f::glModelView(mAxis.pos, getTarget(), mAxis.up);
 		}

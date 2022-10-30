@@ -169,9 +169,9 @@ namespace hr::geom
 		for (size_t i = 0; i < mNumIndices; i += 3)
 		{
 			Triangle<Vector3d> tri{
-				Vector3f{ mData[mIndices[i + 0]].pos }.convert<double>(),
-				Vector3f{ mData[mIndices[i + 1]].pos }.convert<double>(),
-				Vector3f{ mData[mIndices[i + 2]].pos }.convert<double>() };
+				Vector3f{ mData[mIndices[i + 0]].pos }.convert<double, 3>(),
+				Vector3f{ mData[mIndices[i + 1]].pos }.convert<double, 3>(),
+				Vector3f{ mData[mIndices[i + 2]].pos }.convert<double, 3>() };
 
 			Triangle<Vector3d>::Hit triHit;
 			if (!tri.intersects(ray, rayDistMin, rayDistMax, triHit))
@@ -195,9 +195,9 @@ namespace hr::geom
 			return false;
 
 		Triangle<Vector3d> tri{
-				Vector3f{ mData[mIndices[(triIndex * 3) + 0]].pos }.convert<double>(),
-				Vector3f{ mData[mIndices[(triIndex * 3) + 1]].pos }.convert<double>(),
-				Vector3f{ mData[mIndices[(triIndex * 3) + 2]].pos }.convert<double>() };
+				Vector3f{ mData[mIndices[(triIndex * 3) + 0]].pos }.convert<double, 3>(),
+				Vector3f{ mData[mIndices[(triIndex * 3) + 1]].pos }.convert<double, 3>(),
+				Vector3f{ mData[mIndices[(triIndex * 3) + 2]].pos }.convert<double, 3>() };
 
 		Triangle<Vector3d>::Hit triHit;
 		if (!tri.intersects(ray, rayDistMin, rayDistMax, triHit))
@@ -326,7 +326,7 @@ namespace hr::geom
 		auto normals = std::unique_ptr<Vector3f[]>(new Vector3f[mNumVertices]);
 
 		for (size_t i = 0; i < mNumVertices; i++)
-			normals[i].set(0.0f);
+			normals[i] = Vector3f::zero();
 
 		for (size_t i = 0; i < mNumIndices; i += 3)
 		{
@@ -526,7 +526,7 @@ namespace hr::geom
 				Vector3f tangent3{ tangent4.data() };
 				matRot.transform(tangent3);
 
-				tangent4 = Vector4f{ tangent3, tangent4[3] };
+				tangent4 = tangent3.convert<float, 4>(tangent4[3]);
 				vertexData->tangent = packedWriteTangent(tangent4.data());
 			}
 		}

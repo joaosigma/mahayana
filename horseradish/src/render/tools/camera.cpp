@@ -119,7 +119,7 @@ namespace hr::render::tools
 		float angX = mouseDeltaX * mScale.mouse;
 		float angY = mouseDeltaY * mScale.mouse * (-1.0f);
 
-		newDir.set(0.0f, 0.0f, -1.0f);
+		newDir = Vector3f{0.0f, 0.0f, -1.0f};
 		auto quat = Quaternionf::fromEuler(angX, -angY, 0.0f, Quaternionf::AxisOrder::XYZ);
 		newDir = quat.unitRotate(newDir);
 		newDir.normalize();
@@ -239,12 +239,12 @@ namespace hr::render::tools
 	{
 		if ((component == Position) && !mPointsPos && (mNumPos < CameraPath::MaxNumPoints))
 		{
-			mPointsPos[mNumPos].set(x, y, z);
+			mPointsPos[mNumPos] = Vector3f{x, y, z};
 			mNumPos++;
 		}
 		else if ((component == Target) && !mPointsTarget && (mNumTarget < CameraPath::MaxNumPoints))
 		{
-			mPointsTarget[mNumTarget].set(x, y, z);
+			mPointsTarget[mNumTarget] = Vector3f{x, y, z};
 			mNumTarget++;
 		}
 	}
@@ -253,12 +253,12 @@ namespace hr::render::tools
 	{
 		if ((component == Position) && !mPointsPos && (mNumPos < CameraPath::MaxNumPoints))
 		{
-			mPointsPos[mNumPos].set(vec);
+			mPointsPos[mNumPos] = vec;
 			mNumPos++;
 		}
 		else if ((component == Target) && !mPointsTarget && (mNumTarget < CameraPath::MaxNumPoints))
 		{
-			mPointsTarget[mNumTarget].set(vec);
+			mPointsTarget[mNumTarget] = vec;
 			mNumTarget++;
 		}
 	}
