@@ -200,7 +200,7 @@ namespace hr::utests
 		QuaternionEqualsMatcher(const TType qx, const TType qy, const TType qz, const TType qw)
 			: m_quat{Quaternion<TType>::from(qx, qy, qz, qw)}
 		{ }
-		
+
 		bool match(const Quaternion<TType>& q) const
 		{
 			// set epsilon to allowed a 0.1% difference and a margin to allow (0.0f == -0.0f) to pass
@@ -241,9 +241,9 @@ namespace hr::utests
 	{
 		static_assert(std::is_same_v<float, TType> || std::is_same_v<double, TType>);
 
-		Matrix4EqualsMatcher(const TType mat[16])
+		Matrix4EqualsMatcher(std::span<const TType, 16> mat)
 		{
-			std::memcpy(m_mat, mat, sizeof(TType) * 16);
+			std::memcpy(m_mat, mat.data(), mat.size_bytes());
 		}
 
 		bool match(const hr::Matrix4<TType>& m) const
@@ -272,7 +272,7 @@ namespace hr::utests
 	template<typename TType>
 	auto Matrix4Equals(const TType mat[16])
 	{
-		return Matrix4EqualsMatcher<TType>{mat};
+		return Matrix4EqualsMatcher<TType>(std::span<const TType, 16>{mat, 16});
 	}
 
 	inline auto Matrix4Equals(const hr::Matrix4f& mat)
@@ -290,9 +290,9 @@ namespace hr::utests
 	{
 		static_assert(std::is_same_v<float, TType> || std::is_same_v<double, TType>);
 
-		Matrix3EqualsMatcher(const TType mat[9])
+		Matrix3EqualsMatcher(std::span<const TType, 9> mat)
 		{
-			std::memcpy(m_mat, mat, sizeof(TType) * 9);
+			std::memcpy(m_mat, mat.data(), mat.size_bytes());
 		}
 
 		bool match(const hr::Matrix3<TType>& m) const
@@ -321,7 +321,7 @@ namespace hr::utests
 	template<typename TType>
 	auto Matrix3Equals(const TType mat[9])
 	{
-		return Matrix3EqualsMatcher<TType>{mat};
+		return Matrix3EqualsMatcher<TType>{std::span<const TType, 9>{mat, 9}};
 	}
 
 	inline auto Matrix3Equals(const hr::Matrix3f& mat)

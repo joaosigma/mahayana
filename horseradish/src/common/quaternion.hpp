@@ -14,6 +14,15 @@ namespace hr
 	*     - plus X points right, plus Y points up and plus Z points forward (to the horizon)
 	*     - this is the same as in matrices
 	*   - almost every operation assumes that the quaternion is normalized (unit quaternion)
+	*   - dividing quaternion A with B is the same as multiplying A with the inverse of B (that why there's no operator/ overload)
+	* 
+	* **NOTE**
+	* 
+	* Don't forget that quaternion multiplication is right to left. So if we write (Qr = Qp * Qc), this means that the first rotation applied
+	* is Qc and then Qp. And so, if we do (Qr = Qp * Qc), then we can:
+	*	- (Qc = Qp.inversed * Qr) -> so we rotate by Qr first, then unrotate it by Qp, yielding Qc
+	*	- (Qp = Qr * Qc.inversed) -> so we apply the inverse of Qc first and then Qr to obtain Qp
+	*	
 	*/
 	template<typename TDataType>
 	class alignas(alignof(TDataType) * 4) Quaternion
@@ -24,13 +33,13 @@ namespace hr
 		using Vector4Type = typename Vector<TDataType, 4>;
 
 		template<class T>
-		static constexpr T kHalf = T(0.5L);
+		static constexpr T kHalf = T(0.5);
 		template<class T>
-		static constexpr T kZero = T(0.0L);
+		static constexpr T kZero = T(0.0);
 		template<class T>
-		static constexpr T kOne = T(1.0L);
+		static constexpr T kOne = T(1.0);
 		template<class T>
-		static constexpr T kTwo = T(2.0L);
+		static constexpr T kTwo = T(2.0);
 
 	public:
 		using DataType = typename TDataType;
@@ -114,8 +123,8 @@ namespace hr
 		static Quaternion fromAxisAngle(const Vector3Type& unitVec, const TDataType angleDeg);
 		static Quaternion fromAxisAngle(const TDataType unitVecX, const TDataType unitVecY, const TDataType unitVecZ, const TDataType angleDeg);
 
-		static Quaternion fromMatrix3x3(const TDataType* const matrix) noexcept;
-		static Quaternion fromMatrix4x4(const TDataType* const matrix) noexcept;
+		static Quaternion fromMatrix3x3(std::span<const TDataType, 9> matrix) noexcept;
+		static Quaternion fromMatrix4x4(std::span<const TDataType, 16> matrix) noexcept;
 		static Quaternion fromEuler(const TDataType angX, const TDataType angY, const TDataType angZ, AxisOrder axisOrder) noexcept;
 		static Quaternion fromVectors(const Vector3Type& from, const Vector3Type& to) noexcept;
 
@@ -158,30 +167,60 @@ namespace hr
 		Quaternion& operator-=(const Quaternion &quat) noexcept;
 		Quaternion& operator*=(const Quaternion &quat) noexcept;
 		Quaternion& operator*=(const TDataType scalar) noexcept;
-		Quaternion& operator/=(const Quaternion &quat) noexcept;
+
+		Quaternion operator-() const noexcept;
 
 		Quaternion operator+(const Quaternion& quat) const noexcept;
 		Quaternion operator-(const Quaternion &quat) const noexcept;
 		Quaternion operator*(const Quaternion &quat) const noexcept;
 		Quaternion operator*(const TDataType scalar) const noexcept;
-		Quaternion operator/(const Quaternion &quat) const noexcept;
 
-		bool isEqual(const Quaternion& quat, const float precision) const noexcept
+		bool isEqual(const Quaternion& quat, const TDataType precision) const noexcept
 		{
-			return ((std::abs(mData[0] - quat.mData[0]) < precision) && (std::abs(mData[1] - quat.mData[1]) < precision) && (std::abs(mData[2] - quat.mData[2]) < precision) && (std::abs(mData[3] - quat.mData[3]) < precision));
+			return (std::abs(mData[0] - quat.mData[0]) < precision) && (std::abs(mData[1] - quat.mData[1]) < precision) && (std::abs(mData[2] - quat.mData[2]) < precision) && (std::abs(mData[3] - quat.mData[3]) < precision);
 		}
 
 		Quaternion& scaleAngle(const TDataType scale) noexcept;
-		Quaternion& conjugate() noexcept;
 		Quaternion& normalize() noexcept;
+		Quaternion& conjugate() noexcept;
+
+		template<bool TUnitQuaternion = true>
+		Quaternion& inverse() noexcept
+		{
+			if constexpr (TUnitQuaternion)
+			{
+				//since we're dealing with a unit quaternion, the inverse is the same as the conjugate
+				mData[0] = -mData[0];
+				mData[1] = -mData[1];
+				mData[2] = -mData[2];
+			}
+			else
+			{
+				TDataType invMag = kOne<TDataType> / magnitudeSquared();
+				mData[0] = -mData[0] * invMag;
+				mData[1] = -mData[1] * invMag;
+				mData[2] = -mData[2] * invMag;
+				mData[3] *= invMag;
+			}
+
+			return *this;
+		}
 
 		Quaternion getConjugate() const noexcept;
+
+		template<bool TUnitQuaternion = true>
+		Quaternion getInverse() const noexcept
+		{
+			Quaternion res{*this};
+			res.inverse<TUnitQuaternion>();
+
+			return res;
+		}
 
 		TDataType magnitude() const noexcept;
 		TDataType magnitudeSquared() const noexcept;
 		TDataType dot(const Quaternion &quat) const noexcept;
 
-		void getAxisAngle(TDataType& vecX, TDataType& vecY, TDataType& vecZ, TDataType& ang) const noexcept;
 		void getAxisAngle(Vector3Type& vec, TDataType& ang) const noexcept;
 		void getEulerAngles(TDataType& angX, TDataType& angY, TDataType& angZ) const noexcept;
 

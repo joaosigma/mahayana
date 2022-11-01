@@ -3,6 +3,7 @@
 #include "utils_t.hpp"
 
 #include "quaternion.hpp"
+#include "matrix.hpp"
 
 #include "libs/catch2/catch.hpp"
 
@@ -13,8 +14,22 @@ namespace hr::utests
 		SECTION("init")
 		{
 			REQUIRE_THAT(Quaternionf::identity(), QuaternionEquals(0.0f, 0.0f, 0.0f, 1.0f));
+			REQUIRE_THAT(Quaternionf::zero(), QuaternionEquals(0.0f, 0.0f, 0.0f, 0.0f));
 			REQUIRE_THAT(Quaternionf::from(1.0f, 2.0f, 3.0f, 4.0f), QuaternionEquals(1.0f, 2.0f, 3.0f, 4.0f));
 			REQUIRE_THAT(Quaternionf::from(1.0, 2.0, 3.0, 4.0), QuaternionEquals(1.0f, 2.0f, 3.0f, 4.0f));
+
+			float valuesf[4]{-0.21f, 55.11f, -0.0001f, 234.77f};
+			double valuesd[4]{2.5632, -24.449, -0.999601, 0.9912902};
+
+			REQUIRE_THAT(Quaternionf::from(std::span<const float>(valuesf, 4)), QuaternionEquals(-0.21f, 55.11f, -0.0001f, 234.77f));
+			REQUIRE_THAT(Quaternionf::from(std::span<const double>(valuesd, 4)), QuaternionEquals(2.5632f, -24.449f, -0.999601f, 0.9912902f));
+			//REQUIRE_THAT(Quaternionf::from(std::span<const float>(valuesf, 2)), QuaternionEquals(Quaternionf::identity()));
+			//REQUIRE_THAT(Quaternionf::from(std::span<const double>(valuesd, 1)), QuaternionEquals(Quaternionf::identity()));
+
+			Vector3f vec3{-12.55f, -0.91175f, 0.123f};
+			Vector4f vec4{5.9682f, -12.55f, 0.123f, -0.91175f};
+			REQUIRE_THAT(Quaternionf::from(vec3, 0.3389f), QuaternionEquals(-12.55f, -0.91175f, 0.123f, 0.3389f));
+			REQUIRE_THAT(Quaternionf::from(vec4), QuaternionEquals(5.9682f, -12.55f, 0.123f, -0.91175f));
 		}
 
 		SECTION("access")
@@ -29,6 +44,11 @@ namespace hr::utests
 			REQUIRE(q[5] == Catch::Approx(2.0f));
 			REQUIRE(q[6] == Catch::Approx(3.0f));
 			REQUIRE(q[7] == Catch::Approx(4.0f));
+
+			REQUIRE(q.data()[0] == Catch::Approx(1.0f));
+			REQUIRE(q.data()[1] == Catch::Approx(2.0f));
+			REQUIRE(q.data()[2] == Catch::Approx(3.0f));
+			REQUIRE(q.data()[3] == Catch::Approx(4.0f));
 		}
 
 		SECTION("basic operators")
@@ -42,6 +62,8 @@ namespace hr::utests
 			*  - operation "/" is actually the inverse / conjugate
 			*/
 
+			REQUIRE_THAT(-qa, QuaternionEquals(-1.0f, -2.0f, -3.0f, -4.0f));
+			REQUIRE_THAT(-qb, QuaternionEquals(-0.1f, 0.2f, -0.3f, 0.4f));
 			REQUIRE_THAT(qa + qb, QuaternionEquals(1.1f, 1.8f, 3.3f, 3.6f));
 			REQUIRE_THAT(qa - qb, QuaternionEquals(0.9f, 2.2f, 2.7f, 4.4f));
 
@@ -76,18 +98,51 @@ namespace hr::utests
 			REQUIRE_THAT(qb, QuaternionEquals(qa));
 		}
 
-		SECTION("inverse / conjugate")
+		SECTION("conjugate")
 		{
-			auto qa = Quaternionf::from(1.0f, -2.0f, 1.0f, 3.0f);
-			auto qb = Quaternionf::from(-1.0f, 2.0f, 3.0f, 2.0f);
-			qa.normalize();
-			qb.normalize();
+			auto q = Quaternionf::from(0.0f, 0.0f, 0.0f, 1.0f);
+			REQUIRE_THAT(q.getConjugate(), QuaternionEquals(0.0f, 0.0f, 0.0f, 1.0f));
+			q.conjugate();
+			REQUIRE_THAT(q, QuaternionEquals(0.0f, 0.0f, 0.0f, 1.0f));
 
-			REQUIRE_THAT(qa * qa.getConjugate(), QuaternionEquals(0.0f, 0.0f, 0.0f, 1.0f));
-			REQUIRE_THAT(qa / qa, QuaternionEquals(0.0f, 0.0f, 0.0f, 1.0f));
+			q = Quaternionf::from(-1.0f, 2.0f, -3.0f, 2.0f);
+			REQUIRE_THAT(q.getConjugate(), QuaternionEquals(1.0f, -2.0f, 3.0f, 2.0f));
+			q.conjugate();
+			REQUIRE_THAT(q, QuaternionEquals(1.0f, -2.0f, 3.0f, 2.0f));
+		}
 
-			REQUIRE_THAT(qa * qa.getConjugate() * qb, QuaternionEquals(qb));
-			REQUIRE_THAT(qa / qa * qb, QuaternionEquals(qb));
+		SECTION("inverse")
+		{
+			{
+				auto qa = Quaternionf::from(1.0f, -2.0f, 1.0f, 3.0f);
+				auto qb = Quaternionf::from(-1.0f, 2.0f, 3.0f, 2.0f);
+
+				REQUIRE_THAT(qa * qa.getInverse<false>(), QuaternionEquals(0.0f, 0.0f, 0.0f, 1.0f));
+				REQUIRE_THAT(qa * qa.getInverse<false>() * qb, QuaternionEquals(qb));
+
+				qa.normalize();
+				qb.normalize();
+				REQUIRE_THAT(qa * qa.getInverse<true>(), QuaternionEquals(0.0f, 0.0f, 0.0f, 1.0f));
+				REQUIRE_THAT(qa * qa.getInverse<true>() * qb, QuaternionEquals(qb));
+			}
+
+			{
+				auto qa = Quaternionf::from(1.0f, -2.0f, 1.0f, 3.0f);
+				auto qb = Quaternionf::from(-1.0f, 2.0f, 3.0f, 2.0f);
+
+				auto qx = qa;
+				qx.inverse<false>();
+				REQUIRE_THAT(qa * qx, QuaternionEquals(0.0f, 0.0f, 0.0f, 1.0f));
+				REQUIRE_THAT(qa * qx * qb, QuaternionEquals(qb));
+
+				qa.normalize();
+				qb.normalize();
+
+				qx = qa;
+				qx.inverse<true>();
+				REQUIRE_THAT(qa * qx, QuaternionEquals(0.0f, 0.0f, 0.0f, 1.0f));
+				REQUIRE_THAT(qa * qx * qb, QuaternionEquals(qb));
+			}
 		}
 
 		SECTION("axis angle X")
@@ -136,15 +191,36 @@ namespace hr::utests
 		{
 			auto qa = Quaternionf::from(0.3919183f, 0.3196269f, -0.8430416f, -0.1830837f);
 			REQUIRE(qa.magnitude() == Catch::Approx(1.0f));
-			REQUIRE_THAT(qa.unitRotate(Vector3f{0.3535534f, -0.1464466f, 0.3535534f}), VectorEquals(-0.487732f, 0.1646256f, 0.08039001f));
+			{
+				Vector3f vec{0.3535534f, -0.1464466f, 0.3535534f}, res;
+
+				qa.unitRotate(vec, res);
+				REQUIRE_THAT(qa.unitRotate(vec), VectorEquals(-0.487732f, 0.1646256f, 0.08039001f));
+				REQUIRE_THAT(res, VectorEquals(-0.487732f, 0.1646256f, 0.08039001f));
+				REQUIRE_THAT(res, VectorEquals(qa.unitRotate(vec)));
+			}
 
 			auto qb = Quaternionf::from(0.336838f, 0.0115086f, 0.421048f, 0.842096f);
 			REQUIRE(qb.magnitude() == Catch::Approx(1.0f));
-			REQUIRE_THAT(qb.unitRotate(Vector3f{0.53f, -0.0532f, 0.22f}), VectorEquals(0.4459215f, 0.2350067f, 0.2793851f));
+			{
+				Vector3f vec{0.53f, -0.0532f, 0.22f}, res;
+
+				qb.unitRotate(vec, res);
+				REQUIRE_THAT(qb.unitRotate(vec), VectorEquals(0.4459215f, 0.2350067f, 0.2793851f));
+				REQUIRE_THAT(res, VectorEquals(0.4459215f, 0.2350067f, 0.2793851f));
+				REQUIRE_THAT(res, VectorEquals(qb.unitRotate(vec)));
+			}
 
 			auto qc = Quaternionf::from(0.0f, 0.7071068f, 0.0f, 0.7071068f);
 			REQUIRE(qc.magnitude() == Catch::Approx(1.0f));
-			REQUIRE_THAT(qc.unitRotate(Vector3f{13.0f, -1.23f, 3.4f}), VectorEquals(3.4f, -1.23f, -13.0f));
+			{
+				Vector3f vec{13.0f, -1.23f, 3.4f}, res;
+
+				qc.unitRotate(vec, res);
+				REQUIRE_THAT(qc.unitRotate(vec), VectorEquals(3.4f, -1.23f, -13.0f));
+				REQUIRE_THAT(res, VectorEquals(3.4f, -1.23f, -13.0f));
+				REQUIRE_THAT(res, VectorEquals(qc.unitRotate(vec)));
+			}
 		}
 
 		SECTION("angles between vectors")
@@ -177,6 +253,7 @@ namespace hr::utests
 
 			REQUIRE(qa.dot(qb) == Catch::Approx(-9572.0f));
 			REQUIRE(qb.dot(qa) == Catch::Approx(-9572.0f));
+			REQUIRE(qa.magnitude() == Catch::Approx(std::sqrt(qa.dot(qa))));
 			REQUIRE(qa.magnitudeSquared() == Catch::Approx(qa.dot(qa)));
 			
 			qa = Quaternionf::from(0.3535534f, -0.1464466f, 0.3535534f, 0.8535535f);
@@ -361,6 +438,17 @@ namespace hr::utests
 			}
 		}
 
+		SECTION("comparison")
+		{
+			auto qa = Quaternionf::from(0.6514133f, -0.1282655f, 0.6116868f, 0.430172f);
+			auto qb = Quaternionf::from(-0.21f, 55.11f, -0.0001f, 234.77f);
+
+			REQUIRE(qb.isEqual(qb, 0.0000000001f));
+			REQUIRE_FALSE(qb.isEqual(qa, 0.0000000001f));
+			REQUIRE(Quaternionf::from(0.001f, 0.002f, 0.003f, 0.004f).isEqual(Quaternionf::from(0.002f, 0.003f, 0.004f, 0.005f), 0.009f));
+			REQUIRE_FALSE(Quaternionf::from(0.001f, 0.002f, 0.003f, 0.004f).isEqual(Quaternionf::from(0.002f, 0.003f, 0.004f, 0.005f), 0.0009f));
+		}
+
 		SECTION("convert")
 		{
 			auto q = Quaternionf::from(0.6514133f, -0.1282655f, 0.6116868f, 0.430172f);
@@ -370,6 +458,118 @@ namespace hr::utests
 			REQUIRE_THAT(qf, QuaternionEquals(0.6514133f, -0.1282655f, 0.6116868f, 0.430172f));
 			REQUIRE_THAT(qd, QuaternionEquals(0.6514133, -0.1282655, 0.6116868, 0.430172));
 		}
+
+		SECTION("multiplication order")
+		{
+			{
+				auto q1 = Quaternionf::from(1.0f, 2.0f, 3.0f, 4.0f);
+				auto q2 = Quaternionf::from(5.0f, 6.0f, 7.0f, 8.0f);
+				auto qr = q1 * q2;
+				REQUIRE_THAT(qr, QuaternionEquals(24.0f, 48.0f, 48.0f, -6.0f));
+			}
+
+			{
+				auto q1 = Quaternionf::fromAxisAngle(Vector3f{0.0f, 1.0f, 0.0f}, 90.0f);
+				auto q2 = Quaternionf::fromAxisAngle(Vector3f{1.0f, 0.0f, 0.0f}, 90.0f);
+				auto qFinal = q2 * q1;
+				REQUIRE_THAT(qFinal.unitRotate(Vector3f{1.0f, 0.0f, 0.0f}), VectorEquals(0.0f, 1.0f, 0.0f));
+				REQUIRE_THAT(qFinal.unitRotate(Vector3f{-0.9f, 0.0f, 0.0f}), VectorEquals(0.0f, -0.9f, 0.0f));
+			}
+		}
+
+		SECTION("from matrix")
+		{
+			{
+				const float matIdentity[]{1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f};
+				auto q = Quaternionf::fromMatrix3x3(matIdentity);
+				REQUIRE_THAT(q, QuaternionEquals(0.0f, 0.0f, 0.0f, 1.0f));
+			}
+
+			{
+				const float matIdentity[]{1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f};
+				auto q = Quaternionf::fromMatrix4x4(matIdentity);
+				REQUIRE_THAT(q, QuaternionEquals(0.0f, 0.0f, 0.0f, 1.0f));
+			}
+
+			for (float angle = 0.0f; angle < 720.0f; angle += 10.0f)
+			{
+				auto qOriginal = Quaternionf::fromAxisAngle(Vector3f{1.0f, 0.0f, 0.0f}, angle);
+
+				auto pred = [qOriginal](const Quaternionf& q) -> bool
+				{
+					auto matcher = QuaternionEquals(qOriginal);
+					return matcher.match(q) || matcher.match(-q);
+				};
+
+				auto mat3 = Matrix3f::rotation(qOriginal);
+				REQUIRE_THAT(Quaternionf::fromMatrix3x3(mat3.data()), Catch::Matchers::Predicate<Quaternionf>(pred));
+
+				auto mat4 = Matrix4f::rotation(qOriginal);
+				REQUIRE_THAT(Quaternionf::fromMatrix4x4(mat4.data()), Catch::Matchers::Predicate<Quaternionf>(pred));
+			}
+
+			for (float angle = 0.0f; angle < 720.0f; angle += 10.0f)
+			{
+				auto qOriginal = Quaternionf::fromAxisAngle(Vector3f{0.0f, 1.0f, 0.0f}, angle);
+
+				auto pred = [qOriginal](const Quaternionf& q) -> bool
+				{
+					auto matcher = QuaternionEquals(qOriginal);
+					return matcher.match(q) || matcher.match(-q);
+				};
+
+				auto mat3 = Matrix3f::rotation(qOriginal);
+				REQUIRE_THAT(Quaternionf::fromMatrix3x3(mat3.data()), Catch::Matchers::Predicate<Quaternionf>(pred));
+
+				auto mat4 = Matrix4f::rotation(qOriginal);
+				REQUIRE_THAT(Quaternionf::fromMatrix4x4(mat4.data()), Catch::Matchers::Predicate<Quaternionf>(pred));
+			}
+
+			for (float angle = 0.0f; angle < 720.0f; angle += 10.0f)
+			{
+				auto qOriginal = Quaternionf::fromAxisAngle(Vector3f{0.0f, 0.0f, 1.0f}, angle);
+
+				auto pred = [qOriginal](const Quaternionf& q) -> bool
+				{
+					auto matcher = QuaternionEquals(qOriginal);
+					return matcher.match(q) || matcher.match(-q);
+				};
+
+				auto mat3 = Matrix3f::rotation(qOriginal);
+				REQUIRE_THAT(Quaternionf::fromMatrix3x3(mat3.data()), Catch::Matchers::Predicate<Quaternionf>(pred));
+
+				auto mat4 = Matrix4f::rotation(qOriginal);
+				REQUIRE_THAT(Quaternionf::fromMatrix4x4(mat4.data()), Catch::Matchers::Predicate<Quaternionf>(pred));
+			}
+
+			for (float angle = 0.0f; angle < 720.0f; angle += 10.0f)
+			{
+				auto qOriginal = Quaternionf::fromAxisAngle(Vector3f{0.0f, 0.0f, 1.0f}, angle);
+				qOriginal *= Quaternionf::fromAxisAngle(Vector3f{0.0f, 1.0f, 0.0f}, angle);
+				qOriginal *= Quaternionf::fromAxisAngle(Vector3f{1.0f, 0.0f, 0.0f}, angle);
+
+				auto pred = [qOriginal](const Quaternionf& q) -> bool
+				{
+					auto matcher = QuaternionEquals(qOriginal);
+					return matcher.match(q) || matcher.match(-q);
+				};
+
+				auto mat3 = Matrix3f::rotationX(angle);
+				mat3 *= Matrix3f::rotationY(angle);
+				mat3 *= Matrix3f::rotationZ(angle);
+				REQUIRE_THAT(Quaternionf::fromMatrix3x3(mat3.data()), Catch::Matchers::Predicate<Quaternionf>(pred));
+
+				auto mat4 = Matrix4f::rotationX(angle);
+				mat4 *= Matrix4f::rotationY(angle);
+				mat4 *= Matrix4f::rotationZ(angle);
+				REQUIRE_THAT(Quaternionf::fromMatrix4x4(mat4.data()), Catch::Matchers::Predicate<Quaternionf>(pred));
+			}
+		}
+
+		/************
+		* NOTE: missing tests:
+		*  - Quaternionf::scaleAngle
+		*/
 	}
 
 	TEST_CASE("Quaternion of type double", "[common][quaternion][quaterniond]")
@@ -377,8 +577,22 @@ namespace hr::utests
 		SECTION("init")
 		{
 			REQUIRE_THAT(Quaterniond::identity(), QuaternionEquals(0.0, 0.0, 0.0, 1.0));
+			REQUIRE_THAT(Quaterniond::zero(), QuaternionEquals(0.0, 0.0, 0.0, 0.0));
 			REQUIRE_THAT(Quaterniond::from(1.0, 2.0, 3.0, 4.0), QuaternionEquals(1.0, 2.0, 3.0, 4.0));
 			REQUIRE_THAT(Quaterniond::from(1.0, 2.0, 3.0, 4.0), QuaternionEquals(1.0, 2.0, 3.0, 4.0));
+
+			float valuesf[4]{-0.21f, 55.11f, -0.0001f, 234.77f};
+			double valuesd[4]{2.5632, -24.449, -0.999601, 0.9912902};
+
+			REQUIRE_THAT(Quaterniond::from(std::span<const float>(valuesf, 4)), QuaternionEquals(-0.21, 55.11, -0.0001, 234.77));
+			REQUIRE_THAT(Quaterniond::from(std::span<const double>(valuesd, 4)), QuaternionEquals(2.5632, -24.449, -0.999601, 0.9912902));
+			//REQUIRE_THAT(Quaterniond::from(std::span<const float>(valuesf, 2)), QuaternionEquals(Quaterniond::identity()));
+			//REQUIRE_THAT(Quaterniond::from(std::span<const double>(valuesd, 1)), QuaternionEquals(Quaterniond::identity()));
+
+			Vector3d vec3{-12.55, -0.91175, 0.123};
+			Vector4d vec4{5.9682, -12.55, 0.123, -0.91175};
+			REQUIRE_THAT(Quaterniond::from(vec3, 0.3389), QuaternionEquals(-12.55, -0.91175, 0.123, 0.3389));
+			REQUIRE_THAT(Quaterniond::from(vec4), QuaternionEquals(5.9682, -12.55, 0.123, -0.91175));
 		}
 
 		SECTION("access")
@@ -393,6 +607,11 @@ namespace hr::utests
 			REQUIRE(q[5] == Catch::Approx(2.0));
 			REQUIRE(q[6] == Catch::Approx(3.0));
 			REQUIRE(q[7] == Catch::Approx(4.0));
+
+			REQUIRE(q.data()[0] == Catch::Approx(1.0));
+			REQUIRE(q.data()[1] == Catch::Approx(2.0));
+			REQUIRE(q.data()[2] == Catch::Approx(3.0));
+			REQUIRE(q.data()[3] == Catch::Approx(4.0));
 		}
 
 		SECTION("basic operators")
@@ -406,6 +625,8 @@ namespace hr::utests
 			*  - operation "/" is actually the inverse / conjugate
 			*/
 
+			REQUIRE_THAT(-qa, QuaternionEquals(-1.0, -2.0, -3.0, -4.0));
+			REQUIRE_THAT(-qb, QuaternionEquals(-0.1, 0.2, -0.3, 0.4));
 			REQUIRE_THAT(qa + qb, QuaternionEquals(1.1, 1.8, 3.3, 3.6));
 			REQUIRE_THAT(qa - qb, QuaternionEquals(0.9, 2.2, 2.7, 4.4));
 
@@ -440,18 +661,51 @@ namespace hr::utests
 			REQUIRE_THAT(qb, QuaternionEquals(qa));
 		}
 
-		SECTION("inverse / conjugate")
+		SECTION("conjugate")
 		{
-			auto qa = Quaterniond::from(1.0, -2.0, 1.0, 3.0);
-			auto qb = Quaterniond::from(-1.0, 2.0, 3.0, 2.0);
-			qa.normalize();
-			qb.normalize();
+			auto q = Quaterniond::from(0.0, 0.0, 0.0, 1.0);
+			REQUIRE_THAT(q.getConjugate(), QuaternionEquals(0.0, 0.0, 0.0, 1.0));
+			q.conjugate();
+			REQUIRE_THAT(q, QuaternionEquals(0.0, 0.0, 0.0, 1.0));
 
-			REQUIRE_THAT(qa * qa.getConjugate(), QuaternionEquals(0.0, 0.0, 0.0, 1.0));
-			REQUIRE_THAT(qa / qa, QuaternionEquals(0.0, 0.0, 0.0, 1.0));
+			q = Quaterniond::from(-1.0, 2.0, -3.0, 2.0);
+			REQUIRE_THAT(q.getConjugate(), QuaternionEquals(1.0, -2.0, 3.0, 2.0));
+			q.conjugate();
+			REQUIRE_THAT(q, QuaternionEquals(1.0, -2.0, 3.0, 2.0));
+		}
 
-			REQUIRE_THAT(qa * qa.getConjugate() * qb, QuaternionEquals(qb));
-			REQUIRE_THAT(qa / qa * qb, QuaternionEquals(qb));
+		SECTION("inverse")
+		{
+			{
+				auto qa = Quaterniond::from(1.0, -2.0, 1.0, 3.0);
+				auto qb = Quaterniond::from(-1.0, 2.0, 3.0, 2.0);
+
+				REQUIRE_THAT(qa * qa.getInverse<false>(), QuaternionEquals(0.0, 0.0, 0.0, 1.0));
+				REQUIRE_THAT(qa * qa.getInverse<false>() * qb, QuaternionEquals(qb));
+
+				qa.normalize();
+				qb.normalize();
+				REQUIRE_THAT(qa * qa.getInverse<true>(), QuaternionEquals(0.0, 0.0, 0.0, 1.0));
+				REQUIRE_THAT(qa * qa.getInverse<true>() * qb, QuaternionEquals(qb));
+			}
+
+			{
+				auto qa = Quaterniond::from(1.0, -2.0, 1.0, 3.0);
+				auto qb = Quaterniond::from(-1.0, 2.0, 3.0, 2.0);
+
+				auto qx = qa;
+				qx.inverse<false>();
+				REQUIRE_THAT(qa * qx, QuaternionEquals(0.0, 0.0, 0.0, 1.0));
+				REQUIRE_THAT(qa * qx * qb, QuaternionEquals(qb));
+
+				qa.normalize();
+				qb.normalize();
+
+				qx = qa;
+				qx.inverse<true>();
+				REQUIRE_THAT(qa * qx, QuaternionEquals(0.0, 0.0, 0.0, 1.0));
+				REQUIRE_THAT(qa * qx * qb, QuaternionEquals(qb));
+			}
 		}
 
 		SECTION("axis angle X")
@@ -500,15 +754,36 @@ namespace hr::utests
 		{
 			auto qa = Quaterniond::from(0.3919183, 0.3196269, -0.8430416, -0.1830837);
 			REQUIRE(qa.magnitude() == Catch::Approx(1.0));
-			REQUIRE_THAT(qa.unitRotate(Vector3d{0.3535534, -0.1464466, 0.3535534}), VectorEquals(-0.487732, 0.1646256, 0.08039001));
+			{
+				Vector3d vec{0.3535534, -0.1464466, 0.3535534}, res;
+
+				qa.unitRotate(vec, res);
+				REQUIRE_THAT(qa.unitRotate(vec), VectorEquals(-0.487732, 0.1646256, 0.08039001));
+				REQUIRE_THAT(res, VectorEquals(-0.487732, 0.1646256, 0.08039001));
+				REQUIRE_THAT(res, VectorEquals(qa.unitRotate(vec)));
+			}
 
 			auto qb = Quaterniond::from(0.336838, 0.0115086, 0.421048, 0.842096);
 			REQUIRE(qb.magnitude() == Catch::Approx(1.0));
-			REQUIRE_THAT(qb.unitRotate(Vector3d{0.53, -0.0532, 0.22}), VectorEquals(0.4459215, 0.2350067, 0.2793851));
+			{
+				Vector3d vec{0.53, -0.0532, 0.22}, res;
+
+				qb.unitRotate(vec, res);
+				REQUIRE_THAT(qb.unitRotate(vec), VectorEquals(0.4459215, 0.2350067, 0.2793851));
+				REQUIRE_THAT(res, VectorEquals(0.4459215, 0.2350067, 0.2793851));
+				REQUIRE_THAT(res, VectorEquals(qb.unitRotate(vec)));
+			}
 
 			auto qc = Quaterniond::from(0.0, 0.7071068, 0.0, 0.7071068);
 			REQUIRE(qc.magnitude() == Catch::Approx(1.0));
-			REQUIRE_THAT(qc.unitRotate(Vector3d{13.0, -1.23, 3.4}), VectorEquals(3.4, -1.23, -13.0));
+			{
+				Vector3d vec{13.0, -1.23, 3.4}, res;
+
+				qc.unitRotate(vec, res);
+				REQUIRE_THAT(qc.unitRotate(vec), VectorEquals(3.4, -1.23, -13.0));
+				REQUIRE_THAT(res, VectorEquals(3.4, -1.23, -13.0));
+				REQUIRE_THAT(res, VectorEquals(qc.unitRotate(vec)));
+			}
 		}
 
 		SECTION("angles between vectors")
@@ -541,6 +816,7 @@ namespace hr::utests
 
 			REQUIRE(qa.dot(qb) == Catch::Approx(-9572.0));
 			REQUIRE(qb.dot(qa) == Catch::Approx(-9572.0));
+			REQUIRE(qa.magnitude() == Catch::Approx(std::sqrt(qa.dot(qa))));
 			REQUIRE(qa.magnitudeSquared() == Catch::Approx(qa.dot(qa)));
 
 			qa = Quaterniond::from(0.3535534, -0.1464466, 0.3535534, 0.8535535);
@@ -725,6 +1001,17 @@ namespace hr::utests
 			}
 		}
 
+		SECTION("comparison")
+		{
+			auto qa = Quaterniond::from(0.6514133, -0.1282655, 0.6116868, 0.430172);
+			auto qb = Quaterniond::from(-0.21, 55.11, -0.0001, 234.77);
+
+			REQUIRE(qb.isEqual(qb, 0.0000000001));
+			REQUIRE_FALSE(qb.isEqual(qa, 0.0000000001));
+			REQUIRE(Quaterniond::from(0.001, 0.002, 0.003, 0.004).isEqual(Quaterniond::from(0.002, 0.003, 0.004, 0.005), 0.009));
+			REQUIRE_FALSE(Quaterniond::from(0.001, 0.002, 0.003, 0.004).isEqual(Quaterniond::from(0.002, 0.003, 0.004, 0.005), 0.0009));
+		}
+
 		SECTION("convert")
 		{
 			auto q = Quaterniond::from(0.6514133, -0.1282655, 0.6116868, 0.430172);
@@ -734,5 +1021,117 @@ namespace hr::utests
 			REQUIRE_THAT(qf, QuaternionEquals(0.6514133f, -0.1282655f, 0.6116868f, 0.430172f));
 			REQUIRE_THAT(qd, QuaternionEquals(0.6514133, -0.1282655, 0.6116868, 0.430172));
 		}
+
+		SECTION("multiplication order")
+		{
+			{
+				auto q1 = Quaterniond::from(1.0, 2.0, 3.0, 4.0);
+				auto q2 = Quaterniond::from(5.0, 6.0, 7.0, 8.0);
+				auto qr = q1 * q2;
+				REQUIRE_THAT(qr, QuaternionEquals(24.0, 48.0, 48.0, -6.0));
+			}
+
+			{
+				auto q1 = Quaterniond::fromAxisAngle(Vector3d{0.0, 1.0, 0.0}, 90.0);
+				auto q2 = Quaterniond::fromAxisAngle(Vector3d{1.0, 0.0, 0.0}, 90.0);
+				auto qFinal = q2 * q1;
+				REQUIRE_THAT(qFinal.unitRotate(Vector3d{1.0, 0.0, 0.0}), VectorEquals(0.0, 1.0, 0.0));
+				REQUIRE_THAT(qFinal.unitRotate(Vector3d{-0.9, 0.0, 0.0}), VectorEquals(0.0, -0.9, 0.0));
+			}
+		}
+
+		SECTION("from matrix")
+		{
+			{
+				const double matIdentity[]{1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0};
+				auto q = Quaterniond::fromMatrix3x3(matIdentity);
+				REQUIRE_THAT(q, QuaternionEquals(0.0, 0.0, 0.0, 1.0));
+			}
+
+			{
+				const double matIdentity[]{1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0};
+				auto q = Quaterniond::fromMatrix4x4(matIdentity);
+				REQUIRE_THAT(q, QuaternionEquals(0.0, 0.0, 0.0, 1.0));
+			}
+
+			for (double angle = 0.0; angle < 720.0; angle += 10.0)
+			{
+				auto qOriginal = Quaterniond::fromAxisAngle(Vector3d{1.0, 0.0, 0.0}, angle);
+
+				auto pred = [qOriginal](const Quaterniond& q) -> bool
+				{
+					auto matcher = QuaternionEquals(qOriginal);
+					return matcher.match(q) || matcher.match(-q);
+				};
+
+				auto mat3 = Matrix3d::rotation(qOriginal);
+				REQUIRE_THAT(Quaterniond::fromMatrix3x3(mat3.data()), Catch::Matchers::Predicate<Quaterniond>(pred));
+
+				auto mat4 = Matrix4d::rotation(qOriginal);
+				REQUIRE_THAT(Quaterniond::fromMatrix4x4(mat4.data()), Catch::Matchers::Predicate<Quaterniond>(pred));
+			}
+
+			for (double angle = 0.0; angle < 720.0; angle += 10.0)
+			{
+				auto qOriginal = Quaterniond::fromAxisAngle(Vector3d{0.0, 1.0, 0.0}, angle);
+
+				auto pred = [qOriginal](const Quaterniond& q) -> bool
+				{
+					auto matcher = QuaternionEquals(qOriginal);
+					return matcher.match(q) || matcher.match(-q);
+				};
+
+				auto mat3 = Matrix3d::rotation(qOriginal);
+				REQUIRE_THAT(Quaterniond::fromMatrix3x3(mat3.data()), Catch::Matchers::Predicate<Quaterniond>(pred));
+
+				auto mat4 = Matrix4d::rotation(qOriginal);
+				REQUIRE_THAT(Quaterniond::fromMatrix4x4(mat4.data()), Catch::Matchers::Predicate<Quaterniond>(pred));
+			}
+
+			for (double angle = 0.0; angle < 720.0; angle += 10.0)
+			{
+				auto qOriginal = Quaterniond::fromAxisAngle(Vector3d{0.0, 0.0, 1.0}, angle);
+
+				auto pred = [qOriginal](const Quaterniond& q) -> bool
+				{
+					auto matcher = QuaternionEquals(qOriginal);
+					return matcher.match(q) || matcher.match(-q);
+				};
+
+				auto mat3 = Matrix3d::rotation(qOriginal);
+				REQUIRE_THAT(Quaterniond::fromMatrix3x3(mat3.data()), Catch::Matchers::Predicate<Quaterniond>(pred));
+
+				auto mat4 = Matrix4d::rotation(qOriginal);
+				REQUIRE_THAT(Quaterniond::fromMatrix4x4(mat4.data()), Catch::Matchers::Predicate<Quaterniond>(pred));
+			}
+
+			for (double angle = 0.0; angle < 720.0; angle += 10.0)
+			{
+				auto qOriginal = Quaterniond::fromAxisAngle(Vector3d{0.0, 0.0, 1.0}, angle);
+				qOriginal *= Quaterniond::fromAxisAngle(Vector3d{0.0, 1.0, 0.0}, angle);
+				qOriginal *= Quaterniond::fromAxisAngle(Vector3d{1.0, 0.0, 0.0}, angle);
+
+				auto pred = [qOriginal](const Quaterniond& q) -> bool
+				{
+					auto matcher = QuaternionEquals(qOriginal);
+					return matcher.match(q) || matcher.match(-q);
+				};
+
+				auto mat3 = Matrix3d::rotationX(angle);
+				mat3 *= Matrix3d::rotationY(angle);
+				mat3 *= Matrix3d::rotationZ(angle);
+				REQUIRE_THAT(Quaterniond::fromMatrix3x3(mat3.data()), Catch::Matchers::Predicate<Quaterniond>(pred));
+
+				auto mat4 = Matrix4d::rotationX(angle);
+				mat4 *= Matrix4d::rotationY(angle);
+				mat4 *= Matrix4d::rotationZ(angle);
+				REQUIRE_THAT(Quaterniond::fromMatrix4x4(mat4.data()), Catch::Matchers::Predicate<Quaterniond>(pred));
+			}
+		}
+
+		/************
+		* NOTE: missing tests:
+		*  - Quaterniond::scaleAngle
+		*/
 	}
 }

@@ -250,7 +250,7 @@ namespace hr { namespace render
 
 		auto matrixProj2D = hr::gl::tools::Viewport::genMatrix2DProj(renderWidth, renderHeight);
 		hr::gl::glProgramUniform1i(mRenderData.progFragment.id(), mRenderData.progFragment.getUniformLocation("texSampler"), 0);
-		hr::gl::glProgramUniformMatrix4fv(mRenderData.progVertex.id(), mRenderData.progVertex.getUniformLocation("transformationMatrix"), 1, false, matrixProj2D.data());
+		hr::gl::glProgramUniformMatrix4fv(mRenderData.progVertex.id(), mRenderData.progVertex.getUniformLocation("transformationMatrix"), 1, false, matrixProj2D.data().data());
 
 		mRenderData.progPipeline.init();
 		mRenderData.progPipeline.setStage(mRenderData.progVertex);

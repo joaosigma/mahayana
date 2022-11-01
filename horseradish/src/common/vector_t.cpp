@@ -1301,20 +1301,7 @@ namespace hr::utests
 			v2 = v1;
 			REQUIRE_THAT(v2.mad(0.0f, -4.88f), VectorEquals(-4.88f, -4.88f, -4.88f, -4.88f));
 		}
-
-		/************
-		* NOTE: missing tests:
-		*  - Vector4f::project
-		*  - Vector4f::reflect
-		*/
 	}
-
-
-
-
-
-
-
 
 	TEST_CASE("4 component vector of type double", "[common][vector][vector4d]")
 	{
@@ -1675,11 +1662,5 @@ namespace hr::utests
 			v2 = v1;
 			REQUIRE_THAT(v2.mad(0.0, -4.88), VectorEquals(-4.88, -4.88, -4.88, -4.88));
 		}
-
-		/************
-		* NOTE: missing tests:
-		*  - Vector4f::project
-		*  - Vector4f::reflect
-		*/
 	}
 }

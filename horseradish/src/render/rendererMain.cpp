@@ -83,8 +83,8 @@ namespace hr::render
 		auto matrixModelView = hrCamera.modelView();
 		auto matrixProjection = hrViewport.getProjection(hr::gl::tools::Viewport::ProjectionType::Proj3D);
 
-		hr::gl::glProgramUniformMatrix4fv(mShaders.forwardPassSky.vertex.id(), mShaders.forwardPassSky.vertex.getUniformLocation("modelviewMatrix"), 1, false, matrixModelView.data());
-		hr::gl::glProgramUniformMatrix4fv(mShaders.forwardPassSky.vertex.id(), mShaders.forwardPassSky.vertex.getUniformLocation("projectionMatrix"), 1, false, matrixProjection.data());
+		hr::gl::glProgramUniformMatrix4fv(mShaders.forwardPassSky.vertex.id(), mShaders.forwardPassSky.vertex.getUniformLocation("modelviewMatrix"), 1, false, matrixModelView.data().data());
+		hr::gl::glProgramUniformMatrix4fv(mShaders.forwardPassSky.vertex.id(), mShaders.forwardPassSky.vertex.getUniformLocation("projectionMatrix"), 1, false, matrixProjection.data().data());
 		hr::gl::glBindProgramPipeline(mShaders.forwardPassSky.pipeline.id());
 
 		mSamplers.samplerSky.bind(0);
@@ -130,7 +130,7 @@ namespace hr::render
 			mFBOs.texAvgLuminance.genMipmaps();
 		}
 
-		hr::gl::glProgramUniformMatrix4fv(mShaders.postprocess.vertex.id(), mShaders.postprocess.vertex.getUniformLocation("projectionMatrix"), 1, false, hrViewport.getProjection(hr::gl::tools::Viewport::ProjectionType::Proj2D).data());
+		hr::gl::glProgramUniformMatrix4fv(mShaders.postprocess.vertex.id(), mShaders.postprocess.vertex.getUniformLocation("projectionMatrix"), 1, false, hrViewport.getProjection(hr::gl::tools::Viewport::ProjectionType::Proj2D).data().data());
 		hr::gl::glBindProgramPipeline(mShaders.postprocess.pipeline.id());
 
 		mFBOs.samplerLuminance.bind(3);

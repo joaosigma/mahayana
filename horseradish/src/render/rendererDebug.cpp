@@ -37,7 +37,7 @@ namespace hr { namespace render
 		if (mOptions.drawBBoxes || mOptions.drawNormals)
 		{
 			hr::gl::glBindProgramPipeline(mRenderer2D.mShaders.drawNoTex.progPipeline.id());
-			hr::gl::glProgramUniformMatrix4fv(mRenderer2D.mShaders.drawNoTex.progVertex.id(), mRenderer2D.mShaders.drawNoTex.progVertex.getUniformLocation("transformationMatrix"), 1, false, matrixTransform.data());
+			hr::gl::glProgramUniformMatrix4fv(mRenderer2D.mShaders.drawNoTex.progVertex.id(), mRenderer2D.mShaders.drawNoTex.progVertex.getUniformLocation("transformationMatrix"), 1, false, matrixTransform.data().data());
 
 			for (auto&&[sceneId, scene] : rendererMain.mScenes)
 			{
@@ -107,7 +107,7 @@ namespace hr { namespace render
 
 		if (mOptions.drawTris)
 		{
-			hr::gl::glProgramUniformMatrix4fv(mShaders.geomDebug.vertex.id(), mShaders.geomDebug.vertex.getUniformLocation("matTrans"), 1, false, matrixTransform.data());
+			hr::gl::glProgramUniformMatrix4fv(mShaders.geomDebug.vertex.id(), mShaders.geomDebug.vertex.getUniformLocation("matTrans"), 1, false, matrixTransform.data().data());
 			hr::gl::glBindProgramPipeline(mShaders.geomDebug.pipeline.id());
 
 			hr::gl::glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);

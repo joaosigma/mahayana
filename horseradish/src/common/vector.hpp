@@ -632,7 +632,7 @@ namespace hr
 
 		float dot(const float x, const float y, const float z) const noexcept
 		{
-			return ((mData[0] * x) + (mData[1] * y) + (mData[2] * z));
+			return dot(Vector{x, y, z});
 		}
 
 		float magnitude() const noexcept
@@ -655,7 +655,7 @@ namespace hr
 
 		float distance(const float x, const float y, const float z) const noexcept
 		{
-			return distance(Vector(x, y, z));
+			return distance(Vector{x, y, z});
 		}
 
 		bool isZero(const float precision) const noexcept
@@ -736,6 +736,23 @@ namespace hr
 		using DataType = double;
 		static constexpr size_t NumComponents{3};
 
+	private:
+		static __m128d mmDot(__m256d vec1, __m256d vec2) noexcept
+		{
+			__m256d data = _mm256_mul_pd(vec1, vec2);
+
+			__m128d low = _mm256_castpd256_pd128(data);
+			__m128d high = _mm_shuffle_pd(_mm256_extractf128_pd(data, 1), _mm_setzero_pd(), 0b10); //must zero out w
+
+			__m128d sum = _mm_add_pd(low, high);
+			return _mm_add_pd(sum, _mm_shuffle_pd(sum, sum, 0b01));
+		}
+
+		static __m128d mmDot(__m256d vec) noexcept
+		{
+			return mmDot(vec, vec);
+		}
+
 	public:
 		static constexpr Vector zero() noexcept
 		{
@@ -746,11 +763,12 @@ namespace hr
 
 		static Vector calcNormalize(const Vector& vec) noexcept
 		{
-			__m128d temp = _mm_invsqrt_pd(_mm_set1_pd(vec.dot()));
+			__m256d data = _mm256_load_pd(vec.mData);
+			__m128d temp = _mm_invsqrt_pd(mmDot(data));
 			__m256d invMag = _mm256_permute2f128_pd(_mm256_castpd128_pd256(temp), _mm256_castpd128_pd256(temp), 0x20);
 
 			Vector result;
-			_mm256_store_pd(result.mData, _mm256_mul_pd(_mm256_load_pd(vec.mData), invMag));
+			_mm256_store_pd(result.mData, _mm256_mul_pd(data, invMag));
 			return result;
 		}
 
@@ -1039,39 +1057,22 @@ namespace hr
 
 		double dot() const noexcept
 		{
-			__m256d data = _mm256_load_pd(mData);
-			data = _mm256_mul_pd(data, data);
-
-			__m128d low = _mm256_castpd256_pd128(data);
-			__m128d high = _mm_shuffle_pd(_mm256_extractf128_pd(data, 1), _mm_setzero_pd(), 0b10); //must zero out w
-
-			__m128d sum = _mm_add_pd(low, high);
-			__m128d dot = _mm_add_pd(sum, _mm_shuffle_pd(sum, sum, 0b01));
-			return _mm_cvtsd_f64(dot);
+			return _mm_cvtsd_f64(mmDot(_mm256_load_pd(mData)));
 		}
 
 		double dot(const Vector& vec) const noexcept
 		{
-			__m256d data = _mm256_mul_pd(_mm256_load_pd(mData), _mm256_load_pd(vec.mData));
-
-			__m128d low = _mm256_castpd256_pd128(data);
-			__m128d high = _mm_shuffle_pd(_mm256_extractf128_pd(data, 1), _mm_setzero_pd(), 0b10); //must zero out w
-
-			__m128d sum = _mm_add_pd(low, high);
-			__m128d dot = _mm_add_pd(sum, _mm_shuffle_pd(sum, sum, 0b01));
-			return _mm_cvtsd_f64(dot);
+			return _mm_cvtsd_f64(mmDot(_mm256_load_pd(mData), _mm256_load_pd(vec.mData)));
 		}
 
 		double magnitude() const noexcept
 		{
-			__m128d temp = _mm_set1_pd(dot());
-			return _mm_cvtsd_f64(_mm_sqrt_pd(temp));
+			return _mm_cvtsd_f64(_mm_sqrt_pd(mmDot(_mm256_load_pd(mData))));
 		}
 
 		double magnitudeInv() const noexcept
 		{
-			__m128d temp = _mm_set1_pd(dot());
-			return _mm_cvtsd_f64(_mm_invsqrt_pd(temp));
+			return _mm_cvtsd_f64(_mm_invsqrt_pd(mmDot(_mm256_load_pd(mData))));
 		}
 
 		double distance(const Vector& vec) const noexcept
@@ -1101,10 +1102,11 @@ namespace hr
 
 		Vector& normalize() noexcept
 		{
-			__m128d temp = _mm_invsqrt_pd(_mm_set1_pd(dot()));
+			__m256d data = _mm256_load_pd(mData);
+			__m128d temp = _mm_invsqrt_pd(mmDot(data));
 			__m256d invMag = _mm256_permute2f128_pd(_mm256_castpd128_pd256(temp), _mm256_castpd128_pd256(temp), 0x20);
 
-			_mm256_store_pd(mData, _mm256_mul_pd(_mm256_load_pd(mData), invMag));
+			_mm256_store_pd(mData, _mm256_mul_pd(data, invMag));
 
 			return *this;
 		}
@@ -1223,20 +1225,6 @@ namespace hr
 
 			_mm_store_ps(result.mData, tmp);
 			return result;
-		}
-
-		static Vector calcProject(const Vector& vecA, const Vector& vecB) noexcept
-		{
-			// returns the vector projection of vecA onto vecB
-
-			auto m = vecB.magnitude();
-			m = vecA.dot(vecB) / (m * m);
-			return (vecB * m);
-		}
-
-		static Vector calcReflect(const Vector& vec, const Vector& planeNormal) noexcept
-		{
-			return vec - (calcProject(vec, planeNormal) * 2.0f);
 		}
 
 		static Vector calcLerp(const Vector& from, const Vector& to, const float t) noexcept
@@ -1498,16 +1486,6 @@ namespace hr
 
 			return *this;
 		}
-
-		Vector project(const Vector& vec) const noexcept
-		{
-			return Vector::calcProject(*this, vec);
-		}
-
-		Vector reflect(const Vector& planeNormal) const noexcept
-		{
-			return Vector::calcReflect(*this, planeNormal);
-		}
 	};
 
 	template<>
@@ -1519,6 +1497,23 @@ namespace hr
 		using DataType = double;
 		static constexpr size_t NumComponents{4};
 
+	private:
+		static __m128d mmDot(__m256d vec1, __m256d vec2) noexcept
+		{
+			__m256d data = _mm256_mul_pd(vec1, vec2);
+
+			__m128d low = _mm256_castpd256_pd128(data);
+			__m128d high = _mm256_extractf128_pd(data, 1);
+
+			__m128d sum = _mm_add_pd(low, high);
+			return _mm_add_pd(sum, _mm_shuffle_pd(sum, sum, 0b01));
+		}
+
+		static __m128d mmDot(__m256d vec) noexcept
+		{
+			return mmDot(vec, vec);
+		}
+
 	public:
 		static constexpr Vector zero() noexcept
 		{
@@ -1529,10 +1524,13 @@ namespace hr
 
 		static Vector calcNormalize(const Vector& vec)
 		{
-			__m256d invMag = _mm256_invsqrt_pd(_mm256_set1_pd(vec.dot()));
+			__m256d data = _mm256_load_pd(vec.mData);
+
+			__m128d dot = mmDot(data);
+			__m256d invMag = _mm256_invsqrt_pd(_mm256_set_m128d(dot, dot));
 
 			Vector result;
-			_mm256_store_pd(result.mData, _mm256_mul_pd(_mm256_load_pd(vec.mData), invMag));
+			_mm256_store_pd(result.mData, _mm256_mul_pd(data, invMag));
 			return result;
 		}
 
@@ -1571,20 +1569,6 @@ namespace hr
 			Vector result;
 			_mm256_store_pd(result.mData, tmp);
 			return result;
-		}
-
-		static Vector calcProject(const Vector& vecA, const Vector& vecB)
-		{
-			// returns the vector projection of vecA onto vecB
-
-			auto m = vecB.magnitude();
-			m = vecA.dot(vecB) / (m * m);
-			return (vecB * m);
-		}
-
-		static Vector calcReflect(const Vector& vec, const Vector& planeNormal)
-		{
-			return vec - (calcProject(vec, planeNormal) * 2.0);
 		}
 
 		static Vector calcLerp(const Vector& from, const Vector& to, const double t)
@@ -1742,39 +1726,22 @@ namespace hr
 
 		double dot() const noexcept
 		{
-			__m256d data = _mm256_load_pd(mData);
-			data = _mm256_mul_pd(data, data);
-
-			__m128d low = _mm256_castpd256_pd128(data);
-			__m128d high = _mm256_extractf128_pd(data, 1);
-
-			__m128d sum = _mm_add_pd(low, high);
-			__m128d dot = _mm_add_pd(sum, _mm_shuffle_pd(sum, sum, 0b01));
-			return _mm_cvtsd_f64(dot);
+			return _mm_cvtsd_f64(mmDot(_mm256_load_pd(mData)));
 		}
 
 		double dot(const Vector& vec) const noexcept
 		{
-			__m256d data = _mm256_mul_pd(_mm256_load_pd(mData), _mm256_load_pd(vec.mData));
-
-			__m128d low = _mm256_castpd256_pd128(data);
-			__m128d high = _mm256_extractf128_pd(data, 1);
-
-			__m128d sum = _mm_add_pd(low, high);
-			__m128d dot = _mm_add_pd(sum, _mm_shuffle_pd(sum, sum, 0b01));
-			return _mm_cvtsd_f64(dot);
+			return _mm_cvtsd_f64(mmDot(_mm256_load_pd(mData), _mm256_load_pd(vec.mData)));
 		}
 
 		double magnitude() const noexcept
 		{
-			__m128d temp = _mm_set1_pd(dot());
-			return _mm_cvtsd_f64(_mm_sqrt_pd(temp));
+			return _mm_cvtsd_f64(_mm_sqrt_pd(mmDot(_mm256_load_pd(mData))));
 		}
 
 		double magnitudeInv() const noexcept
 		{
-			__m128d temp = _mm_set1_pd(dot());
-			return _mm_cvtsd_f64(_mm_invsqrt_pd(temp));
+			return _mm_cvtsd_f64(_mm_invsqrt_pd(mmDot(_mm256_load_pd(mData))));
 		}
 
 		double distance(const Vector& vec) const noexcept
@@ -1805,8 +1772,10 @@ namespace hr
 
 		Vector& normalize() noexcept
 		{
-			__m256d invMag = _mm256_invsqrt_pd(_mm256_set1_pd(dot()));
-			_mm256_store_pd(mData, _mm256_mul_pd(_mm256_load_pd(mData), invMag));
+			__m256d data = _mm256_load_pd(mData);
+			__m128d dot = mmDot(data);
+			__m256d invMag = _mm256_invsqrt_pd(_mm256_set_m128d(dot, dot));
+			_mm256_store_pd(mData, _mm256_mul_pd(data, invMag));
 
 			return *this;
 		}
@@ -1843,16 +1812,6 @@ namespace hr
 			_mm256_store_pd(mData, _mm256_add_pd(_mm256_mul_pd(tmp, _mm256_set1_pd(opMul)), _mm256_set1_pd(opAdd)));
 
 			return *this;
-		}
-
-		Vector project(const Vector& vec) const noexcept
-		{
-			return Vector::calcProject(*this, vec);
-		}
-
-		Vector reflect(const Vector& planeNormal) const noexcept
-		{
-			return Vector::calcReflect(*this, planeNormal);
 		}
 	};
 

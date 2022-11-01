@@ -28,23 +28,23 @@ namespace hr
 		};
 
 		template<class T>
-		static constexpr T Pi = T(3.1415926535897932385L);
+		static constexpr T Pi = T(3.1415926535897932385);
 		template<class T>
-		static constexpr T PiHalf = T(1.5707963267948966192L); // PI / 2.0
+		static constexpr T PiHalf = T(1.5707963267948966192); // PI / 2.0
 		template<class T>
-		static constexpr T E = T(2.71828182845904523536L);
+		static constexpr T E = T(2.71828182845904523536);
 		template<class T>
-		static constexpr T Sqrt2 = T(1.41421356237309504880L); // SQRT(2.0)
+		static constexpr T Sqrt2 = T(1.41421356237309504880); // SQRT(2.0)
 		template<class T>
-		static constexpr T Sqrt3 = T(1.73205080756887729352L); // SQRT(3.0)
+		static constexpr T Sqrt3 = T(1.73205080756887729352); // SQRT(3.0)
 		template<class T>
-		static constexpr T Deg2Rad = T(0.017453292519943295769L);
+		static constexpr T Deg2Rad = T(0.017453292519943295769);
 		template<class T>
-		static constexpr T Rad2Deg = T(57.29577951308232087679L);
+		static constexpr T Rad2Deg = T(57.29577951308232087679);
 		template<class T>
-		static constexpr T UByteMax = T(255.0L);
+		static constexpr T UByteMax = T(255.0);
 		template<class T>
-		static constexpr T UByteMaxInv = T(0.003921568627450980392L); // 1.0 / 255.0
+		static constexpr T UByteMaxInv = T(0.003921568627450980392); // 1.0 / 255.0
 
 		static float sqrt(const float x)
 		{

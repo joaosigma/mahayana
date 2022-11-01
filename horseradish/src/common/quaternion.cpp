@@ -8,21 +8,20 @@ namespace hr
 {
 	namespace
 	{
-		double calcDot(const double* quat)
+		__m128d mmDot(__m256d vec1, __m256d vec2) noexcept
 		{
-			__m256d data = _mm256_load_pd(quat);
-			__m256d tmp = _mm256_mul_pd(data, data);
-			tmp = _mm256_hadd_pd(tmp, tmp);
-			__m128d dot = _mm_add_pd(_mm256_castpd256_pd128(tmp), _mm256_extractf128_pd(tmp, 1));
-			return _mm_cvtsd_f64(dot);
+			__m256d data = _mm256_mul_pd(vec1, vec2);
+
+			__m128d low = _mm256_castpd256_pd128(data);
+			__m128d high = _mm256_extractf128_pd(data, 1);
+
+			__m128d sum = _mm_add_pd(low, high);
+			return _mm_add_pd(sum, _mm_shuffle_pd(sum, sum, 0b01));
 		}
 
-		double calcDot(const double* quat1, const double* quat2)
+		__m128d mmDot(__m256d vec) noexcept
 		{
-			__m256d tmp = _mm256_mul_pd(_mm256_load_pd(quat1), _mm256_load_pd(quat2));
-			tmp = _mm256_hadd_pd(tmp, tmp);
-			__m128d dot = _mm_add_pd(_mm256_castpd256_pd128(tmp), _mm256_extractf128_pd(tmp, 1));
-			return _mm_cvtsd_f64(dot);
+			return mmDot(vec, vec);
 		}
 	}
 
@@ -35,10 +34,10 @@ namespace hr
 	template<typename TDataType>
 	Quaternion<TDataType> Quaternion<TDataType>::fromAxisAngle(const TDataType unitVecX, const TDataType unitVecY, const TDataType unitVecZ, const TDataType angleDeg)
 	{
-		auto angleRad = Math::Deg2Rad<TDataType> * angleDeg * kHalf<TDataType>;
+		auto angleRad = Math::Deg2Rad<TDataType> * angleDeg;
 
 		TDataType sin, cos;
-		Math::sinCos(angleRad, sin, cos);
+		Math::sinCos(angleRad * kHalf<TDataType>, sin, cos);
 
 		Quaternion ret;
 		ret.mData[0] = unitVecX * sin;
@@ -50,125 +49,111 @@ namespace hr
 	}
 
 	template<typename TDataType>
-	Quaternion<TDataType> Quaternion<TDataType>::fromMatrix3x3(const TDataType* const matrix) noexcept
+	Quaternion<TDataType> Quaternion<TDataType>::fromMatrix3x3(std::span<const TDataType, 9> matrix) noexcept
 	{
-		auto s = matrix[0] + matrix[4] + matrix[8];
-		if (s > kZero<TDataType>)
-		{
-			s = Math::sqrt(s + kOne<TDataType>);
-
-			Quaternion ret;
-
-			ret.mData[3] = s * kHalf<TDataType>;
-			s = kHalf<TDataType> / s;
-			ret.mData[0] = (matrix[5] - matrix[7]) * s;
-			ret.mData[1] = (matrix[6] - matrix[2]) * s;
-			ret.mData[2] = (matrix[1] - matrix[3]) * s;
-
-			return ret;
-		}
-
-		if ((matrix[4] <= matrix[0]) && (matrix[8] <= matrix[0]))
-		{
-			s = Math::sqrt((matrix[0] - (matrix[4] + matrix[8])) + kOne<TDataType>);
-
-			Quaternion ret;
-
-			ret.mData[0] = s * kHalf<TDataType>;
-			s = kHalf<TDataType> / s;
-			ret.mData[1] = (matrix[1] + matrix[3]) * s;
-			ret.mData[2] = (matrix[2] + matrix[6]) * s;
-			ret.mData[3] = (matrix[5] - matrix[7]) * s;
-
-			return ret;
-		}
-
-		if ((matrix[4] > matrix[0]) && (matrix[8] <= matrix[4]))
-		{
-			s = Math::sqrt((matrix[4] - (matrix[8] + matrix[0])) + kOne<TDataType>);
-
-			Quaternion ret;
-
-			ret.mData[1] = s * kHalf<TDataType>;
-			s = kHalf<TDataType> / s;
-			ret.mData[3] = (matrix[6] - matrix[2]) * s;
-			ret.mData[2] = (matrix[5] + matrix[7]) * s;
-			ret.mData[0] = (matrix[3] + matrix[1]) * s;
-
-			return ret;
-		}
-
-		s = Math::sqrt((matrix[8] - (matrix[0] + matrix[4])) + kOne<TDataType>);
-
 		Quaternion ret;
 
-		ret.mData[2] = s * kHalf<TDataType>;
-		s = kHalf<TDataType> / s;
-		ret.mData[3] = (matrix[1] - matrix[3]) * s;
-		ret.mData[0] = (matrix[6] + matrix[2]) * s;
-		ret.mData[1] = (matrix[7] + matrix[5]) * s;
+		if (auto tr = matrix[0] + matrix[4] + matrix[8]; tr > kZero<TDataType>)
+		{
+			auto s = std::sqrt(tr + kOne<TDataType>);
+			auto s2 = kHalf<TDataType> / s;
+
+			ret[3] = s * kHalf<TDataType>;
+			ret[0] = (matrix[5] - matrix[7]) * s2;
+			ret[1] = (matrix[6] - matrix[2]) * s2;
+			ret[2] = (matrix[1] - matrix[3]) * s2;
+
+			return ret;
+		}
+
+		if ((matrix[0] >= matrix[4]) && (matrix[0] >= matrix[8]))
+		{
+			auto s = std::sqrt(kOne<TDataType> + matrix[0] - matrix[4] - matrix[8]);
+			auto s2 = kHalf<TDataType> / s;
+
+			ret[3] = (matrix[5] - matrix[7]) * s2;
+			ret[0] = kHalf<TDataType> * s;
+			ret[1] = (matrix[1] + matrix[3]) * s2;
+			ret[2] = (matrix[2] + matrix[6]) * s2;
+
+			return ret;
+		}
+
+		if (matrix[4] > matrix[8])
+		{
+			auto s = std::sqrt(kOne<TDataType> + matrix[4] - matrix[0] - matrix[8]);
+			auto s2 = kHalf<TDataType> / s;
+
+			ret[3] = (matrix[6] - matrix[2]) * s2;
+			ret[0] = (matrix[3] + matrix[1]) * s2;
+			ret[1] = kHalf<TDataType> * s;
+			ret[2] = (matrix[7] + matrix[5]) * s2;
+
+			return ret;
+		}
+
+		auto s = std::sqrt(kOne<TDataType> + matrix[8] - matrix[0] - matrix[4]);
+		auto s2 = kHalf<TDataType> / s;
+
+		ret[3] = (matrix[1] - matrix[3]) * s2;
+		ret[0] = (matrix[6] + matrix[2]) * s2;
+		ret[1] = (matrix[7] + matrix[5]) * s2;
+		ret[2] = kHalf<TDataType> * s;
 
 		return ret;
 	}
 
 	template<typename TDataType>
-	Quaternion<TDataType> Quaternion<TDataType>::fromMatrix4x4(const TDataType* const matrix) noexcept
+	Quaternion<TDataType> Quaternion<TDataType>::fromMatrix4x4(std::span<const TDataType, 16> matrix) noexcept
 	{
-		auto s = matrix[0] + matrix[5] + matrix[10];
-		if (s > kZero<TDataType>)
-		{
-			s = Math::sqrt(s + kOne<TDataType>);
-
-			Quaternion ret;
-
-			ret.mData[3] = s * kHalf<TDataType>;
-			s = kHalf<TDataType> / s;
-			ret.mData[0] = (matrix[6] - matrix[9]) * s;
-			ret.mData[1] = (matrix[8] - matrix[2]) * s;
-			ret.mData[2] = (matrix[1] - matrix[4]) * s;
-
-			return ret;
-		}
-
-		if ((matrix[5] <= matrix[0]) && (matrix[10] <= matrix[0]))
-		{
-			s = Math::sqrt((matrix[0] - (matrix[5] + matrix[10])) + kOne<TDataType>);
-
-			Quaternion ret;
-
-			ret.mData[0] = s * kHalf<TDataType>;
-			s = kHalf<TDataType> / s;
-			ret.mData[1] = (matrix[1] + matrix[4]) * s;
-			ret.mData[2] = (matrix[2] + matrix[8]) * s;
-			ret.mData[3] = (matrix[6] - matrix[9]) * s;
-
-			return ret;
-		}
-
-		if ((matrix[5] > matrix[0]) && (matrix[10] <= matrix[5]))
-		{
-			s = Math::sqrt((matrix[5] - (matrix[10] + matrix[0])) + kOne<TDataType>);
-
-			Quaternion ret;
-
-			ret.mData[1] = s * kHalf<TDataType>;
-			s = kHalf<TDataType> / s;
-			ret.mData[3] = (matrix[8] - matrix[2]) * s;
-			ret.mData[2] = (matrix[6] + matrix[9]) * s;
-			ret.mData[0] = (matrix[4] + matrix[1]) * s;
-
-			return ret;
-		}
-
-		s = Math::sqrt((matrix[10] - (matrix[0] + matrix[5])) + kOne<TDataType>);
-
 		Quaternion ret;
 
-		ret.mData[2] = s * kHalf<TDataType>;
-		s = kHalf<TDataType> / s;
-		ret.mData[3] = (matrix[1] - matrix[4]) * s;
-		ret.mData[0] = (matrix[8] + matrix[2]) * s;
-		ret.mData[1] = (matrix[9] + matrix[6]) * s;
+		if (auto tr = matrix[0] + matrix[5] + matrix[10]; tr > kZero<TDataType>)
+		{
+			auto s = std::sqrt(tr + kOne<TDataType>);
+			auto s2 = kHalf<TDataType> / s;
+
+			ret[3] = s * kHalf<TDataType>;
+			ret[0] = (matrix[6] - matrix[9]) * s2;
+			ret[1] = (matrix[8] - matrix[2]) * s2;
+			ret[2] = (matrix[1] - matrix[4]) * s2;
+
+			return ret;
+		}
+
+		if ((matrix[0] >= matrix[5]) && (matrix[0] >= matrix[10]))
+		{
+			auto s = std::sqrt(kOne<TDataType> + matrix[0] - matrix[5] - matrix[10]);
+			auto s2 = kHalf<TDataType> / s;
+
+			ret[3] = (matrix[6] - matrix[9]) * s2;
+			ret[0] = kHalf<TDataType> * s;
+			ret[1] = (matrix[1] + matrix[4]) * s2;
+			ret[2] = (matrix[2] + matrix[8]) * s2;
+
+			return ret;
+		}
+
+		if (matrix[5] > matrix[10])
+		{
+			auto s = std::sqrt(kOne<TDataType> + matrix[5] - matrix[0] - matrix[10]);
+			auto s2 = kHalf<TDataType> / s;
+
+			ret[3] = (matrix[8] - matrix[2]) * s2;
+			ret[0] = (matrix[4] + matrix[1]) * s2;
+			ret[1] = kHalf<TDataType> * s;
+			ret[2] = (matrix[9] + matrix[6]) * s2;
+
+			return ret;
+		}
+
+		auto s = std::sqrt(kOne<TDataType> + matrix[10] - matrix[0] - matrix[5]);
+		auto s2 = kHalf<TDataType> / s;
+
+		ret[3] = (matrix[1] - matrix[4]) * s2;
+		ret[0] = (matrix[8] + matrix[2]) * s2;
+		ret[1] = (matrix[9] + matrix[6]) * s2;
+		ret[2] = kHalf<TDataType> * s;
 
 		return ret;
 	}
@@ -347,10 +332,10 @@ namespace hr
 	{
 		Quaternion thiz{*this};
 
-		mData[0] = (quat.mData[3] * thiz.mData[0]) + (quat.mData[0] * thiz.mData[3]) - (quat.mData[1] * thiz.mData[2]) + (quat.mData[2] * thiz.mData[1]);
-		mData[1] = (quat.mData[3] * thiz.mData[1]) + (quat.mData[0] * thiz.mData[2]) + (quat.mData[1] * thiz.mData[3]) - (quat.mData[2] * thiz.mData[0]);
-		mData[2] = (quat.mData[3] * thiz.mData[2]) - (quat.mData[0] * thiz.mData[1]) + (quat.mData[1] * thiz.mData[0]) + (quat.mData[2] * thiz.mData[3]);
-		mData[3] = (quat.mData[3] * thiz.mData[3]) - (quat.mData[0] * thiz.mData[0]) - (quat.mData[1] * thiz.mData[1]) - (quat.mData[2] * thiz.mData[2]);
+		mData[0] = (thiz.mData[3] * quat.mData[0]) + (thiz.mData[0] * quat.mData[3]) + (thiz.mData[1] * quat.mData[2]) - (thiz.mData[2] * quat.mData[1]);
+		mData[1] = (thiz.mData[3] * quat.mData[1]) - (thiz.mData[0] * quat.mData[2]) + (thiz.mData[1] * quat.mData[3]) + (thiz.mData[2] * quat.mData[0]);
+		mData[2] = (thiz.mData[3] * quat.mData[2]) + (thiz.mData[0] * quat.mData[1]) - (thiz.mData[1] * quat.mData[0]) + (thiz.mData[2] * quat.mData[3]);
+		mData[3] = (thiz.mData[3] * quat.mData[3]) - (thiz.mData[0] * quat.mData[0]) - (thiz.mData[1] * quat.mData[1]) - (thiz.mData[2] * quat.mData[2]);
 
 		return *this;
 	}
@@ -371,17 +356,20 @@ namespace hr
 	}
 
 	template<typename TDataType>
-	Quaternion<TDataType>& Quaternion<TDataType>::operator/=(const Quaternion& quat) noexcept
+	Quaternion<TDataType> Quaternion<TDataType>::operator-() const noexcept
 	{
-		auto mag = kOne<TDataType> / quat.magnitudeSquared();
-
-		Quaternion inv;
-		inv[0] = -quat[0] * mag;
-		inv[1] = -quat[1] * mag;
-		inv[2] = -quat[2] * mag;
-		inv[3] = quat[3] * mag;
-
-		return operator*=(inv);
+		if constexpr (std::is_same_v<TDataType, float>)
+		{
+			Quaternion<TDataType> q;
+			_mm_store_ps(q.mData, _mm_mul_ps(_mm_load_ps(mData), _mm_set_ps1(-1.0f)));
+			return q;
+		}
+		else
+		{
+			Quaternion<TDataType> q;
+			_mm256_store_pd(q.mData, _mm256_mul_pd(_mm256_load_pd(mData), _mm256_set1_pd(-1.0)));
+			return q;
+		}
 	}
 
 	template<typename TDataType>
@@ -417,28 +405,9 @@ namespace hr
 	}
 
 	template<typename TDataType>
-	Quaternion<TDataType> Quaternion<TDataType>::operator/(const Quaternion& quat) const noexcept
-	{
-		auto res = *this;
-		res /= quat;
-		return res;
-	}
-
-	template<typename TDataType>
 	Quaternion<TDataType>& Quaternion<TDataType>::scaleAngle(const TDataType scale) noexcept
 	{
 		mData[3] *= scale;
-		return *this;
-	}
-
-	template<typename TDataType>
-	Quaternion<TDataType>& Quaternion<TDataType>::conjugate() noexcept
-	{
-		//since we're dealing with unit quaternions, the conjugate is the same as the inverse
-		mData[0] = -mData[0];
-		mData[1] = -mData[1];
-		mData[2] = -mData[2];
-
 		return *this;
 	}
 
@@ -453,11 +422,22 @@ namespace hr
 		}
 		else
 		{
-			__m128d temp = _mm_invsqrt_pd(_mm_set1_pd(calcDot(mData)));
+			__m256d data = _mm256_load_pd(mData);
+			__m128d temp = _mm_invsqrt_pd(mmDot(data));
 			__m256d invMag = _mm256_permute2f128_pd(_mm256_castpd128_pd256(temp), _mm256_castpd128_pd256(temp), 0x20);
 
-			_mm256_store_pd(mData, _mm256_mul_pd(_mm256_load_pd(mData), invMag));
+			_mm256_store_pd(mData, _mm256_mul_pd(data, invMag));
 		}
+
+		return *this;
+	}
+
+	template<typename TDataType>
+	Quaternion<TDataType>& Quaternion<TDataType>::conjugate() noexcept
+	{
+		mData[0] = -mData[0];
+		mData[1] = -mData[1];
+		mData[2] = -mData[2];
 
 		return *this;
 	}
@@ -465,7 +445,7 @@ namespace hr
 	template<typename TDataType>
 	Quaternion<TDataType> Quaternion<TDataType>::getConjugate() const noexcept
 	{
-		Quaternion res{ *this };
+		Quaternion res{*this};
 		res.conjugate();
 
 		return res;
@@ -485,8 +465,7 @@ namespace hr
 		}
 		else
 		{
-			__m128d temp = _mm_set1_pd(calcDot(mData));
-			return _mm_cvtsd_f64(_mm_sqrt_pd(temp));
+			return _mm_cvtsd_f64(_mm_sqrt_pd(mmDot(_mm256_load_pd(mData))));
 		}
 	}
 
@@ -504,7 +483,7 @@ namespace hr
 		}
 		else
 		{
-			return calcDot(mData);
+			return _mm_cvtsd_f64(mmDot(_mm256_load_pd(mData)));
 		}
 	}
 
@@ -520,19 +499,8 @@ namespace hr
 		}
 		else
 		{
-			return calcDot(mData, quat.mData);
+			return _mm_cvtsd_f64(mmDot(_mm256_load_pd(mData), _mm256_load_pd(quat.mData)));
 		}
-	}
-
-	template<typename TDataType>
-	void Quaternion<TDataType>::getAxisAngle(TDataType& vecX, TDataType& vecY, TDataType& vecZ, TDataType& ang) const noexcept
-	{
-		Vector3Type vec;
-		getAxisAngle(vec, ang);
-
-		vecX = vec[0];
-		vecY = vec[1];
-		vecZ = vec[2];
 	}
 
 	template<typename TDataType>
