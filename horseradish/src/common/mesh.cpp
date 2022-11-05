@@ -293,10 +293,10 @@ namespace hr::geom
 		auto vertexData = mData.get();
 		for (size_t i = 0; i < mNumVertices; i++, vertexData++)
 		{
-			matFull.transform(vertexData->pos);
+			matFull.transform({vertexData->pos, 3});
 
-			matRot.transform(vertexData->normal);
-			matRot.transform(vertexData->tangent);
+			matRot.transform({vertexData->normal, 3});
+			matRot.transform({vertexData->tangent, 3});
 		}
 	}
 	

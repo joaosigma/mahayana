@@ -39,23 +39,25 @@ namespace hr
 	{
 		TDataType m[16];
 
-		template<typename TDataType>
-		friend class Matrix3;
-
 		using Vector3Type = typename Vector<TDataType, 3>;
 		using Vector4Type = typename Vector<TDataType, 4>;
 
 		template<class T>
-		static constexpr T kZero = T(0.0L);
+		static constexpr T kZero = T(0.0);
 		template<class T>
-		static constexpr T kOne = T(1.0L);
+		static constexpr T kOne = T(1.0);
 		template<class T>
-		static constexpr T kTwo = T(2.0L);
+		static constexpr T kTwo = T(2.0);
 
 	public:
 		using DataType = typename TDataType;
 
 		enum class CloneTransform{ None, Transpose, Inverse, InverseTranspose, InverseHomogenous };
+
+		static constexpr Matrix4 naked() noexcept
+		{
+			return {};
+		}
 
 		static constexpr Matrix4 identity() noexcept
 		{
@@ -67,7 +69,7 @@ namespace hr
 			return mat;
 		}
 
-		static constexpr Matrix4 zero()
+		static constexpr Matrix4 zero() noexcept
 		{
 			Matrix4 mat;
 
@@ -103,7 +105,7 @@ namespace hr
 		}
 
 		template<typename TType>
-		static constexpr Matrix4 from(std::initializer_list<TType> il)
+		static constexpr Matrix4 from(std::initializer_list<TType> il) noexcept
 		{
 			assert(il.size() == 16);
 			if (il.size() != 16)
@@ -126,7 +128,7 @@ namespace hr
 			return mat;
 		}
 
-		static constexpr Matrix4 from(const TDataType scalar)
+		static constexpr Matrix4 from(const TDataType scalar) noexcept
 		{
 			Matrix4 mat;
 
@@ -136,269 +138,28 @@ namespace hr
 			return mat;
 		}
 
-		static constexpr Matrix4 translation(TDataType x, TDataType y, TDataType z) noexcept
-		{
-			Matrix4 mat;
+		static Matrix4 translation(TDataType x, TDataType y, TDataType z) noexcept;
+		static Matrix4 translation(const Vector3Type &amount) noexcept;
 
-			mat.m[0] = mat.m[5] = mat.m[10] = mat.m[15] = kOne<TDataType>;
-			mat.m[1] = mat.m[2] = mat.m[3] = mat.m[4] = mat.m[6] = mat.m[7] = mat.m[8] = mat.m[9] = mat.m[11] = kZero<TDataType>;
-			mat.m[12] = x;
-			mat.m[13] = y;
-			mat.m[14] = z;
+		static Matrix4 rotation(const Quaternion<TDataType> &unitQuaternion) noexcept;
+		static Matrix4 rotation(const Vector3Type &unitVec, const TDataType angleDeg) noexcept;
+		static Matrix4 rotation(const TDataType unitVecX, const TDataType unitVecY, const TDataType unitVecZ, const TDataType angleDeg) noexcept;
+		static Matrix4 rotationX(const TDataType angleDeg) noexcept;
+		static Matrix4 rotationY(const TDataType angleDeg) noexcept;
+		static Matrix4 rotationZ(const TDataType angleDeg) noexcept;
 
-			return mat;
-		}
+		static Matrix4 scale(TDataType scale) noexcept;
+		static Matrix4 scale(TDataType x, TDataType y, TDataType z) noexcept;
+		static Matrix4 scale(const Vector3Type &scale) noexcept;
 
-		static constexpr Matrix4 translation(const Vector3Type &amount) noexcept
-		{
-			return Matrix4::translation(amount[0], amount[1], amount[2]);
-		}
+		static Matrix4 reflection(const Plane<TDataType> &plane) noexcept;
 
-		static constexpr Matrix4 from(const Quaternion<TDataType> &unitQuaternion) noexcept
-		{
-			Matrix4 mat;
+		static Matrix4 saturation(const TDataType sat) noexcept;
 
-			mat.m[0] = kOne<TDataType> - kTwo<TDataType> * (unitQuaternion[1] * unitQuaternion[1] + unitQuaternion[2] * unitQuaternion[2]);
-			mat.m[4] = kTwo<TDataType> * (unitQuaternion[0] * unitQuaternion[1] - unitQuaternion[2] * unitQuaternion[3]);
-			mat.m[8] = kTwo<TDataType> * (unitQuaternion[0] * unitQuaternion[2] + unitQuaternion[1] * unitQuaternion[3]);
-
-			mat.m[1] = kTwo<TDataType> * (unitQuaternion[0] * unitQuaternion[1] + unitQuaternion[2] * unitQuaternion[3]);
-			mat.m[5] = kOne<TDataType> - kTwo<TDataType> * (unitQuaternion[0] * unitQuaternion[0] + unitQuaternion[2] * unitQuaternion[2]);
-			mat.m[9] = kTwo<TDataType> * (unitQuaternion[1] * unitQuaternion[2] - unitQuaternion[0] * unitQuaternion[3]);
-
-			mat.m[2] = kTwo<TDataType> * (unitQuaternion[0] * unitQuaternion[2] - unitQuaternion[1] * unitQuaternion[3]);
-			mat.m[6] = kTwo<TDataType> * (unitQuaternion[1] * unitQuaternion[2] + unitQuaternion[0] * unitQuaternion[3]);
-			mat.m[10] = kOne<TDataType> - kTwo<TDataType> * (unitQuaternion[0] * unitQuaternion[0] + unitQuaternion[1] * unitQuaternion[1]);
-
-			mat.m[3] = mat.m[7] = mat.m[11] = mat.m[12] = mat.m[13] = mat.m[14] = kZero<TDataType>;
-			mat.m[15] = kOne<TDataType>;
-
-			return mat;
-		}
-
-		static constexpr Matrix4 rotation(const Quaternion<TDataType> &unitQuaternion) noexcept
-		{
-			return Matrix4::from(unitQuaternion);
-		}
-
-		static constexpr Matrix4 scale(TDataType x, TDataType y, TDataType z) noexcept
-		{
-			Matrix4 mat;
-
-			mat.m[0] = x;
-			mat.m[5] = y;
-			mat.m[10] = z;
-			mat.m[15] = kOne<TDataType>;
-			mat.m[1] = mat.m[2] = mat.m[3] = mat.m[4] = mat.m[6] = mat.m[7] = mat.m[8] = mat.m[9] = mat.m[11] = mat.m[12] = mat.m[13] = mat.m[14] = kZero<TDataType>;
-
-			return mat;
-		}
-
-		static constexpr Matrix4 scale(const Vector3Type& scale) noexcept
-		{
-			return Matrix4::scale(scale[0], scale[1], scale[2]);
-		}
-
-		static Matrix4 reflection(const Plane<TDataType> &plane) noexcept
-		{
-			Matrix4 mat;
-
-			auto pNormal = plane.normal();
-			pNormal.normalize();
-
-			auto pNormalAux = pNormal * (-kTwo<TDataType> * pNormal[0]);
-			mat.m[0] = pNormalAux[0] + kOne<TDataType>;
-			mat.m[1] = pNormalAux[1];
-			mat.m[2] = pNormalAux[2];
-			mat.m[3] = kZero<TDataType>;
-
-			pNormalAux = pNormal * (-kTwo<TDataType> * pNormal[1]);
-			mat.m[4] = pNormalAux[0];
-			mat.m[5] = pNormalAux[1] + kOne<TDataType>;
-			mat.m[6] = pNormalAux[2];
-			mat.m[7] = kZero<TDataType>;
-
-			pNormalAux = pNormal * (-kTwo<TDataType> * pNormal[2]);
-			mat.m[8] = pNormalAux[0];
-			mat.m[9] = pNormalAux[1];
-			mat.m[10] = pNormalAux[2] + kOne<TDataType>;
-			mat.m[11] = kZero<TDataType>;
-
-			pNormalAux = pNormal * (-kTwo<TDataType> * plane.d());
-			mat.m[12] = pNormalAux[0];
-			mat.m[13] = pNormalAux[1];
-			mat.m[14] = pNormalAux[2];
-			mat.m[15] = kOne<TDataType>;
-
-			return mat;
-		}
-
-		static Matrix4 saturation(const TDataType sat) noexcept
-		{
-			Matrix4 mat;
-
-			if constexpr (std::is_same_v<TDataType, float>)
-			{
-				auto posS = Math::fClamp(sat, -1.0f, 1.0f);
-				auto minusS = 1.0f - posS;
-
-				mat.m[0] = minusS * 0.3086f + posS;
-				mat.m[1] = mat.m[2] = minusS * 0.3086f;
-				mat.m[4] = mat.m[6] = minusS * 0.6094f;
-				mat.m[5] = minusS * 0.6094f + posS;
-				mat.m[8] = mat.m[9] = minusS * 0.0820f;
-				mat.m[10] = minusS * 0.0820f + posS;
-
-				mat.m[3] = mat.m[7] = mat.m[11] = mat.m[12] = mat.m[13] = mat.m[14] = 0.0f;
-				mat.m[15] = 1.0f;
-			}
-			else
-			{
-				auto posS = Math::fClamp(sat, -1.0, 1.0);
-				auto minusS = 1.0 - posS;
-
-				mat.m[0] = minusS * 0.3086 + posS;
-				mat.m[1] = mat.m[2] = minusS * 0.3086;
-				mat.m[4] = mat.m[6] = minusS * 0.6094;
-				mat.m[5] = minusS * 0.6094 + posS;
-				mat.m[8] = mat.m[9] = minusS * 0.0820;
-				mat.m[10] = minusS * 0.0820 + posS;
-
-				mat.m[3] = mat.m[7] = mat.m[11] = mat.m[12] = mat.m[13] = mat.m[14] = 0.0;
-				mat.m[15] = 1.0;
-			}
-
-			return mat;
-		}
-
-		static Matrix4 glModelView(const Vector3Type &pos, const Vector3Type &target, const Vector3Type &up) noexcept
-		{
-			auto z = pos;
-			z -= target;
-			z.normalize();
-
-			auto x = Vector3Type::calcCrossProduct(up, z);
-			auto y = Vector3Type::calcCrossProduct(z, x);
-
-			x.normalize();
-			y.normalize();
-
-			Matrix4 mat;
-			mat.m[0] = x[0];
-			mat.m[1] = y[0];
-			mat.m[2] = z[0];
-			mat.m[3] = kZero<TDataType>;
-			mat.m[4] = x[1];
-			mat.m[5] = y[1];
-			mat.m[6] = z[1];
-			mat.m[7] = kZero<TDataType>;
-			mat.m[8] = x[2];
-			mat.m[9] = y[2];
-			mat.m[10] = z[2];
-			mat.m[11] = kZero<TDataType>;
-
-			x *= -kOne<TDataType>;
-			y *= -kOne<TDataType>;
-			z *= -kOne<TDataType>;
-
-			mat.m[12] = x[0] * pos[0] + x[1] * pos[1] + x[2] * pos[2];
-			mat.m[13] = y[0] * pos[0] + y[1] * pos[1] + y[2] * pos[2];
-			mat.m[14] = z[0] * pos[0] + z[1] * pos[1] + z[2] * pos[2];
-			mat.m[15] = kOne<TDataType>;
-
-			return mat;
-		}
-
-		static Matrix4 glModelView(const Vector3Type &pos, const Vector3Type &target) noexcept
-		{
-			return Matrix4::glModelView(pos, target, Vector3Type{kZero<TDataType>, kOne<TDataType>, kZero<TDataType>});
-		}
-
-		static Matrix4 glModelView(const Vector3Type &pos, TDataType angleDegX, TDataType angleDegY, const Vector3Type &up) noexcept
-		{
-			TDataType sx, sy, cx, cy;
-			Math::sinCos(Math::Deg2Rad<TDataType> * angleDegX, sx, cx);
-			Math::sinCos(Math::Deg2Rad<TDataType> * angleDegY, sy, cy);
-
-			Vector3Type target;
-			target[0] = pos[0] + sx * cy;
-			target[1] = pos[1] + sy;
-			target[2] = pos[2] - (cx * cy);
-
-			return Matrix4::glModelView(pos, target, up);
-		}
-
-		static Matrix4 glModelView(int cubemapFace, const Vector3Type &centerCube) noexcept
-		{
-			auto mat = Matrix4::identity();
-
-			//positive X
-			if (cubemapFace == 0)
-			{
-				mat.m[2] = mat.m[5] = mat.m[8] = -1.;
-				mat.m[12] = centerCube[2];
-				mat.m[13] = centerCube[1];
-				mat.m[14] = centerCube[0];
-				return mat;
-			}
-
-			//negative X
-			if (cubemapFace == 1)
-			{
-				mat.m[2] = mat.m[8] = 1.;
-				mat.m[5] = -1.;
-				mat.m[12] = -centerCube[2];
-				mat.m[13] = centerCube[1];
-				mat.m[14] = -centerCube[0];
-				return mat;
-			}
-
-			//positive Y
-			if (cubemapFace == 2)
-			{
-				mat.m[0] = mat.m[9] = 1.;
-				mat.m[6] = -1.;
-				mat.m[12] = -centerCube[0];
-				mat.m[13] = -centerCube[2];
-				mat.m[14] = centerCube[1];
-				return mat;
-			}
-
-			//negative Y
-			if (cubemapFace == 3)
-			{
-				mat.m[0] = mat.m[6] = 1.;
-				mat.m[9] = -1.;
-				mat.m[12] = -centerCube[0];
-				mat.m[13] = centerCube[2];
-				mat.m[14] = -centerCube[1];
-				return mat;
-			}
-
-			//positive Z
-			if (cubemapFace == 4)
-			{
-				mat.m[5] = mat.m[10] = -1.;
-				mat.m[0] = 1.;
-				mat.m[12] = -centerCube[0];
-				mat.m[13] = centerCube[1];
-				mat.m[14] = centerCube[2];
-				return mat;
-			}
-
-			//negative Z
-			if (cubemapFace == 5)
-			{
-				mat.m[0] = mat.m[5] = -1.;
-				mat.m[10] = 1.;
-				mat.m[12] = centerCube[0];
-				mat.m[13] = centerCube[1];
-				mat.m[14] = -centerCube[2];
-				return mat;
-			}
-
-			return mat;
-		}
+		static Matrix4 glModelView(const Vector3Type &pos, const Vector3Type &target, const Vector3Type &up) noexcept;
+		static Matrix4 glModelView(const Vector3Type &pos, const Vector3Type &target) noexcept;
+		static Matrix4 glModelView(const Vector3Type &pos, TDataType angleDegX, TDataType angleDegY, const Vector3Type &up) noexcept;
+		static Matrix4 glModelView(int cubemapFace, const Vector3Type &centerCube) noexcept;
 
 	private:
 		constexpr Matrix4() = default;
@@ -409,8 +170,8 @@ namespace hr
 		constexpr Matrix4(Matrix4&&) = default;
 		constexpr Matrix4& operator=(Matrix4&&) = default;
 
-		void operator*=(const TDataType s) noexcept;
 		void operator*=(const Matrix4 &mat) noexcept;
+		void operator*=(const TDataType scalar) noexcept;
 		void operator*=(const Matrix3<TDataType> &mat) noexcept;
 		void operator*=(std::span<const TDataType> mat) noexcept;
 		void operator*=(const Quaternion<TDataType> &unitQuaternion) noexcept;
@@ -422,9 +183,9 @@ namespace hr
 		void operator-=(std::span<const TDataType> mat) noexcept;
 
 		Matrix4 operator*(const Matrix4 &mat) const noexcept;
+		Matrix4 operator*(const TDataType scalar) const noexcept;
 		Matrix4 operator+(const Matrix4 &mat) const noexcept;
 		Matrix4 operator-(const Matrix4 &mat) const noexcept;
-		Matrix4 operator*(const TDataType s) const noexcept;
 
 		constexpr TDataType &operator[](size_t index) noexcept
 		{
@@ -436,33 +197,37 @@ namespace hr
 			return m[index % 16];
 		}
 
-		constexpr TDataType *data() noexcept
+		constexpr std::span<TDataType, 16> data() noexcept
 		{
-			return m;
+			return {m};
 		}
 
-		constexpr const TDataType *data() const noexcept
+		constexpr std::span<const TDataType, 16> data() const noexcept
 		{
-			return m;
+			return {m};
 		}
 
 		void transform(std::span<TDataType> vec) const noexcept;
 
 		void transform(Vector3Type &vec) const noexcept;
-		void transform(const Vector3Type &vec, Vector3Type &result) const noexcept;
-		void transform(std::span<Vector3Type> vecs) const noexcept;
+		[[nodiscard]] Vector3Type transformCopy(const Vector3Type &vec) const noexcept;
 
+		void transform(std::span<Vector3Type> vecs) const noexcept;
+		
 		void transform(Vector4Type &vec) const noexcept;
-		void transform(const Vector4Type &vec, Vector4Type &result) const noexcept;
+		[[nodiscard]] Vector4Type transformCopy(const Vector4Type &vec) const noexcept;
+
 		void transform(std::span<Vector4Type> vecs) const noexcept;
 
 		void transform(BBox<Vector3Type> &bbox) const noexcept;
-		void transform(const BBox<Vector3Type> &bbox, BBox<Vector3Type> &bboxDest) const noexcept;
+		[[nodiscard]] BBox<Vector3Type> transformCopy(const BBox<Vector3Type> &bbox) const noexcept;
 
 		Vector4Type getColumn(size_t columnIndex) const noexcept;
 		Vector4Type getRow(size_t rowIndex) const noexcept;
 
-		void write(TDataType dest[16]) const noexcept;
+		TDataType determinant() const noexcept;
+
+		void write(std::span<TDataType, 16> dest) const noexcept;
 
 		Matrix4 clone(CloneTransform transform = CloneTransform::None) const noexcept;
 
@@ -491,26 +256,26 @@ namespace hr
 				else
 				{
 					//same class (Matrix4) but with a different data type
-					Matrix4<TNewDataType> res;
+					auto res = Matrix4<TNewDataType>::naked();
 					for (int i = 0; i < 16; i++)
-						res.m[i] = static_cast<TNewDataType>(m[i]);
+						res[i] = static_cast<TNewDataType>(m[i]);
 					return res;
 				}
 			}
 			else
 			{
 				//convert to Matrix3 and to the data type at the same time
-				Matrix3<TNewDataType> mat3;
+				auto mat3 = Matrix3<TNewDataType>::naked();
 
-				mat3.m[0] = static_cast<TNewDataType>(m[0]);
-				mat3.m[1] = static_cast<TNewDataType>(m[1]);
-				mat3.m[2] = static_cast<TNewDataType>(m[2]);
-				mat3.m[3] = static_cast<TNewDataType>(m[4]);
-				mat3.m[4] = static_cast<TNewDataType>(m[5]);
-				mat3.m[5] = static_cast<TNewDataType>(m[6]);
-				mat3.m[6] = static_cast<TNewDataType>(m[8]);
-				mat3.m[7] = static_cast<TNewDataType>(m[9]);
-				mat3.m[8] = static_cast<TNewDataType>(m[10]);
+				mat3[0] = static_cast<TNewDataType>(m[0]);
+				mat3[1] = static_cast<TNewDataType>(m[1]);
+				mat3[2] = static_cast<TNewDataType>(m[2]);
+				mat3[3] = static_cast<TNewDataType>(m[4]);
+				mat3[4] = static_cast<TNewDataType>(m[5]);
+				mat3[5] = static_cast<TNewDataType>(m[6]);
+				mat3[6] = static_cast<TNewDataType>(m[8]);
+				mat3[7] = static_cast<TNewDataType>(m[9]);
+				mat3[8] = static_cast<TNewDataType>(m[10]);
 
 				return mat3;
 			}
@@ -532,9 +297,6 @@ namespace hr
 
 		TDataType m[9];
 
-		template<typename TDataType>
-		friend class Matrix4;
-
 		using Vector3Type = typename Vector<TDataType, 3>;
 
 		template<class T>
@@ -549,15 +311,20 @@ namespace hr
 
 		enum class CloneTransform{ None, Transpose };
 
+		static constexpr Matrix3 naked() noexcept
+		{
+			return {};
+		}
+
 		static constexpr Matrix3 identity() noexcept
 		{
 			Matrix3 mat;
 
-			mat.m[0] = 1.;
-			mat.m[1] = mat.m[2] = mat.m[3] = 0.;
-			mat.m[4] = 1.;
-			mat.m[5] = mat.m[6] = mat.m[7] = 0.;
-			mat.m[8] = 1.;
+			mat.m[0] = kOne<TDataType>;
+			mat.m[1] = mat.m[2] = mat.m[3] = kZero<TDataType>;
+			mat.m[4] = kOne<TDataType>;
+			mat.m[5] = mat.m[6] = mat.m[7] = kZero<TDataType>;
+			mat.m[8] = kOne<TDataType>;
 
 			return mat;
 		}
@@ -567,7 +334,7 @@ namespace hr
 			Matrix3 mat;
 
 			for (int i = 0; i < 9; i++)
-				mat.m[i] = 0.;
+				mat.m[i] = kZero<TDataType>;
 
 			return mat;
 		}
@@ -631,29 +398,12 @@ namespace hr
 			return mat;
 		}
 
-		static constexpr Matrix3 from(const Quaternion<TDataType> &unitQuaternion) noexcept
-		{
-			Matrix3 mat;
-
-			mat.m[0] = kOne<TDataType> - kTwo<TDataType> * (unitQuaternion[1] * unitQuaternion[1] + unitQuaternion[2] * unitQuaternion[2]);
-			mat.m[3] = kTwo<TDataType> * (unitQuaternion[0] * unitQuaternion[1] - unitQuaternion[2] * unitQuaternion[3]);
-			mat.m[6] = kTwo<TDataType> * (unitQuaternion[0] * unitQuaternion[2] + unitQuaternion[1] * unitQuaternion[3]);
-
-			mat.m[1] = kTwo<TDataType> * (unitQuaternion[0] * unitQuaternion[1] + unitQuaternion[2] * unitQuaternion[3]);
-			mat.m[4] = kOne<TDataType> - kTwo<TDataType> * (unitQuaternion[0] * unitQuaternion[0] + unitQuaternion[2] * unitQuaternion[2]);
-			mat.m[7] = kTwo<TDataType> * (unitQuaternion[1] * unitQuaternion[2] - unitQuaternion[0] * unitQuaternion[3]);
-
-			mat.m[2] = kTwo<TDataType> * (unitQuaternion[0] * unitQuaternion[2] - unitQuaternion[1] * unitQuaternion[3]);
-			mat.m[5] = kTwo<TDataType> * (unitQuaternion[1] * unitQuaternion[2] + unitQuaternion[0] * unitQuaternion[3]);
-			mat.m[8] = kOne<TDataType> - kTwo<TDataType> * (unitQuaternion[0] * unitQuaternion[0] + unitQuaternion[1] * unitQuaternion[1]);
-
-			return mat;
-		}
-
-		static constexpr Matrix3 rotation(const Quaternion<TDataType> &unitQuaternion) noexcept
-		{
-			return Matrix3::from(unitQuaternion);
-		}
+		static Matrix3 rotation(const Quaternion<TDataType> &unitQuaternion) noexcept;
+		static Matrix3 rotation(const Vector3Type &unitVec, const TDataType angleDeg) noexcept;
+		static Matrix3 rotation(const TDataType unitVecX, const TDataType unitVecY, const TDataType unitVecZ, const TDataType angleDeg) noexcept;
+		static Matrix3 rotationX(const TDataType angleDeg) noexcept;
+		static Matrix3 rotationY(const TDataType angleDeg) noexcept;
+		static Matrix3 rotationZ(const TDataType angleDeg) noexcept;
 
 	private:
 		constexpr Matrix3() = default;
@@ -666,6 +416,7 @@ namespace hr
 
 		void operator*=(const Matrix3 &mat) noexcept;
 		void operator*=(std::span<const TDataType> mat) noexcept;
+
 		void operator+=(const Matrix3 &mat) noexcept;
 		void operator+=(std::span<const TDataType> mat) noexcept;
 		void operator-=(const Matrix3 &mat) noexcept;
@@ -685,28 +436,29 @@ namespace hr
 			return m[index % 9];
 		}
 
-		constexpr TDataType *data() noexcept
+		constexpr std::span<TDataType, 9> data() noexcept
 		{
-			return m;
+			return {m};
 		}
 
-		constexpr const TDataType *data() const noexcept
+		constexpr std::span<const TDataType, 9> data() const noexcept
 		{
-			return m;
+			return {m};
 		}
 
-		void transform(TDataType vec[3]) const noexcept;
-
+		void transform(std::span<TDataType> vec) const noexcept;
+		
 		void transform(Vector3Type &vec) const noexcept;
-		Vector3Type transform(const Vector3Type &vec) const noexcept;
-		void transform(const Vector3Type &vec, Vector3Type &result) const noexcept;
+		[[nodiscard]] Vector3Type transformCopy(const Vector3Type &vec) const noexcept;
 
 		void transform(std::span<Vector3Type> vecs) const noexcept;
 
 		Vector3Type getColumn(size_t columnIndex) const noexcept;
 		Vector3Type getRow(size_t rowIndex) const noexcept;
 
-		void write(TDataType dest[9]) const noexcept;
+		TDataType determinant() const noexcept;
+
+		void write(std::span<TDataType, 9> dest) const noexcept;
 
 		Matrix3 clone(CloneTransform transform = CloneTransform::None) const noexcept;
 
@@ -736,30 +488,30 @@ namespace hr
 				else
 				{
 					//same class (Matrix3) but with a different data type
-					Matrix3<TNewDataType> res;
+					auto res = Matrix3<TNewDataType>::naked();
 					for (int i = 0; i < 9; i++)
-						res.m[i] = static_cast<TNewDataType>(m[i]);
+						res[i] = static_cast<TNewDataType>(m[i]);
 					return res;
 				}
 			}
 			else
 			{
 				//convert to Matrix4 and to the data type at the same time
-				Matrix4<TNewDataType> mat4;
+				auto mat4 = Matrix4<TNewDataType>::naked();
 
-				mat4.m[0] = static_cast<TNewDataType>(m[0]);
-				mat4.m[1] = static_cast<TNewDataType>(m[1]);
-				mat4.m[2] = static_cast<TNewDataType>(m[2]);
-				mat4.m[3] = kZero<TNewDataType>;
-				mat4.m[4] = static_cast<TNewDataType>(m[3]);
-				mat4.m[5] = static_cast<TNewDataType>(m[4]);
-				mat4.m[6] = static_cast<TNewDataType>(m[5]);
-				mat4.m[7] = kZero<TNewDataType>;
-				mat4.m[8] = static_cast<TNewDataType>(m[6]);
-				mat4.m[9] = static_cast<TNewDataType>(m[7]);
-				mat4.m[10] = static_cast<TNewDataType>(m[8]);
-				mat4.m[11] = mat4.m[12] = mat4.m[13] = mat4.m[14] = kZero<TNewDataType>;
-				mat4.m[15] = kOne<TNewDataType>;
+				mat4[0] = static_cast<TNewDataType>(m[0]);
+				mat4[1] = static_cast<TNewDataType>(m[1]);
+				mat4[2] = static_cast<TNewDataType>(m[2]);
+				mat4[3] = kZero<TNewDataType>;
+				mat4[4] = static_cast<TNewDataType>(m[3]);
+				mat4[5] = static_cast<TNewDataType>(m[4]);
+				mat4[6] = static_cast<TNewDataType>(m[5]);
+				mat4[7] = kZero<TNewDataType>;
+				mat4[8] = static_cast<TNewDataType>(m[6]);
+				mat4[9] = static_cast<TNewDataType>(m[7]);
+				mat4[10] = static_cast<TNewDataType>(m[8]);
+				mat4[11] = mat4[12] = mat4[13] = mat4[14] = kZero<TNewDataType>;
+				mat4[15] = kOne<TNewDataType>;
 
 				return mat4;
 			}

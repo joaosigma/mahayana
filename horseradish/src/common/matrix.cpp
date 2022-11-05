@@ -298,40 +298,41 @@ namespace hr
 				for (; leftOver >= 4; leftOver -= 4)
 				{
 					curVec = _mm256_load_pd(vecRead);
-					final = _mm256_mul_pd(_mm256_shuffle_pd(curVec, curVec, 0x00), mat1);
-					final = _mm256_add_pd(final, _mm256_mul_pd(_mm256_shuffle_pd(curVec, curVec, 0x55), mat2));
-					final = _mm256_add_pd(final, _mm256_mul_pd(_mm256_shuffle_pd(curVec, curVec, 0xAA), mat3));
-					final = _mm256_add_pd(final, _mm256_mul_pd(_mm256_shuffle_pd(curVec, curVec, 0xFF), mat4));
+
+					final = _mm256_mul_pd(_mm256_permute4x64_pd(curVec, _MM_SHUFFLE(0, 0, 0, 0)), mat1);
+					final = _mm256_add_pd(final, _mm256_mul_pd(_mm256_permute4x64_pd(curVec, _MM_SHUFFLE(1, 1, 1, 1)), mat2));
+					final = _mm256_add_pd(final, _mm256_mul_pd(_mm256_permute4x64_pd(curVec, _MM_SHUFFLE(2, 2, 2, 2)), mat3));
+					final = _mm256_add_pd(final, _mm256_mul_pd(_mm256_permute4x64_pd(curVec, _MM_SHUFFLE(3, 3, 3, 3)), mat4));
 					_mm256_store_pd(vecWrite, final);
 
 					vecRead = (double*)(((unsigned char*)vecRead) + stride);
 					vecWrite = (double*)(((unsigned char*)vecWrite) + stride);
 
 					curVec = _mm256_load_pd(vecRead);
-					final = _mm256_mul_pd(_mm256_shuffle_pd(curVec, curVec, 0x00), mat1);
-					final = _mm256_add_pd(final, _mm256_mul_pd(_mm256_shuffle_pd(curVec, curVec, 0x55), mat2));
-					final = _mm256_add_pd(final, _mm256_mul_pd(_mm256_shuffle_pd(curVec, curVec, 0xAA), mat3));
-					final = _mm256_add_pd(final, _mm256_mul_pd(_mm256_shuffle_pd(curVec, curVec, 0xFF), mat4));
+					final = _mm256_mul_pd(_mm256_permute4x64_pd(curVec, _MM_SHUFFLE(0, 0, 0, 0)), mat1);
+					final = _mm256_add_pd(final, _mm256_mul_pd(_mm256_permute4x64_pd(curVec, _MM_SHUFFLE(1, 1, 1, 1)), mat2));
+					final = _mm256_add_pd(final, _mm256_mul_pd(_mm256_permute4x64_pd(curVec, _MM_SHUFFLE(2, 2, 2, 2)), mat3));
+					final = _mm256_add_pd(final, _mm256_mul_pd(_mm256_permute4x64_pd(curVec, _MM_SHUFFLE(3, 3, 3, 3)), mat4));
 					_mm256_store_pd(vecWrite, final);
 
 					vecRead = (double*)(((unsigned char*)vecRead) + stride);
 					vecWrite = (double*)(((unsigned char*)vecWrite) + stride);
 
 					curVec = _mm256_load_pd(vecRead);
-					final = _mm256_mul_pd(_mm256_shuffle_pd(curVec, curVec, 0x00), mat1);
-					final = _mm256_add_pd(final, _mm256_mul_pd(_mm256_shuffle_pd(curVec, curVec, 0x55), mat2));
-					final = _mm256_add_pd(final, _mm256_mul_pd(_mm256_shuffle_pd(curVec, curVec, 0xAA), mat3));
-					final = _mm256_add_pd(final, _mm256_mul_pd(_mm256_shuffle_pd(curVec, curVec, 0xFF), mat4));
+					final = _mm256_mul_pd(_mm256_permute4x64_pd(curVec, _MM_SHUFFLE(0, 0, 0, 0)), mat1);
+					final = _mm256_add_pd(final, _mm256_mul_pd(_mm256_permute4x64_pd(curVec, _MM_SHUFFLE(1, 1, 1, 1)), mat2));
+					final = _mm256_add_pd(final, _mm256_mul_pd(_mm256_permute4x64_pd(curVec, _MM_SHUFFLE(2, 2, 2, 2)), mat3));
+					final = _mm256_add_pd(final, _mm256_mul_pd(_mm256_permute4x64_pd(curVec, _MM_SHUFFLE(3, 3, 3, 3)), mat4));
 					_mm256_store_pd(vecWrite, final);
 
 					vecRead = (double*)(((unsigned char*)vecRead) + stride);
 					vecWrite = (double*)(((unsigned char*)vecWrite) + stride);
 
 					curVec = _mm256_load_pd(vecRead);
-					final = _mm256_mul_pd(_mm256_shuffle_pd(curVec, curVec, 0x00), mat1);
-					final = _mm256_add_pd(final, _mm256_mul_pd(_mm256_shuffle_pd(curVec, curVec, 0x55), mat2));
-					final = _mm256_add_pd(final, _mm256_mul_pd(_mm256_shuffle_pd(curVec, curVec, 0xAA), mat3));
-					final = _mm256_add_pd(final, _mm256_mul_pd(_mm256_shuffle_pd(curVec, curVec, 0xFF), mat4));
+					final = _mm256_mul_pd(_mm256_permute4x64_pd(curVec, _MM_SHUFFLE(0, 0, 0, 0)), mat1);
+					final = _mm256_add_pd(final, _mm256_mul_pd(_mm256_permute4x64_pd(curVec, _MM_SHUFFLE(1, 1, 1, 1)), mat2));
+					final = _mm256_add_pd(final, _mm256_mul_pd(_mm256_permute4x64_pd(curVec, _MM_SHUFFLE(2, 2, 2, 2)), mat3));
+					final = _mm256_add_pd(final, _mm256_mul_pd(_mm256_permute4x64_pd(curVec, _MM_SHUFFLE(3, 3, 3, 3)), mat4));
 					_mm256_store_pd(vecWrite, final);
 
 					vecRead = (double*)(((unsigned char*)vecRead) + stride);
@@ -343,40 +344,40 @@ namespace hr
 				for (; leftOver >= 4; leftOver -= 4)
 				{
 					curVec = _mm256_load_pd(vecRead);
-					final = _mm256_mul_pd(_mm256_shuffle_pd(curVec, curVec, 0x00), mat1);
-					final = _mm256_add_pd(final, _mm256_mul_pd(_mm256_shuffle_pd(curVec, curVec, 0x55), mat2));
-					final = _mm256_add_pd(final, _mm256_mul_pd(_mm256_shuffle_pd(curVec, curVec, 0xAA), mat3));
-					final = _mm256_add_pd(final, _mm256_mul_pd(_mm256_shuffle_pd(curVec, curVec, 0xFF), mat4));
+					final = _mm256_mul_pd(_mm256_permute4x64_pd(curVec, _MM_SHUFFLE(0, 0, 0, 0)), mat1);
+					final = _mm256_add_pd(final, _mm256_mul_pd(_mm256_permute4x64_pd(curVec, _MM_SHUFFLE(1, 1, 1, 1)), mat2));
+					final = _mm256_add_pd(final, _mm256_mul_pd(_mm256_permute4x64_pd(curVec, _MM_SHUFFLE(2, 2, 2, 2)), mat3));
+					final = _mm256_add_pd(final, _mm256_mul_pd(_mm256_permute4x64_pd(curVec, _MM_SHUFFLE(3, 3, 3, 3)), mat4));
 					_mm256_store_pd(vecWrite, final);
 
 					vecRead = (double*)(((unsigned char*)vecRead) + stride);
 					vecWrite = (double*)(((unsigned char*)vecWrite) + stride);
 
 					curVec = _mm256_load_pd(vecRead);
-					final = _mm256_mul_pd(_mm256_shuffle_pd(curVec, curVec, 0x00), mat1);
-					final = _mm256_add_pd(final, _mm256_mul_pd(_mm256_shuffle_pd(curVec, curVec, 0x55), mat2));
-					final = _mm256_add_pd(final, _mm256_mul_pd(_mm256_shuffle_pd(curVec, curVec, 0xAA), mat3));
-					final = _mm256_add_pd(final, _mm256_mul_pd(_mm256_shuffle_pd(curVec, curVec, 0xFF), mat4));
+					final = _mm256_mul_pd(_mm256_permute4x64_pd(curVec, _MM_SHUFFLE(0, 0, 0, 0)), mat1);
+					final = _mm256_add_pd(final, _mm256_mul_pd(_mm256_permute4x64_pd(curVec, _MM_SHUFFLE(1, 1, 1, 1)), mat2));
+					final = _mm256_add_pd(final, _mm256_mul_pd(_mm256_permute4x64_pd(curVec, _MM_SHUFFLE(2, 2, 2, 2)), mat3));
+					final = _mm256_add_pd(final, _mm256_mul_pd(_mm256_permute4x64_pd(curVec, _MM_SHUFFLE(3, 3, 3, 3)), mat4));
 					_mm256_store_pd(vecWrite, final);
 
 					vecRead = (double*)(((unsigned char*)vecRead) + stride);
 					vecWrite = (double*)(((unsigned char*)vecWrite) + stride);
 
 					curVec = _mm256_load_pd(vecRead);
-					final = _mm256_mul_pd(_mm256_shuffle_pd(curVec, curVec, 0x00), mat1);
-					final = _mm256_add_pd(final, _mm256_mul_pd(_mm256_shuffle_pd(curVec, curVec, 0x55), mat2));
-					final = _mm256_add_pd(final, _mm256_mul_pd(_mm256_shuffle_pd(curVec, curVec, 0xAA), mat3));
-					final = _mm256_add_pd(final, _mm256_mul_pd(_mm256_shuffle_pd(curVec, curVec, 0xFF), mat4));
+					final = _mm256_mul_pd(_mm256_permute4x64_pd(curVec, _MM_SHUFFLE(0, 0, 0, 0)), mat1);
+					final = _mm256_add_pd(final, _mm256_mul_pd(_mm256_permute4x64_pd(curVec, _MM_SHUFFLE(1, 1, 1, 1)), mat2));
+					final = _mm256_add_pd(final, _mm256_mul_pd(_mm256_permute4x64_pd(curVec, _MM_SHUFFLE(2, 2, 2, 2)), mat3));
+					final = _mm256_add_pd(final, _mm256_mul_pd(_mm256_permute4x64_pd(curVec, _MM_SHUFFLE(3, 3, 3, 3)), mat4));
 					_mm256_store_pd(vecWrite, final);
 
 					vecRead = (double*)(((unsigned char*)vecRead) + stride);
 					vecWrite = (double*)(((unsigned char*)vecWrite) + stride);
 
 					curVec = _mm256_load_pd(vecRead);
-					final = _mm256_mul_pd(_mm256_shuffle_pd(curVec, curVec, 0x00), mat1);
-					final = _mm256_add_pd(final, _mm256_mul_pd(_mm256_shuffle_pd(curVec, curVec, 0x55), mat2));
-					final = _mm256_add_pd(final, _mm256_mul_pd(_mm256_shuffle_pd(curVec, curVec, 0xAA), mat3));
-					final = _mm256_add_pd(final, _mm256_mul_pd(_mm256_shuffle_pd(curVec, curVec, 0xFF), mat4));
+					final = _mm256_mul_pd(_mm256_permute4x64_pd(curVec, _MM_SHUFFLE(0, 0, 0, 0)), mat1);
+					final = _mm256_add_pd(final, _mm256_mul_pd(_mm256_permute4x64_pd(curVec, _MM_SHUFFLE(1, 1, 1, 1)), mat2));
+					final = _mm256_add_pd(final, _mm256_mul_pd(_mm256_permute4x64_pd(curVec, _MM_SHUFFLE(2, 2, 2, 2)), mat3));
+					final = _mm256_add_pd(final, _mm256_mul_pd(_mm256_permute4x64_pd(curVec, _MM_SHUFFLE(3, 3, 3, 3)), mat4));
 					_mm256_store_pd(vecWrite, final);
 
 					vecRead = (double*)(((unsigned char*)vecRead) + stride);
@@ -387,10 +388,11 @@ namespace hr
 			for (; leftOver > 0; leftOver--)
 			{
 				curVec = _mm256_load_pd(vecRead);
-				final = _mm256_mul_pd(_mm256_shuffle_pd(curVec, curVec, 0x00), mat1);
-				final = _mm256_add_pd(final, _mm256_mul_pd(_mm256_shuffle_pd(curVec, curVec, 0x55), mat2));
-				final = _mm256_add_pd(final, _mm256_mul_pd(_mm256_shuffle_pd(curVec, curVec, 0xAA), mat3));
-				final = _mm256_add_pd(final, _mm256_mul_pd(_mm256_shuffle_pd(curVec, curVec, 0xFF), mat4));
+
+				final = _mm256_mul_pd(_mm256_permute4x64_pd(curVec, _MM_SHUFFLE(0, 0, 0, 0)), mat1);
+				final = _mm256_add_pd(final, _mm256_mul_pd(_mm256_permute4x64_pd(curVec, _MM_SHUFFLE(1, 1, 1, 1)), mat2));
+				final = _mm256_add_pd(final, _mm256_mul_pd(_mm256_permute4x64_pd(curVec, _MM_SHUFFLE(2, 2, 2, 2)), mat3));
+				final = _mm256_add_pd(final, _mm256_mul_pd(_mm256_permute4x64_pd(curVec, _MM_SHUFFLE(3, 3, 3, 3)), mat4));
 				_mm256_store_pd(vecWrite, final);
 
 				vecRead = (double*)(((unsigned char*)vecRead) + stride);
@@ -529,32 +531,412 @@ namespace hr
 	}
 
 	template<typename TDataType>
-	void Matrix4<TDataType>::operator*=(const TDataType s) noexcept
+	Matrix4<TDataType> Matrix4<TDataType>::translation(TDataType x, TDataType y, TDataType z) noexcept
 	{
+		Matrix4 mat;
+
+		mat.m[0] = mat.m[5] = mat.m[10] = mat.m[15] = kOne<TDataType>;
+		mat.m[1] = mat.m[2] = mat.m[3] = mat.m[4] = mat.m[6] = mat.m[7] = mat.m[8] = mat.m[9] = mat.m[11] = kZero<TDataType>;
+		mat.m[12] = x;
+		mat.m[13] = y;
+		mat.m[14] = z;
+
+		return mat;
+	}
+
+	template<typename TDataType>
+	Matrix4<TDataType> Matrix4<TDataType>::translation(const Vector3Type& amount) noexcept
+	{
+		return Matrix4::translation(amount[0], amount[1], amount[2]);
+	}
+
+	template<typename TDataType>
+	Matrix4<TDataType> Matrix4<TDataType>::rotation(const Quaternion<TDataType>& unitQuaternion) noexcept
+	{
+		auto xx = unitQuaternion[0] * unitQuaternion[0];
+		auto yy = unitQuaternion[1] * unitQuaternion[1];
+		auto zz = unitQuaternion[2] * unitQuaternion[2];
+		auto xy = unitQuaternion[0] * unitQuaternion[1];
+		auto zw = unitQuaternion[2] * unitQuaternion[3];
+		auto xz = unitQuaternion[0] * unitQuaternion[2];
+		auto yw = unitQuaternion[1] * unitQuaternion[3];
+		auto yz = unitQuaternion[1] * unitQuaternion[2];
+		auto xw = unitQuaternion[0] * unitQuaternion[3];
+
+		Matrix4 mat;
+
+		mat.m[0] = kOne<TDataType> - kTwo<TDataType> * (yy + zz);
+		mat.m[1] = kTwo<TDataType> * (xy + zw);
+		mat.m[2] = kTwo<TDataType> * (xz - yw);
+
+		mat.m[4] = kTwo<TDataType> * (xy - zw);
+		mat.m[5] = kOne<TDataType> - kTwo<TDataType> * (xx + zz);
+		mat.m[6] = kTwo<TDataType> * (yz + xw);
+
+		mat.m[8] = kTwo<TDataType> * (xz + yw);
+		mat.m[9] = kTwo<TDataType> * (yz - xw);
+		mat.m[10] = kOne<TDataType> - kTwo<TDataType> * (xx + yy);
+
+		mat.m[3] = mat.m[7] = mat.m[11] = mat.m[12] = mat.m[13] = mat.m[14] = kZero<TDataType>;
+		mat.m[15] = kOne<TDataType>;
+
+		return mat;
+	}
+
+	template<typename TDataType>
+	Matrix4<TDataType> Matrix4<TDataType>::rotation(const Vector3Type& unitVec, const TDataType angleDeg) noexcept
+	{
+		return Matrix4::rotation(unitVec[0], unitVec[1], unitVec[2], angleDeg);
+	}
+
+	template<typename TDataType>
+	Matrix4<TDataType> Matrix4<TDataType>::rotation(const TDataType unitVecX, const TDataType unitVecY, const TDataType unitVecZ, const TDataType angleDeg) noexcept
+	{
+		auto cos = std::cos(Math::Deg2Rad<TDataType> * angleDeg);
+		auto sin = std::sin(Math::Deg2Rad<TDataType> * angleDeg);
+		auto cos_1 = kOne<TDataType> - cos;
+		auto xx = unitVecX * unitVecX;
+		auto yy = unitVecY * unitVecY;
+		auto zz = unitVecZ * unitVecZ;
+		auto xy = unitVecX * unitVecY;
+		auto yz = unitVecY * unitVecZ;
+		auto xz = unitVecX * unitVecZ;
+
+		Matrix4 mat;
+
+		mat.m[0] = cos + xx * cos_1;
+		mat.m[1] = unitVecZ * sin + xy * cos_1;
+		mat.m[2] = -unitVecY * sin + xz * cos_1;
+
+		mat.m[4] = xy * cos_1 - unitVecZ * sin;
+		mat.m[5] = cos + yy * cos_1;
+		mat.m[6] = unitVecX * sin + yz * cos_1;
+
+		mat.m[8] = unitVecY * sin + xz * cos_1;
+		mat.m[9] = -unitVecX * sin + yz * cos_1;
+		mat.m[10] = cos + zz * cos_1;
+
+		mat.m[3] = mat.m[7] = mat.m[11] = mat.m[12] = mat.m[13] = mat.m[14] = kZero<TDataType>;
+		mat.m[15] = kOne<TDataType>;
+
+		return mat;
+	}
+
+	template<typename TDataType>
+	Matrix4<TDataType> Matrix4<TDataType>::rotationX(const TDataType angleDeg) noexcept
+	{
+		auto cos = std::cos(Math::Deg2Rad<TDataType> * angleDeg);
+		auto sin = std::sin(Math::Deg2Rad<TDataType> * angleDeg);
+
+		auto mat = Matrix4::identity();
+
+		mat.m[5] = cos;
+		mat.m[6] = sin;
+		mat.m[9] = -sin;
+		mat.m[10] = cos;
+
+		return mat;
+	}
+
+	template<typename TDataType>
+	Matrix4<TDataType> Matrix4<TDataType>::rotationY(const TDataType angleDeg) noexcept
+	{
+		auto cos = std::cos(Math::Deg2Rad<TDataType> * angleDeg);
+		auto sin = std::sin(Math::Deg2Rad<TDataType> * angleDeg);
+
+		auto mat = Matrix4::identity();
+
+		mat.m[0] = cos;
+		mat.m[2] = -sin;
+		mat.m[8] = sin;
+		mat.m[10] = cos;
+
+		return mat;
+	}
+
+	template<typename TDataType>
+	Matrix4<TDataType> Matrix4<TDataType>::rotationZ(const TDataType angleDeg) noexcept
+	{
+		auto cos = std::cos(Math::Deg2Rad<TDataType> * angleDeg);
+		auto sin = std::sin(Math::Deg2Rad<TDataType> * angleDeg);
+
+		auto mat = Matrix4::identity();
+
+		mat.m[0] = cos;
+		mat.m[1] = sin;
+		mat.m[4] = -sin;
+		mat.m[5] = cos;
+
+		return mat;
+	}
+
+	template<typename TDataType>
+	Matrix4<TDataType> Matrix4<TDataType>::scale(TDataType scale) noexcept
+	{
+		Matrix4 mat;
+
+		mat.m[0] = mat.m[5] = mat.m[10] = scale;
+		mat.m[1] = mat.m[2] = mat.m[3] = mat.m[4] = mat.m[6] = mat.m[7] = mat.m[8] = mat.m[9] = mat.m[11] = mat.m[12] = mat.m[13] = mat.m[14] = kZero<TDataType>;
+		mat.m[15] = kOne<TDataType>;
+
+		return mat;
+	}
+
+	template<typename TDataType>
+	Matrix4<TDataType> Matrix4<TDataType>::scale(TDataType x, TDataType y, TDataType z) noexcept
+	{
+		Matrix4 mat;
+
+		mat.m[0] = x;
+		mat.m[5] = y;
+		mat.m[10] = z;
+		mat.m[1] = mat.m[2] = mat.m[3] = mat.m[4] = mat.m[6] = mat.m[7] = mat.m[8] = mat.m[9] = mat.m[11] = mat.m[12] = mat.m[13] = mat.m[14] = kZero<TDataType>;
+		mat.m[15] = kOne<TDataType>;
+
+		return mat;
+	}
+
+	template<typename TDataType>
+	Matrix4<TDataType> Matrix4<TDataType>::scale(const Vector3Type& scale) noexcept
+	{
+		return Matrix4::scale(scale[0], scale[1], scale[2]);
+	}
+
+	template<typename TDataType>
+	Matrix4<TDataType> Matrix4<TDataType>::reflection(const Plane<TDataType>& plane) noexcept
+	{
+		// creates a matrix that reflects the coordinate system about a specified plane.
+		Matrix4 mat;
+
+		auto pNormal = plane.normal();
+		pNormal.normalize();
+
+		auto pNormalAux = pNormal * (-kTwo<TDataType> * pNormal[0]);
+		mat.m[0] = pNormalAux[0] + kOne<TDataType>;
+		mat.m[1] = pNormalAux[1];
+		mat.m[2] = pNormalAux[2];
+		mat.m[3] = kZero<TDataType>;
+
+		pNormalAux = pNormal * (-kTwo<TDataType> * pNormal[1]);
+		mat.m[4] = pNormalAux[0];
+		mat.m[5] = pNormalAux[1] + kOne<TDataType>;
+		mat.m[6] = pNormalAux[2];
+		mat.m[7] = kZero<TDataType>;
+
+		pNormalAux = pNormal * (-kTwo<TDataType> * pNormal[2]);
+		mat.m[8] = pNormalAux[0];
+		mat.m[9] = pNormalAux[1];
+		mat.m[10] = pNormalAux[2] + kOne<TDataType>;
+		mat.m[11] = kZero<TDataType>;
+
+		pNormalAux = pNormal * (-kTwo<TDataType> * plane.d());
+		mat.m[12] = pNormalAux[0];
+		mat.m[13] = pNormalAux[1];
+		mat.m[14] = pNormalAux[2];
+		mat.m[15] = kOne<TDataType>;
+
+		return mat;
+	}
+
+	template<typename TDataType>
+	Matrix4<TDataType> Matrix4<TDataType>::saturation(const TDataType sat) noexcept
+	{
+		Matrix4 mat;
+
 		if constexpr (std::is_same_v<TDataType, float>)
 		{
-			__m128 scalar = _mm_load_ps1(&s);
+			auto posS = Math::fClamp(sat, -1.0f, 1.0f);
+			auto minusS = 1.0f - posS;
 
-			_mm_store_ps(m + 0, _mm_mul_ps(_mm_load_ps(m + 0), scalar));
-			_mm_store_ps(m + 4, _mm_mul_ps(_mm_load_ps(m + 4), scalar));
-			_mm_store_ps(m + 8, _mm_mul_ps(_mm_load_ps(m + 8), scalar));
-			_mm_store_ps(m + 12, _mm_mul_ps(_mm_load_ps(m + 12), scalar));
+			mat.m[0] = minusS * 0.3086f + posS;
+			mat.m[1] = mat.m[2] = minusS * 0.3086f;
+			mat.m[4] = mat.m[6] = minusS * 0.6094f;
+			mat.m[5] = minusS * 0.6094f + posS;
+			mat.m[8] = mat.m[9] = minusS * 0.0820f;
+			mat.m[10] = minusS * 0.0820f + posS;
+
+			mat.m[3] = mat.m[7] = mat.m[11] = mat.m[12] = mat.m[13] = mat.m[14] = 0.0f;
+			mat.m[15] = 1.0f;
 		}
 		else
 		{
-			__m256d scalar = _mm256_broadcast_sd(&s);
+			auto posS = Math::fClamp(sat, -1.0, 1.0);
+			auto minusS = 1.0 - posS;
 
-			_mm256_store_pd(m + 0, _mm256_mul_pd(_mm256_load_pd(m + 0), scalar));
-			_mm256_store_pd(m + 4, _mm256_mul_pd(_mm256_load_pd(m + 4), scalar));
-			_mm256_store_pd(m + 8, _mm256_mul_pd(_mm256_load_pd(m + 8), scalar));
-			_mm256_store_pd(m + 12, _mm256_mul_pd(_mm256_load_pd(m + 12), scalar));
+			mat.m[0] = minusS * 0.3086 + posS;
+			mat.m[1] = mat.m[2] = minusS * 0.3086;
+			mat.m[4] = mat.m[6] = minusS * 0.6094;
+			mat.m[5] = minusS * 0.6094 + posS;
+			mat.m[8] = mat.m[9] = minusS * 0.0820;
+			mat.m[10] = minusS * 0.0820 + posS;
+
+			mat.m[3] = mat.m[7] = mat.m[11] = mat.m[12] = mat.m[13] = mat.m[14] = 0.0;
+			mat.m[15] = 1.0;
 		}
+
+		return mat;
+	}
+
+	template<typename TDataType>
+	Matrix4<TDataType> Matrix4<TDataType>::glModelView(const Vector3Type& pos, const Vector3Type& target, const Vector3Type& up) noexcept
+	{
+		auto z = pos;
+		z -= target;
+		z.normalize();
+
+		auto x = Vector3Type::calcCrossProduct(up, z);
+		auto y = Vector3Type::calcCrossProduct(z, x);
+
+		x.normalize();
+		y.normalize();
+
+		Matrix4 mat;
+		mat.m[0] = x[0];
+		mat.m[1] = y[0];
+		mat.m[2] = z[0];
+		mat.m[3] = kZero<TDataType>;
+		mat.m[4] = x[1];
+		mat.m[5] = y[1];
+		mat.m[6] = z[1];
+		mat.m[7] = kZero<TDataType>;
+		mat.m[8] = x[2];
+		mat.m[9] = y[2];
+		mat.m[10] = z[2];
+		mat.m[11] = kZero<TDataType>;
+
+		x *= -kOne<TDataType>;
+		y *= -kOne<TDataType>;
+		z *= -kOne<TDataType>;
+
+		mat.m[12] = x[0] * pos[0] + x[1] * pos[1] + x[2] * pos[2];
+		mat.m[13] = y[0] * pos[0] + y[1] * pos[1] + y[2] * pos[2];
+		mat.m[14] = z[0] * pos[0] + z[1] * pos[1] + z[2] * pos[2];
+		mat.m[15] = kOne<TDataType>;
+
+		return mat;
+	}
+
+	template<typename TDataType>
+	Matrix4<TDataType> Matrix4<TDataType>::glModelView(const Vector3Type& pos, const Vector3Type& target) noexcept
+	{
+		return Matrix4::glModelView(pos, target, Vector3Type{kZero<TDataType>, kOne<TDataType>, kZero<TDataType>});
+	}
+
+	template<typename TDataType>
+	Matrix4<TDataType> Matrix4<TDataType>::glModelView(const Vector3Type& pos, TDataType angleDegX, TDataType angleDegY, const Vector3Type& up) noexcept
+	{
+		TDataType sx, sy, cx, cy;
+		Math::sinCos(Math::Deg2Rad<TDataType> * angleDegX, sx, cx);
+		Math::sinCos(Math::Deg2Rad<TDataType> * angleDegY, sy, cy);
+
+		Vector3Type target;
+		target[0] = pos[0] + sx * cy;
+		target[1] = pos[1] + sy;
+		target[2] = pos[2] - (cx * cy);
+
+		return Matrix4::glModelView(pos, target, up);
+	}
+
+	template<typename TDataType>
+	Matrix4<TDataType> Matrix4<TDataType>::glModelView(int cubemapFace, const Vector3Type& centerCube) noexcept
+	{
+		auto mat = Matrix4::identity();
+
+		//positive X
+		if (cubemapFace == 0)
+		{
+			mat.m[2] = mat.m[5] = mat.m[8] = -1.;
+			mat.m[12] = centerCube[2];
+			mat.m[13] = centerCube[1];
+			mat.m[14] = centerCube[0];
+			return mat;
+		}
+
+		//negative X
+		if (cubemapFace == 1)
+		{
+			mat.m[2] = mat.m[8] = 1.;
+			mat.m[5] = -1.;
+			mat.m[12] = -centerCube[2];
+			mat.m[13] = centerCube[1];
+			mat.m[14] = -centerCube[0];
+			return mat;
+		}
+
+		//positive Y
+		if (cubemapFace == 2)
+		{
+			mat.m[0] = mat.m[9] = 1.;
+			mat.m[6] = -1.;
+			mat.m[12] = -centerCube[0];
+			mat.m[13] = -centerCube[2];
+			mat.m[14] = centerCube[1];
+			return mat;
+		}
+
+		//negative Y
+		if (cubemapFace == 3)
+		{
+			mat.m[0] = mat.m[6] = 1.;
+			mat.m[9] = -1.;
+			mat.m[12] = -centerCube[0];
+			mat.m[13] = centerCube[2];
+			mat.m[14] = -centerCube[1];
+			return mat;
+		}
+
+		//positive Z
+		if (cubemapFace == 4)
+		{
+			mat.m[5] = mat.m[10] = -1.;
+			mat.m[0] = 1.;
+			mat.m[12] = -centerCube[0];
+			mat.m[13] = centerCube[1];
+			mat.m[14] = centerCube[2];
+			return mat;
+		}
+
+		//negative Z
+		if (cubemapFace == 5)
+		{
+			mat.m[0] = mat.m[5] = -1.;
+			mat.m[10] = 1.;
+			mat.m[12] = centerCube[0];
+			mat.m[13] = centerCube[1];
+			mat.m[14] = -centerCube[2];
+			return mat;
+		}
+
+		return mat;
 	}
 
 	template<typename TDataType>
 	void Matrix4<TDataType>::operator*=(const Matrix4& mat) noexcept
 	{
 		fastMat4x4Mult(this->m, this->m, mat.m);
+	}
+
+	template<typename TDataType>
+	void Matrix4<TDataType>::operator*=(const TDataType scalar) noexcept
+	{
+		if constexpr (std::is_same_v<TDataType, float>)
+		{
+			__m128 value = _mm_load_ps1(&scalar);
+
+			_mm_store_ps(m + 0, _mm_mul_ps(_mm_load_ps(m + 0), value));
+			_mm_store_ps(m + 4, _mm_mul_ps(_mm_load_ps(m + 4), value));
+			_mm_store_ps(m + 8, _mm_mul_ps(_mm_load_ps(m + 8), value));
+			_mm_store_ps(m + 12, _mm_mul_ps(_mm_load_ps(m + 12), value));
+		}
+		else
+		{
+			__m256d value = _mm256_broadcast_sd(&scalar);
+
+			_mm256_store_pd(m + 0, _mm256_mul_pd(_mm256_load_pd(m + 0), value));
+			_mm256_store_pd(m + 4, _mm256_mul_pd(_mm256_load_pd(m + 4), value));
+			_mm256_store_pd(m + 8, _mm256_mul_pd(_mm256_load_pd(m + 8), value));
+			_mm256_store_pd(m + 12, _mm256_mul_pd(_mm256_load_pd(m + 12), value));
+		}
 	}
 
 	template<typename TDataType>
@@ -574,7 +956,7 @@ namespace hr
 	template<typename TDataType>
 	void Matrix4<TDataType>::operator*=(const Quaternion<TDataType>& unitQuaternion) noexcept
 	{
-		auto mat = Matrix4::from(unitQuaternion);
+		auto mat = Matrix4::rotation(unitQuaternion);
 		fastMat4x4Mult(m, m, mat.m);
 	}
 
@@ -667,6 +1049,31 @@ namespace hr
 	}
 
 	template<typename TDataType>
+	Matrix4<TDataType> Matrix4<TDataType>::operator*(const TDataType s) const noexcept
+	{
+		Matrix4 res;
+
+		if constexpr (std::is_same_v<TDataType, float>)
+		{
+			__m128 scalar = _mm_load_ps1(&s);
+			_mm_store_ps(res.m + 0, _mm_mul_ps(_mm_load_ps(m + 0), scalar));
+			_mm_store_ps(res.m + 4, _mm_mul_ps(_mm_load_ps(m + 4), scalar));
+			_mm_store_ps(res.m + 8, _mm_mul_ps(_mm_load_ps(m + 8), scalar));
+			_mm_store_ps(res.m + 12, _mm_mul_ps(_mm_load_ps(m + 12), scalar));
+		}
+		else
+		{
+			__m256d scalar = _mm256_broadcast_sd(&s);
+			_mm256_store_pd(res.m + 0, _mm256_mul_pd(_mm256_load_pd(m + 0), scalar));
+			_mm256_store_pd(res.m + 4, _mm256_mul_pd(_mm256_load_pd(m + 4), scalar));
+			_mm256_store_pd(res.m + 8, _mm256_mul_pd(_mm256_load_pd(m + 8), scalar));
+			_mm256_store_pd(res.m + 12, _mm256_mul_pd(_mm256_load_pd(m + 12), scalar));
+		}
+
+		return res;
+	}
+
+	template<typename TDataType>
 	Matrix4<TDataType> Matrix4<TDataType>::operator+(const Matrix4& mat) const noexcept
 	{
 		Matrix4 res;
@@ -680,10 +1087,10 @@ namespace hr
 		}
 		else
 		{
-			_mm256_store_pd(res.m + 0, _mm256_sub_pd(_mm256_load_pd(m + 0), _mm256_load_pd(mat.m + 0)));
-			_mm256_store_pd(res.m + 4, _mm256_sub_pd(_mm256_load_pd(m + 4), _mm256_load_pd(mat.m + 4)));
-			_mm256_store_pd(res.m + 8, _mm256_sub_pd(_mm256_load_pd(m + 8), _mm256_load_pd(mat.m + 8)));
-			_mm256_store_pd(res.m + 12, _mm256_sub_pd(_mm256_load_pd(m + 12), _mm256_load_pd(mat.m + 12)));
+			_mm256_store_pd(res.m + 0, _mm256_add_pd(_mm256_load_pd(m + 0), _mm256_load_pd(mat.m + 0)));
+			_mm256_store_pd(res.m + 4, _mm256_add_pd(_mm256_load_pd(m + 4), _mm256_load_pd(mat.m + 4)));
+			_mm256_store_pd(res.m + 8, _mm256_add_pd(_mm256_load_pd(m + 8), _mm256_load_pd(mat.m + 8)));
+			_mm256_store_pd(res.m + 12, _mm256_add_pd(_mm256_load_pd(m + 12), _mm256_load_pd(mat.m + 12)));
 		}
 
 		return res;
@@ -707,31 +1114,6 @@ namespace hr
 			_mm256_store_pd(res.m + 4, _mm256_sub_pd(_mm256_load_pd(m + 4), _mm256_load_pd(mat.m + 4)));
 			_mm256_store_pd(res.m + 8, _mm256_sub_pd(_mm256_load_pd(m + 8), _mm256_load_pd(mat.m + 8)));
 			_mm256_store_pd(res.m + 12, _mm256_sub_pd(_mm256_load_pd(m + 12), _mm256_load_pd(mat.m + 12)));
-		}
-
-		return res;
-	}
-
-	template<typename TDataType>
-	Matrix4<TDataType> Matrix4<TDataType>::operator*(const TDataType s) const noexcept
-	{
-		Matrix4 res;
-
-		if constexpr (std::is_same_v<TDataType, float>)
-		{
-			__m128 scalar = _mm_load_ps1(&s);
-			_mm_store_ps(res.m + 0, _mm_mul_ps(_mm_load_ps(m + 0), scalar));
-			_mm_store_ps(res.m + 4, _mm_mul_ps(_mm_load_ps(m + 4), scalar));
-			_mm_store_ps(res.m + 8, _mm_mul_ps(_mm_load_ps(m + 8), scalar));
-			_mm_store_ps(res.m + 12, _mm_mul_ps(_mm_load_ps(m + 12), scalar));
-		}
-		else
-		{
-			__m256d scalar = _mm256_broadcast_sd(&s);
-			_mm256_store_pd(res.m + 0, _mm256_mul_pd(_mm256_load_pd(m + 0), scalar));
-			_mm256_store_pd(res.m + 4, _mm256_mul_pd(_mm256_load_pd(m + 4), scalar));
-			_mm256_store_pd(res.m + 8, _mm256_mul_pd(_mm256_load_pd(m + 8), scalar));
-			_mm256_store_pd(res.m + 12, _mm256_mul_pd(_mm256_load_pd(m + 12), scalar));
 		}
 
 		return res;
@@ -795,21 +1177,27 @@ namespace hr
 	}
 
 	template<typename TDataType>
-	void Matrix4<TDataType>::transform(const Vector3Type& vec, Vector3Type& result) const noexcept
+	[[nodiscard]] Matrix4<TDataType>::Vector3Type Matrix4<TDataType>::transformCopy(const Vector3Type& vec) const noexcept
 	{
 		if constexpr (std::is_same_v<TDataType, float>)
 		{
 			__m128 row1 = _mm_mul_ps(_mm_load_ps1(&vec[0]), _mm_load_ps(m));
 			__m128 row2 = _mm_mul_ps(_mm_load_ps1(&vec[1]), _mm_load_ps(m + 4));
 			__m128 row3 = _mm_mul_ps(_mm_load_ps1(&vec[2]), _mm_load_ps(m + 8));
+
+			Vector3Type result;
 			_mm_store_ps(result.data(), _mm_add_ps(_mm_add_ps(row1, row2), _mm_add_ps(row3, _mm_load_ps(m + 12))));
+			return result;
 		}
 		else
 		{
 			__m256d row1 = _mm256_mul_pd(_mm256_broadcast_sd(&vec[0]), _mm256_load_pd(m));
 			__m256d row2 = _mm256_mul_pd(_mm256_broadcast_sd(&vec[1]), _mm256_load_pd(m + 4));
 			__m256d row3 = _mm256_mul_pd(_mm256_broadcast_sd(&vec[2]), _mm256_load_pd(m + 8));
+
+			Vector3Type result;
 			_mm256_store_pd(result.data(), _mm256_add_pd(_mm256_add_pd(row1, row2), _mm256_add_pd(row3, _mm256_load_pd(m + 12))));
+			return result;
 		}
 	}
 
@@ -822,11 +1210,11 @@ namespace hr
 	template<typename TDataType>
 	void Matrix4<TDataType>::transform(Vector4Type& vec) const noexcept
 	{
-		transform({vec.data(), 3});
+		transform({vec.data(), 4});
 	}
 
 	template<typename TDataType>
-	void Matrix4<TDataType>::transform(const Vector4Type& vec, Vector4Type& result) const noexcept
+	[[nodiscard]] Matrix4<TDataType>::Vector4Type Matrix4<TDataType>::transformCopy(const Vector4Type& vec) const noexcept
 	{
 		if constexpr (std::is_same_v<TDataType, float>)
 		{
@@ -834,7 +1222,10 @@ namespace hr
 			__m128 row2 = _mm_mul_ps(_mm_load_ps1(&vec[1]), _mm_load_ps(m + 4));
 			__m128 row3 = _mm_mul_ps(_mm_load_ps1(&vec[2]), _mm_load_ps(m + 8));
 			__m128 row4 = _mm_mul_ps(_mm_load_ps1(&vec[3]), _mm_load_ps(m + 12));
+
+			Vector4Type result;
 			_mm_store_ps(result.data(), _mm_add_ps(_mm_add_ps(row1, row2), _mm_add_ps(row3, row4)));
+			return result;
 		}
 		else
 		{
@@ -842,7 +1233,10 @@ namespace hr
 			__m256d row2 = _mm256_mul_pd(_mm256_broadcast_sd(&vec[1]), _mm256_load_pd(m + 4));
 			__m256d row3 = _mm256_mul_pd(_mm256_broadcast_sd(&vec[2]), _mm256_load_pd(m + 8));
 			__m256d row4 = _mm256_mul_pd(_mm256_broadcast_sd(&vec[3]), _mm256_load_pd(m + 12));
+
+			Vector4Type result;
 			_mm256_store_pd(result.data(), _mm256_add_pd(_mm256_add_pd(row1, row2), _mm256_add_pd(row3, row4)));
+			return result;
 		}
 	}
 
@@ -865,15 +1259,16 @@ namespace hr
 	}
 
 	template<typename TDataType>
-	void Matrix4<TDataType>::transform(const BBox<Vector3Type>& bbox, BBox<Vector3Type>& bboxDest) const noexcept
+	[[nodiscard]] BBox<typename Matrix4<TDataType>::Vector3Type> Matrix4<TDataType>::transformCopy(const BBox<Vector3Type>& bbox) const noexcept
 	{
 		std::array<Vector3Type, 8> pts;
 
 		bbox.corners(pts.data());
 		transform(pts);
 
-		bboxDest.reset();
-		bboxDest.merge(pts.data(), 8);
+		BBox<Vector3Type> result;
+		result.merge(pts.data(), 8);
+		return result;
 	}
 
 	template<typename TDataType>
@@ -891,9 +1286,26 @@ namespace hr
 	}
 
 	template<typename TDataType>
-	void Matrix4<TDataType>::write(TDataType dest[16]) const noexcept
+	TDataType Matrix4<TDataType>::determinant() const noexcept
 	{
-		std::memcpy(dest, m, sizeof(TDataType) * 16);
+		auto a = m[10] * m[15] - m[14] * m[11];
+		auto b =  m[9] * m[15] - m[13] * m[11];
+		auto c =  m[9] * m[14] - m[13] * m[10];
+		auto d =  m[8] * m[15] - m[12] * m[11];
+		auto e =  m[8] * m[14] - m[12] * m[10];
+		auto f =  m[8] * m[13] - m[12] *  m[9];
+
+		return
+			m[0] * (m[5] * a - m[6] * b + m[7] * c) -
+			m[1] * (m[4] * a - m[6] * d + m[7] * e) +
+			m[2] * (m[4] * b - m[5] * d + m[7] * f) -
+			m[3] * (m[4] * c - m[5] * e + m[6] * f);
+	}
+
+	template<typename TDataType>
+	void Matrix4<TDataType>::write(std::span<TDataType, 16> dest) const noexcept
+	{
+		std::memcpy(dest.data(), m, dest.size_bytes());
 	}
 
 	template<typename TDataType>
@@ -944,86 +1356,63 @@ namespace hr
 	template<typename TDataType>
 	Matrix4<TDataType>& Matrix4<TDataType>::inverse() noexcept
 	{
-		if constexpr (std::is_same_v<TDataType, float>)
-		{
-			float tmp[12], result[16], det;
+		TDataType tmp[12], result[16];
 
-			//calculate pairs for first 8 elements (cofactors)
-			tmp[0] = m[10] * m[15];
-			tmp[1] = m[11] * m[14];
-			tmp[2] = m[9] * m[15];
-			tmp[3] = m[11] * m[13];
-			tmp[4] = m[9] * m[14];
-			tmp[5] = m[10] * m[13];
-			tmp[6] = m[8] * m[15];
-			tmp[7] = m[11] * m[12];
-			tmp[8] = m[8] * m[14];
-			tmp[9] = m[10] * m[12];
-			tmp[10] = m[8] * m[13];
-			tmp[11] = m[9] * m[12];
+		// calculate pairs for first 8 elements (cofactors)
+		tmp[0] = m[10] * m[15];
+		tmp[1] = m[11] * m[14];
+		tmp[2] = m[9] * m[15];
+		tmp[3] = m[11] * m[13];
+		tmp[4] = m[9] * m[14];
+		tmp[5] = m[10] * m[13];
+		tmp[6] = m[8] * m[15];
+		tmp[7] = m[11] * m[12];
+		tmp[8] = m[8] * m[14];
+		tmp[9] = m[10] * m[12];
+		tmp[10] = m[8] * m[13];
+		tmp[11] = m[9] * m[12];
 
-			//calculate first 8 elements (cofactors)
-			result[0] = tmp[0] * m[5] + tmp[3] * m[6] + tmp[4] * m[7] - tmp[1] * m[5] - tmp[2] * m[6] - tmp[5] * m[7];
-			result[4] = tmp[1] * m[4] + tmp[6] * m[6] + tmp[9] * m[7] - tmp[0] * m[4] - tmp[7] * m[6] - tmp[8] * m[7];
-			result[8] = tmp[2] * m[4] + tmp[7] * m[5] + tmp[10] * m[7] - tmp[3] * m[4] - tmp[6] * m[5] - tmp[11] * m[7];
-			result[12] = tmp[5] * m[4] + tmp[8] * m[5] + tmp[11] * m[6] - tmp[4] * m[4] - tmp[9] * m[5] - tmp[10] * m[6];
-			result[1] = tmp[1] * m[1] + tmp[2] * m[2] + tmp[5] * m[3] - tmp[0] * m[1] - tmp[3] * m[2] - tmp[4] * m[3];
-			result[5] = tmp[0] * m[0] + tmp[7] * m[2] + tmp[8] * m[3] - tmp[1] * m[0] - tmp[6] * m[2] - tmp[9] * m[3];
-			result[9] = tmp[3] * m[0] + tmp[6] * m[1] + tmp[11] * m[3] - tmp[2] * m[0] - tmp[7] * m[1] - tmp[10] * m[3];
-			result[13] = tmp[4] * m[0] + tmp[9] * m[1] + tmp[10] * m[2] - tmp[5] * m[0] - tmp[8] * m[1] - tmp[11] * m[2];
+		// calculate first 8 elements (cofactors)
+		result[0] = tmp[0] * m[5] + tmp[3] * m[6] + tmp[4] * m[7] - tmp[1] * m[5] - tmp[2] * m[6] - tmp[5] * m[7];
+		result[4] = tmp[1] * m[4] + tmp[6] * m[6] + tmp[9] * m[7] - tmp[0] * m[4] - tmp[7] * m[6] - tmp[8] * m[7];
+		result[8] = tmp[2] * m[4] + tmp[7] * m[5] + tmp[10] * m[7] - tmp[3] * m[4] - tmp[6] * m[5] - tmp[11] * m[7];
+		result[12] = tmp[5] * m[4] + tmp[8] * m[5] + tmp[11] * m[6] - tmp[4] * m[4] - tmp[9] * m[5] - tmp[10] * m[6];
+		result[1] = tmp[1] * m[1] + tmp[2] * m[2] + tmp[5] * m[3] - tmp[0] * m[1] - tmp[3] * m[2] - tmp[4] * m[3];
+		result[5] = tmp[0] * m[0] + tmp[7] * m[2] + tmp[8] * m[3] - tmp[1] * m[0] - tmp[6] * m[2] - tmp[9] * m[3];
+		result[9] = tmp[3] * m[0] + tmp[6] * m[1] + tmp[11] * m[3] - tmp[2] * m[0] - tmp[7] * m[1] - tmp[10] * m[3];
+		result[13] = tmp[4] * m[0] + tmp[9] * m[1] + tmp[10] * m[2] - tmp[5] * m[0] - tmp[8] * m[1] - tmp[11] * m[2];
 
-			//calculate pairs for second 8 elements (cofactors)
-			tmp[0] = m[2] * m[7];
-			tmp[1] = m[3] * m[6];
-			tmp[2] = m[1] * m[7];
-			tmp[3] = m[3] * m[5];
-			tmp[4] = m[1] * m[6];
-			tmp[5] = m[2] * m[5];
-			tmp[6] = m[0] * m[7];
-			tmp[7] = m[3] * m[4];
-			tmp[8] = m[0] * m[6];
-			tmp[9] = m[2] * m[4];
-			tmp[10] = m[0] * m[5];
-			tmp[11] = m[1] * m[4];
+		// calculate pairs for second 8 elements (cofactors)
+		tmp[0] = m[2] * m[7];
+		tmp[1] = m[3] * m[6];
+		tmp[2] = m[1] * m[7];
+		tmp[3] = m[3] * m[5];
+		tmp[4] = m[1] * m[6];
+		tmp[5] = m[2] * m[5];
+		tmp[6] = m[0] * m[7];
+		tmp[7] = m[3] * m[4];
+		tmp[8] = m[0] * m[6];
+		tmp[9] = m[2] * m[4];
+		tmp[10] = m[0] * m[5];
+		tmp[11] = m[1] * m[4];
 
-			//calculate second 8 elements (cofactors)
-			result[2] = tmp[0] * m[13] + tmp[3] * m[14] + tmp[4] * m[15] - tmp[1] * m[13] - tmp[2] * m[14] - tmp[5] * m[15];
-			result[6] = tmp[1] * m[12] + tmp[6] * m[14] + tmp[9] * m[15] - tmp[0] * m[12] - tmp[7] * m[14] - tmp[8] * m[15];
-			result[10] = tmp[2] * m[12] + tmp[7] * m[13] + tmp[10] * m[15] - tmp[3] * m[12] - tmp[6] * m[13] - tmp[11] * m[15];
-			result[14] = tmp[5] * m[12] + tmp[8] * m[13] + tmp[11] * m[14] - tmp[4] * m[12] - tmp[9] * m[13] - tmp[10] * m[14];
-			result[3] = tmp[2] * m[10] + tmp[5] * m[11] + tmp[1] * m[9] - tmp[4] * m[11] - tmp[0] * m[9] - tmp[3] * m[10];
-			result[7] = tmp[8] * m[11] + tmp[0] * m[8] + tmp[7] * m[10] - tmp[6] * m[10] - tmp[9] * m[11] - tmp[1] * m[8];
-			result[11] = tmp[6] * m[9] + tmp[11] * m[11] + tmp[3] * m[8] - tmp[10] * m[11] - tmp[2] * m[8] - tmp[7] * m[9];
-			result[15] = tmp[10] * m[10] + tmp[4] * m[8] + tmp[9] * m[9] - tmp[8] * m[9] - tmp[11] * m[10] - tmp[5] * m[8];
+		// calculate second 8 elements (cofactors)
+		result[2] = tmp[0] * m[13] + tmp[3] * m[14] + tmp[4] * m[15] - tmp[1] * m[13] - tmp[2] * m[14] - tmp[5] * m[15];
+		result[6] = tmp[1] * m[12] + tmp[6] * m[14] + tmp[9] * m[15] - tmp[0] * m[12] - tmp[7] * m[14] - tmp[8] * m[15];
+		result[10] = tmp[2] * m[12] + tmp[7] * m[13] + tmp[10] * m[15] - tmp[3] * m[12] - tmp[6] * m[13] - tmp[11] * m[15];
+		result[14] = tmp[5] * m[12] + tmp[8] * m[13] + tmp[11] * m[14] - tmp[4] * m[12] - tmp[9] * m[13] - tmp[10] * m[14];
+		result[3] = tmp[2] * m[10] + tmp[5] * m[11] + tmp[1] * m[9] - tmp[4] * m[11] - tmp[0] * m[9] - tmp[3] * m[10];
+		result[7] = tmp[8] * m[11] + tmp[0] * m[8] + tmp[7] * m[10] - tmp[6] * m[10] - tmp[9] * m[11] - tmp[1] * m[8];
+		result[11] = tmp[6] * m[9] + tmp[11] * m[11] + tmp[3] * m[8] - tmp[10] * m[11] - tmp[2] * m[8] - tmp[7] * m[9];
+		result[15] = tmp[10] * m[10] + tmp[4] * m[8] + tmp[9] * m[9] - tmp[8] * m[9] - tmp[11] * m[10] - tmp[5] * m[8];
 
-			// calculate determinant
-			det = m[0] * result[0] + m[1] * result[4] + m[2] * result[8] + m[3] * result[12];
-			if (Math::isZero(det)) return *this;
+		// calculate determinant
+		auto det = m[0] * result[0] + m[1] * result[4] + m[2] * result[8] + m[3] * result[12];
+		if (Math::isZero(det)) return *this;
 
-			//multiplicar tudo pelo determinante
-			det = 1.0f / det;
-			result[0] *= det;
-			result[1] *= det;
-			result[2] *= det;
-			result[3] *= det;
-			result[4] *= det;
-			result[5] *= det;
-			result[6] *= det;
-			result[7] *= det;
-			result[8] *= det;
-			result[9] *= det;
-			result[10] *= det;
-			result[11] *= det;
-			result[12] *= det;
-			result[13] *= det;
-			result[14] *= det;
-			result[15] *= det;
-
-			std::memcpy(m, result, sizeof(float) * 16);
-		}
-		else
-		{
-		}
+		// calculate matrix inverse
+		std::memcpy(m, result, sizeof(TDataType) * 16);
+		operator*=(kOne<TDataType> / det);
 
 		return *this;
 	}
@@ -1102,6 +1491,120 @@ namespace hr
 	}
 
 	template<typename TDataType>
+	Matrix3<TDataType> Matrix3<TDataType>::rotation(const Quaternion<TDataType>& unitQuaternion) noexcept
+	{
+		auto xx = unitQuaternion[0] * unitQuaternion[0];
+		auto yy = unitQuaternion[1] * unitQuaternion[1];
+		auto zz = unitQuaternion[2] * unitQuaternion[2];
+		auto xy = unitQuaternion[0] * unitQuaternion[1];
+		auto zw = unitQuaternion[2] * unitQuaternion[3];
+		auto xz = unitQuaternion[0] * unitQuaternion[2];
+		auto yw = unitQuaternion[1] * unitQuaternion[3];
+		auto yz = unitQuaternion[1] * unitQuaternion[2];
+		auto xw = unitQuaternion[0] * unitQuaternion[3];
+
+		Matrix3 mat;
+
+		mat.m[0] = kOne<TDataType> - kTwo<TDataType> * (yy + zz);
+		mat.m[1] = kTwo<TDataType> * (xy + zw);
+		mat.m[2] = kTwo<TDataType> * (xz - yw);
+
+		mat.m[3] = kTwo<TDataType> * (xy - zw);
+		mat.m[4] = kOne<TDataType> - kTwo<TDataType> * (xx + zz);
+		mat.m[5] = kTwo<TDataType> * (yz + xw);
+
+		mat.m[6] = kTwo<TDataType> * (xz + yw);
+		mat.m[7] = kTwo<TDataType> * (yz - xw);
+		mat.m[8] = kOne<TDataType> - kTwo<TDataType> * (xx + yy);
+
+		return mat;
+	}
+
+	template<typename TDataType>
+	Matrix3<TDataType> Matrix3<TDataType>::rotation(const Vector3Type& unitVec, const TDataType angleDeg) noexcept
+	{
+		return Matrix3::rotation(unitVec[0], unitVec[1], unitVec[2], angleDeg);
+	}
+
+	template<typename TDataType>
+	Matrix3<TDataType> Matrix3<TDataType>::rotation(const TDataType unitVecX, const TDataType unitVecY, const TDataType unitVecZ, const TDataType angleDeg) noexcept
+	{
+		auto cos = std::cos(Math::Deg2Rad<TDataType> * angleDeg);
+		auto sin = std::sin(Math::Deg2Rad<TDataType> * angleDeg);
+		auto cos_1 = kOne<TDataType> - cos;
+		auto xx = unitVecX * unitVecX;
+		auto yy = unitVecY * unitVecY;
+		auto zz = unitVecZ * unitVecZ;
+		auto xy = unitVecX * unitVecY;
+		auto yz = unitVecY * unitVecZ;
+		auto xz = unitVecX * unitVecZ;
+
+		Matrix3 mat;
+
+		mat.m[0] = cos + xx * cos_1;
+		mat.m[1] = unitVecZ * sin + xy * cos_1;
+		mat.m[2] = -unitVecY * sin + xz * cos_1;
+
+		mat.m[3] = xy * cos_1 - unitVecZ * sin;
+		mat.m[4] = cos + yy * cos_1;
+		mat.m[5] = unitVecX * sin + yz * cos_1;
+
+		mat.m[6] = unitVecY * sin + xz * cos_1;
+		mat.m[7] = -unitVecX * sin + yz * cos_1;
+		mat.m[8] = cos + zz * cos_1;
+
+		return mat;
+	}
+
+	template<typename TDataType>
+	Matrix3<TDataType> Matrix3<TDataType>::rotationX(const TDataType angleDeg) noexcept
+	{
+		auto cos = std::cos(Math::Deg2Rad<TDataType> * angleDeg);
+		auto sin = std::sin(Math::Deg2Rad<TDataType> * angleDeg);
+
+		auto mat = Matrix3::identity();
+
+		mat.m[4] = cos;
+		mat.m[5] = sin;
+		mat.m[7] = -sin;
+		mat.m[8] = cos;
+
+		return mat;
+	}
+
+	template<typename TDataType>
+	Matrix3<TDataType> Matrix3<TDataType>::rotationY(const TDataType angleDeg) noexcept
+	{
+		auto cos = std::cos(Math::Deg2Rad<TDataType> * angleDeg);
+		auto sin = std::sin(Math::Deg2Rad<TDataType> * angleDeg);
+
+		auto mat = Matrix3::identity();
+
+		mat.m[0] = cos;
+		mat.m[2] = -sin;
+		mat.m[6] = sin;
+		mat.m[8] = cos;
+
+		return mat;
+	}
+
+	template<typename TDataType>
+	Matrix3<TDataType> Matrix3<TDataType>::rotationZ(const TDataType angleDeg) noexcept
+	{
+		auto cos = std::cos(Math::Deg2Rad<TDataType> * angleDeg);
+		auto sin = std::sin(Math::Deg2Rad<TDataType> * angleDeg);
+
+		auto mat = Matrix3::identity();
+
+		mat.m[0] = cos;
+		mat.m[1] = sin;
+		mat.m[3] = -sin;
+		mat.m[4] = cos;
+
+		return mat;
+	}
+
+	template<typename TDataType>
 	void Matrix3<TDataType>::operator*=(const Matrix3& s) noexcept
 	{
 		mat3x3Mult<TDataType>(m, s.m);
@@ -1142,7 +1645,7 @@ namespace hr
 		assert(mat.size() == 9);
 
 		for (int i = 0; i < 9; i++)
-			m[i] += mat[i];
+			m[i] -= mat[i];
 	}
 
 	template<typename TDataType>
@@ -1170,8 +1673,10 @@ namespace hr
 	}
 
 	template<typename TDataType>
-	void Matrix3<TDataType>::transform(TDataType vec[3]) const noexcept
+	void Matrix3<TDataType>::transform(std::span<TDataType> vec) const noexcept
 	{
+		assert(vec.size() == 3);
+
 		auto vecX = vec[0];
 		auto vecY = vec[1];
 		auto vecZ = vec[2];
@@ -1184,22 +1689,17 @@ namespace hr
 	template<typename TDataType>
 	void Matrix3<TDataType>::transform(Vector3Type& vec) const noexcept
 	{
-		transform(Vector3Type{vec}, vec);
+		vec = transformCopy(vec);
 	}
 
 	template<typename TDataType>
-	void Matrix3<TDataType>::transform(const Vector3Type& vec, Vector3Type& result) const noexcept
-	{
-		result[0] = vec[0]*m[0] + vec[1]*m[3] + vec[2]*m[6];
-		result[1] = vec[0]*m[1] + vec[1]*m[4] + vec[2]*m[7];
-		result[2] = vec[0]*m[2] + vec[1]*m[5] + vec[2]*m[8];
-	}
-
-	template<typename TDataType>
-	Matrix3<TDataType>::Vector3Type Matrix3<TDataType>::transform(const Vector3Type& vec) const noexcept
+	[[nodiscard]] Matrix3<TDataType>::Vector3Type Matrix3<TDataType>::transformCopy(const Vector3Type& vec) const noexcept
 	{
 		Vector3Type res;
-		transform(vec, res);
+		res[0] = vec[0] * m[0] + vec[1] * m[3] + vec[2] * m[6];
+		res[1] = vec[0] * m[1] + vec[1] * m[4] + vec[2] * m[7];
+		res[2] = vec[0] * m[2] + vec[1] * m[5] + vec[2] * m[8];
+
 		return res;
 	}
 
@@ -1207,7 +1707,7 @@ namespace hr
 	void Matrix3<TDataType>::transform(std::span<Vector3Type> vecs) const noexcept
 	{
 		for (auto& vec : vecs)
-			transform(vec);
+			vec = transformCopy(vec);
 	}
 
 	template<typename TDataType>
@@ -1224,9 +1724,18 @@ namespace hr
 	}
 
 	template<typename TDataType>
-	void Matrix3<TDataType>::write(TDataType dest[9]) const noexcept
+	TDataType Matrix3<TDataType>::determinant() const noexcept
 	{
-		std::memcpy(dest, m, sizeof(TDataType) * 9);
+		return
+			m[0] * (m[4] * m[8] - m[7] * m[5]) -
+			m[1] * (m[3] * m[8] - m[6] * m[5]) +
+			m[2] * (m[3] * m[7] - m[6] * m[4]);
+	}
+
+	template<typename TDataType>
+	void Matrix3<TDataType>::write(std::span<TDataType, 9> dest) const noexcept
+	{
+		std::memcpy(dest.data(), m, dest.size_bytes());
 	}
 
 	template<typename TDataType>

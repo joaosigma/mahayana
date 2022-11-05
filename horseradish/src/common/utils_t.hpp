@@ -188,6 +188,11 @@ namespace hr::utests
 		return Vector4EqualsMatcher<float>{vec[0], vec[1], vec[2], vec[3]};
 	}
 
+	inline auto VectorEquals(const hr::Vector4d& vec)
+	{
+		return Vector4EqualsMatcher<double>{vec[0], vec[1], vec[2], vec[3]};
+	}
+
 	template<typename TType>
 	struct QuaternionEqualsMatcher : Catch::Matchers::MatcherGenericBase
 	{

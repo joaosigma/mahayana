@@ -74,10 +74,12 @@ namespace hr::utests
 				REQUIRE_THAT(valsd, Catch::Matchers::Approx(targets));
 			}
 
-			BENCHMARK_ADVANCED("simd (float)")(Catch::Benchmark::Chronometer meter)
+			constexpr size_t NumValue{5000};
+
+			BENCHMARK_ADVANCED("mad not optimized (float)")(Catch::Benchmark::Chronometer meter)
 			{
 				std::vector<float> vals;
-				vals.resize(500);
+				vals.resize(NumValue);
 				randomVector(vals);
 
 				meter.measure([&vals] {
@@ -88,10 +90,10 @@ namespace hr::utests
 				});
 			};
 
-			BENCHMARK_ADVANCED("simd mad (float)")(Catch::Benchmark::Chronometer meter)
+			BENCHMARK_ADVANCED("mad optimized (float)")(Catch::Benchmark::Chronometer meter)
 			{
 				std::vector<float> vals;
-				vals.resize(500);
+				vals.resize(NumValue);
 				randomVector(vals);
 
 				meter.measure([&vals] {
@@ -100,10 +102,10 @@ namespace hr::utests
 				});
 			};
 
-			BENCHMARK_ADVANCED("simd (double)")(Catch::Benchmark::Chronometer meter)
+			BENCHMARK_ADVANCED("mad not optimized (double)")(Catch::Benchmark::Chronometer meter)
 			{
 				std::vector<double> vals;
-				vals.resize(500);
+				vals.resize(NumValue);
 				randomVector(vals);
 
 				meter.measure([&vals] {
@@ -114,10 +116,10 @@ namespace hr::utests
 				});
 			};
 
-			BENCHMARK_ADVANCED("simd mad (double)")(Catch::Benchmark::Chronometer meter)
+			BENCHMARK_ADVANCED("mad optimized (double)")(Catch::Benchmark::Chronometer meter)
 			{
 				std::vector<double> vals;
-				vals.resize(500);
+				vals.resize(NumValue);
 				randomVector(vals);
 
 				meter.measure([&vals]
