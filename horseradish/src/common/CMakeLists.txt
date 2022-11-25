@@ -35,6 +35,8 @@ set(HR_SOURCES
 	random.hpp
 	ray.hpp
 	scopedAction.hpp
+	serialize.hpp
+	serializeArchives.hpp
 	sorting.cpp
 	sorting.hpp
 	sparseMap.hpp
