@@ -510,10 +510,10 @@ namespace hr::streams
 			return 0;
 
 		if (!mFileHandle)
-			return -1;
+			return 0;
 
 		if (WriteFile(mFileHandle, inBuffer, numBytes, &bytesWritten, nullptr) == 0)
-			return -1;
+			return 0;
 
 		return bytesWritten;
 	}

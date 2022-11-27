@@ -1,5 +1,6 @@
 #pragma once
 
+#include <string>
 #include <functional>
 
 #if defined(_WIN32) && !defined(_WIN64)

@@ -35,6 +35,11 @@ namespace hr::serialize::archive
 			return (mReader.read(buffer.data(), buffer.size_bytes()) == buffer.size_bytes());
 		}
 
+		bool skipBytes(size_t size)
+		{
+			return mReader.skip(size);
+		}
+
 		void writeArrayBegin(const size_t numElements)
 		{
 			mWriter.write(static_cast<uint32_t>(numElements));

@@ -37,6 +37,7 @@ set(HR_SOURCES
 	scopedAction.hpp
 	serialize.hpp
 	serializeArchives.hpp
+	serializeSupport.hpp
 	sorting.cpp
 	sorting.hpp
 	sparseMap.hpp

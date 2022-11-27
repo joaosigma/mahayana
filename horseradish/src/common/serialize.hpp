@@ -1,5 +1,6 @@
 #pragma once
 
+#include <string>
 #include <string_view>
 #include <optional>
 #include <memory>
@@ -9,10 +10,27 @@
 
 namespace hr::serialize
 {
+	template<class T>
+	struct NamedParam
+	{
+		std::string_view name;
+		const T& param;
+	};
+
+	template<class T>
+	struct Support
+	{ };
+
 	namespace traits
 	{
 		namespace detail
 		{
+			template <typename T> struct is_std_span : std::false_type{};
+			template <typename T> struct is_std_span<std::span<T>> : std::true_type{};
+			template <typename T> struct is_std_span<const std::span<T>> : std::true_type{};
+			template <typename T, size_t N> struct is_std_span<std::span<T, N>> : std::true_type{};
+			template <typename T, size_t N> struct is_std_span<const std::span<T, N>> : std::true_type{};
+
 			template <typename T> struct is_std_vector : std::false_type{};
 			template <typename... TArgs> struct is_std_vector<std::vector<TArgs...>> : std::true_type{};
 
@@ -20,10 +38,19 @@ namespace hr::serialize
 			template <typename... TArgs> struct is_std_shared_ptr<std::shared_ptr<TArgs...>> : std::true_type{};
 
 			template <typename T> struct is_std_unique_ptr : std::false_type{};
-			template <typename... TArgs> struct is_std_unique_ptr<std::shared_ptr<TArgs...>> : std::true_type{};
+			template <typename... TArgs> struct is_std_unique_ptr<std::unique_ptr<TArgs...>> : std::true_type{};
 
 			template <typename T> struct is_std_optional : std::false_type{};
-			template <typename... TArgs> struct is_std_optional<std::shared_ptr<TArgs...>> : std::true_type{};
+			template <typename... TArgs> struct is_std_optional<std::optional<TArgs...>> : std::true_type{};
+
+			template <typename T> struct is_named_param : std::false_type{};
+			template <typename... TArgs> struct is_named_param<NamedParam<TArgs...>> : std::true_type{};
+		};
+
+		template<typename T>
+		struct is_std_span
+		{
+			static constexpr bool const value = detail::is_std_span<std::decay_t<T>>::value;
 		};
 
 		template <typename T>
@@ -45,47 +72,13 @@ namespace hr::serialize
 		struct is_std_optional {
 			static constexpr bool const value = detail::is_std_optional<std::decay_t<T>>::value;
 		};
-	}
 
-	template<class T>
-	struct NamedParam
-	{
-		std::string_view name;
-		const T& param;
-	};
-
-	struct Access
-	{
 		template<typename T>
-		static NamedParam<T> namedParam(std::string_view name, const T& param)
+		struct is_named_param
 		{
-			return NamedParam<T>{ .name = name, .param = param};
-		}
-
-		template<class TArchive, class TClass>
-		static void serialize(TArchive& writer, const TClass& t)
-		{
-			t.serialize<TArchive>(writer);
-		}
-
-		template<class TArchive, class TClass>
-		static void deserialize(TArchive& reader, TClass& t)
-		{
-			t.deserialize<TArchive>(reader);
-		}
-
-		template<class TArchive, class TClass>
-		static std::shared_ptr<TClass> deserializeShared(TArchive& reader)
-		{
-			return TClass::template deserializeNew<TArchive>(reader);
-		}
-
-		template<class TArchive, class TClass>
-		static std::shared_ptr<TClass> deserializeUnique(TArchive& reader)
-		{
-			return TClass::template deserializeUnique<TArchive>(reader);
-		}
-	};
+			static constexpr bool const value = detail::is_named_param<std::decay_t<T>>::value;
+		};
+	}
 
 	template<class TArchive>
 	struct Archive
@@ -99,6 +92,11 @@ namespace hr::serialize
 		bool readBytes(std::span<std::byte> buffer)
 		{
 			return static_cast<TArchive*>(this)->readBytes(buffer);
+		}
+		
+		bool skipBytes(size_t size)
+		{
+			return static_cast<TArchive*>(this)->skipBytes(size);
 		}
 
 		void writeArrayBegin(size_t numElements)
@@ -162,6 +160,43 @@ namespace hr::serialize
 		}
 
 		template<typename T>
+		ArchiveReader& operator>>(const T& value)
+		{
+			if constexpr (traits::is_std_span<T>::value)
+			{
+				auto numElements = m_archive.readFixed<uint32_t>();
+				if (value.size() < numElements)
+				{
+					//skip values
+					for (; numElements > 0; numElements--)
+					{
+						typename T::value_type elem;
+						(*this) >> elem;
+					}
+				}
+				else if (numElements > 0)
+				{
+					if constexpr (TArchiveImpl::isBinary() && std::is_trivial_v<typename T::value_type>)
+					{
+						m_archive.readBytes(std::as_writable_bytes(value));
+					}
+					else
+					{
+						size_t curIndex{0};
+						for (; numElements > 0; numElements--)
+							(*this) >> value[curIndex++];
+					}
+				}
+			}
+			else
+			{
+				(Support<typename std::decay<T>::type>{}).load(*this, value);
+			}
+
+			return *this;
+		}
+
+		template<typename T>
 		ArchiveReader& operator >> (T& value)
 		{
 			if constexpr (std::is_enum_v<T>)
@@ -181,6 +216,32 @@ namespace hr::serialize
 				{
 					value.resize(size);
 					m_archive.readBytes(std::as_writable_bytes(std::span{ value }));
+				}
+			}
+			else if constexpr (traits::is_std_span<T>::value)
+			{
+				auto numElements = m_archive.readFixed<uint32_t>();
+				if (value.size() < numElements)
+				{
+					//skip values
+					for (; numElements > 0; numElements--)
+					{
+						typename T::value_type elem;
+						(*this) >> elem;
+					}
+				}
+				else if (numElements > 0)
+				{
+					if constexpr (TArchiveImpl::isBinary() && std::is_trivial_v<typename T::value_type>)
+					{
+						m_archive.readBytes(std::as_writable_bytes(value));
+					}
+					else
+					{
+						size_t curIndex{ 0 };
+						for (; numElements > 0; numElements--)
+							(*this) >> value[curIndex++];
+					}
 				}
 			}
 			else if constexpr (traits::is_std_vector<T>::value)
@@ -210,12 +271,12 @@ namespace hr::serialize
 			else if constexpr (traits::is_std_shared_ptr<T>::value)
 			{
 				auto hasData = m_archive.readFixed<uint8_t>();
-				value = (hasData != 0) ? Access::deserializeShared<ArchiveReader<TArchiveImpl>, T::element_type>(*this) : std::shared_ptr<T>{};
+				value = (hasData != 0) ? (Support<typename std::decay<T>::type>{}).loadShared(*this) : std::shared_ptr<T>{};
 			}
 			else if constexpr (traits::is_std_unique_ptr<T>::value)
 			{
 				auto hasData = m_archive.readFixed<uint8_t>();
-				value = (hasData != 0) ? Access::deserializeUnique<ArchiveReader<TArchiveImpl>, T::element_type>(*this) : std::unique_ptr<T>{};
+				value = (hasData != 0) ? (Support<typename std::decay<T>::type>{}).loadUnique(*this) : std::unique_ptr<T>{};
 			}
 			else if constexpr (traits::is_std_optional<T>::value)
 			{
@@ -226,7 +287,7 @@ namespace hr::serialize
 			}
 			else
 			{
-				Access::deserialize<ArchiveReader<TArchiveImpl>, T>(*this, value);
+				(Support<typename std::decay<T>::type>{}).load(*this, value);
 			}
 
 			return *this;
@@ -250,153 +311,69 @@ namespace hr::serialize
 		}
 
 		template<typename T>
-		ArchiveWriter& operator<<(const NamedParam<T>& namedParam)
-		{
-			m_archive.writeObjectField(namedParam.name);
-			return ((*this) << namedParam.param);
-		}
-
-		template<typename T, typename std::enable_if<!std::is_enum<T>::value>::type* = nullptr>
 		ArchiveWriter& operator<<(const T& value)
 		{
-			m_archive.writeObjectBegin();
-			Access::serialize<ArchiveWriter<TArchiveImpl>, T>(*this, value);
-			m_archive.writeObjectEnd();
-
-			return *this;
-		}
-
-		template<typename T, typename std::enable_if<std::is_enum<T>::value>::type* = nullptr>
-		ArchiveWriter& operator<<(const T& enumValue)
-		{
-			m_archive.template writeFixed<typename std::underlying_type<T>::type>(static_cast<typename std::underlying_type<T>::type>(enumValue));
-			return *this;
-		}
-
-		ArchiveWriter& operator<<(const char& value)
-		{
-			m_archive.template writeFixed<char>(value);
-			return *this;
-		}
-
-		ArchiveWriter& operator<<(const int8_t& value)
-		{
-			m_archive.template writeFixed<int8_t>(value);
-			return *this;
-		}
-
-		ArchiveWriter& operator<<(const uint8_t& value)
-		{
-			m_archive.template writeFixed<uint8_t>(value);
-			return *this;
-		}
-
-		ArchiveWriter& operator<<(const int16_t& value)
-		{
-			m_archive.template writeFixed<int16_t>(value);
-			return *this;
-		}
-
-		ArchiveWriter& operator<<(const uint16_t& value)
-		{
-			m_archive.template writeFixed<uint16_t>(value);
-			return *this;
-		}
-
-		ArchiveWriter& operator<<(const int32_t& value)
-		{
-			m_archive.template writeFixed<int32_t>(value);
-			return *this;
-		}
-
-		ArchiveWriter& operator<<(const uint32_t& value)
-		{
-			m_archive.template writeFixed<uint32_t>(value);
-			return *this;
-		}
-
-		ArchiveWriter& operator<<(const int64_t& value)
-		{
-			m_archive.template writeFixed<int64_t>(value);
-			return *this;
-		}
-
-		ArchiveWriter& operator<<(const uint64_t& value)
-		{
-			m_archive.template writeFixed<uint64_t>(value);
-			return *this;
-		}
-
-		ArchiveWriter& operator<<(const float& value)
-		{
-			m_archive.template writeFixed<float>(value);
-			return *this;
-		}
-
-		ArchiveWriter& operator<<(const double& value)
-		{
-			m_archive.template writeFixed<double>(value);
-			return *this;
-		}
-
-		ArchiveWriter& operator<<(const bool& value)
-		{
-			m_archive.writeBool(value);
-			return *this;
-		}
-
-		ArchiveWriter& operator<<(const std::string& str)
-		{
-			m_archive.writeString(str);
-			return *this;
-		}
-
-		ArchiveWriter& operator<<(std::string_view str)
-		{
-			m_archive.writeString(str);
-			return *this;
-		}
-
-		template<typename T>
-		ArchiveWriter& operator<<(const std::vector<T>& vec)
-		{
-			m_archive.writeArrayBegin(vec.size());
-
-			if constexpr (TArchiveImpl::isBinary() && std::is_trivial_v<T>)
+			if constexpr (traits::is_named_param<T>::value)
 			{
-				m_archive.writeBytes(std::as_bytes(std::span{vec}));
+				m_archive.writeObjectField(value.name);
+				return ((*this) << value.param);
+			}
+			else if constexpr (std::is_enum_v<T>)
+			{
+				m_archive.template writeFixed<typename std::underlying_type<T>::type>(static_cast<typename std::underlying_type<T>::type>(value));
+			}
+			else if constexpr (std::is_integral_v<T> || std::is_floating_point_v<T>)
+			{
+				m_archive.template writeFixed<T>(value);
+			}
+			else if constexpr (std::is_same_v<T, std::string> || std::is_same_v<T, std::string_view>)
+			{
+				m_archive.writeString(value);
+			}
+			else if constexpr (traits::is_std_span<T>::value)
+			{
+				m_archive.writeArrayBegin(value.size());
+
+				if constexpr (TArchiveImpl::isBinary() && std::is_trivial_v<typename T::value_type>)
+				{
+					m_archive.writeBytes(std::as_bytes(value));
+				}
+				else
+				{
+					for (const auto& element : value)
+						(*this) << element;
+				}
+
+				m_archive.writeArrayEnd();
+			}
+			else if constexpr (traits::is_std_vector<T>::value)
+			{
+				m_archive.writeArrayBegin(value.size());
+
+				if constexpr (TArchiveImpl::isBinary() && std::is_trivial_v<typename T::value_type>)
+				{
+					m_archive.writeBytes(std::as_bytes(std::span{value}));
+				}
+				else
+				{
+					for (const auto& element : value)
+						(*this) << element;
+				}
+
+				m_archive.writeArrayEnd();
+			}
+			else if constexpr (traits::is_std_shared_ptr<T>::value || traits::is_std_unique_ptr<T>::value || traits::is_std_optional<T>::value)
+			{
+				m_archive.writePtrState(static_cast<bool>(value));
+				if (value) (*this) << *value;
 			}
 			else
 			{
-				for (const auto& element : vec)
-					(*this) << element;
+				m_archive.writeObjectBegin();
+				(Support<typename std::decay<T>::type>{}).save(*this, value);
+				m_archive.writeObjectEnd();
 			}
 
-			m_archive.writeArrayEnd();
-			return *this;
-		}
-
-		template<typename T>
-		ArchiveWriter& operator<<(const std::shared_ptr<T>& ptr)
-		{
-			m_archive.writePtrState(static_cast<bool>(ptr));
-			if (ptr) (*this) << *ptr;
-			return *this;
-		}
-
-		template<typename T>
-		ArchiveWriter& operator<<(const std::unique_ptr<T>& ptr)
-		{
-			m_archive.writePtrState(static_cast<bool>(ptr));
-			if (ptr) (*this) << *ptr;
-			return *this;
-		}
-
-		template<typename T>
-		ArchiveWriter& operator<<(const std::optional<T>& optional)
-		{
-			m_archive.writePtrState(static_cast<bool>(optional));
-			if (optional) (*this) << *optional;
 			return *this;
 		}
 

@@ -5,12 +5,15 @@
 #include "../platform/platform.hpp"
 
 #include <memory>
+#include <span>
+#include <array>
+#include <cstddef>
 #include <filesystem>
 #include <type_traits>
 
 #include <windows.h>
 
-namespace hr { namespace streams
+namespace hr::streams
 {
 	class MemoryStream;
 	class MemoryViewStream;
@@ -40,6 +43,41 @@ namespace hr { namespace streams
 			 
 		virtual bool cloneAllContent(MemoryViewStream &memView) const = 0;
 		virtual bool cloneAllContent(std::shared_ptr<unsigned char>& buffer, size_t& bufferSize, std::function<std::shared_ptr<unsigned char>(size_t)> allocatorFunc = nullptr) const = 0;
+	};
+
+	class NullStream final : public Stream
+	{
+	public:
+		void close() override
+		{ }
+		void flush() override
+		{ }
+
+		bool canRead() const override
+		{ return false; }
+		bool canRead(size_t) const override
+		{ return false; }
+		bool canWrite() const override
+		{ return false; }
+		bool canWrite(size_t) const override
+		{ return false; }
+		size_t length() const override
+		{ return 0; }
+		size_t position() const override
+		{ return 0; }
+
+		size_t read(void* const, size_t) override
+		{ return 0; }
+		size_t write(const void* const, size_t) override
+		{ return 0; }
+		bool seek(SeekOrigin, int) override
+		{ return false; }
+
+		bool cloneAllContent(MemoryViewStream&) const override
+		{ return false; }
+		bool cloneAllContent(std::shared_ptr<unsigned char>&, size_t&,
+		  std::function<std::shared_ptr<unsigned char>(size_t)> = nullptr) const override
+		{ return false; }
 	};
 
 	class MemoryStream final : public Stream
@@ -257,12 +295,12 @@ namespace hr { namespace streams
 			: mStream(stream)
 		{ }
 
-		Stream& stream()
+		Stream& stream() noexcept
 		{
 			return mStream;
 		}
 
-		const Stream& stream() const
+		const Stream& stream() const noexcept
 		{
 			return mStream;
 		}
@@ -312,52 +350,54 @@ namespace hr { namespace streams
 		Stream& mStream;
 
 	public:
-
 		explicit StreamWriter(Stream &stream) noexcept
 			: mStream(stream)
 		{ }
 
-		Stream& stream()
+		Stream& stream() noexcept
 		{
 			return mStream;
 		}
 
-		const Stream& stream() const
+		const Stream& stream() const noexcept
 		{
 			return mStream;
 		}
 
 		template<typename T>
-		bool write(const T& value)
+		bool write(T value, std::enable_if_t<std::is_arithmetic<T>::value || std::is_enum<T>::value, bool> = true)
 		{
-			if (!mStream.canWrite())
-				return false;
-
+			if (!mStream.canWrite()) return false;
 			return (mStream.write(&value, sizeof(T)) == sizeof(T));
+		}
+
+		template<typename T, size_t N>
+		bool write(std::span<const T, N> data)
+		{
+			if (!mStream.canWrite()) return 0;
+			return (mStream.write(data.data(), data.size_bytes()) == data.size_bytes());
 		}
 
 		size_t write(const void* const buffer, const size_t numBytes)
 		{
-			if (!mStream.canWrite())
-				return 0;
-
+			if (!mStream.canWrite()) return 0;
 			return mStream.write(buffer, numBytes);
 		}
 
 		size_t write(StreamReader& reader, const size_t numBytes)
 		{
-			unsigned char tmpBuffer[1024];
+			std::array<std::byte, 1024> tmpBuffer;
 
 			size_t bytesRemaining = numBytes;
 			size_t bytesTotalWritten = 0;
 
 			while (bytesRemaining > 0)
 			{
-				auto bytesRead = reader.read(tmpBuffer, std::min(bytesRemaining, sizeof(tmpBuffer)));
+				auto bytesRead = reader.read(tmpBuffer.data(), std::min(bytesRemaining, tmpBuffer.size()));
 				if (bytesRead <= 0)
 					break;
 
-				auto bytesWriten = write(tmpBuffer, bytesRead);
+				auto bytesWriten = write(tmpBuffer.data(), bytesRead);
 
 				bytesRemaining -= bytesRead;
 				bytesTotalWritten += bytesWriten;
@@ -439,4 +479,4 @@ namespace hr { namespace streams
 			mStream.write(hr::platform::Platform::NewLine, hr::platform::Platform::NewLineSize);
 		}
 	};
-} }
+}
