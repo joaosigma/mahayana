@@ -62,8 +62,6 @@ namespace hr::render
 
 		bool importMesh(AreaId areaId, std::string_view name, const hr::geom::Mesh<geom::VertexFull, uint32_t>& mesh);
 		bool importObj(AreaId areaId, std::string_view basePath, std::string_view fileName);
-		bool importMD5(AreaId areaId, std::string_view md5Path, std::string newAnimSetName);
-		bool importMD5Anim(AreaId areaId, std::string_view animSetParentName, std::string_view md5AnimPath, std::string newAnimName);
 		bool importGLTF(AreaId areaId, std::string_view gltfPath);
 
 		void processMesh(AreaId areaId, const std::vector<size_t>& objectIds, const std::function<void(geom::Mesh<geom::VertexFull, uint32_t>&)>& cb);

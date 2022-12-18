@@ -36,13 +36,13 @@ namespace hr::render
 
 			Type type = Type::Static;
 			size_t id = 0;
-			hr::BBox bbox;
+			hr::BBox<> bbox;
 
 			struct {
 				bool hasAnim = false;
 				size_t animSetId = 0;
 				geom::MeshAnim meshAnim;
-				geom::Mesh meshAnimated;
+				geom::Mesh<geom::VertexShading, uint16_t> meshAnimated;
 			} anim;
 		};
 
@@ -53,7 +53,7 @@ namespace hr::render
 
 			Type type = Type::Static;
 			size_t objectId = 0;
-			hr::BBox bbox;
+			hr::BBox<> bbox;
 
 			//instance data: [{quat, translate}, ...]
 		};
@@ -81,12 +81,12 @@ namespace hr::render
 
 	protected:
 		static bool geomFileCreate(hr::streams::FileStream& fstream);
-		static bool geomFileAddMesh(hr::streams::FileStream& fstream, size_t geomId, const hr::geom::Mesh& mesh);
+		static bool geomFileAddMesh(hr::streams::FileStream& fstream, size_t geomId, const geom::Mesh<geom::VertexFull, uint32_t>& mesh);
 		static bool geomFileAddMeshAnim(hr::streams::FileStream& fstream, size_t geomId, const hr::geom::MeshAnim& meshAnim, size_t animSetId);
 		static bool geomFileAddAnimationSet(hr::streams::FileStream& fstream, size_t animSetId, const hr::geom::MeshAnimSet& animSet);
-		static bool geomFileAddAnimation(hr::streams::FileStream& fstream, size_t animId, size_t animSetId, float frameRate, const std::vector<hr::geom::MeshAnimSet::Frame>& animation);
+		static bool geomFileAddAnimation(hr::streams::FileStream& fstream, size_t animId, size_t animSetId, const hr::geom::MeshAnimSet::Animation& animation);
 
-		static bool geomFileTransformMeshes(hr::streams::FileStream& fstream, const std::vector<size_t>& geomIds, const std::function<void(hr::geom::Mesh&)>& cb);
+		static bool geomFileTransformMeshes(hr::streams::FileStream& fstream, const std::vector<size_t>& geomIds, const std::function<void(geom::Mesh<geom::VertexFull, uint32_t>&)>& cb);
 
 		static bool geomFileRetrieveOffsets(hr::streams::FileStream& fstream, size_t geomId, size_t& vertexOffset, size_t& indexOffset);
 
@@ -107,6 +107,8 @@ namespace hr::render
 		void unloadArea(AreaId areaId);
 
 		void prepareNextFrame(Timestep& timestep, IRenderer& renderer, const tools::Camera& hrCamera, const hr::gl::tools::Viewport& hrViewport);
+
+		void accessObjectCurrentAnimation(size_t objectId, const std::function<void(const geom::MeshAnimSet&)>& cb) const noexcept;
 
 	private:
 		bool loadAnimations(hr::streams::StreamReader& sreader, Area& area);

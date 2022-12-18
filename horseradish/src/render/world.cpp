@@ -1,6 +1,8 @@
 #include "world.hpp"
 
 #include "common/encoders.hpp"
+#include "common/serializeArchives.hpp"
+#include "common/serializeSupport.hpp"
 #include "common/imageFactory.hpp"
 #include "common/fileSystem.hpp"
 
@@ -55,6 +57,8 @@ namespace hr { namespace render
 			uint32_t flags;
 			uint32_t geomsOffset;
 			uint32_t size;
+			uint32_t jointsSkinNode;
+			uint16_t numNodes;
 			uint16_t numJoints;
 		};
 
@@ -64,8 +68,6 @@ namespace hr { namespace render
 			uint32_t flags;
 			uint32_t geomsOffset;
 			uint32_t size;
-			float frameRate;
-			uint32_t numFrames;
 			uint32_t animSetId;
 		};
 #pragma pack(pop)
@@ -153,7 +155,7 @@ namespace hr { namespace render
 			return true;
 		}
 
-		bool fileRemoveData(hr::streams::FileStream& fstreamIn, hr::streams::FileStream& fstreamOut, std::vector<uint32_t> removeGeomsIds, std::vector<uint32_t> removeAnimSetIds, std::vector<uint32_t> removeAnimIds)
+		bool fileRemoveData(hr::streams::FileStream& fstreamIn, hr::streams::FileStream& fstreamOut, std::vector<size_t> removeGeomsIds, std::vector<uint32_t> removeAnimSetIds, std::vector<uint32_t> removeAnimIds)
 		{
 			hr::streams::StreamReader freader(fstreamIn);
 			hr::streams::StreamWriter fwriter(fstreamOut);
@@ -351,7 +353,8 @@ namespace hr { namespace render
 	public:
 		size_t objectId = 0;
 		struct {
-			hr::BBox bbox;
+			hr::BBox<> bbox;
+
 			size_t numVertices = 0, numIndices = 0;
 			size_t fstreamVertexOffset = 0, fstreamIndexOffset = 0;
 		} geom;
@@ -369,7 +372,7 @@ namespace hr { namespace render
 			return objectId;
 		}
 
-		BBox bbox() const override
+		BBox<> bbox() const override
 		{
 			return geom.bbox;
 		}
@@ -528,8 +531,12 @@ namespace hr { namespace render
 		return true;
 	}
 
-	bool World::geomFileAddMesh(hr::streams::FileStream& fstream, size_t geomId, const hr::geom::Mesh& mesh)
+	bool World::geomFileAddMesh(hr::streams::FileStream& fstream, size_t geomId, const geom::Mesh<geom::VertexFull, uint32_t>& mesh)
 	{
+		auto meshShading = geom::Mesh<geom::VertexShading, uint16_t>::convertMesh(mesh);
+		if (!meshShading.check())
+			return false;
+
 		size_t numGeoms = 0, numAnimSets = 0, numAnims = 0;
 
 		//update file header
@@ -568,7 +575,7 @@ namespace hr { namespace render
 		newGeomChunk.geomsOffset = 0;
 		newGeomChunk.animSetId = 0;
 	
-		auto success = fileAddData(fstream, numGeoms, numAnimSets, numAnims, [&mesh, &newGeomChunk](hr::streams::StreamWriter& fwriter)
+		auto success = fileAddData(fstream, numGeoms, numAnimSets, numAnims, [&mesh = meshShading, &newGeomChunk](hr::streams::StreamWriter& fwriter)
 		{
 			newGeomChunk.geomsOffset = fwriter.position();
 
@@ -708,6 +715,8 @@ namespace hr { namespace render
 		AnimSetChunkInfo newAnimSetChunk;
 		newAnimSetChunk.id = animSetId;
 		newAnimSetChunk.flags = 0;
+		newAnimSetChunk.jointsSkinNode = static_cast<uint16_t>(animSet.jointsRootNodeIndex());
+		newAnimSetChunk.numNodes = static_cast<uint16_t>(animSet.numNodes());
 		newAnimSetChunk.numJoints = static_cast<uint16_t>(animSet.numJoints());
 		newAnimSetChunk.size = 0;
 		newAnimSetChunk.geomsOffset = 0;
@@ -716,11 +725,12 @@ namespace hr { namespace render
 		{
 			newAnimSetChunk.geomsOffset = fwriter.position();
 
-			for (size_t curJoint = 0; curJoint < animSet.numJoints(); curJoint++)
+			//write nodes and joints
 			{
-				auto& mat = animSet.bindPoseInvertedMat(curJoint);
-				if (fwriter.write(mat.data(), sizeof(float) * 16) != sizeof(float) * 16)
-					return false;
+				serialize::archive::Stream archive(fwriter);
+				serialize::ArchiveWriter archiveWriter(archive);
+
+				archiveWriter << animSet.nodes() << animSet.joints();
 			}
 
 			newAnimSetChunk.size = fwriter.position() - newAnimSetChunk.geomsOffset;
@@ -739,7 +749,7 @@ namespace hr { namespace render
 		return success;
 	}
 
-	bool World::geomFileAddAnimation(hr::streams::FileStream& fstream, size_t animId, size_t animSetId, float frameRate, const std::vector<hr::geom::MeshAnimSet::Frame>& animation)
+	bool World::geomFileAddAnimation(hr::streams::FileStream& fstream, size_t animId, size_t animSetId, const hr::geom::MeshAnimSet::Animation& animation)
 	{
 		size_t numGeoms = 0, numAnimSets = 0, numAnims = 0;
 
@@ -773,8 +783,6 @@ namespace hr { namespace render
 		newAnimChunk.id = animId;
 		newAnimChunk.flags = 0;
 		newAnimChunk.animSetId = animSetId;
-		newAnimChunk.frameRate = frameRate;
-		newAnimChunk.numFrames = animation.size();
 		newAnimChunk.size = 0;
 		newAnimChunk.geomsOffset = 0;
 
@@ -782,20 +790,11 @@ namespace hr { namespace render
 		{
 			newAnimChunk.geomsOffset = fwriter.position();
 
-			for (const auto& curFrame : animation)
 			{
-				for (const auto& curJoint : curFrame.joints)
-				{
-					if (fwriter.write(curJoint.pos.data(), sizeof(float) * 3) != sizeof(float) * 3)
-						return false;
-					if (fwriter.write(curJoint.rot.data(), sizeof(float) * 4) != sizeof(float) * 4)
-						return false;
-				}
+				serialize::archive::Stream archive(fwriter);
+				serialize::ArchiveWriter archiveWriter(archive);
 
-				if (fwriter.write(curFrame.bbox.min().data(), sizeof(float) * 3) != sizeof(float) * 3)
-					return false;
-				if (fwriter.write(curFrame.bbox.max().data(), sizeof(float) * 3) != sizeof(float) * 3)
-					return false;
+				archiveWriter << animation;
 			}
 
 			newAnimChunk.size = fwriter.position() - newAnimChunk.geomsOffset;
@@ -814,7 +813,7 @@ namespace hr { namespace render
 		return success;
 	}
 
-	bool World::geomFileTransformMeshes(hr::streams::FileStream& fstream, const std::vector<size_t>& geomIds, const std::function<void(hr::geom::Mesh&)>& cb)
+	bool World::geomFileTransformMeshes(hr::streams::FileStream& fstream, const std::vector<size_t>& geomIds, const std::function<void(geom::Mesh<geom::VertexFull, uint32_t>&)>& cb)
 	{
 		if (!cb)
 			return false;
@@ -850,13 +849,17 @@ namespace hr { namespace render
 
 			auto numVertices = static_cast<size_t>(chunkInfo.numVertices);
 			auto numIndices = static_cast<size_t>(chunkInfo.numIndices);
-			hr::geom::Mesh mesh(numVertices, numIndices);
+			geom::Mesh<geom::VertexShading, uint16_t> mesh(numVertices, numIndices);
 
 			streamBin.seek(hr::streams::Stream::SeekOrigin::Begin, chunkInfo.geomsOffset);
 			streamBin.read(mesh.vertices(), mesh.sizeVertices());
 			streamBin.read(mesh.indices(), mesh.sizeIndices());
 
-			cb(mesh);
+			{
+				auto tmp = geom::Mesh<geom::VertexFull, uint32_t>::convertMesh(mesh);
+				cb(tmp);
+				mesh = geom::Mesh<geom::VertexShading, uint16_t>::convertMesh(tmp);
+			}
 
 			if ((mesh.numVertices() != numVertices) || (mesh.numIndices() != numIndices))
 				continue;
@@ -913,7 +916,7 @@ namespace hr { namespace render
 			if (chunkInfo.id == geomId)
 			{
 				vertexOffset = static_cast<size_t>(chunkInfo.geomsOffset);
-				indexOffset = geom::Mesh::sizeVertices(chunkInfo.numVertices);
+				indexOffset = geom::Mesh<geom::VertexShading, uint16_t>::sizeVertices(chunkInfo.numVertices);
 				return true;
 			}
 		}
@@ -962,15 +965,22 @@ namespace hr { namespace render
 				return false;
 		}
 
-		std::vector<Matrix> bindPoseMats;
-		bindPoseMats.resize(animSetInfo.numJoints);
+		std::vector<geom::MeshAnimSet::Node> nodes;
+		std::vector<geom::MeshAnimSet::Joint> joints;
 
 		stream.seek(hr::streams::Stream::SeekOrigin::Begin, animSetInfo.geomsOffset);
 
-		for (size_t curJointIndex = 0; curJointIndex < animSetInfo.numJoints; curJointIndex++)
-			stream.read(bindPoseMats[curJointIndex].data(), sizeof(float) * 16);
+		{
+			serialize::archive::Stream archive(stream);
+			serialize::ArchiveReader archiveReader(archive);
 
-		meshAnimSet = geom::MeshAnimSet(std::move(bindPoseMats));
+			archiveReader >> nodes >> joints;
+
+			assert(nodes.size() == animSetInfo.numNodes);
+			assert(joints.size() == animSetInfo.numJoints);
+		}
+
+		meshAnimSet = geom::MeshAnimSet("",  std::move(nodes), static_cast<size_t>(animSetInfo.jointsSkinNode), std::move(joints));
 		return true;
 	}
 
@@ -1015,7 +1025,7 @@ namespace hr { namespace render
 
 			hr::geom::MeshAnim meshAnim;
 			{
-				hr::geom::Mesh mesh(geomChunk.numVertices, geomChunk.numIndices); //bind pose
+				geom::Mesh<geom::VertexShading, uint16_t> mesh(geomChunk.numVertices, geomChunk.numIndices); //bind pose
 				stream.read(mesh.vertices(), mesh.sizeVertices());
 				stream.read(mesh.indices(), mesh.sizeIndices());
 
@@ -1087,12 +1097,12 @@ namespace hr { namespace render
 			class RendererObjectProxy
 				: public hr::render::IRenderObject
 			{
-				BBox mBbox;
+				BBox<> mBbox;
 				size_t mObjectId = 0;
-				hr::geom::Mesh& mMesh;
+				geom::Mesh<geom::VertexShading, uint16_t>& mMesh;
 
 			public:
-				RendererObjectProxy(size_t objectId, BBox bbox, hr::geom::Mesh& mesh)
+				RendererObjectProxy(size_t objectId, BBox<> bbox, geom::Mesh<geom::VertexShading, uint16_t>& mesh)
 					: mBbox{ std::move(bbox) }
 					, mObjectId{ objectId }
 					, mMesh{ mesh }
@@ -1104,7 +1114,7 @@ namespace hr { namespace render
 					return mObjectId;
 				}
 
-				BBox bbox() const override
+				BBox<> bbox() const override
 				{
 					return mBbox;
 				}
@@ -1187,8 +1197,8 @@ namespace hr { namespace render
 
 					auto bbox = animSet->second.animationSet.updatedBBox();
 
-					if (!camFrustum.testBox(bbox)) //no point in updating the object if its entire anim set is not visible
-						continue;
+					/*if (!camFrustum.testBox(bbox)) //no point in updating the object if its entire anim set is not visible
+						continue;*/
 
 					animSet->second.animationSet.updateMesh(object.anim.meshAnim, object.anim.meshAnimated);
 					
@@ -1218,19 +1228,38 @@ namespace hr { namespace render
 						if (animSet == area.mAnimationSets.end())
 							continue;
 
-						if (!camFrustum.testBox(animSet->second.animationSet.updatedBBox())) //no point in updating the object if its entire anim set is not visible
-							continue;
+						/*if (!camFrustum.testBox(animSet->second.animationSet.updatedBBox())) //no point in updating the object if its entire anim set is not visible
+							continue;/*
 					}
 					else
 					{
-						if (!camFrustum.testBox(instance.bbox))
-							continue;
+						/*if (!camFrustum.testBox(instance.bbox))
+							continue;*/
 					}
 
 					targetObjects.push_back(instance.objectId);
 				}
 
 				renderer.prepareNextFrame(area.sceneId, targetObjects);
+			}
+		}
+	}
+
+	void World::accessObjectCurrentAnimation(size_t objectId, const std::function<void(const geom::MeshAnimSet&)>& cb) const noexcept
+	{
+		if (!cb) return;
+
+		for (auto& [areaId, area] : mAreas)
+		{
+			for (auto& [objectId, object] : area.mObjects)
+			{
+				if (objectId != objectId) continue;
+
+				auto animSet = area.mAnimationSets.find(object.anim.animSetId);
+				if (animSet == area.mAnimationSets.end()) return;
+
+				cb(animSet->second.animationSet);
+				return;
 			}
 		}
 	}
@@ -1284,15 +1313,19 @@ namespace hr { namespace render
 			auto& animSet = area.mAnimationSets[animSetInfo.id];
 
 			{
-				std::vector<Matrix> bindPoseMats;
-				bindPoseMats.resize(animSetInfo.numJoints);
-
 				sreader.seek(hr::streams::Stream::SeekOrigin::Begin, animSetInfo.geomsOffset);
 
-				for (size_t curJointIndex = 0; curJointIndex < animSetInfo.numJoints; curJointIndex++)
-					sreader.read(bindPoseMats[curJointIndex].data(), sizeof(float) * 16);
+				serialize::archive::Stream archive(sreader);
+				serialize::ArchiveReader archiveReader(archive);
 
-				animSet.animationSet = geom::MeshAnimSet(std::move(bindPoseMats));
+				std::vector<geom::MeshAnimSet::Node> nodes;
+				std::vector<geom::MeshAnimSet::Joint> joints;
+				archiveReader >> nodes >> joints;
+
+				assert(nodes.size() == animSetInfo.numNodes);
+				assert(joints.size() == animSetInfo.numJoints);
+				
+				animSet.animationSet = geom::MeshAnimSet("", std::move(nodes), static_cast<size_t>(animSetInfo.jointsSkinNode), std::move(joints));
 			}
 
 			for (const auto& animInfo : animInfos)
@@ -1302,32 +1335,15 @@ namespace hr { namespace render
 
 				sreader.seek(hr::streams::Stream::SeekOrigin::Begin, animInfo.geomsOffset);
 
-				std::vector<geom::MeshAnimSet::Frame> animFrames;
-				animFrames.reserve(animInfo.numFrames);
-
-				for (size_t curFrameIndex = 0; curFrameIndex < animInfo.numFrames; curFrameIndex++)
+				geom::MeshAnimSet::Animation animation;
 				{
-					std::vector<geom::MeshAnimSet::Joint> skeleton;
-					skeleton.resize(animSetInfo.numJoints);
+					serialize::archive::Stream archive(sreader);
+					serialize::ArchiveReader archiveReader(archive);
 
-					for (size_t curJointIndex = 0; curJointIndex < animSetInfo.numJoints; curJointIndex++)
-					{
-						sreader.read(skeleton[curJointIndex].pos.data(), sizeof(float) * 3);
-						sreader.read(skeleton[curJointIndex].rot.data(), sizeof(float) * 4);
-					}
-
-					Vector3f bboxMin, bboxMax;
-					sreader.read(bboxMin.data(), sizeof(float) * 3);
-					sreader.read(bboxMax.data(), sizeof(float) * 3);
-
-					geom::MeshAnimSet::Frame newFrame;
-					newFrame.bbox.setMinMax(bboxMin, bboxMax);
-					newFrame.joints = std::move(skeleton);
-
-					animFrames.push_back(std::move(newFrame));
+					archiveReader >> animation;
 				}
 
-				animSet.animationSet.animAdd(animInfo.id, animInfo.frameRate, std::move(animFrames));
+				animSet.animationSet.animationAdd(animInfo.id, std::move(animation));
 			}
 		}
 
@@ -1410,7 +1426,7 @@ namespace hr { namespace render
 						size_t objectId = (*itr)["id"].GetUint();
 
 						auto objectType = static_cast<Object::Type>((*itr)["type"].GetUint());
-
+						
 						if (objectType == Object::Type::Static)
 						{
 							auto& object = area.mObjects[objectId];
@@ -1426,6 +1442,9 @@ namespace hr { namespace render
 								if (geomIt == geomInfo.end())
 									continue;
 
+								objectRenderer.geom.numVertices = geomIt->second.numVertices;
+								objectRenderer.geom.numIndices = geomIt->second.numIndices;
+
 								{
 									streamBin.seek(hr::streams::Stream::SeekOrigin::Begin, geomIt->second.geomsOffset);
 
@@ -1434,15 +1453,21 @@ namespace hr { namespace render
 									{
 										object.anim.animSetId = geomIt->second.animSetId;
 
-										object.anim.meshAnimated = hr::geom::Mesh(geomIt->second.numVertices, geomIt->second.numIndices); //bind pose
+										//read and store the base mesh (normally the bind pose)
+										object.anim.meshAnimated = geom::Mesh<geom::VertexShading, uint16_t>(geomIt->second.numVertices, geomIt->second.numIndices);
 										streamBin.read(object.anim.meshAnimated.vertices(), object.anim.meshAnimated.sizeVertices());
 										streamBin.read(object.anim.meshAnimated.indices(), object.anim.meshAnimated.sizeIndices());
 									}
 									else
 									{
-										streamBin.seek(hr::streams::Stream::SeekOrigin::Current, hr::geom::Mesh::sizeVertices(geomIt->second.numVertices));
-										streamBin.seek(hr::streams::Stream::SeekOrigin::Current, hr::geom::Mesh::sizeIndices(geomIt->second.numIndices));
+										//skip base mesh data
+										streamBin.seek(hr::streams::Stream::SeekOrigin::Current, geom::Mesh<geom::VertexShading, uint16_t>::sizeVertices(geomIt->second.numVertices));
+										streamBin.seek(hr::streams::Stream::SeekOrigin::Current, geom::Mesh<geom::VertexShading, uint16_t>::sizeIndices(geomIt->second.numIndices));
 									}
+
+									//store where in the file our geom is
+									objectRenderer.geom.fstreamVertexOffset = geomIt->second.geomsOffset;
+									objectRenderer.geom.fstreamIndexOffset = objectRenderer.geom.fstreamVertexOffset + geom::Mesh<geom::VertexShading, uint16_t>::sizeVertices(objectRenderer.geom.numVertices);
 
 									{
 										Vector3f bboxMin, bboxMax;
@@ -1451,9 +1476,10 @@ namespace hr { namespace render
 										streamBin.read(bboxMax.data(), sizeof(float) * 3);
 
 										object.bbox.setMinMax(bboxMin, bboxMax);
+										objectRenderer.geom.bbox = object.bbox;
 									}
 
-									if (object.anim.hasAnim)
+									if (object.anim.hasAnim) //read vertex joint information
 									{
 										if ((geomIt->second.flags & static_cast<uint16_t>(GeomFlags::AnimExtraBoneSet)) != 0)
 											object.anim.meshAnim = hr::geom::MeshAnim(object.anim.meshAnimated, hr::geom::MeshAnim::SkinningType::Vertex8Joints);
@@ -1463,12 +1489,6 @@ namespace hr { namespace render
 										streamBin.read(object.anim.meshAnim.verticesJoints(), object.anim.meshAnim.sizeVerticesJoints());
 									}
 								}
-
-								objectRenderer.geom.numVertices = geomIt->second.numVertices;
-								objectRenderer.geom.numIndices = geomIt->second.numIndices;
-								objectRenderer.geom.fstreamVertexOffset = geomIt->second.geomsOffset;
-								objectRenderer.geom.fstreamIndexOffset = objectRenderer.geom.fstreamVertexOffset + hr::geom::Mesh::sizeVertices(objectRenderer.geom.numVertices);
-								objectRenderer.geom.bbox = object.bbox;
 							}
 
 							//read material info
