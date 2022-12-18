@@ -234,9 +234,7 @@ namespace hr
 				bInt = 0x80000000 - bInt;
 
 			int intDiff = abs(aInt - bInt);
-			if (intDiff <= maxUlps)
-				return true;
-			return false;
+			return (intDiff <= maxUlps);
 		}
 	};
 

@@ -14,6 +14,11 @@
 
 namespace hr
 {
+	/*
+	* All operations are irregardless of convention, with the exception of the cross-product. And like matrices and quaternions, they use a left-hand convention. This means
+	* that positive rotation is clockwise about the axis of rotation (as looking to the origin of axis): plus X points right, plus Y points up and plus Z points forward (to the horizon).
+	*/
+
 	template<typename TDataType, size_t NComponents>
 	class Vector
 	{

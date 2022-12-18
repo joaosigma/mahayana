@@ -18,7 +18,7 @@ namespace hr { namespace engine
 			auto& sample = mBuffer[curSample];
 			writer.write(sample.statId);
 			writer.write(sample.sampleId);
-			writer.write(sample.timestamp);
+			writer.write(sample.timestamp.time_since_epoch().count());
 			writer.write(sample.value);
 		}
 

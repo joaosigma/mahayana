@@ -1709,6 +1709,8 @@ namespace hr
 	template<typename TTargetType>
 	Color<TTargetType> Color<float>::convert() const
 	{
+		static_assert(std::is_same_v<TTargetType, double> || std::is_same_v<TTargetType, float>, "Unsupported data type");
+
 		if constexpr (std::is_same_v<TTargetType, float>)
 		{
 			Color<float> newColor;
@@ -1716,23 +1718,20 @@ namespace hr
 
 			return newColor;
 		}
-		else if constexpr (std::is_same_v<TTargetType, double>)
+		else
 		{
 			Color<double> newColor;
 			_mm256_store_pd(newColor.data(), _mm256_cvtps_pd(_mm_load_ps(mRGBA)));
 
 			return newColor;
 		}
-		else
-		{
-			static_assert(std::is_same_v<TTargetType, double> || std::is_same_v<TTargetType, float>, "Unsupported data type");
-			return {};
-		}
 	}
 
 	template<typename TTargetType>
 	Color<TTargetType> Color<double>::convert() const
 	{
+		static_assert(std::is_same_v<TTargetType, double> || std::is_same_v<TTargetType, float>, "Unsupported data type");
+
 		if constexpr (std::is_same_v<TTargetType, double>)
 		{
 			Color<double> newColor;
@@ -1740,17 +1739,12 @@ namespace hr
 
 			return newColor;
 		}
-		else if constexpr (std::is_same_v<TTargetType, float>)
+		else
 		{
 			Color<float> newColor;
 			_mm_store_ps(newColor.data(), _mm256_cvtpd_ps(_mm256_load_pd(mRGBA)));
 
 			return newColor;
-		}
-		else
-		{
-			static_assert(std::is_same_v<TTargetType, double> || std::is_same_v<TTargetType, float>, "Unsupported data type");
-			return {};
 		}
 	}
 }

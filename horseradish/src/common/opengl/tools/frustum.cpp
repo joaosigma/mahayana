@@ -8,23 +8,23 @@ namespace hr::gl::tools
 {
 	void Frustum::extractPlanes(const hr::Vector4f& col1, const hr::Vector4f& col2, const hr::Vector4f& col3, const hr::Vector4f& col4)
 	{
-		mPlanes[static_cast<size_t>(PlaneIndex::Left)].set(col4[0] + col1[0], col4[1] + col1[1], col4[2] + col1[2], col4[3] + col1[3]);
-		mPlanes[static_cast<size_t>(PlaneIndex::Right)].set(col4[0] - col1[0], col4[1] - col1[1], col4[2] - col1[2], col4[3] - col1[3]);
+		mPlanes[static_cast<size_t>(PlaneIndex::Left)] = hr::Plane<float>{col4[0] + col1[0], col4[1] + col1[1], col4[2] + col1[2], col4[3] + col1[3]};
+		mPlanes[static_cast<size_t>(PlaneIndex::Right)] = hr::Plane<float>{col4[0] - col1[0], col4[1] - col1[1], col4[2] - col1[2], col4[3] - col1[3]};
 
-		mPlanes[static_cast<size_t>(PlaneIndex::Top)].set(col4[0] - col2[0], col4[1] - col2[1], col4[2] - col2[2], col4[3] - col2[3]);
-		mPlanes[static_cast<size_t>(PlaneIndex::Bottom)].set(col4[0] + col2[0], col4[1] + col2[1], col4[2] + col2[2], col4[3] + col2[3]);
+		mPlanes[static_cast<size_t>(PlaneIndex::Top)] = hr::Plane<float>{col4[0] - col2[0], col4[1] - col2[1], col4[2] - col2[2], col4[3] - col2[3]};
+		mPlanes[static_cast<size_t>(PlaneIndex::Bottom)] = hr::Plane<float>{col4[0] + col2[0], col4[1] + col2[1], col4[2] + col2[2], col4[3] + col2[3]};
 
 		mPlanes[static_cast<size_t>(PlaneIndex::Left)].normalize();
 		mPlanes[static_cast<size_t>(PlaneIndex::Right)].normalize();
 		mPlanes[static_cast<size_t>(PlaneIndex::Bottom)].normalize();
 		mPlanes[static_cast<size_t>(PlaneIndex::Top)].normalize();
 
-		mPlanes[static_cast<size_t>(PlaneIndex::Near)].set(col4[0] + col3[0], col4[1] + col3[1], col4[2] + col3[2], 0.0f);
-		mPlanes[static_cast<size_t>(PlaneIndex::Far)].set(col4[0] - col3[0], col4[1] - col3[1], col4[2] - col3[2], 0.0f);
+		mPlanes[static_cast<size_t>(PlaneIndex::Near)] = hr::Plane<float>{col4[0] + col3[0], col4[1] + col3[1], col4[2] + col3[2], 0.0f};
+		mPlanes[static_cast<size_t>(PlaneIndex::Far)] = hr::Plane<float>{col4[0] - col3[0], col4[1] - col3[1], col4[2] - col3[2], 0.0f};
 		mPlanes[static_cast<size_t>(PlaneIndex::Near)].normalizeNormal();
 		mPlanes[static_cast<size_t>(PlaneIndex::Far)].normalizeNormal();
-		mPlanes[static_cast<size_t>(PlaneIndex::Near)].setD(-(mPlanes[static_cast<size_t>(PlaneIndex::Near)].getDotNormal(mPosition) + mZNear));
-		mPlanes[static_cast<size_t>(PlaneIndex::Far)].setD(-(mPlanes[static_cast<size_t>(PlaneIndex::Near)].getDotNormal(mPosition) - mZFar));
+		mPlanes[static_cast<size_t>(PlaneIndex::Near)].replaceD(-(mPlanes[static_cast<size_t>(PlaneIndex::Near)].dotNormal(mPosition) + mZNear));
+		mPlanes[static_cast<size_t>(PlaneIndex::Far)].replaceD(-(mPlanes[static_cast<size_t>(PlaneIndex::Near)].dotNormal(mPosition) - mZFar));
 	}
 
 	bool Frustum::sweptSpherePlaneIntersect(float& t0, float& t1, const hr::Plane<float>& plane, const hr::Vector3f& sphereCenter, const float& sphereRadius, const hr::Vector3f& sweepDir) const
@@ -32,7 +32,7 @@ namespace hr::gl::tools
 		float b_dot_n, d_dot_n, tmp0, tmp1;
 
 		b_dot_n = plane.distance(sphereCenter);
-		d_dot_n = plane.getDotNormal(sweepDir);
+		d_dot_n = plane.dotNormal(sweepDir);
 
 		if (hr::Math::isZero(d_dot_n))
 		{
@@ -155,7 +155,7 @@ namespace hr::gl::tools
 			return 0.0f;
 
 		auto normalB = mPlanes[pb].normal();
-		return mPlanes[pa].getDotNormal(normalB);
+		return mPlanes[pa].dotNormal(normalB);
 	}
 
 	void Frustum::calculateFrustum(const hr::Matrix4f& transformation)
@@ -203,22 +203,22 @@ namespace hr::gl::tools
 
 	void Frustum::setFrustum(const hr::Vector3f& bboxMin, const hr::Vector3f& bboxMax)
 	{
-		mPlanes[static_cast<size_t>(PlaneIndex::Left)].set(1.0f, 0.0f, 0.0f, -bboxMin[0]);
-		mPlanes[static_cast<size_t>(PlaneIndex::Right)].set(-1.0f, 0.0f, 0.0f, bboxMax[0]);
-		mPlanes[static_cast<size_t>(PlaneIndex::Top)].set(0.0f, -1.0f, 0.0f, bboxMax[1]);
-		mPlanes[static_cast<size_t>(PlaneIndex::Bottom)].set(0.0f, 1.0f, 0.0f, -bboxMin[1]);
-		mPlanes[static_cast<size_t>(PlaneIndex::Near)].set(0.0f, 0.0f, -1.0f, bboxMax[2]);
-		mPlanes[static_cast<size_t>(PlaneIndex::Far)].set(0.0f, 0.0f, 1.0f, -bboxMin[2]);
+		mPlanes[static_cast<size_t>(PlaneIndex::Left)] = hr::Plane<float>{1.0f, 0.0f, 0.0f, -bboxMin[0]};
+		mPlanes[static_cast<size_t>(PlaneIndex::Right)] = hr::Plane<float>{-1.0f, 0.0f, 0.0f, bboxMax[0]};
+		mPlanes[static_cast<size_t>(PlaneIndex::Top)] = hr::Plane<float>{0.0f, -1.0f, 0.0f, bboxMax[1]};
+		mPlanes[static_cast<size_t>(PlaneIndex::Bottom)] = hr::Plane<float>{0.0f, 1.0f, 0.0f, -bboxMin[1]};
+		mPlanes[static_cast<size_t>(PlaneIndex::Near)] = hr::Plane<float>{0.0f, 0.0f, -1.0f, bboxMax[2]};
+		mPlanes[static_cast<size_t>(PlaneIndex::Far)] = hr::Plane<float>{0.0f, 0.0f, 1.0f, -bboxMin[2]};
 	}
 
 	void Frustum::setFrustum(const hr::Vector3f& center, const float radius)
 	{
-		mPlanes[static_cast<size_t>(PlaneIndex::Left)].set(1.0f, 0.0f, 0.0f, -(center[0] - radius));
-		mPlanes[static_cast<size_t>(PlaneIndex::Right)].set(-1.0f, 0.0f, 0.0f, center[0] + radius);
-		mPlanes[static_cast<size_t>(PlaneIndex::Top)].set(0.0f, -1.0f, 0.0f, center[1] + radius);
-		mPlanes[static_cast<size_t>(PlaneIndex::Bottom)].set(0.0f, 1.0f, 0.0f, -(center[1] - radius));
-		mPlanes[static_cast<size_t>(PlaneIndex::Near)].set(0.0f, 0.0f, -1.0f, center[2] + radius);
-		mPlanes[static_cast<size_t>(PlaneIndex::Far)].set(0.0f, 0.0f, 1.0f, -(center[2] - radius));
+		mPlanes[static_cast<size_t>(PlaneIndex::Left)] = hr::Plane<float>{1.0f, 0.0f, 0.0f, -(center[0] - radius)};
+		mPlanes[static_cast<size_t>(PlaneIndex::Right)] = hr::Plane<float>{-1.0f, 0.0f, 0.0f, center[0] + radius};
+		mPlanes[static_cast<size_t>(PlaneIndex::Top)] = hr::Plane<float>{0.0f, -1.0f, 0.0f, center[1] + radius};
+		mPlanes[static_cast<size_t>(PlaneIndex::Bottom)] = hr::Plane<float>{0.0f, 1.0f, 0.0f, -(center[1] - radius)};
+		mPlanes[static_cast<size_t>(PlaneIndex::Near)] = hr::Plane<float>{0.0f, 0.0f, -1.0f, center[2] + radius};
+		mPlanes[static_cast<size_t>(PlaneIndex::Far)] = hr::Plane<float>{0.0f, 0.0f, 1.0f, -(center[2] - radius)};
 	}
 
 	void Frustum::setFrustum(const hr::BBox<>& bbox)

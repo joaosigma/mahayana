@@ -100,13 +100,7 @@ namespace hr::render::tools
 
 		hr::Vector3f getStrideDir() const
 		{
-			auto auxVec = mAxis.dir;
-			auxVec[1] += 1.0f;
-
-			auto strideDir = mAxis.dir.crossProduct(auxVec);
-			strideDir.normalize();
-
-			return strideDir;
+			return mAxis.up.crossProduct(mAxis.dir);
 		}
 
 		float getFocalDist() const

@@ -19,7 +19,10 @@ namespace hr
 		template<class TArchiveReader>
 		static void load(TArchiveReader& reader, Vector3f& vec)
 		{
-			reader >> std::span<float>(vec.data(), 3);
+			std::array<float, 3> values;
+			reader >> std::span(values);
+
+			vec = Vector3f(values.data());
 		}
 	};
 
@@ -35,7 +38,10 @@ namespace hr
 		template<class TArchiveReader>
 		static void load(TArchiveReader& reader, Vector3d& vec)
 		{
-			reader >> std::span<double>(vec.data(), 3);
+			std::array<double, 3> values;
+			reader >> std::span(values);
+
+			vec = Vector3d(values.data());
 		}
 	};
 
@@ -51,7 +57,10 @@ namespace hr
 		template<class TArchiveReader>
 		static void load(TArchiveReader& reader, Vector4f& vec)
 		{
-			reader >> std::span<float>(vec.data(), 4);
+			std::array<float, 4> values;
+			reader >> std::span(values);
+
+			vec = Vector4f(values.data());
 		}
 	};
 
@@ -67,7 +76,10 @@ namespace hr
 		template<class TArchiveReader>
 		static void load(TArchiveReader& reader, Vector4d& vec)
 		{
-			reader >> std::span<double>(vec.data(), 4);
+			std::array<double, 4> values;
+			reader >> std::span(values);
+
+			vec = Vector4d(values.data());
 		}
 	};
 

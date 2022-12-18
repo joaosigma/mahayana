@@ -45,16 +45,15 @@ namespace hr::render::tools
 		hr::Vector3f viewDir;
 
 		float angX = mouseDeltaX * mScale.mouse;
-		float angY = mouseDeltaY * mScale.mouse * (-1.0f);
+		float angY = mouseDeltaY * mScale.mouse;
 
-		auto axis = mAxis.dir.crossProduct(mAxis.up);
-		axis.normalize();
+		auto strideDir = getStrideDir();
 
-		auto quat = Quaternionf::fromAxisAngle(axis, angY);
+		auto quat = Quaternionf::fromAxisAngle(strideDir, angY);
 		viewDir = quat.unitRotate(mAxis.dir);
 		viewDir.normalize();
 
-		quat = Quaternionf::fromAxisAngle(0.0f, 1.0f, 0.0f, -angX);
+		quat = Quaternionf::fromAxisAngle(0.0f, 1.0f, 0.0f, angX);
 		viewDir = quat.unitRotate(viewDir);
 
 		mAxis.dir = viewDir;
@@ -62,7 +61,7 @@ namespace hr::render::tools
 
 		if (updatePosition)
 		{
-			auto strideDir = getStrideDir();
+			strideDir = getStrideDir();
 			auto movementScale = mScale.keys * timeDeltaS * ((actionBitfield & Run) ? 2.0f : 1.0f);
 
 			if ((actionBitfield & Forward) == Forward)

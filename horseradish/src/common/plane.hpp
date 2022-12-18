@@ -23,6 +23,32 @@ namespace hr
 		enum class Position { CoPlanar, Front, Behind, Intersect };
 
 	public:
+		static constexpr Plane zero() noexcept
+		{
+			return Plane{0.0f};
+		}
+
+		static Plane lerp(const Plane& from, const Plane& to, TDataType factor) noexcept
+		{
+			Plane result;
+			result.mA = from.mA * factor;
+			result.mB = from.mB * factor;
+			result.mC = from.mC * factor;
+
+			VectorType vecAux(to.mA, to.mB, to.mC);
+			vecAux *= (1.0f - factor);
+
+			result.mA += vecAux[0];
+			result.mB += vecAux[1];
+			result.mC += vecAux[2];
+			result.normalizeNormal();
+
+			result.mD = (from.mD * factor) + (to.mD * (1.0f - factor));
+
+			return result;
+		}
+
+	public:
 		constexpr Plane() noexcept
 		{
 			mA = mB = mC = mD = 0;
@@ -33,24 +59,18 @@ namespace hr
 		constexpr Plane(Plane&&) = default;
 		constexpr Plane& operator=(Plane&&) = default;
 
-		explicit constexpr Plane(TDataType a, TDataType b, TDataType c, TDataType d)
+		explicit constexpr Plane(TDataType scalar) noexcept
+			: mA{ scalar }, mB{ scalar }, mC{ scalar }, mD{ scalar }
+		{ }
+		explicit constexpr Plane(TDataType a, TDataType b, TDataType c, TDataType d) noexcept
 			: mA{ a }, mB{ b }, mC{ c }, mD{ d }
 		{ }
 
-		explicit constexpr Plane(const VectorType& normal, TDataType d)
+		explicit constexpr Plane(const VectorType& normal, TDataType d) noexcept
 			: mA{ normal[0] }, mB{ normal[1] }, mC{ normal[2] }, mD{ d }
 		{ }
 
-		Plane& set(TDataType ax, TDataType by, TDataType cz, TDataType d)
-		{
-			mA = ax;
-			mB = by;
-			mC = cz;
-			mD = d;
-			return *this;
-		}
-
-		Plane& setNormal(const VectorType& normal)
+		Plane& replaceNormal(const VectorType& normal) noexcept
 		{
 			mA = normal[0];
 			mB = normal[1];
@@ -58,7 +78,7 @@ namespace hr
 			return *this;
 		}
 
-		Plane& setNormal(TDataType ax, TDataType by, TDataType cz)
+		Plane& replaceNormal(TDataType ax, TDataType by, TDataType cz) noexcept
 		{
 			mA = ax;
 			mB = by;
@@ -66,99 +86,86 @@ namespace hr
 			return *this;
 		}
 
-		Plane& setD(TDataType d)
+		Plane& replaceD(TDataType d) noexcept
 		{
 			mD = d;
 			return *this;
 		}
 
-		Plane lerp(const Plane& p, TDataType factor) const
-		{
-			Plane result;
-			result.mA = mA * factor;
-			result.mB = mB * factor;
-			result.mC = mC * factor;
-
-			VectorType vecAux(p.mA, p.mB, p.mC);
-			vecAux *= (1.0f - factor);
-
-			result.mA += vecAux[0];
-			result.mB += vecAux[1];
-			result.mC += vecAux[2];
-			result.normalizeNormal();
-
-			result.mD = (mD * factor) + (p.mD * (1.0f - factor));
-
-			return result;
-		}
-
-		void normalize(void)
+		Plane& normalize(void) noexcept
 		{
 			auto sizeInv = Math::sqrtInv(mA * mA + mB * mB + mC * mC);
 			mA *= sizeInv;
 			mB *= sizeInv;
 			mC *= sizeInv;
 			mD *= sizeInv;
+
+			return *this;
 		}
 
-		void normalizeNormal(void)
+		Plane& normalizeNormal(void) noexcept
 		{
-			
 			auto sizeInv = Math::sqrtInv(mA * mA + mB * mB + mC * mC);
 			mA *= sizeInv;
 			mB *= sizeInv;
 			mC *= sizeInv;
+
+			return *this;
 		}
 
-		void negateNormal()
+		Plane& negateNormal() noexcept
 		{
 			mA *= -1.0f;
 			mB *= -1.0f;
 			mC *= -1.0f;
+
+			return *this;
 		}
 
-		void negateD()
+		Plane& negateD() noexcept
 		{
 			mD *= -1.0f;
+
+			return *this;
 		}
 
-		void calcD(const VectorType& pointOnPlane)
+		void calcD(const VectorType& pointOnPlane) noexcept
 		{
 			mD = -pointOnPlane.dot(mA, mB, mC);
 		}
 
-		TDataType distance(const VectorType& point) const
+		TDataType distance(const VectorType& point) const noexcept
 		{
 			return (point.dot(mA, mB, mC) + mD);
 		}
 
-		VectorType normal() const
+		VectorType normal() const noexcept
 		{
 			return VectorType(mA, mB, mC);
 		}
 
-		TDataType d() const
+		TDataType d() const noexcept
 		{
 			return mD;
 		}
 
-		TDataType getDotCoord(const VectorType& point) const
+		TDataType dotCoord(const VectorType& point) const noexcept
 		{
 			return (point.getDot(mA, mB, mC) + mD);
 		}
 
-		TDataType getDotNormal(const VectorType& point) const
+		TDataType dotNormal(const VectorType& point) const noexcept
 		{
 			return point.dot(mA, mB, mC);
 		}
 
-		bool intersects(const RayType& ray) const
+		bool intersects(const RayType& ray) const noexcept
 		{
 			TDataType hitDistance;
 			return intersects(ray, hitDistance);
 		}
 
-		bool intersects(const RayType& ray, TDataType& hitDistance) const
+		bool intersects(const RayType& ray, TDataType& hitDistance) const noexcept
 		{
 			auto dot = ray.dir().dot(mA, mB, mC);
 			if (Math::isZero(dot))
@@ -168,13 +175,13 @@ namespace hr
 			return (hitDistance >= 0.0f);
 		}
 
-		bool intersects(const VectorType& lineStart, const VectorType& lineEnd) const
+		bool intersects(const VectorType& lineStart, const VectorType& lineEnd) const noexcept
 		{
 			VectorType result;
 			return intersects(lineStart, lineEnd, result);
 		}
 
-		bool intersects(const VectorType& lineStart, const VectorType& lineEnd, VectorType& result) const
+		bool intersects(const VectorType& lineStart, const VectorType& lineEnd, VectorType& result) const noexcept
 		{
 			RayType ray{ lineStart, VectorType::calcNormalize(lineEnd - lineStart) };
 
@@ -190,7 +197,7 @@ namespace hr
 			return true;
 		}
 
-		bool intersects(const Plane& p2, const Plane& p3, VectorType& result) const
+		bool intersects(const Plane& p2, const Plane& p3, VectorType& result) const noexcept
 		{
 			VectorType tmp1, tmp2, tmp3;
 
@@ -216,7 +223,7 @@ namespace hr
 			return true;
 		}
 
-		Position classifyPoint(const VectorType& point) const
+		Position classifyPoint(const VectorType& point) const noexcept
 		{
 			auto calcDot = point.dot(mA, mB, mC) + mD;
 
@@ -227,7 +234,7 @@ namespace hr
 			return Plane::Position::Behind;
 		}
 
-		Position classifyTri(const VectorType& p1, const VectorType& p2, const VectorType& p3) const
+		Position classifyTri(const VectorType& p1, const VectorType& p2, const VectorType& p3) const noexcept
 		{
 			auto c1 = classifyPoint(p1);
 			auto c2 = classifyPoint(p2);

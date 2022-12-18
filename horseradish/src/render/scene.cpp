@@ -100,14 +100,15 @@ namespace hr { namespace render
 			mRenderData.imode.setTexCoord(0.0f, mVideoData.frameSize.height);
 			mRenderData.imode.addPosition(viewRect.x, viewRect.y);
 
-			mRenderData.imode.setTexCoord(mVideoData.frameSize.width, mVideoData.frameSize.height);
-			mRenderData.imode.addPosition(viewRect.x + viewRect.width, viewRect.y);
+			mRenderData.imode.setTexCoord(0.0f, 0.0f);
+			mRenderData.imode.addPosition(viewRect.x, viewRect.y + viewRect.height);
 
 			mRenderData.imode.setTexCoord(mVideoData.frameSize.width, 0.0f);
 			mRenderData.imode.addPosition(viewRect.x + viewRect.width, viewRect.y + viewRect.height);
 
-			mRenderData.imode.setTexCoord(0.0f, 0.0f);
-			mRenderData.imode.addPosition(viewRect.x, viewRect.y + viewRect.height);
+			mRenderData.imode.setTexCoord(mVideoData.frameSize.width, mVideoData.frameSize.height);
+			mRenderData.imode.addPosition(viewRect.x + viewRect.width, viewRect.y);
+			
 			mRenderData.imode.endDraw();
 
 			hr::gl::glDisable(GL_BLEND);

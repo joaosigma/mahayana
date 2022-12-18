@@ -129,15 +129,15 @@ namespace hr
 
 		BSphere<TVectorType> boundingSphere() const
 		{
-			auto center = center();
-			return BSphere<TVectorType>(center, center.getDistance(mMinPt));
+			auto scenter = center();
+			return BSphere<TVectorType>(scenter, scenter.distance(mMinPt));
 		}
 
 		typename TVectorType::DataType planeDistance(const Plane<TVectorType> &plane) const
 		{
 			auto center = center();
 
-			auto d1 = plane.getDotCoord(center);
+			auto d1 = plane.dotCoord(center);
 			TVectorType planeNormal = plane.normal();
 
 			auto d2 = std::abs((mMaxPt[0] - center[0]) * planeNormal[0]);

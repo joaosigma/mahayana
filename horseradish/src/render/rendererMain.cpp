@@ -96,14 +96,15 @@ namespace hr::render
 			mGlImmediateMode.setTexCoord(0.0f, 0.0f);
 			mGlImmediateMode.addPosition(-1.0f, -1.0f, 1.0f);
 			
-			mGlImmediateMode.setTexCoord(1.0f, 0.0f);
-			mGlImmediateMode.addPosition(1.0f, -1.0f, 1.0f);
+			mGlImmediateMode.setTexCoord(0.0f, 1.0f);
+		    mGlImmediateMode.addPosition(-1.0f, 1.0f, 1.0f);
 
 			mGlImmediateMode.setTexCoord(1.0f, 1.0f);
 			mGlImmediateMode.addPosition(1.0f, 1.0f, 1.0f);
 
-			mGlImmediateMode.setTexCoord(0.0f, 1.0f);
-			mGlImmediateMode.addPosition(-1.0f, 1.0f, 1.0f);
+			mGlImmediateMode.setTexCoord(1.0f, 0.0f);
+		    mGlImmediateMode.addPosition(1.0f, -1.0f, 1.0f);
+
 		mGlImmediateMode.endDraw();
 	}
 
@@ -180,6 +181,7 @@ namespace hr::render
 			auto& mesh = scene.mObjects[obj.id()];
 
 			numGeoms++;
+			mesh.objId = obj.id();
 			mesh.bbox = obj.bbox();
 			mesh.meshVBOStartPos = poolVertex;
 			mesh.meshVBOVertexOffset = baseVertexOffset;
@@ -565,19 +567,18 @@ namespace hr::render
 			//reload shaders
 		}
 				
-		mShaders.forwardPassBuffers.fence.wait();
+		{
+			mShaders.forwardPassBuffers.fence.wait();
 
 			//uniform buffer common to every pass is prepared/set here
 			static uint32_t numLights = 1;
 			{
-			    auto matrixModelView = hrCamera.modelView();
-			    auto matrixTransform = hrCamera.modelView();
-
-				matrixTransform *= hrViewport.getProjection(hr::gl::tools::Viewport::ProjectionType::Proj3D);
+				auto matrixMView = hrCamera.modelView();
+				auto matrixProj = hrViewport.getProjection(hr::gl::tools::Viewport::ProjectionType::Proj3D);
 
 				Shaders::UniformLayout uniformData;
-				matrixTransform.write(uniformData.matTrans);
-				matrixModelView.write(uniformData.matView);
+				matrixProj.write(uniformData.matProj);
+				matrixMView.write(uniformData.matMView);
 				uniformData.numLights = numLights;
 
 				mShaders.forwardPassBuffers.uniform.writeData(&uniformData, sizeof(Shaders::UniformLayout), 0);
@@ -646,12 +647,13 @@ namespace hr::render
 			passSky(scene, hrCamera, hrViewport);
 			passLighting(scene, hrCamera, hrViewport);
 
-		mShaders.forwardPassBuffers.fence.place();
+			mShaders.forwardPassBuffers.fence.place();
+		}
 	}
 
-	void RendererMain::renderDebug(RendererDebug& rendererDebug, const tools::Camera& hrCamera, const hr::gl::tools::Viewport& hrViewport)
+	void RendererMain::renderDebug(RendererDebug& rendererDebug, const hr::render::World& world, const tools::Camera& hrCamera, const hr::gl::tools::Viewport& hrViewport)
 	{
-		rendererDebug.render(*this, hrCamera, hrViewport);
+		rendererDebug.render(*this, world, hrCamera, hrViewport);
 	}
 
 	void RendererMain::renderComposite(const hr::gl::tools::Viewport& hrViewport)

@@ -25,7 +25,7 @@ namespace hr
 				int l = bLeft ? bLeft->height : -1;
 				int r = bRight ? bRight->height : -1;
 
-				return (hr::Math::iAbs(l - r) < 2);
+				return (std::abs(l - r) < 2);
 			}
 
 			bool isLeftHeavier() const noexcept

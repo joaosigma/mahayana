@@ -2,6 +2,7 @@
 
 #include "renderer.hpp"
 
+#include "world.hpp"
 #include "tools/camera.hpp"
 #include "../common/random.hpp"
 #include "../common/fileSystem.hpp"
@@ -28,6 +29,8 @@ namespace hr::render
 		{
 			struct Object
 			{
+				size_t objId{ 0 };
+
 				int meshVBOStartPos{ 0 };
 				int meshVBOVertexOffset{ 0 };
 				unsigned int meshDrawIndirectOffset{ 0 };
@@ -74,8 +77,8 @@ namespace hr::render
 
 			struct UniformLayout
 			{
-				float matTrans[4 * 4];
-				float matView[4 * 4];
+				float matProj[4 * 4];
+				float matMView[4 * 4];
 				uint32_t numLights;
 			};
 			static const constexpr size_t LightLayoutMaxElements = 256;
@@ -138,7 +141,7 @@ namespace hr::render
 		~RendererMain();
 
 		void render(const tools::Camera& hrCamera, const hr::gl::tools::Viewport& hrViewport);
-		void renderDebug(RendererDebug& rendererDebug, const tools::Camera& hrCamera, const hr::gl::tools::Viewport& hrViewport);
+		void renderDebug(RendererDebug& rendererDebug, const hr::render::World& world, const tools::Camera& hrCamera, const hr::gl::tools::Viewport& hrViewport);
 		void renderComposite(const hr::gl::tools::Viewport& hrViewport);
 
 		//IRenderer implementation

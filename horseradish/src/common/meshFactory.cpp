@@ -46,6 +46,12 @@ namespace hr::geom
 		return convert(*m);
 	}
 
+	Mesh<VertexFull, uint32_t> Factory::genCylinder(size_t slices, size_t stacks)
+	{
+		par_ptr m{par_shapes_create_cylinder(static_cast<int>(slices), static_cast<int>(stacks)), par_destroyer};
+		return convert(*m);
+	}
+
 	Mesh<VertexFull, uint32_t> Factory::genTorus(size_t slices, size_t stacks, float innerRadius)
 	{
 		par_ptr m{ par_shapes_create_torus(static_cast<int>(slices), static_cast<int>(stacks), innerRadius), par_destroyer };

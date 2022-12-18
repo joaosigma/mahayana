@@ -204,9 +204,15 @@ namespace hr::utests
 			REQUIRE_THAT(Vector3f::calcCrossProduct(v1, v2), VectorEquals(11480.0f, 1260.0f, -1260.0f));
 			REQUIRE_THAT(v1.crossProduct(v2), VectorEquals(11480.0f, 1260.0f, -1260.0f));
 
-			// Cross product of vector and itself is zero
+			// cross product of vector and itself is zero
 			REQUIRE_THAT(Vector3f::calcCrossProduct(v1, v1), VectorEquals(0.0f, 0.0f, 0.0f));
 			REQUIRE_THAT(v1.crossProduct(v1), VectorEquals(0.0f, 0.0f, 0.0f));
+
+			//check direction
+			v1 = Vector3f{1.0f, 0.0f, 0.0f};
+			v2 = Vector3f{0.0f, 1.0f, 0.0f};
+			REQUIRE_THAT(Vector3f::calcCrossProduct(v1, v2), VectorEquals(0.0f, 0.0f, 1.0f));
+			REQUIRE_THAT(v1.crossProduct(v2), VectorEquals(0.0f, 0.0f, 1.0f));
 		}
 
 		SECTION("distance")
@@ -652,9 +658,15 @@ namespace hr::utests
 			REQUIRE_THAT(Vector3d::calcCrossProduct(v1, v2), VectorEquals(11480.0, 1260.0, -1260.0));
 			REQUIRE_THAT(v1.crossProduct(v2), VectorEquals(11480.0, 1260.0, -1260.0));
 
-			// Cross product of vector and itself is zero
+			// cross product of vector and itself is zero
 			REQUIRE_THAT(Vector3d::calcCrossProduct(v1, v1), VectorEquals(0.0, 0.0, 0.0));
 			REQUIRE_THAT(v1.crossProduct(v1), VectorEquals(0.0, 0.0, 0.0));
+
+			//check direction
+			v1 = Vector3d{1.0, 0.0, 0.0};
+			v2 = Vector3d{0.0, 1.0, 0.0};
+			REQUIRE_THAT(Vector3d::calcCrossProduct(v1, v2), VectorEquals(0.0, 0.0, 1.0));
+			REQUIRE_THAT(v1.crossProduct(v2), VectorEquals(0.0, 0.0, 1.0));
 		}
 
 		SECTION("distance")
