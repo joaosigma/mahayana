@@ -33,13 +33,13 @@ namespace hr::types
 		void unpack(const int16_t* const in, float* const out, size_t numValues)
 		{
 			for (size_t i = 0; i < numValues; i++)
-				out[i] = static_cast<float>(in[0])* shortScaleFrom;
+				out[i] = static_cast<float>(in[i])* shortScaleFrom;
 		}
 
 		void unpack(const uint16_t* const in, float* const out, size_t numValues)
 		{
 			for (size_t i = 0; i < numValues; i++)
-				out[i] = static_cast<float>(in[0])* ushortScaleFrom;
+				out[i] = static_cast<float>(in[i])* ushortScaleFrom;
 		}
 	}
 

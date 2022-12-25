@@ -9,8 +9,11 @@
 #include "libs/mikktspace/mikktspace.h"
 #include "libs/meshoptimizer/meshoptimizer.h"
 
+#include <set>
 #include <vector>
 #include <limits>
+#include <numeric>
+#include <unordered_map>
 
 namespace hr::geom
 {
@@ -223,6 +226,32 @@ namespace hr::geom
 
 		return Vector3f::calcNormalize((n1 * baryU) + (n2 * baryV) + (n3 * baryW));
 	}
+
+	BBox<> Mesh<VertexFull, uint32_t>::getBoundingBox() const noexcept
+	{
+		__m128 minPoint, maxPoint;
+
+		{
+			__m128 curPoint;
+			auto vertexData = mData.get();
+
+			minPoint = maxPoint = _mm_loadu_ps(vertexData->pos);
+			vertexData++;
+
+			for (size_t i = 1; i < mNumVertices; i++, vertexData++)
+			{
+				curPoint = _mm_loadu_ps(vertexData->pos);
+				minPoint = _mm_min_ps(minPoint, curPoint);
+				maxPoint = _mm_max_ps(maxPoint, curPoint);
+			}
+		}
+
+		Vector3f tmpVecs[2];
+		_mm_storeu_ps(tmpVecs[0].data(), minPoint);
+		_mm_storeu_ps(tmpVecs[1].data(), maxPoint);
+
+		return BBox(tmpVecs, 2);
+	}
 	
 	void Mesh<VertexFull, uint32_t>::flipUV() noexcept
 	{
@@ -409,6 +438,66 @@ namespace hr::geom
 		ctx.m_pInterface = &inter;
 		ctx.m_pUserData = &dataWrapper;
 		genTangSpaceDefault(&ctx);
+	}
+
+	std::vector<Mesh<VertexFull, uint32_t>> Mesh<VertexFull, uint32_t>::split(size_t maxVertexCount) const
+	{
+		if (mNumVertices <= maxVertexCount)
+			return {};
+
+		std::vector<Mesh<VertexFull, uint32_t>> newMeshes;
+
+		auto addMesh = [this, maxVertexCount, &newMeshes](const std::unordered_map<size_t, size_t>& vertexMapping, const std::vector<uint32_t>& newIndices)
+		{
+			Mesh<VertexFull, uint32_t> newMesh{vertexMapping.size(), newIndices.size()};
+
+			for (auto [oldIndex, newIndex] : vertexMapping)
+				newMesh.vertex(newIndex) = mData[oldIndex];
+			std::copy(newIndices.begin(), newIndices.end(), newMesh.indices());
+
+			assert(newMesh.check(maxVertexCount));
+			newMeshes.push_back(std::move(newMesh));
+		};
+
+		size_t newVertexIndex{0};
+		std::vector<uint32_t> newIndices;
+		std::unordered_map<size_t, size_t> vertexMapping;
+		for (size_t curIndex = 0; curIndex < mNumIndices; curIndex += 3)
+		{
+			//process triangle
+			for (size_t i = 0; i < 3; i++)
+			{
+				auto oldVertexIndex = mIndices[curIndex + i];
+				if (auto it = vertexMapping.find(oldVertexIndex); it != vertexMapping.end())
+				{
+					newIndices.push_back(it->second);
+					continue;
+				}
+
+				vertexMapping[oldVertexIndex] = newVertexIndex;
+				newIndices.push_back(newVertexIndex);
+				newVertexIndex++;
+			}
+
+			if ((vertexMapping.size() + 3) < maxVertexCount) 
+				continue;
+
+			addMesh(vertexMapping, newIndices);
+
+			newVertexIndex = 0;
+			newIndices.clear();
+			vertexMapping.clear();
+		}
+
+		//final remaining triangles
+		if (!newIndices.empty() || vertexMapping.empty())
+		{
+			assert(!newIndices.empty());
+			assert(!vertexMapping.empty());
+			addMesh(vertexMapping, newIndices);
+		}
+
+		return newMeshes;
 	}
 
 	Mesh<VertexShading, uint16_t> Mesh<VertexShading, uint16_t>::convertMesh(const Mesh<VertexFull, uint32_t>& source)

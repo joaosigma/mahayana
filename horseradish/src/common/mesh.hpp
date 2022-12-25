@@ -6,6 +6,7 @@
 #include "matrix.hpp"
 #include "bvolumes.hpp"
 
+#include <vector>
 #include <limits>
 #include <memory>
 #include <cassert>
@@ -95,6 +96,19 @@ namespace hr::geom
 			assert((numIndices % 3) == 0);
 
 			assert(mData&& mIndices);
+		}
+
+		MeshBase(std::span<const TVertex> vertices, std::span<const TIndex> indices)
+			: mNumVertices{ vertices.size() }, mNumIndices{ indices.size() }
+		{
+			mData = std::unique_ptr<TVertex[]>(new TVertex[mNumVertices]);
+			mIndices = std::unique_ptr<TIndex[]>(new TIndex[mNumIndices]);
+
+			assert((sizeof(TVertex) * mNumVertices) == vertices.size_bytes());
+			std::memcpy(mData.get(), vertices.get(), sizeof(TVertex) * mNumVertices);
+
+			assert((sizeof(TIndex) * mNumIndices) == indices.size_bytes());
+			std::memcpy(mIndices.get(), indices.get(), sizeof(TIndex) * mNumIndices);
 		}
 
 		MeshBase(const MeshBase& mesh)
@@ -232,11 +246,12 @@ namespace hr::geom
 			return count;
 		}
 
-		bool check() const noexcept
+		bool check(std::optional<size_t> maxNumVertices = std::nullopt) const noexcept
 		{
 			if (!mData || !mIndices || (mNumVertices <= 0) || (mNumVertices > MeshBase::maxVertexCount()) || (mNumIndices <= 0) || ((mNumIndices % 3) != 0))
 				return false;
 
+			auto maxVertices = !maxNumVertices ? mNumVertices : std::min(mNumVertices, *maxNumVertices);
 			for (size_t i = 0; i < mNumIndices; i++)
 			{
 				if (mIndices[i] >= mNumVertices)
@@ -296,6 +311,8 @@ namespace hr::geom
 
 		Vector3f triNormal(size_t triIndex, float baryU, float baryV) const noexcept;
 
+		BBox<> getBoundingBox() const noexcept;
+
 		void flipUV() noexcept;
 		void mirrorUV() noexcept;
 
@@ -314,6 +331,8 @@ namespace hr::geom
 		void optimizeIndices() noexcept;
 		void genNormals() noexcept;
 		void genTangents4() noexcept;
+
+		std::vector<Mesh> split(size_t maxVertexCount) const;
 	};
 
 	template<>

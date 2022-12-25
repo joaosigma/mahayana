@@ -316,7 +316,7 @@ namespace hr::serialize
 			if constexpr (traits::is_named_param<T>::value)
 			{
 				m_archive.writeObjectField(value.name);
-				return ((*this) << value.param);
+				(*this) << value.param;
 			}
 			else if constexpr (std::is_enum_v<T>)
 			{

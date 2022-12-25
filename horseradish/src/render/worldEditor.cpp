@@ -27,6 +27,13 @@ namespace hr::render
 {
 	namespace
 	{
+		struct gltfNode
+		{
+			std::string name;
+			int32_t parentIndex{ -1 };
+			Matrix4f localTransform{Matrix4f::identity()};
+		};
+
 		struct gltfPrimitiveState
 		{
 			bool hasPos = false;
@@ -69,6 +76,61 @@ namespace hr::render
 			else
 				return Quaterniond::from(data[0], data[1], data[2], data[3]).convert<float>();
 		};
+
+		std::vector<gltfNode> gltfReadNodes(const tinygltf::Model& gltfModel)
+		{
+			std::vector<gltfNode> nodes;
+			nodes.reserve(gltfModel.nodes.size());
+
+			for (const auto& node : gltfModel.nodes)
+			{
+				auto localTrans = Matrix4f::identity();
+				if (node.matrix.size() == 16)
+				{
+					assert(node.scale.empty() && node.rotation.empty() && node.translation.empty());
+					localTrans = Matrix4f::from<double>({node.matrix.data(), 16});
+				}
+				else
+				{
+					//first scale, then rotation and finally translation
+					if (node.scale.size() == 3) localTrans *= Matrix4f::scale(gltfReadVec3f(node.scale.data()));
+					if (node.rotation.size() == 4) localTrans *= gltfReadQuat(node.rotation.data());
+					if (node.translation.size() == 3) localTrans *= Matrix4f::translation(gltfReadVec3f(node.translation.data()));
+				}
+
+				gltfNode newNode;
+				newNode.name = node.name;
+				newNode.localTransform = localTrans;
+
+				nodes.push_back(std::move(newNode));
+			}
+
+			//calculate the parents
+			size_t curNodeIndex{0};
+			for (const auto& node : gltfModel.nodes)
+			{
+				for (const auto childIndex : node.children)
+				{
+					assert(nodes[childIndex].parentIndex == -1);
+					nodes[childIndex].parentIndex = curNodeIndex;
+				}
+
+				curNodeIndex++;
+			}
+
+			return nodes;
+		}
+
+		Matrix4f gltfCalcNodeGlobalTransform(std::span<const gltfNode> nodes, size_t nodeIndex)
+		{
+			assert((nodeIndex >= 0) && (nodeIndex < nodes.size()));
+			auto& node = nodes[nodeIndex];
+
+			if (node.parentIndex < 0)
+				return node.localTransform;
+
+			return node.localTransform * gltfCalcNodeGlobalTransform(nodes, static_cast<size_t>(node.parentIndex));
+		}
 
 		gltfPrimitiveState gltfReadPrimitive(const tinygltf::Model& gltfModel, const tinygltf::Primitive& gltfPrimitive, geom::Mesh<geom::VertexFull, uint32_t>& mesh, geom::MeshAnim &meshAnim)
 		{
@@ -150,10 +212,10 @@ namespace hr::render
 						size_t curIndex = 0;
 						for (; curIndex < mesh.numVertices(); curIndex++)
 						{
-							vertexJoints[(curIndex * 4) + 0].jointIndex = gltfData[0];
-							vertexJoints[(curIndex * 4) + 1].jointIndex = gltfData[1];
-							vertexJoints[(curIndex * 4) + 2].jointIndex = gltfData[2];
-							vertexJoints[(curIndex * 4) + 3].jointIndex = gltfData[3];
+							vertexJoints[(curIndex * 4) + 0].index = gltfData[0];
+							vertexJoints[(curIndex * 4) + 1].index = gltfData[1];
+							vertexJoints[(curIndex * 4) + 2].index = gltfData[2];
+							vertexJoints[(curIndex * 4) + 3].index = gltfData[3];
 							gltfData += gltfDataStride;
 						}
 
@@ -167,10 +229,10 @@ namespace hr::render
 						for (; curIndex < mesh.numVertices(); curIndex++)
 						{
 							auto dataPtr = reinterpret_cast<const uint16_t*>(gltfData);
-							vertexJoints[(curIndex * 4) + 0].jointIndex = dataPtr[0];
-							vertexJoints[(curIndex * 4) + 1].jointIndex = dataPtr[1];
-							vertexJoints[(curIndex * 4) + 2].jointIndex = dataPtr[2];
-							vertexJoints[(curIndex * 4) + 3].jointIndex = dataPtr[3];
+							vertexJoints[(curIndex * 4) + 0].index = dataPtr[0];
+							vertexJoints[(curIndex * 4) + 1].index = dataPtr[1];
+							vertexJoints[(curIndex * 4) + 2].index = dataPtr[2];
+							vertexJoints[(curIndex * 4) + 3].index = dataPtr[3];
 							gltfData += gltfDataStride;
 						}
 
@@ -187,10 +249,10 @@ namespace hr::render
 						for (; curIndex < mesh.numVertices(); curIndex++)
 						{
 							auto dataPtr = reinterpret_cast<const uint16_t*>(gltfData);
-							vertexJoints[(curIndex * 4) + 0].jointWeight = dataPtr[0];
-							vertexJoints[(curIndex * 4) + 1].jointWeight = dataPtr[1];
-							vertexJoints[(curIndex * 4) + 2].jointWeight = dataPtr[2];
-							vertexJoints[(curIndex * 4) + 3].jointWeight = dataPtr[3];
+							vertexJoints[(curIndex * 4) + 0].weight = dataPtr[0];
+							vertexJoints[(curIndex * 4) + 1].weight = dataPtr[1];
+							vertexJoints[(curIndex * 4) + 2].weight = dataPtr[2];
+							vertexJoints[(curIndex * 4) + 3].weight = dataPtr[3];
 							gltfData += gltfDataStride;
 						}
 
@@ -204,10 +266,10 @@ namespace hr::render
 						for (; curIndex < mesh.numVertices(); curIndex++)
 						{
 							auto dataPtr = reinterpret_cast<const float*>(gltfData);
-							vertexJoints[(curIndex * 4) + 0].jointWeight = types::packFloat<uint16_t>(dataPtr[0]);
-							vertexJoints[(curIndex * 4) + 1].jointWeight = types::packFloat<uint16_t>(dataPtr[1]);
-							vertexJoints[(curIndex * 4) + 2].jointWeight = types::packFloat<uint16_t>(dataPtr[2]);
-							vertexJoints[(curIndex * 4) + 3].jointWeight = types::packFloat<uint16_t>(dataPtr[3]);
+							vertexJoints[(curIndex * 4) + 0].weight = types::packFloat<uint16_t>(dataPtr[0]);
+							vertexJoints[(curIndex * 4) + 1].weight = types::packFloat<uint16_t>(dataPtr[1]);
+							vertexJoints[(curIndex * 4) + 2].weight = types::packFloat<uint16_t>(dataPtr[2]);
+							vertexJoints[(curIndex * 4) + 3].weight = types::packFloat<uint16_t>(dataPtr[3]);
 							gltfData += gltfDataStride;
 						}
 
@@ -516,35 +578,35 @@ namespace hr::render
 		if (mAreas.find(areaId) == mAreas.end())
 			return false;
 
-		tinyobj::ObjReader objReader;
+		tinyobj::attrib_t attrib;
+		std::vector<tinyobj::shape_t> shapes;
+		std::vector<tinyobj::material_t> materials;
 		{
 			std::string fullPath;
 			fullPath.reserve(basePath.size() + fileName.size() + 1);
 			fullPath.append(basePath).append(fileName);
 
-			tinyobj::ObjReaderConfig objConfig;
-			objConfig.triangulate = true;
-			objConfig.vertex_color = false;
-			objConfig.mtl_search_path = ""; //use the same folder as the obj file
-
-			objReader.ParseFromFile(fullPath.c_str(), objConfig);
+			std::string err;
+			if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &err, fullPath.c_str()))
+				return false;
 		}
 
-		if (!objReader.Valid())
-			return false;
-
-		if (objReader.GetShapes().empty())
+		if (shapes.empty())
 			return true;
 
 		auto& area = mAreas[areaId];
 		auto& areaData = mAreasData[areaId];
 
-		area.mInstances.reserve(area.mInstances.size() + objReader.GetShapes().size());
+		area.mInstances.reserve(area.mInstances.size() + shapes.size());
 
-		for (const auto& shape : objReader.GetShapes())
+		for (const auto& shape : shapes)
 		{
 			//ignore empty shapes
 			if (shape.mesh.indices.empty())
+				continue;
+
+			//all faces must have 3 vertices (be triangles)
+			if (!std::all_of(shape.mesh.num_face_vertices.begin(), shape.mesh.num_face_vertices.end(), [](auto numVertices) { return (numVertices == 3); }))
 				continue;
 
 			//all tris must belong to the same material
@@ -554,29 +616,22 @@ namespace hr::render
 					continue;
 			}
 
-			//all indices must have position and tex coords
-			if (std::any_of(shape.mesh.indices.begin(), shape.mesh.indices.end(), [](const tinyobj::index_t& index)
-			{
-				return ((index.vertex_index == -1) || (index.texcoord_index == -1));
-			}))
+			//all indices must have position
+			if (std::any_of(shape.mesh.indices.begin(), shape.mesh.indices.end(), [](const tinyobj::index_t& index) { return (index.vertex_index == -1); }))
 				continue;
 
 			//ignore shapes if a object with the same name already exists
 			if (std::find_if(areaData.objects.begin(), areaData.objects.end(), [&name = shape.name](const auto& keyValue) { return (keyValue.second.name == name); }) != areaData.objects.end())
 				continue;
 
-			//create object
-			auto objectId = genObjectId(area);
-			auto& object = area.mObjects[objectId];
-			auto& objectData = areaData.objects[objectId];
-
-			object.id = objectId;
-			object.type = Object::Type::Static;
-			objectData.objectId = objectId;
-			objectData.name = shape.name;
-
 			//process mesh
+			geom::Mesh<geom::VertexFull, uint32_t> newMesh;
 			{
+				bool ignoreTexCoords = std::any_of(shape.mesh.indices.begin(), shape.mesh.indices.end(), [](const tinyobj::index_t& index)
+				{
+					return (index.texcoord_index == -1);
+				});
+
 				bool ignoreNormals = std::any_of(shape.mesh.indices.begin(), shape.mesh.indices.end(), [](const tinyobj::index_t& index)
 				{
 					return (index.normal_index == -1);
@@ -596,11 +651,11 @@ namespace hr::render
 						}
 					};
 
-					hashableIndex(tinyobj::index_t index)
+					hashableIndex(tinyobj::index_t index) noexcept
 						: tinyobj::index_t(index)
 					{ }
 
-					bool operator ==(const hashableIndex& other) const
+					bool operator==(const hashableIndex& other) const noexcept
 					{
 						return (vertex_index == other.vertex_index) && (texcoord_index == other.texcoord_index) && (normal_index == other.normal_index);
 					}
@@ -616,82 +671,112 @@ namespace hr::render
 					mapping[index] = mapping.size();
 				}
 
-				if (mapping.size() <= geom::Mesh<geom::VertexFull, uint32_t>::maxVertexCount())
+				if (mapping.size() > geom::Mesh<geom::VertexFull, uint32_t>::maxVertexCount())
+					continue; //can't create mesh
+
+				newMesh = geom::Mesh<geom::VertexFull, uint32_t>{ mapping.size(), shape.mesh.indices.size() };
+
+				for (const auto& keyValue : mapping)
 				{
-					auto newMesh = geom::Mesh<geom::VertexFull, uint32_t>{ mapping.size(), shape.mesh.indices.size() };
+					auto vertexIndex = keyValue.second;
+				
+					std::memcpy(newMesh.vertices()[vertexIndex].pos, attrib.vertices.data() + (keyValue.first.vertex_index * 3), sizeof(float) * 3);
 
-					for (const auto& keyValue : mapping)
-					{
-						auto& objVertexAttribs = objReader.GetAttrib();
-
-						auto vertexIndex = keyValue.second;
-
-						std::memcpy(newMesh.vertices()[vertexIndex].pos, objVertexAttribs.vertices.data() + (keyValue.first.vertex_index * 3), sizeof(float) * 3);
-						std::memcpy(newMesh.vertices()[vertexIndex].uv, objVertexAttribs.texcoords.data() + (keyValue.first.texcoord_index * 2), sizeof(float) * 2);
-
-						if (!ignoreNormals)
-							std::memcpy(newMesh.vertices()[vertexIndex].normal, objVertexAttribs.normals.data() + (keyValue.first.normal_index * 3), sizeof(float) * 3);
-					}
-
-					size_t curIndex = 0;
-					for (const auto& index : shape.mesh.indices)
-					{
-						auto mappingIt = mapping.find(index);
-						assert(mappingIt != mapping.end());
-
-						newMesh.indices()[curIndex++] = static_cast<uint16_t>(mappingIt->second);
-					}
-
-					assert(newMesh.check());
-					if (ignoreNormals)
-						newMesh.genNormals();
-					newMesh.genTangents4();
-
-					newMesh.optimizeIndices();
-
-					{
-						hr::streams::FileStream geomFileStream(areaData.pathBin, true, true);
-						World::geomFileAddMesh(geomFileStream, objectId, newMesh);
-					}
+					if (!ignoreTexCoords)
+						std::memcpy(newMesh.vertices()[vertexIndex].uv, attrib.texcoords.data() + (keyValue.first.texcoord_index * 2), sizeof(float) * 2);
+				
+					if (!ignoreNormals)
+						std::memcpy(newMesh.vertices()[vertexIndex].normal, attrib.normals.data() + (keyValue.first.normal_index * 3), sizeof(float) * 3);
 				}
-				else
+
+				size_t curIndex = 0;
+				for (const auto& index : shape.mesh.indices)
 				{
-					continue; //couldn't create mesh
+					auto mappingIt = mapping.find(index);
+					assert(mappingIt != mapping.end());
+
+					newMesh.indices()[curIndex++] = static_cast<uint32_t>(mappingIt->second);
 				}
+
+				assert(newMesh.check());
+
+				//very rare and special case, but allowed
+				if (ignoreTexCoords)
+				{
+					newMesh.iterateVertices(
+					  [](size_t, geom::VertexFull& v)
+					  {
+						  v.uv[0] = v.uv[1] = 0.0f;
+						  return true;
+					  });
+				}
+				if (ignoreNormals)
+					newMesh.genNormals();
+				newMesh.genTangents4();
+
+				newMesh.optimizeIndices();
 			}
 
-			//process material
-			if (!shape.mesh.material_ids.empty())
+			auto processMesh = [this, &area, &areaData, &shape, &materials](hr::streams::FileStream& geomFileStream, const geom::Mesh<geom::VertexFull, uint32_t>& mesh)
 			{
-				auto& objMaterials = objReader.GetMaterials();
+				//create object
+				auto objectId = genObjectId(area);
+				auto& object = area.mObjects[objectId];
+				auto& objectData = areaData.objects[objectId];
 
-				auto materialId = shape.mesh.material_ids[0];
-				if ((materialId >= 0) && (materialId < objMaterials.size()))
+				object.id = objectId;
+				object.type = Object::Type::Static;
+				objectData.objectId = objectId;
+				objectData.name = shape.name;
+
+				//add geometry
+				World::geomFileAddMesh(geomFileStream, objectId, mesh);
+
+				//process material
+				if (!shape.mesh.material_ids.empty())
 				{
-					const auto& mat = objMaterials[materialId];
+					auto materialId = shape.mesh.material_ids[0];
+					if ((materialId >= 0) && (materialId < materials.size()))
+					{
+						const auto& mat = materials[materialId];
 
-					if (!mat.diffuse_texname.empty())
-						objectData.matDiffusePath = mat.diffuse_texname;
-					else if (!mat.ambient_texname.empty())
-						objectData.matDiffusePath = mat.ambient_texname;
+						if (!mat.diffuse_texname.empty())
+							objectData.matDiffusePath = mat.diffuse_texname;
+						else if (!mat.ambient_texname.empty())
+							objectData.matDiffusePath = mat.ambient_texname;
 
-					if (!mat.normal_texname.empty())
-						objectData.matNormalPath = mat.normal_texname;
-					else if (!mat.bump_texname.empty())
-						objectData.matNormalPath = mat.bump_texname;
-					else if (mat.unknown_parameter.find("bump") != mat.unknown_parameter.end())
-						objectData.matNormalPath = mat.unknown_parameter.find("bump")->second;
-					else if (mat.unknown_parameter.find("map_bump") != mat.unknown_parameter.end())
-						objectData.matNormalPath = mat.unknown_parameter.find("map_bump")->second;
+						if (!mat.normal_texname.empty())
+							objectData.matNormalPath = mat.normal_texname;
+						else if (!mat.bump_texname.empty())
+							objectData.matNormalPath = mat.bump_texname;
+						else if (mat.unknown_parameter.find("bump") != mat.unknown_parameter.end())
+							objectData.matNormalPath = mat.unknown_parameter.find("bump")->second;
+						else if (mat.unknown_parameter.find("map_bump") != mat.unknown_parameter.end())
+							objectData.matNormalPath = mat.unknown_parameter.find("map_bump")->second;
+					}
 				}
-			}
 
-			//create an object associated with the concept
-			Instance newInstance;
-			newInstance.type = Instance::Type::Static;
-			newInstance.objectId = object.id;
-			newInstance.bbox = object.bbox;
-			area.mInstances.push_back(newInstance);
+				//create an object associated with the concept
+				Instance newInstance;
+				newInstance.type = Instance::Type::Static;
+				newInstance.objectId = object.id;
+				newInstance.bbox = object.bbox;
+				area.mInstances.push_back(newInstance);
+			};
+
+			//split the mesh if necessary
+			auto smallMeshes = newMesh.split(geom::MeshBase<geom::VertexShading, uint16_t>::maxVertexCount());
+			if (smallMeshes.empty())
+			{
+				hr::streams::FileStream geomFileStream(areaData.pathBin, true, true);
+				processMesh(geomFileStream, newMesh);
+			}
+			else
+			{
+				hr::streams::FileStream geomFileStream(areaData.pathBin, true, true);
+				for (const auto& curMesh : smallMeshes)
+					processMesh(geomFileStream, curMesh);
+			}			
 		}
 
 		//need to save everything to file (new geometry was already saved)
@@ -734,53 +819,20 @@ namespace hr::render
 		*/
 
 		//read all the nodes local transformations
-		std::vector<geom::MeshAnimSet::Node> nodes;
-		{
-			nodes.reserve(gltfModel.nodes.size());
-			for (const auto& gltfNode : gltfModel.nodes)
-			{
-				auto localTrans = Matrix4f::identity();
-				
-				if (gltfNode.matrix.size() == 16)
-				{
-					assert(gltfNode.scale.empty() && gltfNode.rotation.empty() && gltfNode.translation.empty());
-					localTrans = Matrix4f::from<double>({gltfNode.matrix.data(), 16});
-				}
-				else
-				{
-					//first scale, then rotation and finally translation
-					if (gltfNode.scale.size() == 3) localTrans *= Matrix4f::scale(gltfReadVec3f(gltfNode.scale.data()));
-					if (gltfNode.rotation.size() == 4) localTrans *= gltfReadQuat(gltfNode.rotation.data());
-					if (gltfNode.translation.size() == 3) localTrans *= Matrix4f::translation(gltfReadVec3f(gltfNode.translation.data()));
-				}
-
-				geom::MeshAnimSet::Node node;
-				node.name = gltfNode.name;
-				node.localTransform = localTrans;
-
-				nodes.push_back(std::move(node));
-			}
-
-			//calculate the parents
-			size_t curNodeIndex{ 0 };
-			for (const auto& gltfNode : gltfModel.nodes)
-			{
-				for (const auto childIndex : gltfNode.children)
-				{
-					assert(nodes[childIndex].parentIndex == -1);
-					nodes[childIndex].parentIndex = curNodeIndex;
-				}
-				
-				curNodeIndex++;
-			}
-		}
-
+		auto nodes = gltfReadNodes(gltfModel);
+		
 		//read the skins
 		struct Skin
 		{
+			struct Joint
+			{
+				size_t nodeIndex;
+				geom::SkeletonAnim::Joint finalJoint;
+			};
+
 			std::string name;
 			size_t animSetId{0};
-			std::vector<geom::MeshAnimSet::Joint> joints;
+			std::vector<Joint> joints;
 		};
 		std::vector<Skin> skins;
 		skins.reserve(gltfModel.skins.size());
@@ -796,22 +848,23 @@ namespace hr::render
 				assert((nodeIndex >= 0) && (nodeIndex < gltfModel.nodes.size()));
 				auto& gltfNode = gltfModel.nodes[nodeIndex];
 
-				geom::MeshAnimSet::Joint joint;
+				Skin::Joint joint;
 				joint.nodeIndex = static_cast<size_t>(nodeIndex);
-				joint.parentIndex = -1;
+				joint.finalJoint.name = gltfNode.name;
+				joint.finalJoint.parentIndex = -1;
 				if (gltfNode.matrix.size() == 16)
 				{
-					joint.localTransform.scale = Vector3f{1.0f};
-					joint.localTransform.rotation = Quaternionf::identity();
-					joint.localTransform.translation = Vector3f::zero();
-					joint.localTransform.matrix = Matrix4f::from<double>({gltfNode.matrix.data(), 16});
+					joint.finalJoint.localTransform.scale = Vector3f{1.0f};
+					joint.finalJoint.localTransform.rotation = Quaternionf::identity();
+					joint.finalJoint.localTransform.translation = Vector3f::zero();
+					joint.finalJoint.localTransform.matrix = Matrix4f::from<double>({gltfNode.matrix.data(), 16});
 				}
 				else
 				{
-					joint.localTransform.scale = (gltfNode.scale.size() == 3) ? gltfReadVec3f(gltfNode.scale.data()) : Vector3f{1.0f};
-					joint.localTransform.rotation = (gltfNode.rotation.size() == 4) ? gltfReadQuat(gltfNode.rotation.data()) : Quaternionf::identity();
-					joint.localTransform.translation = (gltfNode.translation.size() == 3) ? gltfReadVec3f(gltfNode.translation.data()) : Vector3f::zero();
-					joint.localTransform.matrix = Matrix4f::identity();
+					joint.finalJoint.localTransform.scale = (gltfNode.scale.size() == 3) ? gltfReadVec3f(gltfNode.scale.data()) : Vector3f{1.0f};
+					joint.finalJoint.localTransform.rotation = (gltfNode.rotation.size() == 4) ? gltfReadQuat(gltfNode.rotation.data()) : Quaternionf::identity();
+					joint.finalJoint.localTransform.translation = (gltfNode.translation.size() == 3) ? gltfReadVec3f(gltfNode.translation.data()) : Vector3f::zero();
+					joint.finalJoint.localTransform.matrix = Matrix4f::identity();
 				}
 
 				targetSkin.joints.push_back(std::move(joint));
@@ -822,7 +875,7 @@ namespace hr::render
 				auto count = gltfReadInverseBindMatrices(gltfModel, gltfSkin.inverseBindMatrices, [&targetSkin](size_t index, Matrix4f inverseBindMatrix)
 				{
 					assert(index < targetSkin.joints.size());
-					targetSkin.joints[index].transformInvert = std::move(inverseBindMatrix);
+					  targetSkin.joints[index].finalJoint.transformInvert = std::move(inverseBindMatrix);
 					return true;
 				});
 
@@ -838,196 +891,207 @@ namespace hr::render
 
 				auto it = std::find_if(targetSkin.joints.begin(), targetSkin.joints.end(), [&node](const auto& joint) { return (joint.nodeIndex == node.parentIndex); });
 
-				if (it != targetSkin.joints.end()) joint.parentIndex = std::distance(targetSkin.joints.begin(), it);
+				if (it != targetSkin.joints.end()) joint.finalJoint.parentIndex = std::distance(targetSkin.joints.begin(), it);
 			}
 
 			skins.push_back(std::move(targetSkin));
 		}
 
-		//to recursively read all nodes
+		//process all the nodes
+		for (size_t nodeIndex = 0; nodeIndex < gltfModel.nodes.size(); ++nodeIndex)
 		{
-			std::function<void(int, const tinygltf::Node&, const Matrix4f&)> recurNodes;
-			recurNodes = [this, &recurNodes, &area, &areaData, &gltfModel, &skins, &nodes](int gltfNodeIndex, const tinygltf::Node& gltfNode, const Matrix4f& previousGlobalTrans)
+			const auto& node = gltfModel.nodes[nodeIndex];
+
+			if (node.mesh < 0)
+				continue;
+
+			auto globalTrans = gltfCalcNodeGlobalTransform(nodes, nodeIndex);
+
+			auto hasSkin = (node.skin >= 0);
+			assert(!hasSkin || (node.skin < skins.size()));
+
+			//if it's animated (and the associated animation set hasn't been created yet)
+			if (hasSkin && (skins[node.skin].animSetId == 0))
 			{
-				auto globalTrans = nodes[gltfNodeIndex].localTransform * previousGlobalTrans;
-				
-				auto hasSkin = (gltfNode.mesh >= 0) && (gltfNode.skin >= 0) && (gltfNode.skin < skins.size());
-				if (hasSkin && (skins[gltfNode.skin].animSetId == 0)) //create animation set if we don't have one for this skeleton
+				auto& targetSkin = skins[node.skin];
+
+				targetSkin.animSetId = genAnimSetId(area);
+
+				auto& animSet = area.mSkeletonAnims[targetSkin.animSetId];
+				auto& animSetData = areaData.animationSets[targetSkin.animSetId];
+
+				animSet.id = targetSkin.animSetId;
+				animSetData.animSetId = targetSkin.animSetId;
+				animSetData.name = targetSkin.name;
+
 				{
-					auto& targetSkin = skins[gltfNode.skin];
+					std::vector<geom::SkeletonAnim::Joint> finalJoints;
+					finalJoints.reserve(targetSkin.joints.size());
+					for (const auto& joint : targetSkin.joints)
+						finalJoints.push_back(joint.finalJoint);
 
-					targetSkin.animSetId = genAnimSetId(area);
+					//switch the x-axis
+					auto rootTransform = globalTrans * Matrix4f::reflection(Plane<float>{1.0f, 0.0f, 0.0f, 0.0f});
 
-					auto& animSet = area.mAnimationSets[targetSkin.animSetId];
-					auto& animSetData = areaData.animationSets[targetSkin.animSetId];
+					hr::streams::FileStream geomFileStream(areaData.pathBin, true, true);
+					World::geomFileAddAnimationSet(geomFileStream, targetSkin.animSetId, geom::SkeletonAnim{ gltfModel.skins[node.skin].name, rootTransform, std::move(finalJoints) });
+				}
+			}
+				
+			auto& gltfMesh = gltfModel.meshes[node.mesh];
+			for (const auto& gltfPrim : gltfMesh.primitives)
+			{
+				if ((gltfPrim.mode != TINYGLTF_MODE_TRIANGLES) || (gltfPrim.indices < 0))
+					continue;
 
-					animSet.id = targetSkin.animSetId;
-					animSetData.animSetId = targetSkin.animSetId;
-					animSetData.name = targetSkin.name;
+				geom::MeshAnim newMeshAnim;
+				geom::Mesh<geom::VertexFull, uint32_t> newMesh;
 
+				//read indices and prepare mesh
+				{
+					size_t newIndicesCount;
+					std::unique_ptr<uint32_t[]> newIndices;
+
+					if (!gltfReadIndices(gltfModel, gltfPrim.indices, newIndices, newIndicesCount))
+						continue;
+
+					size_t numVertices{ 0 };
+					for (size_t i = 0; i < newIndicesCount; i++)
+						numVertices = std::max<size_t>(numVertices, newIndices[i]);
+					numVertices++;
+
+					newMesh = geom::Mesh<geom::VertexFull, uint32_t>{ std::unique_ptr<geom::VertexFull[]>(new geom::VertexFull[numVertices]), numVertices, std::move(newIndices), newIndicesCount };
+					newMeshAnim = hr::geom::MeshAnim{ geom::Mesh<geom::VertexShading, uint16_t>::convertMesh(newMesh), hr::geom::MeshAnim::SkinningType::Vertex4Joints };
+
+					//can split an animation mesh
+					if (hasSkin && (numVertices > geom::MeshBase<geom::VertexShading, uint16_t>::maxVertexCount()))
+						continue;
+				}
+
+				//read vertex data
+				auto primState = gltfReadPrimitive(gltfModel, gltfPrim, newMesh, newMeshAnim);
+						
+				if (!newMesh.check() || !primState.hasPos || (hasSkin && (!primState.hasJoints || !primState.hasJointsWheights)))
+					continue;
+
+				//very rare and special case, but allowed
+				if (!primState.hasTexCoords)
+				{
+					newMesh.iterateVertices([](size_t, geom::VertexFull& v)
+					{
+						v.uv[0] = v.uv[1] = 0.0f;
+						return true;
+					});
+				}
+
+				if (!primState.hasNormal)
+					newMesh.genNormals();
+				if (!primState.hasTangent)
+					newMesh.genTangents4();
+						
+				if (!hasSkin)
+				{
+					newMesh.optimizeIndices();
+					newMesh.transform(globalTrans, globalTrans.clone(Matrix4f::CloneTransform::InverseTranspose).convert<Matrix3, float>());
+
+					//switch the x-axis
+					auto reflect = Matrix4f::reflection(Plane<float>{1.0f, 0.0f, 0.0f, 0.0f});
+					newMesh.transform(reflect, reflect.clone(Matrix4f::CloneTransform::InverseTranspose).convert<Matrix3, float>());
+					newMesh.invertTriWinding();
+
+					//in GLTF, the determinant of the node’s global transform defines the winding order of that primitive
+					//if (globalTrans.determinant() > 0.0f)
+					//	newMesh.invertTriWinding();
+				}
+				else
+				{
+					//the root transform animation already has the reflection transform (switched the x-axis) so all we have to do is to invert the winding
+					newMesh.invertTriWinding();
+
+					newMeshAnim.correctWeights();
+				}
+
+				//we can now create a new object
+				{
+					//create object
+					auto objectId = genObjectId(area);
+					auto& object = area.mObjects[objectId];
+					auto& objectData = areaData.objects[objectId];
+
+					//object can already be prepared
+					object.id = objectId;
+					object.type = Object::Type::Static;
+					object.bbox = newMesh.bbox();
+					objectData.objectId = objectId;
+					objectData.name = gltfMesh.name;
+					objectData.geom.numVertices = newMesh.numVertices();
+					objectData.geom.numIndices = newMesh.numIndices();
+
+					//store new geometry
+					if (hasSkin)
+					{
+						newMeshAnim.mesh() = geom::Mesh<geom::VertexShading, uint16_t>::convertMesh(newMesh);
+
+						hr::streams::FileStream geomFileStream(areaData.pathBin, true, true);
+						World::geomFileAddMeshAnim(geomFileStream, objectId, newMeshAnim, skins[node.skin].animSetId);
+					}
+					else
 					{
 						hr::streams::FileStream geomFileStream(areaData.pathBin, true, true);
-						World::geomFileAddAnimationSet(geomFileStream, targetSkin.animSetId, geom::MeshAnimSet{gltfModel.skins[gltfNode.skin].name, nodes, static_cast<size_t>(gltfNodeIndex), targetSkin.joints});
+						World::geomFileAddMesh(geomFileStream, objectId, newMesh);
 					}
-				}
 
-				if (gltfNode.mesh >= 0)
-				{
-					auto& gltfMesh = gltfModel.meshes[gltfNode.mesh];
-					for (const auto& gltfPrim : gltfMesh.primitives)
+					//update the offsets
 					{
-						if ((gltfPrim.mode != TINYGLTF_MODE_TRIANGLES) || (gltfPrim.indices < 0))
-							continue;
-
-						geom::MeshAnim newMeshAnim;
-						geom::Mesh<geom::VertexFull, uint32_t> newMesh;
-
-						//read indices and prepare mesh
-						{
-							size_t newIndicesCount;
-							std::unique_ptr<uint32_t[]> newIndices;
-
-							if (!gltfReadIndices(gltfModel, gltfPrim.indices, newIndices, newIndicesCount))
-								continue;
-
-							size_t numVertices{ 0 };
-							for (size_t i = 0; i < newIndicesCount; i++)
-								numVertices = std::max<size_t>(numVertices, newIndices[i]);
-							numVertices++;
-
-							newMesh = geom::Mesh<geom::VertexFull, uint32_t>{ std::unique_ptr<geom::VertexFull[]>(new geom::VertexFull[numVertices]), numVertices, std::move(newIndices), newIndicesCount };
-							newMeshAnim = hr::geom::MeshAnim{ geom::Mesh<geom::VertexShading, uint16_t>::convertMesh(newMesh), hr::geom::MeshAnim::SkinningType::Vertex4Joints };
-						}
-
-						//read vertex data
-						auto primState = gltfReadPrimitive(gltfModel, gltfPrim, newMesh, newMeshAnim);
-						
-						if (!newMesh.check() || !primState.hasPos || (hasSkin && (!primState.hasJoints || !primState.hasJointsWheights)))
-							continue;
-
-						//very rare and special case, but allowed
-						if (!primState.hasTexCoords)
-						{
-							newMesh.iterateVertices([](size_t, geom::VertexFull& v)
-							{
-								v.uv[0] = v.uv[1] = 0.0f;
-								return true;
-							});
-						}
-
-						//in GLTF, the determinant of the node’s global transform defines the winding order of that primitive
-						//if (globalTrans.determinant() > 0.0f)
-						//	newMesh.invertTriWinding();
-
-						if (!primState.hasNormal)
-							newMesh.genNormals();
-						if (!primState.hasTangent)
-							newMesh.genTangents4();
-						
-						if (!hasSkin)
-						{
-							newMesh.optimizeIndices();
-							newMesh.transform(globalTrans, globalTrans.clone(Matrix4f::CloneTransform::InverseTranspose).convert<Matrix3, float>());
-						}
-						else
-						{
-							newMeshAnim.correctWeights();
-						}
-
-						//auto reflect = Matrix4f::reflection(Plane<float>{1.0f, 0.0f, 0.0f, 0.0f});
-						//newMesh.transform(reflect, reflect.convert<Matrix3, float>());
-
-						//we can now create a new object
-
-						{
-							//create object
-							auto objectId = genObjectId(area);
-							auto& object = area.mObjects[objectId];
-							auto& objectData = areaData.objects[objectId];
-
-							//object can already be prepared
-							object.id = objectId;
-							object.type = Object::Type::Static;
-							object.bbox = newMesh.bbox();
-							objectData.objectId = objectId;
-							objectData.name = gltfMesh.name;
-							objectData.geom.numVertices = newMesh.numVertices();
-							objectData.geom.numIndices = newMesh.numIndices();
-
-							//store new geometry
-							if (hasSkin)
-							{
-								newMeshAnim.mesh() = geom::Mesh<geom::VertexShading, uint16_t>::convertMesh(newMesh);
-
-								hr::streams::FileStream geomFileStream(areaData.pathBin, true, true);
-								World::geomFileAddMeshAnim(geomFileStream, objectId, newMeshAnim, skins[gltfNode.skin].animSetId);
-							}
-							else
-							{
-								hr::streams::FileStream geomFileStream(areaData.pathBin, true, true);
-								World::geomFileAddMesh(geomFileStream, objectId, newMesh);
-							}
-
-							//update the offsets
-							{
-								hr::streams::FileStream geomFileStream(areaData.pathBin, true, true);
-								World::geomFileRetrieveOffsets(geomFileStream, objectId, objectData.geom.fstreamVertexOffset, objectData.geom.fstreamIndexOffset);
-							}
-
-							//read material info
-							if (gltfPrim.material >= 0)
-							{
-								const auto& gltfMat = gltfModel.materials[gltfPrim.material];
-								if (!gltfMat.name.empty())
-									objectData.name = objectData.name + "_" + gltfMat.name;
-
-								auto extractImageUri = [](const  tinygltf::Model& model, const tinygltf::Material& material, std::string_view componentName) -> std::string
-								{
-									auto itComponent = material.values.find(std::string(componentName));
-									if (itComponent == material.values.end())
-									{
-										itComponent = material.additionalValues.find(std::string(componentName));
-										if (itComponent == material.additionalValues.end())
-											return {};
-									}
-
-									auto itIndex = itComponent->second.json_double_value.find("index");
-									auto itTexCoord = itComponent->second.json_double_value.find("texCoord");
-									if ((itIndex == itComponent->second.json_double_value.end()) && (itTexCoord == itComponent->second.json_double_value.end()))
-										return {};
-
-									auto texIndex = static_cast<int>(itIndex->second);
-									if ((texIndex < 0) && (static_cast<int>(itTexCoord->second) != 0)) // we support only one set of UVs
-										return {};
-
-									if (model.textures[texIndex].source < 0)
-										return {};
-
-									return model.images[model.textures[texIndex].source].uri;
-								};
-
-								objectData.matDiffusePath = extractImageUri(gltfModel, gltfMat, "baseColorTexture");
-								objectData.matNormalPath = extractImageUri(gltfModel, gltfMat, "normalTexture");
-							}
-
-							//create an object associated with the concept
-							Instance newInstance;
-							newInstance.type = Instance::Type::Static;
-							newInstance.objectId = object.id;
-							newInstance.bbox = object.bbox;
-							area.mInstances.push_back(newInstance);
-						}
+						hr::streams::FileStream geomFileStream(areaData.pathBin, true, true);
+						World::geomFileRetrieveOffsets(geomFileStream, objectId, objectData.geom.fstreamVertexOffset, objectData.geom.fstreamIndexOffset);
 					}
+
+					//read material info
+					if (gltfPrim.material >= 0)
+					{
+						const auto& gltfMat = gltfModel.materials[gltfPrim.material];
+						if (objectData.name.empty() && !gltfMat.name.empty())
+							objectData.name = gltfMat.name;
+
+						auto extractImageUri = [](const  tinygltf::Model& model, const tinygltf::Material& material, std::string_view componentName) -> std::string
+						{
+							auto itComponent = material.values.find(std::string(componentName));
+							if (itComponent == material.values.end())
+							{
+								itComponent = material.additionalValues.find(std::string(componentName));
+								if (itComponent == material.additionalValues.end())
+									return {};
+							}
+
+							auto itIndex = itComponent->second.json_double_value.find("index");
+							auto itTexCoord = itComponent->second.json_double_value.find("texCoord");
+							if ((itIndex == itComponent->second.json_double_value.end()) && (itTexCoord == itComponent->second.json_double_value.end()))
+								return {};
+
+							auto texIndex = static_cast<int>(itIndex->second);
+							if ((texIndex < 0) && (static_cast<int>(itTexCoord->second) != 0)) // we support only one set of UVs
+								return {};
+
+							if (model.textures[texIndex].source < 0)
+								return {};
+
+							return model.images[model.textures[texIndex].source].uri;
+						};
+
+						objectData.matDiffusePath = extractImageUri(gltfModel, gltfMat, "baseColorTexture");
+						objectData.matNormalPath = extractImageUri(gltfModel, gltfMat, "normalTexture");
+					}
+
+					//create an object associated with the concept
+					Instance newInstance;
+					newInstance.type = Instance::Type::Static;
+					newInstance.objectId = object.id;
+					newInstance.bbox = object.bbox;
+					area.mInstances.push_back(newInstance);
 				}
-
-				for (const auto& nodeIndex : gltfNode.children)
-					recurNodes(nodeIndex, gltfModel.nodes[nodeIndex], globalTrans);
-			};
-
-			//recursively parse all nodes *only* in the default scene
-			for (const auto& nodeIndex : gltfModel.scenes[gltfModel.defaultScene].nodes)
-				recurNodes(nodeIndex, gltfModel.nodes[nodeIndex], Matrix4f::identity());
-		}
+			}
+		};
 
 		//now all that is left is to read animations of used skins
 		for (const auto& gltfAnim : gltfModel.animations)
@@ -1047,7 +1111,7 @@ namespace hr::render
 				int input;
 				std::vector<IndexOutput> indexOutputs;
 
-				geom::MeshAnimSet::Animation::Sampler finalSampler;
+				geom::SkeletonAnim::Animation::Sampler finalSampler;
 			};
 			std::vector<SamplerData> samplers;
 
@@ -1108,56 +1172,57 @@ namespace hr::render
 				});
 				assert(itSampler != samplers.end());
 
-				//find the skin where the target node is
+				//find the skin and the joint in that skin where the target node is
+				std::optional<size_t> channelJointIndex;
+				for (auto&& skin : skins)
 				{
-					size_t skinIndex{ 0 };
-			
-					bool hasAnimSet{ false };
-					for (auto&& skin : skins)
-					{
-						skinIndex++;
-			
-						auto it = std::find_if(skin.joints.begin(), skin.joints.end(), [&gltfChannel](const auto& joint) { return (joint.nodeIndex == gltfChannel.target_node); });
-						if (it == skin.joints.end())
-							continue;
-			
-						hasAnimSet = true;
-			
-						if (!animationSetId)
-							animationSetId = skin.animSetId;
-			
-						assert(animationSetId.value() == skin.animSetId);
-						break;
-					}
-			
-					if (!hasAnimSet)
+					auto it = std::find_if(skin.joints.begin(), skin.joints.end(), [&gltfChannel](const auto& joint) { return (joint.nodeIndex == gltfChannel.target_node); });
+					if (it == skin.joints.end())
 						continue;
+			
+					channelJointIndex = std::distance(skin.joints.begin(), it);
+			
+					if (!animationSetId)
+						animationSetId = skin.animSetId;
+			
+					assert(animationSetId.value() == skin.animSetId); //all the channels in an animation must point to the same skin
+					break;
 				}
-
+			
+				if (!channelJointIndex)
+					continue;
+				
 				auto itSamplerOutput = std::find_if(itSampler->indexOutputs.begin(), itSampler->indexOutputs.end(), [&gltfChannel](const auto& indexOutput)
 				{
 					return (indexOutput.sampleIndex == gltfChannel.sampler);
 				});
 				assert(itSamplerOutput != itSampler->indexOutputs.end());
 
-				geom::MeshAnimSet::Animation::Channel channel;
-				channel.nodeIndex = gltfChannel.target_node;
+				geom::SkeletonAnim::Animation::Channel channel;
+				channel.jointIndex = *channelJointIndex;
 												
 				if (gltfChannel.target_path == "scale")
 				{
-					channel.target = geom::MeshAnimSet::Animation::Channel::Target::Scale;
+					channel.target = geom::SkeletonAnim::Animation::Channel::Target::Scale;
 					if (!gltfReadAnimSamplerData(gltfModel, itSamplerOutput->output, false, channel.frameData) || (channel.frameData.size() != itSampler->finalSampler.timePoints.size()))
+						continue;
+
+					//optimize away scaling by 1.0
+					if (std::all_of(channel.frameData.begin(), channel.frameData.end(), [](const auto& scale)
+					{
+						return Math::isZero(scale[0] - 1.0f) && Math::isZero(scale[1] - 1.0f) && Math::isZero(scale[2] - 1.0f);
+					}))
 						continue;
 				}
 				else if (gltfChannel.target_path == "rotation")
 				{
-					channel.target = geom::MeshAnimSet::Animation::Channel::Target::Rotation;
+					channel.target = geom::SkeletonAnim::Animation::Channel::Target::Rotation;
 					if (!gltfReadAnimSamplerData(gltfModel, itSamplerOutput->output, true, channel.frameData) || (channel.frameData.size() != itSampler->finalSampler.timePoints.size()))
 						continue;
 				}
 				else if (gltfChannel.target_path == "translation")
 				{
-					channel.target = geom::MeshAnimSet::Animation::Channel::Target::Translation;
+					channel.target = geom::SkeletonAnim::Animation::Channel::Target::Translation;
 					if (!gltfReadAnimSamplerData(gltfModel, itSamplerOutput->output, false, channel.frameData) || (channel.frameData.size() != itSampler->finalSampler.timePoints.size()))
 						continue;
 				}
@@ -1168,7 +1233,7 @@ namespace hr::render
 			//animation is ready, include in file
 			if (animationSetId.has_value()) //glTF has non skinned animations
 			{
-				geom::MeshAnimSet::Animation animation;
+				geom::SkeletonAnim::Animation animation;
 				animation.name = gltfAnim.name;
 				animation.minTimePoint = std::numeric_limits<float>::max();
 				animation.maxTimePoint = std::numeric_limits<float>::min();
@@ -1195,7 +1260,7 @@ namespace hr::render
 			
 					animSet.anims.push_back(AreaData::AnimSetData::Animation{ newAnimId, gltfAnim.name });
 				}
-			
+
 				hr::streams::FileStream geomFileStream(areaData.pathBin, true, true);
 				World::geomFileAddAnimation(geomFileStream, newAnimId, animationSetId.value(), std::move(animation));
 			}
@@ -1303,7 +1368,7 @@ namespace hr::render
 	size_t WorldEditor::genAnimSetId(Area& area) const
 	{
 		size_t curId = 1;
-		while (area.mAnimationSets.find(curId) != area.mAnimationSets.end())
+		while (area.mSkeletonAnims.find(curId) != area.mSkeletonAnims.end())
 			curId++;
 
 		return curId;

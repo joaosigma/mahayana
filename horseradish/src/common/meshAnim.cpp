@@ -25,12 +25,12 @@ namespace hr::geom
 
 					for (const auto& vertexJoint : vertexJoints)
 					{
-						assert(vertexJoint.jointIndex < animatedJoints.size());
-						if (vertexJoint.jointWeight == 0)
+						assert(vertexJoint.index < animatedJoints.size());
+						if (vertexJoint.weight == 0)
 							continue;
 
-						auto jointMat = animatedJoints[vertexJoint.jointIndex];
-						jointMat *= types::unpackFloat<uint16_t>(vertexJoint.jointWeight);
+						auto jointMat = animatedJoints[vertexJoint.index];
+						jointMat *= types::unpackFloat<uint16_t>(vertexJoint.weight);
 
 						finalMat += jointMat;
 					}
@@ -47,6 +47,9 @@ namespace hr::geom
 				finalMat.transform(bindPos);
 				finalMat3x3.transform(bindNormal);
 				finalMat3x3.transform(bindTangent);
+
+				bindNormal.normalize();
+				bindTangent.normalize();
 
 				animatedMesh.setPos(curVertex, bindPos);
 				animatedMesh.setNormal(curVertex, bindNormal);
@@ -78,11 +81,11 @@ namespace hr::geom
 		{
 			size_t sum = 0;
 			for (size_t ij = 0; ij < jointsPerVertex; ij++)
-				sum += mVertexJoints[(i * jointsPerVertex) + ij].jointWeight;
+				sum += mVertexJoints[(i * jointsPerVertex) + ij].weight;
 
 			assert(sum <= std::numeric_limits<uint16_t>::max());
 			if (sum == 0)
-				mVertexJoints[(i * jointsPerVertex) + 0].jointWeight = std::numeric_limits<uint16_t>::max();
+				mVertexJoints[(i * jointsPerVertex) + 0].weight = std::numeric_limits<uint16_t>::max();
 		}
 	}
 
@@ -135,17 +138,7 @@ namespace hr::geom
 		}
 	}
 
-	Matrix4f MeshAnimSet::calcNodeGlobalTransform(size_t nodeIndex) const noexcept
-	{
-		assert((nodeIndex >= 0) && (nodeIndex < mNodes.size()));
-		auto& node = mNodes[nodeIndex];
-
-		if (node.parentIndex < 0)
-			return node.localTransform;
-		return node.localTransform * calcNodeGlobalTransform(static_cast<size_t>(node.parentIndex));
-	}
-
-	Matrix4f MeshAnimSet::calcJointGlobalTransform(size_t jointIndex) const noexcept
+	Matrix4f SkeletonAnim::calcJointGlobalTransform(size_t jointIndex) const noexcept
 	{
 		assert((jointIndex >= 0) && (jointIndex < mLastAnimation.joints.size()));
 		auto& joint = mLastAnimation.joints[jointIndex];
@@ -155,14 +148,9 @@ namespace hr::geom
 		return joint.localTransform * calcJointGlobalTransform(static_cast<size_t>(joint.parentIndex));
 	}
 
-	MeshAnimSet::MeshAnimSet(std::string name, std::vector<Node> nodeData, size_t jointsRootNodeIndex, std::vector<Joint> jointData)
-		: mName{ std::move(name) }, mNodes{ std::move(nodeData) }, mJointsRootNodeIndex{ jointsRootNodeIndex }, mJoints{ std::move(jointData) }
+	SkeletonAnim::SkeletonAnim(std::string name, Matrix4f rootTransform, std::vector<Joint> jointData)
+		: mName{ std::move(name) }, mRootTransform{ rootTransform }, mJoints{ std::move(jointData) }
 	{
-		assert(std::all_of(mJoints.begin(), mJoints.end(), [numNodes = mNodes.size()](const auto& joint)
-		{
-			return (joint.nodeIndex >= 0) && (joint.nodeIndex < numNodes);
-		}));
-
 		mLastAnimation.joints.reserve(mJoints.size());
 		mLastAnimation.jointsFinalTransform.reserve(mJoints.size());
 		for (const auto& joint : mJoints)
@@ -179,7 +167,7 @@ namespace hr::geom
 		}
 	}
 
-	bool MeshAnimSet::animationAdd(size_t animId, Animation animation)
+	bool SkeletonAnim::animationAdd(size_t animId, Animation animation)
 	{
 		if (mAnimations.contains(animId) || animation.samplers.empty())
 			return false;
@@ -193,12 +181,8 @@ namespace hr::geom
 				if (channel.frameData.size() != sampler.timePoints.size())
 					return false;
 
-				//node index must exist
-				if (channel.nodeIndex >= mNodes.size())
-					return false;
-
-				//node must also be a joint
-				if (std::find_if(mJoints.begin(), mJoints.end(), [&channel](const auto& joint) { return (joint.nodeIndex == channel.nodeIndex); }) == mJoints.end())
+				//joint index must be valid
+				if (channel.jointIndex >= mJoints.size())
 					return false;
 			}
 		}
@@ -207,64 +191,79 @@ namespace hr::geom
 		return true;
 	}
 
-	void MeshAnimSet::animationUpdateBBoxes(size_t animId, const MeshAnim& baseMesh)
+	/*void SkeletonAnim::calculateBBoxes(const MeshAnim& baseMesh)
 	{
-		//if (mAnimations.find(animId) == mAnimations.end())
-		//	return;
-		//
-		//Mesh animatedMesh(bindPoseMesh.mesh());
-		//auto animatedJoints = mLastAnimation.joints;
-		//
-		////for each frame of this animation
-		//for (auto& frame : mAnimations[animId].frames)
-		//{
-		//	//update joints
-		//	for (size_t curJointIndex = 0; curJointIndex < animatedJoints.size(); curJointIndex++)
-		//	{
-		//		auto& pos = frame.joints[curJointIndex].pos;
-		//		auto& rot = frame.joints[curJointIndex].rot;
-		//
-		//		auto tmp = Matrix4f::translation(pos);
-		//		tmp *= rot;
-		//
-		//		auto& finalMat = animatedJoints[curJointIndex];
-		//		finalMat = mGlobalInverted[curJointIndex];
-		//		finalMat *= tmp;
-		//		finalMat *= mBindPoseInverted[curJointIndex];
-		//	}
-		//
-		//	//update mesh and extract bbox
-		//	animateMesh(animatedJoints, bindPoseMesh, animatedMesh);
-		//	frame.bbox += animatedMesh.getBoundingBox();
-		//}
-	}
+		Mesh animatedMesh{ baseMesh.mesh() };
 
-	void MeshAnimSet::animate(size_t animId, float time)
+		//for each animation, calculate the timepoints to sample the bboxes
+		for (auto& [animId, anim] : mAnimations)
+		{
+			anim.bboxes.clear();
+			if (anim.samplers.empty())
+				continue;
+
+			double avgStep{0.0};
+			for (const auto& sampler : anim.samplers)
+			{
+				if (sampler.timePoints.empty())
+					continue;
+
+				double accum{0.0};
+				for (size_t i = 1; i < sampler.timePoints.size(); i++)
+					accum += sampler.timePoints[i] - sampler.timePoints[i - 1];
+
+
+				avgStep += accum / static_cast<double>(sampler.timePoints.size());
+			}
+
+			avgStep /= static_cast<double>(anim.samplers.size());
+
+			anim.bboxes.reserve(Math::ftoi((anim.maxTimePoint - anim.minTimePoint) / avgStep) + 1);
+
+			for (double curStep = anim.minTimePoint; curStep < anim.maxTimePoint; curStep+= avgStep)
+				anim.bboxes.push_back(Animation::TimePointBBox{.timePoint = static_cast<float>(curStep), .bbox = {}});
+
+			if (anim.bboxes.back().timePoint != anim.maxTimePoint)
+				anim.bboxes.push_back(Animation::TimePointBBox{.timePoint = anim.maxTimePoint, .bbox = {}});
+		}
+
+		//we have all the timePoints calculated, now all we're missing are the bboxes
+		for (auto& [animId, anim] : mAnimations)
+		{
+			for (auto& tbbox : anim.bboxes)
+			{
+				animate(animId, tbbox.timePoint);
+				updateMesh(baseMesh, animatedMesh);
+
+				tbbox.bbox = animatedMesh.getBoundingBox();
+			}
+		}
+	}*/
+
+	void SkeletonAnim::animate(size_t animId, float time)
 	{
-		if (mAnimations.find(animId) == mAnimations.end())
-			return;
+		//time *= 0.25f;
+
+		if (mAnimations.find(animId) == mAnimations.end()) return;
 
 		auto& anim = mAnimations[animId];
-		
+
 		//adjust time
-		if (time <= 0.0f)
-			time = 0.0f;
+		if (time <= 0.0f) time = 0.0f;
 		while (time > anim.maxTimePoint)
 			time -= anim.maxTimePoint;
 
 		//animate
 		for (const auto& sampler : anim.samplers)
 		{
-			if ((time < sampler.minTimePoint) || (time > sampler.maxTimePoint))
-				continue;
+			if ((time < sampler.minTimePoint) || (time > sampler.maxTimePoint)) continue;
 
 			//pick the correct frame
-			size_t frameIndex{ 0 };
+			size_t frameIndex{0};
 			for (;; frameIndex++)
 			{
 				assert((frameIndex + 1) < sampler.timePoints.size());
-				if ((time >= sampler.timePoints[frameIndex]) && (time <= sampler.timePoints[frameIndex + 1]))
-					break;
+				if ((time >= sampler.timePoints[frameIndex]) && (time <= sampler.timePoints[frameIndex + 1])) break;
 			}
 
 			//normalize t (for this sampler)
@@ -274,33 +273,30 @@ namespace hr::geom
 				auto timeEnd = sampler.timePoints[frameIndex + 1];
 				samplerTime = Math::fClamp((time - timeStart) / (timeEnd - timeStart), 0.0f, 1.0f);
 			}
-		
+
 			//animate all channels
 			for (const auto& channel : sampler.channels)
 			{
-				//find the joint
-				auto jointIt = std::find_if(mJoints.begin(), mJoints.end(), [&channel](const auto& joint) { return (joint.nodeIndex == channel.nodeIndex); });
-				assert(jointIt != mJoints.end());
-
 				auto& dataStart = channel.frameData[frameIndex];
 				auto& dataNext = channel.frameData[frameIndex + 1];
-				auto jointIndex = std::distance(mJoints.begin(), jointIt);
+
+				auto& jointAnimated = mLastAnimation.joints[channel.jointIndex];
 
 				switch (channel.target)
 				{
 					case Animation::Channel::Target::Scale:
 					{
-						mLastAnimation.joints[jointIndex].updatedScale = Vector4f::calcLerp(dataStart, dataNext, samplerTime).convert<float, 3>();
+						jointAnimated.updatedScale = Vector4f::calcLerp(dataStart, dataNext, samplerTime).convert<float, 3>();
 						break;
 					}
 					case Animation::Channel::Target::Translation:
 					{
-						mLastAnimation.joints[jointIndex].updatedTranslation = Vector4f::calcLerp(dataStart, dataNext, samplerTime).convert<float, 3>();
+						jointAnimated.updatedTranslation = Vector4f::calcLerp(dataStart, dataNext, samplerTime).convert<float, 3>();
 						break;
 					}
 					case Animation::Channel::Target::Rotation:
 					{
-						mLastAnimation.joints[jointIndex].updatedRotation = Quaternionf::sLerp(Quaternionf::from(dataStart), Quaternionf::from(dataNext), samplerTime);
+						jointAnimated.updatedRotation = Quaternionf::sLerp(Quaternionf::from(dataStart), Quaternionf::from(dataNext), samplerTime);
 						break;
 					}
 					case Animation::Channel::Target::None:
@@ -323,34 +319,21 @@ namespace hr::geom
 		}
 
 		//calculate final transformation for each joint
-		{
-			mLastAnimation.jointsRootTransform = calcNodeGlobalTransform(mJointsRootNodeIndex);
-			
-			for (size_t jIndex = 0; jIndex < mJoints.size(); jIndex++)
-				mLastAnimation.jointsFinalTransform[jIndex] = mJoints[jIndex].transformInvert * calcJointGlobalTransform(jIndex);					
-		}
-
-		//and the interpolated bbox
-		//mLastAnimation.bbox.setMin(Vector3f::calcLerp(frameA.bbox.min(), frameB.bbox.min(), static_cast<float>(mLastAnimation.tNormalized)));
-		//mLastAnimation.bbox.setMax(Vector3f::calcLerp(frameA.bbox.max(), frameB.bbox.max(), static_cast<float>(mLastAnimation.tNormalized)));
+		for (size_t jIndex = 0; jIndex < mJoints.size(); jIndex++)
+			mLastAnimation.jointsFinalTransform[jIndex] = mJoints[jIndex].transformInvert * calcJointGlobalTransform(jIndex);
 	}
 
-	void MeshAnimSet::animateReset()
+	void SkeletonAnim::animateReset()
 	{
 		for (size_t jIndex = 0; jIndex < mJoints.size(); jIndex++)
 			mLastAnimation.jointsFinalTransform[jIndex] = Matrix4f::identity();
 	}
 
-	BBox<> MeshAnimSet::updatedBBox() const
-	{
-		return mLastAnimation.bbox;
-	}
-
-	void MeshAnimSet::updateMesh(const MeshAnim& baseMesh, TMesh& animatedMesh) const
+	void SkeletonAnim::updateMesh(const MeshAnim& baseMesh, TMesh& animatedMesh) const
 	{
 		if (baseMesh.mesh().numVertices() != animatedMesh.numVertices())
 			return;
 
-		animateMesh(mLastAnimation.jointsRootTransform, mLastAnimation.jointsFinalTransform, baseMesh, animatedMesh);
+		animateMesh(mRootTransform, mLastAnimation.jointsFinalTransform, baseMesh, animatedMesh);
 	}
 }

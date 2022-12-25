@@ -57,9 +57,6 @@ namespace hr { namespace render
 			uint32_t flags;
 			uint32_t geomsOffset;
 			uint32_t size;
-			uint32_t jointsSkinNode;
-			uint16_t numNodes;
-			uint16_t numJoints;
 		};
 
 		struct AnimChunkInfo
@@ -682,7 +679,7 @@ namespace hr { namespace render
 		return success;
 	}
 
-	bool World::geomFileAddAnimationSet(hr::streams::FileStream& fstream, size_t animSetId, const hr::geom::MeshAnimSet& animSet)
+	bool World::geomFileAddAnimationSet(hr::streams::FileStream& fstream, size_t animSetId, const hr::geom::SkeletonAnim& skeletonAnim)
 	{
 		size_t numGeoms = 0, numAnimSets = 0, numAnims = 0;
 
@@ -715,22 +712,19 @@ namespace hr { namespace render
 		AnimSetChunkInfo newAnimSetChunk;
 		newAnimSetChunk.id = animSetId;
 		newAnimSetChunk.flags = 0;
-		newAnimSetChunk.jointsSkinNode = static_cast<uint16_t>(animSet.jointsRootNodeIndex());
-		newAnimSetChunk.numNodes = static_cast<uint16_t>(animSet.numNodes());
-		newAnimSetChunk.numJoints = static_cast<uint16_t>(animSet.numJoints());
 		newAnimSetChunk.size = 0;
 		newAnimSetChunk.geomsOffset = 0;
 
-		auto success = fileAddData(fstream, numGeoms, numAnimSets, numAnims, [&animSet, &newAnimSetChunk](hr::streams::StreamWriter& fwriter)
+		auto success = fileAddData(fstream, numGeoms, numAnimSets, numAnims, [&skeletonAnim, &newAnimSetChunk](hr::streams::StreamWriter& fwriter)
 		{
 			newAnimSetChunk.geomsOffset = fwriter.position();
 
-			//write nodes and joints
+			//write the animation set
 			{
 				serialize::archive::Stream archive(fwriter);
 				serialize::ArchiveWriter archiveWriter(archive);
 
-				archiveWriter << animSet.nodes() << animSet.joints();
+				archiveWriter << skeletonAnim.name() << skeletonAnim.rootTransform() << skeletonAnim.joints();
 			}
 
 			newAnimSetChunk.size = fwriter.position() - newAnimSetChunk.geomsOffset;
@@ -749,7 +743,7 @@ namespace hr { namespace render
 		return success;
 	}
 
-	bool World::geomFileAddAnimation(hr::streams::FileStream& fstream, size_t animId, size_t animSetId, const hr::geom::MeshAnimSet::Animation& animation)
+	bool World::geomFileAddAnimation(hr::streams::FileStream& fstream, size_t animId, size_t animSetId, const hr::geom::SkeletonAnim::Animation& animation)
 	{
 		size_t numGeoms = 0, numAnimSets = 0, numAnims = 0;
 
@@ -929,7 +923,7 @@ namespace hr { namespace render
 		return fileRemoveData(fstreamOld, fstreamNew, std::move(geomIds), {}, {});
 	}
 
-	bool World::loadAnimationSets(hr::streams::FileStream& fstream, size_t animSetId, geom::MeshAnimSet& meshAnimSet)
+	bool World::loadAnimationSets(hr::streams::FileStream& fstream, size_t animSetId, geom::SkeletonAnim& skeletonAnim)
 	{
 		hr::streams::StreamReader stream(fstream);
 		stream.seek(hr::streams::Stream::SeekOrigin::Begin, 0);
@@ -965,22 +959,21 @@ namespace hr { namespace render
 				return false;
 		}
 
-		std::vector<geom::MeshAnimSet::Node> nodes;
-		std::vector<geom::MeshAnimSet::Joint> joints;
-
 		stream.seek(hr::streams::Stream::SeekOrigin::Begin, animSetInfo.geomsOffset);
 
 		{
 			serialize::archive::Stream archive(stream);
 			serialize::ArchiveReader archiveReader(archive);
 
-			archiveReader >> nodes >> joints;
+			std::string name;
+			Matrix4f rootTransform{ Matrix4f::identity() };
+			std::vector<geom::SkeletonAnim::Joint> joints;
 
-			assert(nodes.size() == animSetInfo.numNodes);
-			assert(joints.size() == animSetInfo.numJoints);
+			archiveReader >> name >> rootTransform >> joints;
+
+			skeletonAnim = geom::SkeletonAnim{std::move(name), std::move(rootTransform), std::move(joints)};
 		}
 
-		meshAnimSet = geom::MeshAnimSet("",  std::move(nodes), static_cast<size_t>(animSetInfo.jointsSkinNode), std::move(joints));
 		return true;
 	}
 
@@ -1181,8 +1174,8 @@ namespace hr { namespace render
 
 			for (auto&[areaId, area] : mAreas)
 			{
-				for (auto&[animSetId, animSet] : area.mAnimationSets)
-					animSet.animationSet.animate(1, timestep.t);
+				for (auto&[animSetId, animSet] : area.mSkeletonAnims)
+					animSet.skeletonAnim.animate(1, timestep.t);
 
 				targetObjects.clear();
 
@@ -1191,18 +1184,18 @@ namespace hr { namespace render
 					if (!object.anim.hasAnim)
 						continue;
 
-					auto animSet = area.mAnimationSets.find(object.anim.animSetId);
-					if (animSet == area.mAnimationSets.end())
+					auto animSet = area.mSkeletonAnims.find(object.anim.animSetId);
+					if (animSet == area.mSkeletonAnims.end())
 						continue;
 
-					auto bbox = animSet->second.animationSet.updatedBBox();
+					//auto bbox = animSet->second.animationSet.updatedBBox();
 
 					/*if (!camFrustum.testBox(bbox)) //no point in updating the object if its entire anim set is not visible
 						continue;*/
 
-					animSet->second.animationSet.updateMesh(object.anim.meshAnim, object.anim.meshAnimated);
+					animSet->second.skeletonAnim.updateMesh(object.anim.meshAnim, object.anim.meshAnimated);
 					
-					targetObjects.push_back(RendererObjectProxy(objectId, std::move(bbox), object.anim.meshAnimated));
+					targetObjects.push_back(RendererObjectProxy(objectId, {}, object.anim.meshAnimated));
 				}
 
 				renderer.updateVertexData(area.sceneId, RendererProxy(targetObjects));
@@ -1224,8 +1217,8 @@ namespace hr { namespace render
 
 					if (itObject->second.anim.hasAnim)
 					{
-						auto animSet = area.mAnimationSets.find(itObject->second.anim.animSetId);
-						if (animSet == area.mAnimationSets.end())
+						auto animSet = area.mSkeletonAnims.find(itObject->second.anim.animSetId);
+						if (animSet == area.mSkeletonAnims.end())
 							continue;
 
 						/*if (!camFrustum.testBox(animSet->second.animationSet.updatedBBox())) //no point in updating the object if its entire anim set is not visible
@@ -1245,7 +1238,7 @@ namespace hr { namespace render
 		}
 	}
 
-	void World::accessObjectCurrentAnimation(size_t objectId, const std::function<void(const geom::MeshAnimSet&)>& cb) const noexcept
+	void World::accessObjectCurrentAnimation(size_t objectId, const std::function<void(const geom::SkeletonAnim&)>& cb) const noexcept
 	{
 		if (!cb) return;
 
@@ -1255,10 +1248,10 @@ namespace hr { namespace render
 			{
 				if (objectId != objectId) continue;
 
-				auto animSet = area.mAnimationSets.find(object.anim.animSetId);
-				if (animSet == area.mAnimationSets.end()) return;
+				auto animSet = area.mSkeletonAnims.find(object.anim.animSetId);
+				if (animSet == area.mSkeletonAnims.end()) return;
 
-				cb(animSet->second.animationSet);
+				cb(animSet->second.skeletonAnim);
 				return;
 			}
 		}
@@ -1310,7 +1303,7 @@ namespace hr { namespace render
 		//read everything
 		for (const auto& animSetInfo : animSetInfos)
 		{
-			auto& animSet = area.mAnimationSets[animSetInfo.id];
+			auto& animSet = area.mSkeletonAnims[animSetInfo.id];
 
 			{
 				sreader.seek(hr::streams::Stream::SeekOrigin::Begin, animSetInfo.geomsOffset);
@@ -1318,14 +1311,13 @@ namespace hr { namespace render
 				serialize::archive::Stream archive(sreader);
 				serialize::ArchiveReader archiveReader(archive);
 
-				std::vector<geom::MeshAnimSet::Node> nodes;
-				std::vector<geom::MeshAnimSet::Joint> joints;
-				archiveReader >> nodes >> joints;
+				std::string name;
+				Matrix4f rootTransform{Matrix4f::identity()};
+				std::vector<geom::SkeletonAnim::Joint> joints;
 
-				assert(nodes.size() == animSetInfo.numNodes);
-				assert(joints.size() == animSetInfo.numJoints);
-				
-				animSet.animationSet = geom::MeshAnimSet("", std::move(nodes), static_cast<size_t>(animSetInfo.jointsSkinNode), std::move(joints));
+				archiveReader >> name >> rootTransform >> joints;
+
+				animSet.skeletonAnim = geom::SkeletonAnim{std::move(name), std::move(rootTransform), std::move(joints)};
 			}
 
 			for (const auto& animInfo : animInfos)
@@ -1335,7 +1327,7 @@ namespace hr { namespace render
 
 				sreader.seek(hr::streams::Stream::SeekOrigin::Begin, animInfo.geomsOffset);
 
-				geom::MeshAnimSet::Animation animation;
+				geom::SkeletonAnim::Animation animation;
 				{
 					serialize::archive::Stream archive(sreader);
 					serialize::ArchiveReader archiveReader(archive);
@@ -1343,7 +1335,7 @@ namespace hr { namespace render
 					archiveReader >> animation;
 				}
 
-				animSet.animationSet.animationAdd(animInfo.id, std::move(animation));
+				animSet.skeletonAnim.animationAdd(animInfo.id, std::move(animation));
 			}
 		}
 
@@ -1496,8 +1488,10 @@ namespace hr { namespace render
 							{
 								auto& jsonMaterial = ((*itr).FindMember("material"))->value;
 
-								objectRenderer.matDiffusePath = jsonMaterial["diffusePath"].GetString();
-								objectRenderer.matNormalPath = jsonMaterial["normalPath"].GetString();
+								if (jsonMaterial.HasMember("diffusePath"))
+									objectRenderer.matDiffusePath = jsonMaterial["diffusePath"].GetString();
+								if (jsonMaterial.HasMember("normalPath"))
+									objectRenderer.matNormalPath = jsonMaterial["normalPath"].GetString();
 							}
 						}
 					}

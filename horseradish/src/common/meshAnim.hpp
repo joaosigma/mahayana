@@ -36,8 +36,8 @@ namespace hr::geom
 #pragma pack(push, 1)
 		struct VertexJoint
 		{
-			uint16_t jointIndex;
-			uint16_t jointWeight;
+			uint16_t index;
+			uint16_t weight;
 		};
 #pragma pack(pop)
 
@@ -108,35 +108,28 @@ namespace hr::geom
 	};
 
 	/*
-	* This class stores animations.
+	* This class stores a skeleton and associated animations.
 	*
 	* It doesn't need any MeshAnim to work, except in the updateMesh(...) method which will then store the final animation
 	*   result in a Mesh. It uses the MeshAnim to access the per-vertex joint information.
 	*
-	* The animation set has a name, an hierarchy of nodes and joints (with per-joint information like transformation matrices) and
-	*	a collection of animations. Each animation has an ID and a list of samplers. Each sampler has a timeline and a list of
-	*	channels, where each channel alters / animates a specific joint local transform.
+	* It has a name, a skeleton (an hierarchy of joints) and a collection of animations. Each animation has
+	*	an ID and a list of samplers. Each sampler has a timeline and a list of channels, where each channel alters / animates
+	*	a specific joint local transform.
 	*
 	* NOTE: it is not the responsibility of this class to make sure that the joints indices in MeshAnim correspond correctly to the
-	*   ones stored here.
+	*   ones stored here. Several MeshAnim can (or not) share the same skeleton.
 	*/
 
-	class MeshAnimSet
+	class SkeletonAnim
 	{
 		using TMesh = Mesh<VertexShading, uint16_t>;
 
 	public:
-		struct Node
-		{
-			std::string name;
-			int32_t parentIndex{ -1 }; //-1 means no parent
-			Matrix4f localTransform{ Matrix4f::identity() };
-		};
-
 		struct Joint
 		{
-			size_t nodeIndex;
-			int32_t parentIndex{-1};
+			std::string name;
+			int32_t parentIndex{ -1 };
 
 			struct
 			{
@@ -156,7 +149,7 @@ namespace hr::geom
 				enum class Target{ None, Scale, Rotation, Translation };
 
 				Target target{ Target::None };
-				size_t nodeIndex{ 0 };
+				size_t jointIndex{ 0 };
 				std::vector<Vector4f> frameData;
 			};
 
@@ -176,9 +169,8 @@ namespace hr::geom
 
 	private:
 		std::string mName;
-		std::vector<Node> mNodes;
 		std::vector<Joint> mJoints;
-		size_t mJointsRootNodeIndex{ 0 };
+		Matrix4f mRootTransform{ Matrix4f::identity() };
 		std::unordered_map<size_t, Animation> mAnimations;
 
 		struct AnimatedJoint
@@ -194,40 +186,32 @@ namespace hr::geom
 
 		struct
 		{
-			BBox<> bbox;
-
 			std::vector<AnimatedJoint> joints;
-
-			Matrix4f jointsRootTransform{ Matrix4f::identity() };
 			std::vector<Matrix4f> jointsFinalTransform;
 
 		} mLastAnimation;
 
-		Matrix4f calcNodeGlobalTransform(size_t nodeIndex) const noexcept;
 		Matrix4f calcJointGlobalTransform(size_t jointIndex) const noexcept;
 
 	public:
-		MeshAnimSet() = default;
-		explicit MeshAnimSet(std::string name, std::vector<Node> nodeData, size_t jointsRootNodeIndex, std::vector<Joint> jointData);
+		SkeletonAnim() = default;
+		explicit SkeletonAnim(std::string name, Matrix4f rootTransform, std::vector<Joint> jointData);
 
 		std::string_view name() const noexcept{ return mName; }
 
-		std::span<const Node> nodes() const noexcept{ return mNodes; }
+		const Matrix4f& rootTransform() const noexcept{ return mRootTransform; }
 		std::span<const Joint> joints() const noexcept{ return mJoints; }
 
-		size_t jointsRootNodeIndex() const noexcept{ return mJointsRootNodeIndex; }
-
-		size_t numNodes() const noexcept{ return mNodes.size(); }
 		size_t numJoints() const noexcept{ return mJoints.size(); }
 		size_t numAnimations() const noexcept{ return mAnimations.size(); }
 
 		bool animationAdd(size_t animId, Animation animation);
-		void animationUpdateBBoxes(size_t animId, const MeshAnim& baseMesh);
+
+		//void calculateBBoxes(const MeshAnim& baseMesh);
 
 		void animate(size_t animId, float time);
 		void animateReset();
 
-		BBox<> updatedBBox() const;
 		void updateMesh(const MeshAnim& baseMesh, TMesh& animatedMesh) const;
 	};
 }
@@ -237,106 +221,74 @@ namespace hr
 	//serialization support
 
 	template<>
-	struct serialize::Support<geom::MeshAnimSet>
+	struct serialize::Support<geom::SkeletonAnim::Joint>
 	{
 		template<class TArchiveWriter>
-		static void save(TArchiveWriter& writer, const geom::MeshAnimSet& animSet)
+		static void save(TArchiveWriter& writer, const geom::SkeletonAnim::Joint& joint)
 		{
 			using serialize::NamedParam;
-			writer << NamedParam("name", animSet.mName);
-		}
-
-		template<class TArchiveReader>
-		static void load(TArchiveReader& reader, geom::MeshAnimSet& animSet)
-		{
-			reader >> animSet.mName;
-		}
-	};
-
-	template<>
-	struct serialize::Support<geom::MeshAnimSet::Node>
-	{
-		template<class TArchiveWriter>
-		static void save(TArchiveWriter& writer, const geom::MeshAnimSet::Node& node)
-		{
-			using serialize::NamedParam;
-			writer << NamedParam("name", node.name) << NamedParam("parentIndex", node.parentIndex) << NamedParam("localTransform", node.localTransform);
-		}
-
-		template<class TArchiveReader>
-		static void load(TArchiveReader& reader, geom::MeshAnimSet::Node& node)
-		{
-			reader >> node.name >> node.parentIndex >> node.localTransform;
-		}
-	};
-
-	template<>
-	struct serialize::Support<geom::MeshAnimSet::Joint>
-	{
-		template<class TArchiveWriter>
-		static void save(TArchiveWriter& writer, const geom::MeshAnimSet::Joint& joint)
-		{
-			using serialize::NamedParam;
-			writer << NamedParam("nodeIndex", joint.nodeIndex) << NamedParam("parentIndex", joint.parentIndex);
+			writer << NamedParam("name", joint.name) << NamedParam("parentIndex", joint.parentIndex);
 			writer << NamedParam("scale", joint.localTransform.scale) << NamedParam("translation", joint.localTransform.translation) << NamedParam("rotation", joint.localTransform.rotation) << NamedParam("localTransform", joint.localTransform.matrix);
 			writer << NamedParam("transformInvert", joint.transformInvert);
 		}
 
 		template<class TArchiveReader>
-		static void load(TArchiveReader& reader, geom::MeshAnimSet::Joint& joint)
+		static void load(TArchiveReader& reader, geom::SkeletonAnim::Joint& joint)
 		{
-			reader >> joint.nodeIndex >> joint.parentIndex;
+			reader >> joint.name >> joint.parentIndex;
 			reader >> joint.localTransform.scale >> joint.localTransform.translation >> joint.localTransform.rotation >> joint.localTransform.matrix;
 			reader >> joint.transformInvert;
 		}
 	};
 
 	template<>
-	struct serialize::Support<geom::MeshAnimSet::Animation::Channel>
+	struct serialize::Support<geom::SkeletonAnim::Animation::Channel>
 	{
 		template<class TArchiveWriter>
-		static void save(TArchiveWriter& writer, const geom::MeshAnimSet::Animation::Channel& channel)
+		static void save(TArchiveWriter& writer, const geom::SkeletonAnim::Animation::Channel& channel)
 		{
 			using serialize::NamedParam;
-			writer << NamedParam("target", channel.target) << NamedParam("nodeIndex", channel.nodeIndex) << NamedParam("frameData", channel.frameData);
+			writer << NamedParam("target", channel.target) << NamedParam("jointIndex", channel.jointIndex) << NamedParam("frameData", channel.frameData);
 		}
 
 		template<class TArchiveReader>
-		static void load(TArchiveReader& reader, geom::MeshAnimSet::Animation::Channel& channel)
+		static void load(TArchiveReader& reader, geom::SkeletonAnim::Animation::Channel& channel)
 		{
-			reader >> channel.target >> channel.nodeIndex >> channel.frameData;
+			reader >> channel.target >> channel.jointIndex >> channel.frameData;
 		}
 	};
 
 	template<>
-	struct serialize::Support<geom::MeshAnimSet::Animation::Sampler>
+	struct serialize::Support<geom::SkeletonAnim::Animation::Sampler>
 	{
 		template<class TArchiveWriter>
-		static void save(TArchiveWriter& writer, const geom::MeshAnimSet::Animation::Sampler& sampler)
+		static void save(TArchiveWriter& writer, const geom::SkeletonAnim::Animation::Sampler& sampler)
 		{
 			using serialize::NamedParam;
 			writer << NamedParam("timePoints", sampler.timePoints) << NamedParam("channels", sampler.channels) << NamedParam("minTimePoint", sampler.minTimePoint) << NamedParam("maxTimePoint", sampler.maxTimePoint);
 		}
 
 		template<class TArchiveReader>
-		static void load(TArchiveReader& reader, geom::MeshAnimSet::Animation::Sampler& sampler)
+		static void load(TArchiveReader& reader, geom::SkeletonAnim::Animation::Sampler& sampler)
 		{
 			reader >> sampler.timePoints >> sampler.channels >> sampler.minTimePoint >> sampler.maxTimePoint;
 		}
 	};
 
 	template<>
-	struct serialize::Support<geom::MeshAnimSet::Animation>
+	struct serialize::Support<geom::SkeletonAnim::Animation>
 	{
 		template<class TArchiveWriter>
-		static void save(TArchiveWriter& writer, const geom::MeshAnimSet::Animation& anim)
+		static void save(TArchiveWriter& writer, const geom::SkeletonAnim::Animation& anim)
 		{
 			using serialize::NamedParam;
-			writer << NamedParam("id", anim.name) << NamedParam("samplers", anim.samplers) << NamedParam("minTimePoint", anim.minTimePoint) << NamedParam("maxTimePoint", anim.maxTimePoint);
+			writer << NamedParam("id", anim.name)
+				<< NamedParam("samplers", anim.samplers)
+				<< NamedParam("minTimePoint", anim.minTimePoint) << NamedParam("maxTimePoint", anim.maxTimePoint);
 		}
 
 		template<class TArchiveReader>
-		static void load(TArchiveReader& reader, geom::MeshAnimSet::Animation& anim)
+		static void load(TArchiveReader& reader, geom::SkeletonAnim::Animation& anim)
 		{
 			reader >> anim.name >> anim.samplers >> anim.minTimePoint >> anim.maxTimePoint;
 		}
