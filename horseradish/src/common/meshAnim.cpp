@@ -39,9 +39,12 @@ namespace hr::geom
 				finalMat = finalMat * rootNodeTrans;
 				auto finalMat3x3 = finalMat.clone(Matrix4f::CloneTransform::InverseTranspose).convert<Matrix3, float>();
 
-				auto bindPos = baseMesh.mesh().getPos(curVertex);
-				auto bindNormal = baseMesh.mesh().getNormal(curVertex);
-				auto bindTangentFull = baseMesh.mesh().getTangent(curVertex);
+				auto& inVertex = baseMesh.mesh().vertex(curVertex);
+				auto& outVertex = animatedMesh.vertex(curVertex);
+
+				auto bindPos = inVertex.getPos();
+				auto bindNormal = inVertex.getNormal();
+				auto bindTangentFull = inVertex.getTangent();
 				auto bindTangent = bindTangentFull.convert<float, 3>();
 
 				finalMat.transform(bindPos);
@@ -51,9 +54,9 @@ namespace hr::geom
 				bindNormal.normalize();
 				bindTangent.normalize();
 
-				animatedMesh.setPos(curVertex, bindPos);
-				animatedMesh.setNormal(curVertex, bindNormal);
-				animatedMesh.setTangent(curVertex, bindTangent.convert<float, 4>(bindTangentFull[3]));
+				outVertex.setPos(bindPos);
+				outVertex.setNormal(bindNormal);
+				outVertex.setTangent(bindTangent.convert<float, 4>(bindTangentFull[3]));
 			}
 		}
 	}

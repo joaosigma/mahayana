@@ -39,7 +39,7 @@ namespace hr::geom
 			return out;
 		}
 
-		uint32_t packedWriteNormal(float normal[3])
+		uint32_t packedWriteNormal(const float normal[3])
 		{
 			const uint32_t xs = normal[0] < 0;
 			const uint32_t ys = normal[1] < 0;
@@ -63,7 +63,7 @@ namespace hr::geom
 			return out;
 		}
 
-		uint32_t packedWriteTangent(float tangent[4])
+		uint32_t packedWriteTangent(const float tangent[4])
 		{
 			const uint32_t xs = tangent[0] < 0;
 			const uint32_t ys = tangent[1] < 0;
@@ -76,32 +76,56 @@ namespace hr::geom
 		}
 	}
 
-	Mesh<VertexFull, uint32_t> Mesh<VertexFull, uint32_t>::convertMesh(const Mesh<VertexShading, uint16_t>& source)
+	void VertexFull::convertTo(VertexShading& dest)
 	{
-		if (!source.check())
-			return {};
+		std::memcpy(dest.pos, pos, sizeof(float) * 3);
+		types::packFloat(uv, dest.uv, 2);
+		dest.normal = packedWriteNormal(normal);
+		dest.tangent = packedWriteTangent(tangent);
+	}
 
-		Mesh<VertexFull, uint32_t> newMesh{ source.numVertices(), source.numIndices() };
-		if (!newMesh.check())
-			return {};
+	Vector3f VertexShading::getPos() const noexcept
+	{
+		return Vector3f{pos};
+	}
 
-		for (size_t i = 0; i < newMesh.mNumVertices; i++)
-		{
-			auto& srcData = source.mData[i];
-			auto& dstData = newMesh.mData[i];
+	Vector3f VertexShading::getNormal() const noexcept
+	{
+		return packedReadNormal(normal);
+	}
 
-			std::memcpy(dstData.pos, srcData.pos, sizeof(float) * 3);
+	Vector4f VertexShading::getTangent() const noexcept
+	{
+		return packedReadTangent(tangent);
+	}
 
-			types::unpackFloat(srcData.uv, dstData.uv, 2);
+	void VertexShading::setPos(const Vector3f& newPos) noexcept
+	{
+		newPos.write(pos);
+	}
 
-			packedReadNormal(srcData.normal).write(dstData.normal);
-			packedReadTangent(srcData.tangent).write(dstData.tangent);
-		}
+	void VertexShading::setUV(float u, float v) noexcept
+	{
+		uv[0] = types::packFloat<uint16_t>(u);
+		uv[1] = types::packFloat<uint16_t>(v);
+	}
 
-		for (size_t i = 0; i < newMesh.mNumIndices; i++)
-			newMesh.mIndices[i] = static_cast<uint32_t>(source.mIndices[i]);
+	void VertexShading::setNormal(const Vector3f& newNormal) noexcept
+	{
+		normal = packedWriteNormal(newNormal.data());
+	}
 
-		return newMesh;
+	void VertexShading::setTangent(const Vector4f& newTangent) noexcept
+	{
+		tangent = packedWriteTangent(newTangent.data());
+	}
+
+	void VertexShading::convertTo(VertexFull& dest)
+	{
+		std::memcpy(dest.pos, pos, sizeof(float) * 3);
+		types::unpackFloat(uv, dest.uv, 2);
+		packedReadNormal(normal).write(dest.normal);
+		packedReadTangent(tangent).write(dest.tangent);
 	}
 
 	BBox<> Mesh<VertexFull, uint32_t>::bbox() const noexcept
@@ -226,32 +250,6 @@ namespace hr::geom
 
 		return Vector3f::calcNormalize((n1 * baryU) + (n2 * baryV) + (n3 * baryW));
 	}
-
-	BBox<> Mesh<VertexFull, uint32_t>::getBoundingBox() const noexcept
-	{
-		__m128 minPoint, maxPoint;
-
-		{
-			__m128 curPoint;
-			auto vertexData = mData.get();
-
-			minPoint = maxPoint = _mm_loadu_ps(vertexData->pos);
-			vertexData++;
-
-			for (size_t i = 1; i < mNumVertices; i++, vertexData++)
-			{
-				curPoint = _mm_loadu_ps(vertexData->pos);
-				minPoint = _mm_min_ps(minPoint, curPoint);
-				maxPoint = _mm_max_ps(maxPoint, curPoint);
-			}
-		}
-
-		Vector3f tmpVecs[2];
-		_mm_storeu_ps(tmpVecs[0].data(), minPoint);
-		_mm_storeu_ps(tmpVecs[1].data(), maxPoint);
-
-		return BBox(tmpVecs, 2);
-	}
 	
 	void Mesh<VertexFull, uint32_t>::flipUV() noexcept
 	{
@@ -350,6 +348,53 @@ namespace hr::geom
 		meshopt_optimizeVertexFetch(mData.get(), mIndices.get(), mNumIndices, mData.get(), mNumVertices, sizeof(VertexFull));
 	}
 	
+	bool Mesh<VertexFull, uint32_t>::genUVs(UVGenType genType) noexcept
+	{
+		//based on https://www.khronos.org/opengl/wiki/Mathematics_of_glTexGen
+
+		if (genType == UVGenType::Sphere)
+		{
+			for (size_t i = 0; i < mNumVertices; i++)
+			{
+				auto& vertex = mData[i];
+
+				auto eyeVec = Vector3f::calcNormalize(vertex.getPos());
+				auto eyeNormal = vertex.getNormal();
+
+				auto reflectionVec = eyeVec - (eyeNormal * 2.0 * eyeVec.dot(eyeNormal));
+				reflectionVec[2] += 1.0f;
+
+				auto m = 1.0f / (2.0f * reflectionVec.magnitude());
+
+				vertex.uv[0] = (reflectionVec[0] * m) + 0.5f;
+				vertex.uv[1] = (reflectionVec[1] * m) + 0.5f;
+			}
+
+			return true;
+		}
+
+		if (genType == UVGenType::Reflection)
+		{
+			for (size_t i = 0; i < mNumVertices; i++)
+			{
+				auto& vertex = mData[i];
+
+				auto eyeVec = Vector3f::calcNormalize(vertex.getPos());
+				auto eyeNormal = vertex.getNormal();
+
+				auto dotResult = 2.0f * eyeVec.dot(eyeNormal);
+
+				vertex.uv[0] = eyeVec[0] - (eyeNormal[0] * dotResult);
+				vertex.uv[1] = eyeVec[1] - (eyeNormal[2] * dotResult);
+				//missing the R (z) componente to sample from the cubemap
+			}
+
+			return true;
+		}
+
+		return false;
+	}
+
 	void Mesh<VertexFull, uint32_t>::genNormals() noexcept
 	{
 		auto normals = std::unique_ptr<Vector3f[]>(new Vector3f[mNumVertices]);
@@ -453,9 +498,11 @@ namespace hr::geom
 
 			for (auto [oldIndex, newIndex] : vertexMapping)
 				newMesh.vertex(newIndex) = mData[oldIndex];
-			std::copy(newIndices.begin(), newIndices.end(), newMesh.indices());
+			std::copy(newIndices.begin(), newIndices.end(), newMesh.indices().data());
 
 			assert(newMesh.check(maxVertexCount));
+			newMesh.optimizeIndices();
+
 			newMeshes.push_back(std::move(newMesh));
 		};
 
@@ -498,126 +545,5 @@ namespace hr::geom
 		}
 
 		return newMeshes;
-	}
-
-	Mesh<VertexShading, uint16_t> Mesh<VertexShading, uint16_t>::convertMesh(const Mesh<VertexFull, uint32_t>& source)
-	{
-		if (!source.check())
-			return {};
-
-		Mesh<VertexShading, uint16_t> newMesh{ source.numVertices(), source.numIndices() };
-		if (!newMesh.check())
-			return {};
-
-		for (size_t i = 0; i < newMesh.mNumVertices; i++)
-		{
-			auto& srcData = source.mData[i];
-			auto& dstData = newMesh.mData[i];
-
-			std::memcpy(dstData.pos, srcData.pos, sizeof(float) * 3);
-
-			types::packFloat(srcData.uv, dstData.uv, 2);
-
-			dstData.normal = packedWriteNormal(srcData.normal);
-			dstData.tangent = packedWriteTangent(srcData.tangent);
-		}
-
-		for (size_t i = 0; i < newMesh.mNumIndices; i++)
-			newMesh.mIndices[i] = static_cast<uint16_t>(source.mIndices[i]);
-
-		return newMesh;
-	}
-
-	BBox<> Mesh<VertexShading, uint16_t>::getBoundingBox() const noexcept
-	{
-		__m128 minPoint, maxPoint;
-
-		{
-			__m128 curPoint;
-			auto vertexData = mData.get();
-
-			minPoint = maxPoint = _mm_loadu_ps(vertexData->pos);
-			vertexData++;
-
-			for (size_t i = 1; i < mNumVertices; i++, vertexData++)
-			{
-				curPoint = _mm_loadu_ps(vertexData->pos);
-				minPoint = _mm_min_ps(minPoint, curPoint);
-				maxPoint = _mm_max_ps(maxPoint, curPoint);
-			}
-		}
-
-		Vector3f tmpVecs[2];
-		_mm_storeu_ps(tmpVecs[0].data(), minPoint);
-		_mm_storeu_ps(tmpVecs[1].data(), maxPoint);
-
-		return BBox(tmpVecs, 2);
-	}
-
-	Vector3f Mesh<VertexShading, uint16_t>::getPos(size_t vertexIndex) const noexcept
-	{
-		assert(vertexIndex < mNumVertices);
-		return Vector3f{ mData[vertexIndex].pos };
-	}
-
-	Vector3f Mesh<VertexShading, uint16_t>::getNormal(size_t vertexIndex) const noexcept
-	{
-		assert(vertexIndex < mNumVertices);
-		return packedReadNormal(mData[vertexIndex].normal);
-	}
-
-	Vector4f Mesh<VertexShading, uint16_t>::getTangent(size_t vertexIndex) const noexcept
-	{
-		assert(vertexIndex < mNumVertices);
-		return packedReadTangent(mData[vertexIndex].tangent);
-	}
-
-	void Mesh<VertexShading, uint16_t>::setPos(size_t vertexIndex, Vector3f pos) noexcept
-	{
-		assert(vertexIndex < mNumVertices);
-		pos.write(mData[vertexIndex].pos);
-	}
-
-	void Mesh<VertexShading, uint16_t>::setUV(size_t vertexIndex, float u, float v) noexcept
-	{
-		assert(vertexIndex < mNumVertices);
-		mData[vertexIndex].uv[0] = types::packFloat<uint16_t>(u);
-		mData[vertexIndex].uv[1] = types::packFloat<uint16_t>(v);
-	}
-
-	void Mesh<VertexShading, uint16_t>::setNormal(size_t vertexIndex, Vector3f normal) noexcept
-	{
-		assert(vertexIndex < mNumVertices);
-		mData[vertexIndex].normal = packedWriteNormal(normal.data());
-	}
-
-	void Mesh<VertexShading, uint16_t>::setTangent(size_t vertexIndex, Vector4f tangent) noexcept
-	{
-		assert(vertexIndex < mNumVertices);
-		mData[vertexIndex].tangent = packedWriteTangent(tangent.data());
-	}
-
-	void Mesh<VertexShading, uint16_t>::transform(const Matrix4f& matFull, const Matrix3f& matRot) noexcept
-	{
-		auto vertexData = mData.get();
-		for (size_t i = 0; i < mNumVertices; i++, vertexData++)
-		{
-			matFull.transform(vertexData->pos);
-
-			{
-				auto normal = packedReadNormal(vertexData->normal);
-				matRot.transform(normal);
-				vertexData->normal = packedWriteNormal(normal.data());
-			}
-
-			{
-				auto tangent4 = packedReadTangent(vertexData->tangent);
-				Vector3f tangent3{ tangent4.data() };
-				matRot.transform(tangent3);
-
-				tangent4 = tangent3.convert<float, 4>(tangent4[3]);
-				vertexData->tangent = packedWriteTangent(tangent4.data());
-			}
-		}
 	}
 }
