@@ -7,10 +7,7 @@
 #include "common/quaternion.hpp"
 #include "common/stringUtils.hpp"
 
-#include "libs/rapidjson/document.h"
-#include "libs/rapidjson/rapidjson.h"
-#include "libs/rapidjson/prettywriter.h"
-#include "libs/rapidjson/stringbuffer.h"
+#include "libs/nlohmann_json/json.hpp"
 
 #include "libs/tinygltf/tiny_gltf.h"
 #include "libs/tinyobjloader/tiny_obj_loader.h"
@@ -495,31 +492,22 @@ namespace hr::render
 				std::filesystem::remove(std::string(binPath));
 
 			{
+				std::string jsonContent;
+				{
+					using nlohmann::json;
+
+					json jFile;
+					jFile["version"] = json::array({1, 0, 0});
+					jFile["textureSets"] = json::array();
+					jFile["materials"] = json::array();
+					jFile["objects"] = json::array();
+					jFile["instances"] = json::array();
+
+					jsonContent = jFile.dump(4);
+				}
+
 				hr::streams::FileStream streamScene(std::string(scenePath), false, true);
-
-				rapidjson::StringBuffer s;
-				rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(s);
-
-				writer.StartObject();
-
-				writer.String("version");
-				writer.StartArray();
-				writer.Int(1);
-				writer.Int(0);
-				writer.Int(0);
-				writer.EndArray();
-
-				writer.String("objects");
-				writer.StartArray();
-				writer.EndArray();
-
-				writer.String("instances");
-				writer.StartArray();
-				writer.EndArray();
-
-				writer.EndObject();
-
-				streamScene.write(s.GetString(), s.GetSize());
+				streamScene.write(jsonContent.data(), jsonContent.size());
 			}
 
 			{
@@ -642,7 +630,7 @@ namespace hr::render
 				{
 					struct hash
 					{
-						size_t operator()(const hashableIndex& index) const
+						size_t operator()(const hashableIndex& index) const noexcept
 						{
 							size_t seed = index.vertex_index;
 							seed ^= index.texcoord_index + 0x9e3779b9 + (seed << 6) + (seed >> 2);
@@ -662,7 +650,6 @@ namespace hr::render
 				};
 
 				std::unordered_map<hashableIndex, size_t, hashableIndex::hash> mapping;
-
 				for (const auto& index : shape.mesh.indices)
 				{
 					if (mapping.find(index) != mapping.end())
@@ -700,18 +687,11 @@ namespace hr::render
 
 				assert(newMesh.check());
 
-				//very rare and special case, but allowed
-				if (ignoreTexCoords)
-				{
-					newMesh.iterateVertices(
-					  [](size_t, geom::VertexFull& v)
-					  {
-						  v.uv[0] = v.uv[1] = 0.0f;
-						  return true;
-					  });
-				}
+				//generate stuff that weren't read (mind the order: it is important)
 				if (ignoreNormals)
 					newMesh.genNormals();
+				if (ignoreTexCoords)
+					newMesh.genUVs(geom::Mesh<geom::VertexFull, uint32_t>::UVGenType::Sphere);
 				newMesh.genTangents4();
 
 				newMesh.optimizeIndices();
@@ -961,7 +941,7 @@ namespace hr::render
 					numVertices++;
 
 					newMesh = geom::Mesh<geom::VertexFull, uint32_t>{ std::unique_ptr<geom::VertexFull[]>(new geom::VertexFull[numVertices]), numVertices, std::move(newIndices), newIndicesCount };
-					newMeshAnim = hr::geom::MeshAnim{ geom::Mesh<geom::VertexShading, uint16_t>::convertMesh(newMesh), hr::geom::MeshAnim::SkinningType::Vertex4Joints };
+					newMeshAnim = hr::geom::MeshAnim{ newMesh.convert<geom::VertexShading, uint16_t>(), hr::geom::MeshAnim::SkinningType::Vertex4Joints };
 
 					//can split an animation mesh
 					if (hasSkin && (numVertices > geom::MeshBase<geom::VertexShading, uint16_t>::maxVertexCount()))
@@ -974,21 +954,14 @@ namespace hr::render
 				if (!newMesh.check() || !primState.hasPos || (hasSkin && (!primState.hasJoints || !primState.hasJointsWheights)))
 					continue;
 
-				//very rare and special case, but allowed
-				if (!primState.hasTexCoords)
-				{
-					newMesh.iterateVertices([](size_t, geom::VertexFull& v)
-					{
-						v.uv[0] = v.uv[1] = 0.0f;
-						return true;
-					});
-				}
-
+				//generate stuff that weren't read (mind the order: it is important)
 				if (!primState.hasNormal)
 					newMesh.genNormals();
+				if (!primState.hasTexCoords)
+					newMesh.genUVs(geom::Mesh<geom::VertexFull, uint32_t>::UVGenType::Sphere);
 				if (!primState.hasTangent)
 					newMesh.genTangents4();
-						
+
 				if (!hasSkin)
 				{
 					newMesh.optimizeIndices();
@@ -1030,7 +1003,7 @@ namespace hr::render
 					//store new geometry
 					if (hasSkin)
 					{
-						newMeshAnim.mesh() = geom::Mesh<geom::VertexShading, uint16_t>::convertMesh(newMesh);
+						newMeshAnim.mesh() = newMesh.convert<geom::VertexShading, uint16_t>();
 
 						hr::streams::FileStream geomFileStream(areaData.pathBin, true, true);
 						World::geomFileAddMeshAnim(geomFileStream, objectId, newMeshAnim, skins[node.skin].animSetId);
@@ -1396,117 +1369,62 @@ namespace hr::render
 		if (std::filesystem::exists(areaData.pathScene))
 			std::filesystem::remove(areaData.pathScene);
 
+		std::string jsonContent;
+		{
+			using nlohmann::json;
+
+			json jFile;
+
+			jFile["version"] = json::array({1, 0, 0});
+			jFile["textureSets"] = json::array();
+			jFile["materials"] = json::array();
+			jFile["objects"] = json::array();
+			jFile["instances"] = json::array();
+
+			jFile["animationSets"] = json::array();
+			for (auto& animSet : areaData.animationSets)
+			{
+				auto jAnimSet = json::object();
+
+				jAnimSet["id"] = animSet.second.animSetId;
+				jAnimSet["name"] = animSet.second.name;
+
+				jFile["animationSets"].push_back(std::move(jAnimSet));
+			}
+
+			for (auto& object : areaData.objects)
+			{
+				auto jObject = json::object();
+
+				jObject["id"] = object.second.objectId;
+				jObject["type"] = static_cast<unsigned int>(Object::Type::Static);
+				jObject["name"] = object.second.name;
+
+				{
+					auto jMat = json::object();
+					jMat["diffusePath"] = object.second.matDiffusePath;
+					jMat["normalPath"] = object.second.matNormalPath;
+
+					jObject["material"] = std::move(jMat);
+				}
+
+				jFile["objects"].push_back(std::move(jObject));
+			}
+
+			for (auto& curObject : area.mInstances)
+			{
+				auto jInstance = json::object();
+
+				jInstance["type"] = static_cast<unsigned int>(curObject.type);
+				jInstance["objectId"] = curObject.objectId;
+
+				jFile["instances"].push_back(std::move(jInstance));
+			}
+
+			jsonContent = jFile.dump(4);
+		}
+
 		hr::streams::FileStream streamScene(areaData.pathScene, false, true);
-
-		rapidjson::StringBuffer s;
-		rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(s);
-
-		writer.StartObject();
-
-		writer.String("version");
-		writer.StartArray();
-		writer.Int(1);
-		writer.Int(0);
-		writer.Int(0);
-		writer.EndArray();
-
-		writer.String("animationSets");
-		writer.StartArray();
-		for (auto& animSet : areaData.animationSets)
-		{
-			writer.StartObject();
-
-			writer.String("id");
-			writer.Uint(animSet.second.animSetId);
-
-			writer.String("name");
-			writer.String(animSet.second.name.c_str());
-
-			writer.String("joints");
-			writer.StartArray();
-			for (auto& joint : animSet.second.joints)
-			{
-				writer.StartObject();
-
-				writer.String("index");
-				writer.Uint(joint.index);
-
-				writer.String("parent");
-				writer.Int(joint.parentIndex);
-
-				writer.String("name");
-				writer.String(joint.name.data());
-
-				writer.EndObject();
-			}
-			writer.EndArray();
-
-			writer.String("animation");
-			writer.StartArray();
-			for (auto& anim : animSet.second.anims)
-			{
-				writer.StartObject();
-
-				writer.String("id");
-				writer.Uint(anim.animId);
-
-				writer.String("name");
-				writer.String(anim.name.c_str());
-
-				writer.EndObject();
-			}
-			writer.EndArray();
-
-			writer.EndObject();
-		}
-		writer.EndArray();
-
-		writer.String("objects");
-		writer.StartArray();
-		for (auto& object : areaData.objects)
-		{
-			writer.StartObject();
-
-			writer.String("id");
-			writer.Uint(object.second.objectId);
-
-			writer.String("type");
-			writer.Uint(static_cast<unsigned int>(Object::Type::Static));
-
-			writer.String("name");
-			writer.String(object.second.name.c_str());
-
-			writer.String("material");
-			writer.StartObject();
-			writer.String("diffusePath");
-			writer.String(object.second.matDiffusePath.c_str());
-
-			writer.String("normalPath");
-			writer.String(object.second.matNormalPath.c_str());
-			writer.EndObject();
-
-			writer.EndObject();
-		}
-		writer.EndArray();
-
-		writer.String("instances");
-		writer.StartArray();
-		for (auto& curObject : area.mInstances)
-		{
-			writer.StartObject();
-
-			writer.String("type");
-			writer.Uint(static_cast<unsigned int>(curObject.type));
-
-			writer.String("objectId");
-			writer.Uint(curObject.objectId);
-
-			writer.EndObject();
-		}
-		writer.EndArray();
-
-		writer.EndObject();
-
-		streamScene.write(s.GetString(), s.GetSize());
+		streamScene.write(jsonContent.data(), jsonContent.size());
 	}
 }

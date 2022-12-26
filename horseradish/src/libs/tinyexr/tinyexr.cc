@@ -1,3 +1,9 @@
+#if defined(_WIN32)
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#endif
+
 #define TINYEXR_USE_THREAD 0
 #define TINYEXR_USE_OPENMP 0
 

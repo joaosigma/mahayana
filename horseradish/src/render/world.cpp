@@ -8,11 +8,7 @@
 
 #include "libs/lz4/lz4.h"
 #include "libs/lz4/lz4hc.h"
-#include "libs/rapidjson/document.h"
-#include "libs/rapidjson/rapidjson.h"
-#include "libs/rapidjson/prettywriter.h"
-#include "libs/rapidjson/stringbuffer.h"
-#include "libs/tinyobjloader/tiny_obj_loader.h"
+#include "libs/nlohmann_json/json.hpp"
 
 #include <array>
 #include <cstdint>
@@ -530,13 +526,14 @@ namespace hr { namespace render
 
 	bool World::geomFileAddMesh(hr::streams::FileStream& fstream, size_t geomId, const geom::Mesh<geom::VertexFull, uint32_t>& mesh)
 	{
-		auto meshShading = geom::Mesh<geom::VertexShading, uint16_t>::convertMesh(mesh);
+		auto meshShading = mesh.convert<geom::VertexShading, uint16_t>();
 		if (!meshShading.check())
 			return false;
 
-		size_t numGeoms = 0, numAnimSets = 0, numAnims = 0;
+		auto meshBBox = mesh.bbox(); //faster than calling bbox() from meshShading
 
 		//update file header
+		size_t numGeoms = 0, numAnimSets = 0, numAnims = 0;
 		{
 			GeomHeader geomHeader;
 			{
@@ -572,20 +569,18 @@ namespace hr { namespace render
 		newGeomChunk.geomsOffset = 0;
 		newGeomChunk.animSetId = 0;
 	
-		auto success = fileAddData(fstream, numGeoms, numAnimSets, numAnims, [&mesh = meshShading, &newGeomChunk](hr::streams::StreamWriter& fwriter)
+		auto success = fileAddData(fstream, numGeoms, numAnimSets, numAnims, [&mesh = meshShading, &meshBBox, &newGeomChunk](hr::streams::StreamWriter& fwriter)
 		{
 			newGeomChunk.geomsOffset = fwriter.position();
 
-			if (fwriter.write(mesh.vertices(), mesh.sizeVertices()) != mesh.sizeVertices())
+			if (fwriter.write(mesh.vertices().data(), mesh.sizeVertices()) != mesh.sizeVertices())
 				return false;
-			if (fwriter.write(mesh.indices(), mesh.sizeIndices()) != mesh.sizeIndices())
+			if (fwriter.write(mesh.indices().data(), mesh.sizeIndices()) != mesh.sizeIndices())
 				return false;
 
-			auto bbox = mesh.getBoundingBox();
-
-			if (fwriter.write(bbox.min().data(), sizeof(float) * 3) != sizeof(float) * 3)
+			if (fwriter.write(meshBBox.min().data(), sizeof(float) * 3) != sizeof(float) * 3)
 				return false;
-			if (fwriter.write(bbox.max().data(), sizeof(float) * 3) != sizeof(float) * 3)
+			if (fwriter.write(meshBBox.max().data(), sizeof(float) * 3) != sizeof(float) * 3)
 				return false;
 
 			newGeomChunk.size = fwriter.position() - newGeomChunk.geomsOffset;
@@ -648,12 +643,12 @@ namespace hr { namespace render
 		{
 			newGeomChunk.geomsOffset = fwriter.position();
 
-			if (fwriter.write(meshAnim.mesh().vertices(), meshAnim.mesh().sizeVertices()) != meshAnim.mesh().sizeVertices())
+			if (fwriter.write(meshAnim.mesh().vertices().data(), meshAnim.mesh().sizeVertices()) != meshAnim.mesh().sizeVertices())
 				return false;
-			if (fwriter.write(meshAnim.mesh().indices(), meshAnim.mesh().sizeIndices()) != meshAnim.mesh().sizeIndices())
+			if (fwriter.write(meshAnim.mesh().indices().data(), meshAnim.mesh().sizeIndices()) != meshAnim.mesh().sizeIndices())
 				return false;
 
-			auto bbox = meshAnim.mesh().getBoundingBox();
+			auto bbox = meshAnim.mesh().bbox();
 
 			if (fwriter.write(bbox.min().data(), sizeof(float) * 3) != sizeof(float) * 3)
 				return false;
@@ -846,13 +841,13 @@ namespace hr { namespace render
 			geom::Mesh<geom::VertexShading, uint16_t> mesh(numVertices, numIndices);
 
 			streamBin.seek(hr::streams::Stream::SeekOrigin::Begin, chunkInfo.geomsOffset);
-			streamBin.read(mesh.vertices(), mesh.sizeVertices());
-			streamBin.read(mesh.indices(), mesh.sizeIndices());
+			streamBin.read(mesh.vertices().data(), mesh.sizeVertices());
+			streamBin.read(mesh.indices().data(), mesh.sizeIndices());
 
 			{
-				auto tmp = geom::Mesh<geom::VertexFull, uint32_t>::convertMesh(mesh);
+				auto tmp = mesh.convert<geom::VertexFull, uint32_t>();
 				cb(tmp);
-				mesh = geom::Mesh<geom::VertexShading, uint16_t>::convertMesh(tmp);
+				mesh = tmp.convert<geom::VertexShading, uint16_t>();
 			}
 
 			if ((mesh.numVertices() != numVertices) || (mesh.numIndices() != numIndices))
@@ -862,10 +857,10 @@ namespace hr { namespace render
 				hr::streams::StreamWriter streamWriter(fstream);
 
 				streamWriter.seek(hr::streams::Stream::SeekOrigin::Begin, chunkInfo.geomsOffset);
-				streamWriter.write(mesh.vertices(), mesh.sizeVertices());
-				streamWriter.write(mesh.indices(), mesh.sizeIndices());
+				streamWriter.write(mesh.vertices().data(), mesh.sizeVertices());
+				streamWriter.write(mesh.indices().data(), mesh.sizeIndices());
 
-				auto bbox = mesh.getBoundingBox();
+				auto bbox = mesh.bbox();
 
 				if (streamWriter.write(bbox.min().data(), sizeof(float) * 3) != sizeof(float) * 3)
 					return false;
@@ -1019,8 +1014,8 @@ namespace hr { namespace render
 			hr::geom::MeshAnim meshAnim;
 			{
 				geom::Mesh<geom::VertexShading, uint16_t> mesh(geomChunk.numVertices, geomChunk.numIndices); //bind pose
-				stream.read(mesh.vertices(), mesh.sizeVertices());
-				stream.read(mesh.indices(), mesh.sizeIndices());
+				stream.read(mesh.vertices().data(), mesh.sizeVertices());
+				stream.read(mesh.indices().data(), mesh.sizeIndices());
 
 				stream.skip(sizeof(float) * 6); //bbox
 
@@ -1135,7 +1130,7 @@ namespace hr { namespace render
 				size_t readVertices(void* const destBuffer, size_t requestedDataSize) const override
 				{
 					assert(requestedDataSize == mMesh.sizeVertices());
-					std::memcpy(destBuffer, mMesh.vertices(), requestedDataSize);
+					std::memcpy(destBuffer, mMesh.vertices().data(), requestedDataSize);
 
 					return requestedDataSize;
 				}
@@ -1405,114 +1400,112 @@ namespace hr { namespace render
 					buffer.get()[requiredSize] = '\0';
 					return buffer;
 				});
+				
+				using nlohmann::json;
 
-				rapidjson::Document d;
-				d.ParseInsitu(reinterpret_cast<char*>(buffer.get()));
-
+				auto jFile = json::parse(buffer.get(), buffer.get() + bufferSize);
+				if (jFile.is_discarded())
+					return false;
+					
+				for (auto& jObject : jFile["objects"].items())
 				{
-					auto& jsonConcepts = d["objects"];
-					assert(jsonConcepts.IsArray());
+					auto objectId = jObject.value()["id"].get<size_t>();
+					auto objectType = static_cast<Object::Type>(jObject.value()["type"].get<int>());
 
-					for (rapidjson::Value::ConstValueIterator itr = jsonConcepts.Begin(); itr != jsonConcepts.End(); ++itr)
+					if (objectType == Object::Type::Static)
 					{
-						size_t objectId = (*itr)["id"].GetUint();
+						auto& object = area.mObjects[objectId];
+						auto& objectRenderer = mRendererObjects.try_emplace(objectId, binFileStream).first->second;
 
-						auto objectType = static_cast<Object::Type>((*itr)["type"].GetUint());
-						
-						if (objectType == Object::Type::Static)
+						object.id = objectId;
+						object.type = Object::Type::Static;
+						objectRenderer.objectId = objectId;
+
+						//read geom info and bbox
 						{
-							auto& object = area.mObjects[objectId];
-							auto& objectRenderer = mRendererObjects.try_emplace(objectId, binFileStream).first->second;
+							auto geomIt = geomInfo.find(object.id);
+							if (geomIt == geomInfo.end()) continue;
 
-							object.id = objectId;
-							object.type = Object::Type::Static;
-							objectRenderer.objectId = objectId;
+							objectRenderer.geom.numVertices = geomIt->second.numVertices;
+							objectRenderer.geom.numIndices = geomIt->second.numIndices;
 
-							//read geom info and bbox
 							{
-								auto geomIt = geomInfo.find(object.id);
-								if (geomIt == geomInfo.end())
-									continue;
+								streamBin.seek(hr::streams::Stream::SeekOrigin::Begin, geomIt->second.geomsOffset);
 
-								objectRenderer.geom.numVertices = geomIt->second.numVertices;
-								objectRenderer.geom.numIndices = geomIt->second.numIndices;
+								object.anim.hasAnim = (geomIt->second.type == static_cast<uint16_t>(GeomType::Animated));
+								if (object.anim.hasAnim)
+								{
+									object.anim.animSetId = geomIt->second.animSetId;
+
+									//read and store the base mesh (normally the bind pose)
+									object.anim.meshAnimated = geom::Mesh<geom::VertexShading, uint16_t>(
+										geomIt->second.numVertices, geomIt->second.numIndices);
+									streamBin.read(object.anim.meshAnimated.vertices().data(),
+										object.anim.meshAnimated.sizeVertices());
+									streamBin.read(object.anim.meshAnimated.indices().data(),
+										object.anim.meshAnimated.sizeIndices());
+								}
+								else
+								{
+									//skip base mesh data
+									streamBin.seek(hr::streams::Stream::SeekOrigin::Current,
+										geom::Mesh<geom::VertexShading, uint16_t>::sizeVertices(geomIt->second.numVertices));
+									streamBin.seek(hr::streams::Stream::SeekOrigin::Current,
+										geom::Mesh<geom::VertexShading, uint16_t>::sizeIndices(geomIt->second.numIndices));
+								}
+
+								//store where in the file our geom is
+								objectRenderer.geom.fstreamVertexOffset = geomIt->second.geomsOffset;
+								objectRenderer.geom.fstreamIndexOffset = objectRenderer.geom.fstreamVertexOffset
+									+ geom::Mesh<geom::VertexShading, uint16_t>::sizeVertices(objectRenderer.geom.numVertices);
 
 								{
-									streamBin.seek(hr::streams::Stream::SeekOrigin::Begin, geomIt->second.geomsOffset);
+									Vector3f bboxMin, bboxMax;
 
-									object.anim.hasAnim = (geomIt->second.type == static_cast<uint16_t>(GeomType::Animated));
-									if (object.anim.hasAnim)
-									{
-										object.anim.animSetId = geomIt->second.animSetId;
+									streamBin.read(bboxMin.data(), sizeof(float) * 3);
+									streamBin.read(bboxMax.data(), sizeof(float) * 3);
 
-										//read and store the base mesh (normally the bind pose)
-										object.anim.meshAnimated = geom::Mesh<geom::VertexShading, uint16_t>(geomIt->second.numVertices, geomIt->second.numIndices);
-										streamBin.read(object.anim.meshAnimated.vertices(), object.anim.meshAnimated.sizeVertices());
-										streamBin.read(object.anim.meshAnimated.indices(), object.anim.meshAnimated.sizeIndices());
-									}
+									object.bbox.setMinMax(bboxMin, bboxMax);
+									objectRenderer.geom.bbox = object.bbox;
+								}
+
+								if (object.anim.hasAnim) //read vertex joint information
+								{
+									if ((geomIt->second.flags & static_cast<uint16_t>(GeomFlags::AnimExtraBoneSet)) != 0)
+										object.anim.meshAnim = hr::geom::MeshAnim(object.anim.meshAnimated,
+											hr::geom::MeshAnim::SkinningType::Vertex8Joints);
 									else
-									{
-										//skip base mesh data
-										streamBin.seek(hr::streams::Stream::SeekOrigin::Current, geom::Mesh<geom::VertexShading, uint16_t>::sizeVertices(geomIt->second.numVertices));
-										streamBin.seek(hr::streams::Stream::SeekOrigin::Current, geom::Mesh<geom::VertexShading, uint16_t>::sizeIndices(geomIt->second.numIndices));
-									}
+										object.anim.meshAnim = hr::geom::MeshAnim(object.anim.meshAnimated,
+											hr::geom::MeshAnim::SkinningType::Vertex4Joints);
 
-									//store where in the file our geom is
-									objectRenderer.geom.fstreamVertexOffset = geomIt->second.geomsOffset;
-									objectRenderer.geom.fstreamIndexOffset = objectRenderer.geom.fstreamVertexOffset + geom::Mesh<geom::VertexShading, uint16_t>::sizeVertices(objectRenderer.geom.numVertices);
-
-									{
-										Vector3f bboxMin, bboxMax;
-
-										streamBin.read(bboxMin.data(), sizeof(float) * 3);
-										streamBin.read(bboxMax.data(), sizeof(float) * 3);
-
-										object.bbox.setMinMax(bboxMin, bboxMax);
-										objectRenderer.geom.bbox = object.bbox;
-									}
-
-									if (object.anim.hasAnim) //read vertex joint information
-									{
-										if ((geomIt->second.flags & static_cast<uint16_t>(GeomFlags::AnimExtraBoneSet)) != 0)
-											object.anim.meshAnim = hr::geom::MeshAnim(object.anim.meshAnimated, hr::geom::MeshAnim::SkinningType::Vertex8Joints);
-										else
-											object.anim.meshAnim = hr::geom::MeshAnim(object.anim.meshAnimated, hr::geom::MeshAnim::SkinningType::Vertex4Joints);
-
-										streamBin.read(object.anim.meshAnim.verticesJoints(), object.anim.meshAnim.sizeVerticesJoints());
-									}
+									streamBin.read(object.anim.meshAnim.verticesJoints(),
+										object.anim.meshAnim.sizeVerticesJoints());
 								}
 							}
+						}
 
-							//read material info
-							if ((*itr).HasMember("material"))
-							{
-								auto& jsonMaterial = ((*itr).FindMember("material"))->value;
+						if (jObject.value().contains("material"))
+						{
+							auto& jMaterial = jObject.value()["material"];
 
-								if (jsonMaterial.HasMember("diffusePath"))
-									objectRenderer.matDiffusePath = jsonMaterial["diffusePath"].GetString();
-								if (jsonMaterial.HasMember("normalPath"))
-									objectRenderer.matNormalPath = jsonMaterial["normalPath"].GetString();
-							}
+							if (jMaterial.contains("diffusePath"))
+								objectRenderer.matDiffusePath = jMaterial["diffusePath"].get<std::string>();
+							if (jMaterial.contains("normalPath"))
+								objectRenderer.matNormalPath = jMaterial["normalPath"].get<std::string>();
 						}
 					}
 				}
 
+				for (auto& jInstance : jFile["instances"].items())
 				{
-					auto& jsonObjects = d["instances"];
-					assert(jsonObjects.IsArray());
+					Instance newInstance;
+					newInstance.objectId = jInstance.value()["objectId"].get<size_t>();
+					newInstance.type = static_cast<Instance::Type>(jInstance.value()["type"].get<int>());
 
-					area.mInstances.reserve(jsonObjects.Size());
-					for (rapidjson::Value::ConstValueIterator itr = jsonObjects.Begin(); itr != jsonObjects.End(); ++itr)
+					if (area.mObjects.find(newInstance.objectId) != area.mObjects.end())
 					{
-						Instance newInstance;
-						newInstance.type = static_cast<Instance::Type>((*itr)["type"].GetUint());
-						newInstance.objectId = (*itr)["objectId"].GetUint();
-
-						if (area.mObjects.find(newInstance.objectId) != area.mObjects.end())
-						{
-							newInstance.bbox = area.mObjects[newInstance.objectId].bbox;
-							area.mInstances.push_back(newInstance);
-						}
+						newInstance.bbox = area.mObjects[newInstance.objectId].bbox;
+						area.mInstances.push_back(newInstance);
 					}
 				}
 			}
