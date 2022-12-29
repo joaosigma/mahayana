@@ -56,15 +56,26 @@ namespace hr::render
 		scene.mRenderData.vboIndirectDraw.bind();
 		for (auto& curObject : scene.mRenderData.objects)
 		{
-			if (curObject->texNormal.isValid())
-				curObject->texNormal.bind(1);
-			else
-				mTexDefaultNormals.bind(1);
+			if (curObject->textureSetId > 0)
+			{
+				assert(scene.mTextureSets.contains(curObject->textureSetId));
+				const auto& texSet = scene.mTextureSets[curObject->textureSetId];
 
-			if (curObject->texDiffuse.isValid())
-				curObject->texDiffuse.bind(0);
+				if (texSet.texNormal.isValid())
+					texSet.texNormal.bind(1);
+				else
+					mTexDefaultNormals.bind(1);
+
+				if (texSet.texDiffuse.isValid())
+					texSet.texDiffuse.bind(0);
+				else
+					mTexDefaultAlbedo.bind(0);
+			}
 			else
+			{
+				mTexDefaultNormals.bind(1);
 				mTexDefaultAlbedo.bind(0);
+			}
 
 			hr::gl::glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_SHORT, reinterpret_cast<void*>(curObject->meshDrawIndirectOffset), 1, 0);			
 		}
@@ -152,7 +163,7 @@ namespace hr::render
 		mGlImmediateMode.endDraw();
 	}
 
-	void RendererMain::loadGeometry(Scene& scene, const IRenderObjectManager& manager)
+	void RendererMain::loadGeometry(Scene& scene, const IRenderManager& manager)
 	{
 		scene.mRenderData.vboMeshData.reset();
 		scene.mRenderData.vboMeshIndexData.reset();
@@ -181,8 +192,13 @@ namespace hr::render
 			auto& mesh = scene.mObjects[obj.id()];
 
 			numGeoms++;
-			mesh.objId = obj.id();
+			mesh.id = obj.id();
 			mesh.bbox = obj.bbox();
+			if (obj.materialId() > 0)
+				mesh.materialId = obj.materialId();
+			if (obj.textureSetId() > 0)
+				mesh.textureSetId = obj.textureSetId();
+
 			mesh.meshVBOStartPos = poolVertex;
 			mesh.meshVBOVertexOffset = baseVertexOffset;
 			mesh.meshTriListOffset = (void*)poolIndex;
@@ -425,17 +441,21 @@ namespace hr::render
 		}
 	}
 
-	void RendererMain::loadTextures(Scene& scene, const IRenderObjectManager& manager)
+	void RendererMain::loadMaterialsTextures(Scene& scene, const IRenderManager& manager)
 	{
-		manager.iterateObjects([this, &scene](IRenderObject& obj)
+		manager.iterateMaterials([this, &scene](IRenderMaterial& material)
 		{
-			auto& object = scene.mObjects[obj.id()];
+		});
 
-			object.texDiffuse.reset();
-			object.texNormal.reset();
+		manager.iterateTextureSets([this, &scene](IRenderTextureSet& textureSet)
+		{
+			auto& texSet = scene.mTextureSets[textureSet.id()];
+			
+			texSet.texDiffuse.reset();
+			loadDiffuse(textureSet.diffusePath(), texSet.texDiffuse, true);
 
-			loadDiffuse(obj.texDiffusePath(), object.texDiffuse, true);
-			loadNormal(obj.texNormalPath(), object.texNormal, true);
+			texSet.texNormal.reset();
+			loadNormal(textureSet.normalPath(), texSet.texNormal, true);
 		});
 	}
 
@@ -443,9 +463,12 @@ namespace hr::render
 		: mFileSystem(fileSystem)
 		, mGlContext(glContext)
 	{
-		loadDiffuse(R"(media\default_albedo.png)", mTexDefaultAlbedo, true);
 		loadDiffuse(R"(media\skies\archesPineTree.hdr)", mTexSky, false);
-		loadNormal(R"(media\default_normal.png)", mTexDefaultNormals, true);
+
+		//loadDiffuse(R"(media\default_albedo.png)", mTexDefaultAlbedo, true);
+		//loadNormal(R"(media\default_normal.png)", mTexDefaultNormals, true);
+		loadDiffuse(R"(texs\color.white.png)", mTexDefaultAlbedo, true);
+		loadNormal(R"(texs\flat.normal.png)", mTexDefaultNormals, true);
 	
 		{
 			auto pathShaders = std::filesystem::current_path();
@@ -538,7 +561,7 @@ namespace hr::render
 		mTexDefaultNormals.reset();
 	}
 
-	RendererMain::SceneId RendererMain::loadScene(const IRenderObjectManager& manager)
+	RendererMain::SceneId RendererMain::loadScene(const IRenderManager& manager)
 	{
 		if (manager.numObjects() <= 0)
 			return 0;
@@ -547,7 +570,7 @@ namespace hr::render
 		auto& scene = mScenes[id];
 
 		loadGeometry(scene, manager);
-		loadTextures(scene, manager);
+		loadMaterialsTextures(scene, manager);
 
 		return id;
 	}
@@ -661,7 +684,7 @@ namespace hr::render
 		compositePostProcessing(hrViewport);
 	}
 
-	void RendererMain::updateVertexData(SceneId sceneId, const IRenderObjectManager& manager)
+	void RendererMain::updateVertexData(SceneId sceneId, const IRenderManager& manager)
 	{
 		auto sceneIt = mScenes.find(sceneId);
 		if (sceneIt == mScenes.end())

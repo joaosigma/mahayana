@@ -27,16 +27,29 @@ namespace hr::render
 	private:
 		struct Scene 
 		{
+			struct Material
+			{
+				size_t id{0};
+			};
+			std::unordered_map<size_t, Material> mMaterials;
+
+			struct TextureSet
+			{
+				size_t id{0};
+
+				hr::gl::objects::Texture texDiffuse, texNormal;
+			};
+			std::unordered_map<size_t, TextureSet> mTextureSets;
+
 			struct Object
 			{
-				size_t objId{ 0 };
+				size_t id{ 0 };
+				size_t materialId{0}, textureSetId{0};
 
 				int meshVBOStartPos{ 0 };
 				int meshVBOVertexOffset{ 0 };
 				unsigned int meshDrawIndirectOffset{ 0 };
-				void* meshTriListOffset{ nullptr };
-
-				hr::gl::objects::Texture texDiffuse, texNormal;
+				void* meshTriListOffset{ nullptr };		
 
 				hr::BBox<> bbox;
 			};
@@ -131,10 +144,10 @@ namespace hr::render
 
 		void compositePostProcessing(const hr::gl::tools::Viewport& hrViewport);
 
-		void loadGeometry(Scene& scene, const IRenderObjectManager& manager);
+		void loadGeometry(Scene& scene, const IRenderManager& manager);
 		void loadDiffuse(std::string_view texFilePath, hr::gl::objects::Texture& targetTexture, bool compress);
 		void loadNormal(std::string_view texFilePath, hr::gl::objects::Texture& targetTexture, bool compress);
-		void loadTextures(Scene& scene, const IRenderObjectManager& manager);
+		void loadMaterialsTextures(Scene& scene, const IRenderManager& manager);
 
 	public:
 		RendererMain(const hr::gl::objects::Context& glContext, hr::io::FileSystem& fileSystem, size_t renderWidth, size_t renderHeight);
@@ -146,10 +159,10 @@ namespace hr::render
 
 		//IRenderer implementation
 
-		SceneId loadScene(const IRenderObjectManager& manager) override;
+		SceneId loadScene(const IRenderManager& manager) override;
 		void unloadScene(SceneId sceneId) override;
 
-		void updateVertexData(SceneId sceneId, const IRenderObjectManager& manager) override;
+		void updateVertexData(SceneId sceneId, const IRenderManager& manager) override;
 		void prepareNextFrame(SceneId sceneId, const std::vector<IRenderObject::ObjectId>& objects) override;
 	};
 }

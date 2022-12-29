@@ -14,6 +14,8 @@
 
 #include "glcorearb.h"
 
+#include <map>
+#include <set>
 #include <array>
 #include <cstdint>
 #include <algorithm>
@@ -465,8 +467,56 @@ namespace hr::render
 		}
 	}
 
-	WorldEditor::WorldEditor()
-	{ }
+	size_t WorldEditor::genObjectId(const Area& area, Random& rand)
+	{
+		while (true)
+		{
+			auto candidate = static_cast<size_t>(rand.nextInteger(10000000, 19999999));
+			if (!area.mObjects.contains(candidate))
+				return candidate;
+		}
+	}
+
+	size_t WorldEditor::genMaterialId(const Area& area, Random& rand)
+	{
+		while (true)
+		{
+			auto candidate = static_cast<size_t>(rand.nextInteger(20000000, 29999999));
+			if (!area.mMaterials.contains(candidate))
+				return candidate;
+		}
+	}
+
+	size_t WorldEditor::genTextureSetId(const Area& area, Random& rand)
+	{
+		while (true)
+		{
+			auto candidate = static_cast<size_t>(rand.nextInteger(30000000, 39999999));
+			if (!area.mTextureSets.contains(candidate))
+				return candidate;
+		}
+	}
+
+	size_t WorldEditor::genAnimSetId(const Area& area, Random& rand)
+	{
+		while (true)
+		{
+			auto candidate = static_cast<size_t>(rand.nextInteger(40000000, 49999999));
+			if (!area.mSkeletonAnims.contains(candidate))
+				return candidate;
+		}
+	}
+
+	size_t WorldEditor::findAnimSetId(const AreaData& area, std::string_view name)
+	{
+		for (auto&& [animSetId, animSet] : area.animationSets)
+		{
+			if (animSet.name == name)
+				return animSetId;
+		}
+
+		return 0;
+	}
 
 	WorldEditor::AreaId WorldEditor::newArea(std::string_view scenePath, std::string_view binPath)
 	{
@@ -529,7 +579,7 @@ namespace hr::render
 		auto& areaData = mAreasData[areaId];
 
 		//create object
-		auto objectId = genObjectId(area);
+		auto objectId = genObjectId(area, mRandom);
 		{
 			auto& object = area.mObjects[objectId];
 			auto& objectData = areaData.objects[objectId];
@@ -570,22 +620,29 @@ namespace hr::render
 		std::vector<tinyobj::shape_t> shapes;
 		std::vector<tinyobj::material_t> materials;
 		{
+			std::string strBasePath{ basePath };
+
 			std::string fullPath;
 			fullPath.reserve(basePath.size() + fileName.size() + 1);
 			fullPath.append(basePath).append(fileName);
 
 			std::string err;
-			if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &err, fullPath.c_str()))
+			if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &err, fullPath.c_str(), strBasePath.c_str()))
 				return false;
 		}
 
 		if (shapes.empty())
 			return true;
 
+		struct MaterialTextureSet
+		{
+			size_t materialId;
+			size_t textureSetId;
+		};
+		std::unordered_map<int, MaterialTextureSet> materialMapping;
+
 		auto& area = mAreas[areaId];
 		auto& areaData = mAreasData[areaId];
-
-		area.mInstances.reserve(area.mInstances.size() + shapes.size());
 
 		for (const auto& shape : shapes)
 		{
@@ -687,54 +744,75 @@ namespace hr::render
 
 				assert(newMesh.check());
 
-				//generate stuff that weren't read (mind the order: it is important)
+				//generate stuff that wasn't read (mind the order: it is important)
 				if (ignoreNormals)
 					newMesh.genNormals();
 				if (ignoreTexCoords)
 					newMesh.genUVs(geom::Mesh<geom::VertexFull, uint32_t>::UVGenType::Sphere);
+				else
+					newMesh.flipUV();
 				newMesh.genTangents4();
-
+				
 				newMesh.optimizeIndices();
 			}
 
-			auto processMesh = [this, &area, &areaData, &shape, &materials](hr::streams::FileStream& geomFileStream, const geom::Mesh<geom::VertexFull, uint32_t>& mesh)
+			//process material
+			std::optional<MaterialTextureSet> materialTexSet;
+			if (!shape.mesh.material_ids.empty() && (shape.mesh.material_ids.front() >= 0) && (shape.mesh.material_ids.front() < materials.size()))
+			{
+				auto matObjId = shape.mesh.material_ids[0];
+
+				if (auto it = materialMapping.find(matObjId); it != materialMapping.end())
+				{
+					//reuse existing one
+					materialTexSet = it->second;
+				}
+				else
+				{
+					const auto& matObj = materials[matObjId];
+
+					materialTexSet = MaterialTextureSet{.materialId = genMaterialId(area, mRandom), .textureSetId = genTextureSetId(area, mRandom)};
+					materialMapping[matObjId] = *materialTexSet;
+
+					auto& finalMat = area.mMaterials[materialTexSet->materialId];
+					finalMat.id = materialTexSet->materialId;
+					finalMat.name = matObj.name;
+
+					auto& finalTexSet = area.mTextureSets[materialTexSet->textureSetId];
+					finalTexSet.id = materialTexSet->textureSetId;
+
+					if (!matObj.diffuse_texname.empty())
+						finalTexSet.diffusePath = matObj.diffuse_texname;
+					else if (!matObj.ambient_texname.empty())
+						finalTexSet.diffusePath = matObj.ambient_texname;
+
+					if (!matObj.normal_texname.empty())
+						finalTexSet.normalPath = matObj.normal_texname;
+					else if (!matObj.bump_texname.empty())
+						finalTexSet.normalPath = matObj.bump_texname;
+					else if (matObj.unknown_parameter.find("bump") != matObj.unknown_parameter.end())
+						finalTexSet.normalPath = matObj.unknown_parameter.find("bump")->second;
+					else if (matObj.unknown_parameter.find("map_bump") != matObj.unknown_parameter.end())
+						finalTexSet.normalPath = matObj.unknown_parameter.find("map_bump")->second;
+				}
+			}
+
+			auto processMesh = [this, &area, &areaData, &shape, &materialTexSet](hr::streams::FileStream& geomFileStream, const geom::Mesh<geom::VertexFull, uint32_t>& mesh)
 			{
 				//create object
-				auto objectId = genObjectId(area);
+				auto objectId = genObjectId(area, mRandom);
 				auto& object = area.mObjects[objectId];
 				auto& objectData = areaData.objects[objectId];
 
 				object.id = objectId;
 				object.type = Object::Type::Static;
+				object.materialId = materialTexSet ? materialTexSet->materialId : 0;
+				object.textureSetId = materialTexSet ? materialTexSet->textureSetId : 0;
 				objectData.objectId = objectId;
 				objectData.name = shape.name;
 
 				//add geometry
 				World::geomFileAddMesh(geomFileStream, objectId, mesh);
-
-				//process material
-				if (!shape.mesh.material_ids.empty())
-				{
-					auto materialId = shape.mesh.material_ids[0];
-					if ((materialId >= 0) && (materialId < materials.size()))
-					{
-						const auto& mat = materials[materialId];
-
-						if (!mat.diffuse_texname.empty())
-							objectData.matDiffusePath = mat.diffuse_texname;
-						else if (!mat.ambient_texname.empty())
-							objectData.matDiffusePath = mat.ambient_texname;
-
-						if (!mat.normal_texname.empty())
-							objectData.matNormalPath = mat.normal_texname;
-						else if (!mat.bump_texname.empty())
-							objectData.matNormalPath = mat.bump_texname;
-						else if (mat.unknown_parameter.find("bump") != mat.unknown_parameter.end())
-							objectData.matNormalPath = mat.unknown_parameter.find("bump")->second;
-						else if (mat.unknown_parameter.find("map_bump") != mat.unknown_parameter.end())
-							objectData.matNormalPath = mat.unknown_parameter.find("map_bump")->second;
-					}
-				}
 
 				//create an object associated with the concept
 				Instance newInstance;
@@ -877,6 +955,14 @@ namespace hr::render
 			skins.push_back(std::move(targetSkin));
 		}
 
+		//to re-use materials
+		struct MaterialTextureSet
+		{
+			size_t materialId;
+			size_t textureSetId;
+		};
+		std::unordered_map<int, MaterialTextureSet> materialMapping;
+
 		//process all the nodes
 		for (size_t nodeIndex = 0; nodeIndex < gltfModel.nodes.size(); ++nodeIndex)
 		{
@@ -895,13 +981,13 @@ namespace hr::render
 			{
 				auto& targetSkin = skins[node.skin];
 
-				targetSkin.animSetId = genAnimSetId(area);
+				targetSkin.animSetId = genAnimSetId(area, mRandom);
 
 				auto& animSet = area.mSkeletonAnims[targetSkin.animSetId];
 				auto& animSetData = areaData.animationSets[targetSkin.animSetId];
 
 				animSet.id = targetSkin.animSetId;
-				animSetData.animSetId = targetSkin.animSetId;
+				animSetData.id = targetSkin.animSetId;
 				animSetData.name = targetSkin.name;
 
 				{
@@ -954,7 +1040,7 @@ namespace hr::render
 				if (!newMesh.check() || !primState.hasPos || (hasSkin && (!primState.hasJoints || !primState.hasJointsWheights)))
 					continue;
 
-				//generate stuff that weren't read (mind the order: it is important)
+				//generate stuff that wasn't read (mind the order: it is important)
 				if (!primState.hasNormal)
 					newMesh.genNormals();
 				if (!primState.hasTexCoords)
@@ -987,7 +1073,7 @@ namespace hr::render
 				//we can now create a new object
 				{
 					//create object
-					auto objectId = genObjectId(area);
+					auto objectId = genObjectId(area, mRandom);
 					auto& object = area.mObjects[objectId];
 					auto& objectData = areaData.objects[objectId];
 
@@ -997,16 +1083,19 @@ namespace hr::render
 					object.bbox = newMesh.bbox();
 					objectData.objectId = objectId;
 					objectData.name = gltfMesh.name;
-					objectData.geom.numVertices = newMesh.numVertices();
-					objectData.geom.numIndices = newMesh.numIndices();
 
 					//store new geometry
 					if (hasSkin)
 					{
+						auto& targetSkin = skins[node.skin];
+
+						assert(targetSkin.animSetId > 0);
+						objectData.animSetId = targetSkin.animSetId;
+
 						newMeshAnim.mesh() = newMesh.convert<geom::VertexShading, uint16_t>();
 
 						hr::streams::FileStream geomFileStream(areaData.pathBin, true, true);
-						World::geomFileAddMeshAnim(geomFileStream, objectId, newMeshAnim, skins[node.skin].animSetId);
+						World::geomFileAddMeshAnim(geomFileStream, objectId, newMeshAnim, targetSkin.animSetId);
 					}
 					else
 					{
@@ -1014,46 +1103,61 @@ namespace hr::render
 						World::geomFileAddMesh(geomFileStream, objectId, newMesh);
 					}
 
-					//update the offsets
-					{
-						hr::streams::FileStream geomFileStream(areaData.pathBin, true, true);
-						World::geomFileRetrieveOffsets(geomFileStream, objectId, objectData.geom.fstreamVertexOffset, objectData.geom.fstreamIndexOffset);
-					}
-
 					//read material info
 					if (gltfPrim.material >= 0)
 					{
-						const auto& gltfMat = gltfModel.materials[gltfPrim.material];
-						if (objectData.name.empty() && !gltfMat.name.empty())
-							objectData.name = gltfMat.name;
-
-						auto extractImageUri = [](const  tinygltf::Model& model, const tinygltf::Material& material, std::string_view componentName) -> std::string
+						if (auto it = materialMapping.find(gltfPrim.material); it != materialMapping.end())
 						{
-							auto itComponent = material.values.find(std::string(componentName));
-							if (itComponent == material.values.end())
+							object.materialId = it->second.materialId;
+							object.textureSetId = it->second.textureSetId;
+						}
+						else
+						{
+							const auto& gltfMat = gltfModel.materials[gltfPrim.material];
+
+							auto materialTexSet = MaterialTextureSet{.materialId = genMaterialId(area, mRandom), .textureSetId = genTextureSetId(area, mRandom)};
+							materialMapping[gltfPrim.material] = materialTexSet;
+							
+							auto& finalMat = area.mMaterials[materialTexSet.materialId];
+							finalMat.id = materialTexSet.materialId;
+							finalMat.name = gltfMat.name;
+
+							auto& finalTexSet = area.mTextureSets[materialTexSet.textureSetId];
+							finalTexSet.id = materialTexSet.textureSetId;
+
+							object.materialId = finalMat.id;
+							object.textureSetId = finalTexSet.id;
+							if (objectData.name.empty() && !finalMat.name.empty())
+								objectData.name = finalMat.name;
+
+							auto extractImageUri = [](const  tinygltf::Model& model, const tinygltf::Material& material, std::string_view componentName) -> std::string
 							{
-								itComponent = material.additionalValues.find(std::string(componentName));
-								if (itComponent == material.additionalValues.end())
+								auto itComponent = material.values.find(std::string(componentName));
+								if (itComponent == material.values.end())
+								{
+									itComponent = material.additionalValues.find(std::string(componentName));
+									if (itComponent == material.additionalValues.end())
+										return {};
+								}
+
+								auto itIndex = itComponent->second.json_double_value.find("index");
+								auto itTexCoord = itComponent->second.json_double_value.find("texCoord");
+								if ((itIndex == itComponent->second.json_double_value.end()) && (itTexCoord == itComponent->second.json_double_value.end()))
 									return {};
-							}
 
-							auto itIndex = itComponent->second.json_double_value.find("index");
-							auto itTexCoord = itComponent->second.json_double_value.find("texCoord");
-							if ((itIndex == itComponent->second.json_double_value.end()) && (itTexCoord == itComponent->second.json_double_value.end()))
-								return {};
+								auto texIndex = static_cast<int>(itIndex->second);
+								if ((texIndex < 0) && (static_cast<int>(itTexCoord->second) != 0)) // we support only one set of UVs
+									return {};
 
-							auto texIndex = static_cast<int>(itIndex->second);
-							if ((texIndex < 0) && (static_cast<int>(itTexCoord->second) != 0)) // we support only one set of UVs
-								return {};
+								if (model.textures[texIndex].source < 0)
+									return {};
 
-							if (model.textures[texIndex].source < 0)
-								return {};
+								return model.images[model.textures[texIndex].source].uri;
+							};
 
-							return model.images[model.textures[texIndex].source].uri;
-						};
-
-						objectData.matDiffusePath = extractImageUri(gltfModel, gltfMat, "baseColorTexture");
-						objectData.matNormalPath = extractImageUri(gltfModel, gltfMat, "normalTexture");
+							finalTexSet.diffusePath = extractImageUri(gltfModel, gltfMat, "baseColorTexture");
+							finalTexSet.normalPath = extractImageUri(gltfModel, gltfMat, "normalTexture");
+						}
 					}
 
 					//create an object associated with the concept
@@ -1204,7 +1308,8 @@ namespace hr::render
 			}
 			
 			//animation is ready, include in file
-			if (animationSetId.has_value()) //glTF has non skinned animations
+
+			if (animationSetId.has_value()) //glTF may have non skinned animations
 			{
 				geom::SkeletonAnim::Animation animation;
 				animation.name = gltfAnim.name;
@@ -1225,13 +1330,17 @@ namespace hr::render
 					animation.samplers.push_back(std::move(sampler.finalSampler));
 				}
 
-				size_t newAnimId = 1; //generate anim id
+				size_t newAnimId = 1; //generate animation id
 				{
 					auto& animSet = areaData.animationSets[animationSetId.value()];
-					while (std::find_if(animSet.anims.begin(), animSet.anims.end(), [&newAnimId](const auto& anim) { return (anim.animId == newAnimId); }) != animSet.anims.end())
-						newAnimId++;
-			
-					animSet.anims.push_back(AreaData::AnimSetData::Animation{ newAnimId, gltfAnim.name });
+
+					newAnimId = animSet.animations.size() + 1;
+
+					AreaData::AnimSetData::Animation areaAnimation;
+					areaAnimation.id = newAnimId;
+					areaAnimation.name = gltfAnim.name;
+								
+					animSet.animations.push_back(std::move(areaAnimation));
 				}
 
 				hr::streams::FileStream geomFileStream(areaData.pathBin, true, true);
@@ -1245,16 +1354,14 @@ namespace hr::render
 		return true;
 	}
 
-	void WorldEditor::processMesh(AreaId areaId, const std::vector<size_t>& objectIds, const std::function<void(geom::Mesh<geom::VertexFull, uint32_t>&)>& cb)
+	void WorldEditor::processMesh(AreaId areaId, std::span<const size_t> objectIds, const std::function<void(geom::Mesh<geom::VertexFull, uint32_t>&)>& cb)
 	{
 		if (!cb || (mAreas.find(areaId) == mAreas.end()))
 			return;
 
-		auto& area = mAreas[areaId];
-		auto& areaData = mAreasData[areaId];
+		assert(mAreasData.contains(areaId));
 
-		hr::streams::FileStream geomFileStream(areaData.pathBin, true, true);
-
+		hr::streams::FileStream geomFileStream(mAreasData[areaId].pathBin, true, true);
 		World::geomFileTransformMeshes(geomFileStream, objectIds, cb);
 	}
 
@@ -1278,7 +1385,7 @@ namespace hr::render
 		return objectIds;
 	}
 
-	void WorldEditor::removeObjects(AreaId areaId, const std::vector<std::string_view>& objectsNames)
+	void WorldEditor::removeObjects(AreaId areaId, std::span<std::string_view> objectsNames)
 	{
 		if (objectsNames.empty() || (mAreas.find(areaId) == mAreas.end()))
 			return;
@@ -1329,33 +1436,46 @@ namespace hr::render
 		}
 	}
 
-	size_t WorldEditor::genObjectId(Area& area) const
+	void WorldEditor::optimizeTextureSets(Area& area)
 	{
-		size_t curId = 1;
-		while (area.mObjects.find(curId) != area.mObjects.end())
-			curId++;
+		std::map<size_t, size_t> duplicated;
 
-		return curId;
-	}
-
-	size_t WorldEditor::genAnimSetId(Area& area) const
-	{
-		size_t curId = 1;
-		while (area.mSkeletonAnims.find(curId) != area.mSkeletonAnims.end())
-			curId++;
-
-		return curId;
-	}
-
-	size_t WorldEditor::findAnimSetId(AreaData& area, std::string_view name)
-	{
-		for (auto&&[animSetId, animSet] : area.animationSets)
+		//gather data
+		for (const auto& [texSetId, texSet] : area.mTextureSets)
 		{
-			if (animSet.name == name)
-				return animSetId;
+			//we already found that this is one is a duplicate
+			if (duplicated.contains(texSetId))
+				continue;
+
+			for (auto& [texSetCompId, texSetCompSet] : area.mTextureSets)
+			{
+				//if this one was already processed
+				if (texSetId == texSetCompId) continue;
+				if (duplicated.contains(texSetCompId)) continue;
+
+				//check if data is the same
+				if (texSet.diffusePath != texSetCompSet.diffusePath) continue;
+				if (texSet.normalPath != texSetCompSet.normalPath) continue;
+				if (texSet.metallicRoughnessPath != texSetCompSet.metallicRoughnessPath) continue;
+
+				//this is a duplicate of texSet
+				duplicated[texSetCompId] = texSetId;
+			}
 		}
 
-		return 0;
+		//remove duplicates
+		for (const auto& ids : duplicated)
+			area.mTextureSets.erase(ids.first);
+
+		//for every object, replace the old id (duplicated) with the same one
+		for (auto& [objectId, object] : area.mObjects)
+		{
+			auto it = duplicated.find(object.textureSetId);
+			if (it != duplicated.end())
+				object.textureSetId = it->second;
+
+			assert(area.mTextureSets.contains(object.textureSetId));
+		}
 	}
 
 	void WorldEditor::saveArea(Area& area)
@@ -1369,6 +1489,10 @@ namespace hr::render
 		if (std::filesystem::exists(areaData.pathScene))
 			std::filesystem::remove(areaData.pathScene);
 
+		//before we save, we can perform some optimizations
+		optimizeTextureSets(area);
+
+		//create file contents
 		std::string jsonContent;
 		{
 			using nlohmann::json;
@@ -1376,41 +1500,87 @@ namespace hr::render
 			json jFile;
 
 			jFile["version"] = json::array({1, 0, 0});
+			
 			jFile["textureSets"] = json::array();
+			for (auto& [texSetId, texSet] : area.mTextureSets)
+			{
+				auto jTexSet = json::object();
+
+				assert(texSetId == texSet.id);
+				jTexSet["id"] = texSetId;
+				jTexSet["diffusePath"] = texSet.diffusePath;
+				jTexSet["normalPath"] = texSet.normalPath;
+				if (!texSet.metallicRoughnessPath.empty())
+					jTexSet["metallicRoughnessPath"] = texSet.metallicRoughnessPath;
+
+				jFile["textureSets"].push_back(std::move(jTexSet));
+			}
+
 			jFile["materials"] = json::array();
-			jFile["objects"] = json::array();
-			jFile["instances"] = json::array();
+			for (auto& [matId, mat] : area.mMaterials)
+			{
+				auto jMat = json::object();
+
+				assert(matId == mat.id);
+				jMat["id"] = matId;
+				jMat["name"] = mat.name;
+				jMat["baseColor"] = json::array({mat.baseColor[0], mat.baseColor[1], mat.baseColor[2], mat.baseColor[3]});
+				jMat["metallicFactor"] = mat.metallicFactor;
+				jMat["roughnessFactor"] = mat.roughnessFactor;
+
+				jFile["materials"].push_back(std::move(jMat));
+			}
 
 			jFile["animationSets"] = json::array();
-			for (auto& animSet : areaData.animationSets)
+			for (auto& [animSetId, animSet] : areaData.animationSets)
 			{
 				auto jAnimSet = json::object();
 
-				jAnimSet["id"] = animSet.second.animSetId;
-				jAnimSet["name"] = animSet.second.name;
+				assert(animSetId == animSet.id);
+				jAnimSet["id"] = animSetId;
+				if (!animSet.name.empty())
+					jAnimSet["name"] = animSet.name;
+
+				jAnimSet["animations"] = json::array();
+				for (auto& animation : animSet.animations)
+				{
+					auto jAnimation = json::object();
+
+					jAnimation["id"] = animation.id;
+					jAnimation["name"] = animation.name;
+
+					jAnimSet["animations"].push_back(std::move(jAnimation));
+				}
 
 				jFile["animationSets"].push_back(std::move(jAnimSet));
 			}
 
-			for (auto& object : areaData.objects)
+			jFile["objects"] = json::array();
+			for (auto& [objectId, object] : areaData.objects)
 			{
 				auto jObject = json::object();
 
-				jObject["id"] = object.second.objectId;
+				assert(objectId == object.objectId);
+				assert(area.mObjects.contains(objectId));
+
+				auto& areaObj = area.mObjects[objectId];
+
+				jObject["id"] = objectId;
 				jObject["type"] = static_cast<unsigned int>(Object::Type::Static);
-				jObject["name"] = object.second.name;
+				jObject["name"] = object.name;
+				if (areaObj.materialId > 0)
+					jObject["materialId"] = areaObj.materialId;
+				if (areaObj.textureSetId > 0)
+					jObject["textureSetId"] = areaObj.textureSetId;
+				jObject["name"] = object.name;
 
-				{
-					auto jMat = json::object();
-					jMat["diffusePath"] = object.second.matDiffusePath;
-					jMat["normalPath"] = object.second.matNormalPath;
-
-					jObject["material"] = std::move(jMat);
-				}
+				if (object.animSetId.has_value())
+					jObject["animationSetId"] = object.animSetId.value();
 
 				jFile["objects"].push_back(std::move(jObject));
 			}
 
+			jFile["instances"] = json::array();
 			for (auto& curObject : area.mInstances)
 			{
 				auto jInstance = json::object();

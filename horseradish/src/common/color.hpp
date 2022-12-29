@@ -462,6 +462,16 @@ namespace hr
 		};
 
 	public:
+		static constexpr Colorf black(float alpha = 0.0f) noexcept
+		{
+			return Colorf{0.0f, 0.0f, 0.0f, alpha};
+		}
+
+		static constexpr Colorf white(float alpha = 1.0f) noexcept
+		{
+			return Colorf{1.0f, 1.0f, 1.0f, alpha};
+		}
+
 		static uint8_t convertColor(float val)
 		{
 			__m128i valConvert;
@@ -1263,6 +1273,16 @@ namespace hr
 		using DataType = double;
 
 	public:
+		static constexpr Color black(double alpha = 0.0) noexcept
+		{
+			return Color{0.0, 0.0, 0.0, alpha};
+		}
+
+		static constexpr Color white(double alpha = 1.0) noexcept
+		{
+			return Color{1.0, 1.0, 1.0, alpha};
+		}
+
 		static Color calcInterpolate(const Color& from, const Color& to, double t) noexcept
 		{
 			Color color;

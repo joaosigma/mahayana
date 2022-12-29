@@ -4,6 +4,7 @@
 
 #include "renderer.hpp"
 
+#include "common/color.hpp"
 #include "common/mesh.hpp"
 #include "common/meshAnim.hpp"
 #include "common/stream.hpp"
@@ -11,6 +12,7 @@
 #include "common/OpenGL/tools/viewport.hpp"
 
 #include <map>
+#include <span>
 #include <atomic>
 #include <vector>
 
@@ -29,6 +31,22 @@ namespace hr::render
 		};
 
 	protected:
+		struct Material
+		{
+			size_t id = 0;
+			Colorf baseColor{Colorf::white()};
+			float metallicFactor = 0.5f, roughnessFactor = 0.5f;
+			std::string name;
+		};
+
+		struct TextureSet
+		{
+			size_t id = 0;
+			std::string diffusePath;
+			std::string normalPath;
+			std::string metallicRoughnessPath;
+		};
+
 		class Object
 		{
 		public:
@@ -36,6 +54,8 @@ namespace hr::render
 
 			Type type = Type::Static;
 			size_t id = 0;
+			size_t materialId = 0;
+			size_t textureSetId = 0;
 			hr::BBox<> bbox;
 
 			struct {
@@ -71,6 +91,9 @@ namespace hr::render
 			IRenderer::SceneId sceneId;
 
 			std::map<size_t, Object> mObjects;
+			std::map<size_t, Material> mMaterials;
+			std::map<size_t, TextureSet> mTextureSets;
+
 			std::vector<Instance> mInstances;
 
 			std::map<size_t, SkeletonAnim> mSkeletonAnims;
@@ -81,19 +104,15 @@ namespace hr::render
 
 	protected:
 		static bool geomFileCreate(hr::streams::FileStream& fstream);
+
 		static bool geomFileAddMesh(hr::streams::FileStream& fstream, size_t geomId, const geom::Mesh<geom::VertexFull, uint32_t>& mesh);
 		static bool geomFileAddMeshAnim(hr::streams::FileStream& fstream, size_t geomId, const hr::geom::MeshAnim& meshAnim, size_t animSetId);
 		static bool geomFileAddAnimationSet(hr::streams::FileStream& fstream, size_t animSetId, const hr::geom::SkeletonAnim& skeletonAnim);
 		static bool geomFileAddAnimation(hr::streams::FileStream& fstream, size_t animId, size_t animSetId, const hr::geom::SkeletonAnim::Animation& animation);
 
-		static bool geomFileTransformMeshes(hr::streams::FileStream& fstream, const std::vector<size_t>& geomIds, const std::function<void(geom::Mesh<geom::VertexFull, uint32_t>&)>& cb);
-
+		static bool geomFileTransformMeshes(hr::streams::FileStream& fstream, std::span<const size_t> geomIds, const std::function<void(geom::Mesh<geom::VertexFull, uint32_t>&)>& cb);
 		static bool geomFileRetrieveOffsets(hr::streams::FileStream& fstream, size_t geomId, size_t& vertexOffset, size_t& indexOffset);
-
 		static bool geomFileRemoveGeom(hr::streams::FileStream& fstreamOld, hr::streams::FileStream& fstreamNew, std::vector<size_t> geomIds);
-
-		static bool loadAnimationSets(hr::streams::FileStream& fstream, size_t animSetId, geom::SkeletonAnim& skeletonAnim);
-		static bool loadAnimationSetMeshes(hr::streams::FileStream& fstream, size_t animSetId, std::vector<hr::geom::MeshAnim>& meshes);
 
 	protected:
 		std::unordered_map<AreaId, Area> mAreas;
@@ -108,7 +127,7 @@ namespace hr::render
 
 		void prepareNextFrame(Timestep& timestep, IRenderer& renderer, const tools::Camera& hrCamera, const hr::gl::tools::Viewport& hrViewport);
 
-		void accessObjectCurrentAnimation(size_t objectId, const std::function<void(const geom::SkeletonAnim&)>& cb) const noexcept;
+		void queryObjectSkeletonAnim(size_t objectId, const std::function<void(const geom::SkeletonAnim&)>& cb) const noexcept;
 
 	private:
 		bool loadAnimations(hr::streams::StreamReader& sreader, Area& area);
