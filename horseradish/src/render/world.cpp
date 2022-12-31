@@ -909,6 +909,12 @@ namespace hr::render
 			return 0;
 		}
 
+		for (auto& [areaId, area] : mAreas)
+		{
+			for (auto& [animSetId, animSet] : area.mSkeletonAnims)
+				animSet.skeletonAnim.animateSetup(geom::SkeletonAnim::AnimationType::CycleAll, 0);
+		}
+
 		return id;
 	}
 
@@ -1032,7 +1038,7 @@ namespace hr::render
 			for (auto&[areaId, area] : mAreas)
 			{
 				for (auto&[animSetId, animSet] : area.mSkeletonAnims)
-					animSet.skeletonAnim.animate(1, timestep.t);
+					animSet.skeletonAnim.animate(timestep.t);
 
 				targetObjects.clear();
 

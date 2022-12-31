@@ -15,7 +15,7 @@
 #include <functional>
 #include <optional>
 #include <vector>
-#include <unordered_map>
+#include <map>
 
 namespace hr::geom
 {
@@ -126,6 +126,8 @@ namespace hr::geom
 		using TMesh = Mesh<VertexShading, uint16_t>;
 
 	public:
+		enum class AnimationType { RepeatCurrent, CycleAll };
+
 		struct Joint
 		{
 			std::string name;
@@ -169,9 +171,10 @@ namespace hr::geom
 
 	private:
 		std::string mName;
+		AnimationType mAnimationType{AnimationType::RepeatCurrent};
 		std::vector<Joint> mJoints;
 		Matrix4f mRootTransform{ Matrix4f::identity() };
-		std::unordered_map<size_t, Animation> mAnimations;
+		std::map<size_t, Animation> mAnimations;
 
 		struct AnimatedJoint
 		{
@@ -186,6 +189,9 @@ namespace hr::geom
 
 		struct
 		{
+			float curTime{0.0f}, lastTime{0.0f};
+			size_t curAnimId{0};
+
 			std::vector<AnimatedJoint> joints;
 			std::vector<Matrix4f> jointsFinalTransform;
 
@@ -209,7 +215,8 @@ namespace hr::geom
 
 		//void calculateBBoxes(const MeshAnim& baseMesh);
 
-		void animate(size_t animId, float time);
+		void animate(float time);
+		void animateSetup(AnimationType animationType, size_t startAnimId);
 		void animateReset();
 
 		void updateMesh(const MeshAnim& baseMesh, TMesh& animatedMesh) const;

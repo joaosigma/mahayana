@@ -1470,6 +1470,9 @@ namespace hr::render
 		//for every object, replace the old id (duplicated) with the same one
 		for (auto& [objectId, object] : area.mObjects)
 		{
+			if (object.textureSetId <= 0)
+				continue;
+
 			auto it = duplicated.find(object.textureSetId);
 			if (it != duplicated.end())
 				object.textureSetId = it->second;

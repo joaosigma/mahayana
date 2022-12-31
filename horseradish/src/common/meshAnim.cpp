@@ -243,68 +243,105 @@ namespace hr::geom
 		}
 	}*/
 
-	void SkeletonAnim::animate(size_t animId, float time)
+	void SkeletonAnim::animate(float time)
 	{
-		//time *= 0.25f;
+		if (mAnimations.empty())
+			return;
 
-		if (mAnimations.find(animId) == mAnimations.end()) return;
+		mLastAnimation.curTime += std::max(time, 0.0f) - mLastAnimation.lastTime;
+		mLastAnimation.lastTime = time;
 
-		auto& anim = mAnimations[animId];
+		assert(mAnimations.contains(mLastAnimation.curAnimId));
 
-		//adjust time
-		if (time <= 0.0f) time = 0.0f;
-		while (time > anim.maxTimePoint)
-			time -= anim.maxTimePoint;
-
-		//animate
-		for (const auto& sampler : anim.samplers)
+		//interpolate animations
 		{
-			if ((time < sampler.minTimePoint) || (time > sampler.maxTimePoint)) continue;
-
-			//pick the correct frame
-			size_t frameIndex{0};
-			for (;; frameIndex++)
+			//adjust time according to animation type
+			if (mAnimationType == AnimationType::RepeatCurrent)
 			{
-				assert((frameIndex + 1) < sampler.timePoints.size());
-				if ((time >= sampler.timePoints[frameIndex]) && (time <= sampler.timePoints[frameIndex + 1])) break;
+				auto& anim = mAnimations[mLastAnimation.curAnimId];
+
+				while (mLastAnimation.curTime >= anim.maxTimePoint)
+					mLastAnimation.curTime -= anim.maxTimePoint;
 			}
-
-			//normalize t (for this sampler)
-			float samplerTime;
+			else if(mAnimationType == AnimationType::CycleAll)
 			{
-				auto timeStart = sampler.timePoints[frameIndex];
-				auto timeEnd = sampler.timePoints[frameIndex + 1];
-				samplerTime = Math::fClamp((time - timeStart) / (timeEnd - timeStart), 0.0f, 1.0f);
-			}
-
-			//animate all channels
-			for (const auto& channel : sampler.channels)
-			{
-				auto& dataStart = channel.frameData[frameIndex];
-				auto& dataNext = channel.frameData[frameIndex + 1];
-
-				auto& jointAnimated = mLastAnimation.joints[channel.jointIndex];
-
-				switch (channel.target)
+				auto& anim = mAnimations[mLastAnimation.curAnimId];
+				if (mLastAnimation.curTime > anim.maxTimePoint)
 				{
-					case Animation::Channel::Target::Scale:
+					//find the next animation
+					auto it = mAnimations.find(mLastAnimation.curAnimId);
+					assert(it != mAnimations.end());
+					
+					it++;
+					if (it == mAnimations.end())
+						it = mAnimations.begin();
+
+					while (mLastAnimation.curTime >= anim.maxTimePoint)
+						mLastAnimation.curTime -= anim.maxTimePoint;
+					while (mLastAnimation.curTime >= it->second.maxTimePoint)
+						mLastAnimation.curTime -= it->second.maxTimePoint;
+					mLastAnimation.curAnimId = it->first;
+
+					//easier to just restart
+					animate(time);
+				}
+			}
+
+			auto& anim = mAnimations[mLastAnimation.curAnimId];
+			assert(mLastAnimation.curTime < anim.maxTimePoint);
+
+			//animate
+			for (const auto& sampler : anim.samplers)
+			{
+				if ((mLastAnimation.curTime < sampler.minTimePoint) || (mLastAnimation.curTime > sampler.maxTimePoint))
+					continue;
+
+				//pick the correct frame
+				size_t frameIndex{0};
+				for (;; frameIndex++)
+				{
+					assert((frameIndex + 1) < sampler.timePoints.size());
+					if ((mLastAnimation.curTime >= sampler.timePoints[frameIndex]) && (mLastAnimation.curTime <= sampler.timePoints[frameIndex + 1]))
+						break;
+				}
+
+				//normalize t (for this sampler)
+				float samplerTime;
+				{
+					auto timeStart = sampler.timePoints[frameIndex];
+					auto timeEnd = sampler.timePoints[frameIndex + 1];
+					samplerTime = Math::fClamp((mLastAnimation.curTime - timeStart) / (timeEnd - timeStart), 0.0f, 1.0f);
+				}
+
+				//animate all channels
+				for (const auto& channel : sampler.channels)
+				{
+					auto& dataStart = channel.frameData[frameIndex];
+					auto& dataNext = channel.frameData[frameIndex + 1];
+
+					auto& jointAnimated = mLastAnimation.joints[channel.jointIndex];
+
+					switch (channel.target)
 					{
-						jointAnimated.updatedScale = Vector4f::calcLerp(dataStart, dataNext, samplerTime).convert<float, 3>();
-						break;
+						case Animation::Channel::Target::Scale:
+						{
+							jointAnimated.updatedScale = Vector4f::calcLerp(dataStart, dataNext, samplerTime).convert<float, 3>();
+							break;
+						}
+						case Animation::Channel::Target::Translation:
+						{
+							jointAnimated.updatedTranslation = Vector4f::calcLerp(dataStart, dataNext, samplerTime).convert<float, 3>();
+							break;
+						}
+						case Animation::Channel::Target::Rotation:
+						{
+							jointAnimated.updatedRotation = Quaternionf::sLerp(Quaternionf::from(dataStart), Quaternionf::from(dataNext), samplerTime);
+							break;
+						}
+						case Animation::Channel::Target::None:
+						default:
+							break;
 					}
-					case Animation::Channel::Target::Translation:
-					{
-						jointAnimated.updatedTranslation = Vector4f::calcLerp(dataStart, dataNext, samplerTime).convert<float, 3>();
-						break;
-					}
-					case Animation::Channel::Target::Rotation:
-					{
-						jointAnimated.updatedRotation = Quaternionf::sLerp(Quaternionf::from(dataStart), Quaternionf::from(dataNext), samplerTime);
-						break;
-					}
-					case Animation::Channel::Target::None:
-					default:
-						break;
 				}
 			}
 		}
@@ -324,6 +361,19 @@ namespace hr::geom
 		//calculate final transformation for each joint
 		for (size_t jIndex = 0; jIndex < mJoints.size(); jIndex++)
 			mLastAnimation.jointsFinalTransform[jIndex] = mJoints[jIndex].transformInvert * calcJointGlobalTransform(jIndex);
+	}
+
+	void SkeletonAnim::animateSetup(AnimationType animationType, size_t startAnimId)
+	{
+		if (mAnimations.empty())
+			return;
+
+		mAnimationType = animationType;
+		if ((mAnimations.size() == 1) && (mAnimationType == AnimationType::CycleAll))
+			mAnimationType = AnimationType::RepeatCurrent;
+		
+		auto it = mAnimations.find(startAnimId);
+		mLastAnimation.curAnimId = (it != mAnimations.end()) ? startAnimId : mAnimations.begin()->first;
 	}
 
 	void SkeletonAnim::animateReset()
