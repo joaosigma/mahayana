@@ -424,16 +424,22 @@ namespace hr::utests
 			REQUIRE_THAT(Vector3f::calcPointAt(v1, v2, 0.0f), VectorEquals(0.0f, 0.0f, 0.0f));
 			REQUIRE_THAT(Vector3f::calcPointAt(v1, v2, 0.5f), VectorEquals(0.5f, 0.5f, 0.5f));
 			REQUIRE_THAT(Vector3f::calcPointAt(v1, v2, 1.0f), VectorEquals(1.0f, 1.0f, 1.0f));
+			REQUIRE_THAT(Vector3f::calcPointAt(v1, v2, 2.0f), VectorEquals(2.0f, 2.0f, 2.0f));
 
 			v1 = Vector3f{0.0f, 0.5f, 0.0f};
 			v2 = Vector3f{0.0f, 0.0f, 1.0f};
 			REQUIRE_THAT(Vector3f::calcPointAt(v1, v2, 0.0f), VectorEquals(0.0f, 0.5f, 0.0f));
 			REQUIRE_THAT(Vector3f::calcPointAt(v1, v2, 0.5f), VectorEquals(0.0f, 0.5f, 0.5f));
 			REQUIRE_THAT(Vector3f::calcPointAt(v1, v2, 1.0f), VectorEquals(0.0f, 0.5f, 1.0f));
+			REQUIRE_THAT(Vector3f::calcPointAt(v1, v2, 2.0f), VectorEquals(0.0f, 0.5f, 2.0f));
 
 			v1 = randomVector3f();
 			v2 = Vector3f::calcNormalize(randomVector3f());
 			REQUIRE_THAT(Vector3f::calcPointAt(v1, v2, 0.83f), VectorEquals(v2[0] * 0.83f + v1[0], v2[1] * 0.83f + v1[1], v2[2] * 0.83f + v1[2]));
+
+			v1 = randomVector3f();
+			v2 = Vector3f::calcNormalize(randomVector3f());
+			REQUIRE_THAT(Vector3f::calcPointAt(v1, v2, -4.33f), VectorEquals(v2[0] * (-4.33f) + v1[0], v2[1] * (-4.33f) + v1[1], v2[2] * (-4.33f) + v1[2]));
 		}
 
 		SECTION("clamp")
@@ -878,16 +884,22 @@ namespace hr::utests
 			REQUIRE_THAT(Vector3d::calcPointAt(v1, v2, 0.0), VectorEquals(0.0, 0.0, 0.0));
 			REQUIRE_THAT(Vector3d::calcPointAt(v1, v2, 0.5), VectorEquals(0.5, 0.5, 0.5));
 			REQUIRE_THAT(Vector3d::calcPointAt(v1, v2, 1.0), VectorEquals(1.0, 1.0, 1.0));
+			REQUIRE_THAT(Vector3d::calcPointAt(v1, v2, 2.0), VectorEquals(2.0, 2.0, 2.0));
 
 			v1 = Vector3d{0.0, 0.5, 0.0};
 			v2 = Vector3d{0.0, 0.0, 1.0};
 			REQUIRE_THAT(Vector3d::calcPointAt(v1, v2, 0.0), VectorEquals(0.0, 0.5, 0.0));
 			REQUIRE_THAT(Vector3d::calcPointAt(v1, v2, 0.5), VectorEquals(0.0, 0.5, 0.5));
 			REQUIRE_THAT(Vector3d::calcPointAt(v1, v2, 1.0), VectorEquals(0.0, 0.5, 1.0));
+			REQUIRE_THAT(Vector3d::calcPointAt(v1, v2, 2.0), VectorEquals(0.0, 0.5, 2.0));
 
 			v1 = randomVector3d();
 			v2 = Vector3d::calcNormalize(randomVector3d());
 			REQUIRE_THAT(Vector3d::calcPointAt(v1, v2, 0.83), VectorEquals(v2[0] * 0.83 + v1[0], v2[1] * 0.83 + v1[1], v2[2] * 0.83 + v1[2]));
+
+			v1 = randomVector3d();
+			v2 = Vector3d::calcNormalize(randomVector3d());
+			REQUIRE_THAT(Vector3d::calcPointAt(v1, v2, -4.33), VectorEquals(v2[0] * (-4.33) + v1[0], v2[1] * (-4.33) + v1[1], v2[2] * (-4.33) + v1[2]));
 		}
 
 		SECTION("clamp")
@@ -1244,16 +1256,22 @@ namespace hr::utests
 			REQUIRE_THAT(Vector4f::calcPointAt(v1, v2, 0.0f), VectorEquals(0.0f, 0.0f, 0.0f, 0.0f));
 			REQUIRE_THAT(Vector4f::calcPointAt(v1, v2, 0.5f), VectorEquals(0.5f, 0.5f, 0.5f, 0.5f));
 			REQUIRE_THAT(Vector4f::calcPointAt(v1, v2, 1.0f), VectorEquals(1.0f, 1.0f, 1.0f, 1.0f));
+			REQUIRE_THAT(Vector4f::calcPointAt(v1, v2, 2.0f), VectorEquals(2.0f, 2.0f, 2.0f, 2.0f));
 
 			v1 = Vector4f{0.0f, 0.5f, 0.0f, 0.33f};
 			v2 = Vector4f{0.0f, 0.0f, 1.0f, 0.0f};
 			REQUIRE_THAT(Vector4f::calcPointAt(v1, v2, 0.0f), VectorEquals(0.0f, 0.5f, 0.0f, 0.33f));
 			REQUIRE_THAT(Vector4f::calcPointAt(v1, v2, 0.5f), VectorEquals(0.0f, 0.5f, 0.5f, 0.33f));
 			REQUIRE_THAT(Vector4f::calcPointAt(v1, v2, 1.0f), VectorEquals(0.0f, 0.5f, 1.0f, 0.33f));
+			REQUIRE_THAT(Vector4f::calcPointAt(v1, v2, 2.0f), VectorEquals(0.0f, 0.5f, 2.0f, 0.33f));
 
 			v1 = randomVector4f();
 			v2 = Vector4f::calcNormalize(randomVector4f());
 			REQUIRE_THAT(Vector4f::calcPointAt(v1, v2, 0.83f), VectorEquals(v2[0] * 0.83f + v1[0], v2[1] * 0.83f + v1[1], v2[2] * 0.83f + v1[2], v2[3] * 0.83f + v1[3]));
+
+			v1 = randomVector4f();
+			v2 = Vector4f::calcNormalize(randomVector4f());
+			REQUIRE_THAT(Vector4f::calcPointAt(v1, v2, (-4.33f)), VectorEquals(v2[0] * (-4.33f) + v1[0], v2[1] * (-4.33f) + v1[1], v2[2] * (-4.33f) + v1[2], v2[3] * (-4.33f) + v1[3]));
 		}
 
 		SECTION("clamp")
@@ -1606,17 +1624,22 @@ namespace hr::utests
 			REQUIRE_THAT(Vector4d::calcPointAt(v1, v2, 0.0), VectorEquals(0.0, 0.0, 0.0, 0.0));
 			REQUIRE_THAT(Vector4d::calcPointAt(v1, v2, 0.5), VectorEquals(0.5, 0.5, 0.5, 0.5));
 			REQUIRE_THAT(Vector4d::calcPointAt(v1, v2, 1.0), VectorEquals(1.0, 1.0, 1.0, 1.0));
+			REQUIRE_THAT(Vector4d::calcPointAt(v1, v2, 2.0), VectorEquals(2.0, 2.0, 2.0, 2.0));
 
 			v1 = Vector4d{0.0, 0.5, 0.0, 0.33};
 			v2 = Vector4d{0.0, 0.0, 1.0, 0.0};
 			REQUIRE_THAT(Vector4d::calcPointAt(v1, v2, 0.0), VectorEquals(0.0, 0.5, 0.0, 0.33));
 			REQUIRE_THAT(Vector4d::calcPointAt(v1, v2, 0.5), VectorEquals(0.0, 0.5, 0.5, 0.33));
 			REQUIRE_THAT(Vector4d::calcPointAt(v1, v2, 1.0), VectorEquals(0.0, 0.5, 1.0, 0.33));
+			REQUIRE_THAT(Vector4d::calcPointAt(v1, v2, 2.0), VectorEquals(0.0, 0.5, 2.0, 0.33));
 
 			v1 = randomVector4d();
 			v2 = Vector4d::calcNormalize(randomVector4d());
-			REQUIRE_THAT(Vector4d::calcPointAt(v1, v2, 0.83),
-			  VectorEquals(v2[0] * 0.83f + v1[0], v2[1] * 0.83f + v1[1], v2[2] * 0.83f + v1[2], v2[3] * 0.83f + v1[3]));
+			REQUIRE_THAT(Vector4d::calcPointAt(v1, v2, 0.83), VectorEquals(v2[0] * 0.83f + v1[0], v2[1] * 0.83f + v1[1], v2[2] * 0.83f + v1[2], v2[3] * 0.83f + v1[3]));
+
+			v1 = randomVector4d();
+			v2 = Vector4d::calcNormalize(randomVector4d());
+			REQUIRE_THAT(Vector4d::calcPointAt(v1, v2, -4.33), VectorEquals(v2[0] * (-4.33) + v1[0], v2[1] * (-4.33) + v1[1], v2[2] * (-4.33) + v1[2], v2[3] * (-4.33) + v1[3]));
 		}
 
 		SECTION("clamp")

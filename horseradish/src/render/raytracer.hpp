@@ -1,6 +1,7 @@
 #pragma once
 
 #include "tools/camera.hpp"
+#include "../common/tasks.hpp"
 #include "../common/image.hpp"
 #include "../common/opengl/tools/viewport.hpp"
 
@@ -11,6 +12,7 @@ namespace hr::render
 	class Raytracer
 	{
 		std::mt19937 mRandGen;
+		Dispatcher& mAsyncDispatcher;
 		imaging::Image<float, imaging::ImageFormatRGB> mBuffer;
 	
 	private:	
@@ -19,7 +21,7 @@ namespace hr::render
 		Colord rayColor(const Ray<Vector3d>& r, size_t depth);
 
 	public:
-		Raytracer(size_t maxWidth, size_t maxHeight);
+		Raytracer(Dispatcher& asyncDispatcher, size_t maxWidth, size_t maxHeight);
 
 		bool trace(const tools::Camera& camera, const gl::tools::Viewport& viewport);
 

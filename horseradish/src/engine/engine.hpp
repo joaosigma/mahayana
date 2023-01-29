@@ -3,6 +3,7 @@
 #include "runtime.hpp"
 #include "logger.hpp"
 
+#include "common/tasks.hpp"
 #include "common/timer.hpp"
 #include "common/types.hpp"
 #include "common/avl-tree.hpp"
@@ -269,6 +270,10 @@ namespace hr { namespace engine
 		AVLTree<char, std::shared_ptr<IVariable>> mVars;
 		std::unordered_map<StatSampleType, std::unique_ptr<StatSeries<3000>>> mStats;
 
+		Scheduler mAsyncScheduler;
+		Dispatcher mAsyncDispatcher;
+		std::vector<std::jthread> mAsyncThreads;
+
 		std::shared_ptr<Logger> mLogger;
 		std::shared_ptr<Logger::Context> mLoggerRenderCtx;
 		std::shared_ptr<Logger::Context> mLoggerRuntimeCtx;
@@ -303,17 +308,21 @@ namespace hr { namespace engine
 		template<typename T>
 		T var(const char* const name) const
 		{
-			static_assert(false, "variable type not supported");
+			//static_assert(false, "variable type not supported");
 		}
 
 		template<typename T>
 		void var(const char* const name, const T& value)
 		{
-			static_assert(false, "variable type not supported");
+			//static_assert(false, "variable type not supported");
 		}
 
-		// misc
 		bool mainLoop();
+
+		Dispatcher& asyncDispatcher() noexcept
+		{
+			return mAsyncDispatcher;
+		}
 
 		int getExitCode() const;
 		ExitAction getExitAction() const;

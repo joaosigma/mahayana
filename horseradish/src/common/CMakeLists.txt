@@ -48,6 +48,8 @@ set(HR_SOURCES
 	stringUtils.hpp
 	triangle.hpp
 	taggedPointer.hpp
+	tasks.cpp
+	tasks.hpp
 	timer.cpp
 	timer.hpp
 	types.cpp

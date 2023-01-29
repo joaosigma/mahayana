@@ -282,13 +282,23 @@ namespace hr { namespace engine
 
 	Engine::Engine(const std::string &cmdLine, bool devMode)
 		: mDevMode(devMode)
+		, mAsyncDispatcher{mAsyncScheduler}
 	{
-		//initiate logger
+		//logger
 		mLogger = std::make_shared<Logger>(10, 500, "../logs/log.txt");
 		mLoggerRenderCtx = std::make_shared<Logger::Context>(*mLogger, Logger::ModuleType::Graphics);
 		mLoggerRuntimeCtx = std::make_shared<Logger::Context>(*mLogger, Logger::ModuleType::SysRuntime);
 
-		//initiate runtime
+		//async tasks
+		{
+			auto maxThreads = std::min<size_t>(std::thread::hardware_concurrency() * 2, 10);
+			
+			mAsyncThreads.reserve(maxThreads);
+			for (size_t curThread = 0; curThread < maxThreads; curThread++)
+				mAsyncThreads.push_back(std::jthread([this]() { mAsyncScheduler.run(); }));
+		}
+
+		//runtime
 		mRuntime = std::make_shared<Runtime>(*mLoggerRuntimeCtx);
 
 		mRuntime->registerFunc("runtime.varCreate", std::bind(&Engine::runtimeFuncVarRegister, this, std::placeholders::_1, std::placeholders::_2));
@@ -329,6 +339,12 @@ namespace hr { namespace engine
 	Engine::~Engine()
 	{
 		mRuntime.reset();
+
+		mAsyncDispatcher.stopAndWait();
+		mAsyncScheduler.stop();
+		for (auto& thread : mAsyncThreads)
+			thread.join();
+		mAsyncThreads.clear();
 
 		mLoggerRuntimeCtx.reset();
 		mLoggerRenderCtx.reset();

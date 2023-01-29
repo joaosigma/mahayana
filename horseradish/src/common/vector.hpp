@@ -314,8 +314,6 @@ namespace hr
 
 		static Vector calcPointAt(const Vector& origin, const Vector& direction, const float t) noexcept
 		{
-			assert(t >= 0.0f && t <= 1.0f);
-
 			Vector result;
 			__m128 tmp;
 
@@ -804,8 +802,6 @@ namespace hr
 
 		static Vector calcPointAt(const Vector& origin, const Vector& direction, const double t) noexcept
 		{
-			assert(t >= 0.0 && t <= 1.0);
-
 			__m256d tmp = _mm256_mul_pd(_mm256_load_pd(direction.mData), _mm256_set1_pd(t));
 			tmp = _mm256_add_pd(tmp, _mm256_load_pd(origin.mData));
 
@@ -1220,8 +1216,6 @@ namespace hr
 
 		static Vector calcPointAt(const Vector& origin, const Vector& direction, const float t) noexcept
 		{
-			assert(t >= 0.0f && t <= 1.0f);
-
 			Vector result;
 			__m128 tmp;
 
@@ -1565,9 +1559,7 @@ namespace hr
 		}
 
 		static Vector calcPointAt(const Vector& origin, const Vector& direction, const double t)
-		{
-			assert(t >= 0.0 && t <= 1.0);
-			
+		{			
 			__m256d tmp = _mm256_mul_pd(_mm256_load_pd(direction.mData), _mm256_set1_pd(t));
 			tmp = _mm256_add_pd(tmp, _mm256_load_pd(origin.mData));
 
