@@ -1,5 +1,6 @@
 # Format Style Options - Created with Clang Power Tools
 ---
+LineEndingStyle: LF
 AccessModifierOffset: -8
 AlignAfterOpenBracket: DontAlign
 AlignOperands: DontAlign

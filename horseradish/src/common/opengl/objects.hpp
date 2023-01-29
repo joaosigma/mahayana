@@ -683,11 +683,11 @@ namespace hr::gl::objects
 			if (!isValid())
 				return false;
 
-			float maxAnisoLevel;
-			if (!mCtx.info(Context::InformationType::MaxAnisotropicLevel, maxAnisoLevel))
+			auto maxAnisoLevel = mCtx.infoFloat(Context::InformationType::MaxAnisotropicLevel);
+			if (!maxAnisoLevel)
 				return false;
 
-			hr::gl::glSamplerParameterf(mId, GL_TEXTURE_MAX_ANISOTROPY, hr::Math::fClamp(anisotropyLevel, 1.0f, maxAnisoLevel));
+			hr::gl::glSamplerParameterf(mId, GL_TEXTURE_MAX_ANISOTROPY, hr::Math::fClamp(anisotropyLevel, 1.0f, *maxAnisoLevel));
 			return true;
 		}
 

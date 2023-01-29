@@ -2,6 +2,7 @@
 
 #include "renderer.hpp"
 
+#include "world.hpp"
 #include "tools/camera.hpp"
 #include "../common/fileSystem.hpp"
 #include "../common/openGL/tools/viewport.hpp"
@@ -37,6 +38,6 @@ namespace hr::render
 		RendererDebug(const hr::gl::objects::Context& glContext, hr::io::FileSystem& fileSystem, Renderer2D& renderer2D);
 		~RendererDebug();
 
-		void render(RendererMain& rendererMain, const tools::Camera& hrCamera, const hr::gl::tools::Viewport& hrViewport);
+		void render(RendererMain& rendererMain, const hr::render::World& world, const tools::Camera& hrCamera, const hr::gl::tools::Viewport& hrViewport);
 	};
 }

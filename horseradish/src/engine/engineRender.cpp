@@ -96,46 +96,32 @@ namespace hr::engine
 
 		void openGLWriteInfo(hr::engine::Logger &logger, const hr::gl::objects::Context &glContext)
 		{
-			std::string infoValueString;
-			int infoValueInt;
-
 			hr::engine::Logger::Context ctx(logger, hr::engine::Logger::ModuleType::Graphics);
 
 			//driver info
 			ctx.info("${olive}->${default}OpenGL driver info:");
-			glContext.info(hr::gl::objects::Context::InformationType::Version, infoValueString);
-			ctx.info("   OpenGL version: " + infoValueString);
-			glContext.info(hr::gl::objects::Context::InformationType::Vendor, infoValueString);
-			ctx.info("   OpenGL vendor: " + infoValueString);
-			glContext.info(hr::gl::objects::Context::InformationType::Renderer, infoValueString);
-			ctx.info("   OpenGL renderer: " + infoValueString);
+			ctx.info("   OpenGL version: {}", glContext.infoStr(hr::gl::objects::Context::InformationType::Version).value_or(""));
+			ctx.info("   OpenGL vendor: {}", glContext.infoStr(hr::gl::objects::Context::InformationType::Vendor).value_or(""));
+			ctx.info("   OpenGL renderer: {}", glContext.infoStr(hr::gl::objects::Context::InformationType::Renderer).value_or(""));
 
 			//extensions available
 			ctx.info("${olive}->${default}OpenGL extensions available:");
-			hr::gl::glGetIntegerv(GL_NUM_EXTENSIONS, &infoValueInt);
-			for (int curExt = 0; curExt < infoValueInt; curExt++)
-				ctx.info((const char*)hr::gl::glGetStringi(GL_EXTENSIONS, curExt));
+			{
+				int infoValueInt;
+				hr::gl::glGetIntegerv(GL_NUM_EXTENSIONS, &infoValueInt);
+				for (int curExt = 0; curExt < infoValueInt; curExt++)
+					ctx.info((const char *)hr::gl::glGetStringi(GL_EXTENSIONS, curExt));
+			}
 
 			//other stuff
 			ctx.info("${olive}->${default}OpenGL extended information:");
-
-			glContext.info(hr::gl::objects::Context::InformationType::GLSLVersion, infoValueString);
-			ctx.info("   GLSL version: " + infoValueString);
-
-			glContext.info(hr::gl::objects::Context::InformationType::MaxDrawBuffers, infoValueInt);
-			ctx.info("   Maximum number of draw buffers: {0}", infoValueInt);
-
-			glContext.info(hr::gl::objects::Context::InformationType::MaxColorAttachments, infoValueInt);
-			ctx.info("   Maximum number of color attachments in FBOs: {0}", infoValueInt);
-
-			glContext.info(hr::gl::objects::Context::InformationType::MaxTextureSize, infoValueInt);
-			ctx.info("   Maximum 1D/2D texture size: {0}x{0}", infoValueInt);
-			glContext.info(hr::gl::objects::Context::InformationType::MaxTexture3DSize, infoValueInt);
-			ctx.info("   Maximum 3D texture size: {0}x{0}x{0}", infoValueInt);
-			glContext.info(hr::gl::objects::Context::InformationType::MaxTextureCubemapSize, infoValueInt);
-			ctx.info("   Maximum cubemap texture size: {0}x{0}", infoValueInt);
-			glContext.info(hr::gl::objects::Context::InformationType::MaxTextureRectSize, infoValueInt);
-			ctx.info("   Maximum rectangle texture size: {0}x{0}", infoValueInt);
+			ctx.info("   GLSL version: {}", glContext.infoStr(hr::gl::objects::Context::InformationType::GLSLVersion).value_or(""));
+			ctx.info("   Maximum number of draw buffers: {}", glContext.infoInt(hr::gl::objects::Context::InformationType::MaxDrawBuffers).value_or(0));
+			ctx.info("   Maximum number of color attachments in FBOs: {}", glContext.infoInt(hr::gl::objects::Context::InformationType::MaxColorAttachments).value_or(0));
+			ctx.info("   Maximum 1D/2D texture size: {0}x{0}", glContext.infoInt(hr::gl::objects::Context::InformationType::MaxTextureSize).value_or(0));
+			ctx.info("   Maximum 3D texture size: {0}x{0}x{0}", glContext.infoInt(hr::gl::objects::Context::InformationType::MaxTexture3DSize).value_or(0));
+			ctx.info("   Maximum cubemap texture size: {0}x{0}", glContext.infoInt(hr::gl::objects::Context::InformationType::MaxTextureCubemapSize).value_or(0));
+			ctx.info("   Maximum rectangle texture size: {0}x{0}", glContext.infoInt(hr::gl::objects::Context::InformationType::MaxTextureRectSize).value_or(0));
 		}
 
 		void CALLBACK openglDebugMessagesCallback(GLenum source, GLenum type, GLuint, GLenum severity, GLsizei length, const GLchar *message, const void *userParam)
@@ -255,11 +241,10 @@ namespace hr::engine
 			glContext = std::make_unique<platform::OpenglContext>(*mWindow, "OpenGL32.dll", 4, 6, var<bool>("renderer.glDebug"), true);
 			if (!glContext->isValid())
 			{
-				auto errorMsg = glContext->getErrorMsg();
-				if (errorMsg.empty())
+				if (auto errorMsg = glContext->getErrorMsg(); errorMsg.empty())
 					exit(ExitAction::Nothing, "Unable to create OpenGL context");
 				else
-					exit(ExitAction::Nothing, std::format("Unable to create OpenGL context: {0}", errorMsg).c_str());
+					exit(ExitAction::Nothing, std::format("Unable to create OpenGL context: {}", errorMsg).c_str());
 
 				return;
 			}
@@ -312,38 +297,8 @@ namespace hr::engine
 
 			//!!!!!!!!!!!!!!!! dev
 			{
-				{
-					hr::render::WorldEditor editor;
-					
-					auto newArea = editor.newArea("c:/Users/Sigma/Desktop/xeno.hscene", "c:/Users/Sigma/Desktop/xeno.hbin");
-
-					editor.importGLTF(newArea, R"(C:\Users\Sigma\Desktop\xeno\scene.gltf)");
-
-					/*editor.processMesh(newArea, { }, [](hr::geom::Mesh& mesh)
-					{
-						Matrix trans;
-
-						trans.setRotation(0.0f, 180.0f, 0.0f);
-						mesh.transform(trans, Matrix3(trans));
-					});*/
-
-					//editor.importMD5(newArea, R"(C:\Users\Sigma\Desktop\network_guardian\mesh.md5mesh)", "network_guardian");
-					//editor.removeObjects(newArea, { "network_guardian/ng_lo_collision" });
-					//editor.importMD5Anim(newArea, "network_guardian", R"(C:\Users\Sigma\Desktop\network_guardian\idle.md5anim)", "idle");
-					//editor.importMD5Anim(newArea, "hellknight", R"(C:\Users\Sigma\Desktop\hellknight\stand.md5anim)", "stand");
-				}
-
 				renderData = std::make_unique<hr::render::World>();
-				//renderData->loadArea(*rendererMain, "../scenes/spheres.hscene", "../scenes/spheres.hbin");
-				//renderData->loadArea(*rendererMain, "../scenes/wood-log.hscene", "../scenes/wood-log.hbin");
-				//renderData->loadArea(*rendererMain, "../scenes/sandstone1.hscene", "../scenes/sandstone1.hbin");
-				//renderData->loadArea(*rendererMain, "../scenes/sandstone2.hscene", "../scenes/sandstone2.hbin");
-				//renderData->loadArea(*rendererMain, "../scenes/volund.hscene", "../scenes/volund.hbin");				
-				//renderData->loadArea(*rendererMain, "../scenes/makron.hscene", "../scenes/makron.hbin");
-				//renderData->loadArea(*rendererMain, "../scenes/hellknight.hscene", "../scenes/hellknight.hbin");
-				//renderData->loadArea(*rendererMain, "../scenes/guardian.hscene", "../scenes/guardian.hbin");
-				
-				renderData->loadArea(*rendererMain, "c:/Users/Sigma/Desktop/xeno.hscene", "c:/Users/Sigma/Desktop/xeno.hbin");
+				renderData->loadArea(*rendererMain, "../scenes/sphere_bot.hscene", "../scenes/sphere_bot.hbin");
 			}
 		}
 			
@@ -376,11 +331,11 @@ namespace hr::engine
 		{
 			//setup camera
 			hr::render::tools::CameraFPS camera;
-			camera.setPos(0.0f, 0.0f, 1.0f);
+			camera.setPos(0.0f, 0.0f, -1.0f);
 			camera.setTarget(0.0f, 0.0f, 0.0f);
 			camera.setMovementScale(hr::render::tools::CameraFPS::CameraInput::Keyboard, 10.0f);
 
-			hr::gl::tools::Viewport viewportRender(45.0f, var<int>("renderer.dims.width"), var<int>("renderer.dims.height"), 0.05f);
+			hr::gl::tools::Viewport viewportRender(Math::Deg2Rad<float> * 45.0f, var<int>("renderer.dims.width"), var<int>("renderer.dims.height"), 0.05f);
 			hr::gl::glViewport(0, 0, viewportRender.width(), viewportRender.height());
 
 			hr::gl::objects::Query::Group<8> renderGlQueryGroup = {
@@ -413,7 +368,7 @@ namespace hr::engine
 
 				//draw main, deferred scene
 				rendererMain->render(camera, viewportRender);
-				rendererMain->renderDebug(*rendererDebug, camera, viewportRender);
+				rendererMain->renderDebug(*rendererDebug, *renderData, camera, viewportRender);
 				rendererMain->renderComposite(viewportRender);
 
 				if (Profiler::isSupported())
