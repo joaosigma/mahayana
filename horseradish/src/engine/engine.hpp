@@ -261,12 +261,12 @@ namespace hr { namespace engine
 	private:
 		mutable std::mutex mSyncLock;
 
-		bool mDevMode = false;
+		bool mDevMode{false};
 		std::string mErrorDesc;
-		std::atomic<State> mCurState = State::Created;
+		std::atomic<State> mCurState{State::Created};
 		hr::Timer mMainTimer;
-		int mExitCode = 0;
-		std::atomic<ExitAction> mExitAction = ExitAction::Nothing;
+		int mExitCode{0};
+		std::atomic<ExitAction> mExitAction{ExitAction::Nothing};
 		AVLTree<char, std::shared_ptr<IVariable>> mVars;
 		std::unordered_map<StatSampleType, std::unique_ptr<StatSeries<3000>>> mStats;
 
@@ -282,9 +282,15 @@ namespace hr { namespace engine
 		std::shared_ptr<Runtime> mRuntime;
 		std::shared_ptr<io::FileSystem> mFileSystem;
 
+		struct
+		{
+			bool dbgRayTrace{false};
+		} mCmdLineOptions;
+
 	private:
 		void exit(ExitAction exitAction, const char * const errorDesc = nullptr);
 
+		void initParseCmdLine(std::string_view cmdLine);
 		void initFileSystem();
 
 		void renderLoop();
@@ -298,7 +304,7 @@ namespace hr { namespace engine
 		void logSysInfo();
 
 	public:
-		Engine(const std::string &cmdLine, bool devMode = false);
+		Engine(std::string_view cmdLine, bool devMode = false);
 		~Engine();
 
 		Engine(const Engine&) = delete;

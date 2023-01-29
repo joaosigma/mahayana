@@ -1,7 +1,7 @@
 param (
     [parameter(Mandatory=$false)]
     [ValidateSet('x86', 'x64', IgnoreCase = $true)]
-    [string]$targetArch = 'x64'
+    [string]$targetArch = 'x86'
 )
 
 Write-Host ">>>>> Generating Horseradish project ($targetArch)"

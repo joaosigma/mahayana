@@ -87,15 +87,15 @@ namespace hr { namespace render
 			{
 				std::string strUTF8;
 
-				if (!hr::platform::Platform::clipboardGetStrings([&](const std::string& curString) -> bool
+				if (!hr::platform::Platform::clipboardGetStrings([&](std::string curString) -> bool
 				{
-					strUTF8 = curString;
+					strUTF8 = std::move(curString);
 					return false;
 				}))
 				{
-					hr::platform::Platform::clipboardGetFiles([&](const std::string& curString) -> bool
+					hr::platform::Platform::clipboardGetFiles([&](std::string curString) -> bool
 					{
-						strUTF8 = curString;
+						strUTF8 = std::move(curString);
 						return false;
 					});
 				}

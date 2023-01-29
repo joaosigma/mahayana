@@ -144,7 +144,7 @@ namespace hr::platform
 #endif
 	}
 
-	bool Platform::cpuGetVendorID(std::string& outputValue)
+	std::optional<std::string> Platform::cpuGetVendorID()
 	{
 		int cpuInfo[4];
 		char cpuString[128];
@@ -157,24 +157,19 @@ namespace hr::platform
 		std::memcpy(cpuString + 4, cpuInfo + 3, sizeof(int));
 		std::memcpy(cpuString + 8, cpuInfo + 2, sizeof(int));
 
-		outputValue = cpuString;
-		return true;
+		return std::string{cpuString};
 	}
 
-	bool Platform::cpuGetProcessorName(std::string& outputValue)
+	std::optional<std::string> Platform::cpuGetProcessorName()
 	{
 		int cpuInfo[4];
-		char cpuString[128];
-
 		std::memset(cpuInfo, 0, sizeof(cpuInfo));
 		__cpuid(cpuInfo, 0x80000000);
 
 		if (cpuInfo[0] < 0x80000004)
-		{
-			outputValue = "<empty>";
-			return true;
-		}
+			return {};
 
+		char cpuString[128];
 		std::memset(cpuString, 0, sizeof(cpuString));
 
 		__cpuid(cpuInfo, 0x80000002);
@@ -193,10 +188,7 @@ namespace hr::platform
 		memcpy(cpuString + 40, cpuInfo + 2, sizeof(int));
 		memcpy(cpuString + 44, cpuInfo + 3, sizeof(int));
 
-		outputValue = cpuString;
-		hr::StringUtils::trim(outputValue);
-
-		return true;
+		return hr::StringUtils::trimCopy(cpuString);
 	}
 
 	bool Platform::cpuCheckFeatures(CPUFeature featuresCheck)
@@ -233,7 +225,7 @@ namespace hr::platform
 		return true;
 	}
 
-	bool Platform::systemInfo(SystemInfo systemInfo, std::string& infoValue)
+	std::optional<std::string> Platform::systemInfoStr(SystemInfo systemInfo)
 	{
 		switch (systemInfo)
 		{
@@ -246,10 +238,10 @@ namespace hr::platform
 				bufferAuxCharCount = sizeof(bufferAux) / sizeof(TCHAR);
 
 				auto result = GetModuleFileName(0, bufferAux, bufferAuxCharCount);
-				if ((result == 0) || (result > bufferAuxCharCount)) return false;
+				if ((result == 0) || (result > bufferAuxCharCount))
+					return {};
 
-				infoValue = hr::StringUtils::conv2UTF8(bufferAux);
-				return true;
+				return hr::StringUtils::conv2UTF8(bufferAux);
 			}
 
 			case Platform::SystemInfo::MachineName:
@@ -260,10 +252,10 @@ namespace hr::platform
 				bufferAux[0] = '\0';
 				bufferAuxCharCount = sizeof(bufferAux) / sizeof(TCHAR);
 
-				if (GetComputerName(bufferAux, &bufferAuxCharCount) == FALSE) return false;
+				if (GetComputerName(bufferAux, &bufferAuxCharCount) == FALSE)
+					return {};
 
-				infoValue = hr::StringUtils::conv2UTF8(bufferAux);
-				return true;
+				return hr::StringUtils::conv2UTF8(bufferAux);
 			}
 
 			case Platform::SystemInfo::CurrentUsername:
@@ -274,10 +266,10 @@ namespace hr::platform
 				bufferAux[0] = '\0';
 				bufferAuxCharCount = sizeof(bufferAux) / sizeof(TCHAR);
 
-				if (GetUserName(bufferAux, &bufferAuxCharCount) == FALSE) return false;
+				if (GetUserName(bufferAux, &bufferAuxCharCount) == FALSE)
+					return {};
 
-				infoValue = hr::StringUtils::conv2UTF8(bufferAux);
-				return true;
+				return hr::StringUtils::conv2UTF8(bufferAux);
 			}
 
 			case Platform::SystemInfo::OperatingSystemName:
@@ -286,38 +278,38 @@ namespace hr::platform
 
 				std::memset(&versionInfo, 0, sizeof(OSVERSIONINFOEX));
 				versionInfo.dwOSVersionInfoSize = sizeof(OSVERSIONINFOEX);
-				if (GetVersionEx((LPOSVERSIONINFOW)&versionInfo) == FALSE) return false;
+				if (GetVersionEx((LPOSVERSIONINFOW)&versionInfo) == FALSE)
+					return {};
 
+				std::string name;
 				if ((versionInfo.dwMajorVersion == 6) && (versionInfo.dwMinorVersion == 1) && (versionInfo.wProductType == VER_NT_WORKSTATION))
-					infoValue = std::format("Windows 7 ({0}.{1})", versionInfo.dwMajorVersion, versionInfo.dwMinorVersion);
+					name = std::format("Windows 7 ({0}.{1})", versionInfo.dwMajorVersion, versionInfo.dwMinorVersion);
 				else if ((versionInfo.dwMajorVersion == 6) && (versionInfo.dwMinorVersion == 0) && (versionInfo.wProductType != VER_NT_WORKSTATION))
-					infoValue = std::format("Windows Vista ({0}.{1})", versionInfo.dwMajorVersion, versionInfo.dwMinorVersion);
+					name = std::format("Windows Vista ({0}.{1})", versionInfo.dwMajorVersion, versionInfo.dwMinorVersion);
 				else if ((versionInfo.dwMajorVersion == 5) && (versionInfo.dwMinorVersion == 1))
-					infoValue = std::format("Windows XP ({0}.{1})", versionInfo.dwMajorVersion, versionInfo.dwMinorVersion);
+					name = std::format("Windows XP ({0}.{1})", versionInfo.dwMajorVersion, versionInfo.dwMinorVersion);
 				else
-					infoValue = std::format("Windows ({0}.{1})", versionInfo.dwMajorVersion, versionInfo.dwMinorVersion);
+					name = std::format("Windows ({0}.{1})", versionInfo.dwMajorVersion, versionInfo.dwMinorVersion);
 
 				if (versionInfo.wServicePackMajor > 0)
 				{
 					if (versionInfo.wServicePackMinor > 0)
-						infoValue += std::format(" SP{0}.{1}", versionInfo.wServicePackMajor, versionInfo.wServicePackMinor);
+						name += std::format(" SP{0}.{1}", versionInfo.wServicePackMajor, versionInfo.wServicePackMinor);
 					else
-						infoValue += std::format(" SP{0}", versionInfo.wServicePackMajor);
+						name += std::format(" SP{0}", versionInfo.wServicePackMajor);
 				}
 
-				return true;
+				return name;
 			}
 			default:
 				break;
 		}
 
-		return false;
+		return {};
 	}
 
-	bool Platform::systemInfo(SystemInfo systemInfo, int64_t& infoValue)
+	std::optional<int64_t> Platform::systemInfoInt(SystemInfo systemInfo)
 	{
-		infoValue = 0;
-
 		switch (systemInfo)
 		{
 			case SystemInfo::MemoryTotal:
@@ -330,20 +322,14 @@ namespace hr::platform
 				switch (systemInfo)
 				{
 					case SystemInfo::MemoryTotal:
-					{
-						infoValue = memoryStatus.ullTotalPhys;
-						return true;
-					}
+						return memoryStatus.ullTotalPhys;
 					case SystemInfo::MemoryFree:
-					{
-						infoValue = memoryStatus.ullAvailPhys;
-						return true;
-					}
+						return memoryStatus.ullAvailPhys;
 					default:
 						break;
 				}
 
-				return false;
+				return {};
 			}
 
 			case SystemInfo::DisplayWidth:
@@ -355,47 +341,34 @@ namespace hr::platform
 
 				std::memset(&deviceMode, 0, sizeof(DEVMODE));
 				deviceMode.dmSize = sizeof(DEVMODE);
-				if (EnumDisplaySettingsEx(nullptr, ENUM_REGISTRY_SETTINGS, &deviceMode, 0) == FALSE) return false;
+				if (EnumDisplaySettingsEx(nullptr, ENUM_REGISTRY_SETTINGS, &deviceMode, 0) == FALSE)
+					return {};
 
 				switch (systemInfo)
 				{
 					case SystemInfo::DisplayWidth:
-					{
-						infoValue = deviceMode.dmPelsWidth;
-						return true;
-					}
+						return deviceMode.dmPelsWidth;
 					case SystemInfo::DisplayHeight:
-					{
-						infoValue = deviceMode.dmPelsHeight;
-						return true;
-					}
+						return deviceMode.dmPelsHeight;
 					case SystemInfo::DisplayColorBits:
-					{
-						infoValue = deviceMode.dmBitsPerPel;
-						return true;
-					}
+						return deviceMode.dmBitsPerPel;
 					case SystemInfo::DisplayFrequency:
-					{
-						infoValue = deviceMode.dmDisplayFrequency;
-						return true;
-					}
+						return deviceMode.dmDisplayFrequency;
 					default:
 						break;
 				}
 
-				return false;
+				return {};
 			}
 
 			case SystemInfo::CleanBoot:
-			{
-				infoValue = (GetSystemMetrics(SM_CLEANBOOT) == 0) ? 1 : 0;
-				return true;
-			}
+				return (GetSystemMetrics(SM_CLEANBOOT) == 0) ? 1 : 0;
+
 			default:
 				break;
 		}
 
-		return false;
+		return {};
 	}
 
 	bool Platform::spawnSelf()
@@ -419,7 +392,7 @@ namespace hr::platform
 		return true;
 	}
 
-	bool Platform::clipboardGetStrings(std::function<bool(const std::string&)> funcCallback)
+	bool Platform::clipboardGetStrings(const std::function<bool(std::string)>& funcCallback)
 	{
 		if (!funcCallback)
 			return false;
@@ -440,23 +413,12 @@ namespace hr::platform
 			return false;
 
 		auto clipDataUTF8 = hr::StringUtils::conv2UTF8(static_cast<const wchar_t*>(clipData));
-
-		funcCallback(clipDataUTF8);
-
-		/*
-		TODO: VS2015 doesn't support this!!! :/
-
-		std::sregex_token_iterator first(clipDataUTF8.begin(), clipDataUTF8.end(), std::regex("\\n+"), -1), last;
-		for (; first != last; first++)
-		{
-			if (!funcCallback(*first))
-				break;
-		}*/
+		funcCallback(std::move(clipDataUTF8));
 
 		return true;
 	}
 
-	bool Platform::clipboardGetFiles(std::function<bool(const std::string&)> funcCallback)
+	bool Platform::clipboardGetFiles(const std::function<bool(std::string)>& funcCallback)
 	{
 		if (!funcCallback)
 			return false;
@@ -487,7 +449,7 @@ namespace hr::platform
 				continue;
 
 			auto curFileUTF8 = hr::StringUtils::conv2UTF8(fileBufferWChar);
-			if (!funcCallback(curFileUTF8))
+			if (!funcCallback(std::move(curFileUTF8)))
 				break;
 		}
 
