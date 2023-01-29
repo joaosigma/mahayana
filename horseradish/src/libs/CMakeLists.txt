@@ -6,6 +6,7 @@ file(GLOB_RECURSE HR_LIBS_SOURCES
 
 set(HR_LIBS_SOURCES_UTESTS ${HR_LIBS_SOURCES})
 
+# remove catch2 from main build
 list(FILTER HR_LIBS_SOURCES EXCLUDE REGEX ".+\/libs\/catch2\/.+")
 
 target_sources(horseradish PRIVATE ${HR_LIBS_SOURCES})

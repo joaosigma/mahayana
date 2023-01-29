@@ -25,6 +25,5 @@ set(HR_SOURCES
 )
 
 target_sources(horseradish PRIVATE ${HR_SOURCES})
-target_sources(horseradish-utests PRIVATE ${HR_SOURCES})
 
 add_subdirectory(tools)
