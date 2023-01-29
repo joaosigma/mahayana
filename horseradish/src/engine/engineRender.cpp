@@ -82,7 +82,7 @@ namespace hr::engine
 			hr::gl::glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 			hr::gl::glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
 			hr::gl::glCullFace(GL_BACK);
-			hr::gl::glFrontFace(GL_CCW);
+			hr::gl::glFrontFace(GL_CW);
 
 			hr::gl::glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 

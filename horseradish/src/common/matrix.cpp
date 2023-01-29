@@ -779,47 +779,32 @@ namespace hr
 
 	template<typename TDataType>
 	Matrix4<TDataType> Matrix4<TDataType>::glModelView(const Vector3Type& pos, const Vector3Type& target, const Vector3Type& up) noexcept
-	{
-		auto z = pos;
-		z -= target;
-		z.normalize();
-
-		auto x = Vector3Type::calcCrossProduct(up, z);
+	{		
+		auto z = Vector3Type::calcNormalize(target - pos);
+		auto x = Vector3Type::calcNormalize(Vector3Type::calcCrossProduct(up, z));
 		auto y = Vector3Type::calcCrossProduct(z, x);
 
-		x.normalize();
-		y.normalize();
+		auto posNeg = -pos;
 
-		Matrix4 mat;
+		auto mat = Matrix4::naked();
 		mat.m[0] = x[0];
-		mat.m[1] = y[0];
-		mat.m[2] = z[0];
-		mat.m[3] = kZero<TDataType>;
-		mat.m[4] = x[1];
+		mat.m[1] = x[1];
+		mat.m[2] = x[2];
+		mat.m[3] = posNeg.dot(x);
+		mat.m[4] = y[0];
 		mat.m[5] = y[1];
-		mat.m[6] = z[1];
-		mat.m[7] = kZero<TDataType>;
-		mat.m[8] = x[2];
-		mat.m[9] = y[2];
+		mat.m[6] = y[2];
+		mat.m[7] = posNeg.dot(y);
+		mat.m[8] = z[0];
+		mat.m[9] = z[1];
 		mat.m[10] = z[2];
-		mat.m[11] = kZero<TDataType>;
-
-		x *= -kOne<TDataType>;
-		y *= -kOne<TDataType>;
-		z *= -kOne<TDataType>;
-
-		mat.m[12] = x[0] * pos[0] + x[1] * pos[1] + x[2] * pos[2];
-		mat.m[13] = y[0] * pos[0] + y[1] * pos[1] + y[2] * pos[2];
-		mat.m[14] = z[0] * pos[0] + z[1] * pos[1] + z[2] * pos[2];
+		mat.m[11] = posNeg.dot(z);
+		mat.m[12] = mat.m[13] = mat.m[14] = kZero<TDataType>;
 		mat.m[15] = kOne<TDataType>;
 
-		return mat;
-	}
+		mat.transpose();
 
-	template<typename TDataType>
-	Matrix4<TDataType> Matrix4<TDataType>::glModelView(const Vector3Type& pos, const Vector3Type& target) noexcept
-	{
-		return Matrix4::glModelView(pos, target, Vector3Type{kZero<TDataType>, kOne<TDataType>, kZero<TDataType>});
+		return mat;
 	}
 
 	template<typename TDataType>

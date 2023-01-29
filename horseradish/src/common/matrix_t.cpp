@@ -859,6 +859,21 @@ namespace hr::utests
 			REQUIRE_THAT(m.transformCopy(Vector3f{0.0f, 0.0f, 0.0f}), VectorEquals(0.0f, 0.33f, 0.0f));
 		}
 
+		//SECTION("lookAt")
+		//{
+		//	auto m = Matrix4f::glModelView(Vector3f{0.0f, 0.0f, -10.0f}, Vector3f{0.0f, 0.0f, 0.0f}, Vector3f{0.0f, 1.0f, 0.0f});
+		//	REQUIRE_THAT(m.transformCopy(Vector3f{0.0f, 0.0f, 1.0f}), VectorEquals(0.0f, 0.0f, -11.0f));
+		//	REQUIRE_THAT(m.transformCopy(Vector3f{0.0f, 0.0f, 0.0f}), VectorEquals(0.0f, 0.0f, -10.0f));
+		//	REQUIRE_THAT(m.transformCopy(Vector3f{0.0f, 0.0f, -10.0f}), VectorEquals(0.0f, 0.0f, 0.0f));
+		//	
+		//
+		//	m = Matrix4f::glModelView(Vector3f{1.0f, 0.0f, -10.0f}, Vector3f{1.0f, 0.0f, 0.0f}, Vector3f{0.0f, 1.0f, 0.0f});
+		//	auto vecView = m.transformCopy(Vector3f{0.0f, 0.0f, 0.0f});
+		//	REQUIRE_THAT(vecView, VectorEquals(1.0f, 0.0f, -10.0f));
+		//}
+
+		
+
 		SECTION("matrix benchmark")
 		{
 			constexpr size_t NumVectors{ 5000 };

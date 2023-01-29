@@ -6,28 +6,16 @@ namespace hr::gl::tools
 	{
 		hr::Matrix4f funcProjection(double fovy, double aspectRatio, double znear) noexcept
 		{
-			/*double ymax = near * std::tan(fov * 0.00872664625997164788461845384); //0.008726646259971 = pi / 180.0 / 2.0
-			double ymin = -ymax;
-			double xmin = ymin * aspectRatio;
-			double xmax = ymax * aspectRatio;
-
-			mat.set(0.0f);
-			mat[0] = static_cast<float>((2.0 * near) / (xmax - xmin));
-			mat[5] = static_cast<float>((2.0 * near) / (ymax - ymin));
-			mat[8] = static_cast<float>((xmax + xmin) / (xmax - xmin));
-			mat[9] = static_cast<float>((ymax + ymin) / (ymax - ymin));
-			mat[10] = -static_cast<float>((far + near) / (far - near));
-			mat[11] = -1.0f;
-			mat[14] = -static_cast<float>((2.0 * far * near) / (far - near));*/
-
+			//more info on a reversed-z, infinite zfar projection matrix: https://thxforthefish.com/posts/reverse_z/
 			auto mat = hr::Matrix4f::zero();
 
-			double f = 1.0 / std::tan(fovy / 2.0);
+			double f = 1.0 / std::tan(fovy * 0.5);
 			mat[0] = static_cast<float>(f / aspectRatio);
 			mat[5] = static_cast<float>(f);
-			mat[11] = -1.0f;
-			mat[14] = static_cast<float>(znear);
+			mat[11] = static_cast<float>(znear);
+			mat[14] = 1.0f; //left-handed
 
+			mat.transpose();
 			return mat;
 		};
 
