@@ -99,7 +99,7 @@ namespace hr::platform
 
 	bool OpenglContext::isValid() const
 	{
-		return (mImpl->isValid() & mIsValid);
+		return (mImpl->isValid() && mIsValid);
 	}
 
 	std::string OpenglContext::getErrorMsg() const

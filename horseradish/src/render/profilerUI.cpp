@@ -78,7 +78,7 @@ namespace hr { namespace render
 		return color;
 	}
 
-	void ProfilerUI::drawInfo(size_t textSize, const hr::Rectangle<float>& viewRect, const hr::Matrix &transformMatrix) const
+	void ProfilerUI::drawInfo(size_t textSize, const hr::Rectangle<float>& viewRect, const hr::Matrix4f& transformMatrix) const
 	{
 		if (mInfoStr.empty())
 			return;
@@ -90,7 +90,7 @@ namespace hr { namespace render
 		float posY = viewRect.height - guiFont.getMaxHeight(textSize) - 15.0f;
 
 		hr::gl::glBindProgramPipeline(mRenderer.mShaders.drawNoTex.progPipeline.id());
-		hr::gl::glProgramUniformMatrix4fv(mRenderer.mShaders.drawNoTex.progVertex.id(), mRenderer.mShaders.drawNoTex.progVertex.getUniformLocation("transformationMatrix"), 1, false, transformMatrix.data());
+		hr::gl::glProgramUniformMatrix4fv(mRenderer.mShaders.drawNoTex.progVertex.id(), mRenderer.mShaders.drawNoTex.progVertex.getUniformLocation("transformationMatrix"), 1, false, transformMatrix.data().data());
 
 		glImmediateMode.beginDraw(hr::gl::tools::ImmediateMode::GeometryType::LineStrip);
 			glImmediateMode.setColor(128, 128, 128);
@@ -100,13 +100,13 @@ namespace hr { namespace render
 			glImmediateMode.addPosition(viewRect.width, posY - 5.0f);
 		glImmediateMode.endDraw();
 
-		guiFont.paintBegin(textSize, transformMatrix.data());
+		guiFont.paintBegin(textSize, transformMatrix.data().data());
 			guiFont.setColor(1.0f, 1.0f, 1.0f);
 			guiFont.write(posX, posY, mInfoStr);
 		guiFont.paintEnd();
 	}
 
-	void ProfilerUI::drawStats(size_t textSize, const hr::Rectangle<float>& viewRect, const hr::Matrix &transformMatrix) const
+	void ProfilerUI::drawStats(size_t textSize, const hr::Rectangle<float>& viewRect, const hr::Matrix4f& transformMatrix) const
 	{
 		if (GraphStatIds.empty())
 			return;
@@ -167,7 +167,7 @@ namespace hr { namespace render
 		hr::gl::glDisable(GL_LINE_SMOOTH);
 
 		// legend
-		guiFont.paintBegin(textSize, transformMatrix.data());
+		guiFont.paintBegin(textSize, transformMatrix.data().data());
 
 		float posX = graphRect.x;
 		for (const auto& curSample : samplePos)
@@ -197,10 +197,10 @@ namespace hr { namespace render
 		guiFont.paintEnd();
 	}
 
-	void ProfilerUI::drawStatsBackground(const hr::Rectangle<float>& viewRect, const hr::Matrix &transformMatrix, float bkgAlpha) const
+	void ProfilerUI::drawStatsBackground(const hr::Rectangle<float>& viewRect, const hr::Matrix4f& transformMatrix, float bkgAlpha) const
 	{
 		hr::gl::glBindProgramPipeline(mRenderer.mShaders.drawNoTex.progPipeline.id());
-		hr::gl::glProgramUniformMatrix4fv(mRenderer.mShaders.drawNoTex.progVertex.id(), mRenderer.mShaders.drawNoTex.progVertex.getUniformLocation("transformationMatrix"), 1, false, transformMatrix.data());
+		hr::gl::glProgramUniformMatrix4fv(mRenderer.mShaders.drawNoTex.progVertex.id(), mRenderer.mShaders.drawNoTex.progVertex.getUniformLocation("transformationMatrix"), 1, false, transformMatrix.data().data());
 
 		auto& glImmediateMode = mRenderer.mGlImmediateMode;
 
@@ -223,7 +223,7 @@ namespace hr { namespace render
 		if (!isVisible())
 			return;
 
-		hr::Matrix transformMatrix = viewport.getProjection(hr::gl::tools::Viewport::ProjectionType::Proj2D);
+		hr::Matrix4f transformMatrix = viewport.getProjection(hr::gl::tools::Viewport::ProjectionType::Proj2D);
 
 		if (mShowInfo)
 		{

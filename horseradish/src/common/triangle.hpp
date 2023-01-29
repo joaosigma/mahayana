@@ -23,6 +23,15 @@ namespace hr
 
 		TVectorType mPoints[3];
 
+		template<class T>
+		static constexpr T kZero = T(0.0);
+		template<class T>
+		static constexpr T kOne = T(1.0);
+		template<class T>
+		static constexpr T kThree = T(3.0);
+
+		using BaseDataType = typename TVectorType::DataType;
+
 	public:
 		using DataType = typename TVectorType;
 		using PlaneType = Plane<typename TVectorType::DataType>;
@@ -33,8 +42,10 @@ namespace hr
 		};
 
 	public:
-		static TVectorType calcNormal(const TVectorType& p1, const TVectorType& p2, const TVectorType& p3)
+		static TVectorType calcNormal(const TVectorType& p1, const TVectorType& p2, const TVectorType& p3) noexcept
 		{
+			static_assert(std::is_same_v<TVectorType, Vector3f> || std::is_same_v<TVectorType, Vector3d>, "Base type must be either Vector3f or Vector3d");
+
 			if constexpr (std::is_same_v<TVectorType, Vector3f>)
 			{
 				__m128 vec1, vec2, tmp1, tmp2;
@@ -50,7 +61,7 @@ namespace hr
 				vec2 = _mm_rsqrt_ps(_mm_dp_ps(vec1, vec1, 0x70 | 0xF));
 				return TVectorType{ _mm_mul_ps(vec1, vec2) };
 			}
-			else if constexpr (std::is_same_v<TVectorType, Vector3d>)
+			else
 			{
 				__m256d vec0 = _mm256_load_pd(p1.data());
 				__m256d vec1 = _mm256_sub_pd(_mm256_load_pd(p2.data()), vec0);
@@ -63,22 +74,20 @@ namespace hr
 				result.normalize();
 				return result;
 			}
-			
-			static_assert(std::is_same_v<TVectorType, Vector3f> || std::is_same_v<TVectorType, Vector3d>, "Base type must be either Vector3f or Vector3d");
 		}
 
-		static TVectorType calcNormal(const typename TVectorType::DataType p1[3], const typename TVectorType::DataType p2[3], const typename TVectorType::DataType p3[3])
+		static TVectorType calcNormal(const typename TVectorType::DataType p1[3], const typename TVectorType::DataType p2[3], const typename TVectorType::DataType p3[3]) noexcept
 		{
 			return calcNormal(TVectorType{ p1 }, TVectorType{ p2 }, TVectorType{ p3 });
 		}
 
-		static PlaneType calcPlane(const TVectorType& p1, const TVectorType& p2, const TVectorType& p3)
+		static PlaneType calcPlane(const TVectorType& p1, const TVectorType& p2, const TVectorType& p3) noexcept
 		{
 			auto normal = calcNormal(p1, p2, p3);
 			return PlaneType{ normal[0], normal[1] , normal[2], -normal.getDot(p1) };
 		}
 
-		static PlaneType calcPlane(const typename TVectorType::DataType p1[3], const typename TVectorType::DataType p2[3], const typename TVectorType::DataType p3[3])
+		static PlaneType calcPlane(const typename TVectorType::DataType p1[3], const typename TVectorType::DataType p2[3], const typename TVectorType::DataType p3[3]) noexcept
 		{
 			auto normal = calcNormal(p1, p2, p3);
 			return PlaneType{ normal[0], normal[1] , normal[2], -normal.getDot(p1) };
@@ -87,11 +96,11 @@ namespace hr
 	public:
 		constexpr Triangle() = default;
 
-		constexpr explicit Triangle(const TVectorType& p1, const TVectorType& p2, const TVectorType& p3)
+		constexpr explicit Triangle(const TVectorType& p1, const TVectorType& p2, const TVectorType& p3) noexcept
 			: mPoints{ p1, p2, p3 }
 		{ }
 
-		const TVectorType& operator[] (const size_t index) const
+		const TVectorType& operator[](const size_t index) const noexcept
 		{
 			return mPoints[index % 3];
 		}
@@ -103,7 +112,7 @@ namespace hr
 
 		TVectorType orthocenter() const noexcept
 		{
-			return (mPoints[0] + mPoints[1] + mPoints[2]) / 3;
+			return (mPoints[0] + mPoints[1] + mPoints[2]) / kThree<BaseDataType>;
 		}
 
 		PlaneType plane() const noexcept
@@ -121,21 +130,21 @@ namespace hr
 			if (det <= 1e-6) //cull back face
 				return false;
 
-			auto invDet = 1 / det;
+			auto invDet = kOne<BaseDataType> / det;
 
 			auto tvec = ray.origin() - mPoints[0];
 			auto u = tvec.getDot(pvec) * invDet;
-			if ((u < 0) || (u > 1))
+			if ((u < kZero<BaseDataType>) || (u > kOne<BaseDataType>))
 				return false;
 
 			auto qvec = tvec.crossProduct(v0v1);
 			auto v = ray.direction().getDot(qvec) * invDet;
-			if ((v < 0) || ((u + v) > 1))
+			if ((v < kZero<BaseDataType>) || ((u + v) > kOne<BaseDataType>))
 				return false;
 
 			hit.rayT = v0v2.getDot(qvec) * invDet;
-			hit.barycentricU = static_cast<float>(u);
-			hit.barycentricV = static_cast<float>(v);
+			hit.barycentricU = u;
+			hit.barycentricV = v;
 
 			return true;
 		}
@@ -145,29 +154,29 @@ namespace hr
 			auto v0v1 = mPoints[1] - mPoints[0];
 			auto v0v2 = mPoints[2] - mPoints[0];
 			auto pvec = ray.direction().crossProduct(v0v2);
-			auto det = v0v1.getDot(pvec);
+			auto det = v0v1.dot(pvec);
 			if (det <= 1e-6) //cull back face
 				return false;
 
-			auto invDet = 1 / det;
+			auto invDet = kOne<BaseDataType> / det;
 
 			auto tvec = ray.origin() - mPoints[0];
-			auto u = tvec.getDot(pvec) * invDet;
-			if ((u < 0) || (u > 1))
+			auto u = tvec.dot(pvec) * invDet;
+			if ((u < kZero<BaseDataType>) || (u > kOne<BaseDataType>))
 				return false;
 
 			auto qvec = tvec.crossProduct(v0v1);
-			auto v = ray.direction().getDot(qvec) * invDet;
-			if ((v < 0) || ((u + v) > 1))
+			auto v = ray.direction().dot(qvec) * invDet;
+			if ((v < kZero<BaseDataType>) || ((u + v) > kOne<BaseDataType>))
 				return false;
 
-			auto t = v0v2.getDot(qvec) * invDet;
+			auto t = v0v2.dot(qvec) * invDet;
 			if ((t < rayDistMin) || (t >= rayDistMax))
 				return false;
 
 			hit.rayT = t;
-			hit.barycentricU = static_cast<float>(u);
-			hit.barycentricV = static_cast<float>(v);
+			hit.barycentricU = u;
+			hit.barycentricV = v;
 
 			return true;
 		}

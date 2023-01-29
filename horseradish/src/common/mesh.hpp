@@ -6,6 +6,8 @@
 #include "matrix.hpp"
 #include "bvolumes.hpp"
 
+#include <span>
+#include <vector>
 #include <limits>
 #include <memory>
 #include <cassert>
@@ -15,12 +17,30 @@
 namespace hr::geom
 {
 #pragma pack(push, 1)
+	struct VertexFull;
+	struct VertexShading;
+
 	struct VertexFull
 	{
 		float pos[3];
 		float uv[2];
 		float normal[3];
 		float tangent[4];
+
+		Vector3f getPos() const noexcept
+		{
+			return Vector3f{pos};
+		}
+		Vector3f getNormal() const noexcept
+		{
+			return Vector3f{normal};
+		}
+		Vector4f getTangent() const noexcept
+		{
+			return Vector4f{tangent};
+		}
+
+		void convertTo(VertexShading& dest);
 	};
 
 	static_assert(sizeof(VertexFull) == 48);
@@ -32,6 +52,17 @@ namespace hr::geom
 		uint16_t uv[2]; //65535 pixels precision
 		uint32_t normal; //GL_INT_2_10_10_10_REV (alpha is unused)
 		uint32_t tangent; //GL_INT_2_10_10_10_REV (alpha is either -1.0 or 1.0 to recover the sign when calculating TBN: cross(normal, tangent) * sign)
+
+		Vector3f getPos() const noexcept;
+		Vector3f getNormal() const noexcept;
+		Vector4f getTangent() const noexcept;
+
+		void setPos(const Vector3f& newPos) noexcept;
+		void setUV(float u, float v) noexcept;
+		void setNormal(const Vector3f& newNormal) noexcept;
+		void setTangent(const Vector4f& newTangent) noexcept;
+
+		void convertTo(VertexFull& dest);
 	};
 
 	static_assert(sizeof(VertexShading) == 24);
@@ -97,6 +128,19 @@ namespace hr::geom
 			assert(mData&& mIndices);
 		}
 
+		MeshBase(std::span<const TVertex> vertices, std::span<const TIndex> indices)
+			: mNumVertices{ vertices.size() }, mNumIndices{ indices.size() }
+		{
+			mData = std::unique_ptr<TVertex[]>(new TVertex[mNumVertices]);
+			mIndices = std::unique_ptr<TIndex[]>(new TIndex[mNumIndices]);
+
+			assert((sizeof(TVertex) * mNumVertices) == vertices.size_bytes());
+			std::memcpy(mData.get(), vertices.get(), sizeof(TVertex) * mNumVertices);
+
+			assert((sizeof(TIndex) * mNumIndices) == indices.size_bytes());
+			std::memcpy(mIndices.get(), indices.get(), sizeof(TIndex) * mNumIndices);
+		}
+
 		MeshBase(const MeshBase& mesh)
 			: mNumVertices{ mesh.mNumVertices }, mNumIndices{ mesh.mNumIndices }
 		{
@@ -125,13 +169,13 @@ namespace hr::geom
 		MeshBase& operator=(MeshBase&& mesh) = default;
 
 	public:
-		const TVertex* vertices() const noexcept
+		std::span<const TVertex> vertices() const noexcept
 		{
-			return mData.get();
+			return {mData.get(), mNumVertices};
 		}
-		TVertex* vertices() noexcept
+		std::span<TVertex> vertices() noexcept
 		{
-			return mData.get();
+			return {mData.get(), mNumVertices};
 		}
 		
 		const TVertex& vertex(size_t index) const noexcept
@@ -145,13 +189,13 @@ namespace hr::geom
 			return mData[index];
 		}
 		
-		const TIndex* indices() const noexcept
+		std::span<const TIndex> indices() const noexcept
 		{
-			return mIndices.get();
+			return {mIndices.get(), mNumIndices};
 		}
-		TIndex* indices() noexcept
+		std::span<TIndex> indices() noexcept
 		{
-			return mIndices.get();
+			return {mIndices.get(), mNumIndices};
 		}
 
 		size_t sizeVertices() const noexcept
@@ -176,18 +220,143 @@ namespace hr::geom
 			return mNumIndices / 3;
 		}
 
-		bool check() const noexcept
+		template<class TCallback>
+		size_t iterateVertices(TCallback&& cb) noexcept
+		{
+			static_assert(std::is_invocable_r_v<bool, TCallback, size_t, TVertex&>);
+
+			size_t i = 0;
+			for (; i < mNumVertices; i++)
+			{
+				if (!cb(i, mData[i])) break;
+			}
+
+			return i;
+		}
+
+		template<class TCallback>
+		size_t iterateVertices(TCallback&& cb) const noexcept
+		{
+			static_assert(std::is_invocable_r_v<bool, TCallback, size_t, const TVertex&>);
+
+			size_t i = 0;
+			for (; i < mNumVertices; i++)
+			{
+				if (!cb(i, mData[i])) break;
+			}
+
+			return i;
+		}
+
+		template<class TCallback>
+		size_t iterateTris(TCallback&& cb) noexcept
+		{
+			static_assert(std::is_invocable_r_v<bool, TCallback, size_t, TVertex&, TVertex&, TVertex>);
+
+			size_t count{0};
+			for (size_t i = 0; i < mNumIndices; i += 3, count++)
+			{
+				if (!cb(count, mData[mIndices[i + 0]], mData[mIndices[i + 1]], mData[mIndices[i + 2]])) break;
+			}
+
+			return count;
+		}
+
+		template<class TCallback>
+		size_t iterateTris(TCallback&& cb) const noexcept
+		{
+			static_assert(std::is_invocable_r_v<bool, TCallback, size_t, const TVertex&, const TVertex&, const TVertex>);
+
+			size_t count{0};
+			for (size_t i = 0; i < mNumIndices; i += 3, count++)
+			{
+				if (!cb(count, mData[mIndices[i + 0]], mData[mIndices[i + 1]], mData[mIndices[i + 2]])) break;
+			}
+
+			return count;
+		}
+
+		bool check(std::optional<size_t> maxNumVertices = std::nullopt) const noexcept
 		{
 			if (!mData || !mIndices || (mNumVertices <= 0) || (mNumVertices > MeshBase::maxVertexCount()) || (mNumIndices <= 0) || ((mNumIndices % 3) != 0))
 				return false;
 
+			auto maxVertices = !maxNumVertices ? mNumVertices : std::min(mNumVertices, *maxNumVertices);
 			for (size_t i = 0; i < mNumIndices; i++)
 			{
-				if (mIndices[i] >= mNumVertices)
+				if (mIndices[i] >= maxVertices)
 					return false;
 			}
 
 			return true;
+		}
+
+		BBox<> bbox() const noexcept
+		{
+			if (mNumVertices <= 0)
+				return {};
+
+			auto vecMin = mData[0].getPos();
+			auto vecMax = vecMin;
+
+			for (size_t i = 1; i < mNumVertices; i++)
+			{
+				auto curPos = mData[i].getPos();
+				vecMin = Vector3f::calcMin(vecMin, curPos);
+				vecMax = Vector3f::calcMax(vecMax, curPos);
+			}
+
+			return BBox(vecMin, vecMax);
+		}
+
+		template<typename TTargetVertex, class TTargetIndex>
+		Mesh<TTargetVertex, TTargetIndex> convert() const noexcept
+		{
+			if (!check())
+				return {};
+
+			//if the amount of vertices doesn't fit
+			if (numVertices() > Mesh<TTargetVertex, TTargetIndex>::maxVertexCount())
+				return {};
+
+			if constexpr (std::is_same_v<TTargetVertex, TVertex> && std::is_same_v<TTargetIndex, TIndex>)
+			{
+				//glorified clone
+				return Mesh<TTargetVertex, TTargetIndex>{this};
+			}
+			else 
+			{
+				Mesh<TTargetVertex, TTargetIndex> newMesh{numVertices(), numIndices()};
+				if (!newMesh.check())
+					return {};
+
+				//try to optimize vertex copy
+				if constexpr (std::is_same_v<TTargetVertex, TVertex>)
+				{
+					assert(sizeVertices() == newMesh.sizeVertices());
+					std::memcpy(newMesh.vertices().data(), mData, sizeVertices());
+				}
+				else
+				{
+					for (size_t i = 0; i < mNumVertices; i++)
+						mData[i].convertTo(newMesh.vertex(i));
+				}
+
+				//try to optimize indices copy
+				if constexpr (std::is_same_v<TTargetIndex, TIndex>)
+				{
+					assert(sizeIndices() == newMesh.sizeIndices());
+					std::memcpy(newMesh.indices().data(), mIndices, sizeIndices());
+				}
+				else
+				{
+					auto newIndices = newMesh.indices().data();
+					for (size_t i = 0; i < mNumIndices; i++)
+						newIndices[i] = static_cast<TTargetIndex>(mIndices[i]);
+				}
+
+				return newMesh;
+			}
 		}
 	};
 
@@ -208,13 +377,13 @@ namespace hr::geom
 		using BaseType = MeshBase<VertexFull, uint32_t>;
 
 	public:
+		enum class UVGenType{ Sphere, Reflection };
+
 		struct Hit {
 			double rayT;
 			size_t triIndex;
 			float barycentricU, barycentricV;
 		};
-
-		static Mesh convertMesh(const Mesh<VertexShading, uint16_t>& source);
 
 	public:
 		using BaseType::MeshBase;
@@ -240,21 +409,6 @@ namespace hr::geom
 
 		Vector3f triNormal(size_t triIndex, float baryU, float baryV) const noexcept;
 
-		template<class TCallback>
-		size_t iterateTris(TCallback&& cb) const noexcept
-		{
-			static_assert(std::is_invocable_r_v<bool, TCallback, size_t, const VertexFull&, const VertexFull&, const VertexFull>);
-
-			size_t count{ 0 };
-			for (size_t i = 0; i < mNumIndices; i += 3, count++)
-			{
-				if (!cb(count, mData[mIndices[i + 0]], mData[mIndices[i + 1]], mData[mIndices[i + 2]]))
-					break;
-			}
-
-			return count;
-		}
-
 		void flipUV() noexcept;
 		void mirrorUV() noexcept;
 
@@ -266,38 +420,16 @@ namespace hr::geom
 		void centerMass(const Vector3f& center) noexcept;
 		void confine(float maxAxis) noexcept;
 
-		void transform(const Matrix& matFull, const Matrix3& matRot) noexcept;
+		void transform(const Matrix4f& matFull, const Matrix3f& matRot) noexcept;
 
 		void invertTriWinding() noexcept;
 
 		void optimizeIndices() noexcept;
+
+		bool genUVs(UVGenType genType) noexcept;
 		void genNormals() noexcept;
 		void genTangents4() noexcept;
-	};
 
-	template<>
-	class Mesh<VertexShading, uint16_t>
-		: public MeshBase<VertexShading, uint16_t>
-	{
-		using BaseType = MeshBase<VertexShading, uint16_t>;
-
-	public:
-		static Mesh convertMesh(const Mesh<VertexFull, uint32_t>& source);
-
-	public:
-		using BaseType::MeshBase;
-
-		BBox<> getBoundingBox() const noexcept;
-
-		Vector3f getPos(size_t vertexIndex) const noexcept;
-		Vector3f getNormal(size_t vertexIndex) const noexcept;
-		Vector4f getTangent(size_t vertexIndex) const noexcept;
-
-		void setPos(size_t vertexIndex, Vector3f pos) noexcept;
-		void setUV(size_t vertexIndex, float u, float v) noexcept;
-		void setNormal(size_t vertexIndex, Vector3f normal) noexcept;
-		void setTangent(size_t vertexIndex, Vector4f tangent) noexcept;
-
-		void transform(const Matrix& matFull, const Matrix3& matRot) noexcept;
+		std::vector<Mesh> split(size_t maxVertexCount) const;
 	};
 }

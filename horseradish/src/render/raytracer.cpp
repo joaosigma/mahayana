@@ -1,7 +1,9 @@
 #include "raytracer.hpp"
 
+#include "common/timer.hpp"
 #include "common/ray.hpp"
 #include "common/mesh.hpp"
+#include "common/meshFactory.hpp"
 #include "common/color.hpp"
 #include "common/triangle.hpp"
 #include "common/bvolumes.hpp"
@@ -23,6 +25,13 @@ namespace hr::render
 {
 	namespace
 	{
+		static thread_local std::mt19937 sRandGen;
+
+		double genRand(double min, double max) noexcept
+		{
+			return std::uniform_real_distribution<double>(min, max)(sRandGen);
+		}
+
 		class Material;
 
 		struct Hit
@@ -41,8 +50,6 @@ namespace hr::render
 			enum class Type { None, Lambertian, Metal };
 
 		private:
-			mutable std::mt19937 mRandGen;
-
 			Type mType = Type::None;
 			Colord mAlbedo;
 			double mFuzziness{ 0.0 };
@@ -50,7 +57,7 @@ namespace hr::render
 		private:
 			static Vector3d reflect(const Vector3d& vec, const Vector3d& normal)
 			{
-				return vec - (normal * 2.0 * vec.getDot(normal));
+				return vec - (normal * 2.0 * vec.dot(normal));
 			}
 
 		private:
@@ -58,13 +65,11 @@ namespace hr::render
 
 			Vector3d randomInUnitSphere() const
 			{
-				std::uniform_real_distribution<double> randDist(-1.0, 1.0);
-
 				Vector3d inUnitSphere;
 				while (true) //algo: just pick a random point inside the "unit cube" and reject if outside the sphere
 				{
-					inUnitSphere = Vector3d{ randDist(mRandGen), randDist(mRandGen), randDist(mRandGen) };
-					if (inUnitSphere.getDot() < 1.0)
+					inUnitSphere = Vector3d{genRand(-1.0, 1.0), genRand(-1.0, 1.0), genRand(-1.0, 1.0)};
+					if (inUnitSphere.dot() < 1.0)
 						return inUnitSphere;
 				}
 			}
@@ -121,7 +126,7 @@ namespace hr::render
 						scattered = Ray<Vector3d>{ hit.rayPoint, reflected };
 					attenuation = mAlbedo;
 
-					return (scattered.direction().getDot(hit.normal) > 0.0);
+					return (scattered.direction().dot(hit.normal) > 0.0);
 				}
 				case Type::None:
 				default:
@@ -145,14 +150,14 @@ namespace hr::render
 				auto viewport_height = 2.0 * h;
 				auto viewport_width = mViewport.aspectRatio() * viewport_height;
 
-				auto w = Vector3d::calcNormalize(Vector3d{ mCamera.getPos() - mCamera.getTarget()});
-				auto u = Vector3d::calcNormalize(Vector3d{ mCamera.getUp() }.crossProduct(w));
+				auto w = Vector3d::calcNormalize((mCamera.getPos() - mCamera.getTarget()).convert<double, 3>());
+				auto u = Vector3d::calcNormalize(mCamera.getUp().convert<double, 3>().crossProduct(w));
 				auto v = w.crossProduct(u);
 
 				mData.horizontal = u * viewport_width;
 				mData.vertical = v * viewport_height;
-				mData.lower_left_corner = Vector3d{ mCamera.getPos() } - (mData.horizontal / 2) - (mData.vertical / 2) - w;
-				mData.rayOrigin = Vector3d{ mCamera.getPos() };
+				mData.lower_left_corner = mCamera.getPos().convert<double, 3>() - (mData.horizontal / 2) - (mData.vertical / 2) - w;
+				mData.rayOrigin = mCamera.getPos().convert<double, 3>();
 			}
 
 		public:
@@ -175,7 +180,7 @@ namespace hr::render
 			}
 
 			template<size_t NSamples>
-			std::array<Ray<Vector3d>, NSamples> generateRays(size_t pixelX, size_t pixelY, std::mt19937& randGen)
+			std::array<Ray<Vector3d>, NSamples> generateRays(size_t pixelX, size_t pixelY)
 			{
 				static_assert(NSamples >= 1, "Samples must be greater or equal to 1");
 
@@ -195,12 +200,10 @@ namespace hr::render
 				}
 				else
 				{
-					std::uniform_real_distribution<double> randDist(0.0, 1.0);
-
 					for (size_t curSample = 0; curSample < NSamples; curSample++)
 					{
-						auto u = (dx + randDist(randGen)) * dWidthInv;
-						auto v = (dy + randDist(randGen)) * dHeightInv;
+						auto u = (dx + genRand(0.0, 1.0)) * dWidthInv;
+						auto v = (dy + genRand(0.0, 1.0)) * dHeightInv;
 
 						rays[curSample] = Ray<Vector3d>(mData.rayOrigin, Vector3d::calcNormalize(mData.lower_left_corner + (mData.horizontal * u) + (mData.vertical * v) - mData.rayOrigin));
 					}
@@ -293,14 +296,17 @@ namespace hr::render
 				mObjects.emplace_back(BSphere<Vector3d>{ Vector3d{ 0.0, 0.0, 0.0 }, 0.5 }, mMaterials.data() + 0);
 				mObjects.emplace_back(BSphere<Vector3d>{ Vector3d{ -1.0, 0.0, 0.0 }, 0.5 }, mMaterials.data() + 1);
 				mObjects.emplace_back(BSphere<Vector3d>{ Vector3d{ 1.0, 0.0, 0.0 }, 0.5 }, mMaterials.data() + 2);
-
-				mObjects2.emplace_back(geom::Mesh<geom::VertexFull, uint32_t>::genBox(1), mMaterials.data() + 3);
+								
+				mObjects2.emplace_back(geom::Factory::genCube(), mMaterials.data() + 3);
+				std::get<0>(mObjects2.back()).scale(2.0f);
 				std::get<0>(mObjects2.back()).centerMass(Vector3f{ 0.0f, 0.5f, -1.6f });
 
-				mObjects2.emplace_back(geom::Mesh<geom::VertexFull, uint32_t>::genBox(1), mMaterials.data() + 0);
+				mObjects2.emplace_back(geom::Factory::genCube(), mMaterials.data() + 0);
+				std::get<0>(mObjects2.back()).scale(2.0f);
 				std::get<0>(mObjects2.back()).centerMass(Vector3f{ 3.0f, 0.5f, -1.6f });
 				
-				mObjects2.emplace_back(geom::Mesh<geom::VertexFull, uint32_t>::genBox(1), mMaterials.data() + 0);
+				mObjects2.emplace_back(geom::Factory::genCube(), mMaterials.data() + 0);
+				std::get<0>(mObjects2.back()).scale(2.0f);
 				std::get<0>(mObjects2.back()).centerMass(Vector3f{-3.0f, 0.5f, -1.6f });
 
 				//debug: 2,08 minutes
@@ -328,7 +334,7 @@ namespace hr::render
 							auto outNormal = (curHit.rayPoint - obj.center()) / obj.radius();
 							outNormal.normalize();
 
-							curHit.frontFace = (ray.direction().getDot(outNormal) < 0.0);
+							curHit.frontFace = (ray.direction().dot(outNormal) < 0.0);
 							curHit.normal = hit.frontFace ? outNormal : -outNormal; //normal is always out (as if the ray hit from the outside)
 
 							curHit.mat = mat;
@@ -373,9 +379,12 @@ namespace hr::render
 						hit.mat = std::get<1>(targetObj);
 						hit.rayPoint = ray.pointAt(hit.rayT);
 
-						auto outNormal = Vector3d{ std::get<0>(targetObj).triNormal(meshHit->primitive_index, static_cast<float>(meshHit->intersection.u), static_cast<float>(meshHit->intersection.v)) };
+						auto outNormal =
+						  std::get<0>(targetObj)
+						  .triNormal(meshHit->primitive_index, static_cast<float>(meshHit->intersection.u), static_cast<float>(meshHit->intersection.v))
+						  .convert<double, 3>();
 
-						hit.frontFace = (ray.direction().getDot(outNormal) < 0.0);
+						hit.frontFace = (ray.direction().dot(outNormal) < 0.0);
 						hit.normal = hit.frontFace ? outNormal : -outNormal; //normal is always out (as if the ray hit from the outside)
 
 					}
@@ -439,17 +448,15 @@ namespace hr::render
 
 	Vector3d Raytracer::randomInHemisphere(const Vector3d& normal)
 	{
-		std::uniform_real_distribution<double> randDist(-1.0, 1.0);
-
 		Vector3d inUnitSphere;
 		while (true) //algo: just pick a random point inside the "unit cube" and reject if outside the sphere
 		{
-			inUnitSphere = Vector3d{ randDist(mRandGen), randDist(mRandGen), randDist(mRandGen) };
-			if (inUnitSphere.getDot() < 1.0)
+			inUnitSphere = Vector3d{genRand(-1.0, 1.0), genRand(-1.0, 1.0), genRand(-1.0, 1.0)};
+			if (inUnitSphere.dot() < 1.0)
 				break;
 		}
 
-		if (normal.getDot(inUnitSphere) > 0.0)
+		if (normal.dot(inUnitSphere) > 0.0)
 			return inUnitSphere;
 		return -inUnitSphere;
 	}
@@ -479,8 +486,9 @@ namespace hr::render
 		return Colord::calcInterpolate(Colord{ 1.0, 1.0, 1.0 }, Colord{ 0.5, 0.7, 1.0 }, (r.direction()[1] + 1.0) * 0.5); //blueish sky
 	}
 
-	Raytracer::Raytracer(size_t maxWidth, size_t maxHeight)
-		: mBuffer{ maxWidth, maxHeight }
+	Raytracer::Raytracer(Dispatcher& asyncDispatcher, size_t maxWidth, size_t maxHeight)
+		: mAsyncDispatcher{asyncDispatcher}
+		, mBuffer{maxWidth, maxHeight}
 	{
 	}
 		
@@ -497,20 +505,51 @@ namespace hr::render
 
 		Window window(myCam, viewport);
 
-		for (size_t j = 0; j < imgHeight; ++j)
+		constexpr size_t raysPerSample{80};
+		constexpr size_t raysMaxDepth{30};
+
+		if (true) //multithread
 		{
-			for (size_t i = 0; i < imgWidth; ++i)
+			auto doLine = [&](size_t row)
 			{
-				Colord pixelColor(0.0);
-
-				auto rays = window.generateRays<10>(i, j, mRandGen);
-				for (const auto& ray : rays)
-					pixelColor += rayColor(ray, 50);
-
-				if (rays.size() > 1)
-					pixelColor /= static_cast<double>(rays.size());
-
-				mBuffer.setPixel(i, imgHeight - j - 1, pixelColor.convert<float>());
+				assert((row >= 0) && (row < imgHeight));
+				for (size_t i = 0; i < imgWidth; ++i)
+				{
+					Colord pixelColor(0.0);
+		
+					auto rays = window.generateRays<raysPerSample>(i, row);
+					for (const auto& ray : rays)
+						pixelColor += rayColor(ray, raysMaxDepth);
+		
+					if (rays.size() > 1)
+						pixelColor /= static_cast<double>(rays.size());
+		
+					mBuffer.setPixel(i, imgHeight - row - 1, pixelColor.convert<float>());
+				}
+			};
+		
+			for (size_t j = 0; j < imgHeight; ++j)
+				mAsyncDispatcher.post(doLine, j);
+		
+			mAsyncDispatcher.wait();
+		}
+		else
+		{
+			for (size_t j = 0; j < imgHeight; ++j)
+			{
+				for (size_t i = 0; i < imgWidth; ++i)
+				{
+					Colord pixelColor(0.0);
+		
+					auto rays = window.generateRays<raysPerSample>(i, j);
+					for (const auto& ray : rays)
+						pixelColor += rayColor(ray, raysMaxDepth);
+		
+					if (rays.size() > 1)
+						pixelColor /= static_cast<double>(rays.size());
+		
+					mBuffer.setPixel(i, imgHeight - j - 1, pixelColor.convert<float>());
+				}
 			}
 		}
 

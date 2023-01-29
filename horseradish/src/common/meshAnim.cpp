@@ -1,101 +1,110 @@
-#pragma once
-
 #include "meshAnim.hpp"
+
+#include "types.hpp"
+
+#include <algorithm>
+#include <functional>
 
 namespace hr::geom
 {
 	namespace
 	{
-		void animateMesh(const std::vector<Matrix>& animatedJoints, const MeshAnim& bindPoseMesh, Mesh& animatedMesh)
+		void animateMesh(const Matrix4f& rootNodeTrans, std::span<const Matrix4f> animatedJoints, const MeshAnim& baseMesh, Mesh<VertexShading, uint16_t>& animatedMesh)
 		{
-			auto numVertices = bindPoseMesh.mesh().numVertices();
+			assert(baseMesh.mesh().numVertices() == animatedMesh.numVertices());
+			assert(baseMesh.mesh().numIndices() == animatedMesh.numIndices());
+
+			auto numVertices = baseMesh.mesh().numVertices();
 			for (size_t curVertex = 0; curVertex < numVertices; curVertex++)
 			{
-				Vector3f bindPos, finalPos(0.0f);
-				Vector3f bindNormal, finalNormal(0.0f);
-				Vector3f bindTangent, finalTangent(0.0f);
-
-				bindPos.set(bindPoseMesh.mesh().vertices()[curVertex].pos);
-				Mesh::unpack(bindPoseMesh.mesh().vertices()[curVertex].normal, bindNormal.data(), 3);
-				Mesh::unpack(bindPoseMesh.mesh().vertices()[curVertex].tangent, bindTangent.data(), 3);
-
-				std::array<MeshAnim::VertexJoint, 8> vertexJoints;
-				bindPoseMesh.collectVertexJoints(curVertex, vertexJoints);
-
-				for (const auto& vertexJoint : vertexJoints)
+				auto finalMat = Matrix4f::zero();
 				{
-					if (vertexJoint.jointWeight == 0)
-						continue;
+					assert(baseMesh.numJointsPerVertex() <= 4);
+					std::array<MeshAnim::VertexJoint, 4> vertexJoints;
+					baseMesh.collectVertexJoints(curVertex, vertexJoints);
 
-					Vector3f transPos;
-					Vector3f transNormal;
-					Vector3f transTangent;
-					animatedJoints[vertexJoint.jointIndex].transform(bindPos, transPos);
+					for (const auto& vertexJoint : vertexJoints)
+					{
+						assert(vertexJoint.index < animatedJoints.size());
+						if (vertexJoint.weight == 0)
+							continue;
 
-					Matrix3 mat3x3(animatedJoints[vertexJoint.jointIndex]);
-					mat3x3.transform(bindNormal, transNormal);
-					mat3x3.transform(bindTangent, transTangent);
+						auto jointMat = animatedJoints[vertexJoint.index];
+						jointMat *= types::unpackFloat<uint16_t>(vertexJoint.weight);
 
-					transPos *= Mesh::unpack(vertexJoint.jointWeight);
-					transNormal *= Mesh::unpack(vertexJoint.jointWeight);
-					transTangent *= Mesh::unpack(vertexJoint.jointWeight);
-
-					finalPos += transPos;
-					finalNormal += transNormal;
-					finalTangent += transTangent;
+						finalMat += jointMat;
+					}
 				}
 
-				finalNormal.normalize();
-				finalTangent.normalize();
+				finalMat = finalMat * rootNodeTrans;
+				auto finalMat3x3 = finalMat.clone(Matrix4f::CloneTransform::InverseTranspose).convert<Matrix3, float>();
 
-				finalPos.write(animatedMesh.vertices()[curVertex].pos);
-				Mesh::pack(finalNormal.data(), animatedMesh.vertices()[curVertex].normal, 3);
-				Mesh::pack(finalTangent.data(), animatedMesh.vertices()[curVertex].tangent, 3);
+				auto& inVertex = baseMesh.mesh().vertex(curVertex);
+				auto& outVertex = animatedMesh.vertex(curVertex);
+
+				auto bindPos = inVertex.getPos();
+				auto bindNormal = inVertex.getNormal();
+				auto bindTangentFull = inVertex.getTangent();
+				auto bindTangent = bindTangentFull.convert<float, 3>();
+
+				finalMat.transform(bindPos);
+				finalMat3x3.transform(bindNormal);
+				finalMat3x3.transform(bindTangent);
+
+				bindNormal.normalize();
+				bindTangent.normalize();
+
+				outVertex.setPos(bindPos);
+				outVertex.setNormal(bindNormal);
+				outVertex.setTangent(bindTangent.convert<float, 4>(bindTangentFull[3]));
 			}
 		}
 	}
 
-	size_t MeshAnim::numJointsPerVertex() const
-	{
-		switch (mSkinningType)
-		{
-		case SkinningType::Vertex4Joints:
-			return 4;
-		case SkinningType::Vertex8Joints:
-			return 8;
-		default:
-			break;
-		}
-
-		return 0;
-	}
-
-	MeshAnim::MeshAnim(Mesh mesh, SkinningType skinningType)
-		: mMesh(std::move(mesh))
-		, mSkinningType(skinningType)
+	MeshAnim::MeshAnim(TMesh mesh, SkinningType skinningType)
+		: mMesh{ std::move(mesh) }
+		, mSkinningType{ skinningType }
 	{
 		if (mMesh.numVertices() <= 0)
 			return;
 
-		auto totalVertexJoints = mMesh.numVertices() * numJointsPerVertex();
+		auto totalVertexJoints = numJoints();
 
 		mVertexJoints = std::unique_ptr<VertexJoint[]>(new VertexJoint[totalVertexJoints]);
 		std::memset(mVertexJoints.get(), 0, sizeof(VertexJoint) * totalVertexJoints);
 	}
 
-	MeshAnim::VertexJoint& MeshAnim::vertexJoint(size_t vertexIndex, size_t jointIndex)
+	void MeshAnim::correctWeights() noexcept
+	{
+		auto jointsPerVertex = numJointsPerVertex();
+		auto numVertices = mMesh.numVertices();
+
+		//make sure that, for each vertex, the weights aren't all zero (if they are, them assume the first joint has all the weight)
+		for (size_t i = 0; i < numVertices; i++)
+		{
+			size_t sum = 0;
+			for (size_t ij = 0; ij < jointsPerVertex; ij++)
+				sum += mVertexJoints[(i * jointsPerVertex) + ij].weight;
+
+			assert(sum <= std::numeric_limits<uint16_t>::max());
+			if (sum == 0)
+				mVertexJoints[(i * jointsPerVertex) + 0].weight = std::numeric_limits<uint16_t>::max();
+		}
+	}
+
+	MeshAnim::VertexJoint& MeshAnim::vertexJoint(size_t vertexIndex, size_t jointIndex) noexcept
 	{
 		auto index = ((vertexIndex % mMesh.numVertices()) * numJointsPerVertex()) + (jointIndex % numJointsPerVertex());
 		return *(mVertexJoints.get() + index);
 	}
 
-	const MeshAnim::VertexJoint& MeshAnim::vertexJoint(size_t vertexIndex, size_t jointIndex) const
+	const MeshAnim::VertexJoint& MeshAnim::vertexJoint(size_t vertexIndex, size_t jointIndex) const noexcept
 	{
 		auto index = ((vertexIndex % mMesh.numVertices()) * numJointsPerVertex()) + (jointIndex % numJointsPerVertex());
 		return *(mVertexJoints.get() + index);
 	}
 
-	void MeshAnim::collectVertexJoints(size_t vertexIndex, std::array<MeshAnim::VertexJoint, 4>& vertexJoints) const
+	void MeshAnim::collectVertexJoints(size_t vertexIndex, std::array<MeshAnim::VertexJoint, 4>& vertexJoints) const noexcept
 	{
 		auto startIndex = (vertexIndex % mMesh.numVertices()) * numJointsPerVertex();
 		vertexJoints[0] = mVertexJoints[startIndex + 0];
@@ -104,7 +113,7 @@ namespace hr::geom
 		vertexJoints[3] = mVertexJoints[startIndex + 3];
 	}
 
-	void MeshAnim::collectVertexJoints(size_t vertexIndex, std::array<MeshAnim::VertexJoint, 8>& vertexJoints) const
+	void MeshAnim::collectVertexJoints(size_t vertexIndex, std::array<MeshAnim::VertexJoint, 8>& vertexJoints) const noexcept
 	{
 		auto startIndex = (vertexIndex % mMesh.numVertices()) * numJointsPerVertex();
 
@@ -132,158 +141,252 @@ namespace hr::geom
 		}
 	}
 
-	MeshAnimSet::MeshAnimSet(std::vector<Matrix> bindPoseInverseTrans)
-		: mBindPoseInverted(std::move(bindPoseInverseTrans))
+	Matrix4f SkeletonAnim::calcJointGlobalTransform(size_t jointIndex) const noexcept
 	{
-		mLastAnimation.joints.resize(mBindPoseInverted.size());
+		assert((jointIndex >= 0) && (jointIndex < mLastAnimation.joints.size()));
+		auto& joint = mLastAnimation.joints[jointIndex];
+
+		if (joint.parentIndex < 0)
+			return joint.localTransform;
+		return joint.localTransform * calcJointGlobalTransform(static_cast<size_t>(joint.parentIndex));
 	}
 
-	MeshAnimSet::MeshAnimSet(std::string name, std::vector<Matrix> bindPoseInverseTrans)
-		: MeshAnimSet(std::move(bindPoseInverseTrans))
+	SkeletonAnim::SkeletonAnim(std::string name, Matrix4f rootTransform, std::vector<Joint> jointData)
+		: mName{ std::move(name) }, mRootTransform{ rootTransform }, mJoints{ std::move(jointData) }
 	{
-		mName = std::move(name);
+		mLastAnimation.joints.reserve(mJoints.size());
+		mLastAnimation.jointsFinalTransform.reserve(mJoints.size());
+		for (const auto& joint : mJoints)
+		{
+			AnimatedJoint newJoint;
+			newJoint.parentIndex = joint.parentIndex;
+			newJoint.updatedScale = joint.localTransform.scale;
+			newJoint.updatedRotation = joint.localTransform.rotation;
+			newJoint.updatedTranslation = joint.localTransform.translation;
+			newJoint.localTransform = Matrix4f::identity();
+
+			mLastAnimation.joints.push_back(std::move(newJoint));
+			mLastAnimation.jointsFinalTransform.push_back(Matrix4f::identity());
+		}
 	}
 
-	const std::string& MeshAnimSet::name() const
+	bool SkeletonAnim::animationAdd(size_t animId, Animation animation)
 	{
-		return mName;
-	}
-
-	const Matrix& MeshAnimSet::bindPoseInvertedMat(size_t jointIndex) const
-	{
-		return mBindPoseInverted[jointIndex % mBindPoseInverted.size()];
-	}
-
-	float MeshAnimSet::animFrameRate(size_t animId) const
-	{
-		return mAnimations.at(animId).frameRate;
-	}
-
-	const std::vector<MeshAnimSet::Frame>& MeshAnimSet::animFrames(size_t animId) const
-	{
-		return mAnimations.at(animId).frames;
-	}
-
-	size_t MeshAnimSet::numJoints() const
-	{
-		return mBindPoseInverted.size();
-	}
-
-	size_t MeshAnimSet::numAnimations() const
-	{
-		return mAnimations.size();
-	}
-
-	bool MeshAnimSet::animAdd(size_t animId, float frameRate, std::vector<Frame> frames)
-	{
-		if ((frameRate <= 0.0f) || frames.empty() || (mAnimations.find(animId) != mAnimations.end()))
+		if (mAnimations.contains(animId) || animation.samplers.empty())
 			return false;
 
-		for (const auto& frame : frames)
+		//some checks
+		for (const auto& sampler : animation.samplers)
 		{
-			if (frame.joints.size() != mBindPoseInverted.size())
-				return false;
+			for (const auto& channel : sampler.channels)
+			{
+				//frame data must coincide with the number of timestamps
+				if (channel.frameData.size() != sampler.timePoints.size())
+					return false;
+
+				//joint index must be valid
+				if (channel.jointIndex >= mJoints.size())
+					return false;
+			}
 		}
 
-		Anim anim;
-		anim.frameRate = frameRate;
-		anim.frames = std::move(frames);
-		anim.framePeriodSeconds = static_cast<float>(anim.frames.size()) / anim.frameRate;
-
-		mAnimations[animId] = std::move(anim);
-
+		mAnimations[animId] = std::move(animation);
 		return true;
 	}
 
-	void MeshAnimSet::animUpdateBBoxes(size_t animId, const MeshAnim& bindPoseMesh)
+	/*void SkeletonAnim::calculateBBoxes(const MeshAnim& baseMesh)
 	{
-		if (mAnimations.find(animId) == mAnimations.end())
-			return;
+		Mesh animatedMesh{ baseMesh.mesh() };
 
-		Mesh animatedMesh(bindPoseMesh.mesh());
-		auto animatedJoints = mLastAnimation.joints;
-
-		//for each frame of this animation
-		for (auto& frame : mAnimations[animId].frames)
+		//for each animation, calculate the timepoints to sample the bboxes
+		for (auto& [animId, anim] : mAnimations)
 		{
-			//update joints
-			for (size_t curJointIndex = 0; curJointIndex < animatedJoints.size(); curJointIndex++)
+			anim.bboxes.clear();
+			if (anim.samplers.empty())
+				continue;
+
+			double avgStep{0.0};
+			for (const auto& sampler : anim.samplers)
 			{
-				auto& pos = frame.joints[curJointIndex].pos;
-				auto& rot = frame.joints[curJointIndex].rot;
+				if (sampler.timePoints.empty())
+					continue;
 
-				auto& finalMat = animatedJoints[curJointIndex];
+				double accum{0.0};
+				for (size_t i = 1; i < sampler.timePoints.size(); i++)
+					accum += sampler.timePoints[i] - sampler.timePoints[i - 1];
 
-				finalMat.setTranslation(pos);
-				finalMat *= rot;
-				finalMat *= mBindPoseInverted[curJointIndex];
+
+				avgStep += accum / static_cast<double>(sampler.timePoints.size());
 			}
 
-			//update mesh and extract bbox
-			animateMesh(animatedJoints, bindPoseMesh, animatedMesh);
-			frame.bbox += animatedMesh.getBoundingBox();
-		}
-	}
+			avgStep /= static_cast<double>(anim.samplers.size());
 
-	void MeshAnimSet::animate(size_t animId, float time)
+			anim.bboxes.reserve(Math::ftoi((anim.maxTimePoint - anim.minTimePoint) / avgStep) + 1);
+
+			for (double curStep = anim.minTimePoint; curStep < anim.maxTimePoint; curStep+= avgStep)
+				anim.bboxes.push_back(Animation::TimePointBBox{.timePoint = static_cast<float>(curStep), .bbox = {}});
+
+			if (anim.bboxes.back().timePoint != anim.maxTimePoint)
+				anim.bboxes.push_back(Animation::TimePointBBox{.timePoint = anim.maxTimePoint, .bbox = {}});
+		}
+
+		//we have all the timePoints calculated, now all we're missing are the bboxes
+		for (auto& [animId, anim] : mAnimations)
+		{
+			for (auto& tbbox : anim.bboxes)
+			{
+				animate(animId, tbbox.timePoint);
+				updateMesh(baseMesh, animatedMesh);
+
+				tbbox.bbox = animatedMesh.getBoundingBox();
+			}
+		}
+	}*/
+
+	void SkeletonAnim::animate(float time)
 	{
-		if (mAnimations.find(animId) == mAnimations.end())
+		if (mAnimations.empty())
 			return;
 
-		auto& anim = mAnimations[animId];
+		mLastAnimation.curTime += std::max(time, 0.0f) - mLastAnimation.lastTime;
+		mLastAnimation.lastTime = time;
 
-		//calculate frames and final t
-		size_t indexStart, indexEnd;
+		assert(mAnimations.contains(mLastAnimation.curAnimId));
+
+		//interpolate animations
 		{
-			if (time <= 0.0f)
-				time = 0.0f;
-			while (time >= anim.framePeriodSeconds)
-				time -= anim.framePeriodSeconds;
+			//adjust time according to animation type
+			if (mAnimationType == AnimationType::RepeatCurrent)
+			{
+				auto& anim = mAnimations[mLastAnimation.curAnimId];
 
-			indexStart = Math::ftoi(Math::floor(time * anim.frameRate));
-			indexStart = (indexStart >= anim.frames.size()) ? 0 : indexStart;
+				while (mLastAnimation.curTime >= anim.maxTimePoint)
+					mLastAnimation.curTime -= anim.maxTimePoint;
+			}
+			else if(mAnimationType == AnimationType::CycleAll)
+			{
+				auto& anim = mAnimations[mLastAnimation.curAnimId];
+				if (mLastAnimation.curTime > anim.maxTimePoint)
+				{
+					//find the next animation
+					auto it = mAnimations.find(mLastAnimation.curAnimId);
+					assert(it != mAnimations.end());
+					
+					it++;
+					if (it == mAnimations.end())
+						it = mAnimations.begin();
 
-			indexEnd = indexStart + 1;
-			indexEnd = (indexEnd >= anim.frames.size()) ? 0 : indexEnd;
+					while (mLastAnimation.curTime >= anim.maxTimePoint)
+						mLastAnimation.curTime -= anim.maxTimePoint;
+					while (mLastAnimation.curTime >= it->second.maxTimePoint)
+						mLastAnimation.curTime -= it->second.maxTimePoint;
+					mLastAnimation.curAnimId = it->first;
 
-			mLastAnimation.tNormalized = Math::fClamp(time * anim.frameRate - static_cast<float>(indexStart), 0.0f, 1.0f);
+					//easier to just restart
+					animate(time);
+				}
+			}
+
+			auto& anim = mAnimations[mLastAnimation.curAnimId];
+			assert(mLastAnimation.curTime < anim.maxTimePoint);
+
+			//animate
+			for (const auto& sampler : anim.samplers)
+			{
+				if ((mLastAnimation.curTime < sampler.minTimePoint) || (mLastAnimation.curTime > sampler.maxTimePoint))
+					continue;
+
+				//pick the correct frame
+				size_t frameIndex{0};
+				for (;; frameIndex++)
+				{
+					assert((frameIndex + 1) < sampler.timePoints.size());
+					if ((mLastAnimation.curTime >= sampler.timePoints[frameIndex]) && (mLastAnimation.curTime <= sampler.timePoints[frameIndex + 1]))
+						break;
+				}
+
+				//normalize t (for this sampler)
+				float samplerTime;
+				{
+					auto timeStart = sampler.timePoints[frameIndex];
+					auto timeEnd = sampler.timePoints[frameIndex + 1];
+					samplerTime = Math::fClamp((mLastAnimation.curTime - timeStart) / (timeEnd - timeStart), 0.0f, 1.0f);
+				}
+
+				//animate all channels
+				for (const auto& channel : sampler.channels)
+				{
+					auto& dataStart = channel.frameData[frameIndex];
+					auto& dataNext = channel.frameData[frameIndex + 1];
+
+					auto& jointAnimated = mLastAnimation.joints[channel.jointIndex];
+
+					switch (channel.target)
+					{
+						case Animation::Channel::Target::Scale:
+						{
+							jointAnimated.updatedScale = Vector4f::calcLerp(dataStart, dataNext, samplerTime).convert<float, 3>();
+							break;
+						}
+						case Animation::Channel::Target::Translation:
+						{
+							jointAnimated.updatedTranslation = Vector4f::calcLerp(dataStart, dataNext, samplerTime).convert<float, 3>();
+							break;
+						}
+						case Animation::Channel::Target::Rotation:
+						{
+							jointAnimated.updatedRotation = Quaternionf::sLerp(Quaternionf::from(dataStart), Quaternionf::from(dataNext), samplerTime);
+							break;
+						}
+						case Animation::Channel::Target::None:
+						default:
+							break;
+					}
+				}
+			}
 		}
 
-		//calculate final matrix transform for each joint
-
-		auto& frameA = anim.frames[indexStart];
-		auto& frameB = anim.frames[indexEnd];
-
-		for (size_t curJointIndex = 0; curJointIndex < mLastAnimation.joints.size(); curJointIndex++)
+		//calculate for each joint the new transformation and store it in the corresponding node
+		for (size_t jIndex = 0; jIndex < mLastAnimation.joints.size(); jIndex++)
 		{
-			Vector3f pos;
-			Quaternion rot;
-			
-			pos.storeInterpolate(frameA.joints[curJointIndex].pos, frameB.joints[curJointIndex].pos, mLastAnimation.tNormalized);
-			rot.setNLerp(frameA.joints[curJointIndex].rot, frameB.joints[curJointIndex].rot, mLastAnimation.tNormalized);
+			auto& jointAnimated = mLastAnimation.joints[jIndex];
 
-			auto& finalMat = mLastAnimation.joints[curJointIndex];
-			
-			finalMat.setTranslation(pos);
-			finalMat *= rot;
-			finalMat *= mBindPoseInverted[curJointIndex];
+			jointAnimated.localTransform = Matrix4f::scale(jointAnimated.updatedScale);
+			jointAnimated.localTransform *= jointAnimated.updatedRotation;
+			jointAnimated.localTransform *= Matrix4f::translation(jointAnimated.updatedTranslation);
+
+			jointAnimated.localTransform *= mJoints[jIndex].localTransform.matrix;
 		}
 
-		//and the interpolated bbox
-		mLastAnimation.bbox.setMin(Vector3f::evalLinear(frameA.bbox.min(), frameB.bbox.min(), mLastAnimation.tNormalized));
-		mLastAnimation.bbox.setMax(Vector3f::evalLinear(frameA.bbox.max(), frameB.bbox.max(), mLastAnimation.tNormalized));
+		//calculate final transformation for each joint
+		for (size_t jIndex = 0; jIndex < mJoints.size(); jIndex++)
+			mLastAnimation.jointsFinalTransform[jIndex] = mJoints[jIndex].transformInvert * calcJointGlobalTransform(jIndex);
 	}
 
-	BBox MeshAnimSet::updatedBBox() const
+	void SkeletonAnim::animateSetup(AnimationType animationType, size_t startAnimId)
 	{
-		return mLastAnimation.bbox;
-	}
-
-	void MeshAnimSet::updateMesh(const MeshAnim& bindPoseMesh, Mesh& animatedMesh) const
-	{
-		if (bindPoseMesh.mesh().numVertices() != animatedMesh.numVertices())
+		if (mAnimations.empty())
 			return;
 
-		animateMesh(mLastAnimation.joints, bindPoseMesh, animatedMesh);
+		mAnimationType = animationType;
+		if ((mAnimations.size() == 1) && (mAnimationType == AnimationType::CycleAll))
+			mAnimationType = AnimationType::RepeatCurrent;
+		
+		auto it = mAnimations.find(startAnimId);
+		mLastAnimation.curAnimId = (it != mAnimations.end()) ? startAnimId : mAnimations.begin()->first;
+	}
+
+	void SkeletonAnim::animateReset()
+	{
+		for (size_t jIndex = 0; jIndex < mJoints.size(); jIndex++)
+			mLastAnimation.jointsFinalTransform[jIndex] = Matrix4f::identity();
+	}
+
+	void SkeletonAnim::updateMesh(const MeshAnim& baseMesh, TMesh& animatedMesh) const
+	{
+		if (baseMesh.mesh().numVertices() != animatedMesh.numVertices())
+			return;
+
+		animateMesh(mRootTransform, mLastAnimation.jointsFinalTransform, baseMesh, animatedMesh);
 	}
 }

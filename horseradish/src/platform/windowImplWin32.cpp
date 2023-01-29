@@ -483,7 +483,7 @@ namespace hr::platform
 		std::lock_guard<std::mutex> lock(mRawInput.lock);
 
 		mRawInput.mouseSnapshot = mRawInput.mouseAccum;
-		mRawInput.mouseAccum.set(0.0f);
+		mRawInput.mouseAccum = Vector3f::zero();
 
 		mRawInput.keysSnapshot = mRawInput.keysRealtime;
 	}

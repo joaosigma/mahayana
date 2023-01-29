@@ -18,7 +18,7 @@ the custom_zlib field of the compress and decompress settings*/
 #define LODEPNG_NO_COMPILE_DISK
 
 /*support for chunks other than IHDR, IDAT, PLTE, tRNS, IEND: ancillary and unknown chunks*/
-#define LODEPNG_NO_COMPILE_ANCILLARY_CHUNKS
+// #define LODEPNG_NO_COMPILE_ANCILLARY_CHUNKS
 
 /*ability to convert error numerical codes to English text string*/
 #define LODEPNG_NO_COMPILE_ERROR_TEXT

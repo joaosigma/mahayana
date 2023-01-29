@@ -45,7 +45,7 @@ namespace hr
 
 		void min(Vector3f &point) const
 		{
-			point.set(mMinX, mMinY, 0.0f);
+			point = Vector3f{mMinX, mMinY, 0.0f};
 		}
 
 		void min(float &x, float &y) const
@@ -56,7 +56,7 @@ namespace hr
 
 		void max(Vector3f &point) const
 		{
-			point.set(mMaxX, mMaxY, 0.0f);
+			point = Vector3f{mMaxX, mMaxY, 0.0f};
 		}
 
 		void max(float &x, float &y) const
@@ -67,8 +67,8 @@ namespace hr
 
 		void minMax(Vector3f &min, Vector3f &max) const
 		{
-			min.set(mMinX, mMinY, 0.0f);
-			max.set(mMaxX, mMaxY, 0.0f);
+			min = Vector3f{mMinX, mMinY, 0.0f};
+			max = Vector3f{mMaxX, mMaxY, 0.0f};
 		}
 
 		void minMax(float * const min, float * const max) const

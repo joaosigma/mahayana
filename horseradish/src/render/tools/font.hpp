@@ -7,6 +7,7 @@
 #include "libs/sparsepp/spp.h"
 
 #include <array>
+#include <span>
 #include <vector>
 #include <unordered_map>
 
@@ -54,6 +55,8 @@ namespace hr { namespace render { namespace tools
 		};
 
 		static constexpr size_t sMumMaxChar = 256;
+
+		static void writeLayout(std::span<VertexDataLayout, 4> layout, float posX, float posY, const CharacterData& charData, float scale) noexcept;
 
 	private:
 		bool mValid = false;

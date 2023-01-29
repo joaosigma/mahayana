@@ -3,6 +3,7 @@
 #include "runtime.hpp"
 #include "logger.hpp"
 
+#include "common/tasks.hpp"
 #include "common/timer.hpp"
 #include "common/types.hpp"
 #include "common/avl-tree.hpp"
@@ -260,14 +261,18 @@ namespace hr { namespace engine
 	private:
 		mutable std::mutex mSyncLock;
 
-		bool mDevMode = false;
+		bool mDevMode{false};
 		std::string mErrorDesc;
-		std::atomic<State> mCurState = State::Created;
+		std::atomic<State> mCurState{State::Created};
 		hr::Timer mMainTimer;
-		int mExitCode = 0;
-		std::atomic<ExitAction> mExitAction = ExitAction::Nothing;
+		int mExitCode{0};
+		std::atomic<ExitAction> mExitAction{ExitAction::Nothing};
 		AVLTree<char, std::shared_ptr<IVariable>> mVars;
 		std::unordered_map<StatSampleType, std::unique_ptr<StatSeries<3000>>> mStats;
+
+		Scheduler mAsyncScheduler;
+		Dispatcher mAsyncDispatcher;
+		std::vector<std::jthread> mAsyncThreads;
 
 		std::shared_ptr<Logger> mLogger;
 		std::shared_ptr<Logger::Context> mLoggerRenderCtx;
@@ -277,9 +282,15 @@ namespace hr { namespace engine
 		std::shared_ptr<Runtime> mRuntime;
 		std::shared_ptr<io::FileSystem> mFileSystem;
 
+		struct
+		{
+			bool dbgRayTrace{false};
+		} mCmdLineOptions;
+
 	private:
 		void exit(ExitAction exitAction, const char * const errorDesc = nullptr);
 
+		void initParseCmdLine(std::string_view cmdLine);
 		void initFileSystem();
 
 		void renderLoop();
@@ -293,7 +304,7 @@ namespace hr { namespace engine
 		void logSysInfo();
 
 	public:
-		Engine(const std::string &cmdLine, bool devMode = false);
+		Engine(std::string_view cmdLine, bool devMode = false);
 		~Engine();
 
 		Engine(const Engine&) = delete;
@@ -303,17 +314,21 @@ namespace hr { namespace engine
 		template<typename T>
 		T var(const char* const name) const
 		{
-			static_assert(false, "variable type not supported");
+			//static_assert(false, "variable type not supported");
 		}
 
 		template<typename T>
 		void var(const char* const name, const T& value)
 		{
-			static_assert(false, "variable type not supported");
+			//static_assert(false, "variable type not supported");
 		}
 
-		// misc
 		bool mainLoop();
+
+		Dispatcher& asyncDispatcher() noexcept
+		{
+			return mAsyncDispatcher;
+		}
 
 		int getExitCode() const;
 		ExitAction getExitAction() const;

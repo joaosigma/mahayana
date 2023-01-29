@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <optional>
 
 namespace hr::gl::objects
 {
@@ -34,8 +35,8 @@ namespace hr::gl::objects
 		bool isExtPresent(const char* const extensionName) const;
 		void dispatchDebugMessages() const;
 
-		bool info(const InformationType& informationType, int& infoValue) const;
-		bool info(const InformationType& informationType, float& infoValue) const;
-		bool info(const InformationType& informationType, std::string& infoValue) const;
+		std::optional<int> infoInt(const InformationType& informationType) const;
+		std::optional<float> infoFloat(const InformationType& informationType) const;
+		std::optional<std::string> infoStr(const InformationType& informationType) const;
 	};
 }

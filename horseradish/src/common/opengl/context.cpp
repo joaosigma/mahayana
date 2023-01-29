@@ -77,66 +77,52 @@ namespace hr::gl::objects
 		}
 	}
 
-	bool Context::info(const InformationType& informationType, int& infoValue) const
+	std::optional<int> Context::infoInt(const InformationType& informationType) const
 	{
 		switch (informationType)
 		{
 		case InformationType::MaxDrawBuffers:
-			infoValue = mInfo.maxDrawBuffers;
-			return true;
+			return mInfo.maxDrawBuffers;
 		case InformationType::MaxColorAttachments:
-			infoValue = mInfo.maxColorAttachments;
-			return true;
+			return mInfo.maxColorAttachments;
 		case InformationType::MaxTextureSize:
-			infoValue = mInfo.maxTextureSize;
-			return true;
+			return mInfo.maxTextureSize;
 		case InformationType::MaxTexture3DSize:
-			infoValue = mInfo.maxTexture3DSize;
-			return true;
+			return mInfo.maxTexture3DSize;
 		case InformationType::MaxTextureCubemapSize:
-			infoValue = mInfo.maxTextureCubemapSize;
-			return true;
+			return mInfo.maxTextureCubemapSize;
 		case InformationType::MaxTextureRectSize:
-			infoValue = mInfo.maxTextureRectSize;
-			return true;
+			return mInfo.maxTextureRectSize;
 		}
 
-		infoValue = 0;
-		return false;
+		return {};
 	}
 
-	bool Context::info(const InformationType& informationType, float& infoValue) const
+	std::optional<float> Context::infoFloat(const InformationType& informationType) const
 	{
 		switch (informationType)
 		{
 		case InformationType::MaxAnisotropicLevel:
-			infoValue = mInfo.maxAnisotropy;
-			return true;
+			return mInfo.maxAnisotropy;
 		}
 
-		infoValue = 0.0f;
-		return false;
+		return {};
 	}
 
-	bool Context::info(const InformationType& informationType, std::string& infoValue) const
+	std::optional<std::string> Context::infoStr(const InformationType& informationType) const
 	{
 		switch (informationType)
 		{
 		case InformationType::Version:
-			infoValue = mInfo.version;
-			return true;
+			return mInfo.version;
 		case InformationType::Vendor:
-			infoValue = mInfo.vendor;
-			return true;
+			return mInfo.vendor;
 		case InformationType::Renderer:
-			infoValue = mInfo.renderer;
-			return true;
+			return mInfo.renderer;
 		case InformationType::GLSLVersion:
-			infoValue = mInfo.glslVersion;
-			return true;
+			return mInfo.glslVersion;
 		}
 
-		infoValue.clear();
-		return false;
+		return {};
 	}
 }

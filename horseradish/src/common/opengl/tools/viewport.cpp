@@ -4,34 +4,25 @@ namespace hr::gl::tools
 {
 	namespace
 	{
-		void funcProjection(hr::Matrix& mat, double fovy, double aspectRatio, double znear) noexcept
+		hr::Matrix4f funcProjection(double fovy, double aspectRatio, double znear) noexcept
 		{
-			/*double ymax = near * std::tan(fov * 0.00872664625997164788461845384); //0.008726646259971 = pi / 180.0 / 2.0
-			double ymin = -ymax;
-			double xmin = ymin * aspectRatio;
-			double xmax = ymax * aspectRatio;
+			//more info on a reversed-z, infinite zfar projection matrix: https://thxforthefish.com/posts/reverse_z/
+			auto mat = hr::Matrix4f::zero();
 
-			mat.set(0.0f);
-			mat[0] = static_cast<float>((2.0 * near) / (xmax - xmin));
-			mat[5] = static_cast<float>((2.0 * near) / (ymax - ymin));
-			mat[8] = static_cast<float>((xmax + xmin) / (xmax - xmin));
-			mat[9] = static_cast<float>((ymax + ymin) / (ymax - ymin));
-			mat[10] = -static_cast<float>((far + near) / (far - near));
-			mat[11] = -1.0f;
-			mat[14] = -static_cast<float>((2.0 * far * near) / (far - near));*/
-
-			double f = 1.0 / std::tan(fovy / 2.0);
-
-			mat.set(0.0f);
+			double f = 1.0 / std::tan(fovy * 0.5);
 			mat[0] = static_cast<float>(f / aspectRatio);
 			mat[5] = static_cast<float>(f);
-			mat[11] = -1.0f;
-			mat[14] = static_cast<float>(znear);
+			mat[11] = static_cast<float>(znear);
+			mat[14] = 1.0f; //left-handed
+
+			mat.transpose();
+			return mat;
 		};
 
-		void funcOrtho(hr::Matrix& mat, double left, double right, double bottom, double top, double near, double far) noexcept
+		hr::Matrix4f funcOrtho(double left, double right, double bottom, double top, double near, double far) noexcept
 		{
-			mat.set(0.0f);
+			auto mat = hr::Matrix4f::zero();
+
 			mat[0] = static_cast<float>(2.0 / (right - left));
 			mat[5] = static_cast<float>(2.0 / (top - bottom));
 			mat[10] = static_cast<float>(-2.0 / (far - near));
@@ -39,23 +30,23 @@ namespace hr::gl::tools
 			mat[13] = static_cast<float>(-(top + bottom) / (top - bottom));
 			mat[14] = static_cast<float>(-(far + near) / (far - near));
 			mat[15] = 1.0f;
+
+			return mat;
 		};
 	}
 
-	hr::Matrix Viewport::genMatrix2DProj(size_t width, size_t height)
+	hr::Matrix4f Viewport::genMatrix2DProj(size_t width, size_t height)
 	{
-		hr::Matrix mat;
-		funcOrtho(mat, 0.0, width, 0.0, height, 1.0, -1.0);
-		return mat;
+		return funcOrtho(0.0, width, 0.0, height, 1.0, -1.0);
 	}
 
 	void Viewport::calcMatrices() noexcept
 	{
-		funcProjection(mMatrices.mp3D, mYFov, mDims.aspectRatio, mZNear);
-		funcOrtho(mMatrices.mp2D, 0.0, mDims.width, 0.0, mDims.height, 1.0, -1.0);
+		mMatrices.mp3D = funcProjection(mYFov, mDims.aspectRatio, mZNear);
+		mMatrices.mp2D = funcOrtho(0.0, mDims.width, 0.0, mDims.height, 1.0, -1.0);
 	}
 
-	const hr::Matrix& Viewport::getProjection(ProjectionType projectionType) const
+	const hr::Matrix4f& Viewport::getProjection(ProjectionType projectionType) const
 	{
 		switch (projectionType)
 		{
@@ -68,12 +59,12 @@ namespace hr::gl::tools
 		return mMatrices.mp3D;
 	}
 
-	void Viewport::projectPoint(ProjectionType projType, const hr::Matrix& modelView, hr::Vector3f* const listPoints, size_t numPoints) const
+	void Viewport::projectPoint(ProjectionType projType, const hr::Matrix4f& modelView, hr::Vector3f* const listPoints, size_t numPoints) const
 	{
 		if (!listPoints || numPoints <= 0)
 			return;
 
-		hr::Matrix transMat;
+		auto transMat = hr::Matrix4f::identity();
 		switch (projType)
 		{
 		case ProjectionType::Proj2D:
@@ -94,7 +85,7 @@ namespace hr::gl::tools
 
 		for (size_t i = 0; i < numPoints; i++)
 		{
-			hr::Vector4f result(listPoints[i], 1.0f);
+			auto result = listPoints->convert<float, 4>(1.0f);
 			transMat.transform(result);
 
 			float rhw = 1.0f / result[3];
@@ -103,7 +94,7 @@ namespace hr::gl::tools
 			float projY = winY - ((1.0f - result[1] * rhw) * winY * 0.5f);
 			float projZ = (result[2] * rhw) * (depthRange[1] - depthRange[0]) + depthRange[0];
 
-			listPoints[i].set(projX, projY, projZ);
+			listPoints[i] = Vector3f{projX, projY, projZ};
 		}
 	}
 }

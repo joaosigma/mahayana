@@ -87,15 +87,15 @@ namespace hr { namespace render
 			{
 				std::string strUTF8;
 
-				if (!hr::platform::Platform::clipboardGetStrings([&](const std::string& curString) -> bool
+				if (!hr::platform::Platform::clipboardGetStrings([&](std::string curString) -> bool
 				{
-					strUTF8 = curString;
+					strUTF8 = std::move(curString);
 					return false;
 				}))
 				{
-					hr::platform::Platform::clipboardGetFiles([&](const std::string& curString) -> bool
+					hr::platform::Platform::clipboardGetFiles([&](std::string curString) -> bool
 					{
-						strUTF8 = curString;
+						strUTF8 = std::move(curString);
 						return false;
 					});
 				}
@@ -130,7 +130,7 @@ namespace hr { namespace render
 		}
 	}
 
-	void ConsoleUI::drawContent(size_t textSize, const hr::Matrix &transformMatrix) const
+	void ConsoleUI::drawContent(size_t textSize, const hr::Matrix4f& transformMatrix) const
 	{
 		if (!mRenderer.mGui.font)
 			return;
@@ -143,7 +143,7 @@ namespace hr { namespace render
 
 		//draw prompt
 		{
-			guiFont->paintBegin(textSize, transformMatrix.data());
+			guiFont->paintBegin(textSize, transformMatrix.data().data());
 			guiFont->setColor(1.0f, 1.0f, 1.0f);
 
 			std::string unicodeStr = PromptDefault;
@@ -209,7 +209,7 @@ namespace hr { namespace render
 				return (maxLines > 0);
 			}, mLogView.offset);
 
-			guiFont->paintBegin(textSize, transformMatrix.data());
+			guiFont->paintBegin(textSize, transformMatrix.data().data());
 			guiFont->setColor(1.0f, 1.0f, 1.0f);
 
 			for (const auto& logMsg : logMsgs)
@@ -311,10 +311,10 @@ namespace hr { namespace render
 		}
 	}
 
-	void ConsoleUI::drawBackground(const hr::Matrix &transformMatrix, float bkgAlpha) const
+	void ConsoleUI::drawBackground(const hr::Matrix4f& transformMatrix, float bkgAlpha) const
 	{
 		hr::gl::glBindProgramPipeline(mRenderer.mShaders.drawNoTex.progPipeline.id());
-		hr::gl::glProgramUniformMatrix4fv(mRenderer.mShaders.drawNoTex.progVertex.id(), mRenderer.mShaders.drawNoTex.progVertex.getUniformLocation("transformationMatrix"), 1, false, transformMatrix.data());
+		hr::gl::glProgramUniformMatrix4fv(mRenderer.mShaders.drawNoTex.progVertex.id(), mRenderer.mShaders.drawNoTex.progVertex.getUniformLocation("transformationMatrix"), 1, false, transformMatrix.data().data());
 
 		auto& glImmediateMode = mRenderer.mGlImmediateMode;
 
@@ -346,7 +346,7 @@ namespace hr { namespace render
 		if (!isVisible())
 			return;
 
-		hr::Matrix transformMatrix = viewport.getProjection(hr::gl::tools::Viewport::ProjectionType::Proj2D);
+		hr::Matrix4f transformMatrix = viewport.getProjection(hr::gl::tools::Viewport::ProjectionType::Proj2D);
 
 		drawBackground(transformMatrix, 0.8f);
 		drawContent(textSize, transformMatrix);

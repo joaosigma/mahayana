@@ -1,1 +1,0 @@
-#define RAPIDJSON_SSE2

@@ -56,15 +56,26 @@ namespace hr::render
 		scene.mRenderData.vboIndirectDraw.bind();
 		for (auto& curObject : scene.mRenderData.objects)
 		{
-			if (curObject->texNormal.isValid())
-				curObject->texNormal.bind(1);
-			else
-				mTexDefaultNormals.bind(1);
+			if (curObject->textureSetId > 0)
+			{
+				assert(scene.mTextureSets.contains(curObject->textureSetId));
+				const auto& texSet = scene.mTextureSets[curObject->textureSetId];
 
-			if (curObject->texDiffuse.isValid())
-				curObject->texDiffuse.bind(0);
+				if (texSet.texNormal.isValid())
+					texSet.texNormal.bind(1);
+				else
+					mTexDefaultNormals.bind(1);
+
+				if (texSet.texDiffuse.isValid())
+					texSet.texDiffuse.bind(0);
+				else
+					mTexDefaultAlbedo.bind(0);
+			}
 			else
+			{
+				mTexDefaultNormals.bind(1);
 				mTexDefaultAlbedo.bind(0);
+			}
 
 			hr::gl::glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_SHORT, reinterpret_cast<void*>(curObject->meshDrawIndirectOffset), 1, 0);			
 		}
@@ -80,15 +91,11 @@ namespace hr::render
 		hr::gl::glDepthMask(GL_FALSE);
 		hr::gl::glDepthFunc(GL_GREATER);
 
-		hr::Matrix matrixProjection;
-		hr::Matrix matrixModelView;
-		{
-			matrixModelView = hrCamera.modelView();
-			matrixProjection = hrViewport.getProjection(hr::gl::tools::Viewport::ProjectionType::Proj3D);
-		}
+		auto matrixModelView = hrCamera.modelView();
+		auto matrixProjection = hrViewport.getProjection(hr::gl::tools::Viewport::ProjectionType::Proj3D);
 
-		hr::gl::glProgramUniformMatrix4fv(mShaders.forwardPassSky.vertex.id(), mShaders.forwardPassSky.vertex.getUniformLocation("modelviewMatrix"), 1, false, matrixModelView.data());
-		hr::gl::glProgramUniformMatrix4fv(mShaders.forwardPassSky.vertex.id(), mShaders.forwardPassSky.vertex.getUniformLocation("projectionMatrix"), 1, false, matrixProjection.data());
+		hr::gl::glProgramUniformMatrix4fv(mShaders.forwardPassSky.vertex.id(), mShaders.forwardPassSky.vertex.getUniformLocation("modelviewMatrix"), 1, false, matrixModelView.data().data());
+		hr::gl::glProgramUniformMatrix4fv(mShaders.forwardPassSky.vertex.id(), mShaders.forwardPassSky.vertex.getUniformLocation("projectionMatrix"), 1, false, matrixProjection.data().data());
 		hr::gl::glBindProgramPipeline(mShaders.forwardPassSky.pipeline.id());
 
 		mSamplers.samplerSky.bind(0);
@@ -100,14 +107,15 @@ namespace hr::render
 			mGlImmediateMode.setTexCoord(0.0f, 0.0f);
 			mGlImmediateMode.addPosition(-1.0f, -1.0f, 1.0f);
 			
-			mGlImmediateMode.setTexCoord(1.0f, 0.0f);
-			mGlImmediateMode.addPosition(1.0f, -1.0f, 1.0f);
+			mGlImmediateMode.setTexCoord(0.0f, 1.0f);
+		    mGlImmediateMode.addPosition(-1.0f, 1.0f, 1.0f);
 
 			mGlImmediateMode.setTexCoord(1.0f, 1.0f);
 			mGlImmediateMode.addPosition(1.0f, 1.0f, 1.0f);
 
-			mGlImmediateMode.setTexCoord(0.0f, 1.0f);
-			mGlImmediateMode.addPosition(-1.0f, 1.0f, 1.0f);
+			mGlImmediateMode.setTexCoord(1.0f, 0.0f);
+		    mGlImmediateMode.addPosition(1.0f, -1.0f, 1.0f);
+
 		mGlImmediateMode.endDraw();
 	}
 
@@ -134,7 +142,7 @@ namespace hr::render
 			mFBOs.texAvgLuminance.genMipmaps();
 		}
 
-		hr::gl::glProgramUniformMatrix4fv(mShaders.postprocess.vertex.id(), mShaders.postprocess.vertex.getUniformLocation("projectionMatrix"), 1, false, hrViewport.getProjection(hr::gl::tools::Viewport::ProjectionType::Proj2D).data());
+		hr::gl::glProgramUniformMatrix4fv(mShaders.postprocess.vertex.id(), mShaders.postprocess.vertex.getUniformLocation("projectionMatrix"), 1, false, hrViewport.getProjection(hr::gl::tools::Viewport::ProjectionType::Proj2D).data().data());
 		hr::gl::glBindProgramPipeline(mShaders.postprocess.pipeline.id());
 
 		mFBOs.samplerLuminance.bind(3);
@@ -155,7 +163,7 @@ namespace hr::render
 		mGlImmediateMode.endDraw();
 	}
 
-	void RendererMain::loadGeometry(Scene& scene, const IRenderObjectManager& manager)
+	void RendererMain::loadGeometry(Scene& scene, const IRenderManager& manager)
 	{
 		scene.mRenderData.vboMeshData.reset();
 		scene.mRenderData.vboMeshIndexData.reset();
@@ -184,7 +192,13 @@ namespace hr::render
 			auto& mesh = scene.mObjects[obj.id()];
 
 			numGeoms++;
+			mesh.id = obj.id();
 			mesh.bbox = obj.bbox();
+			if (obj.materialId() > 0)
+				mesh.materialId = obj.materialId();
+			if (obj.textureSetId() > 0)
+				mesh.textureSetId = obj.textureSetId();
+
 			mesh.meshVBOStartPos = poolVertex;
 			mesh.meshVBOVertexOffset = baseVertexOffset;
 			mesh.meshTriListOffset = (void*)poolIndex;
@@ -427,17 +441,21 @@ namespace hr::render
 		}
 	}
 
-	void RendererMain::loadTextures(Scene& scene, const IRenderObjectManager& manager)
+	void RendererMain::loadMaterialsTextures(Scene& scene, const IRenderManager& manager)
 	{
-		manager.iterateObjects([this, &scene](IRenderObject& obj)
+		manager.iterateMaterials([this, &scene](IRenderMaterial& material)
 		{
-			auto& object = scene.mObjects[obj.id()];
+		});
 
-			object.texDiffuse.reset();
-			object.texNormal.reset();
+		manager.iterateTextureSets([this, &scene](IRenderTextureSet& textureSet)
+		{
+			auto& texSet = scene.mTextureSets[textureSet.id()];
+			
+			texSet.texDiffuse.reset();
+			loadDiffuse(textureSet.diffusePath(), texSet.texDiffuse, true);
 
-			loadDiffuse(obj.texDiffusePath(), object.texDiffuse, true);
-			loadNormal(obj.texNormalPath(), object.texNormal, true);
+			texSet.texNormal.reset();
+			loadNormal(textureSet.normalPath(), texSet.texNormal, true);
 		});
 	}
 
@@ -445,15 +463,19 @@ namespace hr::render
 		: mFileSystem(fileSystem)
 		, mGlContext(glContext)
 	{
-		loadDiffuse(R"(media\default_albedo.png)", mTexDefaultAlbedo, true);
 		loadDiffuse(R"(media\skies\archesPineTree.hdr)", mTexSky, false);
-		loadNormal(R"(media\default_normal.png)", mTexDefaultNormals, true);
-	
-		hr::io::Path pathShaders;
-		pathShaders.set(hr::io::Path::KnownPath::CurrentFolder);
-		pathShaders.combine("shaders");
 
-		mShadersWatchFolderID = mFileSystem.watchChangeCreate(pathShaders.str().c_str(), false, hr::io::FileSystem::FileLastWrite);
+		//loadDiffuse(R"(media\default_albedo.png)", mTexDefaultAlbedo, true);
+		//loadNormal(R"(media\default_normal.png)", mTexDefaultNormals, true);
+		loadDiffuse(R"(texs\color.white.png)", mTexDefaultAlbedo, true);
+		loadNormal(R"(texs\flat.normal.png)", mTexDefaultNormals, true);
+	
+		{
+			auto pathShaders = std::filesystem::current_path();
+			pathShaders /= "shaders";
+
+			mShadersWatchFolderID = mFileSystem.watchChangeCreate(pathShaders, false, hr::io::FileSystem::FileLastWrite);
+		}
 
 		//FBOs
 		mFBOs.texLighting.init(hr::gl::objects::Texture::Type::TexRectangle, hr::gl::objects::Texture::StorageType::RGBA_16F, renderWidth, renderHeight);
@@ -539,7 +561,7 @@ namespace hr::render
 		mTexDefaultNormals.reset();
 	}
 
-	RendererMain::SceneId RendererMain::loadScene(const IRenderObjectManager& manager)
+	RendererMain::SceneId RendererMain::loadScene(const IRenderManager& manager)
 	{
 		if (manager.numObjects() <= 0)
 			return 0;
@@ -548,7 +570,7 @@ namespace hr::render
 		auto& scene = mScenes[id];
 
 		loadGeometry(scene, manager);
-		loadTextures(scene, manager);
+		loadMaterialsTextures(scene, manager);
 
 		return id;
 	}
@@ -568,21 +590,18 @@ namespace hr::render
 			//reload shaders
 		}
 				
-		mShaders.forwardPassBuffers.fence.wait();
+		{
+			mShaders.forwardPassBuffers.fence.wait();
 
 			//uniform buffer common to every pass is prepared/set here
 			static uint32_t numLights = 1;
 			{
-				hr::Matrix matrixModelView, matrixTransform;
-
-				matrixModelView.set(hrCamera.modelView());
-
-				matrixTransform.set(hrCamera.modelView());
-				matrixTransform *= hrViewport.getProjection(hr::gl::tools::Viewport::ProjectionType::Proj3D);
+				auto matrixMView = hrCamera.modelView();
+				auto matrixProj = hrViewport.getProjection(hr::gl::tools::Viewport::ProjectionType::Proj3D);
 
 				Shaders::UniformLayout uniformData;
-				matrixTransform.write(uniformData.matTrans);
-				matrixModelView.write(uniformData.matView);
+				matrixProj.write(uniformData.matProj);
+				matrixMView.write(uniformData.matMView);
 				uniformData.numLights = numLights;
 
 				mShaders.forwardPassBuffers.uniform.writeData(&uniformData, sizeof(Shaders::UniformLayout), 0);
@@ -632,7 +651,7 @@ namespace hr::render
 					else
 						t *= 2.0;
 
-					auto vec = Vector3f::calcLinear(
+					auto vec = Vector3f::calcLerp(
 						Vector3f{ animLight.dir[0] - 10.0f, animLight.dir[1], animLight.dir[2] },
 						Vector3f{ animLight.dir[0] + 10.0f, animLight.dir[1], animLight.dir[2] },
 						t);
@@ -651,12 +670,13 @@ namespace hr::render
 			passSky(scene, hrCamera, hrViewport);
 			passLighting(scene, hrCamera, hrViewport);
 
-		mShaders.forwardPassBuffers.fence.place();
+			mShaders.forwardPassBuffers.fence.place();
+		}
 	}
 
-	void RendererMain::renderDebug(RendererDebug& rendererDebug, const tools::Camera& hrCamera, const hr::gl::tools::Viewport& hrViewport)
+	void RendererMain::renderDebug(RendererDebug& rendererDebug, const hr::render::World& world, const tools::Camera& hrCamera, const hr::gl::tools::Viewport& hrViewport)
 	{
-		rendererDebug.render(*this, hrCamera, hrViewport);
+		rendererDebug.render(*this, world, hrCamera, hrViewport);
 	}
 
 	void RendererMain::renderComposite(const hr::gl::tools::Viewport& hrViewport)
@@ -664,7 +684,7 @@ namespace hr::render
 		compositePostProcessing(hrViewport);
 	}
 
-	void RendererMain::updateVertexData(SceneId sceneId, const IRenderObjectManager& manager)
+	void RendererMain::updateVertexData(SceneId sceneId, const IRenderManager& manager)
 	{
 		auto sceneIt = mScenes.find(sceneId);
 		if (sceneIt == mScenes.end())

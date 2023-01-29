@@ -1,0 +1,10 @@
+#pragma once
+
+#include <string_view>
+
+namespace hr::build
+{
+	inline constexpr std::string_view Hash{"@HR_BUILD_HASH@"};
+	inline constexpr std::string_view HashShort{"@HR_BUILD_HASH_SHORT@"};
+}
+

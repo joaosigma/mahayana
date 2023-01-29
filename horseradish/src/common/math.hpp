@@ -28,23 +28,23 @@ namespace hr
 		};
 
 		template<class T>
-		static constexpr T Pi = T(3.1415926535897932385L);
+		static constexpr T Pi = T(3.1415926535897932385);
 		template<class T>
-		static constexpr T PiHalf = T(1.5707963267948966192L); // PI / 2.0
+		static constexpr T PiHalf = T(1.5707963267948966192); // PI / 2.0
 		template<class T>
-		static constexpr T E = T(2.71828182845904523536L);
+		static constexpr T E = T(2.71828182845904523536);
 		template<class T>
-		static constexpr T Sqrt2 = T(1.41421356237309504880L); // SQRT(2.0)
+		static constexpr T Sqrt2 = T(1.41421356237309504880); // SQRT(2.0)
 		template<class T>
-		static constexpr T Sqrt3 = T(1.73205080756887729352L); // SQRT(3.0)
+		static constexpr T Sqrt3 = T(1.73205080756887729352); // SQRT(3.0)
 		template<class T>
-		static constexpr T Deg2Rad = T(0.017453292519943295769L);
+		static constexpr T Deg2Rad = T(0.017453292519943295769);
 		template<class T>
-		static constexpr T Rad2Deg = T(57.29577951308232087679L);
+		static constexpr T Rad2Deg = T(57.29577951308232087679);
 		template<class T>
-		static constexpr T UByteMax = T(255.0L);
+		static constexpr T UByteMax = T(255.0);
 		template<class T>
-		static constexpr T UByteMaxInv = T(0.003921568627450980392L); // 1.0 / 255.0
+		static constexpr T UByteMaxInv = T(0.003921568627450980392); // 1.0 / 255.0
 
 		static float sqrt(const float x)
 		{
@@ -64,13 +64,17 @@ namespace hr
 
 		static double sqrtInv(const double x)
 		{
+			/* AVX512
 			auto temp = _mm_set1_pd(x);
 			return _mm_cvtsd_f64(_mm_rsqrt28_sd(temp, temp));
+			*/
+
+			return 1.0 / std::sqrt(x);
 		}
 
 		static float sin(const float radians)
 		{
-			return Math::cos(Math::PiHalf<float> -radians);
+			return Math::cos(Math::PiHalf<float> - radians);
 		}
 
 		static float cos(const float radians)
@@ -80,7 +84,7 @@ namespace hr
 
 		static double sin(const double radians)
 		{
-			return Math::cos(Math::PiHalf<float> -radians);
+			return Math::cos(Math::PiHalf<float> - radians);
 		}
 
 		static double cos(const double radians)
@@ -96,43 +100,87 @@ namespace hr
 			c = _mm_cvtss_f32(mmCos);
 		}
 
-		static float floor(const float f)
+		static void sinCos(double radians, double& s, double& c)
 		{
-			return std::floor(f);
+			__m128d mmCos;
+			__m128d mmSin = _mm_sincos_pd(&mmCos, _mm_set1_pd(radians));
+			s = _mm_cvtsd_f64(mmSin);
+			c = _mm_cvtsd_f64(mmCos);
 		}
 
-		static float ceil(const float f)
+		static std::tuple<float, float> sinCos(float radians)
 		{
-			return std::ceil(f);
+			float s, c;
+			Math::sinCos(radians, s, c);
+			return {s, c};
 		}
 
-		static float nearestInt(const float f)
+		static std::tuple<double, double> sinCos(double radians)
 		{
-			return std::floor(f + 0.5f);
+			double s, c;
+			Math::sinCos(radians, s, c);
+			return {s, c};
+		}
+
+		static float floor(const float val)
+		{
+			return std::floor(val);
+		}
+
+		static double floor(const double val)
+		{
+			return std::floor(val);
+		}
+
+		static float ceil(const float val)
+		{
+			return std::ceil(val);
+		}
+
+		static double ceil(const double val)
+		{
+			return std::ceil(val);
+		}
+
+		static float nearestInt(const float val)
+		{
+			return std::floor(val + 0.5f);
+		}
+
+		static double nearestInt(const double val)
+		{
+			return std::floor(val + 0.5);
 		}
 
 		template<typename T>
-		static T ftoi(const float f)
+		static T ftoi(const float val)
 		{
 			static_assert(std::is_integral_v<T>, "Target must must be either [u]int32_t or [u]int64_t");
 
+			/* AVX512
 			if constexpr(std::is_same_v<T, uint32_t>)
-				return _mm_cvtss_u32(_mm_set_ss(f));
-			else if constexpr (std::is_same_v<T, int32_t>)
-				return _mm_cvtss_si32(_mm_set_ss(f));
+				return _mm_cvtss_u32(_mm_set_ss(val));
+			*/
+			if constexpr (std::is_same_v<T, int32_t>)
+				return _mm_cvtss_si32(_mm_set_ss(val));
 #if defined (_M_X64)
+			/* AVX512
 			else if constexpr (std::is_same_v<T, uint64_t>)
-				return _mm_cvtss_u64(_mm_set_ss(f));
+				return _mm_cvtss_u64(_mm_set_ss(val));
+			*/
 			else if constexpr (std::is_same_v<T, int64_t>)
-				return _mm_cvtss_si64(_mm_set_ss(f));
+				return _mm_cvtss_si64(_mm_set_ss(val));
 #endif
 
-			static_assert(std::is_same_v<T, uint32_t> || std::is_same_v<T, int64_t> || std::is_same_v<T, uint64_t> || std::is_same_v<T, int64_t>);
+			static_assert(std::is_same_v<T, uint32_t> || std::is_same_v<T, int32_t> || std::is_same_v<T, uint64_t> || std::is_same_v<T, int64_t>);
 		}
-		static int64_t ftoi(const double d)
+		static int64_t ftoi(const double val)
 		{
-			//return _mm_cvtsd_i64(_mm_set_sd(d));
-			return static_cast<int64_t>(d);
+			/* AVX512
+			return _mm_cvtsd_i64(_mm_set_sd(val));
+			*/
+
+			return static_cast<int64_t>(std::llround(val));
 		}
 
 		static bool isZero(const double d)
@@ -186,9 +234,7 @@ namespace hr
 				bInt = 0x80000000 - bInt;
 
 			int intDiff = abs(aInt - bInt);
-			if (intDiff <= maxUlps)
-				return true;
-			return false;
+			return (intDiff <= maxUlps);
 		}
 	};
 

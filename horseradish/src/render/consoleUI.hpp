@@ -38,8 +38,8 @@ namespace hr { namespace render
 		void updateCursorOffset(int offset);
 		void processMsgPrompt(const platform::Window::Message &msg);
 
-		void drawContent(size_t textSize, const hr::Matrix &transformMatrix) const;
-		void drawBackground(const hr::Matrix &transformMatrix, float bkgAlpha) const;
+		void drawContent(size_t textSize, const hr::Matrix4f& transformMatrix) const;
+		void drawBackground(const hr::Matrix4f& transformMatrix, float bkgAlpha) const;
 
 	public:
 		ConsoleUI(const hr::engine::Logger& logger, hr::render::Renderer2D& renderer, size_t maxPromptHistory);

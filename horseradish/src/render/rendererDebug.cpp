@@ -6,7 +6,7 @@
 #include <cstddef>
 #include <algorithm>
 
-namespace hr { namespace render
+namespace hr::render
 {
 	RendererDebug::RendererDebug(const hr::gl::objects::Context& glContext, hr::io::FileSystem& fileSystem, Renderer2D& renderer2D)
 		: mRenderer2D(renderer2D)
@@ -25,19 +25,18 @@ namespace hr { namespace render
 	{
 	}
 	
-	void RendererDebug::render(RendererMain& rendererMain, const tools::Camera& hrCamera, const hr::gl::tools::Viewport& hrViewport)
+	void RendererDebug::render(RendererMain& rendererMain, const hr::render::World& world, const tools::Camera& hrCamera, const hr::gl::tools::Viewport& hrViewport)
 	{
 		hr::gl::glEnable(GL_DEPTH_TEST);
 		hr::gl::glDepthMask(GL_FALSE);
 		hr::gl::glDepthFunc(GL_GREATER);
 
-		hr::Matrix matrixTransform = hrViewport.getProjection(hr::gl::tools::Viewport::ProjectionType::Proj3D);
-		matrixTransform *= hrCamera.modelView();
+		auto matrixTransform = hrCamera.modelView() * hrViewport.getProjection(hr::gl::tools::Viewport::ProjectionType::Proj3D);
 
 		if (mOptions.drawBBoxes || mOptions.drawNormals)
 		{
 			hr::gl::glBindProgramPipeline(mRenderer2D.mShaders.drawNoTex.progPipeline.id());
-			hr::gl::glProgramUniformMatrix4fv(mRenderer2D.mShaders.drawNoTex.progVertex.id(), mRenderer2D.mShaders.drawNoTex.progVertex.getUniformLocation("transformationMatrix"), 1, false, matrixTransform.data());
+			hr::gl::glProgramUniformMatrix4fv(mRenderer2D.mShaders.drawNoTex.progVertex.id(), mRenderer2D.mShaders.drawNoTex.progVertex.getUniformLocation("matTrans"), 1, false, matrixTransform.data().data());
 
 			for (auto&&[sceneId, scene] : rendererMain.mScenes)
 			{
@@ -81,39 +80,42 @@ namespace hr { namespace render
 						mGlImmediateMode.endDraw();
 					}
 
-					if (mOptions.drawNormals)
-					{
-						mGlImmediateMode.beginDraw(hr::gl::tools::ImmediateMode::GeometryType::Lines);
-						mGlImmediateMode.setColor(255, 0, 0);
-
-						//auto& mesh = mWorld.mConcepts[curObject->conceptId].mesh;
-						//for (size_t i = 0; i < mesh.numVertices(); i++)
-						//{
-						//	Vector3f pos(mesh.vertices()[i].pos);
-						//
-						//	Vector3f normal;
-						//	hr::geom::Mesh::unpack(mesh.vertices()[i].normal, normal.data(), 3);
-						//
-						//	mGlImmediateMode.addPosition(pos[0], pos[1], pos[2]);
-						//	pos += normal;
-						//	mGlImmediateMode.addPosition(pos[0], pos[1], pos[2]);
-						//}
-
-						mGlImmediateMode.endDraw();
-					}
+					//if (mOptions.drawNormals)
+					//{
+					//	mGlImmediateMode.beginDraw(hr::gl::tools::ImmediateMode::GeometryType::Lines);
+					//	mGlImmediateMode.setColor(255, 0, 0);
+					//
+					//	curObject
+					//	scene.mObjects
+					//
+					//	auto& mesh = mWorld.mConcepts[curObject->conceptId].mesh;
+					//	for (size_t i = 0; i < mesh.numVertices(); i++)
+					//	{
+					//		Vector3f pos(mesh.vertices()[i].pos);
+					//	
+					//		Vector3f normal;
+					//		hr::geom::Mesh::unpack(mesh.vertices()[i].normal, normal.data(), 3);
+					//	
+					//		mGlImmediateMode.addPosition(pos[0], pos[1], pos[2]);
+					//		pos += normal;
+					//		mGlImmediateMode.addPosition(pos[0], pos[1], pos[2]);
+					//	}
+					//
+					//	mGlImmediateMode.endDraw();
+					//}
 				}
 			}
 		}
 
 		if (mOptions.drawTris)
 		{
-			hr::gl::glProgramUniformMatrix4fv(mShaders.geomDebug.vertex.id(), mShaders.geomDebug.vertex.getUniformLocation("matTrans"), 1, false, matrixTransform.data());
+			hr::gl::glProgramUniformMatrix4fv(mShaders.geomDebug.vertex.id(), mShaders.geomDebug.vertex.getUniformLocation("matTrans"), 1, false, matrixTransform.data().data());
 			hr::gl::glBindProgramPipeline(mShaders.geomDebug.pipeline.id());
 
 			hr::gl::glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
 			hr::gl::glEnable(GL_POLYGON_OFFSET_LINE);
-			hr::gl::glPolygonOffset(-1.0f, 1.0f);
+			hr::gl::glPolygonOffset(1.0f, 1.0f);
 
 			for (auto&&[sceneId, scene] : rendererMain.mScenes)
 			{
@@ -132,4 +134,4 @@ namespace hr { namespace render
 			hr::gl::glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 		}
 	}
-} }
+}

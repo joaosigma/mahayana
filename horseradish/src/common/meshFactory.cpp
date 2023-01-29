@@ -16,25 +16,26 @@ namespace hr::geom
 			assert(mesh.points && mesh.normals);
 			assert(mesh.triangles);
 
-			Mesh<VertexFull, uint32_t> mesh_out(static_cast<size_t>(mesh.npoints), static_cast<size_t>(mesh.ntriangles) * 3);
+			Mesh<VertexFull, uint32_t> meshOut(static_cast<size_t>(mesh.npoints), static_cast<size_t>(mesh.ntriangles) * 3);
 
-			auto vertices = mesh_out.vertices();
-			for (int i = 0; i < mesh.npoints; ++i, ++vertices)
+			for (int i = 0; i < mesh.npoints; ++i)
 			{
-				std::memcpy(vertices->pos, mesh.points + (i * 3), sizeof(float) * 3);
-				std::memcpy(vertices->normal, mesh.normals + (i * 3), sizeof(float) * 3);
+				auto& vertex = meshOut.vertex(i);
+
+				std::memcpy(vertex.pos, mesh.points + (i * 3), sizeof(float) * 3);
+				std::memcpy(vertex.normal, mesh.normals + (i * 3), sizeof(float) * 3);
 				if (mesh.tcoords)
-					std::memcpy(vertices->uv, mesh.tcoords + (i * 2), sizeof(float) * 2);
+					std::memcpy(vertex.uv, mesh.tcoords + (i * 2), sizeof(float) * 2);
 			}
 
 			auto numIndices = static_cast<size_t>(mesh.ntriangles) * 3;
-			assert(numIndices == mesh_out.numIndices());
+			assert(numIndices == meshOut.numIndices());
 
-			auto indices = mesh_out.indices();
-			for (size_t i = 0; i < numIndices; ++i, ++indices)
-				*indices = static_cast<uint32_t>(mesh.triangles[i]);
+			auto indices = meshOut.indices();
+			for (size_t i = 0; i < numIndices; ++i)
+				indices[i] = static_cast<uint32_t>(mesh.triangles[i]);
 
-			return mesh_out;
+			return meshOut;
 		}
 	}
 
@@ -43,6 +44,12 @@ namespace hr::geom
 		par_ptr m{ par_shapes_create_cube(), par_destroyer };
 		par_shapes_unweld(m.get(), true);
 		par_shapes_compute_normals(m.get());
+		return convert(*m);
+	}
+
+	Mesh<VertexFull, uint32_t> Factory::genCylinder(size_t slices, size_t stacks)
+	{
+		par_ptr m{par_shapes_create_cylinder(static_cast<int>(slices), static_cast<int>(stacks)), par_destroyer};
 		return convert(*m);
 	}
 

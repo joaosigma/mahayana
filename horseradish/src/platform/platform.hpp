@@ -1,6 +1,9 @@
 #pragma once
 
+#include <string>
+#include <optional>
 #include <functional>
+#include <string_view>
 
 #if defined(_WIN32) && !defined(_WIN64)
 	#define HR_BUILD_WINDOWS
@@ -35,7 +38,7 @@ namespace hr::platform
 
 		enum class PriorityType { Normal, High, Highest };
 		enum class OperatingSystemType { Windows, Linux, Android, iOS, OSX };
-		enum class SystemInfo { DisplayWidth, DisplayHeight, DisplayColorBits, DisplayFrequency, OperatingSystemName, SystemFolder, MachineName, CurrentUsername, MemoryTotal, MemoryFree, CleanBoot, CurrentFolder, ExecutableFullPath };
+		enum class SystemInfo { DisplayWidth, DisplayHeight, DisplayColorBits, DisplayFrequency, OperatingSystemName, MachineName, CurrentUsername, MemoryTotal, MemoryFree, CleanBoot, ExecutableFullPath };
 
 	public:
 		static const char* NewLine;
@@ -52,17 +55,17 @@ namespace hr::platform
 
 		static bool isArch64();
 
-		static bool cpuGetVendorID(std::string& outputValue);
-		static bool cpuGetProcessorName(std::string& outputValue);
+		static std::optional<std::string> cpuGetVendorID();
+		static std::optional<std::string> cpuGetProcessorName();
 		static bool cpuCheckFeatures(CPUFeature featuresCheck);
 
-		static bool systemInfo(SystemInfo systemInfo, std::string& infoValue);
-		static bool systemInfo(SystemInfo systemInfo, int64_t& infoValue);
+		static std::optional<std::string> systemInfoStr(SystemInfo systemInfo);
+		static std::optional<int64_t> systemInfoInt(SystemInfo systemInfo);
 
 		static bool spawnSelf();
 
-		static bool clipboardGetStrings(std::function<bool(const std::string&)> funcCallback);
-		static bool clipboardGetFiles(std::function<bool(const std::string&)> funcCallback);
+		static bool clipboardGetStrings(const std::function<bool(std::string)>& funcCallback);
+		static bool clipboardGetFiles(const std::function<bool(std::string)>& funcCallback);
 
 		static bool stdInOutErrRedirect();
 		static void stdInOutErrClose();

@@ -215,10 +215,10 @@ namespace hr { namespace engine
 		mMaxBufferSize = maxBufferedEntries;
 	}
 
-	Logger::Logger(size_t asyncMaxEntries, size_t maxBufferedEntries, const hr::io::Path &filePath)
+	Logger::Logger(size_t asyncMaxEntries, size_t maxBufferedEntries, const std::filesystem::path& filePath)
 		: Logger(asyncMaxEntries, maxBufferedEntries)
 	{
-		mOutFileStream = std::shared_ptr<hr::streams::FileStream>(new hr::streams::FileStream(filePath.str(), false, true));
+		mOutFileStream = std::shared_ptr<hr::streams::FileStream>(new hr::streams::FileStream(filePath, false, true));
 	}
 
 	Logger::~Logger()

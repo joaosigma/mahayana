@@ -1,13 +1,15 @@
-﻿#include "engine/engine.hpp"
+#include "engine/engine.hpp"
 #include "platform/platform.hpp"
 #include "common/stringUtils.hpp"
 
-int WINAPI wWinMain(HINSTANCE, HINSTANCE, PWSTR lpCmdLine, int)
+int WINAPI wWinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ PWSTR lpCmdLine, _In_ int)
 {
 	//architecture assumptions
 	static_assert(sizeof(unsigned char) == 1);
 	static_assert(sizeof(unsigned short) == 2);
 	static_assert(sizeof(unsigned int) == 4);
+	static_assert(sizeof(float) == 4);
+	static_assert(sizeof(double) == 8);
 
 	//minimal checks
 	{
@@ -17,13 +19,10 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, PWSTR lpCmdLine, int)
 			return 0;
 		}
 
+		if (hr::platform::Platform::systemInfoInt(hr::platform::Platform::SystemInfo::CleanBoot).value_or(0) == 0)
 		{
-			int64_t isCleanBoot;
-			if (!hr::platform::Platform::systemInfo(hr::platform::Platform::SystemInfo::CleanBoot, isCleanBoot) || !isCleanBoot)
-			{
-				hr::platform::Window::MsgBoxWarn("The OS did not boot normally!\nFor security reasons the application will now exit.");
-				return 0;
-			}
+			hr::platform::Window::MsgBoxWarn("The OS did not boot normally!\nFor security reasons the application will now exit.");
+			return 0;
 		}
 
 		if (hr::platform::Platform::SingleInstance().isAnotherRunning())

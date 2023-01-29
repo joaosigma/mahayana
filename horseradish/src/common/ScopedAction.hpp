@@ -9,12 +9,14 @@ namespace hr
 		std::function<void()> funcCallback;
 
 	public:
+		explicit ScopedAction(std::function<void()> funcCallback)
+		  : funcCallback{std::move(funcCallback)}
+		{ }
+
 		ScopedAction(const ScopedAction&) = delete;
 		ScopedAction& operator=(const ScopedAction&) = delete;
-
-		explicit ScopedAction(std::function<void()> funcCallback)
-			: funcCallback(funcCallback)
-		{ }
+		ScopedAction(ScopedAction&&) = delete;
+		ScopedAction& operator=(ScopedAction&&) = delete;
 
 		~ScopedAction()
 		{

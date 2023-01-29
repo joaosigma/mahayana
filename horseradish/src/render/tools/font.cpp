@@ -20,6 +20,27 @@ namespace hr { namespace render { namespace tools
 		constexpr auto validAditionalFontCharacters{ u8"¥§©®±µ€" };
 	}
 
+	void Font::writeLayout(std::span<Font::VertexDataLayout, 4> layout, float posX, float posY, const Font::CharacterData& charData, float scale) noexcept
+	{
+		layout[0].pos[0] = posX + charData.rect.offsetX * scale;
+		layout[0].pos[1] = posY + charData.rect.offsetY * scale;
+		layout[1].pos[0] = layout[0].pos[0];
+		layout[1].pos[1] = layout[0].pos[1] + charData.rect.height * scale;
+		layout[2].pos[0] = layout[0].pos[0] + charData.rect.width * scale;
+		layout[2].pos[1] = layout[0].pos[1] + charData.rect.height * scale;
+		layout[3].pos[0] = layout[0].pos[0] + charData.rect.width * scale;
+		layout[3].pos[1] = layout[0].pos[1];
+
+		layout[0].uv[0] = charData.rect.minUV[0];
+		layout[0].uv[1] = charData.rect.minUV[1];
+		layout[1].uv[0] = charData.rect.minUV[0];
+		layout[1].uv[1] = charData.rect.maxUV[1];
+		layout[2].uv[0] = charData.rect.maxUV[0];
+		layout[2].uv[1] = charData.rect.maxUV[1];
+		layout[3].uv[0] = charData.rect.maxUV[0];
+		layout[3].uv[1] = charData.rect.minUV[1];
+	}
+
 	void Font::commitGL()
 	{
 		if (mState.numCharWritten == 0)
@@ -325,16 +346,7 @@ namespace hr { namespace render { namespace tools
 			}
 			lastCharUnicode = curCharUnicode;
 
-			writeData[0].pos[0] = writeData[3].pos[0] = posX + curCharData.rect.offsetX * mState.scale;
-			writeData[1].pos[0] = writeData[2].pos[0] = writeData[0].pos[0] + curCharData.rect.width * mState.scale;
-			writeData[0].pos[1] = writeData[1].pos[1] = posY + curCharData.rect.offsetY * mState.scale;
-			writeData[2].pos[1] = writeData[3].pos[1] = writeData[0].pos[1] + curCharData.rect.height * mState.scale;
-
-			writeData[0].uv[0] = writeData[3].uv[0] = curCharData.rect.minUV[0];
-			writeData[1].uv[0] = writeData[2].uv[0] = curCharData.rect.maxUV[0];
-			writeData[0].uv[1] = writeData[1].uv[1] = curCharData.rect.minUV[1];
-			writeData[2].uv[1] = writeData[3].uv[1] = curCharData.rect.maxUV[1];
-
+			writeLayout(std::span<VertexDataLayout, 4>(writeData, 4), posX, posY, curCharData, mState.scale);
 			memcpy(writeData[0].color, colorTemp, sizeof(unsigned char) * 4);
 			memcpy(writeData[1].color, colorTemp, sizeof(unsigned char) * 4);
 			memcpy(writeData[2].color, colorTemp, sizeof(unsigned char) * 4);
@@ -608,18 +620,7 @@ namespace hr { namespace render { namespace tools
 			commitGL();
 
 		auto writeData = mState.charData.data() + (mState.numCharWritten * 4);
-
-		float posY = py + (mFontInfo.baseHeight * mState.scale);
-
-		writeData[0].pos[0] = writeData[3].pos[0] = px + charData.rect.offsetX * mState.scale;
-		writeData[1].pos[0] = writeData[2].pos[0] = writeData[0].pos[0] + charData.rect.width * mState.scale;
-		writeData[0].pos[1] = writeData[1].pos[1] = posY + charData.rect.offsetY * mState.scale;
-		writeData[2].pos[1] = writeData[3].pos[1] = writeData[0].pos[1] + charData.rect.height * mState.scale;
-
-		writeData[0].uv[0] = writeData[3].uv[0] = charData.rect.minUV[0];
-		writeData[1].uv[0] = writeData[2].uv[0] = charData.rect.maxUV[0];
-		writeData[0].uv[1] = writeData[1].uv[1] = charData.rect.minUV[1];
-		writeData[2].uv[1] = writeData[3].uv[1] = charData.rect.maxUV[1];
+		writeLayout(std::span<VertexDataLayout, 4>(writeData, 4), px, py + (mFontInfo.baseHeight * mState.scale), charData, mState.scale);
 
 		mState.stateColor.write(colorTemp);
 		memcpy(writeData[0].color, colorTemp, sizeof(unsigned char) * 4);

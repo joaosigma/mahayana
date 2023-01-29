@@ -17,9 +17,9 @@ namespace hr { namespace render
 		hr::render::Renderer2D& mRenderer;
 		const hr::engine::Profiler& mProfiler;
 		
-		void drawInfo(size_t textSize, const hr::Rectangle<float>& viewRect, const hr::Matrix &transformMatrix) const;
-		void drawStats(size_t textSize, const hr::Rectangle<float>& viewRect, const hr::Matrix &transformMatrix) const;
-		void drawStatsBackground(const hr::Rectangle<float>& viewRect, const hr::Matrix &transformMatrix, float bkgAlpha) const;
+		void drawInfo(size_t textSize, const hr::Rectangle<float>& viewRect, const hr::Matrix4f& transformMatrix) const;
+		void drawStats(size_t textSize, const hr::Rectangle<float>& viewRect, const hr::Matrix4f& transformMatrix) const;
+		void drawStatsBackground(const hr::Rectangle<float>& viewRect, const hr::Matrix4f& transformMatrix, float bkgAlpha) const;
 
 	public:
 		ProfilerUI(const hr::engine::Profiler& profiler, hr::render::Renderer2D& renderer)

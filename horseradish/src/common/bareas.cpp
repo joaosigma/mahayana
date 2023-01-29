@@ -36,10 +36,10 @@ namespace hr
 	*/
 	void BRect::corners(Vector3f points[4]) const
 	{
-		points[0].set(mMinX, mMinY, 0.0f);
-		points[1].set(mMaxX, mMinY, 0.0f);
-		points[2].set(mMaxX, mMaxY, 0.0f);
-		points[3].set(mMinX, mMaxY, 0.0f);
+		points[0] = Vector3f{mMinX, mMinY, 0.0f};
+		points[1] = Vector3f{mMaxX, mMinY, 0.0f};
+		points[2] = Vector3f{mMaxX, mMaxY, 0.0f};
+		points[3] = Vector3f{mMinX, mMaxY, 0.0f};
 	}
 
 	void BRect::merge(const Vector3f &pt)

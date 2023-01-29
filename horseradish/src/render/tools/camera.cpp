@@ -42,19 +42,18 @@ namespace hr::render::tools
 {
 	void CameraFPS::commitInput(CameraAction actionBitfield, float mouseDeltaX, float mouseDeltaY, bool updatePosition, float timeDeltaS)
 	{
-		hr::Quaternion quat;
 		hr::Vector3f viewDir;
 
 		float angX = mouseDeltaX * mScale.mouse;
-		float angY = mouseDeltaY * mScale.mouse * (-1.0f);
+		float angY = mouseDeltaY * mScale.mouse;
 
-		auto axis = mAxis.dir.crossProduct(mAxis.up);
-		axis.normalize();
+		auto strideDir = getStrideDir();
 
-		quat.setAxisAngle(axis, angY);
+		auto quat = Quaternionf::fromAxisAngle(strideDir, angY);
 		viewDir = quat.unitRotate(mAxis.dir);
 		viewDir.normalize();
-		quat.setAxisAngle(0.0f, 1.0f, 0.0f, -angX);
+
+		quat = Quaternionf::fromAxisAngle(0.0f, 1.0f, 0.0f, angX);
 		viewDir = quat.unitRotate(viewDir);
 
 		mAxis.dir = viewDir;
@@ -62,7 +61,7 @@ namespace hr::render::tools
 
 		if (updatePosition)
 		{
-			auto strideDir = getStrideDir();
+			strideDir = getStrideDir();
 			auto movementScale = mScale.keys * timeDeltaS * ((actionBitfield & Run) ? 2.0f : 1.0f);
 
 			if ((actionBitfield & Forward) == Forward)
@@ -79,7 +78,7 @@ namespace hr::render::tools
 				mAxis.pos[1] -= movementScale;
 		}
 
-		mModelView.setGLModelView(mAxis.pos, getTarget(), mAxis.up);
+		mModelView = Matrix4f::glModelView(mAxis.pos, getTarget(), mAxis.up);
 	}
 
 	void CameraFPS::setMovementScale(CameraInput input, float scale)
@@ -114,14 +113,13 @@ namespace hr::render::tools
 
 	void CameraTarget::commitInput(CameraAction actionBitfield, float mouseDeltaX, float mouseDeltaY, float timeDeltaS)
 	{
-		hr::Quaternion quat;
 		hr::Vector3f newDir;
 
 		float angX = mouseDeltaX * mScale.mouse;
 		float angY = mouseDeltaY * mScale.mouse * (-1.0f);
 
-		newDir.set(0.0f, 0.0f, -1.0f);
-		quat.setFromEuler(angX, -angY, 0.0f, Quaternion::AxisOrder::XYZ);
+		newDir = Vector3f{0.0f, 0.0f, -1.0f};
+		auto quat = Quaternionf::fromEuler(angX, -angY, 0.0f, Quaternionf::AxisOrder::XYZ);
 		newDir = quat.unitRotate(newDir);
 		newDir.normalize();
 
@@ -138,7 +136,7 @@ namespace hr::render::tools
 		mAbsFocus = hr::Math::fClamp(mAbsFocus, mOnSphereMinDist, mOnSphereMaxDist);
 		mAxis.pos = curTarget - (newDir * mAbsFocus);
 
-		mModelView.setGLModelView(mAxis.pos, getTarget(), mAxis.up);
+		mModelView = Matrix4f::glModelView(mAxis.pos, getTarget(), mAxis.up);
 	}
 
 	void CameraTarget::setMovementScale(CameraInput input, float scale)
@@ -240,12 +238,12 @@ namespace hr::render::tools
 	{
 		if ((component == Position) && !mPointsPos && (mNumPos < CameraPath::MaxNumPoints))
 		{
-			mPointsPos[mNumPos].set(x, y, z);
+			mPointsPos[mNumPos] = Vector3f{x, y, z};
 			mNumPos++;
 		}
 		else if ((component == Target) && !mPointsTarget && (mNumTarget < CameraPath::MaxNumPoints))
 		{
-			mPointsTarget[mNumTarget].set(x, y, z);
+			mPointsTarget[mNumTarget] = Vector3f{x, y, z};
 			mNumTarget++;
 		}
 	}
@@ -254,12 +252,12 @@ namespace hr::render::tools
 	{
 		if ((component == Position) && !mPointsPos && (mNumPos < CameraPath::MaxNumPoints))
 		{
-			mPointsPos[mNumPos].set(vec);
+			mPointsPos[mNumPos] = vec;
 			mNumPos++;
 		}
 		else if ((component == Target) && !mPointsTarget && (mNumTarget < CameraPath::MaxNumPoints))
 		{
-			mPointsTarget[mNumTarget].set(vec);
+			mPointsTarget[mNumTarget] = vec;
 			mNumTarget++;
 		}
 	}

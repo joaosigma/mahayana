@@ -38,12 +38,12 @@ namespace hr::imaging
 		uint8_t* outBuffer = nullptr;
 
 		if (lodepng_decode24(&outBuffer, &outW, &outH, static_cast<const uint8_t *>(streamContent.data()), streamContent.length()) != 0)
-			return Image<uint8_t, ImageFormatRGB>();
+			return {};
 
 		if (outBuffer)
 			return Image<uint8_t, ImageFormatRGB>(std::unique_ptr<uint8_t[]>(outBuffer), outW, outH);
 
-		return Image<uint8_t, ImageFormatRGB>();
+		return {};
 	}
 
 	Image<uint8_t, ImageFormatRGBA> Factory::readPNGWithAlpha(const hr::streams::StreamReader &streamReader)
@@ -55,12 +55,12 @@ namespace hr::imaging
 		uint8_t* outBuffer = nullptr;
 
 		if (lodepng_decode32(&outBuffer, &outW, &outH, static_cast<const uint8_t *>(streamContent.data()), streamContent.length()) != 0)
-			return Image<uint8_t, ImageFormatRGBA>();
+			return {};
 
 		if (outBuffer)
 			return Image<uint8_t, ImageFormatRGBA>(std::unique_ptr<uint8_t[]>(outBuffer), outW, outH);
 
-		return Image<uint8_t, ImageFormatRGBA>();
+		return {};
 	}
 
 	bool Factory::savePNG(hr::streams::StreamWriter &streamWriter, const ImageView<uint8_t, ImageFormatRGB>& imgView)
@@ -112,7 +112,7 @@ namespace hr::imaging
 
 		auto imgData = stbi_load_from_callbacks(&ioCbS, &streamReader, &imgWidth, &imgHeight, &imgNumComponents, 4);
 		if (!imgData)
-			return Image<uint8_t, ImageFormatRGBA>();
+			return {};
 
 		return Image<uint8_t, ImageFormatRGBA>(std::unique_ptr<uint8_t[]>(imgData), imgWidth, imgHeight);
 	}
@@ -128,7 +128,7 @@ namespace hr::imaging
 
 		auto imgData = stbi_load_from_callbacks(&ioCbS, &streamReader, &imgWidth, &imgHeight, &imgNumComponents, 3);
 		if (!imgData)
-			return Image<uint8_t, ImageFormatRGB>();
+			return {};
 
 		return Image<uint8_t, ImageFormatRGB>(std::unique_ptr<uint8_t[]>(imgData), imgWidth, imgHeight);
 	}
@@ -144,7 +144,7 @@ namespace hr::imaging
 
 		auto imgData = stbi_loadf_from_callbacks(&ioCbS, &streamReader, &imgWidth, &imgHeight, &imgNumComponents, 3);
 		if (!imgData)
-			return Image<float, ImageFormatRGB>();
+			return {};
 
 		return Image<float, ImageFormatRGB>(std::unique_ptr<float[]>(imgData), imgWidth, imgHeight);
 	}
@@ -159,7 +159,8 @@ namespace hr::imaging
 		{
 			if (bufferOut)
 				free(bufferOut);
-			return Image<float, ImageFormatRGBA>();
+
+			return {};
 		}
 
 		return Image<float, ImageFormatRGBA>(std::unique_ptr<float[]>(bufferOut), width, height);

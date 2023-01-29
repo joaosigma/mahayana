@@ -1,6 +1,9 @@
 #include "engine.hpp"
 
+#include "render/raytracer.hpp"
+#include "common/imageFactory.hpp"
 #include "common/opengl/openGL.hpp"
+
 #include "../build.hpp"
 
 #include <format>
@@ -28,30 +31,38 @@ namespace hr { namespace engine
 			mWindow->sendMessageClose();
 	}
 
+	void Engine::initParseCmdLine(std::string_view cmdLine)
+	{
+		if (cmdLine.find("--debugRaytracer") != std::string_view::npos)
+			mCmdLineOptions.dbgRayTrace = true;
+	}
+
 	void Engine::initFileSystem()
 	{
 		mFileSystem = std::make_shared<hr::io::FileSystem>(10);
 
 		//mount current and previous directory
-		auto currentFolder = hr::io::Path(hr::io::Path::KnownPath::CurrentFolder);
-		mFileSystem->mountPath(currentFolder, {});
-		currentFolder.removeLastComponent();
-		mFileSystem->mountPath(currentFolder, {});
+		{
+			auto currentPath = std::filesystem::current_path();
+		
+			mFileSystem->mountPath(currentPath, {});
+			mFileSystem->mountPath(currentPath.parent_path(), {});
+		}
 
 		//mount main game resource directory
-		mFileSystem->mountPath(hr::io::Path("d:/jogos/doom3/base/"), {});
+		mFileSystem->mountPath(std::filesystem::path{"d:/jogos/doom3/base/"}, {});
 		mLoggerRuntimeCtx->info("${olive}->${default}Path set to: \"d:/jogos/doom3/base/\"");
 
 		size_t totalFich = 0;
 		size_t totalPacks = 0;
 
 		//for every pack/zip/7zip file
-		hr::io::FileSystem::findFiles("d:/jogos/doom3/base/pak*.pk4", true, [&](const hr::io::Path &filePath, const uint64_t&)
+		hr::io::FileSystem::findFiles("d:/jogos/doom3/base/pak*.pk4", true, [&](const std::filesystem::path &path, const uint64_t&)
 		{
 			size_t numFilesZip;
 
 			//mount the zip file as a directoty
-			if (mFileSystem->mountZip(filePath, {}, &numFilesZip))
+			if (mFileSystem->mountZip(path, {}, &numFilesZip))
 			{
 				totalPacks += 1;
 				totalFich += numFilesZip;
@@ -204,7 +215,7 @@ namespace hr { namespace engine
 		ctx.setReturnValue(finalList);
 	}
 
-	void Engine::runtimeFuncRuntime(const std::string &funcName, Runtime::FunctionReturnContext &ctx)
+	void Engine::runtimeFuncRuntime(const std::string &funcName, Runtime::FunctionReturnContext &)
 	{
 		if (funcName == "runtime.quit")
 		{
@@ -227,46 +238,35 @@ namespace hr { namespace engine
 
 	void Engine::logSysInfo()
 	{
-		std::string auxInfo;
-
 		//misc info
 		mLoggerRuntimeCtx->info("${olive}->${default}System information:");
 
-		if (hr::platform::Platform::cpuGetVendorID(auxInfo))
-			mLoggerRuntimeCtx->info("   CPU vendor ID: {0}", auxInfo);
-		if (hr::platform::Platform::cpuGetProcessorName(auxInfo))
-			mLoggerRuntimeCtx->info("   CPU processor name: {0}", auxInfo);
+		if (auto info = hr::platform::Platform::cpuGetVendorID(); info)
+			mLoggerRuntimeCtx->info("   CPU vendor ID: {}", *info);
+		if (auto info = hr::platform::Platform::cpuGetProcessorName(); info)
+			mLoggerRuntimeCtx->info("   CPU processor name: {}", *info);
 
 		{
-			int64_t memTotal, memFree;
+			auto memTotal = hr::platform::Platform::systemInfoInt(hr::platform::Platform::SystemInfo::MemoryTotal);
+			auto memFree = hr::platform::Platform::systemInfoInt(hr::platform::Platform::SystemInfo::MemoryFree);
 
-			hr::platform::Platform::systemInfo(hr::platform::Platform::SystemInfo::MemoryTotal, memTotal);
-			hr::platform::Platform::systemInfo(hr::platform::Platform::SystemInfo::MemoryFree, memFree);
-
-			mLoggerRuntimeCtx->info("   Total physical memory: {0}", hr::StringUtils::formatSize(memTotal));
-			mLoggerRuntimeCtx->info("   Free physical memory: {0}", hr::StringUtils::formatSize(memFree));
+			mLoggerRuntimeCtx->info("   Total physical memory: {0}", hr::StringUtils::formatSize(memTotal.value_or(0)));
+			mLoggerRuntimeCtx->info("   Free physical memory: {0}", hr::StringUtils::formatSize(memFree.value_or(0)));
 		}
 
 		{
-			int64_t displayWidth, displayHeight, displayColorBits, displayFrequency;
-
-			hr::platform::Platform::systemInfo(hr::platform::Platform::SystemInfo::DisplayWidth, displayWidth);
-			hr::platform::Platform::systemInfo(hr::platform::Platform::SystemInfo::DisplayHeight, displayHeight);
-			hr::platform::Platform::systemInfo(hr::platform::Platform::SystemInfo::DisplayColorBits, displayColorBits);
-			hr::platform::Platform::systemInfo(hr::platform::Platform::SystemInfo::DisplayFrequency, displayFrequency);
-			mLoggerRuntimeCtx->info("   Desktop resolution: {0}x{1}x{2}@{3}", displayWidth, displayHeight, displayColorBits, displayFrequency);
+			auto displayWidth = hr::platform::Platform::systemInfoInt(hr::platform::Platform::SystemInfo::DisplayWidth);
+			auto displayHeight = hr::platform::Platform::systemInfoInt(hr::platform::Platform::SystemInfo::DisplayHeight);
+			auto displayColorBits = hr::platform::Platform::systemInfoInt(hr::platform::Platform::SystemInfo::DisplayColorBits);
+			auto displayFrequency = hr::platform::Platform::systemInfoInt(hr::platform::Platform::SystemInfo::DisplayFrequency);
+			mLoggerRuntimeCtx->info("   Desktop resolution: {0}x{1}x{2}@{3}", displayWidth.value_or(0), displayHeight.value_or(0), displayColorBits.value_or(0), displayFrequency.value_or(0));
 		}
 
-		hr::platform::Platform::systemInfo(hr::platform::Platform::SystemInfo::OperatingSystemName, auxInfo);
-		mLoggerRuntimeCtx->info("   Operating system: {0}", auxInfo);
 
+		mLoggerRuntimeCtx->info("   Operating system: {0}", hr::platform::Platform::systemInfoStr(hr::platform::Platform::SystemInfo::OperatingSystemName).value_or(""));
 		mLoggerRuntimeCtx->info(hr::platform::Platform::isArch64() ? "   Build type: x86 64bit" : "   Build type: x86 32bit");
-
-		hr::platform::Platform::systemInfo(hr::platform::Platform::SystemInfo::MachineName, auxInfo);
-		mLoggerRuntimeCtx->info("   Machine name: {0}", auxInfo);
-
-		hr::platform::Platform::systemInfo(hr::platform::Platform::SystemInfo::CurrentUsername, auxInfo);
-		mLoggerRuntimeCtx->info("   User name: {0}", auxInfo);
+		mLoggerRuntimeCtx->info("   Machine name: {0}", hr::platform::Platform::systemInfoStr(hr::platform::Platform::SystemInfo::MachineName).value_or(""));
+		mLoggerRuntimeCtx->info("   User name: {0}", hr::platform::Platform::systemInfoStr(hr::platform::Platform::SystemInfo::CurrentUsername).value_or(""));
 
 		//test UTF8
 		mLoggerRuntimeCtx->info("${olive}->${default}UTF8 text test:");
@@ -278,15 +278,24 @@ namespace hr { namespace engine
 		mLoggerRuntimeCtx->info("   مرحبا");
 	}
 
-	Engine::Engine(const std::string &cmdLine, bool devMode)
+	Engine::Engine(std::string_view cmdLine, bool devMode)
 		: mDevMode(devMode)
+		, mAsyncDispatcher{mAsyncScheduler}
 	{
-		//initiate logger
-		mLogger = std::make_shared<Logger>(10, 500, hr::io::Path("../logs/log.txt"));
+		initParseCmdLine(cmdLine);
+
+		mLogger = std::make_shared<Logger>(10, 500, "../logs/log.txt");
 		mLoggerRenderCtx = std::make_shared<Logger::Context>(*mLogger, Logger::ModuleType::Graphics);
 		mLoggerRuntimeCtx = std::make_shared<Logger::Context>(*mLogger, Logger::ModuleType::SysRuntime);
 
-		//initiate runtime
+		{
+			auto maxThreads = std::min<size_t>(std::thread::hardware_concurrency() * 2, 10);
+			
+			mAsyncThreads.reserve(maxThreads);
+			for (size_t curThread = 0; curThread < maxThreads; curThread++)
+				mAsyncThreads.push_back(std::jthread([this]() { mAsyncScheduler.run(); }));
+		}
+
 		mRuntime = std::make_shared<Runtime>(*mLoggerRuntimeCtx);
 
 		mRuntime->registerFunc("runtime.varCreate", std::bind(&Engine::runtimeFuncVarRegister, this, std::placeholders::_1, std::placeholders::_2));
@@ -311,11 +320,11 @@ namespace hr { namespace engine
 		{
 			std::string strAux;
 
-			if (hr::platform::Platform::cpuGetVendorID(strAux))
-				var<std::string>("sys.info.cpuVendor", strAux);
-			if (hr::platform::Platform::cpuGetProcessorName(strAux))
-				var<std::string>("sys.info.cpuName", strAux);
-			var<std::string>("sys.info.build", std::format("Horseradish v1.0.0 (alpha build {0})", BuildNumber));
+			if (auto info = hr::platform::Platform::cpuGetVendorID(); info)
+				var<std::string>("sys.info.cpuVendor", *info);
+			if (auto info = hr::platform::Platform::cpuGetProcessorName(); info)
+				var<std::string>("sys.info.cpuName", *info);
+			var<std::string>("sys.info.build", std::format("Horseradish v1.0.0 ({})", hr::build::Hash));
 		}
 
 		//first entries
@@ -327,6 +336,12 @@ namespace hr { namespace engine
 	Engine::~Engine()
 	{
 		mRuntime.reset();
+
+		mAsyncDispatcher.stopAndWait();
+		mAsyncScheduler.stop();
+		for (auto& thread : mAsyncThreads)
+			thread.join();
+		mAsyncThreads.clear();
 
 		mLoggerRuntimeCtx.reset();
 		mLoggerRenderCtx.reset();
@@ -446,6 +461,38 @@ namespace hr { namespace engine
 		assert(mCurState == State::Created);
 		if (mCurState != State::Created)
 			return false;
+
+		//if we want to simply run the raytracer
+		if (mCmdLineOptions.dbgRayTrace)
+		{
+			auto raytracer = hr::render::Raytracer(mAsyncDispatcher, 1024, 768);
+
+			hr::render::tools::Camera cam;
+			raytracer.trace(cam, hr::gl::tools::Viewport{1024, 768});
+
+			{
+				auto srcImg = raytracer.buffer().clone();
+				srcImg.transform(
+				  [](hr::Colorf& pixel)
+				  {
+					  pixel[0] = hr::Colorf::convertLinear2SRGB(pixel[0]);
+					  pixel[1] = hr::Colorf::convertLinear2SRGB(pixel[1]);
+					  pixel[2] = hr::Colorf::convertLinear2SRGB(pixel[2]);
+					  return true;
+				  });
+
+				auto finalImg = srcImg.convert<uint8_t, hr::imaging::ImageFormatRGB>(1.0f, 0.0f);
+
+				hr::streams::FileStream fs(R"(../raytrace.png)", false, true);
+				hr::streams::StreamWriter swriter{fs};
+				hr::imaging::Factory::savePNG(swriter, finalImg);
+			}
+
+			//leave
+			mExitCode = 0;
+			mCurState = State::Stopped;
+			return true;
+		}
 
 		//initiate every system
 		mCurState = State::Initializing;

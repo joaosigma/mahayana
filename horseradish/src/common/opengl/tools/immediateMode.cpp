@@ -195,13 +195,13 @@ namespace hr::gl::tools
 		resetState();
 	}
 
-	void ImmediateMode::setTexCoord(const float& u, const float& v)
+	void ImmediateMode::setTexCoord(const float u, const float v)
 	{
 		mState.uv[0] = u;
 		mState.uv[1] = v;
 	}
 
-	void ImmediateMode::setColor(const unsigned char& r, const unsigned char& g, const unsigned char& b)
+	void ImmediateMode::setColor(const unsigned char r, const unsigned char g, const unsigned char b)
 	{
 		mState.color[0] = r;
 		mState.color[1] = g;
@@ -209,7 +209,7 @@ namespace hr::gl::tools
 		mState.color[3] = 255;
 	}
 
-	void ImmediateMode::setColor(const unsigned char& r, const unsigned char& g, const unsigned char& b, const unsigned char& a)
+	void ImmediateMode::setColor(const unsigned char r, const unsigned char g, const unsigned char b, const unsigned char a)
 	{
 		mState.color[0] = r;
 		mState.color[1] = g;
@@ -217,7 +217,7 @@ namespace hr::gl::tools
 		mState.color[3] = a;
 	}
 
-	void ImmediateMode::setColorF(const float& rgb)
+	void ImmediateMode::setColorF(const float rgb)
 	{
 		mState.color[0] = Colorf::convertColor(rgb);
 		mState.color[1] = mState.color[0];
@@ -225,7 +225,7 @@ namespace hr::gl::tools
 		mState.color[3] = 255;
 	}
 
-	void ImmediateMode::setColorF(const float& rgb, const float& a)
+	void ImmediateMode::setColorF(const float rgb, const float a)
 	{
 		mState.color[0] = Colorf::convertColor(rgb);
 		mState.color[1] = mState.color[0];
@@ -233,7 +233,7 @@ namespace hr::gl::tools
 		mState.color[3] = Colorf::convertColor(a);
 	}
 
-	void ImmediateMode::setColorF(const float& r, const float& g, const float& b)
+	void ImmediateMode::setColorF(const float r, const float g, const float b)
 	{
 		mState.color[0] = Colorf::convertColor(r);
 		mState.color[1] = Colorf::convertColor(g);
@@ -241,7 +241,7 @@ namespace hr::gl::tools
 		mState.color[3] = 255;
 	}
 
-	void ImmediateMode::setColorF(const float& r, const float& g, const float& b, const float& a)
+	void ImmediateMode::setColorF(const float r, const float g, const float b, const float a)
 	{
 		mState.color[0] = Colorf::convertColor(r);
 		mState.color[1] = Colorf::convertColor(g);
@@ -265,17 +265,17 @@ namespace hr::gl::tools
 		mState.color[3] = 255;
 	}
 
-	void ImmediateMode::addPosition(const float& x)
+	void ImmediateMode::addPosition(const float x)
 	{
 		addPosition(x, 0.0f, 0.0f);
 	}
 
-	void ImmediateMode::addPosition(const float& x, const float& y)
+	void ImmediateMode::addPosition(const float x, const float y)
 	{
 		addPosition(x, y, 0.0f);
 	}
 
-	void ImmediateMode::addPosition(const float& x, const float& y, const float& z)
+	void ImmediateMode::addPosition(const float x, const float y, const float z)
 	{
 		if (mState.geomType == GeometryType::None)
 			return;
@@ -299,18 +299,23 @@ namespace hr::gl::tools
 		mState.curVertex++;
 	}
 
-	void ImmediateMode::addQuad(const float& x, const float& y, const float& width, const float& height)
+	void ImmediateMode::addPosition(const Vector3f& vec)
+	{
+		addPosition(vec[0], vec[1], vec[2]);
+	}
+
+	void ImmediateMode::addQuad(const float x, const float y, const float width, const float height)
 	{
 		if (mState.geomType != GeometryType::Quads)
 			return;
 
 		addPosition(x, y);
-		addPosition(x + width, y);
-		addPosition(x + width, y + height);
 		addPosition(x, y + height);
+		addPosition(x + width, y + height);
+		addPosition(x + width, y);
 	}
 
-	void ImmediateMode::addQuadTexCoords(const float& x, const float& y, const float& width, const float& height, bool normalizedTexCoords)
+	void ImmediateMode::addQuadTexCoords(const float x, const float y, const float width, const float height, bool normalizedTexCoords)
 	{
 		if (mState.geomType != GeometryType::Quads)
 			return;
@@ -321,14 +326,14 @@ namespace hr::gl::tools
 			mState.uv[1] = 0.0f;
 			addPosition(x, y);
 
-			mState.uv[0] = 1.0f;
-			addPosition(x + width, y);
-
 			mState.uv[1] = 1.0f;
+			addPosition(x, y + height);
+
+			mState.uv[0] = 1.0f;
 			addPosition(x + width, y + height);
 
-			mState.uv[0] = 0.0f;
-			addPosition(x, y + height);
+			mState.uv[1] = 0.0f;
+			addPosition(x + width, y);
 		}
 		else
 		{
@@ -336,18 +341,18 @@ namespace hr::gl::tools
 			mState.uv[1] = y;
 			addPosition(x, y);
 
-			mState.uv[0] = x + width;
-			addPosition(x + width, y);
+			mState.uv[1] = y + width;
+			addPosition(x, y + height);
 
-			mState.uv[1] = y + height;
+			mState.uv[0] = x + height;
 			addPosition(x + width, y + height);
 
-			mState.uv[0] = x;
-			addPosition(x, y + height);
+			mState.uv[1] = y;
+			addPosition(x + width, y);
 		}
 	}
 
-	void ImmediateMode::addLine(const float& x1, const float& y1, const float& x2, const float& y2)
+	void ImmediateMode::addLine(const float x1, const float y1, const float x2, const float y2)
 	{
 		if (mState.geomType != GeometryType::Lines)
 			return;
@@ -356,7 +361,7 @@ namespace hr::gl::tools
 		addPosition(x2, y2);
 	}
 
-	void ImmediateMode::addLineH(const float& x1, const float& x2, const float& y)
+	void ImmediateMode::addLineH(const float x1, const float x2, const float y)
 	{
 		if (mState.geomType != GeometryType::Lines)
 			return;
@@ -365,7 +370,7 @@ namespace hr::gl::tools
 		addPosition(x2, y);
 	}
 
-	void ImmediateMode::addLineV(const float& x, const float& y1, const float& y2)
+	void ImmediateMode::addLineV(const float x, const float y1, const float y2)
 	{
 		if (mState.geomType != GeometryType::Lines)
 			return;
