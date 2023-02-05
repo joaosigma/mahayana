@@ -341,10 +341,10 @@ namespace hr::gl::tools
 			mState.uv[1] = y;
 			addPosition(x, y);
 
-			mState.uv[1] = y + width;
+			mState.uv[1] = y + height;
 			addPosition(x, y + height);
 
-			mState.uv[0] = x + height;
+			mState.uv[0] = x + width;
 			addPosition(x + width, y + height);
 
 			mState.uv[1] = y;

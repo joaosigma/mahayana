@@ -20,33 +20,34 @@ namespace hr { namespace misc
 		struct TimerInfo{
 			hr::Timer timer;
 			double timestampS = 0.0;
-		}mTimerInfo;
+		} mTimerInfo;
 
 		struct VideoInfo{
 			AVCodecContext *codecContext = nullptr;
-			AVCodec *codec = nullptr;
 			AVFrame *videoFrameOriginal = nullptr;
 			AVStream *stream = nullptr;
+			AVPacket *packet = nullptr;
 			double avgFrameRate = 0.0;
 			SwsContext *pixelConvertContext = nullptr;
 			int streamIndex = -1;
 			size_t frameBufferSize = 0;
-		}mVideoInfo;
+		} mVideoInfo;
 
 		struct VideoFrame{
 			AVFrame *avFrame = nullptr;
 			uint8_t *frameData = nullptr;
 			double frameStart = 0.0, frameDuration = 0.0, frameEnd = 0.0;
 			int64_t framePTS = 0;
-		}*mVideoQueue;
+		};
+		std::unique_ptr<VideoFrame[]> mVideoQueue;
 		size_t mVideoQueueMax = 0, mVideoQueueActive = 0;
 
 		struct AudioInfo{
 			AVCodecContext *codecContext = nullptr;
-			AVCodec *codec = nullptr;
 			int streamIndex = -1;
-		}mAudioInfo;
+		} mAudioInfo;
 
+		void readAVFrame();
 		void processAVFrame();
 		void recycleVideoFrameQueue();
 		VideoFrame* getLatestFrame() const;
@@ -54,8 +55,6 @@ namespace hr { namespace misc
 	public:
 		explicit VideoStream(size_t maxFramesQueue, AVPixelFormat frameTargetPixelFormat, const char * const videoFilePath);
 		~VideoStream();
-
-		static void Initialize();
 
 		void process();
 

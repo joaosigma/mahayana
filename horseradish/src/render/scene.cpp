@@ -11,8 +11,6 @@ namespace hr { namespace render
 		: mName(name), mFilePath(filePath)
 		, mRuntime(runtime), mLogger(logger), mGlCtx(glCtx)
 	{
-		misc::VideoStream::Initialize();
-
 		mVideoData.stream = std::make_unique<misc::VideoStream>(3, AVPixelFormat::AV_PIX_FMT_BGR24, mFilePath.c_str());
 		if (!mVideoData.stream->isValid())
 		{
@@ -22,7 +20,10 @@ namespace hr { namespace render
 
 		mVideoData.stream->getVideoDims(mVideoData.frameSize.width, mVideoData.frameSize.height);
 
-		mRenderData.texVideo.init(hr::gl::objects::Texture::Type::TexRectangle, hr::gl::objects::Texture::StorageType::RGBA_8, mVideoData.frameSize.width, mVideoData.frameSize.height);
+		mRenderData.windowSize = hr::Size<int>(renderWidth, renderHeight);
+		mRenderData.proj2D = hr::gl::tools::Viewport::genMatrix2DProj(renderWidth, renderHeight);
+
+		mRenderData.texVideo.init(hr::gl::objects::Texture::Type::TexRectangle, hr::gl::objects::Texture::StorageType::SRGBA_8, mVideoData.frameSize.width, mVideoData.frameSize.height);
 
 		mRenderData.bufferPBO.init(hr::gl::objects::Buffer::Type::PixelUnpackBuffer, mVideoData.stream->getVideoFrameDataSize(), hr::gl::objects::Buffer::UsageType::OnlyWrite);
 
@@ -33,17 +34,12 @@ namespace hr { namespace render
 		//std::string infoLog = mRenderData.progVertex.getInfoLog();
 		//infoLog += mRenderData.progFragment.getInfoLog();
 
-		auto matrixProj2D = hr::gl::tools::Viewport::genMatrix2DProj(renderWidth, renderHeight);
-
 		hr::gl::glProgramUniform1i(mRenderData.progFragment.id(), mRenderData.progFragment.getUniformLocation("texSampler"), 0);
-		hr::gl::glProgramUniformMatrix4fv(mRenderData.progVertex.id(), mRenderData.progVertex.getUniformLocation("transformationMatrix"), 1, false, matrixProj2D.data().data());
+		hr::gl::glProgramUniformMatrix4fv(mRenderData.progVertex.id(), mRenderData.progVertex.getUniformLocation("projectionMatrix"), 1, false, mRenderData.proj2D.data().data());
 
 		mRenderData.progPipeline.init();
 		mRenderData.progPipeline.setStage(mRenderData.progVertex);
 		mRenderData.progPipeline.setStage(mRenderData.progFragment);
-
-		mRenderData.windowSize.reset(renderWidth, renderHeight);
-		mRenderData.proj2D = hr::gl::tools::Viewport::genMatrix2DProj(mRenderData.windowSize.width, mRenderData.windowSize.height);
 	}
 
 	Scene::~Scene()
@@ -94,6 +90,8 @@ namespace hr { namespace render
 			mRenderData.sampler.bind(0);
 			mRenderData.texVideo.bind(0);
 
+			//NOTE: video is flipped
+
 			mRenderData.imode.beginDraw(hr::gl::tools::ImmediateMode::GeometryType::Quads);
 			mRenderData.imode.setColorF(1.0f, 1.0f, 1.0f, mRenderData.fadingAlpha);
 
@@ -112,7 +110,6 @@ namespace hr { namespace render
 			mRenderData.imode.endDraw();
 
 			hr::gl::glDisable(GL_BLEND);
-			hr::gl::glBindProgramPipeline(0);
 		}
 
 		return true;

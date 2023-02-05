@@ -386,6 +386,8 @@ namespace hr::engine
 				{
 					auto fontSize = static_cast<size_t>(var<int>("sys.console.text.size"));
 
+					hr::gl::glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
 					hr::gl::glEnable(GL_BLEND);
 					hr::gl::glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 

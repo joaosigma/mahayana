@@ -26,10 +26,8 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 if (CMAKE_GENERATOR MATCHES "^Visual Studio")
 
-	if (NOT ("${CMAKE_GENERATOR_PLATFORM}" STREQUAL "Win32" OR "${CMAKE_GENERATOR_PLATFORM}" STREQUAL "x64"))
-
-		message(FATAL_ERROR "For Windows builds, only \"Win32\" and \"x64\" architectures are supported")
-
+	if (NOT "${CMAKE_GENERATOR_PLATFORM}" STREQUAL "x64")
+		message(FATAL_ERROR "Only \"x64\" builds are supported")
 	endif()
 
 endif()
@@ -91,8 +89,8 @@ if (CMAKE_GENERATOR MATCHES "^Visual Studio")
 
 	set(HR_COMPILER_DEFS
 
-		WINVER=0x0601 # Windows 7
-		_WIN32_WINNT=0x0601 # Windows 7
+		WINVER=0x0A00 # Windows 10
+		_WIN32_WINNT=0x0A00 # Windows 10
 		NTDDI_VERSION=0x06010000
 
 		_UNICODE #default Windows APIs to Unicode
@@ -177,39 +175,19 @@ target_include_directories(horseradish-utests PUBLIC ${CMAKE_CURRENT_LIST_DIR}/e
 
 if (CMAKE_GENERATOR MATCHES "^Visual Studio")
 
-	if ("${CMAKE_GENERATOR_PLATFORM}" STREQUAL "Win32")
+	set_target_properties(horseradish PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_CURRENT_LIST_DIR}/../sandbox/bin")
 
-		set_target_properties(horseradish PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_CURRENT_LIST_DIR}/../sandbox/bin_x86")
-		
-		target_link_libraries(horseradish PRIVATE ${CMAKE_CURRENT_LIST_DIR}/external_libs/x86/ffmpeg/avcodec.lib)
-		target_link_libraries(horseradish PRIVATE ${CMAKE_CURRENT_LIST_DIR}/external_libs/x86/ffmpeg/avformat.lib)
-		target_link_libraries(horseradish PRIVATE ${CMAKE_CURRENT_LIST_DIR}/external_libs/x86/ffmpeg/avutil.lib)
-		target_link_libraries(horseradish PRIVATE ${CMAKE_CURRENT_LIST_DIR}/external_libs/x86/ffmpeg/swscale.lib)
+	target_link_libraries(horseradish PRIVATE ${CMAKE_CURRENT_LIST_DIR}/external_libs/ffmpeg_x64/avcodec.lib)
+	target_link_libraries(horseradish PRIVATE ${CMAKE_CURRENT_LIST_DIR}/external_libs/ffmpeg_x64/avformat.lib)
+	target_link_libraries(horseradish PRIVATE ${CMAKE_CURRENT_LIST_DIR}/external_libs/ffmpeg_x64/avutil.lib)
+	target_link_libraries(horseradish PRIVATE ${CMAKE_CURRENT_LIST_DIR}/external_libs/ffmpeg_x64/swscale.lib)
 
-		set_target_properties(horseradish-utests PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_CURRENT_LIST_DIR}/../sandbox/bin_x86")
+	set_target_properties(horseradish-utests PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_CURRENT_LIST_DIR}/../sandbox/bin")
 
-		target_link_libraries(horseradish-utests PRIVATE ${CMAKE_CURRENT_LIST_DIR}/external_libs/x86/ffmpeg/avcodec.lib)
-		target_link_libraries(horseradish-utests PRIVATE ${CMAKE_CURRENT_LIST_DIR}/external_libs/x86/ffmpeg/avformat.lib)
-		target_link_libraries(horseradish-utests PRIVATE ${CMAKE_CURRENT_LIST_DIR}/external_libs/x86/ffmpeg/avutil.lib)
-		target_link_libraries(horseradish-utests PRIVATE ${CMAKE_CURRENT_LIST_DIR}/external_libs/x86/ffmpeg/swscale.lib)
-
-	else ()
-
-		set_target_properties(horseradish PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_CURRENT_LIST_DIR}/../sandbox/bin_x64")
-
-		target_link_libraries(horseradish PRIVATE ${CMAKE_CURRENT_LIST_DIR}/external_libs/x64/ffmpeg/avcodec.lib)
-		target_link_libraries(horseradish PRIVATE ${CMAKE_CURRENT_LIST_DIR}/external_libs/x64/ffmpeg/avformat.lib)
-		target_link_libraries(horseradish PRIVATE ${CMAKE_CURRENT_LIST_DIR}/external_libs/x64/ffmpeg/avutil.lib)
-		target_link_libraries(horseradish PRIVATE ${CMAKE_CURRENT_LIST_DIR}/external_libs/x64/ffmpeg/swscale.lib)
-
-		set_target_properties(horseradish-utests PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_CURRENT_LIST_DIR}/../sandbox/bin_x64")
-
-		target_link_libraries(horseradish-utests PRIVATE ${CMAKE_CURRENT_LIST_DIR}/external_libs/x64/ffmpeg/avcodec.lib)
-		target_link_libraries(horseradish-utests PRIVATE ${CMAKE_CURRENT_LIST_DIR}/external_libs/x64/ffmpeg/avformat.lib)
-		target_link_libraries(horseradish-utests PRIVATE ${CMAKE_CURRENT_LIST_DIR}/external_libs/x64/ffmpeg/avutil.lib)
-		target_link_libraries(horseradish-utests PRIVATE ${CMAKE_CURRENT_LIST_DIR}/external_libs/x64/ffmpeg/swscale.lib)
-
-	endif()
+	target_link_libraries(horseradish-utests PRIVATE ${CMAKE_CURRENT_LIST_DIR}/external_libs/ffmpeg_x64/avcodec.lib)
+	target_link_libraries(horseradish-utests PRIVATE ${CMAKE_CURRENT_LIST_DIR}/external_libs/ffmpeg_x64/avformat.lib)
+	target_link_libraries(horseradish-utests PRIVATE ${CMAKE_CURRENT_LIST_DIR}/external_libs/ffmpeg_x64/avutil.lib)
+	target_link_libraries(horseradish-utests PRIVATE ${CMAKE_CURRENT_LIST_DIR}/external_libs/ffmpeg_x64/swscale.lib)
 
 endif()
 
