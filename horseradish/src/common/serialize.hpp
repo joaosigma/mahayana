@@ -162,6 +162,8 @@ namespace hr::serialize
 		template<typename T>
 		ArchiveReader& operator>>(const T& value)
 		{
+			static_assert(!std::is_same_v<T, size_t>); //because size_t size varies between architectures
+
 			if constexpr (traits::is_std_span<T>::value)
 			{
 				auto numElements = m_archive.readFixed<uint32_t>();
@@ -197,7 +199,7 @@ namespace hr::serialize
 		}
 
 		template<typename T>
-		ArchiveReader& operator >> (T& value)
+		ArchiveReader& operator>> (T& value)
 		{
 			if constexpr (std::is_enum_v<T>)
 			{
@@ -313,6 +315,8 @@ namespace hr::serialize
 		template<typename T>
 		ArchiveWriter& operator<<(const T& value)
 		{
+			static_assert(!std::is_same_v<T, size_t>); //because size_t size varies between architectures
+
 			if constexpr (traits::is_named_param<T>::value)
 			{
 				m_archive.writeObjectField(value.name);

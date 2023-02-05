@@ -8,6 +8,8 @@ int WINAPI wWinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ PWSTR lpCmdLine, _I
 	static_assert(sizeof(unsigned char) == 1);
 	static_assert(sizeof(unsigned short) == 2);
 	static_assert(sizeof(unsigned int) == 4);
+	static_assert(sizeof(short) == 2);
+	static_assert(sizeof(int) == 4);
 	static_assert(sizeof(float) == 4);
 	static_assert(sizeof(double) == 8);
 

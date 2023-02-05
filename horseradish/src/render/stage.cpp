@@ -250,7 +250,7 @@ namespace hr { namespace render
 
 		auto matrixProj2D = hr::gl::tools::Viewport::genMatrix2DProj(renderWidth, renderHeight);
 		hr::gl::glProgramUniform1i(mRenderData.progFragment.id(), mRenderData.progFragment.getUniformLocation("texSampler"), 0);
-		hr::gl::glProgramUniformMatrix4fv(mRenderData.progVertex.id(), mRenderData.progVertex.getUniformLocation("transformationMatrix"), 1, false, matrixProj2D.data().data());
+		hr::gl::glProgramUniformMatrix4fv(mRenderData.progVertex.id(), mRenderData.progVertex.getUniformLocation("projectionMatrix"), 1, false, matrixProj2D.data().data());
 
 		mRenderData.progPipeline.init();
 		mRenderData.progPipeline.setStage(mRenderData.progVertex);
@@ -283,8 +283,6 @@ namespace hr { namespace render
 		for (auto& scene : mTempScenes)
 			mScenesDrawned |= scene->getScene().processDraw();
 
-		hr::gl::glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
 		for (auto& scene : mTempScenes)
 			scene->rtInvokeDraw();
 
@@ -293,10 +291,13 @@ namespace hr { namespace render
 
 	void Stage::drawComposite(const hr::gl::tools::Viewport& viewport)
 	{
-		if (!mScenesDrawned)
+		if (!std::exchange(mScenesDrawned, false))
 			return;
 
-		mScenesDrawned = false;
+		hr::gl::glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+		hr::gl::glDisable(GL_DEPTH_TEST);
+		hr::gl::glDepthMask(GL_FALSE);
 
 		hr::gl::glBindProgramPipeline(mRenderData.progPipeline.id());
 

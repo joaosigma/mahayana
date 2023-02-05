@@ -1,79 +1,109 @@
 #include "videoStream.hpp"
 
 extern "C" {
-#include <libavutil/avutil.h>
+	#include <libavutil/imgutils.h>
+	#include <libavcodec/avcodec.h>
 }
 
 //define this to reproduce the video as quickly as possible
 //#define VIDEO_IGNORE_TIMING
 
-namespace hr { namespace misc
+namespace hr::misc
 {
-	void VideoStream::processAVFrame()
+	void VideoStream::readAVFrame()
 	{
-		AVPacket packet;
-
 		if (mVideoQueueActive >= mVideoQueueMax)
 			return;
 
-		while (av_read_frame(mFormatContext, &packet) >= 0)
+		std::function<bool(AVPacket *packet)> processPacket;
+		processPacket = [this, &processPacket](AVPacket *packet)
 		{
-			if (packet.stream_index == mVideoInfo.streamIndex)
+			//try to read something
+			switch (avcodec_receive_frame(mVideoInfo.codecContext, mVideoInfo.videoFrameOriginal))
 			{
-				int videoFrameEnded;
-				avcodec_decode_video2(mVideoInfo.codecContext, mVideoInfo.videoFrameOriginal, &videoFrameEnded, &packet);
+				//sucess (there was still data in the codec)
+				case 0:
+					processAVFrame();
+					return true;
 
-				if (videoFrameEnded != 0)
-				{
-					VideoFrame *framePrevious = nullptr;
-					if (mVideoQueueActive >= 1)
-						framePrevious = mVideoQueue + mVideoQueueActive - 1;
-
-					auto *frameTarget = mVideoQueue + mVideoQueueActive;
-					mVideoQueueActive++;
-
-					auto videoFramePTS = mVideoInfo.videoFrameOriginal->best_effort_timestamp;
-					//videoFramePTS = mVideoInfo.videoFrameOriginal->pkt_pts;
-					//videoFramePTS = mVideoInfo.videoFrameOriginal->pkt_dts;
-					if (videoFramePTS == AV_NOPTS_VALUE)
-						videoFramePTS = 0;
-
-					sws_scale(mVideoInfo.pixelConvertContext, mVideoInfo.videoFrameOriginal->data, mVideoInfo.videoFrameOriginal->linesize, 0, mVideoInfo.codecContext->height, frameTarget->avFrame->data, frameTarget->avFrame->linesize);
-
-					frameTarget->framePTS = videoFramePTS;
-					frameTarget->frameStart = videoFramePTS * av_q2d(mVideoInfo.stream->time_base);
-
-					frameTarget->frameDuration = av_q2d(mVideoInfo.codecContext->time_base);
-					frameTarget->frameDuration += mVideoInfo.videoFrameOriginal->repeat_pict * (frameTarget->frameDuration * 0.5);
-
-					frameTarget->frameEnd = frameTarget->frameStart + frameTarget->frameDuration;
-
-					if (framePrevious)
-					{
-						double newDuration = frameTarget->frameStart - framePrevious->frameStart;
-						if (newDuration > framePrevious->frameDuration)
-						{
-							framePrevious->frameDuration = newDuration;
-							framePrevious->frameEnd = framePrevious->frameStart + framePrevious->frameDuration;
-						}
-					}
-				}
-
-				av_free_packet(&packet);
-
-				if (videoFrameEnded != 0)
+				//needs more data to be sent
+				case AVERROR_EOF:
+				case AVERROR(EAGAIN):
 					break;
 
-				continue;
+				//can't recover
+				default:
+					return false;
 			}
 
-			if (mAudioInfo.codecContext && (packet.stream_index == mAudioInfo.streamIndex))
+			if (!packet)
+				return false;
+
+			//send packet to codec
+			switch (avcodec_send_packet(mVideoInfo.codecContext, packet))
 			{
-				av_free_packet(&packet);
-				continue;
+				//success
+				case 0:
+					return processPacket(nullptr);
+
+				//can't process packet right away, need to receive frame and try again
+				case AVERROR(EAGAIN):
+					return processPacket(packet);
+
+				default:
+					return false;
+			}
+		};
+
+		while (av_read_frame(mFormatContext, mVideoInfo.packet) == 0)
+		{
+			if (mVideoInfo.packet->stream_index == mVideoInfo.streamIndex)
+			{
+				auto frameRead = processPacket(mVideoInfo.packet);
+				av_packet_unref(mVideoInfo.packet);
+
+				if (!frameRead)
+					continue;
+				break;
 			}
 
-			av_free_packet(&packet);
+			av_packet_unref(mVideoInfo.packet);
+		}
+	}
+
+	void VideoStream::processAVFrame()
+	{
+		VideoFrame *framePrevious = nullptr;
+		if (mVideoQueueActive >= 1)
+			framePrevious = mVideoQueue.get() + mVideoQueueActive - 1;
+
+		auto& frameTarget = mVideoQueue[mVideoQueueActive];
+		mVideoQueueActive++;
+
+		auto videoFramePTS = mVideoInfo.videoFrameOriginal->best_effort_timestamp;
+		//videoFramePTS = mVideoInfo.videoFrameOriginal->pkt_pts;
+		//videoFramePTS = mVideoInfo.videoFrameOriginal->pkt_dts;
+		if (videoFramePTS == AV_NOPTS_VALUE)
+			videoFramePTS = 0;
+
+		sws_scale(mVideoInfo.pixelConvertContext, mVideoInfo.videoFrameOriginal->data, mVideoInfo.videoFrameOriginal->linesize, 0, mVideoInfo.codecContext->height, frameTarget.avFrame->data, frameTarget.avFrame->linesize);
+
+		frameTarget.framePTS = videoFramePTS;
+		frameTarget.frameStart = videoFramePTS * av_q2d(mVideoInfo.stream->time_base);
+
+		frameTarget.frameDuration = av_q2d(mVideoInfo.codecContext->time_base);
+		frameTarget.frameDuration += mVideoInfo.videoFrameOriginal->repeat_pict * (frameTarget.frameDuration * 0.5);
+
+		frameTarget.frameEnd = frameTarget.frameStart + frameTarget.frameDuration;
+
+		if (framePrevious)
+		{
+			double newDuration = frameTarget.frameStart - framePrevious->frameStart;
+			if (newDuration > framePrevious->frameDuration)
+			{
+				framePrevious->frameDuration = newDuration;
+				framePrevious->frameEnd = framePrevious->frameStart + framePrevious->frameDuration;
+			}
 		}
 	}
 
@@ -83,12 +113,12 @@ namespace hr { namespace misc
 			return;
 
 		VideoFrame videoFrameTemp;
-		memcpy(&videoFrameTemp, mVideoQueue + 0, sizeof(VideoFrame));
+		std::memcpy(&videoFrameTemp, &mVideoQueue[0], sizeof(VideoFrame));
 
 		for (size_t i = 0; i < (mVideoQueueMax - 1); i++)
-			memcpy(mVideoQueue + i, mVideoQueue + i + 1, sizeof(VideoFrame));
+			std::memcpy(&mVideoQueue[i], &mVideoQueue[i + 1], sizeof(VideoFrame));
 
-		memcpy(mVideoQueue + mVideoQueueMax - 1, &videoFrameTemp, sizeof(VideoFrame));
+		std::memcpy(&mVideoQueue[mVideoQueueMax - 1], &videoFrameTemp, sizeof(VideoFrame));
 	}
 
 	VideoStream::VideoFrame* VideoStream::getLatestFrame() const
@@ -97,13 +127,13 @@ namespace hr { namespace misc
 			return nullptr;
 
 		if (mVideoQueueActive == 1)
-			return (mVideoQueue + 0);
+			return &mVideoQueue[0];
 
-		auto frameFinal = (mVideoQueue + 0);
+		auto frameFinal = &mVideoQueue[0];
 		for (size_t i = 1; i < mVideoQueueActive; i++)
 		{
 			if (mVideoQueue[i].framePTS > frameFinal->framePTS)
-				frameFinal = mVideoQueue + i;
+				frameFinal = &mVideoQueue[i];
 		}
 
 		return frameFinal;
@@ -112,88 +142,112 @@ namespace hr { namespace misc
 	VideoStream::VideoStream(size_t maxFramesQueue, AVPixelFormat frameTargetPixelFormat, const char * const videoFilePath)
 	{
 		mVideoQueueMax = (maxFramesQueue < 2) ? 2 : maxFramesQueue;
-		mVideoQueue = new VideoFrame[mVideoQueueMax];
+		mVideoQueue = std::make_unique<VideoFrame[]>(mVideoQueueMax);
 
+		//the main format ctx
+		mFormatContext = avformat_alloc_context();
+		if (!mFormatContext)
+			return;
+
+		//open file in the ctx
 		if (avformat_open_input(&mFormatContext, videoFilePath, nullptr, nullptr) != 0)
 			return;
 
+		//check if there are any streams available
 		if (avformat_find_stream_info(mFormatContext, nullptr) < 0)
 			return;
 
-		for (size_t i = 0; i < mFormatContext->nb_streams; i++)
+		//find the video and audio streams
+		for (int i = 0; i < mFormatContext->nb_streams; i++)
 		{
-			if ((mVideoInfo.codecContext == nullptr) && (mFormatContext->streams[i]->codec->codec_type == AVMediaType::AVMEDIA_TYPE_VIDEO))
+			AVCodecParameters *codecParams = mFormatContext->streams[i]->codecpar;
+
+			const AVCodec *codec = avcodec_find_decoder(codecParams->codec_id);
+			if (codec == nullptr)
+				continue;
+
+			if ((mVideoInfo.streamIndex == -1) && (codecParams->codec_type == AVMEDIA_TYPE_VIDEO))
 			{
 				mVideoInfo.stream = mFormatContext->streams[i];
 				mVideoInfo.streamIndex = i;
-				mVideoInfo.codecContext = mVideoInfo.stream->codec;
+
+				mVideoInfo.codecContext = avcodec_alloc_context3(codec);
+				if (!mVideoInfo.codecContext)
+					continue;
+
+				if (avcodec_parameters_to_context(mVideoInfo.codecContext, codecParams) < 0)
+					return;
+
+				if (avcodec_open2(mVideoInfo.codecContext, codec, nullptr) < 0)
+					return;
+
 				continue;
 			}
 
-			if ((mAudioInfo.codecContext == nullptr) && (mFormatContext->streams[i]->codec->codec_type == AVMediaType::AVMEDIA_TYPE_AUDIO))
+			if ((mAudioInfo.streamIndex == -1) && (codecParams->codec_type == AVMEDIA_TYPE_AUDIO))
 			{
 				mAudioInfo.streamIndex = i;
-				mAudioInfo.codecContext = mFormatContext->streams[i]->codec;
+
+				mAudioInfo.codecContext = avcodec_alloc_context3(codec);
+				if (!mAudioInfo.codecContext)
+					continue;
+
+				if (avcodec_parameters_to_context(mAudioInfo.codecContext, codecParams) < 0)
+					return;
+
+				if (avcodec_open2(mAudioInfo.codecContext, codec, nullptr) < 0)
+					return;
+
 				continue;
 			}
 		}
 
+		//always needs video
 		if (!mVideoInfo.codecContext)
 			return;
 
-		mVideoInfo.codec = avcodec_find_decoder(mVideoInfo.codecContext->codec_id);
-		if (!mVideoInfo.codec)
-			return;
+		//to read data from the file and provide to the codec
+		mVideoInfo.packet = av_packet_alloc();
 
-		if (avcodec_open2(mVideoInfo.codecContext, mVideoInfo.codec, nullptr) < 0)
-			return;
-
+		//random stuff
 		mVideoInfo.avgFrameRate = av_q2d(mVideoInfo.stream->avg_frame_rate);
-
 		mVideoInfo.pixelConvertContext = sws_getContext(mVideoInfo.codecContext->width, mVideoInfo.codecContext->height, mVideoInfo.codecContext->pix_fmt, mVideoInfo.codecContext->width, mVideoInfo.codecContext->height, frameTargetPixelFormat, SWS_BICUBIC, nullptr, nullptr, nullptr);
 
-		if (mAudioInfo.codecContext)
-		{
-			mAudioInfo.codec = avcodec_find_decoder(mAudioInfo.codecContext->codec_id);
-			if (!mAudioInfo.codec)
-				return;
-
-			if (avcodec_open2(mAudioInfo.codecContext, mAudioInfo.codec, nullptr) < 0)
-				return;
-		}
-
+		//this is the frame where the video is decoded to
 		mVideoInfo.videoFrameOriginal = av_frame_alloc();
 		if (!mVideoInfo.videoFrameOriginal)
 			return;
 
-		int frameSize = avpicture_get_size(frameTargetPixelFormat, mVideoInfo.codecContext->width, mVideoInfo.codecContext->height);
+		//but also need a buffer where the video is converted to the target format
+		int frameSize = av_image_get_buffer_size(frameTargetPixelFormat, mVideoInfo.codecContext->width, mVideoInfo.codecContext->height, 1);
 		if (frameSize < 0)
 			return;
 
 		mVideoInfo.frameBufferSize = static_cast<size_t>(frameSize);
 
+		//create a bunch of temp frames
 		size_t skipQueue = 0;
 		for (size_t i = 0; i < mVideoQueueMax; i++)
 		{
-			auto targetFrame = mVideoQueue + i - skipQueue;
+			auto& targetFrame = mVideoQueue[i - skipQueue];
 
-			targetFrame->avFrame = av_frame_alloc();
-			if (!targetFrame->avFrame)
+			targetFrame.avFrame = av_frame_alloc();
+			if (!targetFrame.avFrame)
 			{
 				skipQueue++;
 				continue;
 			}
 
-			targetFrame->frameData = (uint8_t *)av_malloc(mVideoInfo.frameBufferSize * sizeof(uint8_t));
-			if (!targetFrame->frameData)
+			targetFrame.frameData = (uint8_t *)av_malloc(mVideoInfo.frameBufferSize * sizeof(uint8_t));
+			if (!targetFrame.frameData)
 			{
-				av_frame_free(&targetFrame->avFrame);
+				av_frame_free(&targetFrame.avFrame);
 
 				skipQueue++;
 				continue;
 			}
 
-			avpicture_fill((AVPicture *)targetFrame->avFrame, targetFrame->frameData, frameTargetPixelFormat, mVideoInfo.codecContext->width, mVideoInfo.codecContext->height);
+			av_image_fill_arrays(targetFrame.avFrame->data, targetFrame.avFrame->linesize, targetFrame.frameData, frameTargetPixelFormat, mVideoInfo.codecContext->width, mVideoInfo.codecContext->height, 1);
 		}
 
 		mVideoQueueMax -= skipQueue;
@@ -206,38 +260,26 @@ namespace hr { namespace misc
 			av_free(mVideoQueue[i].frameData);
 			av_frame_free(&mVideoQueue[i].avFrame);
 		}
+		mVideoQueue.release();
 
-		delete[] mVideoQueue;
-
-		if (mVideoInfo.pixelConvertContext)
-			sws_freeContext(mVideoInfo.pixelConvertContext);
+		av_packet_free(&mVideoInfo.packet);
+		sws_freeContext(mVideoInfo.pixelConvertContext);
 
 		if (mVideoInfo.videoFrameOriginal)
 			av_frame_free(&mVideoInfo.videoFrameOriginal);
 
 		if (mAudioInfo.codecContext)
-			avcodec_close(mAudioInfo.codecContext);
+			avcodec_free_context(&mAudioInfo.codecContext);
 		if (mVideoInfo.codecContext)
-			avcodec_close(mVideoInfo.codecContext);
+			avcodec_free_context(&mVideoInfo.codecContext);
 
 		if (mFormatContext)
 			avformat_close_input(&mFormatContext);
 	}
 
-	void VideoStream::Initialize()
-	{
-		static bool avInitialized = false;
-		if (avInitialized)
-			return;
-
-		av_register_all();
-
-		avInitialized = true;
-	}
-
 	void VideoStream::process()
 	{
-		processAVFrame();
+		readAVFrame();
 	}
 
 	bool VideoStream::goToBeginning()
@@ -266,7 +308,7 @@ namespace hr { namespace misc
 
 		mVideoQueueActive = 0;
 
-		processAVFrame();
+		readAVFrame();
 
 		mTimerInfo.timer.reStart();
 		mTimerInfo.timestampS = 0.0;
@@ -303,7 +345,7 @@ namespace hr { namespace misc
 
 		mVideoQueueActive = 0;
 
-		processAVFrame();
+		readAVFrame();
 
 		if (mVideoQueueActive > 0)
 			mTimerInfo.timer.setS(mVideoQueue[0].frameStart);
@@ -326,7 +368,7 @@ namespace hr { namespace misc
 		{
 			if (mVideoQueueActive <= 0)
 			{
-				processAVFrame();
+				readAVFrame();
 
 				if (mVideoQueueActive <= 0)
 					return nullptr;
@@ -341,12 +383,12 @@ namespace hr { namespace misc
 
 			if (mTimerInfo.timestampS < mVideoQueue[0].frameEnd)
 			{
-				auto targetFrame = mVideoQueue + 0;
+				auto& targetFrame = mVideoQueue[0];
 
-				frameID = targetFrame->framePTS;
-				frameDurationS = targetFrame->frameEnd - mTimerInfo.timer.getTimeS();
+				frameID = targetFrame.framePTS;
+				frameDurationS = targetFrame.frameEnd - mTimerInfo.timer.getTimeS();
 
-				return targetFrame->frameData;
+				return targetFrame.frameData;
 			}
 
 			recycleVideoFrameQueue();
@@ -370,11 +412,11 @@ namespace hr { namespace misc
 		if (mVideoQueueActive <= 0)
 			return 0.0;
 
-		auto targetFrame = mVideoQueue + 0;
-		if (targetFrame->framePTS != frameID)
+		auto& targetFrame = mVideoQueue[0];
+		if (targetFrame.framePTS != frameID)
 			return 0.0;
 
-		return (targetFrame->frameEnd - mTimerInfo.timer.getTimeS());
+		return (targetFrame.frameEnd - mTimerInfo.timer.getTimeS());
 	}
 
 	bool VideoStream::isValid() const
@@ -384,7 +426,7 @@ namespace hr { namespace misc
 
 	bool VideoStream::hasAudio() const
 	{
-		return (mAudioInfo.codec != nullptr);
+		return (mAudioInfo.codecContext != nullptr);
 	}
 
 	double VideoStream::getTimeStampDelta() const
@@ -482,5 +524,4 @@ namespace hr { namespace misc
 			videoHeight
 		);
 	}
-
-}}
+}

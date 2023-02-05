@@ -151,7 +151,7 @@ namespace hr::geom
 				enum class Target{ None, Scale, Rotation, Translation };
 
 				Target target{ Target::None };
-				size_t jointIndex{ 0 };
+				uint32_t jointIndex{ 0 };
 				std::vector<Vector4f> frameData;
 			};
 

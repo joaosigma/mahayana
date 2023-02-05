@@ -337,8 +337,8 @@ namespace hr { namespace render
 	{
 		mPrompt.maxHistorySize = maxPromptHistory;
 
-		mViewRect.reset(30.0f, 30.0f, mRenderer.mRenderWidth - 60.0f, mRenderer.mRenderHeight - 60.0f);
-		mTextRect.reset(mViewRect.x + 9.0f, mViewRect.y + 9.0f, mViewRect.width - 18.0f, mViewRect.height - 18.0f);
+		mViewRect = hr::Rectangle<float>(30.0f, 30.0f, mRenderer.mRenderWidth - 60.0f, mRenderer.mRenderHeight - 60.0f);
+		mTextRect = hr::Rectangle<float>(mViewRect.x + 9.0f, mViewRect.y + 9.0f, mViewRect.width - 18.0f, mViewRect.height - 18.0f);
 	}
 
 	void ConsoleUI::draw(size_t textSize, const hr::gl::tools::Viewport& viewport) const

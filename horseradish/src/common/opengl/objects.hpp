@@ -52,6 +52,7 @@ namespace hr::gl::objects
 			RG_8, RG_16F, RG_32F, RG_8I, RG_8UI, RG_16I, RG_16UI, RG_32I, RG_32UI,
 			RGB_8, RGB_16F, RGB_32F, RGB_8I, RGB_8UI, RGB_16I, RGB_16UI, RGB_32I, RGB_32UI,
 			RGBA_8, RGBA_16F, RGBA_32F, RGBA_8I, RGBA_8UI, RGBA_16I, RGBA_16UI, RGBA_32I, RGBA_32UI,
+			SRGB_8, SRGBA_8,
 			DEPTH_16, DEPTH_24, DEPTH_24_STENCIL_8, DEPTH_32F,
 
 			COMPRESSED_BC1, COMPRESSED_SRGB_BC1, //RGB
@@ -172,6 +173,11 @@ namespace hr::gl::objects
 				return GL_RGBA32I;
 			case StorageType::RGBA_32UI:
 				return GL_RGBA32UI;
+
+			case StorageType::SRGB_8:
+				return GL_SRGB8;
+			case StorageType::SRGBA_8:
+				return GL_SRGB8_ALPHA8;
 
 			case StorageType::DEPTH_16:
 				return GL_DEPTH_COMPONENT16;
