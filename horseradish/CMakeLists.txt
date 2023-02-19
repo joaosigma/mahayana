@@ -193,6 +193,42 @@ endif()
 
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT horseradish)
 
+#######################
+### final configs
+
+# enable pre-compiled headers
+
+if (${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.16.3")
+
+	target_precompile_headers(horseradish
+
+		PRIVATE
+
+		"$<$<COMPILE_LANGUAGE:CXX>:<algorithm$<ANGLE-R>>"
+		"$<$<COMPILE_LANGUAGE:CXX>:<array$<ANGLE-R>>"
+		"$<$<COMPILE_LANGUAGE:CXX>:<atomic$<ANGLE-R>>"
+		"$<$<COMPILE_LANGUAGE:CXX>:<cstring$<ANGLE-R>>"
+		"$<$<COMPILE_LANGUAGE:CXX>:<format$<ANGLE-R>>"
+		"$<$<COMPILE_LANGUAGE:CXX>:<functional$<ANGLE-R>>"
+		"$<$<COMPILE_LANGUAGE:CXX>:<map$<ANGLE-R>>"
+		"$<$<COMPILE_LANGUAGE:CXX>:<memory$<ANGLE-R>>"
+		"$<$<COMPILE_LANGUAGE:CXX>:<mutex$<ANGLE-R>>"
+		"$<$<COMPILE_LANGUAGE:CXX>:<optional$<ANGLE-R>>"
+		"$<$<COMPILE_LANGUAGE:CXX>:<set$<ANGLE-R>>"
+		"$<$<COMPILE_LANGUAGE:CXX>:<span$<ANGLE-R>>"
+		"$<$<COMPILE_LANGUAGE:CXX>:<sstream$<ANGLE-R>>"
+		"$<$<COMPILE_LANGUAGE:CXX>:<string$<ANGLE-R>>"
+		"$<$<COMPILE_LANGUAGE:CXX>:<string_view$<ANGLE-R>>"
+		"$<$<COMPILE_LANGUAGE:CXX>:<tuple$<ANGLE-R>>"
+		"$<$<COMPILE_LANGUAGE:CXX>:<type_traits$<ANGLE-R>>"
+		"$<$<COMPILE_LANGUAGE:CXX>:<unordered_map$<ANGLE-R>>"
+		"$<$<COMPILE_LANGUAGE:CXX>:<unordered_set$<ANGLE-R>>"
+		"$<$<COMPILE_LANGUAGE:CXX>:<utility$<ANGLE-R>>"
+		"$<$<COMPILE_LANGUAGE:CXX>:<vector$<ANGLE-R>>"
+	)
+
+endif()
+
 # just to make things pretty in IDEs
 
 get_property(HR_SOURCES TARGET horseradish PROPERTY SOURCES)
