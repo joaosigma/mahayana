@@ -1,13 +1,13 @@
 # Format Style Options - Created with Clang Power Tools
 ---
-LineEndingStyle: LF
 AccessModifierOffset: -8
 AlignAfterOpenBracket: DontAlign
 AlignOperands: DontAlign
 AllowAllArgumentsOnNextLine: false
 AllowAllParametersOfDeclarationOnNextLine: true
+AllowShortLambdasOnASingleLine: None
 AllowShortFunctionsOnASingleLine: None
-AllowShortIfStatementsOnASingleLine: WithoutElse
+AllowShortIfStatementsOnASingleLine: Never
 BasedOnStyle: Mozilla
 BinPackArguments: true
 BinPackParameters: true
@@ -36,10 +36,11 @@ ColumnLimit: 180
 CompactNamespaces: true
 Cpp11BracedListStyle: true
 DerivePointerAlignment: true
+IncludeBlocks: Preserve
 IndentWidth: 8
 NamespaceIndentation: All
 ReflowComments: false
-SortIncludes: false
+SortIncludes: true
 SpaceAroundPointerQualifiers: Before
 SpaceBeforeCtorInitializerColon: false
 Standard: c++20
