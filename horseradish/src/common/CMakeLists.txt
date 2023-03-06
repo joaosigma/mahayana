@@ -71,3 +71,4 @@ target_sources(horseradish-utests
 )
 
 add_subdirectory(opengl)
+add_subdirectory(vulkan)

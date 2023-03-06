@@ -5,13 +5,13 @@
 #include "../common/stringUtils.hpp"
 #include "../common/scopedAction.hpp"
 
-#include <io.h>
 #include <regex>
+#include <cassert>
 #include <format>
 
 #include <fcntl.h>
 #include <intrin.h>
-
+#include <io.h>
 #include <windows.h>
 #include <shellapi.h>
 
@@ -384,7 +384,7 @@ namespace hr::platform
 		std::memset(&processInfo, 0, sizeof(PROCESS_INFORMATION));
 		startInfo.cb = sizeof(STARTUPINFO);
 
-		CreateProcess(nullptr, szFileName, nullptr, nullptr, FALSE, 0, nullptr, nullptr, &startInfo, &processInfo);
+		CreateProcess(nullptr, szFileName, nullptr, nullptr, FALSE, NORMAL_PRIORITY_CLASS, nullptr, nullptr, &startInfo, &processInfo);
 
 		CloseHandle(processInfo.hProcess);
 		CloseHandle(processInfo.hThread);
@@ -557,6 +557,104 @@ namespace hr::platform
 
 		bytesWritten = 0;
 		return false;
+	}
+
+	std::optional<int> Platform::execute(std::string_view execPathArgs, std::optional<std::string>& output)
+	{
+		if (execPathArgs.empty())
+			return std::nullopt;
+
+		//create pipes to read stdout and stderr
+
+		HANDLE stdOutErrRead{nullptr};
+		HANDLE stdOutErrWrite{nullptr};
+		if (output.has_value())
+		{
+			SECURITY_ATTRIBUTES sa;
+			sa.nLength = sizeof(SECURITY_ATTRIBUTES);
+			sa.bInheritHandle = TRUE;
+			sa.lpSecurityDescriptor = NULL;
+
+			if (!CreatePipe(&stdOutErrRead, &stdOutErrWrite, &sa, 0))
+				return std::nullopt;
+
+			if (!SetHandleInformation(stdOutErrRead, HANDLE_FLAG_INHERIT, 0))
+				return std::nullopt;
+		}
+
+		// run the process
+
+		STARTUPINFO startInfo;
+		PROCESS_INFORMATION processInfo;
+		{
+			std::memset(&startInfo, 0, sizeof(STARTUPINFO));
+			std::memset(&processInfo, 0, sizeof(PROCESS_INFORMATION));
+			startInfo.cb = sizeof(STARTUPINFO);
+			startInfo.dwFlags = STARTF_USESHOWWINDOW; 
+			startInfo.wShowWindow = SW_HIDE;
+			if (stdOutErrWrite)
+			{
+				startInfo.hStdError = stdOutErrWrite;
+				startInfo.hStdOutput = stdOutErrWrite;
+				startInfo.dwFlags |= STARTF_USESTDHANDLES;
+			}
+
+			{
+				auto nativePathArgs = hr::StringUtils::conv2Native(execPathArgs);
+
+				auto nativePathArgsWritable = std::make_unique<wchar_t[]>(nativePathArgs.size() + 1);
+				std::memcpy(nativePathArgsWritable.get(), nativePathArgs.data(), sizeof(wchar_t) * nativePathArgs.size());
+				nativePathArgsWritable[nativePathArgs.size()] = '\0';
+
+				auto res = CreateProcess(nullptr, nativePathArgsWritable.get(), nullptr, nullptr, TRUE, 0, nullptr, nullptr, &startInfo, &processInfo);
+
+				if (stdOutErrWrite)
+					CloseHandle(stdOutErrWrite);
+
+				if (!res)
+				{
+					if (stdOutErrRead)
+						CloseHandle(stdOutErrRead);
+
+					return std::nullopt;
+				}
+			}
+
+			WaitForSingleObject(processInfo.hProcess, INFINITE);
+		}
+
+		std::optional<int> exitCode;
+		{
+			DWORD nativeExitCode;
+			if (GetExitCodeProcess(processInfo.hProcess, &nativeExitCode))
+				exitCode = static_cast<int>(nativeExitCode);
+		}
+
+		// read output from process
+		if (stdOutErrRead)
+		{
+			std::array<CHAR, 4096> buffer;
+			while (true)
+			{
+				DWORD bytesRead;
+
+				auto res = ReadFile(stdOutErrRead, buffer.data(), buffer.size(), &bytesRead, NULL);
+				if (!res || (bytesRead == 0))
+					break;
+
+				assert(output.has_value());
+				(*output).append(buffer.data(), bytesRead);
+			}
+
+			CloseHandle(stdOutErrRead);
+		}
+
+		//all done
+
+		CloseHandle(processInfo.hProcess);
+		CloseHandle(processInfo.hThread);
+
+		return exitCode;
 	}
 }
 

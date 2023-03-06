@@ -1,0 +1,8 @@
+#pragma once
+
+#include <string_view>
+
+namespace hr::vulkan
+{
+	inline constexpr std::string_view GLSLCPath{R"(@Vulkan_GLSLC_EXECUTABLE@)"};
+}

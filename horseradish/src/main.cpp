@@ -61,7 +61,7 @@ int WINAPI wWinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ PWSTR lpCmdLine, _I
 
 	auto engineError = engine.getErrorDesc();
 	if (!engineError.empty())
-		hr::platform::Window::MsgBoxError(engineError.c_str());
+		hr::platform::Window::MsgBoxError(engineError);
 
 	switch (engine.getExitAction())
 	{

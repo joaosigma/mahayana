@@ -14,13 +14,14 @@
 #include <array>
 #include <memory>
 #include <string>
+#include <optional>
 
-namespace hr { namespace engine
+namespace hr::engine
 {
 	class Engine final
 	{
 	public:
-		enum class State { Created, Initializing, Running, Stopping, Stopped, StoppedError };
+		enum class State { Created, Initializing, Running, Stopping, Stopped };
 		enum class ExitAction { Nothing, Restart };
 		enum class StatSampleType { Fps, NumTris };
 
@@ -288,7 +289,7 @@ namespace hr { namespace engine
 		} mCmdLineOptions;
 
 	private:
-		void exit(ExitAction exitAction, const char * const errorDesc = nullptr);
+		void exit(ExitAction exitAction, std::optional<std::string_view> errorDesc = std::nullopt);
 
 		void initParseCmdLine(std::string_view cmdLine);
 		void initFileSystem();
@@ -333,9 +334,9 @@ namespace hr { namespace engine
 		int getExitCode() const;
 		ExitAction getExitAction() const;
 
-		std::string getErrorDesc() const;
+		std::string_view getErrorDesc() const;
 	};
-} }
+}
 
 template<> bool hr::engine::Engine::var<bool>(const char* const name) const;
 template<> int32_t hr::engine::Engine::var<int32_t>(const char* const name) const;

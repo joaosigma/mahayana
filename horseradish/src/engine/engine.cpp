@@ -2,29 +2,30 @@
 
 #include "render/raytracer.hpp"
 #include "common/imageFactory.hpp"
-#include "common/opengl/openGL.hpp"
 
 #include "../build.hpp"
 
 #include <format>
 #include <cassert>
 
-namespace hr { namespace engine
+namespace hr::engine
 {
-	void Engine::exit(ExitAction exitAction, const char * const errorDesc)
+	void Engine::exit(ExitAction exitAction, std::optional<std::string_view> errorDesc)
 	{
 		std::lock_guard<std::mutex> lock(mSyncLock);
 
 		if ((mCurState != State::Initializing) && (mCurState != State::Running))
 			return;
 
-		mCurState = (mCurState == State::Initializing) ? (errorDesc ? State::StoppedError : State::Stopped) : State::Stopping;
+		auto hasMsg = errorDesc && !errorDesc.value().empty();
+
+		mCurState = (mCurState == State::Initializing) ? State::Stopped : State::Stopping;
 		mExitAction = exitAction;
 
-		if (errorDesc)
+		if (hasMsg)
 		{
-			mErrorDesc = errorDesc;
-			mLoggerRuntimeCtx->error(errorDesc);
+			mErrorDesc = std::string{*errorDesc};
+			mLoggerRuntimeCtx->error(*errorDesc);
 		}
 
 		if (mWindow)
@@ -67,6 +68,8 @@ namespace hr { namespace engine
 				totalPacks += 1;
 				totalFich += numFilesZip;
 			}
+
+			return true;
 		});
 
 		mLoggerRuntimeCtx->info("   loaded {0} archives with a total of {1} files", totalPacks, totalFich);
@@ -498,12 +501,6 @@ namespace hr { namespace engine
 		mCurState = State::Initializing;
 		{
 			mRuntime->runScriptFile("../engine.initd.nut");
-
-			if (!hr::gl::OpenGLLoadLibrary("OpenGL32.dll"))
-			{
-				exit(ExitAction::Nothing, "Unable to load OpenGL driver");
-				return false;
-			}
 	
 			logSysInfo();
 			mLoggerRuntimeCtx->info("");
@@ -522,11 +519,11 @@ namespace hr { namespace engine
 			{
 				mWindow.reset();
 
-				const auto windowErrorMsg = mWindow->getErrorMsg();
-				if (windowErrorMsg.empty())
+				const auto msg = mWindow->getErrorMsg();
+				if (msg.empty())
 					exit(ExitAction::Nothing, "Unable to create main window");
 				else
-					exit(ExitAction::Nothing, std::format("Unable to create main window: {0}", windowErrorMsg).c_str());
+					exit(ExitAction::Nothing, std::format("Unable to create main window: {}", msg));
 
 				return false;
 			}
@@ -541,7 +538,7 @@ namespace hr { namespace engine
 		mCurState = State::Running;
 		{
 			//render thread
-			std::thread threadRender(&Engine::renderLoop, this);
+			std::jthread threadRender(&Engine::renderLoop, this);
 
 			//this will block until the window message loop ends
 			mExitCode = mWindow->messageLoop([&]()
@@ -555,7 +552,6 @@ namespace hr { namespace engine
 		{
 			mWindow.reset();
 			mFileSystem.reset();
-			hr::gl::OpenGLUnloadLibrary();
 		}
 
 		//so long, and thanks for all the fish
@@ -565,9 +561,7 @@ namespace hr { namespace engine
 
 	int Engine::getExitCode() const
 	{
-		auto state = mCurState.load();
-
-		if ((state != State::Stopped) && (state != State::StoppedError))
+		if (mCurState != State::Stopped)
 			return -1;
 		return mExitCode;
 	}
@@ -577,8 +571,8 @@ namespace hr { namespace engine
 		return mExitAction;
 	}
 
-	std::string Engine::getErrorDesc() const
+	std::string_view Engine::getErrorDesc() const
 	{
-		return ((mCurState == State::StoppedError) ? mErrorDesc : std::string());
+		return mErrorDesc;
 	}
-} }
+}

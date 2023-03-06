@@ -82,6 +82,8 @@ namespace hr::platform
 
 		int messageLoop(const std::function<void()>& closingCb);
 		void processMessages(const std::function<void(const Window::Message&)>& cb, const bool resetQueue);
+
+		VkSurfaceKHR setupVulkanSurface(VkInstance vulkanInstance);
 	};
 
 	class OpenglContextImpl

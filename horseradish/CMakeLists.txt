@@ -50,7 +50,7 @@ execute_process(
 	COMMAND_ERROR_IS_FATAL ANY
 )
 
-configure_file (
+configure_file(
     "${CMAKE_CURRENT_LIST_DIR}/src/build.hpp.in"
     "${CMAKE_CURRENT_LIST_DIR}/src/build.hpp"
     @ONLY
@@ -85,7 +85,7 @@ endif()
 
 # compiler specific
 
-if (CMAKE_GENERATOR MATCHES "^Visual Studio")
+if (WIN32)
 
 	set(HR_COMPILER_DEFS
 
@@ -105,7 +105,6 @@ if (CMAKE_GENERATOR MATCHES "^Visual Studio")
 		NOICONS
 		NOSYSCOMMANDS
 		NORASTEROPS
-		NOSHOWWINDOW
 		OEMRESOURCE
 		NOATOM
 		NOCOLOR
@@ -134,6 +133,13 @@ if (CMAKE_GENERATOR MATCHES "^Visual Studio")
 		_WINSOCK_DEPRECATED_NO_WARNINGS
 	)
 
+	target_compile_definitions(horseradish PRIVATE ${HR_COMPILER_DEFS})
+	target_compile_definitions(horseradish-utests PRIVATE ${HR_COMPILER_DEFS})
+
+endif()
+
+if (CMAKE_GENERATOR MATCHES "^Visual Studio")
+
 	set(HR_COMPILER_OPTIONS
 
 		/GR- # disable RTTI
@@ -148,13 +154,12 @@ if (CMAKE_GENERATOR MATCHES "^Visual Studio")
 		/arch:AVX2
 	)
 
-	target_compile_definitions(horseradish PRIVATE ${HR_COMPILER_DEFS})
 	target_compile_options(horseradish PRIVATE ${HR_COMPILER_OPTIONS})
 	target_link_options(horseradish PRIVATE "$<$<C_COMPILER_ID:MSVC>:-SAFESEH:NO>")
 
-	target_compile_definitions(horseradish-utests PRIVATE ${HR_COMPILER_DEFS})
 	target_compile_options(horseradish-utests PRIVATE ${HR_COMPILER_OPTIONS})
 	target_link_options(horseradish-utests PRIVATE "$<$<C_COMPILER_ID:MSVC>:-SAFESEH:NO>")
+
 endif()
 
 #######################
@@ -165,15 +170,18 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 add_subdirectory(src)
 
-target_include_directories(horseradish PUBLIC ${CMAKE_CURRENT_LIST_DIR}/src)
-target_include_directories(horseradish PUBLIC ${CMAKE_CURRENT_LIST_DIR}/external_includes/gl)
-target_include_directories(horseradish PUBLIC ${CMAKE_CURRENT_LIST_DIR}/external_includes/ffmpeg)
+#######################
+### external dependencies (includes and libs)
 
-target_include_directories(horseradish-utests PUBLIC ${CMAKE_CURRENT_LIST_DIR}/src)
-target_include_directories(horseradish-utests PUBLIC ${CMAKE_CURRENT_LIST_DIR}/external_includes/gl)
-target_include_directories(horseradish-utests PUBLIC ${CMAKE_CURRENT_LIST_DIR}/external_includes/ffmpeg)
+target_include_directories(horseradish PRIVATE ${CMAKE_CURRENT_LIST_DIR}/src)
+target_include_directories(horseradish PRIVATE ${CMAKE_CURRENT_LIST_DIR}/external_includes/gl)
+target_include_directories(horseradish PRIVATE ${CMAKE_CURRENT_LIST_DIR}/external_includes/ffmpeg)
 
-if (CMAKE_GENERATOR MATCHES "^Visual Studio")
+target_include_directories(horseradish-utests PRIVATE ${CMAKE_CURRENT_LIST_DIR}/src)
+target_include_directories(horseradish-utests PRIVATE ${CMAKE_CURRENT_LIST_DIR}/external_includes/gl)
+target_include_directories(horseradish-utests PRIVATE ${CMAKE_CURRENT_LIST_DIR}/external_includes/ffmpeg)
+
+if (WIN32)
 
 	set_target_properties(horseradish PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_CURRENT_LIST_DIR}/../sandbox/bin")
 
@@ -194,6 +202,28 @@ endif()
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT horseradish)
 
 #######################
+### external dependencies (modules)
+
+find_package(Vulkan REQUIRED)
+
+if (NOT Vulkan_FOUND)
+	message(FATAL_ERROR "Unable to find Vulkan library. Does the VULKAN_SDK environment variable point to the root of the Vulkan SDK?")
+endif()
+
+target_include_directories(horseradish PRIVATE ${Vulkan_INCLUDE_DIR})
+target_include_directories(horseradish-utests PRIVATE ${Vulkan_INCLUDE_DIR})
+
+target_link_libraries(horseradish PRIVATE ${Vulkan_LIBRARY})
+target_link_libraries(horseradish-utests PRIVATE ${Vulkan_LIBRARY})
+
+configure_file(
+    "${CMAKE_CURRENT_LIST_DIR}/src/common/vulkan/build_tools.hpp.in"
+    "${CMAKE_CURRENT_LIST_DIR}/src/common/vulkan/build_tools.hpp"
+    @ONLY
+    NEWLINE_STYLE UNIX
+)
+
+#######################
 ### final configs
 
 # enable pre-compiled headers
@@ -203,6 +233,8 @@ if (${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.16.3")
 	target_precompile_headers(horseradish
 
 		PRIVATE
+
+		"$<$<COMPILE_LANGUAGE:CXX>:<vulkan/vulkan.h$<ANGLE-R>>"
 
 		"$<$<COMPILE_LANGUAGE:CXX>:<algorithm$<ANGLE-R>>"
 		"$<$<COMPILE_LANGUAGE:CXX>:<array$<ANGLE-R>>"

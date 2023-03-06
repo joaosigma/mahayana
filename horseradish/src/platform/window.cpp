@@ -91,6 +91,11 @@ namespace hr::platform
 		mImpl->processMessages(cb, resetQueue);
 	}
 
+	VkSurfaceKHR Window::setupVulkanSurface(VkInstance vulkanInstance)
+	{
+		return mImpl->setupVulkanSurface(vulkanInstance);
+	}
+
 	OpenglContext::OpenglContext(const Window &window, std::string_view openGLModuleName, int contextMajorVersion, int contextMinorVersion, bool contextDebug, bool contextForwardCompatible)
 		: mImpl(new OpenglContextImpl(*window.mImpl, openGLModuleName, contextMajorVersion, contextMinorVersion, contextDebug, contextForwardCompatible))
 	{

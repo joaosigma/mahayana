@@ -13,10 +13,11 @@ namespace hr
 		  : funcCallback{std::move(funcCallback)}
 		{ }
 
+		ScopedAction() noexcept = default;
 		ScopedAction(const ScopedAction&) = delete;
 		ScopedAction& operator=(const ScopedAction&) = delete;
-		ScopedAction(ScopedAction&&) = delete;
-		ScopedAction& operator=(ScopedAction&&) = delete;
+		ScopedAction(ScopedAction&&) noexcept = default;
+		ScopedAction& operator=(ScopedAction&&) noexcept = default;
 
 		~ScopedAction()
 		{

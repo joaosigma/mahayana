@@ -7,6 +7,8 @@
 #include "../common/timer.hpp"
 #include "../common/opengl/openGL.hpp"
 #include "../common/opengl/tools/viewport.hpp"
+#include "../common/vulkan/app.hpp"
+#include "../common/vulkan/build_tools.hpp"
 
 #include "../render/stage.hpp"
 #include "../render/world.hpp"
@@ -234,52 +236,171 @@ namespace hr::engine
 				Profiler::StatId::GPUFragmentShaderInvocations, Profiler::StatId::GPUClipInputPrimitives, Profiler::StatId::GPUClipOutputPrimitives);
 		}
 
-		//start everything related to OpenGL
+		//start everything related to Vulkan
+		std::unique_ptr<hr::vulkan::App> vulkanApp;
 		{
-			int glMajorVersion, glMinorVersion;
-
-			glContext = std::make_unique<platform::OpenglContext>(*mWindow, "OpenGL32.dll", 4, 6, var<bool>("renderer.glDebug"), true);
-			if (!glContext->isValid())
+			vulkanApp = std::make_unique<hr::vulkan::App>([this](vulkan::App::DebugMessageSeverity severity, vulkan::App::App::DebugMessageContext context, std::string_view source, std::string_view msg)
 			{
-				if (auto errorMsg = glContext->getErrorMsg(); errorMsg.empty())
-					exit(ExitAction::Nothing, "Unable to create OpenGL context");
-				else
-					exit(ExitAction::Nothing, std::format("Unable to create OpenGL context: {}", errorMsg).c_str());
+				std::string_view severityStr;
+				switch (severity)
+				{
+					case vulkan::App::DebugMessageSeverity::Verbose:
+						severityStr = "verbose";
+						break;
+					case vulkan::App::DebugMessageSeverity::Info:
+						severityStr = "info";
+						break;
+					case vulkan::App::DebugMessageSeverity::Warning:
+						severityStr = "warn";
+						break;
+					case vulkan::App::DebugMessageSeverity::Error:
+						severityStr = "error";
+						break;
+				}
 
+				std::string contextStr;
+				if ((context & vulkan::App::App::DebugMessageContext::General) == vulkan::App::App::DebugMessageContext::General)
+					contextStr.append("general, ");
+				if ((context & vulkan::App::App::DebugMessageContext::Validation) == vulkan::App::App::DebugMessageContext::Validation)
+					contextStr.append("validation, ");
+				if ((context & vulkan::App::App::DebugMessageContext::Performance) == vulkan::App::App::DebugMessageContext::Performance)
+					contextStr.append("performance, ");
+				if ((context & vulkan::App::App::DebugMessageContext::DeviceAddressBinding) == vulkan::App::App::DebugMessageContext::DeviceAddressBinding)
+					contextStr.append("device address binding, ");
+
+				if (!contextStr.empty())
+					contextStr.erase(contextStr.size() - 2);
+
+				mLoggerRenderCtx->info(std::format("VK {} ({}) {}: {}", severityStr, contextStr, source, msg));
+			});
+
+			auto setupSurface = [this](auto vulkanInstance)
+			{
+				return mWindow->setupVulkanSurface(vulkanInstance);
+			};
+
+			if (!vulkanApp->init(setupSurface))
+			{
+				exit(ExitAction::Nothing, std::format("Unable to initialize Vulkan: {}", vulkanApp->lastError()));
 				return;
 			}
 
-			hr::gl::glGetIntegerv(GL_MAJOR_VERSION, &glMajorVersion);
-			hr::gl::glGetIntegerv(GL_MINOR_VERSION, &glMinorVersion);
-			if ((glMajorVersion < 4) || ((glMajorVersion == 4) && (glMinorVersion < 6)))
+			mLoggerRuntimeCtx->info("${olive}->${default}Vulkan layer initialized.");
+
+			//compile the shaders (from GLSL to SPIR-V)
+			if (isDevMove)
 			{
-				exit(ExitAction::Nothing, "OpenGL version 4.6 or higher is required (try updating your drivers).");
-				return;
+				assert(!vulkan::GLSLCPath.empty());
+				auto compilerPath = std::filesystem::canonical(std::filesystem::path(vulkan::GLSLCPath));
+				compilerPath.make_preferred();
+
+				auto searchPath = std::filesystem::canonical(std::filesystem::current_path() / "../shaders");
+				searchPath.make_preferred() /= "*.?shader";
+
+				bool hasErrors{false};
+				hr::io::FileSystem::findFiles(searchPath, true, [this, &compilerPath, &hasErrors](const std::filesystem::path &path, const uint64_t &)
+				{
+					std::vector<std::string> errors;
+					auto success = vulkan::Object<VkShaderModule>::compileShader(path, [this, &compilerPath, &errors](const std::filesystem::path &input, const std::filesystem::path &output, vulkan::Object<VkShaderModule>::ShaderType shaderType)
+					{
+						std::string_view shaderName;
+						switch (shaderType)
+						{
+							case vulkan::Object<VkShaderModule>::ShaderType::Vertex:
+								shaderName = "vertex";
+								break;
+							case vulkan::Object<VkShaderModule>::ShaderType::Fragment:
+								shaderName = "fragment";
+								break;
+							case vulkan::Object<VkShaderModule>::ShaderType::Compute:
+								shaderName = "compute";
+								break;
+							default:
+								return false;
+						}
+
+						auto args = std::format("{} -fshader-stage={} -x glsl {} -o {}", compilerPath.string(), shaderName, input.string(), output.string());
+
+						std::optional<std::string> error{std::string{}};
+						auto res = platform::Platform::execute(args, error);
+						if (error.has_value() && (!res.has_value() || (res.value() != 0)))
+							errors.push_back(*std::move(error));
+							
+						return true; //keep going
+					});
+
+					if (!errors.empty())
+					{
+						std::string fullErrorMsg;
+						
+						fullErrorMsg += std::format("Unable to compile '{0}' to SPIR-V:{1}{1}", path.string(), platform::Platform::NewLine);
+						for (const auto &error : errors)
+							fullErrorMsg += std::format("{0}{1}", error, platform::Platform::NewLine);
+
+						mLoggerRuntimeCtx->error(fullErrorMsg);
+					}
+
+					hasErrors |= !success;
+					return true; //keep going
+				});
+
+				if (hasErrors)
+				{
+					exit(ExitAction::Nothing, "Errors detected while compiling the shaders (check the logs for more information).");
+					return;
+				}
 			}
 
-			if (!glContext->isExtPresent("GL_EXT_texture_compression_s3tc"))
-			{
-				exit(ExitAction::Nothing, "Required extensions are not present");
-				return;
-			}
-
-			openglInitialize();
-			glContext->swapBuffers(); //to force a black screen
-			glContext->setSwapInterval(var<int>("renderer.winSwapInterval"));
-
-			mLoggerRenderCtx->info("${olive}->${default}OpenGL system initialized.");
-			openGLWriteInfo(*mLogger, *glContext);
-
-			if (var<bool>("renderer.glDebug"))
-			{
-				hr::gl::glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
-				hr::gl::glDebugMessageCallback(openglDebugMessagesCallback, mLogger.get());
-				hr::gl::glEnable(GL_DEBUG_OUTPUT);
-				hr::gl::glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
-
-				glContext->dispatchDebugMessages();
-			}
+			//init the swapchain (i.e.: how to render to the swapchain images)
+			vulkanApp->swapChainInit(nullptr);
 		}
+
+		//start everything related to OpenGL
+		//{
+		//	int glMajorVersion, glMinorVersion;
+		//
+		//	glContext = std::make_unique<platform::OpenglContext>(*mWindow, "OpenGL32.dll", 4, 6, var<bool>("renderer.glDebug"), true);
+		//	if (!glContext->isValid())
+		//	{
+		//		if (auto errorMsg = glContext->getErrorMsg(); errorMsg.empty())
+		//			exit(ExitAction::Nothing, "Unable to create OpenGL context");
+		//		else
+		//			exit(ExitAction::Nothing, std::format("Unable to create OpenGL context: {}", errorMsg).c_str());
+		//
+		//		return;
+		//	}
+		//
+		//	hr::gl::glGetIntegerv(GL_MAJOR_VERSION, &glMajorVersion);
+		//	hr::gl::glGetIntegerv(GL_MINOR_VERSION, &glMinorVersion);
+		//	if ((glMajorVersion < 4) || ((glMajorVersion == 4) && (glMinorVersion < 6)))
+		//	{
+		//		exit(ExitAction::Nothing, "OpenGL version 4.6 or higher is required (try updating your drivers).");
+		//		return;
+		//	}
+		//
+		//	if (!glContext->isExtPresent("GL_EXT_texture_compression_s3tc"))
+		//	{
+		//		exit(ExitAction::Nothing, "Required extensions are not present");
+		//		return;
+		//	}
+		//
+		//	openglInitialize();
+		//	glContext->swapBuffers(); //to force a black screen
+		//	glContext->setSwapInterval(var<int>("renderer.winSwapInterval"));
+		//
+		//	mLoggerRenderCtx->info("${olive}->${default}OpenGL system initialized.");
+		//	openGLWriteInfo(*mLogger, *glContext);
+		//
+		//	if (var<bool>("renderer.glDebug"))
+		//	{
+		//		hr::gl::glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
+		//		hr::gl::glDebugMessageCallback(openglDebugMessagesCallback, mLogger.get());
+		//		hr::gl::glEnable(GL_DEBUG_OUTPUT);
+		//		hr::gl::glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+		//
+		//		glContext->dispatchDebugMessages();
+		//	}
+		//}
 
 		//start everything related to the renderers (worl, deferred renderer, etc.)
 		{
@@ -523,6 +644,6 @@ namespace hr::engine
 
 		renderData.reset();
 
-		glContext.reset();
+		vulkanApp.reset();
 	}
 }

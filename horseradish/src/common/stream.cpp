@@ -335,6 +335,22 @@ namespace hr::streams
 		return true;
 	}
 
+	std::filesystem::path FileStream::createTmpFile(std::string_view baseName, std::string_view extension)
+	{
+		auto path = std::filesystem::temp_directory_path() / std::format("{}{}", baseName, extension);
+		if (!std::filesystem::exists(path))
+			return path;
+
+		for (size_t curIndex = 0; true; ++curIndex)
+		{
+			path = std::filesystem::temp_directory_path() / std::format("{}_{}{}", baseName, curIndex, extension);
+			if (std::filesystem::exists(path))
+				continue;
+
+			return path;
+		}
+	}
+
 	std::unique_ptr<MemoryViewStream> FileStream::readEntireFile(const std::filesystem::path& filePath)
 	{
 		if (filePath.empty())

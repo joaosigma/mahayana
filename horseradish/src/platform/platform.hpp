@@ -73,5 +73,7 @@ namespace hr::platform
 		static void stdOutClear();
 		static bool stdErrRead(void *outBuffer, int outBufferSize, int &bytesWritten);
 		static bool stdOutRead(void *outBuffer, int outBufferSize, int &bytesWritten);
+
+		static std::optional<int> execute(std::string_view execPathArgs, std::optional<std::string> &output);
 	};
 }

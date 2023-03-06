@@ -5,66 +5,72 @@
 #include "common/stringUtils.hpp"
 #include "common/opengl/openGL.hpp"
 
+#include <vulkan/vulkan_win32.h>
+
 #include <Windowsx.h>
 
 namespace hr::platform
 {
-	static
-	bool retrieveMonitorArea(RECT& monitorArea, bool secondaryIfAvailable, bool fullArea)
+	namespace
 	{
-		struct CallbackData
+		bool retrieveMonitorArea(RECT &monitorArea, bool secondaryIfAvailable, bool fullArea)
 		{
-			bool foundPrimary = false;
-			RECT primaryAreaFull, primaryAreaWork;
-
-			bool foundSecondary = false;
-			RECT secondaryAreaFull, secondaryAreaWork;
-		} cbData;
-
-		EnumDisplayMonitors(nullptr, nullptr, [](HMONITOR hMonitor, HDC, LPRECT, LPARAM dwData) -> BOOL
-		{
-			MONITORINFO monitorInfo;
-			memset(&monitorInfo, 0, sizeof(MONITORINFO));
-			monitorInfo.cbSize = sizeof(MONITORINFO);
-
-			if (!GetMonitorInfo(hMonitor, &monitorInfo))
-				return TRUE;
-
-			auto cbData = reinterpret_cast<CallbackData*>(dwData);
-
-			if ((monitorInfo.dwFlags & MONITORINFOF_PRIMARY) == MONITORINFOF_PRIMARY)
+			struct CallbackData
 			{
-				cbData->foundPrimary = true;
-				cbData->primaryAreaFull = monitorInfo.rcMonitor;
-				cbData->primaryAreaWork = monitorInfo.rcWork;
-			}
-			else if (!cbData->foundSecondary && monitorInfo.rcMonitor.left >= 0)
+				bool foundPrimary = false;
+				RECT primaryAreaFull, primaryAreaWork;
+
+				bool foundSecondary = false;
+				RECT secondaryAreaFull, secondaryAreaWork;
+			} cbData;
+
+			EnumDisplayMonitors(
+			  nullptr, nullptr,
+			  [](HMONITOR hMonitor, HDC, LPRECT, LPARAM dwData) -> BOOL
+			  {
+				  MONITORINFO monitorInfo;
+				  memset(&monitorInfo, 0, sizeof(MONITORINFO));
+				  monitorInfo.cbSize = sizeof(MONITORINFO);
+
+				  if (!GetMonitorInfo(hMonitor, &monitorInfo))
+					  return TRUE;
+
+				  auto cbData = reinterpret_cast<CallbackData *>(dwData);
+
+				  if ((monitorInfo.dwFlags & MONITORINFOF_PRIMARY) == MONITORINFOF_PRIMARY)
+				  {
+					  cbData->foundPrimary = true;
+					  cbData->primaryAreaFull = monitorInfo.rcMonitor;
+					  cbData->primaryAreaWork = monitorInfo.rcWork;
+				  }
+				  else if (!cbData->foundSecondary && monitorInfo.rcMonitor.left >= 0)
+				  {
+					  cbData->foundSecondary = true;
+					  cbData->secondaryAreaFull = monitorInfo.rcMonitor;
+					  cbData->secondaryAreaWork = monitorInfo.rcWork;
+				  }
+
+				  return ((cbData->foundPrimary && cbData->foundSecondary) ? FALSE : TRUE);
+			  },
+			  reinterpret_cast<LPARAM>(&cbData));
+
+			if (secondaryIfAvailable && cbData.foundSecondary)
 			{
-				cbData->foundSecondary = true;
-				cbData->secondaryAreaFull = monitorInfo.rcMonitor;
-				cbData->secondaryAreaWork = monitorInfo.rcWork;
+				monitorArea = fullArea ? cbData.secondaryAreaFull : cbData.secondaryAreaWork;
+				return true;
 			}
 
-			return ((cbData->foundPrimary && cbData->foundSecondary) ? FALSE : TRUE);
-		}, reinterpret_cast<LPARAM>(&cbData));
+			if (cbData.foundPrimary)
+				monitorArea = fullArea ? cbData.primaryAreaFull : cbData.primaryAreaWork;
 
-		if (secondaryIfAvailable && cbData.foundSecondary)
-		{
-			monitorArea = fullArea ? cbData.secondaryAreaFull : cbData.secondaryAreaWork;
-			return true;
+			return cbData.foundPrimary;
 		}
 
-		if (cbData.foundPrimary)
-			monitorArea = fullArea ? cbData.primaryAreaFull : cbData.primaryAreaWork;
-
-		return cbData.foundPrimary;
+		LRESULT CALLBACK auxWindowWGLExtProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
+		{
+			return DefWindowProc(hwnd, message, wParam, lParam);
+		};
 	}
-
-	static
-	LRESULT CALLBACK auxWindowWGLExtProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
-	{
-		return DefWindowProc(hwnd, message, wParam, lParam);
-	};
 
 	LRESULT CALLBACK WindowImpl::wndProc(HWND hWnd, UINT messageID, WPARAM wParam, LPARAM lParam)
 	{
@@ -386,7 +392,7 @@ namespace hr::platform
 			mDisplayInfo.resizeWidth = monitorRect.right - monitorRect.left;
 			mDisplayInfo.resizeHeight = monitorRect.bottom - monitorRect.top;
 		}
-		else if(style == Window::WindowStyle::StyleWindow)
+		else if (style == Window::WindowStyle::StyleWindow)
 		{
 			RECT monitorRect;
 			if (!retrieveMonitorArea(monitorRect, targetSecondaryDisplay, targetSecondaryDisplay))
@@ -566,6 +572,20 @@ namespace hr::platform
 
 		if (resetQueue)
 			mEvents.queueSize = 0;
+	}
+
+	VkSurfaceKHR WindowImpl::setupVulkanSurface(VkInstance vulkanInstance)
+	{
+		VkWin32SurfaceCreateInfoKHR createInfo{};
+		createInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
+		createInfo.hwnd = mHWnd;
+		createInfo.hinstance = GetModuleHandle(nullptr);
+
+		VkSurfaceKHR surface;
+		if (vkCreateWin32SurfaceKHR(vulkanInstance, &createInfo, nullptr, &surface) != VK_SUCCESS)
+			return VK_NULL_HANDLE;
+
+		return surface;
 	}
 
 	void OpenglContextImpl::loadWGLFunctions(HMODULE openglModule)

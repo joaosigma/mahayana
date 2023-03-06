@@ -227,6 +227,8 @@ namespace hr::streams
 		bool openFile(const std::filesystem::path& filePath, bool toRead, bool toWrite);
 
 	public:
+		static std::filesystem::path createTmpFile(std::string_view baseName, std::string_view extension);
+
 		static std::unique_ptr<MemoryViewStream> readEntireFile(const std::filesystem::path& filePath);
 		static std::string readEntireFileAsString(const std::filesystem::path& filePath);
 		static bool streamDump(Stream& stream, const std::filesystem::path& filePath);
@@ -336,7 +338,7 @@ namespace hr::streams
 
 		bool skip(size_t offset)
 		{
-			return mStream.seek(Stream::SeekOrigin::Current, offset);
+			return mStream.seek(Stream::SeekOrigin::Current, static_cast<int>(offset));
 		}
 
 		bool seek(Stream::SeekOrigin seekOrigin, int offset)
@@ -424,7 +426,7 @@ namespace hr::streams
 
 		bool skip(size_t offset)
 		{
-			return mStream.seek(Stream::SeekOrigin::Current, offset);
+			return mStream.seek(Stream::SeekOrigin::Current, static_cast<int>(offset));
 		}
 
 		bool seek(Stream::SeekOrigin seekOrigin, int offset)
