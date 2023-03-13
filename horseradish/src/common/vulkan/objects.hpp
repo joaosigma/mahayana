@@ -71,6 +71,8 @@ namespace hr::vulkan
 	using RenderPass = Object<VkRenderPass>;
 	using CommandPool = Object<VkCommandPool>;
 	using CommandBuffer = Object<VkCommandBuffer>;
+	using Semaphore = Object<VkSemaphore>;
+	using Fence = Object<VkFence>;
 
 	template<>
 	class Object<VkImageView> final : public detail::BaseObject<VkImageView>
@@ -168,8 +170,6 @@ namespace hr::vulkan
 		VkPipelineLayout mPipelineLayout{VK_NULL_HANDLE};
 
 	private:
-		Object() noexcept = default;
-
 		explicit Object(VkDevice device, VkPipeline pipeline, VkPipelineLayout pipelineLayout) noexcept
 		  : BaseObject{pipeline}
 		  , mDevice{device}
@@ -221,6 +221,7 @@ namespace hr::vulkan
 		};
 
 	public:
+		Object() noexcept = default;
 		~Object() noexcept;
 
 		Object(const Object&) = delete;
@@ -235,8 +236,6 @@ namespace hr::vulkan
 		VkDevice mDevice{VK_NULL_HANDLE};
 
 	private:
-		Object() noexcept = default;
-
 		explicit Object(VkDevice device, VkRenderPass renderPass) noexcept
 		  : BaseObject{renderPass}
 		  , mDevice{device}
@@ -249,7 +248,7 @@ namespace hr::vulkan
 			VkDevice mDevice{VK_NULL_HANDLE};
 			std::vector<VkAttachmentDescription> mAttachments;
 			std::vector<VkSubpassDescription> mSubpasses;
-			
+			std::vector<VkSubpassDependency> mSubpassDependencies;
 
 		public:
 			Builder(VkDevice device) noexcept;
@@ -261,11 +260,13 @@ namespace hr::vulkan
 
 			Builder& addAttachment(VkFormat format);
 			Builder& addSubpass();
+			Builder& addSubpassDependency();
 
 			Object build();
 		};
 
 	public:
+		Object() noexcept = default;
 		~Object() noexcept;
 
 		Object(const Object&) = delete;
@@ -334,7 +335,7 @@ namespace hr::vulkan
 			}
 
 		public:
-			~Recorder() noexcept;
+			~Recorder() noexcept = default;
 			Recorder(const Recorder&) = delete;
 			Recorder& operator=(const Recorder&) = delete;
 			Recorder(Recorder&&) noexcept = default;
@@ -348,11 +349,15 @@ namespace hr::vulkan
 
 			Recorder& draw(uint32_t vertexCount) noexcept;
 
-			bool save() noexcept;
+			bool finish() noexcept;
 		};
 
 	public:
-		~Object() = default;
+		~Object() noexcept
+		{
+			//commands are destroyed through the command pool
+			mObj = VK_NULL_HANDLE;
+		}
 
 		Object(const Object&) = delete;
 		Object& operator=(const Object&) = delete;
@@ -360,6 +365,65 @@ namespace hr::vulkan
 		Object& operator=(Object&&) noexcept = default;
 
 	public:
-		std::optional<Recorder> record() noexcept;
+		void reset() noexcept;
+		std::optional<Recorder> record(bool oneTimeOnly) noexcept;
+	};
+
+	template<>
+	class Object<VkSemaphore> final : public detail::BaseObject<VkSemaphore>
+	{
+		VkDevice mDevice{VK_NULL_HANDLE};
+
+	private:
+		Object() noexcept = default;
+
+		explicit Object(VkDevice device, VkSemaphore semaphore) noexcept
+		  : BaseObject{semaphore}
+		  , mDevice{device}
+		{
+		}
+
+	public:
+		static Object gen(VkDevice device) noexcept;
+
+	public:
+		~Object() noexcept;
+
+		Object(const Object&) = delete;
+		Object& operator=(const Object&) = delete;
+		Object(Object&&) noexcept = default;
+		Object& operator=(Object&&) noexcept = default;
+	};
+
+	template<>
+	class Object<VkFence> final : public detail::BaseObject<VkFence>
+	{
+		VkDevice mDevice{VK_NULL_HANDLE};
+
+	private:
+		Object() noexcept = default;
+
+		explicit Object(VkDevice device, VkFence fence) noexcept
+		  : BaseObject{fence}
+		  , mDevice{device}
+		{
+		}
+
+	public:
+		static Object gen(VkDevice device, bool signaled = false) noexcept;
+
+		static void waitAll(VkDevice device, std::initializer_list<Object> fences) noexcept;
+
+	public:
+		~Object() noexcept;
+
+		Object(const Object&) = delete;
+		Object& operator=(const Object&) = delete;
+		Object(Object&&) noexcept = default;
+		Object& operator=(Object&&) noexcept = default;
+
+	public:
+		Object& wait() noexcept;
+		Object& reset() noexcept;
 	};
 }

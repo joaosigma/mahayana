@@ -350,9 +350,6 @@ namespace hr::engine
 					return;
 				}
 			}
-
-			//init the swapchain (i.e.: how to render to the swapchain images)
-			vulkanApp->swapChainInit(nullptr);
 		}
 
 		//start everything related to OpenGL
@@ -403,37 +400,37 @@ namespace hr::engine
 		//}
 
 		//start everything related to the renderers (worl, deferred renderer, etc.)
-		{
-			size_t displayWidth = var<int>("renderer.dims.width");
-			size_t displayHeight = var<int>("renderer.dims.height");
-
-			renderer2D = std::make_unique<hr::render::Renderer2D>(*glContext);
-			renderer2D->initialize(displayWidth, displayHeight, mFileSystem.get(), var<std::string>("sys.console.text.font").c_str());
-
-			rendererDebug = std::make_unique<hr::render::RendererDebug>(*glContext, *mFileSystem, *renderer2D);
-
-			rendererMain = std::make_unique<hr::render::RendererMain>(*glContext, *mFileSystem, displayWidth, displayHeight);
-
-			stage = std::make_unique<render::Stage>(*mRuntime, *mLoggerRuntimeCtx, *mFileSystem, *glContext, displayWidth, displayHeight);
-
-			//!!!!!!!!!!!!!!!! dev
-			{
-				renderData = std::make_unique<hr::render::World>();
-				renderData->loadArea(*rendererMain, "../scenes/sphere_bot.hscene", "../scenes/sphere_bot.hbin");
-			}
-		}
+		//{
+		//	size_t displayWidth = var<int>("renderer.dims.width");
+		//	size_t displayHeight = var<int>("renderer.dims.height");
+		//
+		//	renderer2D = std::make_unique<hr::render::Renderer2D>(*glContext);
+		//	renderer2D->initialize(displayWidth, displayHeight, mFileSystem.get(), var<std::string>("sys.console.text.font").c_str());
+		//
+		//	rendererDebug = std::make_unique<hr::render::RendererDebug>(*glContext, *mFileSystem, *renderer2D);
+		//
+		//	rendererMain = std::make_unique<hr::render::RendererMain>(*glContext, *mFileSystem, displayWidth, displayHeight);
+		//
+		//	stage = std::make_unique<render::Stage>(*mRuntime, *mLoggerRuntimeCtx, *mFileSystem, *glContext, displayWidth, displayHeight);
+		//
+		//	//!!!!!!!!!!!!!!!! dev
+		//	{
+		//		renderData = std::make_unique<hr::render::World>();
+		//		renderData->loadArea(*rendererMain, "../scenes/sphere_bot.hscene", "../scenes/sphere_bot.hbin");
+		//	}
+		//}
 			
 		//start other renderers (misc) related stuff
-		{
-			if (Profiler::isSupported())
-			{
-				profilerUI = std::make_unique<hr::render::ProfilerUI>(*profiler, *renderer2D);
-				profilerUI->setInfoState(isDevMove);
-			}
-
-			if (isDevMove)
-				consoleUI = std::make_unique<hr::render::ConsoleUI>(*mLogger, *renderer2D, 20);
-		}
+		//{
+		//	if (Profiler::isSupported())
+		//	{
+		//		profilerUI = std::make_unique<hr::render::ProfilerUI>(*profiler, *renderer2D);
+		//		profilerUI->setInfoState(isDevMove);
+		//	}
+		//
+		//	if (isDevMove)
+		//		consoleUI = std::make_unique<hr::render::ConsoleUI>(*mLogger, *renderer2D, 20);
+		//}
 			
 		//initialization finished
 		mLoggerRenderCtx->info(" ");
@@ -446,7 +443,7 @@ namespace hr::engine
 
 		mRuntime->callVoidMethod("events.ready");
 
-		hr::gl::glEnable(GL_FRAMEBUFFER_SRGB);
+		//hr::gl::glEnable(GL_FRAMEBUFFER_SRGB);
 
 		//we are about to enter the main render loop
 		{
@@ -457,16 +454,53 @@ namespace hr::engine
 			camera.setMovementScale(hr::render::tools::CameraFPS::CameraInput::Keyboard, 10.0f);
 
 			hr::gl::tools::Viewport viewportRender(Math::Deg2Rad<float> * 45.0f, var<int>("renderer.dims.width"), var<int>("renderer.dims.height"), 0.05f);
-			hr::gl::glViewport(0, 0, viewportRender.width(), viewportRender.height());
+			//hr::gl::glViewport(0, 0, viewportRender.width(), viewportRender.height());
 
-			hr::gl::objects::Query::Group<8> renderGlQueryGroup = {
-				hr::gl::objects::Query::Type::TimeElapsed, hr::gl::objects::Query::Type::SamplesPassed,
-				hr::gl::objects::Query::Type::VerticesSubmitted, hr::gl::objects::Query::Type::PrimitivesSubmitted,
-				hr::gl::objects::Query::Type::VertexShaderInvocations, hr::gl::objects::Query::Type::FragmentShaderInvocations,
-				hr::gl::objects::Query::Type::ClippingInputPrimitives, hr::gl::objects::Query::Type::ClippingOutputPrimitives
-			};
+			//hr::gl::objects::Query::Group<8> renderGlQueryGroup = {
+			//	hr::gl::objects::Query::Type::TimeElapsed, hr::gl::objects::Query::Type::SamplesPassed,
+			//	hr::gl::objects::Query::Type::VerticesSubmitted, hr::gl::objects::Query::Type::PrimitivesSubmitted,
+			//	hr::gl::objects::Query::Type::VertexShaderInvocations, hr::gl::objects::Query::Type::FragmentShaderInvocations,
+			//	hr::gl::objects::Query::Type::ClippingInputPrimitives, hr::gl::objects::Query::Type::ClippingOutputPrimitives
+			//};
 
 			Timestep timestep(50);
+
+			auto vulkanFrameFence = hr::vulkan::Fence::gen(vulkanApp->device(), true);
+			auto vulkanSwapChainImageReady = hr::vulkan::Semaphore::gen(vulkanApp->device());
+
+			hr::vulkan::RenderPass renderPass;
+			{
+				auto builder = hr::vulkan::RenderPass::Builder(vulkanApp->device());
+				builder
+					.addAttachment(vulkanApp->swapChainImageFormat())
+					.addSubpass()
+					.addSubpassDependency();
+				renderPass = builder.build();
+			}
+
+			//init the swapchain (i.e.: how to render to the swapchain images)
+			vulkanApp->swapChainInit(renderPass.native());
+
+			hr::vulkan::Pipeline vulkanPipeline;
+			{
+				auto shaderVertex = hr::vulkan::ShaderModule::loadShader(vulkanApp->device(), "../shaders/temp.v_spv");
+				auto shaderFragment = hr::vulkan::ShaderModule::loadShader(vulkanApp->device(), "../shaders/temp.f_spv");
+
+				auto builder = hr::vulkan::Pipeline::Builder(vulkanApp->device());
+
+				builder.setupVertexInput()
+				  .setupInputAssembly(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, false)
+				  .setupViewport(0.0f, 0.0f, static_cast<float>(viewportRender.width()), static_cast<float>(viewportRender.height()), 0.0f, 1.0f)
+				  .setupScissor(0, 0, static_cast<uint32_t>(viewportRender.width()), static_cast<uint32_t>(viewportRender.height()))
+				  .setupShader(std::move(shaderVertex), hr::vulkan::ShaderModule::ShaderType::Vertex)
+				  .setupShader(std::move(shaderFragment), hr::vulkan::ShaderModule::ShaderType::Fragment);
+
+				vulkanPipeline = builder.build(renderPass.native());
+			}
+
+			auto vulkanCmdPool = vulkanApp->createCommandPool();
+			auto vulkanCmdBuffer = vulkanCmdPool.allocateBuffer();		
+			auto vulkanCmdBufferDone = hr::vulkan::Semaphore::gen(vulkanApp->device());
 
 			while (mCurState == State::Running)
 			{
@@ -479,47 +513,76 @@ namespace hr::engine
 				//Start frame rendering requests to queue stuff onto the GPU
 				//--------------------
 
-				//in case nothing is drawn
-				hr::gl::glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-				hr::gl::glDepthMask(GL_TRUE);
-				hr::gl::glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+				//wait for the previous frame to submit and reset for the next frame
+				vulkanFrameFence
+					.wait()
+					.reset();
 
-				if (Profiler::isSupported())
-					renderGlQueryGroup.queriesBegin();
+				//where to draw to
+				auto vulkanSwapChainImage = vulkanApp->swapChainAcquireImage(vulkanSwapChainImageReady.native());
 
-				//draw main, deferred scene
-				rendererMain->render(camera, viewportRender);
-				rendererMain->renderDebug(*rendererDebug, *renderData, camera, viewportRender);
-				rendererMain->renderComposite(viewportRender);
+				//record command buffer
+				{
+					vulkanCmdBuffer.reset();
+					auto recorder = vulkanCmdBuffer.record(false);
+					
+					recorder->doRenderPass(renderPass.native(), vulkanApp->swapChainFramebuffer(vulkanSwapChainImage), viewportRender.width(),
+					  viewportRender.height(),
+					  [&vulkanPipeline](auto &recorder)
+					  {
+						  recorder.bindPipeline(vulkanPipeline.native());
+						  //scissor and viewport were already set at the pipeline
+						  recorder.draw(3);
+					  });
+					
+					recorder->finish();
+				}
 
-				if (Profiler::isSupported())
-					renderGlQueryGroup.queriesEnd();
+				vulkanApp->graphicsQueueSubmit(vulkanSwapChainImageReady.native(), VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, vulkanCmdBuffer.native(),
+				  vulkanCmdBufferDone.native(),
+				  vulkanFrameFence.native());
 
-				//draw stage
-				stage->drawScenes();
-				stage->drawComposite(viewportRender);
+				////in case nothing is drawn
+				//hr::gl::glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+				//hr::gl::glDepthMask(GL_TRUE);
+				//hr::gl::glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+				//
+				//if (Profiler::isSupported())
+				//	renderGlQueryGroup.queriesBegin();
+
+				////draw main, deferred scene
+				//rendererMain->render(camera, viewportRender);
+				//rendererMain->renderDebug(*rendererDebug, *renderData, camera, viewportRender);
+				//rendererMain->renderComposite(viewportRender);
+				//
+				//if (Profiler::isSupported())
+				//	renderGlQueryGroup.queriesEnd();
+
+				////draw stage
+				//stage->drawScenes();
+				//stage->drawComposite(viewportRender);
 
 				if (Profiler::isSupported())
 					profiler->addSample(Profiler::StatId::FrameDraw, timerFrame.getTimeIntMS());
 
-				//draw console and/or profiler
-				if ((profilerUI && profilerUI->isVisible()) || (consoleUI && consoleUI->isVisible()))
-				{
-					auto fontSize = static_cast<size_t>(var<int>("sys.console.text.size"));
-
-					hr::gl::glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-					hr::gl::glEnable(GL_BLEND);
-					hr::gl::glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-					if (profilerUI && profilerUI->isVisible())
-						profilerUI->draw(fontSize, viewportRender);
-
-					if (consoleUI && consoleUI->isVisible())
-						consoleUI->draw(fontSize, viewportRender);
-
-					hr::gl::glDisable(GL_BLEND);
-				}
+				////draw console and/or profiler
+				//if ((profilerUI && profilerUI->isVisible()) || (consoleUI && consoleUI->isVisible()))
+				//{
+				//	auto fontSize = static_cast<size_t>(var<int>("sys.console.text.size"));
+				//
+				//	hr::gl::glBindFramebuffer(GL_FRAMEBUFFER, 0);
+				//
+				//	hr::gl::glEnable(GL_BLEND);
+				//	hr::gl::glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+				//
+				//	if (profilerUI && profilerUI->isVisible())
+				//		profilerUI->draw(fontSize, viewportRender);
+				//
+				//	if (consoleUI && consoleUI->isVisible())
+				//		consoleUI->draw(fontSize, viewportRender);
+				//
+				//	hr::gl::glDisable(GL_BLEND);
+				//}
 
 				//--------------------
 				//Frame rendering request is finished
@@ -564,17 +627,17 @@ namespace hr::engine
 
 				}, true);
 
-				if (Profiler::isSupported())
-				{
-					profiler->addSample(Profiler::StatId::GPUTimeElapsed, static_cast<int64_t>(renderGlQueryGroup.getResultI64<0>() / 1000));
-					profiler->addSample(Profiler::StatId::GPUSamples, static_cast<int64_t>(renderGlQueryGroup.getResultI64<1>()));
-					profiler->addSample(Profiler::StatId::GPUVerticesSubmitted, static_cast<int64_t>(renderGlQueryGroup.getResultI64<2>()));
-					profiler->addSample(Profiler::StatId::GPUPrimitivesSubmitted, static_cast<int64_t>(renderGlQueryGroup.getResultI64<3>()));
-					profiler->addSample(Profiler::StatId::GPUVertexShaderInvocations, static_cast<int64_t>(renderGlQueryGroup.getResultI64<4>()));
-					profiler->addSample(Profiler::StatId::GPUFragmentShaderInvocations, static_cast<int64_t>(renderGlQueryGroup.getResultI64<5>()));
-					profiler->addSample(Profiler::StatId::GPUClipInputPrimitives, static_cast<int64_t>(renderGlQueryGroup.getResultI64<6>()));
-					profiler->addSample(Profiler::StatId::GPUClipOutputPrimitives, static_cast<int64_t>(renderGlQueryGroup.getResultI64<7>()));
-				}
+				//if (Profiler::isSupported())
+				//{
+				//	profiler->addSample(Profiler::StatId::GPUTimeElapsed, static_cast<int64_t>(renderGlQueryGroup.getResultI64<0>() / 1000));
+				//	profiler->addSample(Profiler::StatId::GPUSamples, static_cast<int64_t>(renderGlQueryGroup.getResultI64<1>()));
+				//	profiler->addSample(Profiler::StatId::GPUVerticesSubmitted, static_cast<int64_t>(renderGlQueryGroup.getResultI64<2>()));
+				//	profiler->addSample(Profiler::StatId::GPUPrimitivesSubmitted, static_cast<int64_t>(renderGlQueryGroup.getResultI64<3>()));
+				//	profiler->addSample(Profiler::StatId::GPUVertexShaderInvocations, static_cast<int64_t>(renderGlQueryGroup.getResultI64<4>()));
+				//	profiler->addSample(Profiler::StatId::GPUFragmentShaderInvocations, static_cast<int64_t>(renderGlQueryGroup.getResultI64<5>()));
+				//	profiler->addSample(Profiler::StatId::GPUClipInputPrimitives, static_cast<int64_t>(renderGlQueryGroup.getResultI64<6>()));
+				//	profiler->addSample(Profiler::StatId::GPUClipOutputPrimitives, static_cast<int64_t>(renderGlQueryGroup.getResultI64<7>()));
+				//}
 
 				//run any simulations that require a fixed timestep
 				timestep.processSim([](double deltaTimeMS)
@@ -582,13 +645,13 @@ namespace hr::engine
 				});
 
 				//process step in the render data, stage and console
-				{
-					hr::render::World::Timestep wTimestep;
-					wTimestep.t = std::chrono::duration<float, std::chrono::seconds::period>(timestep.totalElapsed()).count();
-
-					renderData->prepareNextFrame(wTimestep, *rendererMain, camera, viewportRender);
-					stage->processStep();
-				}
+				//{
+				//	hr::render::World::Timestep wTimestep;
+				//	wTimestep.t = std::chrono::duration<float, std::chrono::seconds::period>(timestep.totalElapsed()).count();
+				//
+				//	renderData->prepareNextFrame(wTimestep, *rendererMain, camera, viewportRender);
+				//	stage->processStep();
+				//}
 
 				if (consoleUI)
 					consoleUI->processStep();
@@ -603,7 +666,7 @@ namespace hr::engine
 				//Simulations are finished, we can swap GPU buffers and move on
 				//--------------------
 
-				glContext->swapBuffers();
+				//glContext->swapBuffers();
 
 				//if we must take a screenshot
 				if (var<int>("sys.screenshot") > 0)
@@ -628,7 +691,11 @@ namespace hr::engine
 
 				if (Profiler::isSupported())
 					profiler->addSample(Profiler::StatId::FrameTotal, timerFrame.getTimeIntMS());
+
+				vulkanSwapChainImage.present(vulkanCmdBufferDone.native()); //return / present the frame back to the swapchain
 			}
+
+			vulkanApp->waitDeviceIdle(); //wait for any remaining work to finish
 		}
 
 		stage.reset();

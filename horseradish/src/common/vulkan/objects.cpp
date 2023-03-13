@@ -376,8 +376,8 @@ namespace hr::vulkan
 
 		mViewportState = VkPipelineViewportStateCreateInfo{};
 		mViewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-		mViewportState.viewportCount = 1;
-		mViewportState.scissorCount = 1;
+		mViewportState.viewportCount = 0;
+		mViewportState.scissorCount = 0;
 
 		mRasterizer = VkPipelineRasterizationStateCreateInfo{};
 		mRasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
@@ -481,6 +481,7 @@ namespace hr::vulkan
 				createInfo.pName = "main";
 
 				shaderStages[numShaderStages] = std::move(createInfo);
+				numShaderStages++;
 			}
 
 			if (mStageShaders.fragmentShaderModule.has_value())
@@ -492,23 +493,33 @@ namespace hr::vulkan
 				createInfo.pName = "main";
 
 				shaderStages[numShaderStages] = std::move(createInfo);
+				numShaderStages++;
 			}
 		}
 
 		std::vector<VkDynamicState> mDynamicStates;
 		{
-			assert(mViewportState.viewportCount == 1);
-			assert(mViewportState.scissorCount == 1);
-
 			if (mStageViewport.viewport.has_value())
+			{
+				mViewportState.viewportCount = 1;
 				mViewportState.pViewports = &(*mStageViewport.viewport);
+			}
 			else
+			{
+				mViewportState.viewportCount = 0;
 				mDynamicStates.push_back(VK_DYNAMIC_STATE_VIEWPORT);
+			}
 
 			if (mStageViewport.scissor.has_value())
+			{
+				mViewportState.scissorCount = 1;
 				mViewportState.pScissors = &(*mStageViewport.scissor);
+			}
 			else
+			{
+				mViewportState.scissorCount = 0;
 				mDynamicStates.push_back(VK_DYNAMIC_STATE_SCISSOR);
+			}
 		}
 
 		VkPipelineDynamicStateCreateInfo dynamicState{};
@@ -547,7 +558,7 @@ namespace hr::vulkan
 
 		VkGraphicsPipelineCreateInfo pipelineInfo{};
 		pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-		pipelineInfo.stageCount = static_cast<uint32_t>(shaderStages.size());
+		pipelineInfo.stageCount = numShaderStages; //don't use the size of shaderStages
 		pipelineInfo.pStages = shaderStages.data();
 		pipelineInfo.pVertexInputState = &mVertexInputInfo;
 		pipelineInfo.pInputAssemblyState = &mInputAssembly;
@@ -623,6 +634,20 @@ namespace hr::vulkan
 		return *this;
 	}
 
+	Object<VkRenderPass>::Builder& Object<VkRenderPass>::Builder::addSubpassDependency()
+	{
+		VkSubpassDependency dependency{};
+		dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+		dependency.dstSubpass = 0;
+		dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+		dependency.srcAccessMask = 0;
+		dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+		dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+
+		mSubpassDependencies.push_back(std::move(dependency));
+		return *this;
+	}
+
 	Object<VkRenderPass> Object<VkRenderPass>::Builder::build()
 	{
 		VkRenderPassCreateInfo renderPassInfo{};
@@ -631,6 +656,8 @@ namespace hr::vulkan
 		renderPassInfo.pAttachments = mAttachments.data();
 		renderPassInfo.subpassCount = static_cast<uint32_t>(mSubpasses.size());
 		renderPassInfo.pSubpasses = mSubpasses.data();
+		renderPassInfo.dependencyCount = static_cast<uint32_t>(mSubpassDependencies.size());
+		renderPassInfo.pDependencies = mSubpassDependencies.data();
 
 		VkRenderPass renderPass;
 		if (vkCreateRenderPass(mDevice, &renderPassInfo, nullptr, &renderPass) != VK_SUCCESS)
@@ -695,11 +722,6 @@ namespace hr::vulkan
 		return Object(device, commandBuffer);
 	}
 
-	Object<VkCommandBuffer>::Recorder::~Recorder() noexcept
-	{
-		save();
-	}
-
 	bool Object<VkCommandBuffer>::Recorder::doRenderPass(VkRenderPass renderPass, VkFramebuffer framebuffer, uint32_t renderWidth, uint32_t renderHeight, const std::function<void(Recorder&)>& cb)
 	{
 		if (!cb || std::exchange(mFinished, true))
@@ -762,9 +784,9 @@ namespace hr::vulkan
 		return *this;
 	}
 
-	bool Object<VkCommandBuffer>::Recorder::save() noexcept
+	bool Object<VkCommandBuffer>::Recorder::finish() noexcept
 	{
-		if (std::exchange(mFinished, true))
+		if (!std::exchange(mFinished, true))
 			return false;
 
 		if (vkEndCommandBuffer(mCmdBuffer.native()) != VK_SUCCESS)
@@ -773,16 +795,105 @@ namespace hr::vulkan
 		return true;
 	}
 
-	std::optional<Object<VkCommandBuffer>::Recorder> Object<VkCommandBuffer>::record() noexcept
+	void Object<VkCommandBuffer>::reset() noexcept
+	{
+		vkResetCommandBuffer(mObj, 0);
+	}
+
+	std::optional<Object<VkCommandBuffer>::Recorder> Object<VkCommandBuffer>::record(bool oneTimeOnly) noexcept
 	{
 		VkCommandBufferBeginInfo cmdBeginInfo{};
 		cmdBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-		cmdBeginInfo.flags = 0;
+		cmdBeginInfo.flags = oneTimeOnly ? VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT : VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
 		cmdBeginInfo.pInheritanceInfo = nullptr;
 
 		if (vkBeginCommandBuffer(mObj, &cmdBeginInfo) != VK_SUCCESS)
 			return std::nullopt;
 
 		return Object<VkCommandBuffer>::Recorder{*this};
+	}
+
+	Object<VkSemaphore>::~Object<VkSemaphore>()
+	{
+		if (!BaseObject::operator bool())
+			return;
+
+		assert(mDevice != VK_NULL_HANDLE);
+
+		vkDestroySemaphore(mDevice, mObj, nullptr);
+		mObj = nullptr;
+	}
+
+	Object<VkSemaphore> Object<VkSemaphore>::gen(VkDevice device) noexcept
+	{
+		VkSemaphoreCreateInfo semaphoreInfo{};
+		semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+		VkSemaphore semaphore;
+		if (vkCreateSemaphore(device, &semaphoreInfo, nullptr, &semaphore) != VK_SUCCESS)
+			return {};
+
+		return Object(device, semaphore);
+	}
+
+	void Object<VkFence>::waitAll(VkDevice device, std::initializer_list<Object> fences) noexcept
+	{
+		std::array<VkFence, 16> arrayBuffer;
+		if (fences.size() <= arrayBuffer.size())
+		{
+			size_t curIndex{0};
+			for (const auto& fence : fences)
+				arrayBuffer[curIndex++] = fence.native();
+			assert(curIndex == fences.size());
+
+			vkWaitForFences(device, static_cast<uint32_t>(fences.size()), arrayBuffer.data(), VK_TRUE, UINT64_MAX);
+		}
+		else
+		{
+			std::vector<VkFence> vecBuffer;
+			vecBuffer.reserve(fences.size());
+
+			for (const auto& fence : fences)
+				vecBuffer.push_back(fence.native());
+			assert(vecBuffer.size() == fences.size());
+
+			vkWaitForFences(device, static_cast<uint32_t>(vecBuffer.size()), vecBuffer.data(), VK_TRUE, UINT64_MAX);
+		}
+	}
+
+	Object<VkFence>::~Object<VkFence>()
+	{
+		if (!BaseObject::operator bool())
+			return;
+
+		assert(mDevice != VK_NULL_HANDLE);
+
+		vkDestroyFence(mDevice, mObj, nullptr);
+		mObj = nullptr;
+	}
+
+	Object<VkFence> Object<VkFence>::gen(VkDevice device, bool signaled) noexcept
+	{
+		VkFenceCreateInfo fenceInfo{};
+		fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+		fenceInfo.flags = signaled ? VK_FENCE_CREATE_SIGNALED_BIT : 0;
+
+		VkFence fence;
+		if (vkCreateFence(device, &fenceInfo, nullptr, &fence) != VK_SUCCESS)
+			return {};
+
+		return Object(device, fence);
+	}
+
+	Object<VkFence>& Object<VkFence>::wait() noexcept
+	{
+		vkWaitForFences(mDevice, 1, &mObj, VK_TRUE, UINT64_MAX);
+		return *this;
+	}
+
+	Object<VkFence>& Object<VkFence>::reset() noexcept
+	{
+		vkResetFences(mDevice, 1, &mObj);
+		return *this;
 	}
 }

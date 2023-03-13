@@ -35,6 +35,32 @@ namespace hr::vulkan
 		using SetupSurface = std::function<VkSurfaceKHR(VkInstance)>;
 		using DebugMessageCallback = std::function<void(DebugMessageSeverity, DebugMessageContext, std::string_view, std::string_view)>;
 
+		class SwapChainImage
+		{
+			friend class App;
+
+			App& mApp;
+			std::optional<uint32_t> mImageIndex;
+
+		private:
+			SwapChainImage(App& app, uint32_t imageIndex) noexcept
+			  : mApp{app}
+			  , mImageIndex{imageIndex}
+			{
+			}
+
+		public:
+			~SwapChainImage() noexcept = default;
+
+			SwapChainImage(const SwapChainImage&) = delete;
+			SwapChainImage& operator=(const SwapChainImage&) = delete;
+			SwapChainImage(SwapChainImage&& o) noexcept = default;
+			SwapChainImage& operator=(SwapChainImage&& o) noexcept = default;
+
+			bool present() noexcept;
+			bool present(VkSemaphore toWaitFor) noexcept;
+		};
+
 	private:
 		bool mInitialized{false};
 
@@ -99,6 +125,18 @@ namespace hr::vulkan
 		{
 			return mGraphicsQueue;
 		}
+
+		VkFormat swapChainImageFormat() const noexcept
+		{
+			return mSwapChainSurfaceFormat.format;
+		}
+
+		SwapChainImage swapChainAcquireImage(VkSemaphore whenImageReady) noexcept;
+		VkFramebuffer swapChainFramebuffer(const SwapChainImage& swapChainImage) const noexcept;
+
+		bool graphicsQueueSubmit(VkSemaphore waitFor, VkPipelineStageFlags waitForState, VkCommandBuffer commandBuffer, VkSemaphore doneCommandBuffer, VkFence doneQueue) const noexcept;
+
+		void waitDeviceIdle() const noexcept;
 	};
 
 	inline App::DebugMessageContext operator|(App::DebugMessageContext a, App::DebugMessageContext b)

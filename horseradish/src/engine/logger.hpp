@@ -89,7 +89,7 @@ namespace hr::engine
 		std::thread *mThreadFlush = nullptr;
 		std::atomic<bool> mThreadFlushExit = {false};
 		std::condition_variable mThreadFlushCondition;
-		std::shared_ptr<hr::streams::FileStream> mOutFileStream;
+		std::unique_ptr<hr::streams::FileStream> mOutFileStream;
 
 		void processAsyncBuffer();
 		void writeToFile(const EntryData& entry);

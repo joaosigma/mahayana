@@ -287,7 +287,7 @@ namespace hr::engine
 	{
 		initParseCmdLine(cmdLine);
 
-		mLogger = std::make_shared<Logger>(10, 500, "../logs/log.txt");
+		mLogger = std::make_shared<Logger>(0, 0, "../logs/log.txt");
 		mLoggerRenderCtx = std::make_shared<Logger::Context>(*mLogger, Logger::ModuleType::Graphics);
 		mLoggerRuntimeCtx = std::make_shared<Logger::Context>(*mLogger, Logger::ModuleType::SysRuntime);
 

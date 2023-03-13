@@ -58,6 +58,45 @@ namespace hr::vulkan
 		}
 	}
 
+	bool App::SwapChainImage::present() noexcept
+	{
+		if (!mImageIndex.has_value())
+			return false;
+
+		auto imageIndex = std::exchange(mImageIndex, std::nullopt).value();
+
+		VkPresentInfoKHR presentInfo{};
+		presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+		presentInfo.swapchainCount = 1;
+		presentInfo.pSwapchains = &mApp.mSwapChain;
+		presentInfo.pImageIndices = &imageIndex;
+		presentInfo.pResults = nullptr;
+
+		vkQueuePresentKHR(mApp.mGraphicsQueue, &presentInfo);
+		return true;
+
+	}
+
+	bool App::SwapChainImage::present(VkSemaphore toWaitFor) noexcept
+	{
+		if (!mImageIndex.has_value())
+			return false;
+
+		auto imageIndex = std::exchange(mImageIndex, std::nullopt).value();
+
+		VkPresentInfoKHR presentInfo{};
+		presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+		presentInfo.waitSemaphoreCount = 1;
+		presentInfo.pWaitSemaphores = &toWaitFor;
+		presentInfo.swapchainCount = 1;
+		presentInfo.pSwapchains = &mApp.mSwapChain;
+		presentInfo.pImageIndices = &imageIndex;
+		presentInfo.pResults = nullptr;
+
+		vkQueuePresentKHR(mApp.mGraphicsQueue, &presentInfo);
+		return true;
+	}
+
 	bool App::initDebug(VkInstanceCreateInfo& createInfo)
 	{
 		createInfo.enabledLayerCount = 0;
@@ -443,7 +482,7 @@ namespace hr::vulkan
 		createInfo.imageColorSpace = mSwapChainSurfaceFormat.colorSpace;
 		createInfo.imageExtent = capabilities.maxImageExtent;
 		createInfo.imageArrayLayers = 1;
-		createInfo.imageUsage = VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+		createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 		createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
 		createInfo.queueFamilyIndexCount = 0;
 		createInfo.pQueueFamilyIndices = nullptr;
@@ -493,6 +532,8 @@ namespace hr::vulkan
 		vkDestroySwapchainKHR(mDevice, mSwapChain, nullptr);
 		vkDestroySurfaceKHR(mInstance, mSurface, nullptr);
 		vkDestroyDevice(mDevice, nullptr);
+
+		cleanupDebug();
 		vkDestroyInstance(mInstance, nullptr);
 	}
 
@@ -559,5 +600,48 @@ namespace hr::vulkan
 	{
 		assert(mDebugCb);
 		mDebugCb(severity, context, source, msg);
+	}
+
+	App::SwapChainImage App::swapChainAcquireImage(VkSemaphore whenImageReady) noexcept
+	{
+		uint32_t imageIndex;
+		vkAcquireNextImageKHR(mDevice, mSwapChain, UINT64_MAX, whenImageReady, VK_NULL_HANDLE, &imageIndex);
+
+		assert((imageIndex >= 0) && (imageIndex < mSwapChainFramebuffers.size()));
+		return App::SwapChainImage{*this, imageIndex};
+	}
+
+	VkFramebuffer App::swapChainFramebuffer(const SwapChainImage& swapChainImage) const noexcept
+	{
+		assert(swapChainImage.mImageIndex.has_value());
+		assert(swapChainImage.mImageIndex.value() < mSwapChainFramebuffers.size());
+		return mSwapChainFramebuffers[swapChainImage.mImageIndex.value()].native();
+	}
+
+	bool App::graphicsQueueSubmit(VkSemaphore waitFor, VkPipelineStageFlags waitForState, VkCommandBuffer commandBuffer, VkSemaphore doneCommandBuffer, VkFence doneQueue) const noexcept
+	{
+		VkSubmitInfo submitInfo{};
+		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+
+		VkPipelineStageFlags waitStages[] = {waitForState};
+		submitInfo.waitSemaphoreCount = 1;
+		submitInfo.pWaitSemaphores = &waitFor;
+		submitInfo.pWaitDstStageMask = waitStages;
+
+		submitInfo.commandBufferCount = 1;
+		submitInfo.pCommandBuffers = &commandBuffer;
+
+		submitInfo.signalSemaphoreCount = 1;
+		submitInfo.pSignalSemaphores = &doneCommandBuffer;
+
+		if (vkQueueSubmit(mGraphicsQueue, 1, &submitInfo, doneQueue) != VK_SUCCESS)
+			return false;
+
+		return true;
+	}
+
+	void App::waitDeviceIdle() const noexcept
+	{
+		vkDeviceWaitIdle(mDevice);
 	}
 }

@@ -2,7 +2,7 @@
 
 #include <ctime>
 
-namespace hr { namespace engine
+namespace hr::engine
 {
 	bool Logger::checkEntryData(std::string_view entryData, bool &hasFormattedText) noexcept
 	{
@@ -144,6 +144,8 @@ namespace hr { namespace engine
 		}
 
 		streamWriter.write(hr::platform::Platform::NewLine, hr::platform::Platform::NewLineSize);
+
+		mOutFileStream->flush();
 	}
 
 	void Logger::threadFlushFunc()
@@ -218,7 +220,7 @@ namespace hr { namespace engine
 	Logger::Logger(size_t asyncMaxEntries, size_t maxBufferedEntries, const std::filesystem::path& filePath)
 		: Logger(asyncMaxEntries, maxBufferedEntries)
 	{
-		mOutFileStream = std::shared_ptr<hr::streams::FileStream>(new hr::streams::FileStream(filePath, false, true));
+		mOutFileStream = std::make_unique<hr::streams::FileStream>(filePath, false, true);
 	}
 
 	Logger::~Logger()
@@ -256,4 +258,4 @@ namespace hr { namespace engine
 				break;
 		}
 	}
-} }
+}
