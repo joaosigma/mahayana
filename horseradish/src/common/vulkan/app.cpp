@@ -618,6 +618,108 @@ namespace hr::vulkan
 		return mSwapChainFramebuffers[swapChainImage.mImageIndex.value()].native();
 	}
 
+	Memory App::allocateMemory(size_t size, uint32_t memoryTypeFilter, VkMemoryPropertyFlags flags)
+	{
+		if (!mMemTypes)
+		{
+			VkPhysicalDeviceMemoryProperties memProperties;
+			vkGetPhysicalDeviceMemoryProperties(mPhysicalDevice, &memProperties);
+
+			mMemTypes = std::move(memProperties);
+		}
+
+		std::optional<uint32_t> memIndex;
+		for (uint32_t i = 0; i < mMemTypes->memoryTypeCount; i++)
+		{
+			if ((memoryTypeFilter & (1 << i)) == 0)
+				continue;
+			if ((mMemTypes->memoryTypes[i].propertyFlags & flags) != flags)
+				continue;
+
+			memIndex = i;
+			break;
+		}
+
+		if (!memIndex)
+			return Memory::gen(mDevice, VK_NULL_HANDLE, 0);
+
+		VkMemoryAllocateInfo allocInfo{};
+		allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+		allocInfo.allocationSize = static_cast<VkDeviceSize>(size);
+		allocInfo.memoryTypeIndex = *memIndex;
+
+		VkDeviceMemory memory;
+		if (vkAllocateMemory(mDevice, &allocInfo, nullptr, &memory) != VK_SUCCESS)
+			return Memory::gen(mDevice, VK_NULL_HANDLE, 0);
+
+		return Memory::gen(mDevice, memory, size);
+	}
+
+	bool App::transferData(Buffer& dest, size_t destOffset, std::span<const std::byte> data, const CommandPool& commandPool)
+	{
+		if (data.empty())
+			return false;
+
+		assert((data.size() + destOffset) <= dest.size());
+		if ((data.size() + destOffset) > dest.size())
+			return false;
+
+		//create a staging buffer and memory before copying to the host
+		Memory stagingMemory;
+		Buffer stagingBuffer;
+		{
+			stagingBuffer = Object<VkBuffer>::gen(mDevice, data.size(), VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
+			if (!stagingBuffer)
+				return false;
+
+			stagingMemory = allocateMemory(stagingBuffer.hostRequiredSize(), stagingBuffer.hostRequiredMemoryType(), VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+			if (!stagingMemory)
+				return false;
+
+			vkBindBufferMemory(mDevice, stagingBuffer.native(), stagingMemory.native(), 0);
+		}
+
+		//this copies our data to the staging buffer
+		{
+			void* hostData;
+			if (vkMapMemory(mDevice, stagingMemory.native(), 0, static_cast<VkDeviceSize>(data.size()), 0, &hostData) != VK_SUCCESS)
+				return false;
+
+			std::memcpy(hostData, data.data(), data.size());
+			vkUnmapMemory(mDevice, stagingMemory.native());
+		}
+
+		//create a command buffer to take care of the transfer and submit it
+		{
+			auto cmdBuffer = CommandBuffer::gen(mDevice, commandPool.native(), false);
+			if (!cmdBuffer)
+				return false;
+
+			{
+				auto recorder = cmdBuffer.record(true);
+				if (!recorder)
+					return false;
+
+				recorder->copyBuffer(dest.native(), destOffset, stagingBuffer.native(), 0, data.size());
+				recorder->finish();
+			}
+
+			{
+				std::array<VkCommandBuffer, 1> tmpBuffer{cmdBuffer.native()};
+
+				VkSubmitInfo submitInfo{};
+				submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+				submitInfo.commandBufferCount = 1;
+				submitInfo.pCommandBuffers = tmpBuffer.data();
+
+				vkQueueSubmit(mGraphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
+				vkQueueWaitIdle(mGraphicsQueue);
+			}
+		}
+
+		return true;
+	}
+
 	bool App::graphicsQueueSubmit(VkSemaphore waitFor, VkPipelineStageFlags waitForState, VkCommandBuffer commandBuffer, VkSemaphore doneCommandBuffer, VkFence doneQueue) const noexcept
 	{
 		VkSubmitInfo submitInfo{};

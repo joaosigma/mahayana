@@ -81,6 +81,8 @@ namespace hr::vulkan
 		std::vector<Framebuffer> mSwapChainFramebuffers;
 		VkExtent2D mSwapChainExtent{};
 
+		std::optional<VkPhysicalDeviceMemoryProperties> mMemTypes;
+
 		VkDebugUtilsMessengerEXT mDebugMessenger{};
 
 		std::string mErrorMsg;
@@ -133,6 +135,10 @@ namespace hr::vulkan
 
 		SwapChainImage swapChainAcquireImage(VkSemaphore whenImageReady) noexcept;
 		VkFramebuffer swapChainFramebuffer(const SwapChainImage& swapChainImage) const noexcept;
+
+		Memory allocateMemory(size_t size, uint32_t memoryTypeFilter, VkMemoryPropertyFlags flags);
+
+		bool transferData(Buffer& dest, size_t destOffset, std::span<const std::byte> data, const CommandPool& commandPool);
 
 		bool graphicsQueueSubmit(VkSemaphore waitFor, VkPipelineStageFlags waitForState, VkCommandBuffer commandBuffer, VkSemaphore doneCommandBuffer, VkFence doneQueue) const noexcept;
 

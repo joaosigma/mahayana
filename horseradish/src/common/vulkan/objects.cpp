@@ -431,8 +431,35 @@ namespace hr::vulkan
 		return *this;
 	};
 
-	Object<VkPipeline>::Builder& Object<VkPipeline>::Builder::setupVertexInput()
+	Object<VkPipeline>::Builder& Object<VkPipeline>::Builder::addVertexBinding(size_t bindingIndex, size_t stride)
 	{
+		if (mStageVertexInput.numBindings >= mStageVertexInput.bindings.size())
+			return *this;
+
+		auto& binding = mStageVertexInput.bindings[mStageVertexInput.numBindings];
+		mStageVertexInput.numBindings++;
+
+		binding = VkVertexInputBindingDescription{};
+		binding.binding = static_cast<uint32_t>(bindingIndex);
+		binding.stride = static_cast<uint32_t>(stride);
+		binding.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+
+		return *this;
+	}
+
+	Object<VkPipeline>::Builder& Object<VkPipeline>::Builder::addVertexAttribute(size_t bindingIndex, size_t locationIndex, size_t offset, VkFormat format)
+	{
+		if (mStageVertexInput.numAttribs >= mStageVertexInput.attribs.size())
+			return *this;
+
+		auto& attrib = mStageVertexInput.attribs[mStageVertexInput.numAttribs];
+		mStageVertexInput.numAttribs++;
+
+		attrib.binding = static_cast<uint32_t>(bindingIndex);
+		attrib.location = static_cast<uint32_t>(locationIndex);
+		attrib.format = format;
+		attrib.offset = static_cast<uint32_t>(offset);
+
 		return *this;
 	}
 
@@ -495,6 +522,17 @@ namespace hr::vulkan
 				shaderStages[numShaderStages] = std::move(createInfo);
 				numShaderStages++;
 			}
+		}
+
+		if (mStageVertexInput.numBindings > 0)
+		{
+			mVertexInputInfo.vertexBindingDescriptionCount = static_cast<uint32_t>(mStageVertexInput.numBindings);
+			mVertexInputInfo.pVertexBindingDescriptions = mStageVertexInput.bindings.data();
+		}
+		if (mStageVertexInput.numAttribs > 0)
+		{
+			mVertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(mStageVertexInput.numAttribs);
+			mVertexInputInfo.pVertexAttributeDescriptions = mStageVertexInput.attribs.data();
 		}
 
 		std::vector<VkDynamicState> mDynamicStates;
@@ -702,12 +740,12 @@ namespace hr::vulkan
 		mObj = nullptr;
 	}
 
-	CommandBuffer Object<VkCommandPool>::allocateBuffer() noexcept
+	CommandBuffer Object<VkCommandPool>::allocateBuffer(bool destroyWithPool) noexcept
 	{
-		return CommandBuffer::gen(mDevice, mObj);
+		return CommandBuffer::gen(mDevice, mObj, destroyWithPool);
 	}
 
-	Object<VkCommandBuffer> Object<VkCommandBuffer>::gen(VkDevice device, VkCommandPool commandPool) noexcept
+	Object<VkCommandBuffer> Object<VkCommandBuffer>::gen(VkDevice device, VkCommandPool commandPool, bool destroyWithPool) noexcept
 	{
 		VkCommandBufferAllocateInfo allocInfo{};
 		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -719,14 +757,11 @@ namespace hr::vulkan
 		if (vkAllocateCommandBuffers(device, &allocInfo, &commandBuffer) != VK_SUCCESS)
 			return {};
 
-		return Object(device, commandBuffer);
+		return Object(device, commandPool, commandBuffer, destroyWithPool);
 	}
 
 	bool Object<VkCommandBuffer>::Recorder::doRenderPass(VkRenderPass renderPass, VkFramebuffer framebuffer, uint32_t renderWidth, uint32_t renderHeight, const std::function<void(Recorder&)>& cb)
 	{
-		if (!cb || std::exchange(mFinished, true))
-			return false;
-
 		VkRenderPassBeginInfo renderPassInfo{};
 		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 		renderPassInfo.renderPass = renderPass;
@@ -746,6 +781,36 @@ namespace hr::vulkan
 		vkCmdEndRenderPass(mCmdBuffer.native());
 
 		return true;
+	}
+
+	Object<VkCommandBuffer>::Recorder& Object<VkCommandBuffer>::Recorder::copyBuffer(VkBuffer dest, VkBuffer source, size_t size) noexcept
+	{
+		return copyBuffer(dest, 0, source, 0, size);
+	}
+
+	Object<VkCommandBuffer>::Recorder& Object<VkCommandBuffer>::Recorder::copyBuffer(VkBuffer dest, size_t destOffset, VkBuffer source, size_t sourceOffset, size_t size) noexcept
+	{
+		VkBufferCopy copyRegion{};
+		copyRegion.srcOffset = static_cast<VkDeviceSize>(sourceOffset);
+		copyRegion.dstOffset = static_cast<VkDeviceSize>(destOffset);
+		copyRegion.size = static_cast<VkDeviceSize>(size);
+		vkCmdCopyBuffer(mCmdBuffer.native(), source, dest, 1, &copyRegion);
+
+		return *this;
+	}
+
+	Object<VkCommandBuffer>::Recorder& Object<VkCommandBuffer>::Recorder::bindVertexBuffer(uint32_t bindingIndex, VkBuffer buffer, uint32_t bufferOffset) noexcept
+	{
+		VkDeviceSize offsets[] = {bufferOffset};
+		vkCmdBindVertexBuffers(mCmdBuffer.native(), bindingIndex, 1, &buffer, offsets);
+
+		return *this;
+	}
+
+	Object<VkCommandBuffer>::Recorder& Object<VkCommandBuffer>::Recorder::bindIndexBuffer(VkBuffer buffer, uint32_t bufferOffset, VkIndexType indexType) noexcept
+	{
+		vkCmdBindIndexBuffer(mCmdBuffer.native(), buffer, bufferOffset, indexType);
+		return *this;
 	}
 
 	Object<VkCommandBuffer>::Recorder& Object<VkCommandBuffer>::Recorder::bindPipeline(VkPipeline pipeline) noexcept
@@ -778,21 +843,39 @@ namespace hr::vulkan
 		return *this;
 	}
 
-	Object<VkCommandBuffer>::Recorder& Object<VkCommandBuffer>::Recorder::draw(uint32_t vertexCount) noexcept
+	Object<VkCommandBuffer>::Recorder& Object<VkCommandBuffer>::Recorder::draw(uint32_t numIndices) noexcept
 	{
-		vkCmdDraw(mCmdBuffer.native(), vertexCount, 1, 0, 0);
+		vkCmdDrawIndexed(mCmdBuffer.native(), numIndices, 1, 0, 0, 0);
 		return *this;
 	}
 
 	bool Object<VkCommandBuffer>::Recorder::finish() noexcept
 	{
-		if (!std::exchange(mFinished, true))
+		if (std::exchange(mFinished, true))
 			return false;
 
 		if (vkEndCommandBuffer(mCmdBuffer.native()) != VK_SUCCESS)
 			return false;
 
 		return true;
+	}
+
+	Object<VkCommandBuffer>::~Object() noexcept
+	{
+		if (mDestroyWithPool)
+		{
+			mObj = nullptr; //otherwise BaseObject will complain
+			return;
+		}
+
+		if (!BaseObject::operator bool())
+			return;
+
+		assert(mDevice != VK_NULL_HANDLE);
+		assert(mCommandPool != VK_NULL_HANDLE);
+
+		vkFreeCommandBuffers(mDevice, mCommandPool, 1, &mObj);
+		mObj = nullptr;
 	}
 
 	void Object<VkCommandBuffer>::reset() noexcept
@@ -895,5 +978,100 @@ namespace hr::vulkan
 	{
 		vkResetFences(mDevice, 1, &mObj);
 		return *this;
+	}
+
+	Object<VkDeviceMemory>::~Object<VkDeviceMemory>()
+	{
+		if (!BaseObject::operator bool())
+			return;
+
+		assert(mDevice != VK_NULL_HANDLE);
+
+		vkFreeMemory(mDevice, mObj, nullptr);
+		mObj = nullptr;
+	}
+
+	Object<VkDeviceMemory> Object<VkDeviceMemory>::gen(VkDevice device, VkDeviceMemory memory, size_t size) noexcept
+	{
+		return Object(device, memory, size);
+	}
+
+	std::optional<size_t> Object<VkDeviceMemory>::reserve(size_t size) noexcept
+	{
+		if (size <= 0)
+			return std::nullopt;
+
+		if (size > (mSpace.total - mSpace.used))
+			return std::nullopt;
+
+		auto offset = mSpace.used;
+		mSpace.used += size;
+		return offset;
+	}
+
+	std::optional<size_t> Object<VkDeviceMemory>::reserve(size_t size, size_t alignment) noexcept
+	{
+		assert(alignment > 0);
+
+		if (size <= 0)
+			return std::nullopt;
+
+		if (mSpace.used <= 0) //first one
+		{
+			if (size > mSpace.total)
+				return std::nullopt;
+
+			mSpace.used += size;
+			return 0; //since we're at the beginning, the alignment isn't required (it will always match)
+		}
+
+		auto alignedOffset = ((mSpace.used + (alignment - 1)) & ~(alignment - 1)); //must align to requested alignment
+		if ((alignedOffset >= mSpace.total) || (size > (mSpace.total - alignedOffset)))
+			return std::nullopt;
+
+		mSpace.used = alignedOffset + size;
+		return alignedOffset;
+	}
+
+	Object<VkBuffer>::~Object<VkBuffer>()
+	{
+		if (!BaseObject::operator bool())
+			return;
+
+		assert(mDevice != VK_NULL_HANDLE);
+
+		vkDestroyBuffer(mDevice, mObj, nullptr);
+		mObj = nullptr;
+		mSize = 0;
+	}
+
+	Object<VkBuffer> Object<VkBuffer>::gen(VkDevice device, size_t size, VkBufferUsageFlags usage) noexcept
+	{
+		VkBufferCreateInfo bufferInfo{};
+		bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+		bufferInfo.size = static_cast<VkDeviceSize>(size);
+		bufferInfo.usage = usage;
+		bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+		VkBuffer buffer;
+		if (vkCreateBuffer(device, &bufferInfo, nullptr, &buffer) != VK_SUCCESS)
+			return {};
+
+		VkMemoryRequirements memRequirements;
+		vkGetBufferMemoryRequirements(device, buffer, &memRequirements);
+
+		return Object(device, buffer, size, memRequirements);
+	}
+
+	bool Object<VkBuffer>::allocate(Object<VkDeviceMemory>& memory) const noexcept
+	{
+		auto offset = memory.reserve(mMemRequirements.size, mMemRequirements.alignment);
+		if (!offset)
+			return false;
+
+		if (vkBindBufferMemory(mDevice, mObj, memory.native(), *offset) != VK_SUCCESS)
+			return false;
+
+		return true;
 	}
 }

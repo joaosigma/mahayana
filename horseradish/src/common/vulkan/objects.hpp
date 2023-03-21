@@ -73,6 +73,8 @@ namespace hr::vulkan
 	using CommandBuffer = Object<VkCommandBuffer>;
 	using Semaphore = Object<VkSemaphore>;
 	using Fence = Object<VkFence>;
+	using Memory = Object<VkDeviceMemory>;
+	using Buffer = Object<VkBuffer>;
 
 	template<>
 	class Object<VkImageView> final : public detail::BaseObject<VkImageView>
@@ -195,6 +197,13 @@ namespace hr::vulkan
 			} mStageViewport;
 			VkPipelineViewportStateCreateInfo mViewportState;
 
+			struct
+			{
+				size_t numBindings{0};
+				std::array<VkVertexInputBindingDescription, 8> bindings;
+				size_t numAttribs{0};
+				std::array<VkVertexInputAttributeDescription, 8> attribs;
+			} mStageVertexInput;
 			VkPipelineVertexInputStateCreateInfo mVertexInputInfo;
 			VkPipelineInputAssemblyStateCreateInfo mInputAssembly;
 
@@ -212,7 +221,8 @@ namespace hr::vulkan
 			Builder& operator=(Builder&&) noexcept = delete;
 
 			Builder& setupShader(ShaderModule module, ShaderModule::ShaderType shaderType);
-			Builder& setupVertexInput();
+			Builder& addVertexBinding(size_t bindingIndex, size_t stride);
+			Builder& addVertexAttribute(size_t bindingIndex, size_t locationIndex, size_t offset, VkFormat format);
 			Builder& setupInputAssembly(VkPrimitiveTopology topology, bool primitiveRestart);
 			Builder& setupViewport(float x, float y, float width, float height, float minDepth, float maxDepth);
 			Builder& setupScissor(int32_t x, int32_t y, uint32_t width, uint32_t height);
@@ -301,25 +311,29 @@ namespace hr::vulkan
 		Object& operator=(Object&&) noexcept = default;
 
 	public:
-		CommandBuffer allocateBuffer() noexcept;
+		CommandBuffer allocateBuffer(bool destroyWithPool) noexcept;
 	};
 
 	template<>
 	class Object<VkCommandBuffer> final : public detail::BaseObject<VkCommandBuffer>
 	{
 		VkDevice mDevice{VK_NULL_HANDLE};
+		VkCommandPool mCommandPool{VK_NULL_HANDLE};
+		bool mDestroyWithPool{true};
 
 	private:
 		Object() noexcept = default;
 
-		explicit Object(VkDevice device, VkCommandBuffer commandBuffer) noexcept
+		explicit Object(VkDevice device, VkCommandPool commandPool, VkCommandBuffer commandBuffer, bool destroyWithPool) noexcept
 		  : BaseObject{commandBuffer}
 		  , mDevice{device}
+		  , mCommandPool{commandPool}
+		  , mDestroyWithPool{destroyWithPool}
 		{
 		}
 
 	public:
-		static Object gen(VkDevice device, VkCommandPool commandPool) noexcept;
+		static Object gen(VkDevice device, VkCommandPool commandPool, bool destroyWithPool) noexcept;
 
 		class Recorder
 		{
@@ -343,21 +357,23 @@ namespace hr::vulkan
 
 			bool doRenderPass(VkRenderPass renderPass, VkFramebuffer framebuffer, uint32_t renderWidth, uint32_t renderHeight, const std::function<void(Recorder&)>& cb);
 
+			Recorder& copyBuffer(VkBuffer dest, VkBuffer source, size_t size) noexcept;
+			Recorder& copyBuffer(VkBuffer dest, size_t destOffset, VkBuffer source, size_t sourceOffset, size_t size) noexcept;
+
+			Recorder& bindVertexBuffer(uint32_t bindingIndex, VkBuffer buffer, uint32_t bufferOffset) noexcept;
+			Recorder& bindIndexBuffer(VkBuffer buffer, uint32_t bufferOffset, VkIndexType indexType) noexcept;
+
 			Recorder& bindPipeline(VkPipeline pipeline) noexcept;
 			Recorder& setViewport(float x, float y, float width, float height, float minDepth, float maxDepth) noexcept;
 			Recorder& setScissor(int32_t x, int32_t y, uint32_t width, uint32_t height) noexcept;
 
-			Recorder& draw(uint32_t vertexCount) noexcept;
+			Recorder& draw(uint32_t numIndices) noexcept;
 
 			bool finish() noexcept;
 		};
 
 	public:
-		~Object() noexcept
-		{
-			//commands are destroyed through the command pool
-			mObj = VK_NULL_HANDLE;
-		}
+		~Object() noexcept;
 
 		Object(const Object&) = delete;
 		Object& operator=(const Object&) = delete;
@@ -425,5 +441,91 @@ namespace hr::vulkan
 	public:
 		Object& wait() noexcept;
 		Object& reset() noexcept;
+	};
+
+	template<>
+	class Object<VkDeviceMemory> final : public detail::BaseObject<VkDeviceMemory>
+	{
+		VkDevice mDevice{VK_NULL_HANDLE};
+		struct
+		{
+			size_t total{0};
+			size_t used{0};
+		} mSpace;
+		
+
+	private:
+		explicit Object(VkDevice device, VkDeviceMemory memory, size_t size) noexcept
+		  : BaseObject{memory}
+		  , mDevice{device}
+		{
+			mSpace.total = size;
+		}
+
+	public:
+		static Object gen(VkDevice device, VkDeviceMemory memory, size_t size) noexcept;
+
+	public:
+		Object() noexcept = default;
+		~Object() noexcept;
+
+		Object(const Object&) = delete;
+		Object& operator=(const Object&) = delete;
+		Object(Object&&) noexcept = default;
+		Object& operator=(Object&&) noexcept = default;
+
+		size_t sizeUsed() const noexcept
+		{
+			return mSpace.used;
+		}
+
+		std::optional<size_t> reserve(size_t size) noexcept;
+		std::optional<size_t> reserve(size_t size, size_t alignment) noexcept;
+	};
+
+	template<>
+	class Object<VkBuffer> final : public detail::BaseObject<VkBuffer>
+	{
+		VkDevice mDevice{VK_NULL_HANDLE};
+		VkMemoryRequirements mMemRequirements{};
+		size_t mSize{0};
+
+	private:
+		explicit Object(VkDevice device, VkBuffer buffer, size_t size, VkMemoryRequirements memRequirements) noexcept
+		  : BaseObject{buffer}
+		  , mDevice{device}
+		  , mMemRequirements{memRequirements}
+		  , mSize{size}
+		{
+		}
+
+	public:
+		static Object gen(VkDevice device, size_t size, VkBufferUsageFlags usage) noexcept;
+
+	public:
+		Object() noexcept = default;
+		~Object() noexcept;
+
+		Object(const Object&) = delete;
+		Object& operator=(const Object&) = delete;
+		Object(Object&&) noexcept = default;
+		Object& operator=(Object&&) noexcept = default;
+
+		size_t size() const noexcept
+		{
+			return mSize;
+		}
+
+		size_t hostRequiredSize() const noexcept
+		{
+			return static_cast<size_t>(mMemRequirements.size);
+		}
+
+		uint32_t hostRequiredMemoryType() const noexcept
+		{
+			return mMemRequirements.memoryTypeBits;
+		}
+
+		bool allocate(Object<VkDeviceMemory>& memory) const noexcept;
 	};
 }

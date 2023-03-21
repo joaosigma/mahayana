@@ -465,6 +465,43 @@ namespace hr::engine
 
 			Timestep timestep(50);
 
+			struct Vertex
+			{
+				float pos[2];
+				float color[3];
+			};
+
+			auto vulkanCmdPool = vulkanApp->createCommandPool();
+
+			//data
+			vulkan::Memory vulkanMemory;
+			vulkan::Buffer vulkanBufferVertexIndices;
+			vulkan::Buffer vulkanBufferVertexData;
+			{
+				const std::vector<Vertex> vertices = {
+					{{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
+					{{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
+					{{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
+					{{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}}};
+
+				const std::vector<uint16_t> indices = {0, 1, 2, 2, 3, 0};
+
+				vulkanBufferVertexData = vulkan::Buffer::gen(vulkanApp->device(), vertices.size() * sizeof(Vertex), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+				vulkanBufferVertexIndices = vulkan::Buffer::gen(vulkanApp->device(), indices.size() * sizeof(uint16_t), VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+				assert(vulkanBufferVertexData.hostRequiredMemoryType() == vulkanBufferVertexIndices.hostRequiredMemoryType());
+
+				auto totalSize = vulkanBufferVertexData.hostRequiredSize();
+				totalSize += vulkanBufferVertexIndices.hostRequiredSize();
+				vulkanMemory = vulkanApp->allocateMemory(totalSize, vulkanBufferVertexData.hostRequiredMemoryType(), VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+				vulkanBufferVertexData.allocate(vulkanMemory);
+				vulkanApp->transferData(vulkanBufferVertexData, 0, std::as_bytes(std::span{vertices}), vulkanCmdPool);
+
+				vulkanBufferVertexIndices.allocate(vulkanMemory);
+				vulkanApp->transferData(vulkanBufferVertexIndices, 0, std::as_bytes(std::span{indices}), vulkanCmdPool);
+			}
+
+
 			auto vulkanFrameFence = hr::vulkan::Fence::gen(vulkanApp->device(), true);
 			auto vulkanSwapChainImageReady = hr::vulkan::Semaphore::gen(vulkanApp->device());
 
@@ -488,7 +525,9 @@ namespace hr::engine
 
 				auto builder = hr::vulkan::Pipeline::Builder(vulkanApp->device());
 
-				builder.setupVertexInput()
+				builder.addVertexBinding(0, sizeof(Vertex))
+				  .addVertexAttribute(0, 0, offsetof(Vertex, pos), VK_FORMAT_R32G32_SFLOAT)
+				  .addVertexAttribute(0, 1, offsetof(Vertex, color), VK_FORMAT_R32G32B32_SFLOAT)
 				  .setupInputAssembly(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, false)
 				  .setupViewport(0.0f, 0.0f, static_cast<float>(viewportRender.width()), static_cast<float>(viewportRender.height()), 0.0f, 1.0f)
 				  .setupScissor(0, 0, static_cast<uint32_t>(viewportRender.width()), static_cast<uint32_t>(viewportRender.height()))
@@ -498,10 +537,11 @@ namespace hr::engine
 				vulkanPipeline = builder.build(renderPass.native());
 			}
 
-			auto vulkanCmdPool = vulkanApp->createCommandPool();
-			auto vulkanCmdBuffer = vulkanCmdPool.allocateBuffer();		
+			
+			auto vulkanCmdBuffer = vulkanCmdPool.allocateBuffer(true);
 			auto vulkanCmdBufferDone = hr::vulkan::Semaphore::gen(vulkanApp->device());
 
+			//main render loop
 			while (mCurState == State::Running)
 			{
 				hr::Timer timerFrame;
@@ -526,13 +566,14 @@ namespace hr::engine
 					vulkanCmdBuffer.reset();
 					auto recorder = vulkanCmdBuffer.record(false);
 					
-					recorder->doRenderPass(renderPass.native(), vulkanApp->swapChainFramebuffer(vulkanSwapChainImage), viewportRender.width(),
-					  viewportRender.height(),
-					  [&vulkanPipeline](auto &recorder)
+					recorder->doRenderPass(renderPass.native(), vulkanApp->swapChainFramebuffer(vulkanSwapChainImage), viewportRender.width(), viewportRender.height(),
+					  [&vulkanPipeline, &vulkanBufferVertexData, &vulkanBufferVertexIndices](auto &recorder)
 					  {
 						  recorder.bindPipeline(vulkanPipeline.native());
+						  recorder.bindVertexBuffer(0, vulkanBufferVertexData.native(), 0);
+						  recorder.bindIndexBuffer(vulkanBufferVertexIndices.native(), 0, VK_INDEX_TYPE_UINT16);
 						  //scissor and viewport were already set at the pipeline
-						  recorder.draw(3);
+						  recorder.draw(6);
 					  });
 					
 					recorder->finish();
@@ -620,7 +661,8 @@ namespace hr::engine
 					if (msg.isType(platform::Window::Message::MessageType::CharacterKey))
 						mRuntime->callVoidMethod("events.onKeyPress", msg.getParam());
 
-					stage->processMessage(msg);
+					if (stage)
+						stage->processMessage(msg);
 
 					if (consoleUI)
 						consoleUI->processMsg(msg, [&](const char * const newInput) { mRuntime->runScript(newInput); });
@@ -695,7 +737,7 @@ namespace hr::engine
 				vulkanSwapChainImage.present(vulkanCmdBufferDone.native()); //return / present the frame back to the swapchain
 			}
 
-			vulkanApp->waitDeviceIdle(); //wait for any remaining work to finish
+			vulkanApp->waitDeviceIdle(); //wait for any remaining work to finish (before we start destroying everything)
 		}
 
 		stage.reset();
