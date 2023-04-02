@@ -62,8 +62,6 @@ configure_file(
 
 project(Mustard VERSION 0.9 LANGUAGES C CXX)
 
-set(CMAKE_CXX_EXTENSIONS OFF)
-
 add_executable(horseradish WIN32 "")
 add_executable(horseradish-utests "")
 

@@ -449,7 +449,7 @@ namespace hr::engine
 		{
 			//setup camera
 			hr::render::tools::CameraFPS camera;
-			camera.setPos(0.0f, 0.0f, -1.0f);
+			camera.setPos(0.0f, 0.0f, 1.0f);
 			camera.setTarget(0.0f, 0.0f, 0.0f);
 			camera.setMovementScale(hr::render::tools::CameraFPS::CameraInput::Keyboard, 10.0f);
 
@@ -474,9 +474,22 @@ namespace hr::engine
 			auto vulkanCmdPool = vulkanApp->createCommandPool();
 
 			//data
+			struct UniformBufferObject
+			{
+				Matrix4f model = Matrix4f::zero();
+				Matrix4f view = Matrix4f::zero();
+				Matrix4f proj = Matrix4f::zero();
+			};
+
 			vulkan::Memory vulkanMemory;
 			vulkan::Buffer vulkanBufferVertexIndices;
 			vulkan::Buffer vulkanBufferVertexData;
+
+			vulkan::Memory vulkanMemoryUBO;
+			vulkan::Buffer vulkanBufferUBO;
+			vulkan::DescriptorSetLayout vulkanDescriptorSetLayout;
+			vulkan::DescriptorPool vulkanDescriptorPool = vulkan::DescriptorPool::gen(vulkanApp->device(), true, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1);
+			vulkan::DescriptorSet vulkanDescriptorSet;
 			{
 				const std::vector<Vertex> vertices = {
 					{{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
@@ -499,6 +512,19 @@ namespace hr::engine
 
 				vulkanBufferVertexIndices.allocate(vulkanMemory);
 				vulkanApp->transferData(vulkanBufferVertexIndices, 0, std::as_bytes(std::span{indices}), vulkanCmdPool);
+
+
+
+				vulkanBufferUBO = vulkan::Buffer::gen(vulkanApp->device(), sizeof(UniformBufferObject), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
+				vulkanMemoryUBO = vulkanApp->allocateMemory(vulkanBufferUBO.size(), vulkanBufferVertexData.hostRequiredMemoryType(), VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+				vulkanBufferUBO.allocate(vulkanMemoryUBO);
+				vulkanMemoryUBO.memMap(vulkanBufferUBO.size(), 0);
+
+				vulkanDescriptorSetLayout = vulkan::DescriptorSetLayout::gen(vulkanApp->device(), VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT);
+
+				vulkanDescriptorSet = vulkanDescriptorPool.allocateDescriptorSet(vulkanDescriptorSetLayout.native());
+				vulkanDescriptorSet.writeUniformBuffer(0, vulkanBufferUBO.native());
 			}
 
 
@@ -528,6 +554,7 @@ namespace hr::engine
 				builder.addVertexBinding(0, sizeof(Vertex))
 				  .addVertexAttribute(0, 0, offsetof(Vertex, pos), VK_FORMAT_R32G32_SFLOAT)
 				  .addVertexAttribute(0, 1, offsetof(Vertex, color), VK_FORMAT_R32G32B32_SFLOAT)
+				  .addDescriptorSetLayout(vulkanDescriptorSetLayout.native())
 				  .setupInputAssembly(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, false)
 				  .setupViewport(0.0f, 0.0f, static_cast<float>(viewportRender.width()), static_cast<float>(viewportRender.height()), 0.0f, 1.0f)
 				  .setupScissor(0, 0, static_cast<uint32_t>(viewportRender.width()), static_cast<uint32_t>(viewportRender.height()))
@@ -567,9 +594,10 @@ namespace hr::engine
 					auto recorder = vulkanCmdBuffer.record(false);
 					
 					recorder->doRenderPass(renderPass.native(), vulkanApp->swapChainFramebuffer(vulkanSwapChainImage), viewportRender.width(), viewportRender.height(),
-					  [&vulkanPipeline, &vulkanBufferVertexData, &vulkanBufferVertexIndices](auto &recorder)
+					  [&vulkanPipeline, &vulkanBufferVertexData, &vulkanBufferVertexIndices, &vulkanDescriptorSet](auto &recorder)
 					  {
 						  recorder.bindPipeline(vulkanPipeline.native());
+						  recorder.bindDescriptorSets(vulkanPipeline.layout(), vulkanDescriptorSet.native());
 						  recorder.bindVertexBuffer(0, vulkanBufferVertexData.native(), 0);
 						  recorder.bindIndexBuffer(vulkanBufferVertexIndices.native(), 0, VK_INDEX_TYPE_UINT16);
 						  //scissor and viewport were already set at the pipeline
@@ -577,6 +605,17 @@ namespace hr::engine
 					  });
 					
 					recorder->finish();
+				}
+
+				//update UBO
+				{
+					UniformBufferObject ubo;
+
+					ubo.model = Matrix4f::identity();
+					ubo.view = camera.modelView();
+					ubo.proj = viewportRender.getProjection(hr::gl::tools::Viewport::ProjectionType::Proj3D);
+
+					std::memcpy(vulkanMemoryUBO.memMappedPtr(), &ubo, sizeof(UniformBufferObject));
 				}
 
 				vulkanApp->graphicsQueueSubmit(vulkanSwapChainImageReady.native(), VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, vulkanCmdBuffer.native(),

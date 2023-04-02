@@ -75,6 +75,9 @@ namespace hr::vulkan
 	using Fence = Object<VkFence>;
 	using Memory = Object<VkDeviceMemory>;
 	using Buffer = Object<VkBuffer>;
+	using DescriptorSetLayout = Object<VkDescriptorSetLayout>;
+	using DescriptorSet = Object<VkDescriptorSet>;
+	using DescriptorPool = Object<VkDescriptorPool>;
 
 	template<>
 	class Object<VkImageView> final : public detail::BaseObject<VkImageView>
@@ -200,12 +203,15 @@ namespace hr::vulkan
 			struct
 			{
 				size_t numBindings{0};
-				std::array<VkVertexInputBindingDescription, 8> bindings;
+				std::array<VkVertexInputBindingDescription, 8> bindings{};
 				size_t numAttribs{0};
-				std::array<VkVertexInputAttributeDescription, 8> attribs;
+				std::array<VkVertexInputAttributeDescription, 8> attribs{};
 			} mStageVertexInput;
 			VkPipelineVertexInputStateCreateInfo mVertexInputInfo;
 			VkPipelineInputAssemblyStateCreateInfo mInputAssembly;
+
+			std::vector<VkDescriptorSetLayout> mDSetLayouts;
+			std::vector<VkPushConstantRange> mPushConstants;
 
 			VkPipelineRasterizationStateCreateInfo mRasterizer;
 			VkPipelineMultisampleStateCreateInfo mMultisampling;
@@ -221,6 +227,9 @@ namespace hr::vulkan
 			Builder& operator=(Builder&&) noexcept = delete;
 
 			Builder& setupShader(ShaderModule module, ShaderModule::ShaderType shaderType);
+			Builder& addDescriptorSetLayout(VkDescriptorSetLayout dsetLayout);
+			Builder& addPushConstant(size_t offset, size_t size, VkShaderStageFlags stageFlags);
+
 			Builder& addVertexBinding(size_t bindingIndex, size_t stride);
 			Builder& addVertexAttribute(size_t bindingIndex, size_t locationIndex, size_t offset, VkFormat format);
 			Builder& setupInputAssembly(VkPrimitiveTopology topology, bool primitiveRestart);
@@ -238,6 +247,11 @@ namespace hr::vulkan
 		Object& operator=(const Object&) = delete;
 		Object(Object&&) noexcept = default;
 		Object& operator=(Object&&) noexcept = default;
+
+		VkPipelineLayout layout() const noexcept
+		{
+			return mPipelineLayout;
+		}
 	};
 
 	template<>
@@ -367,6 +381,9 @@ namespace hr::vulkan
 			Recorder& setViewport(float x, float y, float width, float height, float minDepth, float maxDepth) noexcept;
 			Recorder& setScissor(int32_t x, int32_t y, uint32_t width, uint32_t height) noexcept;
 
+			Recorder& bindDescriptorSets(VkPipelineLayout pipelineLayout, VkDescriptorSet descriptorSet);
+			Recorder& pushConstants(VkPipelineLayout pipelineLayout, VkShaderStageFlags stageFlags, const void* data, size_t dataSize, size_t dataOffset) noexcept;
+
 			Recorder& draw(uint32_t numIndices) noexcept;
 
 			bool finish() noexcept;
@@ -452,6 +469,7 @@ namespace hr::vulkan
 			size_t total{0};
 			size_t used{0};
 		} mSpace;
+		std::optional<void*> mMappedMem;
 		
 
 	private:
@@ -481,21 +499,29 @@ namespace hr::vulkan
 
 		std::optional<size_t> reserve(size_t size) noexcept;
 		std::optional<size_t> reserve(size_t size, size_t alignment) noexcept;
+
+		void* memMap(size_t size, size_t offset) noexcept;
+		void memUnmap() noexcept;
+
+		void* memMappedPtr() const noexcept
+		{
+			return mMappedMem.value_or(nullptr);
+		}
 	};
 
 	template<>
 	class Object<VkBuffer> final : public detail::BaseObject<VkBuffer>
 	{
 		VkDevice mDevice{VK_NULL_HANDLE};
-		VkMemoryRequirements mMemRequirements{};
 		size_t mSize{0};
+		VkMemoryRequirements mMemRequirements{};
 
 	private:
 		explicit Object(VkDevice device, VkBuffer buffer, size_t size, VkMemoryRequirements memRequirements) noexcept
 		  : BaseObject{buffer}
 		  , mDevice{device}
-		  , mMemRequirements{memRequirements}
 		  , mSize{size}
+		  , mMemRequirements{memRequirements}
 		{
 		}
 
@@ -527,5 +553,93 @@ namespace hr::vulkan
 		}
 
 		bool allocate(Object<VkDeviceMemory>& memory) const noexcept;
+	};
+
+	template<>
+	class Object<VkDescriptorSetLayout> final : public detail::BaseObject<VkDescriptorSetLayout>
+	{
+		VkDevice mDevice{VK_NULL_HANDLE};
+
+	private:
+		explicit Object(VkDevice device, VkDescriptorSetLayout dsetLayout) noexcept
+		  : BaseObject{dsetLayout}
+		  , mDevice{device}
+		{
+		}
+
+	public:
+		static Object gen(VkDevice device, VkDescriptorType descriptorType, VkShaderStageFlags shaderStageFlags) noexcept;
+
+	public:
+		Object() noexcept = default;
+		~Object() noexcept;
+
+		Object(const Object&) = delete;
+		Object& operator=(const Object&) = delete;
+		Object(Object&&) noexcept = default;
+		Object& operator=(Object&&) noexcept = default;
+	};
+
+	template<>
+	class Object<VkDescriptorSet> final : public detail::BaseObject<VkDescriptorSet>
+	{
+		friend class Object<VkDescriptorPool>;
+
+		VkDevice mDevice{VK_NULL_HANDLE};
+		VkDescriptorPool mDescriptorPool{VK_NULL_HANDLE};
+		bool mImmortal{false};
+
+	private:
+		explicit Object(VkDevice device, VkDescriptorPool descriptorPool, VkDescriptorSet descriptorSet, bool immortal) noexcept
+		  : BaseObject{descriptorSet}
+		  , mDevice{device}
+		  , mDescriptorPool{descriptorPool}
+		  , mImmortal{immortal}
+		{
+		}
+
+	public:
+		Object() noexcept = default;
+		~Object() noexcept;
+
+		Object(const Object&) = delete;
+		Object& operator=(const Object&) = delete;
+		Object(Object&&) noexcept = default;
+		Object& operator=(Object&&) noexcept = default;
+
+	public:
+		void writeUniformBuffer(uint32_t bindingIndex, VkBuffer buffer);
+		void writeUniformBuffer(uint32_t bindingIndex, VkBuffer buffer, size_t bufferOffset, size_t bufferSize);
+	};
+
+	template<>
+	class Object<VkDescriptorPool> final : public detail::BaseObject<VkDescriptorPool>
+	{
+		VkDevice mDevice{VK_NULL_HANDLE};
+		bool mImmortalDescriptorSets{false};
+
+	private:
+		Object() noexcept = default;
+
+		explicit Object(VkDevice device, VkDescriptorPool descriptorPool, bool immortalDescriptorSets) noexcept
+		  : BaseObject{descriptorPool}
+		  , mDevice{device}
+		  , mImmortalDescriptorSets{immortalDescriptorSets}
+		{
+		}
+
+	public:
+		static Object gen(VkDevice device, bool immortalDescriptorSets, size_t maxDescriptorSets, VkDescriptorType descriptorType, size_t descriptorCount) noexcept;
+
+	public:
+		~Object() noexcept;
+
+		Object(const Object&) = delete;
+		Object& operator=(const Object&) = delete;
+		Object(Object&&) noexcept = default;
+		Object& operator=(Object&&) noexcept = default;
+
+	public:
+		Object<VkDescriptorSet> allocateDescriptorSet(VkDescriptorSetLayout dsetLayout);
 	};
 }

@@ -385,7 +385,7 @@ namespace hr::vulkan
 		mRasterizer.rasterizerDiscardEnable = VK_FALSE;
 		mRasterizer.polygonMode = VK_POLYGON_MODE_FILL;
 		mRasterizer.lineWidth = 1.0f;
-		mRasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
+		mRasterizer.cullMode = VK_CULL_MODE_NONE; //VK_CULL_MODE_BACK_BIT;
 		mRasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
 		mRasterizer.depthBiasEnable = VK_FALSE;
 		mRasterizer.depthBiasConstantFactor = 0.0f;
@@ -429,7 +429,24 @@ namespace hr::vulkan
 		}
 
 		return *this;
-	};
+	}
+
+	Object<VkPipeline>::Builder& Object<VkPipeline>::Builder::addDescriptorSetLayout(VkDescriptorSetLayout dsetLayout)
+	{
+		mDSetLayouts.push_back(dsetLayout);
+		return *this;
+	}
+
+	Object<VkPipeline>::Builder& Object<VkPipeline>::Builder::addPushConstant(size_t offset, size_t size, VkShaderStageFlags stageFlags)
+	{
+		VkPushConstantRange pushRange{};
+		pushRange.offset = static_cast<uint32_t>(offset);
+		pushRange.size = static_cast<uint32_t>(size);
+		pushRange.stageFlags = stageFlags;
+		mPushConstants.push_back(std::move(pushRange));
+
+		return *this;
+	}
 
 	Object<VkPipeline>::Builder& Object<VkPipeline>::Builder::addVertexBinding(size_t bindingIndex, size_t stride)
 	{
@@ -583,10 +600,18 @@ namespace hr::vulkan
 		{
 			VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
 			pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-			pipelineLayoutInfo.setLayoutCount = 0;
-			pipelineLayoutInfo.pSetLayouts = nullptr;
-			pipelineLayoutInfo.pushConstantRangeCount = 0;
-			pipelineLayoutInfo.pPushConstantRanges = nullptr;
+
+			if (!mDSetLayouts.empty())
+			{
+				pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(mDSetLayouts.size());
+				pipelineLayoutInfo.pSetLayouts = mDSetLayouts.data();
+			}
+
+			if (!mPushConstants.empty())
+			{
+				pipelineLayoutInfo.pushConstantRangeCount = static_cast<uint32_t>(mPushConstants.size());
+				pipelineLayoutInfo.pPushConstantRanges = mPushConstants.data();
+			}
 
 			if (vkCreatePipelineLayout(mDevice, &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS)
 				return {};
@@ -843,6 +868,18 @@ namespace hr::vulkan
 		return *this;
 	}
 
+	Object<VkCommandBuffer>::Recorder& Object<VkCommandBuffer>::Recorder::bindDescriptorSets(VkPipelineLayout pipelineLayout, VkDescriptorSet descriptorSet)
+	{
+		vkCmdBindDescriptorSets(mCmdBuffer.native(), VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
+		return *this;
+	}
+
+	Object<VkCommandBuffer>::Recorder& Object<VkCommandBuffer>::Recorder::pushConstants(VkPipelineLayout pipelineLayout, VkShaderStageFlags stageFlags, const void* data, size_t dataSize, size_t dataOffset) noexcept
+	{
+		vkCmdPushConstants(mCmdBuffer.native(), pipelineLayout, stageFlags, static_cast<uint32_t>(dataOffset), static_cast<uint32_t>(dataSize), data);
+		return *this;
+	}
+
 	Object<VkCommandBuffer>::Recorder& Object<VkCommandBuffer>::Recorder::draw(uint32_t numIndices) noexcept
 	{
 		vkCmdDrawIndexed(mCmdBuffer.native(), numIndices, 1, 0, 0, 0);
@@ -1033,6 +1070,28 @@ namespace hr::vulkan
 		return alignedOffset;
 	}
 
+	void* Object<VkDeviceMemory>::memMap(size_t size, size_t offset) noexcept
+	{
+		if (mMappedMem.has_value())
+			return nullptr;
+
+		void* dataPtr;
+		if (vkMapMemory(mDevice, mObj, static_cast<VkDeviceSize>(offset), static_cast<VkDeviceSize>(size), 0, &dataPtr) != VK_SUCCESS)
+			return nullptr;
+
+		mMappedMem = dataPtr;
+		return dataPtr;
+	}
+
+	void Object<VkDeviceMemory>::memUnmap() noexcept
+	{
+		if (!mMappedMem.has_value())
+			return;
+
+		vkUnmapMemory(mDevice, mObj);
+		mMappedMem = std::nullopt;
+	}
+
 	Object<VkBuffer>::~Object<VkBuffer>()
 	{
 		if (!BaseObject::operator bool())
@@ -1073,5 +1132,141 @@ namespace hr::vulkan
 			return false;
 
 		return true;
+	}
+
+	Object<VkDescriptorSetLayout> Object<VkDescriptorSetLayout>::gen(VkDevice device, VkDescriptorType descriptorType, VkShaderStageFlags shaderStageFlags) noexcept
+	{
+		VkDescriptorSetLayoutBinding uboLayoutBinding{};
+		uboLayoutBinding.binding = 0;
+		uboLayoutBinding.descriptorType = descriptorType;
+		uboLayoutBinding.descriptorCount = 1;
+		uboLayoutBinding.stageFlags = shaderStageFlags;
+		uboLayoutBinding.pImmutableSamplers = nullptr;
+
+		VkDescriptorSetLayoutCreateInfo layoutInfo{};
+		layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+		layoutInfo.bindingCount = 1;
+		layoutInfo.pBindings = &uboLayoutBinding;
+
+		VkDescriptorSetLayout descriptorSetLayout;
+		if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &descriptorSetLayout) != VK_SUCCESS)
+			return {};
+
+		return Object(device, descriptorSetLayout);
+	}
+
+	Object<VkDescriptorSetLayout>::~Object<VkDescriptorSetLayout>()
+	{
+		if (!BaseObject::operator bool())
+			return;
+
+		assert(mDevice != VK_NULL_HANDLE);
+
+		vkDestroyDescriptorSetLayout(mDevice, mObj, nullptr);
+		mObj = nullptr;
+	}
+
+	Object<VkDescriptorSet>::~Object<VkDescriptorSet>()
+	{
+		if (mImmortal)
+		{
+			mObj = nullptr; //otherwise BaseObject will complain
+			return;
+		}
+
+		if (!BaseObject::operator bool())
+			return;
+
+		assert(mDevice != VK_NULL_HANDLE);
+		assert(mDescriptorPool != VK_NULL_HANDLE);
+
+		vkFreeDescriptorSets(mDevice, mDescriptorPool, 1, &mObj);
+		mObj = nullptr;
+	}
+
+	void Object<VkDescriptorSet>::writeUniformBuffer(uint32_t bindingIndex, VkBuffer buffer)
+	{
+		VkDescriptorBufferInfo bufferInfo{};
+		bufferInfo.buffer = buffer;
+		bufferInfo.offset = 0;
+		bufferInfo.range = VK_WHOLE_SIZE;
+
+		VkWriteDescriptorSet descriptorWrite{};
+		descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		descriptorWrite.dstSet = mObj;
+		descriptorWrite.dstBinding = bindingIndex;
+		descriptorWrite.dstArrayElement = 0;
+		descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		descriptorWrite.descriptorCount = 1;
+		descriptorWrite.pBufferInfo = &bufferInfo;
+
+		vkUpdateDescriptorSets(mDevice, 1, &descriptorWrite, 0, nullptr);
+	}
+
+	void Object<VkDescriptorSet>::writeUniformBuffer(uint32_t bindingIndex, VkBuffer buffer, size_t bufferOffset, size_t bufferSize)
+	{
+		VkDescriptorBufferInfo bufferInfo{};
+		bufferInfo.buffer = buffer;
+		bufferInfo.offset = static_cast<VkDeviceSize>(bufferOffset);
+		bufferInfo.range = static_cast<VkDeviceSize>(bufferSize);
+
+		VkWriteDescriptorSet descriptorWrite{};
+		descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		descriptorWrite.dstSet = mObj;
+		descriptorWrite.dstBinding = bindingIndex;
+		descriptorWrite.dstArrayElement = 0;
+		descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		descriptorWrite.descriptorCount = 1;
+		descriptorWrite.pBufferInfo = &bufferInfo;
+
+		vkUpdateDescriptorSets(mDevice, 1, &descriptorWrite, 0, nullptr);
+	}
+
+	Object<VkDescriptorPool> Object<VkDescriptorPool>::gen(VkDevice device, bool immortalDescriptorSets, size_t maxDescriptorSets, VkDescriptorType descriptorType,
+	  size_t descriptorCount) noexcept
+	{
+		VkDescriptorPoolSize poolSize{};
+		poolSize.type = descriptorType;
+		poolSize.descriptorCount = static_cast<uint32_t>(descriptorCount);
+
+		VkDescriptorPoolCreateInfo poolInfo{};
+		poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+		poolInfo.poolSizeCount = 1;
+		poolInfo.pPoolSizes = &poolSize;
+		poolInfo.maxSets = static_cast<uint32_t>(maxDescriptorSets);
+		if (!immortalDescriptorSets)
+			poolInfo.flags |= VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
+
+		VkDescriptorPool descriptorPool;
+		if (vkCreateDescriptorPool(device, &poolInfo, nullptr, &descriptorPool) != VK_SUCCESS)
+			return {};
+
+		return Object(device, descriptorPool, immortalDescriptorSets);
+	}
+
+	Object<VkDescriptorPool>::~Object<VkDescriptorPool>()
+	{
+		if (!BaseObject::operator bool())
+			return;
+
+		assert(mDevice != VK_NULL_HANDLE);
+
+		vkDestroyDescriptorPool(mDevice, mObj, nullptr);
+		mObj = nullptr;
+	}
+
+	Object<VkDescriptorSet> Object<VkDescriptorPool>::allocateDescriptorSet(VkDescriptorSetLayout dsetLayout)
+	{
+		VkDescriptorSetAllocateInfo allocInfo{};
+		allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+		allocInfo.descriptorPool = mObj;
+		allocInfo.descriptorSetCount = 1;
+		allocInfo.pSetLayouts = &dsetLayout;
+
+		VkDescriptorSet descriptorSet;
+		if (vkAllocateDescriptorSets(mDevice, &allocInfo, &descriptorSet) != VK_SUCCESS)
+			return {};
+
+		return Object<VkDescriptorSet>(mDevice, mObj, descriptorSet, mImmortalDescriptorSets);
 	}
 }
