@@ -11,7 +11,7 @@ namespace hr::gl::tools
 
 			double f = 1.0 / std::tan(fovy * 0.5);
 			mat[0] = static_cast<float>(f / aspectRatio);
-			mat[5] = static_cast<float>(f);
+			mat[5] = static_cast<float>(-f);
 			mat[11] = static_cast<float>(znear);
 			mat[14] = 1.0f; //left-handed
 

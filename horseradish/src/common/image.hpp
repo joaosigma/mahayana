@@ -54,47 +54,52 @@ namespace hr::imaging
 			return mDataPtr;
 		}
 
-		const TDataType* data() const
+		std::span<const TDataType> asSpan() const noexcept
+		{
+			return {mDataPtr, size()};
+		}
+
+		const TDataType* data() const noexcept
 		{
 			return mDataPtr;
 		}
 
-		size_t width() const
+		size_t width() const noexcept
 		{
 			return mWidth;
 		}
 
-		size_t height() const
+		size_t height() const noexcept
 		{
 			return mHeight;
 		}
 
-		bool empty() const
+		bool empty() const noexcept
 		{
 			return (area() <= 0);
 		}
 
-		size_t area() const
+		size_t area() const noexcept
 		{
 			return mWidth * mHeight;
 		}
 
-		size_t size() const
+		size_t size() const noexcept
 		{
 			return (mWidth * mHeight * TDataFormat::size() * sizeof(TDataType));
 		}
 
-		size_t rowSize() const
+		size_t rowSize() const noexcept
 		{
 			return (mWidth * TDataFormat::size() * sizeof(TDataType));
 		}
 
-		size_t pixelOffset(const size_t x, const size_t y) const
+		size_t pixelOffset(const size_t x, const size_t y) const noexcept
 		{
 			return ((y * mWidth * TDataFormat::size()) + (x * TDataFormat::size()));
 		}
 
-		void getPixel(const size_t x, const size_t y, TDataType* const pixelValue, const TDataType defaultColorValue, const TDataType defaultAlphaValue) const
+		void getPixel(const size_t x, const size_t y, TDataType* const pixelValue, const TDataType defaultColorValue, const TDataType defaultAlphaValue) const noexcept
 		{
 			TDataFormat::template readRGBA<TDataType>(mDataPtr + pixelOffset(x, y), pixelValue, defaultColorValue, defaultAlphaValue);
 		}
@@ -159,12 +164,12 @@ namespace hr::imaging
 		ImageView(ImageView&& imgView) = default;
 		ImageView& operator=(ImageView&& imgView) = default;
 
-		void getPixel(const size_t x, const size_t y, hr::Colorf& pixelValue) const
+		void getPixel(const size_t x, const size_t y, hr::Colorf& pixelValue) const noexcept
 		{
 			BaseType::getPixel(x, y, pixelValue.data(), 0, 255);
 		}
 
-		void getPixel(const size_t x, const size_t y, uint8_t* const pixelValue) const
+		void getPixel(const size_t x, const size_t y, uint8_t* const pixelValue) const noexcept
 		{
 			BaseType::getPixel(x, y, pixelValue, 0, 255);
 		}
@@ -191,12 +196,12 @@ namespace hr::imaging
 		ImageView(ImageView&& imgView) = default;
 		ImageView& operator=(ImageView&& imgView) = default;
 
-		void getPixel(const size_t x, const size_t y, hr::Colorf& pixelValue) const
+		void getPixel(const size_t x, const size_t y, hr::Colorf& pixelValue) const noexcept
 		{
 			BaseType::getPixel(x, y, pixelValue.data(), 0.0f, 1.0f);
 		}
 
-		void getPixel(const size_t x, const size_t y, float* const pixelValue) const
+		void getPixel(const size_t x, const size_t y, float* const pixelValue) const noexcept
 		{
 			BaseType::getPixel(x, y, pixelValue, 0.0f, 1.0f);
 		}
@@ -213,6 +218,12 @@ namespace hr::imaging
 		ImageBase& operator=(const ImageBase&) = delete;
 		ImageBase(ImageBase&& img) = default;
 		ImageBase& operator=(ImageBase&& img) = default;
+
+		std::span<TDataType> asSpan() noexcept
+		{
+			assert(!mDataSource || mDataSource.get() == BaseType::data());
+			return {mDataSource.get(), BaseType::size()};
+		}
 
 		TDataType* data() noexcept
 		{
@@ -682,7 +693,7 @@ namespace hr::imaging
 			Image<TNewDataType, TNewDataFormat> newImg(mWidth, mHeight);
 
 			//RGB -> RGBA
-			if (std::is_same_v<TDataFormat, ImageFormatRGB> && std::is_same_v<TNewDataFormat, ImageFormatRGBA>)
+			if constexpr (std::is_same_v<TDataFormat, ImageFormatRGB> && std::is_same_v<TNewDataFormat, ImageFormatRGBA>)
 			{
 				auto numPixels = area();
 				auto walker = mDataPtr;
@@ -697,7 +708,7 @@ namespace hr::imaging
 				}
 			}
 			//RGBA->RGB
-			else if (std::is_same_v<TDataFormat, ImageFormatRGBA> && std::is_same_v<TNewDataFormat, ImageFormatRGB>)
+			else if constexpr (std::is_same_v<TDataFormat, ImageFormatRGBA> && std::is_same_v<TNewDataFormat, ImageFormatRGB>)
 			{
 				auto numPixels = area();
 				auto walker = mDataPtr;

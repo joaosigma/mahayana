@@ -58,6 +58,11 @@ namespace hr::vulkan
 			{
 				return mObj;
 			}
+
+			const T* nativePtr() const noexcept
+			{
+				return &mObj;
+			}
 		};
 	}
 
@@ -65,6 +70,8 @@ namespace hr::vulkan
 	class Object;
 
 	using ImageView = Object<VkImageView>;
+	using Image = Object<VkImage>;
+	using Sampler = Object<VkSampler>;
 	using ShaderModule = Object<VkShaderModule>;
 	using Framebuffer = Object<VkFramebuffer>;
 	using Pipeline = Object<VkPipeline>;
@@ -85,8 +92,6 @@ namespace hr::vulkan
 		VkDevice mDevice{VK_NULL_HANDLE};
 
 	private:
-		Object() noexcept = default;
-
 		explicit Object(VkDevice device, VkImageView imageView) noexcept
 		  : BaseObject{imageView}
 		  , mDevice{device}
@@ -97,6 +102,90 @@ namespace hr::vulkan
 		static Object gen2D(VkDevice device, VkImage sourceImg, VkFormat sourceFormat) noexcept;
 
 	public:
+		Object() noexcept = default;
+		~Object() noexcept;
+
+		Object(const Object&) = delete;
+		Object& operator=(const Object&) = delete;
+		Object(Object&&) noexcept = default;
+		Object& operator=(Object&&) noexcept = default;
+	};
+
+	template<>
+	class Object<VkImage> final : public detail::BaseObject<VkImage>
+	{
+		VkDevice mDevice{VK_NULL_HANDLE};
+		VkMemoryRequirements mMemRequirements{};
+
+	private:
+		explicit Object(VkDevice device, VkImage image, VkMemoryRequirements memRequirements) noexcept
+		  : BaseObject{image}
+		  , mDevice{device}
+		  , mMemRequirements{memRequirements}
+		{
+		}
+
+	public:
+		static size_t calculateNumMipMaps(size_t width)
+		{
+			return static_cast<size_t>(std::floor(std::log2(width))) + 1;
+		}
+
+		static size_t calculateNumMipMaps(size_t width, size_t height)
+		{
+			return calculateNumMipMaps(std::max(width, height));
+		}
+
+		static size_t calculateNumMipMaps(size_t width, size_t height, size_t depth)
+		{
+			return calculateNumMipMaps(std::max(std::max(width, height), depth));
+		}
+
+		static Object gen2D(VkDevice device, size_t width, size_t height, bool withMipMaps, VkFormat format) noexcept;
+
+	public:
+		Object() noexcept = default;
+		~Object() noexcept;
+
+		Object(const Object&) = delete;
+		Object& operator=(const Object&) = delete;
+		Object(Object&&) noexcept = default;
+		Object& operator=(Object&&) noexcept = default;
+
+		size_t hostRequiredSize() const noexcept
+		{
+			return static_cast<size_t>(mMemRequirements.size);
+		}
+
+		uint32_t hostRequiredMemoryType() const noexcept
+		{
+			return mMemRequirements.memoryTypeBits;
+		}
+
+		bool allocate(Object<VkDeviceMemory>& memory) const noexcept;
+	};
+
+	template<>
+	class Object<VkSampler> final : public detail::BaseObject<VkSampler>
+	{
+		VkDevice mDevice{VK_NULL_HANDLE};
+
+	private:
+		static VkSamplerCreateInfo defaultSampler() noexcept;
+
+	private:
+		explicit Object(VkDevice device, VkSampler sampler) noexcept
+		  : BaseObject{sampler}
+		  , mDevice{device}
+		{
+		}
+
+	public:
+		static Object create(VkDevice device, VkFilter minFilter, VkFilter magFilter) noexcept;
+		static Object createAnisotropic(VkDevice device, VkFilter minFilter, VkFilter magFilter, float maxAnisotropy) noexcept;
+
+	public:
+		Object() noexcept = default;
 		~Object() noexcept;
 
 		Object(const Object&) = delete;
@@ -286,7 +375,7 @@ namespace hr::vulkan
 			Builder& addSubpass();
 			Builder& addSubpassDependency();
 
-			Object build();
+			Object build() const noexcept;
 		};
 
 	public:
@@ -373,6 +462,7 @@ namespace hr::vulkan
 
 			Recorder& copyBuffer(VkBuffer dest, VkBuffer source, size_t size) noexcept;
 			Recorder& copyBuffer(VkBuffer dest, size_t destOffset, VkBuffer source, size_t sourceOffset, size_t size) noexcept;
+			Recorder& copyBufferToImage(VkImage dest, VkBuffer source, size_t width, size_t height) noexcept;
 
 			Recorder& bindVertexBuffer(uint32_t bindingIndex, VkBuffer buffer, uint32_t bufferOffset) noexcept;
 			Recorder& bindIndexBuffer(VkBuffer buffer, uint32_t bufferOffset, VkIndexType indexType) noexcept;
@@ -383,6 +473,8 @@ namespace hr::vulkan
 
 			Recorder& bindDescriptorSets(VkPipelineLayout pipelineLayout, VkDescriptorSet descriptorSet);
 			Recorder& pushConstants(VkPipelineLayout pipelineLayout, VkShaderStageFlags stageFlags, const void* data, size_t dataSize, size_t dataOffset) noexcept;
+
+			Recorder& pipelineBarrier(VkPipelineStageFlags sourceStage, VkPipelineStageFlags destinationStage, const VkImageMemoryBarrier& barrier) noexcept;
 
 			Recorder& draw(uint32_t numIndices) noexcept;
 
@@ -500,6 +592,8 @@ namespace hr::vulkan
 		std::optional<size_t> reserve(size_t size) noexcept;
 		std::optional<size_t> reserve(size_t size, size_t alignment) noexcept;
 
+		bool write(std::span<const std::byte> data, size_t offset) const noexcept;
+
 		void* memMap(size_t size, size_t offset) noexcept;
 		void memUnmap() noexcept;
 
@@ -568,7 +662,28 @@ namespace hr::vulkan
 		}
 
 	public:
-		static Object gen(VkDevice device, VkDescriptorType descriptorType, VkShaderStageFlags shaderStageFlags) noexcept;
+		class Builder
+		{
+			VkDevice mDevice{VK_NULL_HANDLE};
+
+			std::vector<VkDescriptorSetLayoutBinding> mBindings;
+
+		public:
+			Builder(VkDevice device) noexcept
+			  : mDevice{device}
+			{
+			}
+
+			Builder(const Builder&) = delete;
+			Builder& operator=(const Builder&) = delete;
+			Builder(Builder&&) noexcept = delete;
+			Builder& operator=(Builder&&) noexcept = delete;
+
+			Builder& addUbo(uint32_t binding, VkShaderStageFlags shaderStageFlags);
+			Builder& addSampler(uint32_t binding, VkShaderStageFlags shaderStageFlags);
+
+			Object build() const noexcept;
+		};
 
 	public:
 		Object() noexcept = default;
@@ -589,6 +704,10 @@ namespace hr::vulkan
 		VkDescriptorPool mDescriptorPool{VK_NULL_HANDLE};
 		bool mImmortal{false};
 
+		std::vector<VkWriteDescriptorSet> mDescriptorWrites;
+		std::vector<VkDescriptorBufferInfo> mDescriptorBufferInfo;
+		std::vector<VkDescriptorImageInfo> mDescriptorImageInfo;
+
 	private:
 		explicit Object(VkDevice device, VkDescriptorPool descriptorPool, VkDescriptorSet descriptorSet, bool immortal) noexcept
 		  : BaseObject{descriptorSet}
@@ -608,8 +727,10 @@ namespace hr::vulkan
 		Object& operator=(Object&&) noexcept = default;
 
 	public:
-		void writeUniformBuffer(uint32_t bindingIndex, VkBuffer buffer);
-		void writeUniformBuffer(uint32_t bindingIndex, VkBuffer buffer, size_t bufferOffset, size_t bufferSize);
+		Object& updateUniformBuffer(uint32_t bindingIndex, VkBuffer buffer);
+		Object& updateUniformBuffer(uint32_t bindingIndex, VkBuffer buffer, size_t bufferOffset, size_t bufferSize);
+		Object& updateImageViewSampler(uint32_t bindingIndex, VkImageView imageView, VkSampler sampler);
+		void save();
 	};
 
 	template<>
@@ -629,7 +750,27 @@ namespace hr::vulkan
 		}
 
 	public:
-		static Object gen(VkDevice device, bool immortalDescriptorSets, size_t maxDescriptorSets, VkDescriptorType descriptorType, size_t descriptorCount) noexcept;
+		class Builder
+		{
+			VkDevice mDevice{VK_NULL_HANDLE};
+
+			std::vector<VkDescriptorPoolSize> mDescriptors;
+
+		public:
+			Builder(VkDevice device) noexcept
+			  : mDevice{device}
+			{
+			}
+
+			Builder(const Builder&) = delete;
+			Builder& operator=(const Builder&) = delete;
+			Builder(Builder&&) noexcept = delete;
+			Builder& operator=(Builder&&) noexcept = delete;
+
+			Builder& addDescriptor(VkDescriptorType descriptorType, size_t descriptorCount);
+
+			Object build(bool immortalDescriptorSets, size_t maxDescriptorSets) const noexcept;
+		};
 
 	public:
 		~Object() noexcept;

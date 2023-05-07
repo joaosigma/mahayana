@@ -177,6 +177,119 @@ namespace hr::vulkan
 
 		return Object(device, imgView);
 	}
+	
+	Object<VkImage>::~Object<VkImage>()
+	{
+		if (!BaseObject::operator bool())
+			return;
+
+		assert(mDevice != VK_NULL_HANDLE);
+
+		vkDestroyImage(mDevice, mObj, nullptr);
+		mObj = nullptr;
+	}
+
+	Object<VkImage> Object<VkImage>::gen2D(VkDevice device, size_t width, size_t height, bool withMipMaps, VkFormat format) noexcept
+	{
+		VkImageCreateInfo imageInfo{};
+		imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+		imageInfo.imageType = VK_IMAGE_TYPE_2D;
+		imageInfo.extent.width = static_cast<uint32_t>(width);
+		imageInfo.extent.height = static_cast<uint32_t>(height);
+		imageInfo.extent.depth = 1;
+		imageInfo.mipLevels = withMipMaps ? static_cast<uint32_t>(calculateNumMipMaps(width, height)) : 1;
+		imageInfo.arrayLayers = 1;
+		imageInfo.format = format;
+		imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+		imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		imageInfo.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+		imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+		imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+		imageInfo.flags = 0;
+
+		VkImage image;
+		if (vkCreateImage(device, &imageInfo, nullptr, &image) != VK_SUCCESS)
+			return {};
+
+		VkMemoryRequirements memRequirements;
+		vkGetImageMemoryRequirements(device, image, &memRequirements);
+
+		return Object(device, image, memRequirements);
+	}
+
+	bool Object<VkImage>::allocate(Object<VkDeviceMemory>& memory) const noexcept
+	{
+		auto offset = memory.reserve(mMemRequirements.size, mMemRequirements.alignment);
+		if (!offset)
+			return false;
+
+		if (vkBindImageMemory(mDevice, mObj, memory.native(), *offset) != VK_SUCCESS)
+			return false;
+
+		return true;
+	}
+
+	VkSamplerCreateInfo Object<VkSampler>::defaultSampler() noexcept
+	{
+		VkSamplerCreateInfo samplerInfo{};
+		samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+		samplerInfo.magFilter = VK_FILTER_NEAREST;
+		samplerInfo.minFilter = VK_FILTER_NEAREST;
+		samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+		samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+		samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+		samplerInfo.anisotropyEnable = VK_FALSE;
+		samplerInfo.maxAnisotropy = 1.0f;
+		samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+		samplerInfo.unnormalizedCoordinates = VK_FALSE;
+		samplerInfo.compareEnable = VK_FALSE;
+		samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
+		samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+		samplerInfo.mipLodBias = 0.0f;
+		samplerInfo.minLod = 0.0f;
+		samplerInfo.maxLod = 0.0f;
+
+		return samplerInfo;
+	}
+
+	Object<VkSampler> Object<VkSampler>::create(VkDevice device, VkFilter minFilter, VkFilter magFilter) noexcept
+	{
+		auto samplerInfo = defaultSampler();
+		samplerInfo.magFilter = magFilter;
+		samplerInfo.minFilter = minFilter;
+
+		VkSampler sampler;
+		if (vkCreateSampler(device, &samplerInfo, nullptr, &sampler) != VK_SUCCESS)
+			return {};
+
+		return Object(device, sampler);
+	}
+
+	Object<VkSampler> Object<VkSampler>::createAnisotropic(VkDevice device, VkFilter minFilter, VkFilter magFilter, float maxAnisotropy) noexcept
+	{
+		auto samplerInfo = defaultSampler();
+		samplerInfo.magFilter = magFilter;
+		samplerInfo.minFilter = minFilter;
+		samplerInfo.anisotropyEnable = VK_TRUE;
+		samplerInfo.maxAnisotropy = maxAnisotropy;
+
+		VkSampler sampler;
+		if (vkCreateSampler(device, &samplerInfo, nullptr, &sampler) != VK_SUCCESS)
+			return {};
+
+		return Object(device, sampler);
+	}
+
+	Object<VkSampler>::~Object<VkSampler>()
+	{
+		if (!BaseObject::operator bool())
+			return;
+
+		assert(mDevice != VK_NULL_HANDLE);
+
+		vkDestroySampler(mDevice, mObj, nullptr);
+		mObj = nullptr;
+	}
 
 	bool Object<VkShaderModule>::compileShader(const std::filesystem::path& path,
 	  const std::function<bool(const std::filesystem::path&, const std::filesystem::path&, ShaderType)>& compilerCb)
@@ -711,7 +824,7 @@ namespace hr::vulkan
 		return *this;
 	}
 
-	Object<VkRenderPass> Object<VkRenderPass>::Builder::build()
+	Object<VkRenderPass> Object<VkRenderPass>::Builder::build() const noexcept
 	{
 		VkRenderPassCreateInfo renderPassInfo{};
 		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
@@ -815,11 +928,28 @@ namespace hr::vulkan
 
 	Object<VkCommandBuffer>::Recorder& Object<VkCommandBuffer>::Recorder::copyBuffer(VkBuffer dest, size_t destOffset, VkBuffer source, size_t sourceOffset, size_t size) noexcept
 	{
-		VkBufferCopy copyRegion{};
-		copyRegion.srcOffset = static_cast<VkDeviceSize>(sourceOffset);
-		copyRegion.dstOffset = static_cast<VkDeviceSize>(destOffset);
-		copyRegion.size = static_cast<VkDeviceSize>(size);
-		vkCmdCopyBuffer(mCmdBuffer.native(), source, dest, 1, &copyRegion);
+		VkBufferCopy region{};
+		region.srcOffset = static_cast<VkDeviceSize>(sourceOffset);
+		region.dstOffset = static_cast<VkDeviceSize>(destOffset);
+		region.size = static_cast<VkDeviceSize>(size);
+		vkCmdCopyBuffer(mCmdBuffer.native(), source, dest, 1, &region);
+
+		return *this;
+	}
+
+	Object<VkCommandBuffer>::Recorder& Object<VkCommandBuffer>::Recorder::copyBufferToImage(VkImage dest, VkBuffer source, size_t width, size_t height) noexcept
+	{
+		VkBufferImageCopy region{};
+		region.bufferOffset = 0;
+		region.bufferRowLength = 0;
+		region.bufferImageHeight = 0;
+		region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		region.imageSubresource.mipLevel = 0;
+		region.imageSubresource.baseArrayLayer = 0;
+		region.imageSubresource.layerCount = 1;
+		region.imageOffset = {0, 0, 0};
+		region.imageExtent = {static_cast<uint32_t>(width), static_cast<uint32_t>(height), 1};
+		vkCmdCopyBufferToImage(mCmdBuffer.native(), source, dest, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 
 		return *this;
 	}
@@ -877,6 +1007,12 @@ namespace hr::vulkan
 	Object<VkCommandBuffer>::Recorder& Object<VkCommandBuffer>::Recorder::pushConstants(VkPipelineLayout pipelineLayout, VkShaderStageFlags stageFlags, const void* data, size_t dataSize, size_t dataOffset) noexcept
 	{
 		vkCmdPushConstants(mCmdBuffer.native(), pipelineLayout, stageFlags, static_cast<uint32_t>(dataOffset), static_cast<uint32_t>(dataSize), data);
+		return *this;
+	}
+
+	Object<VkCommandBuffer>::Recorder& Object<VkCommandBuffer>::Recorder::pipelineBarrier(VkPipelineStageFlags sourceStage, VkPipelineStageFlags destinationStage, const VkImageMemoryBarrier& barrier) noexcept
+	{
+		vkCmdPipelineBarrier(mCmdBuffer.native(), sourceStage, destinationStage, 0, 0, nullptr, 0, nullptr, 1, &barrier);
 		return *this;
 	}
 
@@ -1070,6 +1206,26 @@ namespace hr::vulkan
 		return alignedOffset;
 	}
 
+	bool Object<VkDeviceMemory>::write(std::span<const std::byte> data, size_t offset) const noexcept
+	{
+		assert(!mMappedMem);
+		if (mMappedMem.has_value())
+			return false;
+
+		assert((data.size() + offset) <= mSpace.total);
+		if ((data.size() + offset) > mSpace.total)
+			return false;
+
+		void* dataPtr;
+		if (vkMapMemory(mDevice, mObj, static_cast<VkDeviceSize>(offset), static_cast<VkDeviceSize>(data.size()), 0, &dataPtr) != VK_SUCCESS)
+			return false;
+
+		std::memcpy(dataPtr, data.data(), data.size());
+		vkUnmapMemory(mDevice, mObj);
+
+		return true;
+	}
+
 	void* Object<VkDeviceMemory>::memMap(size_t size, size_t offset) noexcept
 	{
 		if (mMappedMem.has_value())
@@ -1134,25 +1290,46 @@ namespace hr::vulkan
 		return true;
 	}
 
-	Object<VkDescriptorSetLayout> Object<VkDescriptorSetLayout>::gen(VkDevice device, VkDescriptorType descriptorType, VkShaderStageFlags shaderStageFlags) noexcept
+	Object<VkDescriptorSetLayout>::Builder& Object<VkDescriptorSetLayout>::Builder::addUbo(uint32_t binding, VkShaderStageFlags shaderStageFlags)
 	{
 		VkDescriptorSetLayoutBinding uboLayoutBinding{};
-		uboLayoutBinding.binding = 0;
-		uboLayoutBinding.descriptorType = descriptorType;
+		uboLayoutBinding.binding = binding;
+		uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 		uboLayoutBinding.descriptorCount = 1;
 		uboLayoutBinding.stageFlags = shaderStageFlags;
 		uboLayoutBinding.pImmutableSamplers = nullptr;
 
+		mBindings.push_back(std::move(uboLayoutBinding));
+
+		return *this;
+	}
+
+	Object<VkDescriptorSetLayout>::Builder& Object<VkDescriptorSetLayout>::Builder::addSampler(uint32_t binding, VkShaderStageFlags shaderStageFlags)
+	{
+		VkDescriptorSetLayoutBinding samplerLayoutBinding{};
+		samplerLayoutBinding.binding = binding;
+		samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		samplerLayoutBinding.descriptorCount = 1;
+		samplerLayoutBinding.stageFlags = shaderStageFlags;
+		samplerLayoutBinding.pImmutableSamplers = nullptr;
+
+		mBindings.push_back(std::move(samplerLayoutBinding));
+
+		return *this;
+	}
+
+	Object<VkDescriptorSetLayout> Object<VkDescriptorSetLayout>::Builder::build() const noexcept
+	{
 		VkDescriptorSetLayoutCreateInfo layoutInfo{};
 		layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-		layoutInfo.bindingCount = 1;
-		layoutInfo.pBindings = &uboLayoutBinding;
+		layoutInfo.bindingCount = static_cast<uint32_t>(mBindings.size());
+		layoutInfo.pBindings = mBindings.data();
 
 		VkDescriptorSetLayout descriptorSetLayout;
-		if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &descriptorSetLayout) != VK_SUCCESS)
+		if (vkCreateDescriptorSetLayout(mDevice, &layoutInfo, nullptr, &descriptorSetLayout) != VK_SUCCESS)
 			return {};
 
-		return Object(device, descriptorSetLayout);
+		return Object(mDevice, descriptorSetLayout);
 	}
 
 	Object<VkDescriptorSetLayout>::~Object<VkDescriptorSetLayout>()
@@ -1184,12 +1361,13 @@ namespace hr::vulkan
 		mObj = nullptr;
 	}
 
-	void Object<VkDescriptorSet>::writeUniformBuffer(uint32_t bindingIndex, VkBuffer buffer)
+	Object<VkDescriptorSet>& Object<VkDescriptorSet>::updateUniformBuffer(uint32_t bindingIndex, VkBuffer buffer)
 	{
 		VkDescriptorBufferInfo bufferInfo{};
 		bufferInfo.buffer = buffer;
 		bufferInfo.offset = 0;
 		bufferInfo.range = VK_WHOLE_SIZE;
+		mDescriptorBufferInfo.push_back(std::move(bufferInfo));
 
 		VkWriteDescriptorSet descriptorWrite{};
 		descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -1198,17 +1376,19 @@ namespace hr::vulkan
 		descriptorWrite.dstArrayElement = 0;
 		descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 		descriptorWrite.descriptorCount = 1;
-		descriptorWrite.pBufferInfo = &bufferInfo;
+		descriptorWrite.pBufferInfo = nullptr; //update on save()
+		mDescriptorWrites.push_back(std::move(descriptorWrite));
 
-		vkUpdateDescriptorSets(mDevice, 1, &descriptorWrite, 0, nullptr);
+		return *this;
 	}
 
-	void Object<VkDescriptorSet>::writeUniformBuffer(uint32_t bindingIndex, VkBuffer buffer, size_t bufferOffset, size_t bufferSize)
+	Object<VkDescriptorSet>& Object<VkDescriptorSet>::updateUniformBuffer(uint32_t bindingIndex, VkBuffer buffer, size_t bufferOffset, size_t bufferSize)
 	{
 		VkDescriptorBufferInfo bufferInfo{};
 		bufferInfo.buffer = buffer;
 		bufferInfo.offset = static_cast<VkDeviceSize>(bufferOffset);
 		bufferInfo.range = static_cast<VkDeviceSize>(bufferSize);
+		mDescriptorBufferInfo.push_back(std::move(bufferInfo));
 
 		VkWriteDescriptorSet descriptorWrite{};
 		descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -1217,31 +1397,89 @@ namespace hr::vulkan
 		descriptorWrite.dstArrayElement = 0;
 		descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 		descriptorWrite.descriptorCount = 1;
-		descriptorWrite.pBufferInfo = &bufferInfo;
+		descriptorWrite.pBufferInfo = nullptr; //update on save()
+		mDescriptorWrites.push_back(std::move(descriptorWrite));
 
-		vkUpdateDescriptorSets(mDevice, 1, &descriptorWrite, 0, nullptr);
+		return *this;
 	}
 
-	Object<VkDescriptorPool> Object<VkDescriptorPool>::gen(VkDevice device, bool immortalDescriptorSets, size_t maxDescriptorSets, VkDescriptorType descriptorType,
-	  size_t descriptorCount) noexcept
+	Object<VkDescriptorSet>& Object<VkDescriptorSet>::updateImageViewSampler(uint32_t bindingIndex, VkImageView imageView, VkSampler sampler)
+	{
+		VkDescriptorImageInfo imageInfo{};
+		imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		imageInfo.imageView = imageView;
+		imageInfo.sampler = sampler;
+		mDescriptorImageInfo.push_back(std::move(imageInfo));
+
+		VkWriteDescriptorSet descriptorWrite{};
+		descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		descriptorWrite.dstSet = mObj;
+		descriptorWrite.dstBinding = bindingIndex;
+		descriptorWrite.dstArrayElement = 0;
+		descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		descriptorWrite.descriptorCount = 1;
+		descriptorWrite.pImageInfo = nullptr; //update on save()
+		mDescriptorWrites.push_back(std::move(descriptorWrite));
+
+		return *this;
+	}
+
+	void Object<VkDescriptorSet>::save()
+	{
+		size_t bufferIndex{0}, imageIndex{0};
+		for (auto& desc : mDescriptorWrites)
+		{
+			switch (desc.descriptorType)
+			{
+				case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
+					desc.pBufferInfo = &mDescriptorBufferInfo[bufferIndex];
+					++bufferIndex;
+					break;
+				case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
+					desc.pImageInfo = &mDescriptorImageInfo[imageIndex];
+					++imageIndex;
+					break;
+				default:
+					assert(!"Unknown descriptorType");
+					break;
+			}
+		}
+		assert(bufferIndex == mDescriptorBufferInfo.size());
+		assert(imageIndex == mDescriptorImageInfo.size());
+
+		vkUpdateDescriptorSets(mDevice, static_cast<uint32_t>(mDescriptorWrites.size()), mDescriptorWrites.data(), 0, nullptr);
+
+		mDescriptorWrites.clear();
+		mDescriptorBufferInfo.clear();
+		mDescriptorImageInfo.clear();
+	}
+
+	Object<VkDescriptorPool>::Builder& Object<VkDescriptorPool>::Builder::addDescriptor(VkDescriptorType descriptorType, size_t descriptorCount)
 	{
 		VkDescriptorPoolSize poolSize{};
 		poolSize.type = descriptorType;
 		poolSize.descriptorCount = static_cast<uint32_t>(descriptorCount);
 
+		mDescriptors.push_back(std::move(poolSize));
+
+		return *this;
+	}
+
+	Object<VkDescriptorPool> Object<VkDescriptorPool>::Builder::build(bool immortalDescriptorSets, size_t maxDescriptorSets) const noexcept
+	{
 		VkDescriptorPoolCreateInfo poolInfo{};
 		poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-		poolInfo.poolSizeCount = 1;
-		poolInfo.pPoolSizes = &poolSize;
+		poolInfo.poolSizeCount = static_cast<uint32_t>(mDescriptors.size());
+		poolInfo.pPoolSizes = mDescriptors.data();
 		poolInfo.maxSets = static_cast<uint32_t>(maxDescriptorSets);
 		if (!immortalDescriptorSets)
 			poolInfo.flags |= VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
-
+		
 		VkDescriptorPool descriptorPool;
-		if (vkCreateDescriptorPool(device, &poolInfo, nullptr, &descriptorPool) != VK_SUCCESS)
+		if (vkCreateDescriptorPool(mDevice, &poolInfo, nullptr, &descriptorPool) != VK_SUCCESS)
 			return {};
-
-		return Object(device, descriptorPool, immortalDescriptorSets);
+		
+		return Object(mDevice, descriptorPool, immortalDescriptorSets);
 	}
 
 	Object<VkDescriptorPool>::~Object<VkDescriptorPool>()

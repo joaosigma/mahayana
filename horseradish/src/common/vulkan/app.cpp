@@ -371,6 +371,8 @@ namespace hr::vulkan
 			return false;
 		}
 
+		vkGetPhysicalDeviceProperties(mPhysicalDevice, &mPhysicalDeviceProperties);
+
 		return true;
 	}
 
@@ -602,6 +604,11 @@ namespace hr::vulkan
 		mDebugCb(severity, context, source, msg);
 	}
 
+	float App::deviceMaxAnisotropy() const noexcept
+	{
+		return mPhysicalDeviceProperties.limits.maxSamplerAnisotropy;
+	}
+
 	App::SwapChainImage App::swapChainAcquireImage(VkSemaphore whenImageReady) noexcept
 	{
 		uint32_t imageIndex;
@@ -689,35 +696,38 @@ namespace hr::vulkan
 			vkUnmapMemory(mDevice, stagingMemory.native());
 		}
 
-		//create a command buffer to take care of the transfer and submit it
+		//take care of the transfer
+		executeOneTimeCommand(commandPool, [this, &dest, &destOffset, &stagingBuffer, data](CommandBuffer::Recorder& recorder)
 		{
-			auto cmdBuffer = CommandBuffer::gen(mDevice, commandPool.native(), false);
-			if (!cmdBuffer)
-				return false;
-
-			{
-				auto recorder = cmdBuffer.record(true);
-				if (!recorder)
-					return false;
-
-				recorder->copyBuffer(dest.native(), destOffset, stagingBuffer.native(), 0, data.size());
-				recorder->finish();
-			}
-
-			{
-				std::array<VkCommandBuffer, 1> tmpBuffer{cmdBuffer.native()};
-
-				VkSubmitInfo submitInfo{};
-				submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-				submitInfo.commandBufferCount = 1;
-				submitInfo.pCommandBuffers = tmpBuffer.data();
-
-				vkQueueSubmit(mGraphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
-				vkQueueWaitIdle(mGraphicsQueue);
-			}
-		}
+			recorder.copyBuffer(dest.native(), destOffset, stagingBuffer.native(), 0, data.size());
+		});
 
 		return true;
+	}
+
+	void App::executeOneTimeCommand(const CommandPool& commandPool, const std::function<void(CommandBuffer::Recorder&)>& cb)
+	{
+		if (!cb)
+			return;
+
+		auto commandBuffer = CommandBuffer::gen(mDevice, commandPool.native(), false);
+		{
+			auto recorder = commandBuffer.record(true);
+			if (!recorder)
+				return;
+
+			cb(*recorder);
+
+			recorder->finish();
+		}
+
+		VkSubmitInfo submitInfo{};
+		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		submitInfo.commandBufferCount = 1;
+		submitInfo.pCommandBuffers = commandBuffer.nativePtr();
+
+		vkQueueSubmit(mGraphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
+		vkQueueWaitIdle(mGraphicsQueue);
 	}
 
 	bool App::graphicsQueueSubmit(VkSemaphore waitFor, VkPipelineStageFlags waitForState, VkCommandBuffer commandBuffer, VkSemaphore doneCommandBuffer, VkFence doneQueue) const noexcept

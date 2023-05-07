@@ -70,6 +70,8 @@ namespace hr::vulkan
 		VkSurfaceKHR mSurface{};
 
 		VkPhysicalDevice mPhysicalDevice{};
+		VkPhysicalDeviceProperties mPhysicalDeviceProperties{};
+
 		VkDevice mDevice{};
 		VkQueue mGraphicsQueue{};
 		uint32_t mGraphicsQueueIndex{0};
@@ -133,12 +135,15 @@ namespace hr::vulkan
 			return mSwapChainSurfaceFormat.format;
 		}
 
+		float deviceMaxAnisotropy() const noexcept;
+
 		SwapChainImage swapChainAcquireImage(VkSemaphore whenImageReady) noexcept;
 		VkFramebuffer swapChainFramebuffer(const SwapChainImage& swapChainImage) const noexcept;
 
 		Memory allocateMemory(size_t size, uint32_t memoryTypeFilter, VkMemoryPropertyFlags flags);
 
 		bool transferData(Buffer& dest, size_t destOffset, std::span<const std::byte> data, const CommandPool& commandPool);
+		void executeOneTimeCommand(const CommandPool& commandPool, const std::function<void(CommandBuffer::Recorder&)>& cb);
 
 		bool graphicsQueueSubmit(VkSemaphore waitFor, VkPipelineStageFlags waitForState, VkCommandBuffer commandBuffer, VkSemaphore doneCommandBuffer, VkFence doneQueue) const noexcept;
 

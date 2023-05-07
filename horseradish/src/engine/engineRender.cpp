@@ -19,6 +19,8 @@
 #include "../render/rendererDebug.hpp"
 #include "../render/renderer2D.hpp"
 
+#include "../common/imageFactory.hpp"
+
 namespace hr::engine
 {
 	namespace
@@ -465,13 +467,99 @@ namespace hr::engine
 
 			Timestep timestep(50);
 
+			auto vulkanCmdPool = vulkanApp->createCommandPool();
+
+			//texture
+			vulkan::Image vulkanTexture;
+			vulkan::ImageView vulkanTextureView;
+			vulkan::Memory vulkanMemoryTexture;
+			{
+				size_t imgWidth{0}, imgHeight{0};
+				vulkan::Memory stagingMemoryImg;
+				vulkan::Buffer stagingBufferImg;
+				{
+					hr::imaging::Image<uint8_t, hr::imaging::ImageFormatRGBA> imgData;
+					{
+						auto fstream = mFileSystem->fileRead(R"(C:\Users\sigma\Desktop\texture.jpg)");
+						hr::streams::StreamReader reader(*fstream);
+						auto img = hr::imaging::Factory::readJPG(reader);
+						imgData = img.convert<uint8_t, hr::imaging::ImageFormatRGBA>(0, 255);
+					}
+
+					stagingBufferImg = vulkan::Buffer::gen(vulkanApp->device(), imgData.size(), VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
+					stagingMemoryImg = vulkanApp->allocateMemory(stagingBufferImg.hostRequiredSize(), stagingBufferImg.hostRequiredMemoryType(),
+					  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+					stagingBufferImg.allocate(stagingMemoryImg);
+					stagingMemoryImg.write(std::as_bytes(imgData.asSpan()), 0);
+
+					imgWidth = imgData.width();
+					imgHeight = imgData.height();
+				}
+
+				vulkanTexture = vulkan::Image::gen2D(vulkanApp->device(), imgWidth, imgHeight, false, VK_FORMAT_R8G8B8A8_SRGB);
+				vulkanMemoryTexture =
+				  vulkanApp->allocateMemory(vulkanTexture.hostRequiredSize(), vulkanTexture.hostRequiredMemoryType(), VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+				vulkanTexture.allocate(vulkanMemoryTexture);
+
+				vulkanApp->executeOneTimeCommand(vulkanCmdPool,
+				  [&vulkanTexture, &stagingBufferImg, &imgWidth, &imgHeight](vulkan::CommandBuffer::Recorder &recorder)
+				  {
+					  //transition to VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
+					  {
+						  VkImageMemoryBarrier barrier{};
+						  barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+						  barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+						  barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+						  barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+						  barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+						  barrier.image = vulkanTexture.native();
+						  barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+						  barrier.subresourceRange.baseMipLevel = 0;
+						  barrier.subresourceRange.levelCount = 1;
+						  barrier.subresourceRange.baseArrayLayer = 0;
+						  barrier.subresourceRange.layerCount = 1;
+						  barrier.srcAccessMask = 0;
+						  barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+
+						  recorder.pipelineBarrier(VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, barrier);
+					  }
+
+					  //actual transfer
+					  recorder.copyBufferToImage(vulkanTexture.native(), stagingBufferImg.native(), imgWidth, imgHeight);
+
+					  //transition to VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+					  {
+						  VkImageMemoryBarrier barrier{};
+						  barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+						  barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+						  barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+						  barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+						  barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+						  barrier.image = vulkanTexture.native();
+						  barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+						  barrier.subresourceRange.baseMipLevel = 0;
+						  barrier.subresourceRange.levelCount = 1;
+						  barrier.subresourceRange.baseArrayLayer = 0;
+						  barrier.subresourceRange.layerCount = 1;
+						  barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+						  barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+						  recorder.pipelineBarrier(VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, barrier);
+					  }
+				  });
+
+				vulkanTextureView = vulkan::ImageView::gen2D(vulkanApp->device(), vulkanTexture.native(), VK_FORMAT_R8G8B8A8_SRGB);
+			}
+
+			vulkan::Sampler vulkanSampler = vulkan::Sampler::create(vulkanApp->device(), VK_FILTER_LINEAR, VK_FILTER_LINEAR);
+
 			struct Vertex
 			{
 				float pos[2];
 				float color[3];
+				float uv[2];
 			};
-
-			auto vulkanCmdPool = vulkanApp->createCommandPool();
 
 			//data
 			struct UniformBufferObject
@@ -488,19 +576,21 @@ namespace hr::engine
 			vulkan::Memory vulkanMemoryUBO;
 			vulkan::Buffer vulkanBufferUBO;
 			vulkan::DescriptorSetLayout vulkanDescriptorSetLayout;
-			vulkan::DescriptorPool vulkanDescriptorPool = vulkan::DescriptorPool::gen(vulkanApp->device(), true, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1);
+			vulkan::DescriptorPool vulkanDescriptorPool = vulkan::DescriptorPool::Builder(vulkanApp->device())
+			                                                .addDescriptor(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1)
+			                                                .addDescriptor(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1)
+			                                                .build(true, 1);
 			vulkan::DescriptorSet vulkanDescriptorSet;
 			{
-				const std::vector<Vertex> vertices = {
-					{{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
-					{{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
-					{{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
-					{{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}}};
+				const std::vector<Vertex> vertices = {{{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}}, {{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
+				  {{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}}, {{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}}};
 
 				const std::vector<uint16_t> indices = {0, 1, 2, 2, 3, 0};
 
-				vulkanBufferVertexData = vulkan::Buffer::gen(vulkanApp->device(), vertices.size() * sizeof(Vertex), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
-				vulkanBufferVertexIndices = vulkan::Buffer::gen(vulkanApp->device(), indices.size() * sizeof(uint16_t), VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+				vulkanBufferVertexData =
+				  vulkan::Buffer::gen(vulkanApp->device(), vertices.size() * sizeof(Vertex), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+				vulkanBufferVertexIndices =
+				  vulkan::Buffer::gen(vulkanApp->device(), indices.size() * sizeof(uint16_t), VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
 				assert(vulkanBufferVertexData.hostRequiredMemoryType() == vulkanBufferVertexIndices.hostRequiredMemoryType());
 
 				auto totalSize = vulkanBufferVertexData.hostRequiredSize();
@@ -513,20 +603,24 @@ namespace hr::engine
 				vulkanBufferVertexIndices.allocate(vulkanMemory);
 				vulkanApp->transferData(vulkanBufferVertexIndices, 0, std::as_bytes(std::span{indices}), vulkanCmdPool);
 
-
-
 				vulkanBufferUBO = vulkan::Buffer::gen(vulkanApp->device(), sizeof(UniformBufferObject), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
-				vulkanMemoryUBO = vulkanApp->allocateMemory(vulkanBufferUBO.size(), vulkanBufferVertexData.hostRequiredMemoryType(), VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+				assert(vulkanBufferUBO.size() == vulkanBufferUBO.hostRequiredSize());
+				vulkanMemoryUBO = vulkanApp->allocateMemory(vulkanBufferUBO.hostRequiredSize(), vulkanBufferUBO.hostRequiredMemoryType(),
+				  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
 				vulkanBufferUBO.allocate(vulkanMemoryUBO);
 				vulkanMemoryUBO.memMap(vulkanBufferUBO.size(), 0);
 
-				vulkanDescriptorSetLayout = vulkan::DescriptorSetLayout::gen(vulkanApp->device(), VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT);
+				vulkanDescriptorSetLayout = vulkan::DescriptorSetLayout::Builder(vulkanApp->device())
+				                              .addUbo(0, VK_SHADER_STAGE_VERTEX_BIT)
+				                              .addSampler(1, VK_SHADER_STAGE_FRAGMENT_BIT)
+				                              .build();
 
 				vulkanDescriptorSet = vulkanDescriptorPool.allocateDescriptorSet(vulkanDescriptorSetLayout.native());
-				vulkanDescriptorSet.writeUniformBuffer(0, vulkanBufferUBO.native());
+				vulkanDescriptorSet.updateUniformBuffer(0, vulkanBufferUBO.native())
+				  .updateImageViewSampler(1, vulkanTextureView.native(), vulkanSampler.native())
+				  .save();
 			}
-
 
 			auto vulkanFrameFence = hr::vulkan::Fence::gen(vulkanApp->device(), true);
 			auto vulkanSwapChainImageReady = hr::vulkan::Semaphore::gen(vulkanApp->device());
@@ -554,6 +648,7 @@ namespace hr::engine
 				builder.addVertexBinding(0, sizeof(Vertex))
 				  .addVertexAttribute(0, 0, offsetof(Vertex, pos), VK_FORMAT_R32G32_SFLOAT)
 				  .addVertexAttribute(0, 1, offsetof(Vertex, color), VK_FORMAT_R32G32B32_SFLOAT)
+				  .addVertexAttribute(0, 2, offsetof(Vertex, uv), VK_FORMAT_R32G32_SFLOAT)
 				  .addDescriptorSetLayout(vulkanDescriptorSetLayout.native())
 				  .setupInputAssembly(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, false)
 				  .setupViewport(0.0f, 0.0f, static_cast<float>(viewportRender.width()), static_cast<float>(viewportRender.height()), 0.0f, 1.0f)
