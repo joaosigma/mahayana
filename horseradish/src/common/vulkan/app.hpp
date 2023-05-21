@@ -110,6 +110,7 @@ namespace hr::vulkan
 		bool init(SetupSurface setupSurfaceCb);
 
 		bool swapChainInit(VkRenderPass renderPass);
+		bool swapChainInit(VkRenderPass renderPass, VkImageView depthImageView);
 
 		CommandPool createCommandPool();
 
@@ -136,6 +137,7 @@ namespace hr::vulkan
 		}
 
 		float deviceMaxAnisotropy() const noexcept;
+		bool deviceSupportsFormat(VkFormat format, VkImageTiling tiling, VkFormatFeatureFlags features) const noexcept;
 
 		SwapChainImage swapChainAcquireImage(VkSemaphore whenImageReady) noexcept;
 		VkFramebuffer swapChainFramebuffer(const SwapChainImage& swapChainImage) const noexcept;

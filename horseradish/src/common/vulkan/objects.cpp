@@ -177,6 +177,30 @@ namespace hr::vulkan
 
 		return Object(device, imgView);
 	}
+
+	Object<VkImageView> Object<VkImageView>::genDepth(VkDevice device, VkImage sourceImg, VkFormat sourceFormat) noexcept
+	{
+		VkImageViewCreateInfo createInfo{};
+		createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+		createInfo.image = sourceImg;
+		createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+		createInfo.format = sourceFormat;
+		createInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+		createInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+		createInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+		createInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+		createInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+		createInfo.subresourceRange.baseMipLevel = 0;
+		createInfo.subresourceRange.levelCount = 1;
+		createInfo.subresourceRange.baseArrayLayer = 0;
+		createInfo.subresourceRange.layerCount = 1;
+
+		VkImageView imgView;
+		if (vkCreateImageView(device, &createInfo, nullptr, &imgView) != VK_SUCCESS)
+			return {};
+
+		return Object(device, imgView);
+	}
 	
 	Object<VkImage>::~Object<VkImage>()
 	{
@@ -203,6 +227,34 @@ namespace hr::vulkan
 		imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
 		imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 		imageInfo.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+		imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+		imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+		imageInfo.flags = 0;
+
+		VkImage image;
+		if (vkCreateImage(device, &imageInfo, nullptr, &image) != VK_SUCCESS)
+			return {};
+
+		VkMemoryRequirements memRequirements;
+		vkGetImageMemoryRequirements(device, image, &memRequirements);
+
+		return Object(device, image, memRequirements);
+	}
+
+	Object<VkImage> Object<VkImage>::genDepth(VkDevice device, size_t width, size_t height, VkFormat format) noexcept
+	{
+		VkImageCreateInfo imageInfo{};
+		imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+		imageInfo.imageType = VK_IMAGE_TYPE_2D;
+		imageInfo.extent.width = static_cast<uint32_t>(width);
+		imageInfo.extent.height = static_cast<uint32_t>(height);
+		imageInfo.extent.depth = 1;
+		imageInfo.mipLevels = 1;
+		imageInfo.arrayLayers = 1;
+		imageInfo.format = format;
+		imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+		imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		imageInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
 		imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 		imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
 		imageInfo.flags = 0;
@@ -498,7 +550,7 @@ namespace hr::vulkan
 		mRasterizer.rasterizerDiscardEnable = VK_FALSE;
 		mRasterizer.polygonMode = VK_POLYGON_MODE_FILL;
 		mRasterizer.lineWidth = 1.0f;
-		mRasterizer.cullMode = VK_CULL_MODE_NONE; //VK_CULL_MODE_BACK_BIT;
+		mRasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
 		mRasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
 		mRasterizer.depthBiasEnable = VK_FALSE;
 		mRasterizer.depthBiasConstantFactor = 0.0f;
@@ -600,6 +652,25 @@ namespace hr::vulkan
 		return *this;
 	}
 
+	Object<VkPipeline>::Builder& Object<VkPipeline>::Builder::setupViewport(float width, float height, bool flipY)
+	{
+		VkViewport viewport{};
+		viewport.x = 0.0f;
+		viewport.y = !flipY ? 0.0f : height;
+		viewport.width = width;
+		viewport.height = !flipY ? height : -height;
+		viewport.minDepth = 0.0f;
+		viewport.maxDepth = 1.0f;
+
+		mStageViewport.viewport = std::move(viewport);
+		return *this;
+	}
+
+	Object<VkPipeline>::Builder& Object<VkPipeline>::Builder::setupViewport(float x, float y, float width, float height)
+	{
+		return setupViewport(x, y, width, height, 0.0f, 1.0f);
+	}
+
 	Object<VkPipeline>::Builder& Object<VkPipeline>::Builder::setupViewport(float x, float y, float width, float height, float minDepth, float maxDepth)
 	{
 		VkViewport viewport{};
@@ -621,6 +692,31 @@ namespace hr::vulkan
 		scissor.extent = VkExtent2D{width, height};
 
 		mStageViewport.scissor = std::move(scissor);
+		return *this;
+	}
+
+	Object<VkPipeline>::Builder& Object<VkPipeline>::Builder::setupDepth(bool enableDepthTest, bool enableDepthWrite)
+	{
+		if (!mDepthStencil)
+		{
+			VkPipelineDepthStencilStateCreateInfo depthStencilDefault{};
+			depthStencilDefault.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+			depthStencilDefault.depthTestEnable = VK_FALSE;
+			depthStencilDefault.depthWriteEnable = VK_FALSE;
+			depthStencilDefault.depthCompareOp = VK_COMPARE_OP_GREATER_OR_EQUAL;
+			depthStencilDefault.depthBoundsTestEnable = VK_FALSE;
+			depthStencilDefault.minDepthBounds = 0.0f;
+			depthStencilDefault.maxDepthBounds = 1.0f;
+			depthStencilDefault.stencilTestEnable = VK_FALSE;
+			depthStencilDefault.front = {};
+			depthStencilDefault.back = {};
+
+			mDepthStencil = std::move(depthStencilDefault);
+		}
+
+		mDepthStencil->depthTestEnable = enableDepthTest ? VK_TRUE : VK_FALSE;
+		mDepthStencil->depthWriteEnable = enableDepthWrite ? VK_TRUE : VK_FALSE;
+
 		return *this;
 	}
 
@@ -741,7 +837,8 @@ namespace hr::vulkan
 		pipelineInfo.pViewportState = &mViewportState;
 		pipelineInfo.pRasterizationState = &mRasterizer;
 		pipelineInfo.pMultisampleState = &mMultisampling;
-		pipelineInfo.pDepthStencilState = nullptr;
+		if (mDepthStencil)
+			pipelineInfo.pDepthStencilState = &mDepthStencil.value();
 		pipelineInfo.pColorBlendState = &colorBlending;
 		pipelineInfo.pDynamicState = &dynamicState;
 		pipelineInfo.layout = pipelineLayout;
@@ -781,6 +878,11 @@ namespace hr::vulkan
 
 	Object<VkRenderPass>::Builder& Object<VkRenderPass>::Builder::addAttachment(VkFormat format)
 	{
+		VkAttachmentReference colorAttachmentRef{};
+		colorAttachmentRef.attachment = static_cast<uint32_t>(mAttachments.size());
+		colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+		mAttachmentColorRefs.push_back(std::move(colorAttachmentRef));
+
 		VkAttachmentDescription colorAttachment{};
 		colorAttachment.format = format;
 		colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
@@ -790,35 +892,79 @@ namespace hr::vulkan
 		colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 		colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 		colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-
 		mAttachments.push_back(std::move(colorAttachment));
+
+		return *this;
+	}
+
+	Object<VkRenderPass>::Builder& Object<VkRenderPass>::Builder::addAttachmentDepth(VkFormat format)
+	{
+		//we can only set one depth attachment
+		if (mAttachmentDepthRef)
+			return *this;
+
+		mAttachmentDepthRef = VkAttachmentReference{};
+		mAttachmentDepthRef->attachment = static_cast<uint32_t>(mAttachments.size());
+		mAttachmentDepthRef->layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+		VkAttachmentDescription depthAttachment{};
+		depthAttachment.format = format;
+		depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+		depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+		depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+		mAttachments.push_back(std::move(depthAttachment));
+
 		return *this;
 	}
 
 	Object<VkRenderPass>::Builder& Object<VkRenderPass>::Builder::addSubpass()
 	{
-		VkAttachmentReference colorAttachmentRef{};
-		colorAttachmentRef.attachment = 0;
-		colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
 		VkSubpassDescription subpass{};
 		subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-		subpass.colorAttachmentCount = 1;
-		subpass.pColorAttachments = &colorAttachmentRef;
+		subpass.colorAttachmentCount = static_cast<uint32_t>(mAttachmentColorRefs.size());
+		subpass.pColorAttachments = mAttachmentColorRefs.data();
+		if (mAttachmentDepthRef)
+			subpass.pDepthStencilAttachment = &mAttachmentDepthRef.value();
 
 		mSubpasses.push_back(std::move(subpass));
 		return *this;
 	}
 
-	Object<VkRenderPass>::Builder& Object<VkRenderPass>::Builder::addSubpassDependency()
+	Object<VkRenderPass>::Builder& Object<VkRenderPass>::Builder::addSubpassDependency(bool hasColor, bool hasDepth)
 	{
+		assert(hasColor || hasDepth);
+		if (!hasColor && !hasDepth)
+			return *this;
+
+		VkPipelineStageFlags srcStageMask{VK_PIPELINE_STAGE_NONE};
+		VkPipelineStageFlags dstStageMask{VK_PIPELINE_STAGE_NONE};
+		VkAccessFlags dstAccessMask{VK_ACCESS_NONE};
+
+		if (hasColor)
+		{
+			srcStageMask |= VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+			dstStageMask |= VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+			dstAccessMask |= VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+		}
+
+		if (hasDepth)
+		{
+			srcStageMask |= VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+			dstStageMask |= VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+			dstAccessMask |= VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+		}
+
 		VkSubpassDependency dependency{};
 		dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
 		dependency.dstSubpass = 0;
-		dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-		dependency.srcAccessMask = 0;
-		dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-		dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+		dependency.srcStageMask = srcStageMask;
+		dependency.srcAccessMask = VK_ACCESS_NONE;
+		dependency.dstStageMask = dstStageMask;
+		dependency.dstAccessMask = dstAccessMask;
 
 		mSubpassDependencies.push_back(std::move(dependency));
 		return *this;
@@ -898,7 +1044,8 @@ namespace hr::vulkan
 		return Object(device, commandPool, commandBuffer, destroyWithPool);
 	}
 
-	bool Object<VkCommandBuffer>::Recorder::doRenderPass(VkRenderPass renderPass, VkFramebuffer framebuffer, uint32_t renderWidth, uint32_t renderHeight, const std::function<void(Recorder&)>& cb)
+	bool Object<VkCommandBuffer>::Recorder::doRenderPass(VkRenderPass renderPass, VkFramebuffer framebuffer, uint32_t renderWidth, uint32_t renderHeight,
+	  std::span<const float, 4> clearColor, float clearDepth, uint32_t clearStencil, const std::function<void(Recorder&)>& cb)
 	{
 		VkRenderPassBeginInfo renderPassInfo{};
 		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -908,9 +1055,13 @@ namespace hr::vulkan
 		renderPassInfo.renderArea.offset = {0, 0};
 		renderPassInfo.renderArea.extent = {renderWidth, renderHeight};
 
-		VkClearValue clearColor = {{{0.0f, 0.0f, 0.0f, 1.0f}}};
-		renderPassInfo.clearValueCount = 1;
-		renderPassInfo.pClearValues = &clearColor;
+		std::array<VkClearValue, 2> clearColorsInfo;
+		clearColorsInfo[0] = VkClearValue{};
+		std::memcpy(clearColorsInfo[0].color.float32, clearColor.data(), clearColor.size_bytes());
+		clearColorsInfo[1] = VkClearValue{};
+		clearColorsInfo[1].depthStencil = {clearDepth, clearStencil};
+		renderPassInfo.clearValueCount = 2;
+		renderPassInfo.pClearValues = clearColorsInfo.data();
 
 		vkCmdBeginRenderPass(mCmdBuffer.native(), &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 

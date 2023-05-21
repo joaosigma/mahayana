@@ -201,7 +201,7 @@ namespace hr::vulkan
 		appInfo.applicationVersion = VK_MAKE_VERSION(0, 0, 1);
 		appInfo.pEngineName = "horseradish";
 		appInfo.engineVersion = VK_MAKE_VERSION(0, 0, 1);
-		appInfo.apiVersion = VK_API_VERSION_1_0;
+		appInfo.apiVersion = VK_API_VERSION_1_3;
 
 		VkInstanceCreateInfo createInfo{};
 		createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
@@ -571,16 +571,34 @@ namespace hr::vulkan
 
 	bool App::swapChainInit(VkRenderPass renderPass)
 	{
-		if (mSwapChainImageViews.empty())
-			return false;
-
-		if (!mSwapChainFramebuffers.empty())
+		if (mSwapChainImageViews.empty() || !mSwapChainFramebuffers.empty())
 			return false;
 
 		mSwapChainFramebuffers.reserve(mSwapChainImageViews.size());
 		for (const auto& imageView : mSwapChainImageViews)
 		{
 			auto framebuffer = Framebuffer::gen(mDevice, renderPass, {imageView.native()}, mSwapChainExtent.width, mSwapChainExtent.height);
+			if (!framebuffer)
+			{
+				mSwapChainFramebuffers.clear();
+				return false;
+			}
+
+			mSwapChainFramebuffers.push_back(std::move(framebuffer));
+		}
+
+		return true;
+	}
+
+	bool App::swapChainInit(VkRenderPass renderPass, VkImageView depthImageView)
+	{
+		if (mSwapChainImageViews.empty() || !mSwapChainFramebuffers.empty())
+			return false;
+
+		mSwapChainFramebuffers.reserve(mSwapChainImageViews.size());
+		for (const auto& imageView : mSwapChainImageViews)
+		{
+			auto framebuffer = Framebuffer::gen(mDevice, renderPass, {imageView.native(), depthImageView}, mSwapChainExtent.width, mSwapChainExtent.height);
 			if (!framebuffer)
 			{
 				mSwapChainFramebuffers.clear();
@@ -607,6 +625,19 @@ namespace hr::vulkan
 	float App::deviceMaxAnisotropy() const noexcept
 	{
 		return mPhysicalDeviceProperties.limits.maxSamplerAnisotropy;
+	}
+
+	bool App::deviceSupportsFormat(VkFormat format, VkImageTiling tiling, VkFormatFeatureFlags features) const noexcept
+	{
+		VkFormatProperties props;
+		vkGetPhysicalDeviceFormatProperties(mPhysicalDevice, format, &props);
+
+		if ((tiling == VK_IMAGE_TILING_LINEAR) && ((props.linearTilingFeatures & features) == features))
+			return true;
+		if ((tiling == VK_IMAGE_TILING_OPTIMAL) && ((props.optimalTilingFeatures & features) == features))
+			return true;
+
+		return false;
 	}
 
 	App::SwapChainImage App::swapChainAcquireImage(VkSemaphore whenImageReady) noexcept

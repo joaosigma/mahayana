@@ -85,7 +85,7 @@ namespace hr::io
 		}
 	}
 
-	std::unique_ptr<streams::Stream> FileSystem::MountDataPath::fileRead(const std::filesystem::path& filePath)
+	std::unique_ptr<streams::Stream> FileSystem::MountDataPath::fileRead(const std::filesystem::path& filePath) const
 	{
 		auto pathFinal = m_baseFolder;
 		pathFinal /= filePath;
@@ -98,7 +98,7 @@ namespace hr::io
 		return std::move(fileStream);
 	}
 
-	bool FileSystem::MountDataPath::fileExists(const std::filesystem::path& filePath)
+	bool FileSystem::MountDataPath::fileExists(const std::filesystem::path& filePath) const
 	{
 		auto pathFinal = m_baseFolder;
 		pathFinal /= filePath;
@@ -166,11 +166,11 @@ namespace hr::io
 		return m_fileEntries.size();
 	}
 
-	void FileSystem::MountDataZip::filesEnumerate()
+	void FileSystem::MountDataZip::filesEnumerate() const
 	{
 	}
 
-	std::unique_ptr<streams::Stream> FileSystem::MountDataZip::fileRead(const std::filesystem::path& filePath)
+	std::unique_ptr<streams::Stream> FileSystem::MountDataZip::fileRead(const std::filesystem::path& filePath) const
 	{
 		if (filePath.empty())
 			return nullptr;
@@ -181,7 +181,8 @@ namespace hr::io
 
 		std::shared_ptr<unsigned char> fileData(new unsigned char[it->second.fileSize], std::default_delete<unsigned char[]>());
 
-		unzGoToFilePos(m_zipFile, &it->second.filePos);
+		unz_file_pos file_pos = it->second.filePos;
+		unzGoToFilePos(m_zipFile, &file_pos);
 
 		unzOpenCurrentFile(m_zipFile);
 
@@ -192,7 +193,7 @@ namespace hr::io
 		return std::unique_ptr<streams::Stream>(new streams::MemoryViewStream(std::move(fileData), it->second.fileSize));
 	}
 
-	bool FileSystem::MountDataZip::fileExists(const std::filesystem::path& filePath)
+	bool FileSystem::MountDataZip::fileExists(const std::filesystem::path& filePath) const
 	{
 		if (filePath.empty())
 			return false;
@@ -288,7 +289,7 @@ namespace hr::io
 		return true;
 	}
 
-	std::unique_ptr<streams::Stream> FileSystem::fileRead(std::string_view filePath)
+	std::unique_ptr<streams::Stream> FileSystem::fileRead(std::string_view filePath) const
 	{
 		if (filePath.empty())
 			return nullptr;
@@ -304,7 +305,7 @@ namespace hr::io
 		return nullptr;
 	}
 
-	std::unique_ptr<streams::Stream> FileSystem::fileRead(std::string_view filePath, FileSystem::MountType mountType)
+	std::unique_ptr<streams::Stream> FileSystem::fileRead(std::string_view filePath, FileSystem::MountType mountType) const
 	{
 		if (filePath.empty())
 			return nullptr;

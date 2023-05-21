@@ -4,16 +4,57 @@ namespace hr::gl::tools
 {
 	namespace
 	{
+		/******
+		* NOTE:
+		*	The perspective projection matrices produce a left-hand coordinate system, which means:
+		*		- plus X points right, plus Y points up and plus Z points forward (to the horizon)
+		*
+		*	The orthographic projection matrices uses the same orientation as Vulkan: (0, 0) is the top-left corner.
+		*/
+		hr::Matrix4f funcProjection(double fovy, double aspectRatio, double znear, double zfar, hr::Matrix4f* inverse) noexcept
+		{
+			//this calculates a reverse-Z projection for Vulkan
+			
+			double f = 1.0 / std::tan(fovy * 0.5);
+			double x = f / aspectRatio;
+			double y = -f;
+			double A = znear / (zfar - znear);
+			double B = f * A;
+
+			auto mat = hr::Matrix4f::zero();
+			mat[0] = static_cast<float>(x);
+			mat[5] = static_cast<float>(y);
+			mat[10] = static_cast<float>(A);
+			mat[11] = static_cast<float>(B);
+			mat[14] = -1.0;
+
+			if (inverse)
+			{
+				auto matInverse = hr::Matrix4f::zero();
+				matInverse[0] = static_cast<float>(1.0 / x);
+				matInverse[5] = static_cast<float>(1.0 / y);
+				matInverse[11] = static_cast<float>(-1.0);
+				matInverse[14] = static_cast<float>(1.0 / B);
+				matInverse[15] = A / B;
+
+				*inverse = matInverse;
+			}
+
+			mat.transpose();
+			return mat;
+		};
+
 		hr::Matrix4f funcProjection(double fovy, double aspectRatio, double znear) noexcept
 		{
-			//more info on a reversed-z, infinite zfar projection matrix: https://thxforthefish.com/posts/reverse_z/
-			auto mat = hr::Matrix4f::zero();
+			//this calculates a reverse-Z projection, with an infinite Z far, for Vulkan
 
 			double f = 1.0 / std::tan(fovy * 0.5);
+
+			auto mat = hr::Matrix4f::zero();
 			mat[0] = static_cast<float>(f / aspectRatio);
 			mat[5] = static_cast<float>(-f);
 			mat[11] = static_cast<float>(znear);
-			mat[14] = 1.0f; //left-handed
+			mat[14] = 1.0f;
 
 			mat.transpose();
 			return mat;

@@ -6,6 +6,8 @@ set(HR_SOURCES
 	build_tools.hpp
 	objects.cpp
 	objects.hpp
+	utils.cpp
+	utils.hpp
 )
 
 target_sources(horseradish PRIVATE ${HR_SOURCES})

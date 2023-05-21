@@ -8,6 +8,7 @@
 #include <optional>
 #include <functional>
 #include <filesystem>
+#include <initializer_list>
 
 namespace hr::vulkan
 {
@@ -100,6 +101,7 @@ namespace hr::vulkan
 
 	public:
 		static Object gen2D(VkDevice device, VkImage sourceImg, VkFormat sourceFormat) noexcept;
+		static Object genDepth(VkDevice device, VkImage sourceImg, VkFormat sourceFormat) noexcept;
 
 	public:
 		Object() noexcept = default;
@@ -142,6 +144,7 @@ namespace hr::vulkan
 		}
 
 		static Object gen2D(VkDevice device, size_t width, size_t height, bool withMipMaps, VkFormat format) noexcept;
+		static Object genDepth(VkDevice device, size_t width, size_t height, VkFormat format) noexcept;
 
 	public:
 		Object() noexcept = default;
@@ -307,6 +310,8 @@ namespace hr::vulkan
 
 			VkPipelineColorBlendAttachmentState mColorBlendAttachment;
 
+			std::optional<VkPipelineDepthStencilStateCreateInfo> mDepthStencil;
+
 		public:
 			Builder(VkDevice device) noexcept;
 
@@ -322,8 +327,13 @@ namespace hr::vulkan
 			Builder& addVertexBinding(size_t bindingIndex, size_t stride);
 			Builder& addVertexAttribute(size_t bindingIndex, size_t locationIndex, size_t offset, VkFormat format);
 			Builder& setupInputAssembly(VkPrimitiveTopology topology, bool primitiveRestart);
+
+			Builder& setupViewport(float width, float height, bool flipY);
+			Builder& setupViewport(float x, float y, float width, float height);
 			Builder& setupViewport(float x, float y, float width, float height, float minDepth, float maxDepth);
 			Builder& setupScissor(int32_t x, int32_t y, uint32_t width, uint32_t height);
+
+			Builder& setupDepth(bool enableDepthTest, bool enableDepthWrite);
 
 			Object build(VkRenderPass renderPass);
 		};
@@ -360,6 +370,9 @@ namespace hr::vulkan
 		{
 			VkDevice mDevice{VK_NULL_HANDLE};
 			std::vector<VkAttachmentDescription> mAttachments;
+			std::vector<VkAttachmentReference> mAttachmentColorRefs;
+			std::optional<VkAttachmentReference> mAttachmentDepthRef;
+
 			std::vector<VkSubpassDescription> mSubpasses;
 			std::vector<VkSubpassDependency> mSubpassDependencies;
 
@@ -372,8 +385,9 @@ namespace hr::vulkan
 			Builder& operator=(Builder&&) noexcept = delete;
 
 			Builder& addAttachment(VkFormat format);
+			Builder& addAttachmentDepth(VkFormat format);
 			Builder& addSubpass();
-			Builder& addSubpassDependency();
+			Builder& addSubpassDependency(bool hasColor, bool hasDepth);
 
 			Object build() const noexcept;
 		};
@@ -458,7 +472,8 @@ namespace hr::vulkan
 			Recorder(Recorder&&) noexcept = default;
 			Recorder& operator=(Recorder&&) noexcept = default;
 
-			bool doRenderPass(VkRenderPass renderPass, VkFramebuffer framebuffer, uint32_t renderWidth, uint32_t renderHeight, const std::function<void(Recorder&)>& cb);
+			bool doRenderPass(VkRenderPass renderPass, VkFramebuffer framebuffer, uint32_t renderWidth, uint32_t renderHeight, std::span<const float, 4> clearColor, float clearDepth,
+			  uint32_t clearStencil, const std::function<void(Recorder&)>& cb);
 
 			Recorder& copyBuffer(VkBuffer dest, VkBuffer source, size_t size) noexcept;
 			Recorder& copyBuffer(VkBuffer dest, size_t destOffset, VkBuffer source, size_t sourceOffset, size_t size) noexcept;

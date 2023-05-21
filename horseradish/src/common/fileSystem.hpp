@@ -51,9 +51,9 @@ namespace hr::io
 			virtual ~MountData() = default;
 
 			virtual FileSystem::MountType mountType() const = 0;
-			virtual void filesEnumerate() = 0;
-			virtual std::unique_ptr<streams::Stream> fileRead(const std::filesystem::path& filePath) = 0;
-			virtual bool fileExists(const std::filesystem::path &filePath) = 0;
+			virtual void filesEnumerate() const = 0;
+			virtual std::unique_ptr<streams::Stream> fileRead(const std::filesystem::path &filePath) const = 0;
+			virtual bool fileExists(const std::filesystem::path &filePath) const = 0;
 		};
 
 		class MountDataPath : public MountData
@@ -70,12 +70,12 @@ namespace hr::io
 				return FileSystem::MountType::Path;
 			}
 
-			void filesEnumerate() override
+			void filesEnumerate() const override
 			{ }
 
-			std::unique_ptr<streams::Stream> fileRead(const std::filesystem::path &filePath) override;
+			std::unique_ptr<streams::Stream> fileRead(const std::filesystem::path &filePath) const override;
 
-			bool fileExists(const std::filesystem::path &filePath) override;
+			bool fileExists(const std::filesystem::path &filePath) const override;
 		};
 
 		class MountDataZip : public MountData
@@ -97,9 +97,9 @@ namespace hr::io
 			FileSystem::MountType mountType() const;
 			size_t numberFiles() const;
 
-			void filesEnumerate() override;
-			std::unique_ptr<streams::Stream> fileRead(const std::filesystem::path &filePath) override;
-			bool fileExists(const std::filesystem::path &filePath) override;
+			void filesEnumerate() const override;
+			std::unique_ptr<streams::Stream> fileRead(const std::filesystem::path &filePath) const override;
+			bool fileExists(const std::filesystem::path &filePath) const override;
 		};
 
 		size_t m_maxNumMounts = 0;
@@ -116,8 +116,8 @@ namespace hr::io
 		bool mountPath(const std::filesystem::path &baseFolder, std::string mountPoint);
 		bool mountZip(const std::filesystem::path &zipPath, std::string mountPoint, size_t * const numFilesZip = nullptr);
 
-		std::unique_ptr<streams::Stream> fileRead(std::string_view filePath);
-		std::unique_ptr<streams::Stream> fileRead(std::string_view filePath, MountType mountType);
+		std::unique_ptr<streams::Stream> fileRead(std::string_view filePath) const;
+		std::unique_ptr<streams::Stream> fileRead(std::string_view filePath, MountType mountType) const;
 
 		std::string readFileAsString(std::string_view filePath);
 
