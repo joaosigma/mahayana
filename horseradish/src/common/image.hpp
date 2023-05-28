@@ -5,6 +5,7 @@
 #include "libs/stb/stb_image_resize.h"
 
 #include <cassert>
+#include <concepts>
 #include <type_traits>
 
 namespace hr::imaging
@@ -110,6 +111,8 @@ namespace hr::imaging
 
 		template<typename TNewDataType, typename TNewDataFormat>
 		Image<TNewDataType, TNewDataFormat> convert(const TDataType defaultColorValue, const TDataType defaultAlphaValue) const;
+
+		void iterateMipmaps(bool assumeSRGB, std::invocable<size_t, const Image<TDataType, TDataFormat>&> auto&& func) const;
 
 	protected:
 		ImageViewBase(TDataType* const data, size_t width, size_t height) noexcept
@@ -220,6 +223,12 @@ namespace hr::imaging
 		ImageBase& operator=(ImageBase&& img) = default;
 
 		std::span<TDataType> asSpan() noexcept
+		{
+			assert(!mDataSource || mDataSource.get() == BaseType::data());
+			return {mDataSource.get(), BaseType::size()};
+		}
+
+		std::span<const TDataType> asSpan() const noexcept
 		{
 			assert(!mDataSource || mDataSource.get() == BaseType::data());
 			return {mDataSource.get(), BaseType::size()};
@@ -763,5 +772,21 @@ namespace hr::imaging
 		}
 
 		return {};
+	}
+
+	template<typename TDataType, typename TDataFormat>
+	void ImageViewBase<TDataType, TDataFormat>::iterateMipmaps(bool assumeSRGB, std::invocable<size_t, const Image<TDataType, TDataFormat>&> auto&& func) const
+	{
+		if (area() <= 1)
+			return;
+
+		auto imageScaled = clone();
+
+		size_t mipLevel{1};
+		while (imageScaled.area() > 1)
+		{
+			imageScaled = imageScaled.resize(std::max<size_t>(1, imageScaled.width() >> 1), std::max<size_t>(1, imageScaled.height() >> 1), assumeSRGB);
+			func(mipLevel++, imageScaled);
+		}
 	}
 }

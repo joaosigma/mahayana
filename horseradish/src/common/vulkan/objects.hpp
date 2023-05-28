@@ -100,7 +100,7 @@ namespace hr::vulkan
 		}
 
 	public:
-		static Object gen2D(VkDevice device, VkImage sourceImg, VkFormat sourceFormat) noexcept;
+		static Object gen2D(VkDevice device, VkImage sourceImg, size_t numMipLevels, VkFormat sourceFormat) noexcept;
 		static Object genDepth(VkDevice device, VkImage sourceImg, VkFormat sourceFormat) noexcept;
 
 	public:
@@ -186,6 +186,9 @@ namespace hr::vulkan
 	public:
 		static Object create(VkDevice device, VkFilter minFilter, VkFilter magFilter) noexcept;
 		static Object createAnisotropic(VkDevice device, VkFilter minFilter, VkFilter magFilter, float maxAnisotropy) noexcept;
+
+		static Object createMipMaps(VkDevice device, VkFilter minFilter, VkFilter magFilter, VkSamplerMipmapMode mipmapMode) noexcept;
+		static Object createMipMapsAnisotropic(VkDevice device, VkFilter minFilter, VkFilter magFilter, VkSamplerMipmapMode mipmapMode, float maxAnisotropy) noexcept;
 
 	public:
 		Object() noexcept = default;
@@ -477,7 +480,12 @@ namespace hr::vulkan
 
 			Recorder& copyBuffer(VkBuffer dest, VkBuffer source, size_t size) noexcept;
 			Recorder& copyBuffer(VkBuffer dest, size_t destOffset, VkBuffer source, size_t sourceOffset, size_t size) noexcept;
-			Recorder& copyBufferToImage(VkImage dest, VkBuffer source, size_t width, size_t height) noexcept;
+
+			Recorder& copyBufferToImage(VkImage dest, VkBuffer source, size_t width, size_t height, size_t mipLevel) noexcept;
+			Recorder& copyBufferToImage(VkImage dest, VkBuffer source, size_t width, size_t height) noexcept
+			{
+				return copyBufferToImage(dest, source, width, height, 0);
+			}
 
 			Recorder& bindVertexBuffer(uint32_t bindingIndex, VkBuffer buffer, uint32_t bufferOffset) noexcept;
 			Recorder& bindIndexBuffer(VkBuffer buffer, uint32_t bufferOffset, VkIndexType indexType) noexcept;

@@ -154,8 +154,10 @@ namespace hr::vulkan
 		mObj = nullptr;
 	}
 
-	Object<VkImageView> Object<VkImageView>::gen2D(VkDevice device, VkImage sourceImg, VkFormat sourceFormat) noexcept
+	Object<VkImageView> Object<VkImageView>::gen2D(VkDevice device, VkImage sourceImg, size_t numMipLevels, VkFormat sourceFormat) noexcept
 	{
+		assert(numMipLevels >= 1);
+
 		VkImageViewCreateInfo createInfo{};
 		createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
 		createInfo.image = sourceImg;
@@ -167,7 +169,7 @@ namespace hr::vulkan
 		createInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
 		createInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 		createInfo.subresourceRange.baseMipLevel = 0;
-		createInfo.subresourceRange.levelCount = 1;
+		createInfo.subresourceRange.levelCount = static_cast<uint32_t>(numMipLevels);
 		createInfo.subresourceRange.baseArrayLayer = 0;
 		createInfo.subresourceRange.layerCount = 1;
 
@@ -322,6 +324,42 @@ namespace hr::vulkan
 		auto samplerInfo = defaultSampler();
 		samplerInfo.magFilter = magFilter;
 		samplerInfo.minFilter = minFilter;
+		samplerInfo.anisotropyEnable = VK_TRUE;
+		samplerInfo.maxAnisotropy = maxAnisotropy;
+
+		VkSampler sampler;
+		if (vkCreateSampler(device, &samplerInfo, nullptr, &sampler) != VK_SUCCESS)
+			return {};
+
+		return Object(device, sampler);
+	}
+
+	Object<VkSampler> Object<VkSampler>::createMipMaps(VkDevice device, VkFilter minFilter, VkFilter magFilter, VkSamplerMipmapMode mipmapMode) noexcept
+	{
+		auto samplerInfo = defaultSampler();
+		samplerInfo.magFilter = magFilter;
+		samplerInfo.minFilter = minFilter;
+		samplerInfo.mipmapMode = mipmapMode;
+		samplerInfo.minLod = 0.0f;
+		samplerInfo.maxLod = VK_LOD_CLAMP_NONE;
+		samplerInfo.mipLodBias = 0.0f;
+
+		VkSampler sampler;
+		if (vkCreateSampler(device, &samplerInfo, nullptr, &sampler) != VK_SUCCESS)
+			return {};
+
+		return Object(device, sampler);
+	}
+
+	Object<VkSampler> Object<VkSampler>::createMipMapsAnisotropic(VkDevice device, VkFilter minFilter, VkFilter magFilter, VkSamplerMipmapMode mipmapMode, float maxAnisotropy) noexcept
+	{
+		auto samplerInfo = defaultSampler();
+		samplerInfo.magFilter = magFilter;
+		samplerInfo.minFilter = minFilter;
+		samplerInfo.mipmapMode = mipmapMode;
+		samplerInfo.minLod = 0.0f;
+		samplerInfo.maxLod = VK_LOD_CLAMP_NONE;
+		samplerInfo.mipLodBias = 0.0f;
 		samplerInfo.anisotropyEnable = VK_TRUE;
 		samplerInfo.maxAnisotropy = maxAnisotropy;
 
@@ -1088,14 +1126,16 @@ namespace hr::vulkan
 		return *this;
 	}
 
-	Object<VkCommandBuffer>::Recorder& Object<VkCommandBuffer>::Recorder::copyBufferToImage(VkImage dest, VkBuffer source, size_t width, size_t height) noexcept
+	Object<VkCommandBuffer>::Recorder& Object<VkCommandBuffer>::Recorder::copyBufferToImage(VkImage dest, VkBuffer source, size_t width, size_t height, size_t mipLevel) noexcept
 	{
+		assert(mipLevel >= 0);
+
 		VkBufferImageCopy region{};
 		region.bufferOffset = 0;
 		region.bufferRowLength = 0;
 		region.bufferImageHeight = 0;
 		region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-		region.imageSubresource.mipLevel = 0;
+		region.imageSubresource.mipLevel = static_cast<uint32_t>(mipLevel);
 		region.imageSubresource.baseArrayLayer = 0;
 		region.imageSubresource.layerCount = 1;
 		region.imageOffset = {0, 0, 0};

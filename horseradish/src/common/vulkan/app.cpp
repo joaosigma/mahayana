@@ -512,7 +512,7 @@ namespace hr::vulkan
 			mSwapChainImageViews.reserve(count);
 			for (uint32_t i = 0; i < count; i++)
 			{
-				mSwapChainImageViews.emplace_back(ImageView::gen2D(mDevice, mSwapChainImages[i], mSwapChainSurfaceFormat.format));
+				mSwapChainImageViews.emplace_back(ImageView::gen2D(mDevice, mSwapChainImages[i], 1, mSwapChainSurfaceFormat.format));
 				if (!mSwapChainImageViews.back().isValid())
 				{
 					mErrorMsg = "Error creating swap chain image view.";
