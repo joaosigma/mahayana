@@ -1,6 +1,6 @@
 ## Project stuff
-build/
-sandbox/
+/horseradish/build-*
+/sandbox/
 *.sublime-workspace
 
 ## Ignore Visual Studio temporary files, build results, and
