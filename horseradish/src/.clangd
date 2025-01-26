@@ -1,0 +1,15 @@
+Diagnostics:
+  UnusedIncludes: Strict
+  MissingIncludes: Strict
+  ClangTidy:
+    Add:
+      - bugprone-*
+      - modernize-*
+      - performance-*
+      - readability-*
+      - cppcoreguidelines-*
+    Remove:
+      - readability-braces-around-statements
+      - readability-identifier-length
+    CheckOptions:
+      cppcoreguidelines-special-member-functions.AllowSoleDefaultDtor: true

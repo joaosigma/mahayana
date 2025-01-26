@@ -1,48 +1,53 @@
-# Format Style Options - Created with Clang Power Tools
 ---
-AccessModifierOffset: -8
-AlignAfterOpenBracket: DontAlign
-AlignOperands: DontAlign
-AllowAllArgumentsOnNextLine: false
-AllowAllParametersOfDeclarationOnNextLine: true
-AllowShortLambdasOnASingleLine: None
+Language: Cpp
+Standard: c++20
+UseTab: Never
+LineEnding: LF
+
+ColumnLimit: 180
+IndentWidth: 4
+IndentAccessModifiers: false
+AccessModifierOffset: -4
+TabWidth: 4
+
+AlignAfterOpenBracket: Align
+AlignOperands: Align
+AllowAllArgumentsOnNextLine: true
 AllowShortFunctionsOnASingleLine: None
 AllowShortIfStatementsOnASingleLine: Never
+AllowShortLambdasOnASingleLine: Inline
 BasedOnStyle: Mozilla
 BinPackArguments: true
-BinPackParameters: true
-BraceWrapping: 
-  AfterCaseLabel: false
-  AfterClass: false
-  AfterControlStatement: false
-  AfterEnum: false
-  AfterFunction: false
-  AfterNamespace: false
-  AfterObjCDeclaration: false
-  AfterStruct: false
-  AfterUnion: false
-  AfterExternBlock: false
-  BeforeCatch: false
-  BeforeElse: false
+BreakConstructorInitializers: BeforeComma
+BreakInheritanceList: BeforeComma
+CompactNamespaces: true
+Cpp11BracedListStyle: true
+IncludeBlocks: Preserve
+NamespaceIndentation: All
+SortIncludes: true
+SpaceAroundPointerQualifiers: Before
+SpaceBeforeCtorInitializerColon: false
+SpaceBeforeInheritanceColon: false
+PackConstructorInitializers: NextLineOnly
+
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterCaseLabel: true
+  AfterClass: true
+  AfterControlStatement: true
+  AfterEnum: true
+  AfterFunction: true
+  AfterNamespace: true
+  AfterObjCDeclaration: true
+  AfterStruct: true
+  AfterUnion: true
+  AfterExternBlock: true
+  BeforeCatch: true
+  BeforeElse: true
   IndentBraces: false
   SplitEmptyFunction: false
   SplitEmptyRecord: false
   SplitEmptyNamespace: false
-  BeforeLambdaBody: false
+  BeforeLambdaBody: true
   BeforeWhile: false
-BreakBeforeBinaryOperators: NonAssignment
-BreakBeforeBraces: Allman
-ColumnLimit: 180
-CompactNamespaces: true
-Cpp11BracedListStyle: true
-DerivePointerAlignment: true
-IncludeBlocks: Preserve
-IndentWidth: 8
-NamespaceIndentation: All
-ReflowComments: false
-SortIncludes: true
-SpaceAroundPointerQualifiers: Before
-SpaceBeforeCtorInitializerColon: false
-Standard: c++20
-UseTab: ForIndentation
 ...

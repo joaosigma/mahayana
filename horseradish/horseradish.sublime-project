@@ -2,7 +2,7 @@
 	"folders":
 	[
 		{
-			"path": "src"
+			"path": "src",
 		},
 		{
 			"file_include_patterns":
@@ -16,7 +16,7 @@
 				"**/**"
 			],
 			"path": ".",
-			"name": "."
+			"name": ".",
 		},
 	],
 	"settings":
@@ -25,6 +25,23 @@
 		"default_line_ending": "unix",
 		"ensure_newline_at_eof_on_save": true,
 		"tab_size": 4,
-		"trim_trailing_white_space_on_save": true
-	}
+		"trim_trailing_white_space_on_save": true,
+
+		"LSP":
+		{
+			"clangd":
+			{
+				"initializationOptions":
+				{
+					"clangd.clang-tidy": true,
+			        "clangd.background-index": true,
+			        "clangd.header-insertion": "iwyu",
+			        "clangd.completion-style": "detailed",
+					"clangd.compile-commands-dir": "C:\\dev\\mahayana\\horseradish\\build-ninja"
+	        	},
+				"enabled": true,
+			},
+		},
+		"lsp_format_on_save": true,
+	},
 }
