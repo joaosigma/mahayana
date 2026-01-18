@@ -5,6 +5,7 @@
 #include "quaternion.hpp"
 
 #include <format>
+#include <type_traits>
 
 #include "libs/catch2/catch.hpp"
 
@@ -109,7 +110,7 @@ namespace hr::utests
 		bool match(const TVector& v) const
 		{
 			static_assert(std::is_same_v<TVector, hr::Vector3f> || std::is_same_v<TVector, hr::Vector3d>);
-			static_assert(std::is_same_v<TVector::DataType, TType>);
+			static_assert(std::is_same_v<typename TVector::DataType, TType>);
 			static_assert(TVector::NumComponents == 3);
 
 			// set epsilon to allowed a 0.1% difference and a margin to allow (0.0f == -0.0f) to pass
@@ -141,7 +142,7 @@ namespace hr::utests
 		bool match(const TVector& v) const
 		{
 			static_assert(std::is_same_v<TVector, hr::Vector4f> || std::is_same_v<TVector, hr::Vector4d>);
-			static_assert(std::is_same_v<TVector::DataType, TType>);
+            static_assert(std::is_same_v<typename TVector::DataType, TType>);
 			static_assert(TVector::NumComponents == 4);
 
 			// set epsilon to allowed a 0.1% difference and a margin to allow (0.0f == -0.0f) to pass

@@ -285,7 +285,7 @@ namespace hr::serialize
 				if (auto hasData = m_archive.readFixed<uint8_t>(); hasData != 0)
 					(*this) >> *value;
 				else
-					value = std::nullopt_t;
+                    value = std::nullopt_t{};
 			}
 			else
 			{

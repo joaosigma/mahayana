@@ -40,7 +40,7 @@ namespace hr::geom
 			return Vector4f{tangent};
 		}
 
-		void convertTo(VertexShading& dest);
+		void convertTo(VertexShading& dest) const;
 	};
 
 	static_assert(sizeof(VertexFull) == 48);
@@ -68,6 +68,9 @@ namespace hr::geom
 	static_assert(sizeof(VertexShading) == 24);
 	static_assert(std::is_trivial_v<VertexShading>);
 #pragma pack(pop)
+
+	template<typename, typename>
+    class Mesh;
 
 	template<class TVertex, class TIndex>
 	class MeshBase
@@ -118,7 +121,7 @@ namespace hr::geom
 			std::memset(mIndices.get(), 0, sizeof(TIndex)* numIndices);
 		}
 
-		MeshBase(std::unique_ptr<TVertex[]> vertices, size_t numVertices, std::unique_ptr<TIndex[]> indices, size_t numIndices)
+		MeshBase(std::unique_ptr<TVertex[]> vertices, size_t numVertices, std::unique_ptr<TIndex[]> indices, size_t numIndices) noexcept
 			: mData{ std::move(vertices) }, mNumVertices{ numVertices }, mIndices{ std::move(indices) }, mNumIndices{ numIndices }
 		{
 			assert((numVertices > 0) && (numIndices > 0));

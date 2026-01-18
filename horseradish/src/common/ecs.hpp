@@ -252,31 +252,31 @@ namespace hr
 				}
 			}
 
-			const TKey* rawKeys() const noexcept
+			std::span<const TKey> rawKeys() const noexcept
 			{
 				assert(std::is_empty_v<TValue> || (mDenseKeys.size() == mDenseValues.size()));
 
-				return mDenseKeys.data();
+				return {mDenseKeys.data(), mDenseKeys.size()};
 			}
 
-			TValue* raw() noexcept
+			std::span<TValue> raw() noexcept
 			{
 				assert(std::is_empty_v<TValue> || (mDenseKeys.size() == mDenseValues.size()));
 
 				if constexpr (std::is_empty_v<TValue>)
-					return nullptr;
+					return {};
 				else
-					return mDenseValues.data();
+					return {mDenseValues.data(), mDenseValues.size()};
 			}
 
-			const TValue* raw() const noexcept
+			std::span<const TValue> raw() const noexcept
 			{
 				assert(std::is_empty_v<TValue> || (mDenseKeys.size() == mDenseValues.size()));
 
 				if constexpr (std::is_empty_v<TValue>)
-					return nullptr;
+					return {};
 				else
-					return mDenseValues.data();
+					return {mDenseValues.data(), mDenseValues.size()};
 			}
 
 			void add(TKey key, TValue value)
@@ -514,7 +514,7 @@ namespace hr
 				forEach(std::forward<TCallback>(cb), std::make_integer_sequence<size_t, std::tuple_size_v<TIndexA::TypeTuple>>{});
 			}
 
-			const TKey* rawKeys() const noexcept
+			std::span<const TKey> rawKeys() const noexcept
 			{
 				return mKeys.data();
 			}
@@ -633,7 +633,7 @@ namespace hr
 				mStorage->forEach(std::forward<TCallback>(cb));
 			}
 
-			const TKey* rawKeys() const noexcept
+			std::span<const TKey> rawKeys() const noexcept
 			{
 				return mStorage->rawKeys();
 			}

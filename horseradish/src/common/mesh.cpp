@@ -76,7 +76,7 @@ namespace hr::geom
 		}
 	}
 
-	void VertexFull::convertTo(VertexShading& dest)
+	void VertexFull::convertTo(VertexShading& dest) const
 	{
 		std::memcpy(dest.pos, pos, sizeof(float) * 3);
 		types::packFloat(uv, dest.uv, 2);

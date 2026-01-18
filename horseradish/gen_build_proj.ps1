@@ -22,6 +22,20 @@ function Set-VSEnv {
     Remove-Item "$env:temp\vcvars.txt"
 }
 
+function Get-VSCMakeGen {
+    $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+
+    $version = &$vswhere -latest -property catalog_productLineVersion
+    $year = &$vswhere -latest -property catalog_featureReleaseYear
+
+    return "Visual Studio $version $year"
+}
+
+function Get-VSExecPath {
+    $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+    return &$vswhere -latest -property productPath
+}
+
 Write-Host ">>>>> Generating Horseradish project ($($Ninja ? "Ninja" : "VStudio"))"
 Write-Host ">>>>> (good luck)"
 Write-Host ""
@@ -54,9 +68,6 @@ $env:PATH = "$env:VCPKG_ROOT;$env:PATH"
 if ($Ninja) {
     $targetFolder = "build-ninja"
 
-    if (-not (Test-Path -Path "build-tools")) {
-        New-Item -Path "." -Name "build-tools" -ItemType Directory | Out-Null
-    }
     if (-not (Test-Path -Path "build-tools/ninja")) {
         Write-Host "Downloading Ninja..."
 
@@ -77,9 +88,10 @@ if ($Ninja) {
         Write-Error "Unable to figure out the path for ninja-build"
     }
 
-    $Env:PATH += ";$ninjaPath"
-
+    $env:PATH += ";$ninjaPath"
     Set-VSEnv
+
+    Write-Host ""
 
 } else {
     $targetFolder = "build-vs"
@@ -89,24 +101,29 @@ if (-not (Test-Path -Path $targetFolder)) {
     New-Item -Path "." -Name $targetFolder -ItemType Directory | Out-Null
 }
 
+# now we can run cmake to generate the build solution / files
+
 Push-Location -Path $targetFolder
 try {
 
     if ($Ninja) {
+
         & cmake -DHR_ENABLE_DEVEL=1 -DHR_ENABLE_LOGGING=1 -DHR_ENABLE_PROFILLING=1 -DCMAKE_BUILD_TYPE=Release -DCMAKE_EXPORT_COMPILE_COMMANDS=1 -G "Ninja" ..
         if ($LASTEXITCODE -ne 0) { return; }
+
     } else {
         $generator = Get-VSCMakeGen
         Write-Host "Using generator: $generator"
 
         & cmake -DHR_ENABLE_DEVEL=1 -DHR_ENABLE_LOGGING=1 -DHR_ENABLE_PROFILLING=1 -DCMAKE_TOOLCHAIN_FILE="$(Join-Path -Path "$vcpkgPath" -ChildPath "scripts/buildsystems/vcpkg.cmake")" -G "$generator" -A x64 -T host=x64 ..
         if ($LASTEXITCODE -ne 0) { return; }
+
+        $idePath = Get-VSExecPath
+        &$idePath .\mustard.slnx
     }
 
 } finally {
     Pop-Location
 }
-
-# if (-not $Ninja) { Invoke-Item -Path ".\$targetFolder\Mustard.sln" }
 
 Write-Host ">>>>> done"

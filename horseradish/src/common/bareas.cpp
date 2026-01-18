@@ -4,7 +4,7 @@
 
 namespace hr
 {
-	static_assert(std::is_trivially_copyable<BRect>::value);
+	static_assert(std::is_trivially_copyable_v<BRect>);
 
 	BRect::BRect(const Vector3f * const points, size_t numVec)
 	{

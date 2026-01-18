@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.17.3 FATAL_ERROR)
+cmake_minimum_required(VERSION 4.2.1 FATAL_ERROR)
 
 #######################
 ### declare all vars and global options
@@ -60,17 +60,15 @@ configure_file (
 #######################
 ### the project
 
-project(Mustard VERSION 0.9 LANGUAGES C CXX)
-
-set(CMAKE_CXX_EXTENSIONS OFF)
+project(mustard VERSION 0.9 LANGUAGES C CXX)
 
 add_executable(horseradish WIN32 "")
 add_executable(horseradish-utests "")
 
-target_compile_features(horseradish PRIVATE c_std_11)
+target_compile_features(horseradish PRIVATE c_std_17)
 target_compile_features(horseradish PRIVATE cxx_std_20)
 
-target_compile_features(horseradish-utests PRIVATE c_std_11)
+target_compile_features(horseradish-utests PRIVATE c_std_17)
 target_compile_features(horseradish-utests PRIVATE cxx_std_20)
 
 if (HR_ENABLE_DEVEL)
@@ -105,7 +103,6 @@ if (CMAKE_GENERATOR MATCHES "^Visual Studio")
 		NOICONS
 		NOSYSCOMMANDS
 		NORASTEROPS
-		NOSHOWWINDOW
 		OEMRESOURCE
 		NOATOM
 		NOCOLOR

@@ -2,6 +2,8 @@
 
 #include "types.hpp"
 
+#include <array>
+#include <cassert>
 #include <algorithm>
 #include <functional>
 
@@ -144,7 +146,7 @@ namespace hr::geom
 	Matrix4f SkeletonAnim::calcJointGlobalTransform(size_t jointIndex) const noexcept
 	{
 		assert((jointIndex >= 0) && (jointIndex < mLastAnimation.joints.size()));
-		auto& joint = mLastAnimation.joints[jointIndex];
+		const auto& joint = mLastAnimation.joints[jointIndex];
 
 		if (joint.parentIndex < 0)
 			return joint.localTransform;
@@ -316,8 +318,8 @@ namespace hr::geom
 				//animate all channels
 				for (const auto& channel : sampler.channels)
 				{
-					auto& dataStart = channel.frameData[frameIndex];
-					auto& dataNext = channel.frameData[frameIndex + 1];
+					const auto& dataStart = channel.frameData[frameIndex];
+					const auto& dataNext = channel.frameData[frameIndex + 1];
 
 					auto& jointAnimated = mLastAnimation.joints[channel.jointIndex];
 

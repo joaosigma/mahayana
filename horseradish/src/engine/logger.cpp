@@ -2,258 +2,270 @@
 
 #include <ctime>
 
-namespace hr { namespace engine
+namespace hr::engine
 {
-	bool Logger::checkEntryData(std::string_view entryData, bool &hasFormattedText) noexcept
-	{
-		hasFormattedText = false;
+    bool Logger::checkEntryData(std::string_view entryData, bool& hasFormattedText) noexcept
+    {
+        hasFormattedText = false;
 
-		auto walker = entryData.begin();
-		for (; walker != entryData.end(); ++walker)
-		{
-			if (*walker != '$') continue;
+        auto walker = entryData.begin();
+        for (; walker != entryData.end(); ++walker)
+        {
+            if (*walker != '$')
+                continue;
 
-			++walker;
-			if (walker == entryData.end()) return true;
+            ++walker;
+            if (walker == entryData.end())
+                return true;
 
-			if (*walker == '$') continue; //escaped
-			if (*walker != '{') continue; //not section
+            if (*walker == '$')
+                continue; // escaped
+            if (*walker != '{')
+                continue; // not section
 
-			//we're inside a section
-			hasFormattedText |= true;
+            // we're inside a section
+            hasFormattedText |= true;
 
-			for (++walker; walker != entryData.end(); ++walker)
-			{
-				//invalid chars inside section
-				if (*walker == '$') return false;
-				if (*walker == '{') return false;
+            for (++walker; walker != entryData.end(); ++walker)
+            {
+                // invalid chars inside section
+                if (*walker == '$')
+                    return false;
+                if (*walker == '{')
+                    return false;
 
-				if (*walker == '}') break; //exit section
-			}
+                if (*walker == '}')
+                    break; // exit section
+            }
 
-			//section wasn't closed
-			if (walker == entryData.end()) return false;
-		}
+            // section wasn't closed
+            if (walker == entryData.end())
+                return false;
+        }
 
-		return true;
-	}
+        return true;
+    }
 
-	void Logger::processAsyncBuffer()
-	{
-		if (mAsyncBuffer.empty())
-			return;
+    void Logger::processAsyncBuffer()
+    {
+        if (mAsyncBuffer.empty())
+            return;
 
-		for (const auto& entry : mAsyncBuffer)
-			writeToFile(entry);
+        for (const auto& entry : mAsyncBuffer)
+            writeToFile(entry);
 
-		mAsyncBuffer.clear();
-	}
+        mAsyncBuffer.clear();
+    }
 
-	void Logger::writeToFile(const EntryData& entry)
-	{
-		if (!mOutFileStream)
-			return;
+    void Logger::writeToFile(const EntryData& entry)
+    {
+        if (!mOutFileStream)
+            return;
 
-		hr::streams::StreamWriter streamWriter(*mOutFileStream);
+        hr::streams::StreamWriter streamWriter(*mOutFileStream);
 
-		switch (entry.moduleType)
-		{
-		case Logger::ModuleType::SysRuntime:
-			streamWriter.writeString("sysRuntime\t");
-			break;
-		case Logger::ModuleType::FileSystem:
-			streamWriter.writeString("fileSystem\t");
-			break;
-		case Logger::ModuleType::Graphics:
-			streamWriter.writeString("graphics\t");
-			break;
-		case Logger::ModuleType::Audio:
-			streamWriter.writeString("audio\t");
-			break;
-		case Logger::ModuleType::Network:
-			streamWriter.writeString("network\t");
-			break;
-		case Logger::ModuleType::PlayRuntime:
-			streamWriter.writeString("playRuntime\t");
-			break;
-		case Logger::ModuleType::Misc:
-		default:
-			streamWriter.writeString("misc\t");
-			break;
-		}
+        switch (entry.moduleType)
+        {
+            case Logger::ModuleType::SysRuntime:
+                streamWriter.writeString("sysRuntime\t");
+                break;
+            case Logger::ModuleType::FileSystem:
+                streamWriter.writeString("fileSystem\t");
+                break;
+            case Logger::ModuleType::Graphics:
+                streamWriter.writeString("graphics\t");
+                break;
+            case Logger::ModuleType::Audio:
+                streamWriter.writeString("audio\t");
+                break;
+            case Logger::ModuleType::Network:
+                streamWriter.writeString("network\t");
+                break;
+            case Logger::ModuleType::PlayRuntime:
+                streamWriter.writeString("playRuntime\t");
+                break;
+            case Logger::ModuleType::Misc:
+            default:
+                streamWriter.writeString("misc\t");
+                break;
+        }
 
-		switch (entry.entryType)
-		{
-		case Logger::EntryType::Error:
-			streamWriter.writeString("error\t");
-			break;
-		case Logger::EntryType::Info:
-			streamWriter.writeString("info\t");
-			break;
-		case Logger::EntryType::Warning:
-			streamWriter.writeString("warning\t");
-			break;
-		default:
-			streamWriter.writeString("????\t");
-			break;
-		}
+        switch (entry.entryType)
+        {
+            case Logger::EntryType::Error:
+                streamWriter.writeString("error\t");
+                break;
+            case Logger::EntryType::Info:
+                streamWriter.writeString("info\t");
+                break;
+            case Logger::EntryType::Warning:
+                streamWriter.writeString("warning\t");
+                break;
+            default:
+                streamWriter.writeString("????\t");
+                break;
+        }
 
-		{
-			char buffer[64];
-			const auto result = std::format_to_n(buffer, std::size(buffer) - 1, "{:%Y-%m-%d %H:%M:%S}", entry.timestamp);
-			
-			streamWriter.write(buffer, result.size);
-			streamWriter.writeString("\t");
-		}
+        {
+            char buffer[64];
+            const auto result = std::format_to_n(buffer, std::size(buffer) - 1, "{:%Y-%m-%d %H:%M:%S}", entry.timestamp);
 
-		if (!entry.isMsgFormated)
-		{
-			streamWriter.writeString(entry.msg.c_str());
-		}
-		else
-		{
-			auto walker = reinterpret_cast<const char*>(entry.msg.c_str());
-			while ((walker[0] == '$') && (walker[1] == '{'))
-			{
-				for (; (*walker != '\0') && (*walker != '}'); walker++);
-				if (*walker == '\0')
-					break;
-				walker++;
-			}
+            streamWriter.write(buffer, result.size);
+            streamWriter.writeString("\t");
+        }
 
-			auto walkerNext = walker;
-			for (; *walkerNext != '\0'; walkerNext++)
-			{
-				if ((walkerNext[0] == '$') && (walkerNext[1] == '{') && (walker[-1] != '$'))
-				{
-					if ((walkerNext - walker) > 0)
-						streamWriter.write(walker, walkerNext - walker);
+        if (!entry.isMsgFormated)
+        {
+            streamWriter.writeString(entry.msg.c_str());
+        }
+        else
+        {
+            auto walker = reinterpret_cast<const char*>(entry.msg.c_str());
+            while ((walker[0] == '$') && (walker[1] == '{'))
+            {
+                for (; (*walker != '\0') && (*walker != '}'); walker++)
+                    ;
+                if (*walker == '\0')
+                    break;
+                walker++;
+            }
 
-					for (; (*walkerNext != '\0') && (*walkerNext != '}'); walkerNext++);
-					if (*walkerNext == '}')
-						walkerNext++;
+            auto walkerNext = walker;
+            for (; *walkerNext != '\0'; walkerNext++)
+            {
+                if ((walkerNext[0] == '$') && (walkerNext[1] == '{') && (walker[-1] != '$'))
+                {
+                    if ((walkerNext - walker) > 0)
+                        streamWriter.write(walker, walkerNext - walker);
 
-					walker = walkerNext;
-					if (*walkerNext == '\0')
-						break;
-				}
-			}
+                    for (; (*walkerNext != '\0') && (*walkerNext != '}'); walkerNext++)
+                        ;
+                    if (*walkerNext == '}')
+                        walkerNext++;
 
-			if ((walkerNext - walker) > 0)
-				streamWriter.write(walker, walkerNext - walker);
-		}
+                    walker = walkerNext;
+                    if (*walkerNext == '\0')
+                        break;
+                }
+            }
 
-		streamWriter.write(hr::platform::Platform::NewLine, hr::platform::Platform::NewLineSize);
-	}
+            if ((walkerNext - walker) > 0)
+                streamWriter.write(walker, walkerNext - walker);
+        }
 
-	void Logger::threadFlushFunc()
-	{
-		while (!mThreadFlushExit)
-		{
-			std::unique_lock<std::mutex> lock(mASyncLock);
+        streamWriter.write(hr::platform::Platform::NewLine, hr::platform::Platform::NewLineSize);
 
-			auto waitReson = mThreadFlushCondition.wait_for(lock, std::chrono::milliseconds(1500));
-			if (waitReson == std::cv_status::timeout)
-			{
-				processAsyncBuffer();
+        mOutFileStream->flush();
+    }
 
-				if (mOutFileStream)
-					mOutFileStream->flush();
-			}
-		}
-	}
+    void Logger::threadFlushFunc()
+    {
+        while (!mThreadFlushExit)
+        {
+            std::unique_lock<std::mutex> lock(mASyncLock);
 
-	bool Logger::addEntry(const EntryType entryType, const ModuleType moduleType, std::string_view entryData)
-	{
-		bool hasFormattedText;
-		if (!Logger::checkEntryData(entryData, hasFormattedText))
-			return false;
+            auto waitReson = mThreadFlushCondition.wait_for(lock, std::chrono::milliseconds(1500));
+            if (waitReson == std::cv_status::timeout)
+            {
+                processAsyncBuffer();
 
-		EntryData entry(entryType, moduleType);
-		entry.msg = std::string{ entryData };
-		entry.isMsgFormated = hasFormattedText;
-		entry.timestamp = std::chrono::system_clock::now();
+                if (mOutFileStream)
+                    mOutFileStream->flush();
+            }
+        }
+    }
 
-		std::lock_guard lock(mASyncLock);
+    bool Logger::addEntry(const EntryType entryType, const ModuleType moduleType, std::string_view entryData)
+    {
+        bool hasFormattedText;
+        if (!Logger::checkEntryData(entryData, hasFormattedText))
+            return false;
 
-		if (mMaxBufferSize > 0)
-		{
-			std::lock_guard lockB(mBufferLock);
+        EntryData entry(entryType, moduleType);
+        entry.msg = std::string{entryData};
+        entry.isMsgFormated = hasFormattedText;
+        entry.timestamp = std::chrono::system_clock::now();
 
-			if (mBuffer.size() >= mMaxBufferSize)
-				mBuffer.pop_back();
+        std::lock_guard lock(mASyncLock);
 
-			mBuffer.push_front(entry);
-			assert(mBuffer.size() <= mMaxBufferSize);
-		}
+        if (mMaxBufferSize > 0)
+        {
+            std::lock_guard lockB(mBufferLock);
 
-		if (mMaxAsyncBufferSize == 0)
-		{
-			writeToFile(entry);
-		}
-		else
-		{
-			if (mAsyncBuffer.size() >= mMaxAsyncBufferSize)
-				processAsyncBuffer();
+            if (mBuffer.size() >= mMaxBufferSize)
+                mBuffer.pop_back();
 
-			mAsyncBuffer.push_back(entry);
-		}
+            mBuffer.push_front(entry);
+            assert(mBuffer.size() <= mMaxBufferSize);
+        }
 
-		return true;
-	}
+        if (mMaxAsyncBufferSize == 0)
+        {
+            writeToFile(entry);
+        }
+        else
+        {
+            if (mAsyncBuffer.size() >= mMaxAsyncBufferSize)
+                processAsyncBuffer();
 
-	Logger::Logger(size_t asyncMaxEntries)
-		: mMaxAsyncBufferSize(asyncMaxEntries)
-	{
-		if (mMaxAsyncBufferSize > 0)
-			mThreadFlush = new std::thread(&Logger::threadFlushFunc, this);
-	}
+            mAsyncBuffer.push_back(entry);
+        }
 
-	Logger::Logger(size_t asyncMaxEntries, size_t maxBufferedEntries)
-		: Logger(asyncMaxEntries)
-	{
-		mMaxBufferSize = maxBufferedEntries;
-	}
+        return true;
+    }
 
-	Logger::Logger(size_t asyncMaxEntries, size_t maxBufferedEntries, const std::filesystem::path& filePath)
-		: Logger(asyncMaxEntries, maxBufferedEntries)
-	{
-		mOutFileStream = std::shared_ptr<hr::streams::FileStream>(new hr::streams::FileStream(filePath, false, true));
-	}
+    Logger::Logger(size_t asyncMaxEntries)
+      : mMaxAsyncBufferSize(asyncMaxEntries)
+    {
+        if (mMaxAsyncBufferSize > 0)
+            mThreadFlush = new std::thread(&Logger::threadFlushFunc, this);
+    }
 
-	Logger::~Logger()
-	{
-		if (mThreadFlush)
-		{
-			mThreadFlushExit = true;
-			mThreadFlushCondition.notify_one();
-			mThreadFlush->join();
+    Logger::Logger(size_t asyncMaxEntries, size_t maxBufferedEntries)
+      : Logger(asyncMaxEntries)
+    {
+        mMaxBufferSize = maxBufferedEntries;
+    }
 
-			delete mThreadFlush;
-			mThreadFlush = nullptr;
-		}
+    Logger::Logger(size_t asyncMaxEntries, size_t maxBufferedEntries, const std::filesystem::path& filePath)
+      : Logger(asyncMaxEntries, maxBufferedEntries)
+    {
+        mOutFileStream = std::make_unique<hr::streams::FileStream>(filePath, false, true);
+    }
 
-		if (mOutFileStream)
-		{
-			for (const auto& entry : mAsyncBuffer)
-				writeToFile(entry);
+    Logger::~Logger()
+    {
+        if (mThreadFlush)
+        {
+            mThreadFlushExit = true;
+            mThreadFlushCondition.notify_one();
+            mThreadFlush->join();
 
-			mOutFileStream.reset();
-		}
-	}
+            delete mThreadFlush;
+            mThreadFlush = nullptr;
+        }
 
-	void Logger::iterateBuffer(const std::function<bool(const EntryType, const ModuleType, const bool, std::string_view)>& logEntryCb, size_t offset) const
-	{
-		if ((mMaxBufferSize == 0) || !logEntryCb)
-			return;
+        if (mOutFileStream)
+        {
+            for (const auto& entry : mAsyncBuffer)
+                writeToFile(entry);
 
-		std::lock_guard<std::mutex> lock(mBufferLock);
+            mOutFileStream.reset();
+        }
+    }
 
-		for (size_t i = offset; i < mBuffer.size(); i++)
-		{
-			const EntryData& entry = mBuffer[i];
-			if (!logEntryCb(entry.entryType, entry.moduleType, entry.isMsgFormated, entry.msg))
-				break;
-		}
-	}
-} }
+    void Logger::iterateBuffer(const std::function<bool(const EntryType, const ModuleType, const bool, std::string_view)>& logEntryCb, size_t offset) const
+    {
+        if ((mMaxBufferSize == 0) || !logEntryCb)
+            return;
+
+        std::lock_guard<std::mutex> lock(mBufferLock);
+
+        for (size_t i = offset; i < mBuffer.size(); i++)
+        {
+            const EntryData& entry = mBuffer[i];
+            if (!logEntryCb(entry.entryType, entry.moduleType, entry.isMsgFormated, entry.msg))
+                break;
+        }
+    }
+}

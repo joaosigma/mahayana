@@ -7,12 +7,12 @@ namespace hr::imaging
 	{
 		static constexpr size_t size()
 		{
-			TFormat::template size();
+			return TFormat::template size();
 		}
 
 		static constexpr bool hasAlpha()
 		{
-			TFormat::template hasAlpha();
+			return TFormat::template hasAlpha();
 		}
 
 		template<typename T>

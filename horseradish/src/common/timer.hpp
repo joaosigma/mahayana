@@ -2,12 +2,17 @@
 
 #include <chrono>
 #include <cstdint>
+#include <type_traits>
 
 namespace hr
 {
 	class Timer final
 	{
-		std::chrono::high_resolution_clock::time_point mTimepoint;
+        using ClockType = std::conditional<std::chrono::high_resolution_clock::is_steady && !std::is_same_v<std::chrono::high_resolution_clock, std::chrono::steady_clock>,
+                                           std::chrono::high_resolution_clock,
+                                           std::chrono::steady_clock>::type;
+
+		ClockType::time_point mTimepoint;
 
 	public:
 		Timer() noexcept;

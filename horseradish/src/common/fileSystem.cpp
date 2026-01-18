@@ -1,387 +1,393 @@
 #include "fileSystem.hpp"
 
-#include "math.hpp"
 #include "hashing.hpp"
+#include "math.hpp"
 #include "sorting.hpp"
-#include "types.hpp"
 #include "stringUtils.hpp"
+#include "types.hpp"
 
 #include <algorithm>
 
 namespace hr::io
 {
-	namespace
-	{
-		uLong ZCALLBACK zwrite(voidpf, voidpf, const void*, uLong)
-		{
-			return 0;
-		}
-
-		int ZCALLBACK zerror(voidpf, voidpf)
-		{
-			return 0;
-		}
-
-		voidpf ZCALLBACK zopen(voidpf, const char* filename, int)
-		{
-			auto fileStream = new hr::streams::FileStream(std::filesystem::path{filename, std::filesystem::path::generic_format}, true, false);
-
-			return ((voidpf)fileStream);
-		}
-
-		uLong ZCALLBACK zread(voidpf, voidpf stream, void* buf, uLong size)
-		{
-			auto fileStream = reinterpret_cast<hr::streams::FileStream*>(stream);
-
-			return fileStream->read(buf, size);
-		}
-
-		long ZCALLBACK ztell(voidpf, voidpf stream)
-		{
-			auto fileStream = reinterpret_cast<hr::streams::FileStream*>(stream);
-
-			return fileStream->position();
-		}
-
-		long ZCALLBACK zseek(voidpf, voidpf stream, uLong offset, int origin)
-		{
-			auto fileStream = reinterpret_cast<hr::streams::FileStream*>(stream);
-
-			if (origin == ZLIB_FILEFUNC_SEEK_CUR)
-				fileStream->seek(hr::streams::Stream::SeekOrigin::Current, offset);
-			else if (origin == ZLIB_FILEFUNC_SEEK_END)
-				fileStream->seek(hr::streams::Stream::SeekOrigin::End, offset);
-			else if (origin == ZLIB_FILEFUNC_SEEK_SET)
-				fileStream->seek(hr::streams::Stream::SeekOrigin::Begin, offset);
-			else
-				return 1;
-
-			return 0;
-		}
-
-		int ZCALLBACK zclose(voidpf, voidpf stream)
-		{
-			auto fileStream = reinterpret_cast<hr::streams::FileStream*>(stream);
-
-			fileStream->close();
-			delete fileStream;
-
-			return 0;
-		}
-
-		void overloadZLibIO(zlib_filefunc_def * const zlibFileFunc)
-		{
-			if (!zlibFileFunc)
-				return;
-
-			zlibFileFunc->zclose_file = zclose;
-			zlibFileFunc->zopen_file = zopen;
-			zlibFileFunc->zread_file = zread;
-			zlibFileFunc->zseek_file = zseek;
-			zlibFileFunc->ztell_file = ztell;
-
-			zlibFileFunc->zerror_file = zerror;
-			zlibFileFunc->zwrite_file = zwrite;
-		}
-	}
-
-	std::unique_ptr<streams::Stream> FileSystem::MountDataPath::fileRead(const std::filesystem::path& filePath)
-	{
-		auto pathFinal = m_baseFolder;
-		pathFinal /= filePath;
+    namespace
+    {
+        uLong ZCALLBACK zwrite(voidpf, voidpf, const void*, uLong)
+        {
+            return 0;
+        }
+
+        int ZCALLBACK zerror(voidpf, voidpf)
+        {
+            return 0;
+        }
+
+        voidpf ZCALLBACK zopen(voidpf, const char* filename, int)
+        {
+            auto fileStream = new hr::streams::FileStream(std::filesystem::path{filename, std::filesystem::path::generic_format}, true, false);
+
+            return ((voidpf)fileStream);
+        }
+
+        uLong ZCALLBACK zread(voidpf, voidpf stream, void* buf, uLong size)
+        {
+            auto fileStream = reinterpret_cast<hr::streams::FileStream*>(stream);
+
+            return fileStream->read(buf, size);
+        }
+
+        long ZCALLBACK ztell(voidpf, voidpf stream)
+        {
+            auto fileStream = reinterpret_cast<hr::streams::FileStream*>(stream);
+
+            return fileStream->position();
+        }
+
+        long ZCALLBACK zseek(voidpf, voidpf stream, uLong offset, int origin)
+        {
+            auto fileStream = reinterpret_cast<hr::streams::FileStream*>(stream);
+
+            if (origin == ZLIB_FILEFUNC_SEEK_CUR)
+                fileStream->seek(hr::streams::Stream::SeekOrigin::Current, offset);
+            else if (origin == ZLIB_FILEFUNC_SEEK_END)
+                fileStream->seek(hr::streams::Stream::SeekOrigin::End, offset);
+            else if (origin == ZLIB_FILEFUNC_SEEK_SET)
+                fileStream->seek(hr::streams::Stream::SeekOrigin::Begin, offset);
+            else
+                return 1;
+
+            return 0;
+        }
+
+        int ZCALLBACK zclose(voidpf, voidpf stream)
+        {
+            auto fileStream = reinterpret_cast<hr::streams::FileStream*>(stream);
+
+            fileStream->close();
+            delete fileStream;
+
+            return 0;
+        }
+
+        void overloadZLibIO(zlib_filefunc_def* const zlibFileFunc)
+        {
+            if (!zlibFileFunc)
+                return;
+
+            zlibFileFunc->zclose_file = zclose;
+            zlibFileFunc->zopen_file = zopen;
+            zlibFileFunc->zread_file = zread;
+            zlibFileFunc->zseek_file = zseek;
+            zlibFileFunc->ztell_file = ztell;
+
+            zlibFileFunc->zerror_file = zerror;
+            zlibFileFunc->zwrite_file = zwrite;
+        }
+    }
+
+    std::unique_ptr<streams::Stream> FileSystem::MountDataPath::fileRead(const std::filesystem::path& filePath) const
+    {
+        auto pathFinal = m_baseFolder;
+        pathFinal /= filePath;
+
+        auto fileStream = std::unique_ptr<streams::FileStream>(new streams::FileStream(pathFinal, true, false));
+
+        if (!fileStream->isValid())
+            return nullptr;
 
-		auto fileStream = std::unique_ptr<streams::FileStream>(new streams::FileStream(pathFinal, true, false));
-
-		if (!fileStream->isValid())
-			return nullptr;
+        return std::move(fileStream);
+    }
+
+    bool FileSystem::MountDataPath::fileExists(const std::filesystem::path& filePath) const
+    {
+        auto pathFinal = m_baseFolder;
+        pathFinal /= filePath;
 
-		return std::move(fileStream);
-	}
+        return FileSystem::fileExists(pathFinal);
+    }
 
-	bool FileSystem::MountDataPath::fileExists(const std::filesystem::path& filePath)
-	{
-		auto pathFinal = m_baseFolder;
-		pathFinal /= filePath;
+    FileSystem::MountDataZip::MountDataZip(std::filesystem::path zipPath, std::string mountPoint)
+      : MountData(std::move(mountPoint)), m_zipPath{std::move(zipPath)}
+    {
+        zlib_filefunc_def zlibAPI;
+        char zipFileCurFileName[1024];
 
-		return FileSystem::fileExists(pathFinal);
-	}
+        overloadZLibIO(&zlibAPI);
 
-	FileSystem::MountDataZip::MountDataZip(std::filesystem::path zipPath, std::string mountPoint)
-		: MountData(std::move(mountPoint)), m_zipPath{std::move(zipPath)}
-	{
-		zlib_filefunc_def zlibAPI;
-		char zipFileCurFileName[1024];
+        m_zipFile = unzOpen2(reinterpret_cast<const char*>(m_zipPath.u8string().c_str()), &zlibAPI);
+        if (!m_zipFile)
+            return;
 
-		overloadZLibIO(&zlibAPI);
+        unsigned int numEntries = 0;
+        {
+            unz_global_info zipInfo;
 
-		m_zipFile = unzOpen2(reinterpret_cast<const char*>(m_zipPath.u8string().c_str()), &zlibAPI);
-		if (!m_zipFile)
-			return;
+            unzGetGlobalInfo(m_zipFile, &zipInfo);
+            numEntries = zipInfo.number_entry;
+        }
 
-		unsigned int numEntries = 0;
-		{
-			unz_global_info zipInfo;
+        m_fileEntries.rehash(numEntries);
 
-			unzGetGlobalInfo(m_zipFile, &zipInfo);
-			numEntries = zipInfo.number_entry;
-		}
+        unzGoToFirstFile(m_zipFile);
+        for (unsigned int entryIndex = 0; entryIndex < numEntries; entryIndex++)
+        {
+            unz_file_info zipFileCurFileInfo;
+            unzGetCurrentFileInfo(m_zipFile, &zipFileCurFileInfo, zipFileCurFileName, sizeof(zipFileCurFileName), nullptr, 0, nullptr, 0);
 
-		m_fileEntries.rehash(numEntries);
+            if (zipFileCurFileInfo.uncompressed_size > 0) // ignore folders
+            {
+                ZipEntry zipEntry;
+                zipEntry.fileSize = zipFileCurFileInfo.uncompressed_size;
+                unzGetFilePos(m_zipFile, &zipEntry.filePos);
 
-		unzGoToFirstFile(m_zipFile);
-		for (unsigned int entryIndex = 0; entryIndex < numEntries; entryIndex++)
-		{
-			unz_file_info zipFileCurFileInfo;
-			unzGetCurrentFileInfo(m_zipFile, &zipFileCurFileInfo, zipFileCurFileName, sizeof(zipFileCurFileName), nullptr, 0, nullptr, 0);
+                m_fileEntries[std::string(zipFileCurFileName, zipFileCurFileInfo.size_filename)] = zipEntry;
+            }
 
-			if (zipFileCurFileInfo.uncompressed_size > 0) //ignore folders
-			{
-				ZipEntry zipEntry;
-				zipEntry.fileSize = zipFileCurFileInfo.uncompressed_size;
-				unzGetFilePos(m_zipFile, &zipEntry.filePos);
+            unzGoToNextFile(m_zipFile);
+        }
+    }
 
-				m_fileEntries[std::string(zipFileCurFileName, zipFileCurFileInfo.size_filename)] = zipEntry;
-			}
+    FileSystem::MountDataZip::~MountDataZip()
+    {
+        m_fileEntries.clear();
+        m_zipPath.clear();
 
-			unzGoToNextFile(m_zipFile);
-		}
-	}
+        if (m_zipFile)
+            unzClose(m_zipFile);
+        m_zipFile = nullptr;
+    }
 
-	FileSystem::MountDataZip::~MountDataZip()
-	{
-		m_fileEntries.clear();
-		m_zipPath.clear();
+    FileSystem::MountType FileSystem::MountDataZip::mountType() const
+    {
+        return FileSystem::MountType::ZIP;
+    }
 
-		if (m_zipFile) unzClose(m_zipFile);
-		m_zipFile = nullptr;
-	}
+    size_t FileSystem::MountDataZip::numberFiles() const
+    {
+        return m_fileEntries.size();
+    }
 
-	FileSystem::MountType FileSystem::MountDataZip::mountType() const
-	{
-		return FileSystem::MountType::ZIP;
-	}
+    void FileSystem::MountDataZip::filesEnumerate() const
+    {}
 
-	size_t FileSystem::MountDataZip::numberFiles() const
-	{
-		return m_fileEntries.size();
-	}
+    std::unique_ptr<streams::Stream> FileSystem::MountDataZip::fileRead(const std::filesystem::path& filePath) const
+    {
+        if (filePath.empty())
+            return nullptr;
 
-	void FileSystem::MountDataZip::filesEnumerate()
-	{
-	}
+        auto it = m_fileEntries.find(filePath);
+        if (it == m_fileEntries.end())
+            return nullptr;
 
-	std::unique_ptr<streams::Stream> FileSystem::MountDataZip::fileRead(const std::filesystem::path& filePath)
-	{
-		if (filePath.empty())
-			return nullptr;
+        std::shared_ptr<unsigned char> fileData(new unsigned char[it->second.fileSize], std::default_delete<unsigned char[]>());
 
-		auto it = m_fileEntries.find(filePath);
-		if (it == m_fileEntries.end())
-			return nullptr;
+        unz_file_pos file_pos = it->second.filePos;
+        unzGoToFilePos(m_zipFile, &file_pos);
 
-		std::shared_ptr<unsigned char> fileData(new unsigned char[it->second.fileSize], std::default_delete<unsigned char[]>());
+        unzOpenCurrentFile(m_zipFile);
 
-		unzGoToFilePos(m_zipFile, &it->second.filePos);
+        unzReadCurrentFile(m_zipFile, fileData.get(), it->second.fileSize);
 
-		unzOpenCurrentFile(m_zipFile);
+        unzCloseCurrentFile(m_zipFile);
 
-		unzReadCurrentFile(m_zipFile, fileData.get(), it->second.fileSize);
+        return std::unique_ptr<streams::Stream>(new streams::MemoryViewStream(std::move(fileData), it->second.fileSize));
+    }
 
-		unzCloseCurrentFile(m_zipFile);
+    bool FileSystem::MountDataZip::fileExists(const std::filesystem::path& filePath) const
+    {
+        if (filePath.empty())
+            return false;
 
-		return std::unique_ptr<streams::Stream>(new streams::MemoryViewStream(std::move(fileData), it->second.fileSize));
-	}
+        return (m_fileEntries.find(filePath) != m_fileEntries.end());
+    }
 
-	bool FileSystem::MountDataZip::fileExists(const std::filesystem::path& filePath)
-	{
-		if (filePath.empty())
-			return false;
+    const int FileSystem::FolderNameLength = 128;
+    const int FileSystem::FileNameLength = 256;
+    const int FileSystem::PathLength = 16383;
 
-		return (m_fileEntries.find(filePath) != m_fileEntries.end());
-	}
+    FileSystem::FileSystem(size_t maxNumMounts)
+    {
+        m_maxNumMounts = (maxNumMounts < 1) ? 1 : ((maxNumMounts > 10) ? 10 : maxNumMounts);
 
-	const int FileSystem::FolderNameLength = 128;
-	const int FileSystem::FileNameLength = 256;
-	const int FileSystem::PathLength = 16383;
+        m_listMounts.reserve(m_maxNumMounts);
+    }
 
-	FileSystem::FileSystem(size_t maxNumMounts)
-	{
-		m_maxNumMounts = (maxNumMounts < 1) ? 1 : ((maxNumMounts > 10) ? 10 : maxNumMounts);
+    FileSystem::~FileSystem()
+    {
+        for (auto& change : m_listWatchChange)
+            FindCloseChangeNotification(change.changeHandle);
+        m_listWatchChange.clear();
 
-		m_listMounts.reserve(m_maxNumMounts);
-	}
+        m_listMounts.clear();
+        m_maxNumMounts = 0;
+    }
 
-	FileSystem::~FileSystem()
-	{
-		for (auto& change : m_listWatchChange)
-			FindCloseChangeNotification(change.changeHandle);
-		m_listWatchChange.clear();
+    void FileSystem::findFiles(const std::filesystem::path& baseFolderAndFilter,
+                               const bool returnFilesFullPath,
+                               const std::function<bool(const std::filesystem::path& filePath, const uint64_t& fileSize)>& cb)
+    {
+        if (!cb || baseFolderAndFilter.empty())
+            return;
 
-		m_listMounts.clear();
-		m_maxNumMounts = 0;
-	}
+        WIN32_FIND_DATA findData;
+        HANDLE handleFind = FindFirstFile(baseFolderAndFilter.c_str(), &findData);
+        if (handleFind == INVALID_HANDLE_VALUE)
+            return;
 
-	void FileSystem::findFiles(const std::filesystem::path& baseFolderAndFilter, const bool returnFilesFullPath, const std::function<void(const std::filesystem::path& filePath, const uint64_t& fileSize)>& cb)
-	{
-		if (!cb|| baseFolderAndFilter.empty())
-			return;
+        auto basePath = baseFolderAndFilter.parent_path();
 
-		WIN32_FIND_DATA findData;
-		HANDLE handleFind = FindFirstFile(baseFolderAndFilter.c_str(), &findData);
-		if (handleFind == INVALID_HANDLE_VALUE)
-			return;
+        do
+        {
+            if (findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+                continue;
 
-		auto basePath = baseFolderAndFilter.parent_path();
+            auto filePath = hr::StringUtils::conv2UTF8(findData.cFileName);
 
-		do
-		{
-			if (findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
-				continue;
+            ULARGE_INTEGER ul;
+            ul.HighPart = findData.nFileSizeHigh;
+            ul.LowPart = findData.nFileSizeLow;
+            uint64_t fileSize = ul.QuadPart;
 
-			auto filePath = hr::StringUtils::conv2UTF8(findData.cFileName);
+            bool res;
+            if (!returnFilesFullPath)
+                res = cb(filePath, fileSize);
+            else
+                res = cb(basePath / filePath, fileSize);
 
-			ULARGE_INTEGER ul;
-			ul.HighPart = findData.nFileSizeHigh;
-			ul.LowPart = findData.nFileSizeLow;
-			uint64_t fileSize = ul.QuadPart;
+            if (!res)
+                break;
 
-			if (!returnFilesFullPath)
-				cb(filePath, fileSize);
-			else
-				cb(basePath / filePath, fileSize);
+        } while (FindNextFile(handleFind, &findData) != 0);
 
-		} while (FindNextFile(handleFind, &findData) != 0);
+        FindClose(handleFind);
+    }
 
+    bool FileSystem::fileExists(const std::filesystem::path& path)
+    {
+        auto status = std::filesystem::status(path);
+        return std::filesystem::is_regular_file(status) && std::filesystem::exists(status);
+    }
 
-		FindClose(handleFind);
-	}
+    bool FileSystem::mountPath(const std::filesystem::path& baseFolder, std::string mountPoint)
+    {
+        if (m_listMounts.size() >= m_maxNumMounts)
+            return false;
 
-	bool FileSystem::fileExists(const std::filesystem::path& path)
-	{
-		auto status = std::filesystem::status(path);
-		return std::filesystem::is_regular_file(status) && std::filesystem::exists(status);
-	}
+        m_listMounts.push_back(std::unique_ptr<MountDataPath>(new MountDataPath(baseFolder, std::move(mountPoint))));
+        return true;
+    }
 
-	bool FileSystem::mountPath(const std::filesystem::path& baseFolder, std::string mountPoint)
-	{
-		if (m_listMounts.size() >= m_maxNumMounts)
-			return false;
+    bool FileSystem::mountZip(const std::filesystem::path& zipPath, std::string mountPoint, size_t* const numFilesZip)
+    {
+        if (m_listMounts.size() >= m_maxNumMounts)
+            return false;
 
-		m_listMounts.push_back(std::unique_ptr<MountDataPath>(new MountDataPath(baseFolder, std::move(mountPoint))));
-		return true;
-	}
+        auto mPoint = std::make_unique<MountDataZip>(zipPath, std::move(mountPoint));
+
+        if (numFilesZip)
+            *numFilesZip = mPoint->numberFiles();
 
-	bool FileSystem::mountZip(const std::filesystem::path& zipPath, std::string mountPoint, size_t* const numFilesZip)
-	{
-		if (m_listMounts.size() >= m_maxNumMounts)
-			return false;
+        m_listMounts.push_back(std::move(mPoint));
 
-		auto mPoint = std::make_unique<MountDataZip>(zipPath, std::move(mountPoint));
+        return true;
+    }
 
-		if (numFilesZip) *numFilesZip = mPoint->numberFiles();
+    std::unique_ptr<streams::Stream> FileSystem::fileRead(std::string_view filePath)
+    {
+        if (filePath.empty())
+            return nullptr;
 
-		m_listMounts.push_back(std::move(mPoint));
+        for (auto& curMount : m_listMounts)
+        {
+            if (!curMount->fileExists(filePath))
+                continue;
 
-		return true;
-	}
+            return curMount->fileRead(filePath);
+        }
 
-	std::unique_ptr<streams::Stream> FileSystem::fileRead(std::string_view filePath)
-	{
-		if (filePath.empty())
-			return nullptr;
+        return nullptr;
+    }
 
-		for (auto& curMount : m_listMounts)
-		{
-			if (!curMount->fileExists(filePath))
-				continue;
+    std::unique_ptr<streams::Stream> FileSystem::fileRead(std::string_view filePath, FileSystem::MountType mountType)
+    {
+        if (filePath.empty())
+            return nullptr;
 
-			return curMount->fileRead(filePath);
-		}
+        for (auto& curMount : m_listMounts)
+        {
+            if (curMount->mountType() != mountType)
+                continue;
 
-		return nullptr;
-	}
+            if (!curMount->fileExists(filePath))
+                continue;
 
-	std::unique_ptr<streams::Stream> FileSystem::fileRead(std::string_view filePath, FileSystem::MountType mountType)
-	{
-		if (filePath.empty())
-			return nullptr;
+            return curMount->fileRead(filePath);
+        }
 
-		for (auto& curMount : m_listMounts)
-		{
-			if (curMount->mountType() != mountType)
-				continue;
+        return nullptr;
+    }
 
-			if (!curMount->fileExists(filePath))
-				continue;
+    std::string FileSystem::readFileAsString(std::string_view filePath)
+    {
+        auto fileStream = fileRead(filePath);
+        if (!fileStream)
+            return std::string();
 
-			return curMount->fileRead(filePath);
-		}
+        hr::streams::MemoryViewStream fileData;
+        if (!fileStream->cloneAllContent(fileData))
+            return std::string();
 
-		return nullptr;
-	}
+        return fileData.toStr();
+    }
 
-	std::string FileSystem::readFileAsString(std::string_view filePath)
-	{
-		auto fileStream = fileRead(filePath);
-		if (!fileStream)
-			return std::string();
+    int FileSystem::watchChangeCreate(const std::filesystem::path& baseFolder, bool includeSubFolders, FileSystem::ChangeType changeType)
+    {
+        HANDLE handleChange;
 
-		hr::streams::MemoryViewStream fileData;
-		if (!fileStream->cloneAllContent(fileData))
-			return std::string();
+        if (baseFolder.empty())
+            return -1;
 
-		return fileData.toStr();
-	}
+        {
+            DWORD changeFlags = 0;
+            if (changeType & FileName)
+                changeFlags = FILE_NOTIFY_CHANGE_FILE_NAME;
+            if (changeType & FileSize)
+                changeFlags = FILE_NOTIFY_CHANGE_SIZE;
+            if (changeType & FileLastWrite)
+                changeFlags = FILE_NOTIFY_CHANGE_LAST_WRITE;
 
-	int FileSystem::watchChangeCreate(const std::filesystem::path& baseFolder, bool includeSubFolders, FileSystem::ChangeType changeType)
-	{
-		HANDLE handleChange;
+            handleChange = FindFirstChangeNotification(baseFolder.c_str(), includeSubFolders ? TRUE : FALSE, changeFlags);
+            if (handleChange == INVALID_HANDLE_VALUE)
+                return 0;
+        }
 
-		if (baseFolder.empty())
-			return -1;
+        auto changeID = m_listWatchChange.size() + 13;
+        m_listWatchChange.push_back(WatchChangeData(changeID, handleChange));
 
-		{
-			DWORD changeFlags = 0;
-			if (changeType & FileName)
-				changeFlags = FILE_NOTIFY_CHANGE_FILE_NAME;
-			if (changeType & FileSize)
-				changeFlags = FILE_NOTIFY_CHANGE_SIZE;
-			if (changeType & FileLastWrite)
-				changeFlags = FILE_NOTIFY_CHANGE_LAST_WRITE;
+        return changeID;
+    }
 
-			handleChange = FindFirstChangeNotification(baseFolder.c_str(), includeSubFolders ? TRUE : FALSE, changeFlags);
-			if (handleChange == INVALID_HANDLE_VALUE)
-				return 0;
-		}
+    void FileSystem::watchChangeDelete(const int watchChangeID)
+    {
+        auto it = std::find_if(m_listWatchChange.begin(), m_listWatchChange.end(), [&watchChangeID](const WatchChangeData& data) { return data.changeID == watchChangeID; });
+        if (it == m_listWatchChange.end())
+            return;
 
-		auto changeID = m_listWatchChange.size() + 13;
-		m_listWatchChange.push_back(WatchChangeData(changeID, handleChange));
+        FindCloseChangeNotification(it->changeHandle);
+        m_listWatchChange.erase(it);
+    }
 
-		return changeID;
-	}
+    bool FileSystem::watchChanged(const int watchChangeID)
+    {
+        auto changeIndex =
+          std::find_if(m_listWatchChange.begin(), m_listWatchChange.end(), [&watchChangeID](const WatchChangeData& data) { return data.changeID == watchChangeID; });
+        if (changeIndex == m_listWatchChange.end())
+            return false;
 
-	void FileSystem::watchChangeDelete(const int watchChangeID)
-	{
-		auto it =
-		  std::find_if(m_listWatchChange.begin(), m_listWatchChange.end(), [&watchChangeID](const WatchChangeData& data) { return data.changeID == watchChangeID; });
-		if (it == m_listWatchChange.end())
-			return;
+        auto didChange = (WaitForSingleObject(changeIndex->changeHandle, 0) == WAIT_OBJECT_0);
+        if (didChange)
+            FindNextChangeNotification(changeIndex->changeHandle);
 
-		FindCloseChangeNotification(it->changeHandle);
-		m_listWatchChange.erase(it);
-	}
-
-	bool FileSystem::watchChanged(const int watchChangeID)
-	{
-		auto changeIndex =
-		  std::find_if(m_listWatchChange.begin(), m_listWatchChange.end(), [&watchChangeID](const WatchChangeData& data) { return data.changeID == watchChangeID; });
-		if (changeIndex == m_listWatchChange.end())
-			return false;
-
-		auto didChange = (WaitForSingleObject(changeIndex->changeHandle, 0) == WAIT_OBJECT_0);
-		if (didChange)
-			FindNextChangeNotification(changeIndex->changeHandle);
-
-		return didChange;
-	}
+        return didChange;
+    }
 }
