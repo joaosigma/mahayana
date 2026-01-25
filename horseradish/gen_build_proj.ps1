@@ -24,6 +24,32 @@ function Set-VSEnv {
 
 Write-Host ">>>>> Generating Horseradish project ($($Ninja ? "Ninja" : "VStudio"))"
 Write-Host ">>>>> (good luck)"
+Write-Host ""
+
+# prepare stuff related to VCPKG
+
+$env:PATH = "$env:VCPKG_DISABLE_METRICS;$env:PATH"
+
+if (-not (Test-Path -Path "build-tools/vcpkg")) {
+    Write-Host "Downloading and setting up vcpkg..."
+
+    New-Item -Path "." -Name "build-tools/vcpkg" -ItemType Directory | Out-Null
+    Push-Location -Path "build-tools/vcpkg"
+    try {
+        git clone --no-tags --depth 1 --shallow-submodules https://github.com/microsoft/vcpkg.git .
+        .\bootstrap-vcpkg.bat
+    } finally {
+        Pop-Location
+    }
+
+    Write-Host ""
+}
+
+$vcpkgPath = Join-Path -Path "$(Get-Location)" -ChildPath "build-tools/vcpkg"
+$env:VCPKG_ROOT = $vcpkgPath
+$env:PATH = "$env:VCPKG_ROOT;$env:PATH"
+
+# prepare stuff related to the build target folder and utils (i.e.: download ninja if necessary)
 
 if ($Ninja) {
     $targetFolder = "build-ninja"
@@ -70,7 +96,10 @@ try {
         & cmake -DHR_ENABLE_DEVEL=1 -DHR_ENABLE_LOGGING=1 -DHR_ENABLE_PROFILLING=1 -DCMAKE_BUILD_TYPE=Release -DCMAKE_EXPORT_COMPILE_COMMANDS=1 -G "Ninja" ..
         if ($LASTEXITCODE -ne 0) { return; }
     } else {
-        & cmake -DHR_ENABLE_DEVEL=1 -DHR_ENABLE_LOGGING=1 -DHR_ENABLE_PROFILLING=1 -G "Visual Studio 17 2022" -A x64 -T host=x64 ..
+        $generator = Get-VSCMakeGen
+        Write-Host "Using generator: $generator"
+
+        & cmake -DHR_ENABLE_DEVEL=1 -DHR_ENABLE_LOGGING=1 -DHR_ENABLE_PROFILLING=1 -DCMAKE_TOOLCHAIN_FILE="$(Join-Path -Path "$vcpkgPath" -ChildPath "scripts/buildsystems/vcpkg.cmake")" -G "$generator" -A x64 -T host=x64 ..
         if ($LASTEXITCODE -ne 0) { return; }
     }
 

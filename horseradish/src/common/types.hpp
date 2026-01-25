@@ -107,6 +107,7 @@ namespace hr::types
 		unsigned __int16    ui16[16];
 		unsigned __int32    ui32[8];
 		unsigned __int64    ui64[4];
+        hData128			h128[2];
 		__m256              m256;
 	} hData256;
 	static_assert(sizeof(hData256) == 32);

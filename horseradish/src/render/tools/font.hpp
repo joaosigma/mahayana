@@ -4,14 +4,15 @@
 #include "common/opengl/objects.hpp"
 #include "common/color.hpp"
 #include "common/stringUtils.hpp"
-#include "libs/sparsepp/spp.h"
+
+#include <tsl/hopscotch_map.h>
 
 #include <array>
 #include <span>
 #include <vector>
 #include <unordered_map>
 
-namespace hr { namespace render { namespace tools
+namespace hr::render::tools
 {
 	class Font
 	{
@@ -61,7 +62,7 @@ namespace hr { namespace render { namespace tools
 	private:
 		bool mValid = false;
 		std::vector<KerningData> mKerningData;
-		spp::sparse_hash_map<char32_t, CharacterData> mCharMap;
+        tsl::hopscotch_map<char32_t, CharacterData> mCharMap;
 	
 		unsigned int mGlVertexProgramID, mGlFragmentProgramID, mGlProgramPipelineID, mGlUniformSampler, mGlUniformMatrix;
 	
@@ -133,5 +134,5 @@ namespace hr { namespace render { namespace tools
 		void setColor(const Colorf &color);
 	};
 
-} } }
+}
 

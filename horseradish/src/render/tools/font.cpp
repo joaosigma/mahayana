@@ -3,12 +3,12 @@
 #include "common/image.hpp"
 #include "common/opengl/openGLext.hpp"
 
-#include "libs/stb/stb_truetype.h"
+#include <stb_truetype.h>
 
 #include <algorithm>
 #include <cstddef>
 
-namespace hr { namespace render { namespace tools
+namespace hr::render::tools
 {
 	namespace
 	{
@@ -178,7 +178,7 @@ namespace hr { namespace render { namespace tools
 
 			//the character map is final
 
-			mCharMap.resize(charMap.size());
+			mCharMap.rehash(charMap.size());
 			for (const auto&[key, value] : charMap)
 				mCharMap[key] = value;
 		}
@@ -266,28 +266,29 @@ namespace hr { namespace render { namespace tools
 		}
 
 		//get kerning info
-		for (auto& curChar1 : mCharMap)
+		for (auto& [curChar1Key, _] : mCharMap)
 		{
-			auto glyphIndex1 = stbtt_FindGlyphIndex(&fontInfo, curChar1.first);
+            auto glyphIndex1 = stbtt_FindGlyphIndex(&fontInfo, curChar1Key);
 
-			curChar1.second.kernDataIndices.first = mKerningData.size();
-			curChar1.second.kernDataIndices.second = 0;
+			auto& curChar1Value = mCharMap.at(curChar1Key);
+			curChar1Value.kernDataIndices.first = mKerningData.size();
+			curChar1Value.kernDataIndices.second = 0;
 				
-			for (const auto& curChar2 : mCharMap)
+			for (const auto& [curChar2Key, _] : mCharMap)
 			{
-				auto kernAmount = stbtt_GetGlyphKernAdvance(&fontInfo, glyphIndex1, stbtt_FindGlyphIndex(&fontInfo, curChar2.first));
+                auto kernAmount = stbtt_GetGlyphKernAdvance(&fontInfo, glyphIndex1, stbtt_FindGlyphIndex(&fontInfo, curChar2Key));
 				if (kernAmount == 0)
 					continue;
 
 				KerningData newKerningData;
-				newKerningData.codepoint1 = curChar1.first;
-				newKerningData.codepoint2 = curChar2.first;
+                newKerningData.codepoint1 = curChar1Key;
+                newKerningData.codepoint2 = curChar2Key;
 				newKerningData.offset = static_cast<float>(kernAmount) * targetScale;
 
 				mKerningData.push_back(newKerningData);
 			}
 
-			curChar1.second.kernDataIndices.second = mKerningData.size() - curChar1.second.kernDataIndices.first;
+			curChar1Value.kernDataIndices.second = mKerningData.size() - curChar1Value.kernDataIndices.first;
 		}
 
 		mGl.texture.init(hr::gl::objects::Texture::Type::Tex2D, hr::gl::objects::Texture::StorageType::R_8, imgFinal.width(), imgFinal.height());
@@ -651,5 +652,4 @@ namespace hr { namespace render { namespace tools
 	{
 		mState.stateColor.set(color);
 	}
-
-} } }
+}

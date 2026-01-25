@@ -3,8 +3,8 @@
 #include "stream.hpp"
 #include "types.hpp"
 
-#include "libs/zlib/zlib.h"
-#include "libs/zlib/minizip/unzip.h"
+#include <minizip/unzip.h>
+#include <zlib.h>
 
 #include <vector>
 #include <memory>

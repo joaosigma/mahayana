@@ -6,8 +6,8 @@
 #include "vector.hpp"
 #include "triangle.hpp"
 
-#include "libs/mikktspace/mikktspace.h"
-#include "libs/meshoptimizer/meshoptimizer.h"
+#include <mikktspace.h>
+#include <meshoptimizer.h>
 
 #include <set>
 #include <vector>

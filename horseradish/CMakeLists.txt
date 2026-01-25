@@ -127,8 +127,6 @@ if (CMAKE_GENERATOR MATCHES "^Visual Studio")
 		NODEFERWINDOWPOS
 		NOMCX
 
-		_ITERATOR_DEBUG_LEVEL=0
-
 		_CRT_SECURE_NO_WARNINGS
 		#_SCL_SECURE_NO_WARNINGS
 		_WINSOCK_DEPRECATED_NO_WARNINGS
@@ -157,6 +155,10 @@ if (CMAKE_GENERATOR MATCHES "^Visual Studio")
 	target_link_options(horseradish-utests PRIVATE "$<$<C_COMPILER_ID:MSVC>:-SAFESEH:NO>")
 endif()
 
+# libs definitions
+add_definitions(-DLODEPNG_NO_COMPILE_DISK -DLODEPNG_NO_COMPILE_ERROR_TEXT) #lodepng
+set(nlohmann-json_IMPLICIT_CONVERSIONS OFF) #nlohmann
+
 #######################
 ### the sub-projects
 
@@ -172,6 +174,50 @@ target_include_directories(horseradish PUBLIC ${CMAKE_CURRENT_LIST_DIR}/external
 target_include_directories(horseradish-utests PUBLIC ${CMAKE_CURRENT_LIST_DIR}/src)
 target_include_directories(horseradish-utests PUBLIC ${CMAKE_CURRENT_LIST_DIR}/external_includes/gl)
 target_include_directories(horseradish-utests PUBLIC ${CMAKE_CURRENT_LIST_DIR}/external_includes/ffmpeg)
+
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(hr_pkg_deps REQUIRED IMPORTED_TARGET libcoro)
+
+find_package(lodepng CONFIG REQUIRED)
+find_package(ZLIB REQUIRED)
+find_package(unofficial-minizip CONFIG REQUIRED)
+find_package(nlohmann_json CONFIG REQUIRED)
+find_package(Stb REQUIRED)
+find_path(TINYGLTF_INCLUDE_DIRS "tiny_gltf.h")
+find_package(tinyexr CONFIG REQUIRED)
+find_package(tinyobjloader CONFIG REQUIRED)
+find_package(meshoptimizer CONFIG REQUIRED)
+find_package(mikktspace CONFIG REQUIRED)
+find_package(tsl-hopscotch-map CONFIG REQUIRED)
+find_package(unofficial-libsquish CONFIG REQUIRED)
+
+target_link_libraries(horseradish PRIVATE PkgConfig::hr_pkg_deps) #libcoro
+target_link_libraries(horseradish PRIVATE lodepng)
+target_link_libraries(horseradish PRIVATE ZLIB::ZLIB)
+target_link_libraries(horseradish PRIVATE unofficial::minizip::minizip)
+target_link_libraries(horseradish PRIVATE nlohmann_json::nlohmann_json)
+target_include_directories(horseradish PRIVATE ${Stb_INCLUDE_DIR})
+target_include_directories(horseradish PRIVATE ${TINYGLTF_INCLUDE_DIRS})
+target_link_libraries(horseradish PRIVATE unofficial::tinyexr::tinyexr)
+target_link_libraries(horseradish PRIVATE tinyobjloader::tinyobjloader)
+target_link_libraries(horseradish PRIVATE meshoptimizer::meshoptimizer)
+target_link_libraries(horseradish PRIVATE mikktspace::mikktspace)
+target_link_libraries(horseradish PRIVATE tsl::hopscotch_map)
+target_link_libraries(horseradish PRIVATE unofficial::libsquish::squish)
+
+target_link_libraries(horseradish-utests PRIVATE PkgConfig::hr_pkg_deps) #libcoro
+target_link_libraries(horseradish-utests PRIVATE lodepng)
+target_link_libraries(horseradish-utests PRIVATE ZLIB::ZLIB)
+target_link_libraries(horseradish-utests PRIVATE unofficial::minizip::minizip)
+target_link_libraries(horseradish-utests PRIVATE nlohmann_json::nlohmann_json)
+target_include_directories(horseradish-utests PRIVATE ${Stb_INCLUDE_DIR})
+target_include_directories(horseradish-utests PRIVATE ${TINYGLTF_INCLUDE_DIRS})
+target_link_libraries(horseradish-utests PRIVATE unofficial::tinyexr::tinyexr)
+target_link_libraries(horseradish-utests PRIVATE tinyobjloader::tinyobjloader)
+target_link_libraries(horseradish-utests PRIVATE meshoptimizer::meshoptimizer)
+target_link_libraries(horseradish-utests PRIVATE mikktspace::mikktspace)
+target_link_libraries(horseradish-utests PRIVATE tsl::hopscotch_map)
+target_link_libraries(horseradish-utests PRIVATE unofficial::libsquish::squish)
 
 if (CMAKE_GENERATOR MATCHES "^Visual Studio")
 

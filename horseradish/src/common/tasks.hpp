@@ -1,7 +1,7 @@
 #pragma once
 
-#include "libs/libcoro/task.hpp"
-#include "libs/libcoro/event.hpp"
+#include <coro/task.hpp>
+#include <coro/event.hpp>
 
 #include <list>
 #include <deque>

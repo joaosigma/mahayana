@@ -1,5 +1,5 @@
 #define STB_DXT_IMPLEMENTATION
 
-#include <cstring>
+#include <string.h>
 
-#include "stb_dxt.h"
+#include <stb_dxt.h>

@@ -1,5 +1,6 @@
 #include "engine.hpp"
 
+#include <thread>
 #include <format>
 
 #include "profiler.hpp"

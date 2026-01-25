@@ -1,8 +1,8 @@
 #include "common/imageFactory.hpp"
 
-#include "libs/stb/stb_image.h"
-#include "libs/lodepng/lodepng.h"
-#include "libs/tinyexr/tinyexr.h"
+#include <lodepng.h>
+#include <stb_image.h>
+#include <tinyexr.h>
 
 #include <memory>
 

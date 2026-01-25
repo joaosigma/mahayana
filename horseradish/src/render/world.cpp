@@ -6,9 +6,7 @@
 #include "common/imageFactory.hpp"
 #include "common/fileSystem.hpp"
 
-#include "libs/lz4/lz4.h"
-#include "libs/lz4/lz4hc.h"
-#include "libs/nlohmann_json/json.hpp"
+#include <nlohmann/json.hpp>
 
 #include <array>
 #include <cstdint>

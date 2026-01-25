@@ -7,10 +7,10 @@
 #include "common/quaternion.hpp"
 #include "common/stringUtils.hpp"
 
-#include "libs/nlohmann_json/json.hpp"
+#include <nlohmann/json.hpp>
 
-#include "libs/tinygltf/tiny_gltf.h"
-#include "libs/tinyobjloader/tiny_obj_loader.h"
+#include <tiny_gltf.h>
+#include <tiny_obj_loader.h>
 
 #include "glcorearb.h"
 
@@ -626,8 +626,8 @@ namespace hr::render
 			fullPath.reserve(basePath.size() + fileName.size() + 1);
 			fullPath.append(basePath).append(fileName);
 
-			std::string err;
-			if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &err, fullPath.c_str(), strBasePath.c_str()))
+			std::string warn, err;
+            if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, fullPath.c_str(), strBasePath.c_str()))
 				return false;
 		}
 

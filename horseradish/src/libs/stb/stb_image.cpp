@@ -1,10 +1,9 @@
 #define STB_IMAGE_IMPLEMENTATION
 
-#define STBI_ONLY_JPEG
-#define STBI_ONLY_HDR
-#define STBI_ONLY_TGA
-
-#define STBI_NO_STDIO
+#define STBI_ONLY_JPEG 
+#define STBI_ONLY_HDR 
+#define STBI_ONLY_TGA 
+#define STBI_NO_STDIO 
 #define STBI_NO_FAILURE_STRINGS
 
-#include "stb_image.h"
+#include <stb_image.h>

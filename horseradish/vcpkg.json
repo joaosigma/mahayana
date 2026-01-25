@@ -1,0 +1,19 @@
+{
+  "dependencies": [
+    "pkgconf",
+
+    "libcoro",
+    "lodepng",
+    "nlohmann-json",
+    "stb",
+    "zlib",
+    "minizip",
+    "tinygltf",
+    "tinyobjloader",
+    "tinyexr",
+    "meshoptimizer",
+    "mikktspace",
+    "tsl-hopscotch-map",
+    "libsquish"
+  ]
+}

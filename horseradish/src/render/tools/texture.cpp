@@ -1,8 +1,8 @@
 #include "texture.hpp"
 
-#include "libs/stb/stb_dxt.h"
+#include <stb_dxt.h>
 #include "libs/bc7/bc7enc16.h"
-#include "libs/libsquish/squish.h"
+#include <squish.h>
 
 namespace hr::render::tools
 {
