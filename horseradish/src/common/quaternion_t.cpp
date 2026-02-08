@@ -5,7 +5,8 @@
 #include "quaternion.hpp"
 #include "matrix.hpp"
 
-#include "libs/catch2/catch.hpp"
+#include <catch2/catch_test_macros.hpp>
+#include <catch2/matchers/catch_matchers_predicate.hpp>
 
 namespace hr::utests
 {

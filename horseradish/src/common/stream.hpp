@@ -4,6 +4,7 @@
 #include "math.hpp"
 #include "types.hpp"
 
+#include <algorithm>
 #include <array>
 #include <cstddef>
 #include <filesystem>
@@ -371,10 +372,10 @@ namespace hr::streams
             return mStream.canRead();
         }
 
-		bool skip(size_t offset)
-		{
-			return mStream.seek(Stream::SeekOrigin::Current, static_cast<int>(offset));
-		}
+        bool skip(size_t offset)
+        {
+            return mStream.seek(Stream::SeekOrigin::Current, static_cast<int>(offset));
+        }
 
         bool seek(Stream::SeekOrigin seekOrigin, int offset)
         {
@@ -462,10 +463,10 @@ namespace hr::streams
             return mStream.position();
         }
 
-		bool skip(size_t offset)
-		{
-			return mStream.seek(Stream::SeekOrigin::Current, static_cast<int>(offset));
-		}
+        bool skip(size_t offset)
+        {
+            return mStream.seek(Stream::SeekOrigin::Current, static_cast<int>(offset));
+        }
 
         bool seek(Stream::SeekOrigin seekOrigin, int offset)
         {

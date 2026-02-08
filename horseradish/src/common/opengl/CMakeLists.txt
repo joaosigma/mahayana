@@ -11,6 +11,9 @@ set(HR_SOURCES
 )
 
 target_sources(horseradish PRIVATE ${HR_SOURCES})
-target_sources(horseradish-utests PRIVATE ${HR_SOURCES})
+
+if (BUILD_TESTING)
+	target_sources(horseradish-utests PRIVATE ${HR_SOURCES})
+endif()
 
 add_subdirectory(tools)

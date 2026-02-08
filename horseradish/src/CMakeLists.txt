@@ -6,10 +6,12 @@ target_sources(horseradish
 		main.cpp
 )
 
-target_sources(horseradish-utests
-	PRIVATE
-		main_t.cpp
-)
+if (BUILD_TESTING)
+	target_sources(horseradish-utests
+		PRIVATE
+			main_t.cpp
+	)
+endif()
 
 add_subdirectory(common)
 add_subdirectory(engine)

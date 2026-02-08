@@ -1,12 +1,23 @@
 param (
-    # target Ninja instead of VStudio
     [Parameter(Mandatory=$false)]
-    [switch ]$Ninja
+    [ValidateNotNullOrEmpty()]
+    [ValidateSet('vs', 'ninja')]
+    [String] $buildTool = "vs",
+
+    [Parameter(Mandatory=$false)]
+    [switch] $buildTest = $false
 )
 
 $ErrorActionPreference = 'Stop'
 
 function Set-VSEnv {
+    if ($null -ne $env:VCToolsVersion -And $null -ne $env:VCToolsInstallDir) {
+        Write-Host "Skipping setting up Visual Studio env."
+        return
+    }
+
+    Write-Host "Setting up Visual Studio env..."
+
     $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
 
     $vcvarspath = &$vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
@@ -15,7 +26,7 @@ function Set-VSEnv {
 
     Get-Content "$env:temp\vcvars.txt" | Foreach-Object {
         if ($_ -match "^(.*?)=(.*)$") {
-          Set-Content "env:\$($matches[1])" $matches[2]
+            Set-Content "env:\$($matches[1])" $matches[2]
         }
     }
 
@@ -36,7 +47,7 @@ function Get-VSExecPath {
     return &$vswhere -latest -property productPath
 }
 
-Write-Host ">>>>> Generating Horseradish project ($($Ninja ? "Ninja" : "VStudio"))"
+Write-Host ">>>>> Generating Horseradish project ($($($buildTool -eq "ninja") ? "Ninja" : "VStudio"))"
 Write-Host ">>>>> (good luck)"
 Write-Host ""
 
@@ -65,7 +76,7 @@ $env:PATH = "$env:VCPKG_ROOT;$env:PATH"
 
 # prepare stuff related to the build target folder and utils (i.e.: download ninja if necessary)
 
-if ($Ninja) {
+if ($buildTool -eq "ninja") {
     $targetFolder = "build-ninja"
 
     if (-not (Test-Path -Path "build-tools/ninja")) {
@@ -106,20 +117,37 @@ if (-not (Test-Path -Path $targetFolder)) {
 Push-Location -Path $targetFolder
 try {
 
-    if ($Ninja) {
+    $env:CMAKE_TOOLCHAIN_FILE = "$(Join-Path -Path "$vcpkgPath" -ChildPath "scripts/buildsystems/vcpkg.cmake")"
+
+    if ($buildTool -eq "ninja") {
 
         & cmake -DHR_ENABLE_DEVEL=1 -DHR_ENABLE_LOGGING=1 -DHR_ENABLE_PROFILLING=1 -DCMAKE_BUILD_TYPE=Release -DCMAKE_EXPORT_COMPILE_COMMANDS=1 -G "Ninja" ..
         if ($LASTEXITCODE -ne 0) { return; }
+
+        if ($buildTest) {
+            cmake --build .
+            ctest -V
+        }
 
     } else {
         $generator = Get-VSCMakeGen
         Write-Host "Using generator: $generator"
 
-        & cmake -DHR_ENABLE_DEVEL=1 -DHR_ENABLE_LOGGING=1 -DHR_ENABLE_PROFILLING=1 -DCMAKE_TOOLCHAIN_FILE="$(Join-Path -Path "$vcpkgPath" -ChildPath "scripts/buildsystems/vcpkg.cmake")" -G "$generator" -A x64 -T host=x64 ..
+        & cmake -DHR_ENABLE_DEVEL=1 -DHR_ENABLE_LOGGING=1 -DHR_ENABLE_PROFILLING=1 -G "$generator" -A x64 -T host=x64 ..
         if ($LASTEXITCODE -ne 0) { return; }
 
-        $idePath = Get-VSExecPath
-        &$idePath .\mustard.slnx
+        if ($buildTest) {
+
+            cmake --build . --config Release
+            ctest --build-config Release --verbose
+
+        } else {
+
+            $idePath = Get-VSExecPath
+            &$idePath .\mustard.slnx
+
+        }
+
     }
 
 } finally {

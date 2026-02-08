@@ -14,9 +14,14 @@ if (BUILD_IS_MULTI_CONFIG)
 	set(CMAKE_CONFIGURATION_TYPES "Debug" "Release" CACHE STRING "" FORCE) # limit configuration types to Debug and Release
 endif()
 
+set(BUILD_ENV "windows" CACHE STRING "The target build environment")
+if (NOT BUILD_ENV STREQUAL "windows")
+	message(FATAL_ERROR "Only \"windows\" build environment is currently supported (value: '${BUILD_ENV}')")
+endif()
+
 set(HR_ENABLE_DEVEL OFF CACHE BOOL "Enables generic developer / debugging features")
 set(HR_ENABLE_LOGGING OFF CACHE BOOL "Enables the logger and logging messages")
-set(HR_ENABLE_PROFILLING OFF CACHE BOOL "Enables the profiler in the engine, otherwise, all features related to profilling are discarded")
+set(HR_ENABLE_PROFILLING OFF CACHE BOOL "Enables the profiler in the engine, otherwise, all features related to profiling are discarded")
 
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -62,14 +67,19 @@ configure_file (
 
 project(mustard VERSION 0.9 LANGUAGES C CXX)
 
-add_executable(horseradish WIN32 "")
-add_executable(horseradish-utests "")
+include(CTest)
 
+add_executable(horseradish WIN32 "")
 target_compile_features(horseradish PRIVATE c_std_17)
 target_compile_features(horseradish PRIVATE cxx_std_20)
 
-target_compile_features(horseradish-utests PRIVATE c_std_17)
-target_compile_features(horseradish-utests PRIVATE cxx_std_20)
+if (BUILD_TESTING)
+	add_executable(horseradish-utests "")
+	target_compile_features(horseradish-utests PRIVATE c_std_17)
+	target_compile_features(horseradish-utests PRIVATE cxx_std_20)
+
+	add_test(NAME "horseradish unit tests" COMMAND horseradish-utests)
+endif()
 
 if (HR_ENABLE_DEVEL)
 	target_compile_definitions(horseradish PRIVATE HR_DEVEL)
@@ -83,7 +93,7 @@ endif()
 
 # compiler specific
 
-if (CMAKE_GENERATOR MATCHES "^Visual Studio")
+if (BUILD_ENV STREQUAL "windows")
 
 	set(HR_COMPILER_DEFS
 
@@ -97,7 +107,6 @@ if (CMAKE_GENERATOR MATCHES "^Visual Studio")
 		WIN32_LEAN_AND_MEAN
 		VC_EXTRALEAN
 
-		NOMINMAX
 		NOGDICAPMASKS
 		NOMENUS
 		NOICONS
@@ -129,6 +138,16 @@ if (CMAKE_GENERATOR MATCHES "^Visual Studio")
 		_WINSOCK_DEPRECATED_NO_WARNINGS
 	)
 
+	target_compile_definitions(horseradish PRIVATE ${HR_COMPILER_DEFS})
+
+	if (BUILD_TESTING)
+		target_compile_definitions(horseradish-utests PRIVATE ${HR_COMPILER_DEFS})
+	endif()
+
+endif()
+
+if (CMAKE_GENERATOR MATCHES "^Visual Studio")
+
 	set(HR_COMPILER_OPTIONS
 
 		/GR- # disable RTTI
@@ -143,13 +162,14 @@ if (CMAKE_GENERATOR MATCHES "^Visual Studio")
 		/arch:AVX2
 	)
 
-	target_compile_definitions(horseradish PRIVATE ${HR_COMPILER_DEFS})
 	target_compile_options(horseradish PRIVATE ${HR_COMPILER_OPTIONS})
 	target_link_options(horseradish PRIVATE "$<$<C_COMPILER_ID:MSVC>:-SAFESEH:NO>")
 
-	target_compile_definitions(horseradish-utests PRIVATE ${HR_COMPILER_DEFS})
-	target_compile_options(horseradish-utests PRIVATE ${HR_COMPILER_OPTIONS})
-	target_link_options(horseradish-utests PRIVATE "$<$<C_COMPILER_ID:MSVC>:-SAFESEH:NO>")
+	if (BUILD_TESTING)
+		target_compile_options(horseradish-utests PRIVATE ${HR_COMPILER_OPTIONS})
+		target_link_options(horseradish-utests PRIVATE "$<$<C_COMPILER_ID:MSVC>:-SAFESEH:NO>")
+	endif()
+
 endif()
 
 # libs definitions
@@ -168,9 +188,11 @@ target_include_directories(horseradish PUBLIC ${CMAKE_CURRENT_LIST_DIR}/src)
 target_include_directories(horseradish PUBLIC ${CMAKE_CURRENT_LIST_DIR}/external_includes/gl)
 target_include_directories(horseradish PUBLIC ${CMAKE_CURRENT_LIST_DIR}/external_includes/ffmpeg)
 
-target_include_directories(horseradish-utests PUBLIC ${CMAKE_CURRENT_LIST_DIR}/src)
-target_include_directories(horseradish-utests PUBLIC ${CMAKE_CURRENT_LIST_DIR}/external_includes/gl)
-target_include_directories(horseradish-utests PUBLIC ${CMAKE_CURRENT_LIST_DIR}/external_includes/ffmpeg)
+if (BUILD_TESTING)
+	target_include_directories(horseradish-utests PUBLIC ${CMAKE_CURRENT_LIST_DIR}/src)
+	target_include_directories(horseradish-utests PUBLIC ${CMAKE_CURRENT_LIST_DIR}/external_includes/gl)
+	target_include_directories(horseradish-utests PUBLIC ${CMAKE_CURRENT_LIST_DIR}/external_includes/ffmpeg)
+endif()
 
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(hr_pkg_deps REQUIRED IMPORTED_TARGET libcoro)
@@ -187,6 +209,7 @@ find_package(meshoptimizer CONFIG REQUIRED)
 find_package(mikktspace CONFIG REQUIRED)
 find_package(tsl-hopscotch-map CONFIG REQUIRED)
 find_package(unofficial-libsquish CONFIG REQUIRED)
+find_package(Catch2 CONFIG REQUIRED)
 
 target_link_libraries(horseradish PRIVATE PkgConfig::hr_pkg_deps) #libcoro
 target_link_libraries(horseradish PRIVATE lodepng)
@@ -202,21 +225,25 @@ target_link_libraries(horseradish PRIVATE mikktspace::mikktspace)
 target_link_libraries(horseradish PRIVATE tsl::hopscotch_map)
 target_link_libraries(horseradish PRIVATE unofficial::libsquish::squish)
 
-target_link_libraries(horseradish-utests PRIVATE PkgConfig::hr_pkg_deps) #libcoro
-target_link_libraries(horseradish-utests PRIVATE lodepng)
-target_link_libraries(horseradish-utests PRIVATE ZLIB::ZLIB)
-target_link_libraries(horseradish-utests PRIVATE unofficial::minizip::minizip)
-target_link_libraries(horseradish-utests PRIVATE nlohmann_json::nlohmann_json)
-target_include_directories(horseradish-utests PRIVATE ${Stb_INCLUDE_DIR})
-target_include_directories(horseradish-utests PRIVATE ${TINYGLTF_INCLUDE_DIRS})
-target_link_libraries(horseradish-utests PRIVATE unofficial::tinyexr::tinyexr)
-target_link_libraries(horseradish-utests PRIVATE tinyobjloader::tinyobjloader)
-target_link_libraries(horseradish-utests PRIVATE meshoptimizer::meshoptimizer)
-target_link_libraries(horseradish-utests PRIVATE mikktspace::mikktspace)
-target_link_libraries(horseradish-utests PRIVATE tsl::hopscotch_map)
-target_link_libraries(horseradish-utests PRIVATE unofficial::libsquish::squish)
+if (BUILD_TESTING)
+	target_link_libraries(horseradish-utests PRIVATE PkgConfig::hr_pkg_deps) #libcoro
+	target_link_libraries(horseradish-utests PRIVATE lodepng)
+	target_link_libraries(horseradish-utests PRIVATE ZLIB::ZLIB)
+	target_link_libraries(horseradish-utests PRIVATE unofficial::minizip::minizip)
+	target_link_libraries(horseradish-utests PRIVATE nlohmann_json::nlohmann_json)
+	target_include_directories(horseradish-utests PRIVATE ${Stb_INCLUDE_DIR})
+	target_include_directories(horseradish-utests PRIVATE ${TINYGLTF_INCLUDE_DIRS})
+	target_link_libraries(horseradish-utests PRIVATE unofficial::tinyexr::tinyexr)
+	target_link_libraries(horseradish-utests PRIVATE tinyobjloader::tinyobjloader)
+	target_link_libraries(horseradish-utests PRIVATE meshoptimizer::meshoptimizer)
+	target_link_libraries(horseradish-utests PRIVATE mikktspace::mikktspace)
+	target_link_libraries(horseradish-utests PRIVATE tsl::hopscotch_map)
+	target_link_libraries(horseradish-utests PRIVATE unofficial::libsquish::squish)
 
-if (CMAKE_GENERATOR MATCHES "^Visual Studio")
+	target_link_libraries(horseradish-utests PRIVATE Catch2::Catch2 Catch2::Catch2WithMain)
+endif()
+
+if (BUILD_ENV STREQUAL "windows")
 
 	set_target_properties(horseradish PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_CURRENT_LIST_DIR}/../sandbox/bin")
 
@@ -225,12 +252,14 @@ if (CMAKE_GENERATOR MATCHES "^Visual Studio")
 	target_link_libraries(horseradish PRIVATE ${CMAKE_CURRENT_LIST_DIR}/external_libs/ffmpeg_x64/avutil.lib)
 	target_link_libraries(horseradish PRIVATE ${CMAKE_CURRENT_LIST_DIR}/external_libs/ffmpeg_x64/swscale.lib)
 
-	set_target_properties(horseradish-utests PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_CURRENT_LIST_DIR}/../sandbox/bin")
+	if (BUILD_TESTING)
+		set_target_properties(horseradish-utests PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_CURRENT_LIST_DIR}/../sandbox/bin")
 
-	target_link_libraries(horseradish-utests PRIVATE ${CMAKE_CURRENT_LIST_DIR}/external_libs/ffmpeg_x64/avcodec.lib)
-	target_link_libraries(horseradish-utests PRIVATE ${CMAKE_CURRENT_LIST_DIR}/external_libs/ffmpeg_x64/avformat.lib)
-	target_link_libraries(horseradish-utests PRIVATE ${CMAKE_CURRENT_LIST_DIR}/external_libs/ffmpeg_x64/avutil.lib)
-	target_link_libraries(horseradish-utests PRIVATE ${CMAKE_CURRENT_LIST_DIR}/external_libs/ffmpeg_x64/swscale.lib)
+		target_link_libraries(horseradish-utests PRIVATE ${CMAKE_CURRENT_LIST_DIR}/external_libs/ffmpeg_x64/avcodec.lib)
+		target_link_libraries(horseradish-utests PRIVATE ${CMAKE_CURRENT_LIST_DIR}/external_libs/ffmpeg_x64/avformat.lib)
+		target_link_libraries(horseradish-utests PRIVATE ${CMAKE_CURRENT_LIST_DIR}/external_libs/ffmpeg_x64/avutil.lib)
+		target_link_libraries(horseradish-utests PRIVATE ${CMAKE_CURRENT_LIST_DIR}/external_libs/ffmpeg_x64/swscale.lib)
+	endif()
 
 endif()
 
@@ -275,7 +304,9 @@ endif()
 # just to make things pretty in IDEs
 
 get_property(HR_SOURCES TARGET horseradish PROPERTY SOURCES)
-source_group(TREE "${CMAKE_CURRENT_LIST_DIR}/src" FILES ${HR_SOURCES})
-
-get_property(HR_SOURCES TARGET horseradish-utests PROPERTY SOURCES)
 source_group(TREE "${CMAKE_CURRENT_LIST_DIR}/src" FILES ${HR_SOURCES}) # just to make things pretty in IDEs
+
+if (BUILD_TESTING)
+	get_property(HR_SOURCES TARGET horseradish-utests PROPERTY SOURCES)
+	source_group(TREE "${CMAKE_CURRENT_LIST_DIR}/src" FILES ${HR_SOURCES}) # just to make things pretty in IDEs
+endif()

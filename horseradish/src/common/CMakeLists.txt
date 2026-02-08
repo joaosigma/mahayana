@@ -59,15 +59,17 @@ set(HR_SOURCES
 
 target_sources(horseradish PRIVATE ${HR_SOURCES})
 
-target_sources(horseradish-utests PRIVATE ${HR_SOURCES})
-target_sources(horseradish-utests
-	PRIVATE
-		math_t.cpp
-		matrix_t.cpp
-		quaternion_t.cpp
-		triangle_t.cpp
-		utils_t.hpp
-		vector_t.cpp
-)
+if (BUILD_TESTING)
+	target_sources(horseradish-utests PRIVATE ${HR_SOURCES})
+	target_sources(horseradish-utests
+		PRIVATE
+			math_t.cpp
+			matrix_t.cpp
+			quaternion_t.cpp
+			triangle_t.cpp
+			utils_t.hpp
+			vector_t.cpp
+	)
+endif()
 
 add_subdirectory(opengl)

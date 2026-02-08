@@ -4,7 +4,7 @@
 
 #include "triangle.hpp"
 
-#include "libs/catch2/catch.hpp"
+#include <catch2/catch_test_macros.hpp>
 
 namespace hr::utests
 {

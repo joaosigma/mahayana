@@ -14,6 +14,10 @@
     "meshoptimizer",
     "mikktspace",
     "tsl-hopscotch-map",
-    "libsquish"
+    "libsquish",
+    {
+      "name": "catch2",
+      "features": ["thread-safe-assertions"]
+    }
   ]
 }
