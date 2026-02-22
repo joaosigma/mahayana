@@ -2,19 +2,20 @@
 
 #include "types.hpp"
 
+#include <cstddef>
+#include <cstdint>
+#include <span>
+
 namespace hr
 {
-	class Hashing
-	{
-	public:
-		static uint8_t calculateCRC8(const void * const buffer, size_t bufferSize) noexcept;
-		static uint16_t calculateCRC16(const void * const buffer, size_t bufferSize) noexcept;
-		static uint32_t calculateCRC32(const void * const buffer, size_t bufferSize) noexcept;
-		
-		static void calculateMD5(const void * const buffer, size_t bufferSize, types::hData128 * const hash) noexcept;
+    class Hashing
+    {
+    public:
+        static uint8_t crc8(std::span<const std::byte> buffer) noexcept;
+        static uint16_t crc16(std::span<const std::byte> buffer) noexcept;
+        static uint32_t crc32(std::span<const std::byte> buffer) noexcept;
 
-		static void calculateSHA256(const void * const buffer, size_t bufferSize, types::hData128 * const hash) noexcept;
-		
-		static uint32_t superFastHash(const void * const buffer, size_t bufferSize) noexcept;
-	};
+        static uint32_t murmur32(std::span<const std::byte> buffer) noexcept;
+        static types::hData128 murmur128(std::span<const std::byte> buffer) noexcept;
+    };
 }

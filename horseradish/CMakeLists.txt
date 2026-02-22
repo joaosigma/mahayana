@@ -210,6 +210,7 @@ find_package(mikktspace CONFIG REQUIRED)
 find_package(tsl-hopscotch-map CONFIG REQUIRED)
 find_package(unofficial-libsquish CONFIG REQUIRED)
 find_package(Catch2 CONFIG REQUIRED)
+find_package(murmurhash CONFIG REQUIRED)
 
 target_link_libraries(horseradish PRIVATE PkgConfig::hr_pkg_deps) #libcoro
 target_link_libraries(horseradish PRIVATE lodepng)
@@ -224,6 +225,7 @@ target_link_libraries(horseradish PRIVATE meshoptimizer::meshoptimizer)
 target_link_libraries(horseradish PRIVATE mikktspace::mikktspace)
 target_link_libraries(horseradish PRIVATE tsl::hopscotch_map)
 target_link_libraries(horseradish PRIVATE unofficial::libsquish::squish)
+target_link_libraries(horseradish PRIVATE murmurhash::murmurhash)
 
 if (BUILD_TESTING)
 	target_link_libraries(horseradish-utests PRIVATE PkgConfig::hr_pkg_deps) #libcoro
@@ -239,6 +241,7 @@ if (BUILD_TESTING)
 	target_link_libraries(horseradish-utests PRIVATE mikktspace::mikktspace)
 	target_link_libraries(horseradish-utests PRIVATE tsl::hopscotch_map)
 	target_link_libraries(horseradish-utests PRIVATE unofficial::libsquish::squish)
+	target_link_libraries(horseradish-utests PRIVATE murmurhash::murmurhash)
 
 	target_link_libraries(horseradish-utests PRIVATE Catch2::Catch2 Catch2::Catch2WithMain)
 endif()

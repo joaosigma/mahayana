@@ -18,6 +18,7 @@
     {
       "name": "catch2",
       "features": ["thread-safe-assertions"]
-    }
+    },
+    "murmurhash"
   ]
 }
