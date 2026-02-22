@@ -13,8 +13,8 @@
 #include <fcntl.h>
 #include <intrin.h>
 
-#include <windows.h>
 #include <shellapi.h>
+#include <windows.h>
 
 namespace hr::platform
 {

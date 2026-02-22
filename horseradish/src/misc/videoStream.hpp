@@ -1,78 +1,83 @@
 #pragma once
 
-#include "../common/timer.hpp"
 #include "../common/image.hpp"
 #include "../common/primitives2D.hpp"
+#include "../common/timer.hpp"
 
-extern "C" {
+extern "C"
+{
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
 #include <libswscale/swscale.h>
 }
 
-namespace hr { namespace misc
+namespace hr::misc
 {
-	class VideoStream
-	{
-	private:
-		AVFormatContext *mFormatContext = nullptr;
+    class VideoStream
+    {
+    private:
+        AVFormatContext* mFormatContext = nullptr;
 
-		struct TimerInfo{
-			hr::Timer timer;
-			double timestampS = 0.0;
-		} mTimerInfo;
+        struct TimerInfo
+        {
+            hr::Timer timer;
+            double timestampS = 0.0;
+        } mTimerInfo;
 
-		struct VideoInfo{
-			AVCodecContext *codecContext = nullptr;
-			AVFrame *videoFrameOriginal = nullptr;
-			AVStream *stream = nullptr;
-			AVPacket *packet = nullptr;
-			double avgFrameRate = 0.0;
-			SwsContext *pixelConvertContext = nullptr;
-			int streamIndex = -1;
-			size_t frameBufferSize = 0;
-		} mVideoInfo;
+        struct VideoInfo
+        {
+            AVCodecContext* codecContext = nullptr;
+            AVFrame* videoFrameOriginal = nullptr;
+            AVStream* stream = nullptr;
+            AVPacket* packet = nullptr;
+            double avgFrameRate = 0.0;
+            SwsContext* pixelConvertContext = nullptr;
+            int streamIndex = -1;
+            size_t frameBufferSize = 0;
+        } mVideoInfo;
 
-		struct VideoFrame{
-			AVFrame *avFrame = nullptr;
-			uint8_t *frameData = nullptr;
-			double frameStart = 0.0, frameDuration = 0.0, frameEnd = 0.0;
-			int64_t framePTS = 0;
-		};
-		std::unique_ptr<VideoFrame[]> mVideoQueue;
-		size_t mVideoQueueMax = 0, mVideoQueueActive = 0;
+        struct VideoFrame
+        {
+            AVFrame* avFrame = nullptr;
+            uint8_t* frameData = nullptr;
+            double frameStart = 0.0, frameDuration = 0.0, frameEnd = 0.0;
+            int64_t framePTS = 0;
+        };
+        std::unique_ptr<VideoFrame[]> mVideoQueue;
+        size_t mVideoQueueMax = 0, mVideoQueueActive = 0;
 
-		struct AudioInfo{
-			AVCodecContext *codecContext = nullptr;
-			int streamIndex = -1;
-		} mAudioInfo;
+        struct AudioInfo
+        {
+            AVCodecContext* codecContext = nullptr;
+            int streamIndex = -1;
+        } mAudioInfo;
 
-		void readAVFrame();
-		void processAVFrame();
-		void recycleVideoFrameQueue();
-		VideoFrame* getLatestFrame() const;
+        void readAVFrame();
+        void processAVFrame();
+        void recycleVideoFrameQueue();
+        VideoFrame* getLatestFrame() const;
 
-	public:
-		explicit VideoStream(size_t maxFramesQueue, AVPixelFormat frameTargetPixelFormat, const char * const videoFilePath);
-		~VideoStream();
+    public:
+        explicit VideoStream(size_t maxFramesQueue, AVPixelFormat frameTargetPixelFormat, const char* const videoFilePath);
+        ~VideoStream();
 
-		void process();
+        void process();
 
-		bool goToBeginning();
-		bool goToTime(double seconds);
+        bool goToBeginning();
+        bool goToTime(double seconds);
 
-		const void* getFrame(bool &clockIsBehind, int64_t &frameID, double &frameDurationS);
-		double getFrameDuration(const int64_t& frameID)  const;
+        const void* getFrame(bool& clockIsBehind, int64_t& frameID, double& frameDurationS);
+        double getFrameDuration(const int64_t& frameID) const;
 
-		bool isValid() const;
-		bool hasAudio() const;
-		double getTimeStampDelta() const;
+        bool isValid() const;
+        bool hasAudio() const;
+        double getTimeStampDelta() const;
 
-		size_t getVideoFrameDataSize() const;
-		double getVideoFrameAspectRatio() const;
-		void getVideoDims(size_t &videoWidth, size_t &videoHeight) const;
-		hr::Rectangle<int> getVideoRect(size_t winWidth, size_t winHeight, bool maintainAspectRatio) const;
-		hr::Rectangle<int> getVideoRectCenter(float scale, size_t winWidth, size_t winHeight) const;
-	};
+        size_t getVideoFrameDataSize() const;
+        double getVideoFrameAspectRatio() const;
+        void getVideoDims(size_t& videoWidth, size_t& videoHeight) const;
+        hr::Rectangle<int> getVideoRect(size_t winWidth, size_t winHeight, bool maintainAspectRatio) const;
+        hr::Rectangle<int> getVideoRectCenter(float scale, size_t winWidth, size_t winHeight) const;
+    };
 
-}}
+}

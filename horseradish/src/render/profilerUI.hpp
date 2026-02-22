@@ -1,38 +1,38 @@
 #pragma once
 
-#include "renderer2D.hpp"
-#include "../common/timer.hpp"
-#include "../common/primitives2D.hpp"
 #include "../common/openGL/tools/viewport.hpp"
+#include "../common/primitives2D.hpp"
+#include "../common/timer.hpp"
 #include "../engine/profiler.hpp"
+#include "renderer2D.hpp"
 
-namespace hr { namespace render
+namespace hr::render
 {
-	class ProfilerUI
-	{
-		bool mShowStats = false;
-		bool mShowInfo = false;
-		std::string mInfoStr;
-		hr::Timer mTimer;
-		hr::render::Renderer2D& mRenderer;
-		const hr::engine::Profiler& mProfiler;
-		
-		void drawInfo(size_t textSize, const hr::Rectangle<float>& viewRect, const hr::Matrix4f& transformMatrix) const;
-		void drawStats(size_t textSize, const hr::Rectangle<float>& viewRect, const hr::Matrix4f& transformMatrix) const;
-		void drawStatsBackground(const hr::Rectangle<float>& viewRect, const hr::Matrix4f& transformMatrix, float bkgAlpha) const;
+    class ProfilerUI
+    {
+        bool mShowStats = false;
+        bool mShowInfo = false;
+        std::string mInfoStr;
+        hr::Timer mTimer;
+        hr::render::Renderer2D& mRenderer;
+        const hr::engine::Profiler& mProfiler;
 
-	public:
-		ProfilerUI(const hr::engine::Profiler& profiler, hr::render::Renderer2D& renderer)
-			: mRenderer(renderer), mProfiler(profiler)
-		{ }
+        void drawInfo(size_t textSize, const hr::Rectangle<float>& viewRect, const hr::Matrix4f& transformMatrix) const;
+        void drawStats(size_t textSize, const hr::Rectangle<float>& viewRect, const hr::Matrix4f& transformMatrix) const;
+        void drawStatsBackground(const hr::Rectangle<float>& viewRect, const hr::Matrix4f& transformMatrix, float bkgAlpha) const;
 
-		void draw(size_t textSize, const hr::gl::tools::Viewport& viewport) const;
+    public:
+        ProfilerUI(const hr::engine::Profiler& profiler, hr::render::Renderer2D& renderer)
+          : mRenderer(renderer), mProfiler(profiler)
+        {}
 
-		void processStats();
+        void draw(size_t textSize, const hr::gl::tools::Viewport& viewport) const;
 
-		bool isVisible() const;
+        void processStats();
 
-		void setStatsState(bool enabled);
-		void setInfoState(bool enabled);
-	};
-} }
+        bool isVisible() const;
+
+        void setStatsState(bool enabled);
+        void setInfoState(bool enabled);
+    };
+}

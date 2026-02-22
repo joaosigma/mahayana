@@ -5,149 +5,157 @@
 
 #include "../misc/videoStream.hpp"
 
-namespace hr { namespace render
+namespace hr::render
 {
-	Scene::Scene(engine::Runtime& runtime, engine::Logger::Context& logger, hr::io::FileSystem& fileSystem, hr::gl::objects::Context &glCtx, const std::string& name, const std::string& filePath, size_t renderWidth, size_t renderHeight)
-		: mName(name), mFilePath(filePath)
-		, mRuntime(runtime), mLogger(logger), mGlCtx(glCtx)
-	{
-		mVideoData.stream = std::make_unique<misc::VideoStream>(3, AVPixelFormat::AV_PIX_FMT_BGR24, mFilePath.c_str());
-		if (!mVideoData.stream->isValid())
-		{
-			mVideoData.stream.reset();
-			return;
-		}
+    Scene::Scene(engine::Runtime& runtime,
+                 engine::Logger::Context& logger,
+                 hr::io::FileSystem& fileSystem,
+                 hr::gl::objects::Context& glCtx,
+                 const std::string& name,
+                 const std::string& filePath,
+                 size_t renderWidth,
+                 size_t renderHeight)
+      : mName(name), mFilePath(filePath), mRuntime(runtime), mLogger(logger), mGlCtx(glCtx)
+    {
+        mVideoData.stream = std::make_unique<misc::VideoStream>(3, AVPixelFormat::AV_PIX_FMT_BGR24, mFilePath.c_str());
+        if (!mVideoData.stream->isValid())
+        {
+            mVideoData.stream.reset();
+            return;
+        }
 
-		mVideoData.stream->getVideoDims(mVideoData.frameSize.width, mVideoData.frameSize.height);
+        mVideoData.stream->getVideoDims(mVideoData.frameSize.width, mVideoData.frameSize.height);
 
-		mRenderData.windowSize = hr::Size<int>(renderWidth, renderHeight);
-		mRenderData.proj2D = hr::gl::tools::Viewport::genMatrix2DProj(renderWidth, renderHeight);
+        mRenderData.windowSize = hr::Size<int>(renderWidth, renderHeight);
+        mRenderData.proj2D = hr::gl::tools::Viewport::genMatrix2DProj(renderWidth, renderHeight);
 
-		mRenderData.texVideo.init(hr::gl::objects::Texture::Type::TexRectangle, hr::gl::objects::Texture::StorageType::SRGBA_8, mVideoData.frameSize.width, mVideoData.frameSize.height);
+        mRenderData.texVideo.init(hr::gl::objects::Texture::Type::TexRectangle, hr::gl::objects::Texture::StorageType::SRGBA_8, mVideoData.frameSize.width,
+                                  mVideoData.frameSize.height);
 
-		mRenderData.bufferPBO.init(hr::gl::objects::Buffer::Type::PixelUnpackBuffer, mVideoData.stream->getVideoFrameDataSize(), hr::gl::objects::Buffer::UsageType::OnlyWrite);
+        mRenderData.bufferPBO.init(hr::gl::objects::Buffer::Type::PixelUnpackBuffer, mVideoData.stream->getVideoFrameDataSize(), hr::gl::objects::Buffer::UsageType::OnlyWrite);
 
-		mRenderData.sampler.init(hr::gl::objects::Sampler::FilterType::Linear, hr::gl::objects::Sampler::FilterType::Linear, hr::gl::objects::Sampler::WrapType::ClampEdge);
+        mRenderData.sampler.init(hr::gl::objects::Sampler::FilterType::Linear, hr::gl::objects::Sampler::FilterType::Linear, hr::gl::objects::Sampler::WrapType::ClampEdge);
 
-		mRenderData.progVertex.init(hr::gl::objects::ShaderProgram::Type::Vertex, fileSystem.readFileAsString("shaders/stage.vshader"));
-		mRenderData.progFragment.init(hr::gl::objects::ShaderProgram::Type::Fragment, fileSystem.readFileAsString("shaders/stage.fshader"));
-		//std::string infoLog = mRenderData.progVertex.getInfoLog();
-		//infoLog += mRenderData.progFragment.getInfoLog();
+        mRenderData.progVertex.init(hr::gl::objects::ShaderProgram::Type::Vertex, fileSystem.readFileAsString("shaders/stage.vshader"));
+        mRenderData.progFragment.init(hr::gl::objects::ShaderProgram::Type::Fragment, fileSystem.readFileAsString("shaders/stage.fshader"));
+        // std::string infoLog = mRenderData.progVertex.getInfoLog();
+        // infoLog += mRenderData.progFragment.getInfoLog();
 
-		hr::gl::glProgramUniform1i(mRenderData.progFragment.id(), mRenderData.progFragment.getUniformLocation("texSampler"), 0);
-		hr::gl::glProgramUniformMatrix4fv(mRenderData.progVertex.id(), mRenderData.progVertex.getUniformLocation("projectionMatrix"), 1, false, mRenderData.proj2D.data().data());
+        hr::gl::glProgramUniform1i(mRenderData.progFragment.id(), mRenderData.progFragment.getUniformLocation("texSampler"), 0);
+        hr::gl::glProgramUniformMatrix4fv(mRenderData.progVertex.id(), mRenderData.progVertex.getUniformLocation("projectionMatrix"), 1, false, mRenderData.proj2D.data().data());
 
-		mRenderData.progPipeline.init();
-		mRenderData.progPipeline.setStage(mRenderData.progVertex);
-		mRenderData.progPipeline.setStage(mRenderData.progFragment);
-	}
+        mRenderData.progPipeline.init();
+        mRenderData.progPipeline.setStage(mRenderData.progVertex);
+        mRenderData.progPipeline.setStage(mRenderData.progFragment);
+    }
 
-	Scene::~Scene()
-	{ }
+    Scene::~Scene()
+    {}
 
-	bool Scene::processDraw()
-	{
-		if (!mVideoData.stream || mVideoData.streamEnded)
-			return false;
+    bool Scene::processDraw()
+    {
+        if (!mVideoData.stream || mVideoData.streamEnded)
+            return false;
 
-		if (std::chrono::milliseconds(mVideoData.frameTimer.getTimeIntMS()) >= mVideoData.waitDuration)
-		{
-			bool frameIsAhead;
-			int64_t frameID;
-			double frameDurationS;
+        if (std::chrono::milliseconds(mVideoData.frameTimer.getTimeIntMS()) >= mVideoData.waitDuration)
+        {
+            bool frameIsAhead;
+            int64_t frameID;
+            double frameDurationS;
 
-			auto frameData = mVideoData.stream->getFrame(frameIsAhead, frameID, frameDurationS);
-			if (!frameData && !frameIsAhead)
-			{
-				mVideoData.streamEnded = true;
-				return false;
-			}
+            auto frameData = mVideoData.stream->getFrame(frameIsAhead, frameID, frameDurationS);
+            if (!frameData && !frameIsAhead)
+            {
+                mVideoData.streamEnded = true;
+                return false;
+            }
 
-			if (frameData && (frameID != mVideoData.frameLastID))
-			{
-				mRenderData.bufferPBO.writeData(frameData, mVideoData.stream->getVideoFrameDataSize(), 0);
+            if (frameData && (frameID != mVideoData.frameLastID))
+            {
+                mRenderData.bufferPBO.writeData(frameData, mVideoData.stream->getVideoFrameDataSize(), 0);
 
-				mRenderData.bufferPBO.bind();
-				mRenderData.texVideo.uploadData(0, 0, 0, mVideoData.frameSize.width, mVideoData.frameSize.height, hr::gl::objects::Texture::DataFormat::BGR, hr::gl::objects::Texture::DataType::UBYTE, nullptr);
-				mRenderData.bufferPBO.unbind();
+                mRenderData.bufferPBO.bind();
+                mRenderData.texVideo.uploadData(0, 0, 0, mVideoData.frameSize.width, mVideoData.frameSize.height, hr::gl::objects::Texture::DataFormat::BGR,
+                                                hr::gl::objects::Texture::DataType::UBYTE, nullptr);
+                mRenderData.bufferPBO.unbind();
 
-				mVideoData.frameLastID = frameID;
-			}
+                mVideoData.frameLastID = frameID;
+            }
 
-			mVideoData.frameTimer.reStart();
-			mVideoData.waitDuration = std::chrono::milliseconds(hr::Math::ftoi(frameDurationS * 1000.0));
-		}
+            mVideoData.frameTimer.reStart();
+            mVideoData.waitDuration = std::chrono::milliseconds(hr::Math::ftoi(frameDurationS * 1000.0));
+        }
 
-		if (mRenderData.fading || (mVideoData.frameLastID >= 0))
-		{
-			auto viewRect = mVideoData.stream->getVideoRect(mRenderData.windowSize.width, mRenderData.windowSize.height, true);
+        if (mRenderData.fading || (mVideoData.frameLastID >= 0))
+        {
+            auto viewRect = mVideoData.stream->getVideoRect(mRenderData.windowSize.width, mRenderData.windowSize.height, true);
 
-			hr::gl::glEnable(GL_BLEND);
-			hr::gl::glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+            hr::gl::glEnable(GL_BLEND);
+            hr::gl::glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-			hr::gl::glBindProgramPipeline(mRenderData.progPipeline.id());
+            hr::gl::glBindProgramPipeline(mRenderData.progPipeline.id());
 
-			mRenderData.sampler.bind(0);
-			mRenderData.texVideo.bind(0);
+            mRenderData.sampler.bind(0);
+            mRenderData.texVideo.bind(0);
 
-			//NOTE: video is flipped
+            // NOTE: video is flipped
 
-			mRenderData.imode.beginDraw(hr::gl::tools::ImmediateMode::GeometryType::Quads);
-			mRenderData.imode.setColorF(1.0f, 1.0f, 1.0f, mRenderData.fadingAlpha);
+            mRenderData.imode.beginDraw(hr::gl::tools::ImmediateMode::GeometryType::Quads);
+            mRenderData.imode.setColorF(1.0f, 1.0f, 1.0f, mRenderData.fadingAlpha);
 
-			mRenderData.imode.setTexCoord(0.0f, mVideoData.frameSize.height);
-			mRenderData.imode.addPosition(viewRect.x, viewRect.y);
+            mRenderData.imode.setTexCoord(0.0f, mVideoData.frameSize.height);
+            mRenderData.imode.addPosition(viewRect.x, viewRect.y);
 
-			mRenderData.imode.setTexCoord(0.0f, 0.0f);
-			mRenderData.imode.addPosition(viewRect.x, viewRect.y + viewRect.height);
+            mRenderData.imode.setTexCoord(0.0f, 0.0f);
+            mRenderData.imode.addPosition(viewRect.x, viewRect.y + viewRect.height);
 
-			mRenderData.imode.setTexCoord(mVideoData.frameSize.width, 0.0f);
-			mRenderData.imode.addPosition(viewRect.x + viewRect.width, viewRect.y + viewRect.height);
+            mRenderData.imode.setTexCoord(mVideoData.frameSize.width, 0.0f);
+            mRenderData.imode.addPosition(viewRect.x + viewRect.width, viewRect.y + viewRect.height);
 
-			mRenderData.imode.setTexCoord(mVideoData.frameSize.width, mVideoData.frameSize.height);
-			mRenderData.imode.addPosition(viewRect.x + viewRect.width, viewRect.y);
-			
-			mRenderData.imode.endDraw();
+            mRenderData.imode.setTexCoord(mVideoData.frameSize.width, mVideoData.frameSize.height);
+            mRenderData.imode.addPosition(viewRect.x + viewRect.width, viewRect.y);
 
-			hr::gl::glDisable(GL_BLEND);
-		}
+            mRenderData.imode.endDraw();
 
-		return true;
-	}
+            hr::gl::glDisable(GL_BLEND);
+        }
 
-	void Scene::processMessage(const std::string& msg, const std::string& payload)
-	{
-		if (msg == "exit")
-		{
-			if (mVideoData.stream)
-				mRenderData.fading = true;
-		}
-	}
+        return true;
+    }
 
-	void Scene::processStep(double stepDeltaMS, double stepTotalMS, std::function<void(const std::string& msg, const std::string& payload)> cbMessages)
-	{
-		if (mRenderData.fading)
-		{
-			mRenderData.fadingAlpha -= stepDeltaMS / 1500.0;
-			if (mRenderData.fadingAlpha <= 0.0f)
-			{
-				mVideoData.streamEnded = true;
+    void Scene::processMessage(const std::string& msg, const std::string& payload)
+    {
+        if (msg == "exit")
+        {
+            if (mVideoData.stream)
+                mRenderData.fading = true;
+        }
+    }
 
-				mRenderData.fading = false;
-				mRenderData.fadingAlpha = 0.0f;
-			}
-		}
+    void Scene::processStep(double stepDeltaMS, double stepTotalMS, std::function<void(const std::string& msg, const std::string& payload)> cbMessages)
+    {
+        if (mRenderData.fading)
+        {
+            mRenderData.fadingAlpha -= stepDeltaMS / 1500.0;
+            if (mRenderData.fadingAlpha <= 0.0f)
+            {
+                mVideoData.streamEnded = true;
 
-		if (mVideoData.streamEnded)
-		{
-			mVideoData.streamEnded = false;
-			mVideoData.stream.reset();
+                mRenderData.fading = false;
+                mRenderData.fadingAlpha = 0.0f;
+            }
+        }
 
-			cbMessages("finished", "");
-			return;
-		}
+        if (mVideoData.streamEnded)
+        {
+            mVideoData.streamEnded = false;
+            mVideoData.stream.reset();
 
-		if (mVideoData.stream)
-			mVideoData.stream->process();
-	}
-} }
+            cbMessages("finished", "");
+            return;
+        }
+
+        if (mVideoData.stream)
+            mVideoData.stream->process();
+    }
+}

@@ -5,7 +5,7 @@
 
 namespace hr
 {
-    template <typename T, int AlignedTo>
+    template<typename T, int AlignedTo>
     class TaggedPointer final
     {
     private:
@@ -35,7 +35,7 @@ namespace hr
         inline void set(T* pointer, int tag = 0)
         {
             assert((reinterpret_cast<intptr_t>(pointer) & TagMask) == 0); // make sure that the pointer really is aligned
-            assert((tag & PointerMask) == 0); // make sure that the tag isn't too large
+            assert((tag & PointerMask) == 0);                             // make sure that the tag isn't too large
 
             asPointer = pointer;
             asBits |= tag;
