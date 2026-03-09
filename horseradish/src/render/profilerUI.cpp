@@ -3,6 +3,8 @@
 #include "../common/color.hpp"
 
 #include <format>
+#include <functional>
+#include <span>
 
 namespace hr::render
 {
@@ -11,62 +13,47 @@ namespace hr::render
 
     static hr::Colorf retrieveColor(hr::engine::Profiler::StatId statId)
     {
-        const unsigned char* targetColor;
-
-        switch (statId)
-        {
-            case hr::engine::Profiler::StatId::FrameTotal:
-                targetColor = hr::Colorf::KnownColors::CadetBlue;
-                break;
-            case hr::engine::Profiler::StatId::FrameLogic:
-                targetColor = hr::Colorf::KnownColors::BurlyWood;
-                break;
-            case hr::engine::Profiler::StatId::FrameDraw:
-                targetColor = hr::Colorf::KnownColors::Firebrick;
-                break;
-            case hr::engine::Profiler::StatId::FrameGPU:
-                targetColor = hr::Colorf::KnownColors::Coral;
-                break;
-            case hr::engine::Profiler::StatId::GPUTimeElapsed:
-                targetColor = hr::Colorf::KnownColors::DarkSalmon;
-                break;
-            case hr::engine::Profiler::StatId::GPUSamples:
-                targetColor = hr::Colorf::KnownColors::OliveDrab;
-                break;
-            case hr::engine::Profiler::StatId::GPUVerticesSubmitted:
-                targetColor = hr::Colorf::KnownColors::Wheat;
-                break;
-            case hr::engine::Profiler::StatId::GPUPrimitivesSubmitted:
-                targetColor = hr::Colorf::KnownColors::Sienna;
-                break;
-            case hr::engine::Profiler::StatId::GPUVertexShaderInvocations:
-                targetColor = hr::Colorf::KnownColors::PeachPuff;
-                break;
-            case hr::engine::Profiler::StatId::GPUFragmentShaderInvocations:
-                targetColor = hr::Colorf::KnownColors::BlanchedAlmond;
-                break;
-            case hr::engine::Profiler::StatId::GPUClipInputPrimitives:
-                targetColor = hr::Colorf::KnownColors::Cornsilk;
-                break;
-            case hr::engine::Profiler::StatId::GPUClipOutputPrimitives:
-                targetColor = hr::Colorf::KnownColors::MediumAquamarine;
-                break;
-            case hr::engine::Profiler::StatId::MemTotal:
-                targetColor = hr::Colorf::KnownColors::Lavender;
-                break;
-            case hr::engine::Profiler::StatId::MemScripts:
-                targetColor = hr::Colorf::KnownColors::Tan;
-                break;
-            case hr::engine::Profiler::StatId::MemObjects:
-                targetColor = hr::Colorf::KnownColors::Plum;
-                break;
-            case hr::engine::Profiler::StatId::MemAnimations:
-                targetColor = hr::Colorf::KnownColors::DodgerBlue;
-                break;
-            default:
-                targetColor = hr::Colorf::KnownColors::DarkMagenta;
-                break;
-        }
+        auto targetColor = std::invoke(
+          [statId]() -> std::span<const uint8_t, 4>
+          {
+              switch (statId)
+              {
+                  case hr::engine::Profiler::StatId::FrameTotal:
+                      return hr::Colorf::KnownColors::CadetBlue;
+                  case hr::engine::Profiler::StatId::FrameLogic:
+                      return hr::Colorf::KnownColors::BurlyWood;
+                  case hr::engine::Profiler::StatId::FrameDraw:
+                      return hr::Colorf::KnownColors::Firebrick;
+                  case hr::engine::Profiler::StatId::FrameGPU:
+                      return hr::Colorf::KnownColors::Coral;
+                  case hr::engine::Profiler::StatId::GPUTimeElapsed:
+                      return hr::Colorf::KnownColors::DarkSalmon;
+                  case hr::engine::Profiler::StatId::GPUSamples:
+                      return hr::Colorf::KnownColors::OliveDrab;
+                  case hr::engine::Profiler::StatId::GPUVerticesSubmitted:
+                      return hr::Colorf::KnownColors::Wheat;
+                  case hr::engine::Profiler::StatId::GPUPrimitivesSubmitted:
+                      return hr::Colorf::KnownColors::Sienna;
+                  case hr::engine::Profiler::StatId::GPUVertexShaderInvocations:
+                      return hr::Colorf::KnownColors::PeachPuff;
+                  case hr::engine::Profiler::StatId::GPUFragmentShaderInvocations:
+                      return hr::Colorf::KnownColors::BlanchedAlmond;
+                  case hr::engine::Profiler::StatId::GPUClipInputPrimitives:
+                      return hr::Colorf::KnownColors::Cornsilk;
+                  case hr::engine::Profiler::StatId::GPUClipOutputPrimitives:
+                      return hr::Colorf::KnownColors::MediumAquamarine;
+                  case hr::engine::Profiler::StatId::MemTotal:
+                      return hr::Colorf::KnownColors::Lavender;
+                  case hr::engine::Profiler::StatId::MemScripts:
+                      return hr::Colorf::KnownColors::Tan;
+                  case hr::engine::Profiler::StatId::MemObjects:
+                      return hr::Colorf::KnownColors::Plum;
+                  case hr::engine::Profiler::StatId::MemAnimations:
+                      return hr::Colorf::KnownColors::DodgerBlue;
+                  default:
+                      return hr::Colorf::KnownColors::DarkMagenta;
+              }
+          });
 
         hr::Colorf color;
         color.set(targetColor);

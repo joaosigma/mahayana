@@ -6,23 +6,17 @@ namespace hr
 {
     static_assert(std::is_trivially_copyable_v<BRect>);
 
-    BRect::BRect(const Vector3f* const points, size_t numVec)
+    BRect::BRect(std::span<const Vector3f> points) noexcept
     {
-        mMinX = mMinY = std::numeric_limits<float>::infinity();
-        mMaxX = mMaxY = -std::numeric_limits<float>::infinity();
-
-        merge(points, numVec);
+        merge(points);
     }
 
-    BRect::BRect(const BRect* const brects, size_t numBRect)
+    BRect::BRect(std::span<const BRect> brects) noexcept
     {
-        mMinX = mMinY = std::numeric_limits<float>::infinity();
-        mMaxX = mMaxY = -std::numeric_limits<float>::infinity();
-
-        for (size_t i = 0; i < numBRect; i++)
+        for (const auto& brect : brects)
         {
-            merge(brects[i].mMinX, brects[i].mMinY);
-            merge(brects[i].mMaxX, brects[i].mMaxY);
+            merge(brect.mMinX, brect.mMinY);
+            merge(brect.mMaxX, brect.mMaxY);
         }
     }
 
@@ -34,7 +28,7 @@ namespace hr
     |			  |
     0-------------1
     */
-    void BRect::corners(Vector3f points[4]) const
+    void BRect::corners(std::span<Vector3f, 4> points) const noexcept
     {
         points[0] = Vector3f{mMinX, mMinY, 0.0f};
         points[1] = Vector3f{mMaxX, mMinY, 0.0f};
@@ -42,7 +36,7 @@ namespace hr
         points[3] = Vector3f{mMinX, mMaxY, 0.0f};
     }
 
-    void BRect::merge(const Vector3f& pt)
+    void BRect::merge(const Vector3f& pt) noexcept
     {
         mMinX = std::fmin(mMinX, pt[0]);
         mMinY = std::fmin(mMinY, pt[1]);
@@ -50,26 +44,18 @@ namespace hr
         mMaxY = std::fmax(mMaxY, pt[1]);
     }
 
-    void BRect::merge(const float* const pt)
+    void BRect::merge(std::span<const Vector3f> points) noexcept
     {
-        mMinX = std::fmin(mMinX, pt[0]);
-        mMinY = std::fmin(mMinY, pt[1]);
-        mMaxX = std::fmax(mMaxX, pt[0]);
-        mMaxY = std::fmax(mMaxY, pt[1]);
-    }
-
-    void BRect::merge(const Vector3f* const pts, size_t numPts)
-    {
-        for (size_t i = 0; i < numPts; i++)
+        for (const auto& p : points)
         {
-            mMinX = std::fmin(mMinX, pts[i][0]);
-            mMinY = std::fmin(mMinY, pts[i][1]);
-            mMaxX = std::fmax(mMaxX, pts[i][0]);
-            mMaxY = std::fmax(mMaxY, pts[i][1]);
+            mMinX = std::fmin(mMinX, p[0]);
+            mMinY = std::fmin(mMinY, p[1]);
+            mMaxX = std::fmax(mMaxX, p[0]);
+            mMaxY = std::fmax(mMaxY, p[1]);
         }
     }
 
-    void BRect::merge(const float& x, const float& y)
+    void BRect::merge(float x, float y) noexcept
     {
         mMinX = std::fmin(mMinX, x);
         mMinY = std::fmin(mMinY, y);
@@ -77,7 +63,7 @@ namespace hr
         mMaxY = std::fmax(mMaxY, y);
     }
 
-    void BRect::translate(const Vector3f& translation)
+    void BRect::translate(const Vector3f& translation) noexcept
     {
         mMinX += translation[0];
         mMinY += translation[1];
@@ -85,15 +71,7 @@ namespace hr
         mMaxY += translation[1];
     }
 
-    void BRect::expand(const float amount)
-    {
-        mMinX -= amount;
-        mMinY -= amount;
-        mMaxX += amount;
-        mMaxY += amount;
-    }
-
-    void BRect::expand(const float amountX, const float amountY)
+    void BRect::expand(float amountX, float amountY) noexcept
     {
         mMinX -= amountX;
         mMinY -= amountY;
@@ -101,16 +79,13 @@ namespace hr
         mMaxY += amountY;
     }
 
-    void BRect::crossSection(const BRect& brect, BRect& brectResult) const
+    std::optional<BRect> BRect::crossSection(const BRect& brect) const noexcept
     {
-        brectResult.mMinX = std::fmax(mMinX, brect.mMinX);
-        brectResult.mMinY = std::fmax(mMinY, brect.mMinY);
-        brectResult.mMaxX = std::fmin(mMaxX, brect.mMaxX);
-        brectResult.mMaxY = std::fmin(mMaxY, brect.mMaxY);
+        BRect res{std::fmax(mMinX, brect.mMinX), std::fmax(mMinY, brect.mMinY), std::fmin(mMaxX, brect.mMaxX), std::fmin(mMaxY, brect.mMaxY)};
 
-        if ((brectResult.mMinX <= brectResult.mMaxX) && (brectResult.mMinY <= brectResult.mMaxY))
-            return;
+        if ((res.mMinX <= res.mMaxX) && (res.mMinY <= res.mMaxY))
+            return res;
 
-        brectResult.reset();
+        return {};
     }
 }

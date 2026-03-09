@@ -718,7 +718,7 @@ namespace hr::utests
                 // a span of 3
                 {
                     auto vecTmp = vecSource;
-                    m.transform(std::span<float, 3>{vecTmp.data(), 3});
+                    m.transform(vecTmp.data());
 
                     REQUIRE_THAT(vecTmp, VectorEquals(vecExpected));
                 }
@@ -790,7 +790,7 @@ namespace hr::utests
                 // a span of 4
                 {
                     auto vecTmp = vecSource;
-                    m.transform(std::span<float, 4>{vecTmp.data(), 4});
+                    m.transform(vecTmp.data());
 
                     REQUIRE_THAT(vecTmp, VectorEquals(vecExpected));
                 }
@@ -1598,7 +1598,7 @@ namespace hr::utests
                 // a span of 3
                 {
                     auto vecTmp = vecSource;
-                    m.transform(std::span<double, 3>{vecTmp.data(), 3});
+                    m.transform(vecTmp.data());
 
                     REQUIRE_THAT(vecTmp, VectorEquals(vecExpected));
                 }
@@ -1670,7 +1670,7 @@ namespace hr::utests
                 // a span of 4
                 {
                     auto vecTmp = vecSource;
-                    m.transform(std::span<double, 4>{vecTmp.data(), 4});
+                    m.transform(vecTmp.data());
 
                     REQUIRE_THAT(vecTmp, VectorEquals(vecExpected));
                 }
@@ -2256,7 +2256,7 @@ namespace hr::utests
             REQUIRE_THAT(vecRotated, VectorEquals(res1));
 
             auto res2 = vecSource;
-            m.transform(std::span<float, 3>{res2.data(), 3});
+            m.transform(res2.data());
             REQUIRE_THAT(vecRotated, VectorEquals(res2));
 
             Vector3f res3[19];
@@ -2677,7 +2677,7 @@ namespace hr::utests
             REQUIRE_THAT(vecRotated, VectorEquals(res1));
 
             auto res2 = vecSource;
-            m.transform(std::span<double, 3>{res2.data(), 3});
+            m.transform(res2.data());
             REQUIRE_THAT(vecRotated, VectorEquals(res2));
 
             Vector3d res3[19];

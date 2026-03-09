@@ -11,5 +11,8 @@ Diagnostics:
     Remove:
       - readability-braces-around-statements
       - readability-identifier-length
+      - readability-uppercase-literal-suffix
+      - bugprone-easily-swappable-parameters
+      - modernize-use-trailing-return-type
     CheckOptions:
       cppcoreguidelines-special-member-functions.AllowSoleDefaultDtor: true

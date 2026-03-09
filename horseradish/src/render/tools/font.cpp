@@ -243,7 +243,7 @@ namespace hr::render::tools
             }
         }
 
-        hr::imaging::Image<unsigned char, hr::imaging::ImageFormatR> imgFinal(texWidth, texHeight);
+        auto imgFinal = hr::imaging::Image<unsigned char, hr::imaging::ImageFormatR>::create(texWidth, texHeight);
         imgFinal.clear(0, 0, 0, 0);
 
         // read each glyph bitmap
@@ -291,7 +291,8 @@ namespace hr::render::tools
         }
 
         mGl.texture.init(hr::gl::objects::Texture::Type::Tex2D, hr::gl::objects::Texture::StorageType::R_8, imgFinal.width(), imgFinal.height());
-        mGl.texture.uploadData(0, 0, 0, imgFinal.width(), imgFinal.height(), hr::gl::objects::Texture::DataFormat::R, hr::gl::objects::Texture::DataType::UBYTE, imgFinal.data());
+        mGl.texture.uploadData(0, 0, 0, imgFinal.width(), imgFinal.height(), hr::gl::objects::Texture::DataFormat::R, hr::gl::objects::Texture::DataType::UBYTE,
+                               imgFinal.data().data());
 
         return true;
     }
@@ -644,7 +645,7 @@ namespace hr::render::tools
         mState.stateColor.set(r, g, b, 1.0f);
     }
 
-    void Font::setColor(const float* const color)
+    void Font::setColor(std::span<const float, 4> color)
     {
         mState.stateColor.set(color);
     }

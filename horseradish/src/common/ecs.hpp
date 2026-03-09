@@ -704,11 +704,12 @@ namespace hr
 
         public:
             constexpr EntityId() = default;
+            ~EntityId() noexcept = default;
+
             constexpr EntityId(const EntityId&) = default;
             constexpr EntityId& operator=(const EntityId&) = default;
             constexpr EntityId(EntityId&&) = default;
             constexpr EntityId& operator=(EntityId&&) = default;
-            ~EntityId() = default;
 
             constexpr explicit EntityId(uint32_t id, uint32_t version) noexcept
               : m_data{((version & 0xFFF) << 20) | (id & 0xFFFFF)}

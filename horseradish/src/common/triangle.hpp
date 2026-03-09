@@ -1,11 +1,11 @@
 #pragma once
 
-#include "math.hpp"
 #include "plane.hpp"
 #include "vector.hpp"
 
 #include <immintrin.h>
 #include <smmintrin.h>
+#include <type_traits>
 #include <xmmintrin.h>
 
 namespace hr
@@ -51,9 +51,9 @@ namespace hr
             {
                 __m128 vec1, vec2, tmp1, tmp2;
 
-                tmp1 = _mm_load_ps(p1.data());
-                vec1 = _mm_sub_ps(_mm_load_ps(p2.data()), tmp1);
-                vec2 = _mm_sub_ps(_mm_load_ps(p3.data()), tmp1);
+                tmp1 = _mm_load_ps(p1.data().data());
+                vec1 = _mm_sub_ps(_mm_load_ps(p2.data().data()), tmp1);
+                vec2 = _mm_sub_ps(_mm_load_ps(p3.data().data()), tmp1);
 
                 tmp1 = _mm_mul_ps(_mm_shuffle_ps(vec1, vec1, _MM_SHUFFLE(3, 0, 2, 1)), _mm_shuffle_ps(vec2, vec2, _MM_SHUFFLE(3, 1, 0, 2)));
                 tmp2 = _mm_mul_ps(_mm_shuffle_ps(vec1, vec1, _MM_SHUFFLE(3, 1, 0, 2)), _mm_shuffle_ps(vec2, vec2, _MM_SHUFFLE(3, 0, 2, 1)));
@@ -64,9 +64,9 @@ namespace hr
             }
             else
             {
-                __m256d vec0 = _mm256_load_pd(p1.data());
-                __m256d vec1 = _mm256_sub_pd(_mm256_load_pd(p2.data()), vec0);
-                __m256d vec2 = _mm256_sub_pd(_mm256_load_pd(p3.data()), vec0);
+                __m256d vec0 = _mm256_load_pd(p1.data().data());
+                __m256d vec1 = _mm256_sub_pd(_mm256_load_pd(p2.data().data()), vec0);
+                __m256d vec2 = _mm256_sub_pd(_mm256_load_pd(p3.data().data()), vec0);
 
                 __m256d xa = _mm256_mul_pd(_mm256_permute4x64_pd(vec1, _MM_SHUFFLE(3, 0, 2, 1)), _mm256_permute4x64_pd(vec2, _MM_SHUFFLE(3, 1, 0, 2)));
                 __m256d xb = _mm256_mul_pd(_mm256_permute4x64_pd(vec1, _MM_SHUFFLE(3, 1, 0, 2)), _mm256_permute4x64_pd(vec2, _MM_SHUFFLE(3, 0, 2, 1)));
@@ -77,7 +77,9 @@ namespace hr
             }
         }
 
-        static TVectorType calcNormal(const typename TVectorType::DataType p1[3], const typename TVectorType::DataType p2[3], const typename TVectorType::DataType p3[3]) noexcept
+        static TVectorType calcNormal(std::span<const typename TVectorType::DataType, 3> p1,
+                                      std::span<const typename TVectorType::DataType, 3> p2,
+                                      std::span<const typename TVectorType::DataType, 3> p3) noexcept
         {
             return calcNormal(TVectorType{p1}, TVectorType{p2}, TVectorType{p3});
         }
@@ -88,7 +90,9 @@ namespace hr
             return PlaneType{normal[0], normal[1], normal[2], -normal.getDot(p1)};
         }
 
-        static PlaneType calcPlane(const typename TVectorType::DataType p1[3], const typename TVectorType::DataType p2[3], const typename TVectorType::DataType p3[3]) noexcept
+        static PlaneType calcPlane(std::span<const typename TVectorType::DataType, 3> p1,
+                                   std::span<const typename TVectorType::DataType, 3> p2,
+                                   std::span<const typename TVectorType::DataType, 3> p3) noexcept
         {
             auto normal = calcNormal(p1, p2, p3);
             return PlaneType{normal[0], normal[1], normal[2], -normal.getDot(p1)};

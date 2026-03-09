@@ -60,7 +60,7 @@ namespace hr::render::tools
             if ((x >= image.width()) || (y >= image.height()))
                 return false;
 
-            image.getPixel(x, y, sample);
+            image.getPixel(x, y, std::span<uint8_t, 4>{sample, 4});
             return true;
         }
 
@@ -335,7 +335,7 @@ namespace hr::render::tools
         while (true)
         {
             textureDst.uploadData(curLevel, 0, 0, imageScaled.width(), imageScaled.height(), hr::gl::objects::Texture::DataFormat::RGBA, hr::gl::objects::Texture::DataType::UBYTE,
-                                  imageScaled.data());
+                                  imageScaled.data().data());
             if (imageScaled.area() <= 1)
                 break;
 
@@ -359,7 +359,7 @@ namespace hr::render::tools
         while (true)
         {
             textureDst.uploadData(curLevel, 0, 0, imageScaled.width(), imageScaled.height(), hr::gl::objects::Texture::DataFormat::RGBA, hr::gl::objects::Texture::DataType::UBYTE,
-                                  imageScaled.data());
+                                  imageScaled.data().data());
             if (imageScaled.area() <= 1)
                 break;
 
@@ -383,7 +383,7 @@ namespace hr::render::tools
         while (true)
         {
             textureDst.uploadData(curLevel, 0, 0, imageScaled.width(), imageScaled.height(), hr::gl::objects::Texture::DataFormat::RGB, hr::gl::objects::Texture::DataType::FLOAT,
-                                  imageScaled.data());
+                                  imageScaled.data().data());
             if (imageScaled.area() <= 1)
                 break;
 
@@ -507,7 +507,7 @@ namespace hr::render::tools
             auto imageByte = imageNormals.convert<uint8_t, hr::imaging::ImageFormatRGBA>(0.0f, 1.0f);
 
             textureDst.uploadData(curLevel, 0, 0, imageByte.width(), imageByte.height(), hr::gl::objects::Texture::DataFormat::RGBA, hr::gl::objects::Texture::DataType::UBYTE,
-                                  imageByte.data());
+                                  imageByte.data().data());
             if (imageByte.area() <= 1)
                 break;
 

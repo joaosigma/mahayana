@@ -3,7 +3,6 @@
 #include "bvolumes.hpp"
 #include "plane.hpp"
 #include "quaternion.hpp"
-#include "types.hpp"
 #include "vector.hpp"
 
 #include <span>
@@ -216,7 +215,8 @@ namespace hr
             return {m};
         }
 
-        void transform(std::span<TDataType> vec) const noexcept;
+        void transform(std::span<TDataType, 3> vec) const noexcept;
+        void transform(std::span<TDataType, 4> vec) const noexcept;
 
         void transform(Vector3Type& vec) const noexcept;
         [[nodiscard]] Vector3Type transformCopy(const Vector3Type& vec) const noexcept;
@@ -460,7 +460,7 @@ namespace hr
             return {m};
         }
 
-        void transform(std::span<TDataType> vec) const noexcept;
+        void transform(std::span<TDataType, 3> vec) const noexcept;
 
         void transform(Vector3Type& vec) const noexcept;
         [[nodiscard]] Vector3Type transformCopy(const Vector3Type& vec) const noexcept;

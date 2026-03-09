@@ -123,7 +123,7 @@ namespace hr
         }
 
         template<class TCallback, class... TArgs>
-        [[nodiscard]] coro::task<void> schedule(size_t dispatcherId, size_t taskId, TCallback callback, TArgs... args)
+        [[nodiscard]] coro::task<void> schedule(size_t dispatcherId, size_t taskId, TCallback&& callback, TArgs... args)
         {
             co_await schedule(taskId); // this will swith to one of the scheduler's threads
 

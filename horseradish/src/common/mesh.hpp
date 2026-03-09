@@ -3,15 +3,16 @@
 #include "bvolumes.hpp"
 #include "matrix.hpp"
 #include "ray.hpp"
-#include "types.hpp"
 #include "vector.hpp"
 
 #include <cassert>
+#include <cstdint>
 #include <limits>
 #include <memory>
 #include <optional>
 #include <span>
 #include <type_traits>
+#include <utility>
 #include <vector>
 
 namespace hr::geom
@@ -173,33 +174,23 @@ namespace hr::geom
         MeshBase& operator=(MeshBase&& mesh) = default;
 
     public:
-        std::span<const TVertex> vertices() const noexcept
+        template<typename Self>
+        constexpr auto vertices(this Self&& self) noexcept
         {
-            return {mData.get(), mNumVertices};
-        }
-        std::span<TVertex> vertices() noexcept
-        {
-            return {mData.get(), mNumVertices};
+            return std::span{self.mData.get(), self.mNumVertices};
         }
 
-        const TVertex& vertex(size_t index) const noexcept
+        template<typename Self>
+        constexpr auto& vertex(this Self&& self, size_t index) noexcept
         {
-            assert(index < mNumVertices);
-            return mData[index];
-        }
-        TVertex& vertex(size_t index) noexcept
-        {
-            assert(index < mNumVertices);
-            return mData[index];
+            assert(index < self.mNumVertices);
+            return self.mData[index];
         }
 
-        std::span<const TIndex> indices() const noexcept
+        template<typename Self>
+        constexpr auto indices(this Self&& self) noexcept
         {
-            return {mIndices.get(), mNumIndices};
-        }
-        std::span<TIndex> indices() noexcept
-        {
-            return {mIndices.get(), mNumIndices};
+            return std::span{self.mIndices.get(), self.mNumIndices};
         }
 
         size_t sizeVertices() const noexcept
@@ -405,16 +396,16 @@ namespace hr::geom
         bool intersects(const Ray<Vector3d>& ray, double rayDistMin, double rayDistMax, Hit& hit) const noexcept;
         bool intersects(const Ray<Vector3d>& ray, Hit& hit) const noexcept
         {
-            auto tMin = -std::numeric_limits<double>::infinity();
-            auto tMax = std::numeric_limits<double>::infinity();
+            constexpr auto tMin = -std::numeric_limits<double>::infinity();
+            constexpr auto tMax = std::numeric_limits<double>::infinity();
             return intersects(ray, tMin, tMax, hit);
         }
 
         bool intersects(size_t triIndex, const Ray<Vector3d>& ray, double rayDistMin, double rayDistMax, Hit& hit) const noexcept;
         bool intersects(size_t triIndex, const Ray<Vector3d>& ray, Hit& hit) const noexcept
         {
-            auto tMin = -std::numeric_limits<double>::infinity();
-            auto tMax = std::numeric_limits<double>::infinity();
+            constexpr auto tMin = -std::numeric_limits<double>::infinity();
+            constexpr auto tMax = std::numeric_limits<double>::infinity();
             return intersects(triIndex, ray, tMin, tMax, hit);
         }
 

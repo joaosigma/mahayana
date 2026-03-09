@@ -544,9 +544,9 @@ namespace hr::render
               if (fwriter.write(mesh.indices().data(), mesh.sizeIndices()) != mesh.sizeIndices())
                   return false;
 
-              if (fwriter.write(meshBBox.min().data(), sizeof(float) * 3) != sizeof(float) * 3)
+              if (!fwriter.write(meshBBox.min().data()))
                   return false;
-              if (fwriter.write(meshBBox.max().data(), sizeof(float) * 3) != sizeof(float) * 3)
+              if (!fwriter.write(meshBBox.max().data()))
                   return false;
 
               newGeomChunk.size = fwriter.position() - newGeomChunk.geomsOffset;
@@ -618,9 +618,9 @@ namespace hr::render
 
               auto bbox = meshAnim.mesh().bbox();
 
-              if (fwriter.write(bbox.min().data(), sizeof(float) * 3) != sizeof(float) * 3)
+              if (!fwriter.write(bbox.min().data()))
                   return false;
-              if (fwriter.write(bbox.max().data(), sizeof(float) * 3) != sizeof(float) * 3)
+              if (!fwriter.write(bbox.max().data()))
                   return false;
 
               if (fwriter.write(meshAnim.verticesJoints(), meshAnim.sizeVerticesJoints()) != meshAnim.sizeVerticesJoints())
@@ -835,9 +835,9 @@ namespace hr::render
 
                 auto bbox = mesh.bbox();
 
-                if (streamWriter.write(bbox.min().data(), sizeof(float) * 3) != sizeof(float) * 3)
+                if (!streamWriter.write(bbox.min().data()))
                     return false;
-                if (streamWriter.write(bbox.max().data(), sizeof(float) * 3) != sizeof(float) * 3)
+                if (!streamWriter.write(bbox.max().data()))
                     return false;
             }
         }
@@ -1365,8 +1365,8 @@ namespace hr::render
                                 {
                                     Vector3f bboxMin, bboxMax;
 
-                                    streamBin.read(bboxMin.data(), sizeof(float) * 3);
-                                    streamBin.read(bboxMax.data(), sizeof(float) * 3);
+                                    streamBin.read(bboxMin.data());
+                                    streamBin.read(bboxMax.data());
 
                                     object.bbox.setMinMax(bboxMin, bboxMax);
                                     objectRenderer.geom.bbox = object.bbox;

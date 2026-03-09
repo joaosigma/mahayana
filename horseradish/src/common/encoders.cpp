@@ -74,23 +74,24 @@ namespace hr
         }
     }
 
-    std::string Encoders::encodeBase64(const void* const buffer, size_t bufferSize)
+    std::string Encoders::encodeBase64(std::span<const std::byte> buffer)
     {
         std::string stringOut;
 
-        Encoders::encodeBase64(buffer, bufferSize, stringOut);
+        Encoders::encodeBase64(buffer, stringOut);
         return stringOut;
     }
 
-    void Encoders::encodeBase64(const void* const buffer, size_t bufferSize, std::string& stringOut)
+    void Encoders::encodeBase64(std::span<const std::byte> buffer, std::string& stringOut)
     {
-        stringOut.reserve(stringOut.size() + (4 * (bufferSize + 3) / 3 + 2));
+        stringOut.reserve(stringOut.size() + (4 * (buffer.size() + 3) / 3 + 2));
 
         size_t i = 0;
         unsigned char char_array_3[3];
         unsigned char char_array_4[4];
 
-        auto bufferWalker = reinterpret_cast<const unsigned char*>(buffer);
+        auto bufferSize = buffer.size();
+        auto bufferWalker = reinterpret_cast<const unsigned char*>(buffer.data());
 
         while (bufferSize--)
         {
@@ -128,13 +129,14 @@ namespace hr
         }
     }
 
-    void Encoders::encodeBase64(const void* const buffer, size_t bufferSize, hr::streams::Stream& streamOut)
+    void Encoders::encodeBase64(std::span<const std::byte> buffer, hr::streams::Stream& streamOut)
     {
         size_t i = 0;
         unsigned char char_array_3[3];
         unsigned char char_array_4[4];
 
-        auto bufferWalker = reinterpret_cast<const unsigned char*>(buffer);
+        auto bufferSize = buffer.size();
+        auto bufferWalker = reinterpret_cast<const unsigned char*>(buffer.data());
 
         while (bufferSize--)
         {
@@ -179,44 +181,46 @@ namespace hr
         return (3 * numBase64Chars / 4);
     }
 
-    size_t Encoders::decodeBase64(const std::string& dataBase64, void* bufferOut)
+    size_t Encoders::decodeBase64(std::string_view dataBase64, std::span<std::byte> bufferOut)
     {
         if (dataBase64.empty())
             return 0;
 
-        return Encoders::decodeBase64(dataBase64.data(), dataBase64.size(), bufferOut);
+        return Encoders::decodeBase64({dataBase64.data(), dataBase64.size()}, bufferOut);
     }
 
-    size_t Encoders::decodeBase64(const std::string& dataBase64, std::vector<unsigned char>& bufferOut)
+    size_t Encoders::decodeBase64(std::string_view dataBase64, std::vector<unsigned char>& bufferOut)
     {
         if (dataBase64.empty())
             return 0;
 
-        return Encoders::decodeBase64(dataBase64.data(), dataBase64.size(), bufferOut);
+        return Encoders::decodeBase64({dataBase64.data(), dataBase64.size()}, bufferOut);
     }
 
-    size_t Encoders::decodeBase64(const std::string& dataBase64, hr::streams::Stream& streamOut)
+    size_t Encoders::decodeBase64(std::string_view dataBase64, hr::streams::Stream& streamOut)
     {
         if (dataBase64.empty())
             return 0;
 
-        return Encoders::decodeBase64(dataBase64.data(), dataBase64.size(), streamOut);
+        return Encoders::decodeBase64({dataBase64.data(), dataBase64.size()}, streamOut);
     }
 
-    size_t Encoders::decodeBase64(const char* const dataBase64, size_t dataSize, void* bufferOut)
+    size_t Encoders::decodeBase64(std::span<const std::byte> dataBase64, std::span<std::byte> bufferOut)
     {
-        if (!dataBase64 || dataSize == 0)
+        if (dataBase64.empty())
             return 0;
 
-        size_t in_len = dataSize;
+        size_t in_len = dataBase64.size();
         size_t i = 0;
         size_t in_ = 0;
         size_t bytesWritten = 0;
         unsigned char char_array_4[4], char_array_3[3];
 
-        while (in_len-- && (dataBase64[in_] != '=') && isBase64Char(dataBase64[in_]))
+        auto data = reinterpret_cast<const unsigned char*>(dataBase64.data());
+
+        while (in_len-- && (data[in_] != '=') && isBase64Char(data[in_]) && !bufferOut.empty())
         {
-            char_array_4[i++] = dataBase64[in_];
+            char_array_4[i++] = data[in_];
             in_++;
             if (i == 4)
             {
@@ -229,8 +233,8 @@ namespace hr
                 char_array_3[1] = ((char_array_4[1] & 0xf) << 4) + ((char_array_4[2] & 0x3c) >> 2);
                 char_array_3[2] = ((char_array_4[2] & 0x3) << 6) + char_array_4[3];
 
-                memcpy(bufferOut, char_array_3, sizeof(unsigned char) * 3);
-                bufferOut = reinterpret_cast<unsigned char*>(bufferOut) + 3;
+                std::memcpy(bufferOut.data(), char_array_3, sizeof(unsigned char) * 3);
+                bufferOut = bufferOut.subspan(3);
                 bytesWritten += 3;
 
                 i = 0;
@@ -253,8 +257,8 @@ namespace hr
 
             for (size_t j = 0; (j < i - 1); j++)
             {
-                memcpy(bufferOut, char_array_3 + j, sizeof(unsigned char));
-                bufferOut = reinterpret_cast<unsigned char*>(bufferOut);
+                std::memcpy(bufferOut.data(), char_array_3 + j, sizeof(unsigned char));
+                bufferOut = bufferOut.subspan(1);
                 bytesWritten++;
             }
         }
@@ -262,22 +266,24 @@ namespace hr
         return bytesWritten;
     }
 
-    size_t Encoders::decodeBase64(const char* const dataBase64, size_t dataSize, std::vector<unsigned char>& bufferOut)
+    size_t Encoders::decodeBase64(std::span<const std::byte> dataBase64, std::vector<unsigned char>& bufferOut)
     {
-        if (!dataBase64 || dataSize == 0)
+        if (dataBase64.empty())
             return 0;
 
-        bufferOut.reserve(bufferOut.capacity() + Encoders::decodeBase64RequiredSize(dataSize));
+        bufferOut.reserve(bufferOut.capacity() + Encoders::decodeBase64RequiredSize(dataBase64.size()));
 
-        size_t in_len = dataSize;
+        size_t in_len = dataBase64.size();
         size_t i = 0;
         size_t in_ = 0;
         size_t bytesWritten = 0;
         unsigned char char_array_4[4], char_array_3[3];
 
-        while (in_len-- && (dataBase64[in_] != '=') && isBase64Char(dataBase64[in_]))
+        auto data = reinterpret_cast<const unsigned char*>(dataBase64.data());
+
+        while (in_len-- && (data[in_] != '=') && isBase64Char(data[in_]))
         {
-            char_array_4[i++] = dataBase64[in_];
+            char_array_4[i++] = data[in_];
             in_++;
             if (i == 4)
             {
@@ -323,20 +329,22 @@ namespace hr
         return bytesWritten;
     }
 
-    size_t Encoders::decodeBase64(const char* const dataBase64, size_t dataSize, hr::streams::Stream& streamOut)
+    size_t Encoders::decodeBase64(std::span<const std::byte> dataBase64, hr::streams::Stream& streamOut)
     {
-        if (!dataBase64 || dataSize == 0)
+        if (dataBase64.empty())
             return 0;
 
-        size_t in_len = dataSize;
+        size_t in_len = dataBase64.size();
         size_t i = 0;
         size_t in_ = 0;
         size_t bytesWritten = 0;
         unsigned char char_array_4[4], char_array_3[3];
 
-        while (in_len-- && (dataBase64[in_] != '=') && isBase64Char(dataBase64[in_]))
+        auto data = reinterpret_cast<const unsigned char*>(dataBase64.data());
+
+        while (in_len-- && (data[in_] != '=') && isBase64Char(data[in_]))
         {
-            char_array_4[i++] = dataBase64[in_];
+            char_array_4[i++] = data[in_];
             in_++;
             if (i == 4)
             {
@@ -380,22 +388,22 @@ namespace hr
         return bytesWritten;
     }
 
-    std::string Encoders::encodeHex(const void* const buffer, size_t bufferSize, bool toUppercase)
+    std::string Encoders::encodeHex(std::span<const std::byte> buffer, bool toUppercase)
     {
         std::string stringOut;
 
-        Encoders::encodeHex(buffer, bufferSize, toUppercase, stringOut);
+        Encoders::encodeHex(buffer, toUppercase, stringOut);
         return stringOut;
     }
 
-    void Encoders::encodeHex(const void* const buffer, size_t bufferSize, bool toUppercase, std::string& stringOut)
+    void Encoders::encodeHex(std::span<const std::byte> buffer, bool toUppercase, std::string& stringOut)
     {
-        stringOut.reserve(stringOut.size() + ((bufferSize * 2) + 1));
+        stringOut.reserve(stringOut.size() + ((buffer.size() * 2) + 1));
 
         auto bufferHex = toUppercase ? hexEncodeLookupUpper : hexEncodeLookupLower;
-        auto bufferWalker = reinterpret_cast<const unsigned char*>(buffer);
+        auto bufferWalker = reinterpret_cast<const unsigned char*>(buffer.data());
 
-        for (size_t i = 0; i < bufferSize; i++, bufferWalker++)
+        for (size_t i = 0; i < buffer.size(); i++, bufferWalker++)
         {
             auto hexPair = bufferHex + ((*bufferWalker) * 2);
 
@@ -404,12 +412,12 @@ namespace hr
         }
     }
 
-    void Encoders::encodeHex(const void* const buffer, size_t bufferSize, bool toUppercase, hr::streams::Stream& streamOut)
+    void Encoders::encodeHex(std::span<const std::byte> buffer, bool toUppercase, hr::streams::Stream& streamOut)
     {
         auto bufferHex = toUppercase ? hexEncodeLookupUpper : hexEncodeLookupLower;
-        auto bufferWalker = reinterpret_cast<const unsigned char*>(buffer);
+        auto bufferWalker = reinterpret_cast<const unsigned char*>(buffer.data());
 
-        for (size_t i = 0; i < bufferSize; i++, bufferWalker++)
+        for (size_t i = 0; i < buffer.size(); i++, bufferWalker++)
         {
             auto hexPair = bufferHex + ((*bufferWalker) * 2);
 
@@ -430,14 +438,14 @@ namespace hr
         return (numHexChars / 2);
     }
 
-    size_t Encoders::decodeHex(const std::string& dataHex, hr::streams::Stream& streamOut)
+    size_t Encoders::decodeHex(std::string_view dataHex, hr::streams::Stream& streamOut)
     {
         if (dataHex.empty() || ((dataHex.size() % 2) != 0))
             return 0;
 
         size_t inSize = dataHex.size();
         size_t bytesWritten = 0;
-        auto* inWalker = reinterpret_cast<const unsigned char*>(dataHex.c_str());
+        auto* inWalker = reinterpret_cast<const unsigned char*>(dataHex.data());
 
         for (size_t i = 0; i < inSize; i += 2)
         {
@@ -451,9 +459,11 @@ namespace hr
         return bytesWritten;
     }
 
-    unsigned char Encoders::decodeHexByte(const char* const dataHex)
+    unsigned char Encoders::decodeHexByte(std::string_view dataHex)
     {
+        if (dataHex.size() < 2)
+            return 0;
+
         return ((hexDecodeLookup[dataHex[0]] << 4) | hexDecodeLookup[dataHex[1]]);
     }
-
 }

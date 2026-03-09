@@ -4,14 +4,12 @@
 
 #include "math.hpp"
 #include "triangle.hpp"
+#include "types.hpp"
 #include "vector.hpp"
 
 #include <meshoptimizer.h>
 #include <mikktspace.h>
 
-#include <limits>
-#include <numeric>
-#include <set>
 #include <unordered_map>
 #include <vector>
 
@@ -40,7 +38,7 @@ namespace hr::geom
             return out;
         }
 
-        uint32_t packedWriteNormal(const float normal[3])
+        uint32_t packedWriteNormal(std::span<const float, 3> normal)
         {
             const uint32_t xs = normal[0] < 0;
             const uint32_t ys = normal[1] < 0;
@@ -62,7 +60,7 @@ namespace hr::geom
             return out;
         }
 
-        uint32_t packedWriteTangent(const float tangent[4])
+        uint32_t packedWriteTangent(std::span<const float, 4> tangent)
         {
             const uint32_t xs = tangent[0] < 0;
             const uint32_t ys = tangent[1] < 0;
@@ -109,12 +107,12 @@ namespace hr::geom
 
     void VertexShading::setNormal(const Vector3f& newNormal) noexcept
     {
-        normal = packedWriteNormal(newNormal.data());
+        normal = packedWriteNormal(newNormal.data().first<3>());
     }
 
     void VertexShading::setTangent(const Vector4f& newTangent) noexcept
     {
-        tangent = packedWriteTangent(newTangent.data());
+        tangent = packedWriteTangent(newTangent.data().first<4>());
     }
 
     void VertexShading::convertTo(VertexFull& dest)
@@ -314,10 +312,10 @@ namespace hr::geom
         auto vertexData = mData.get();
         for (size_t i = 0; i < mNumVertices; i++, vertexData++)
         {
-            matFull.transform({vertexData->pos, 3});
+            matFull.transform(vertexData->pos);
 
-            matRot.transform({vertexData->normal, 3});
-            matRot.transform({vertexData->tangent, 3});
+            matRot.transform(vertexData->normal);
+            matRot.transform(std::span<float, 3>{vertexData->tangent, 3});
         }
     }
 

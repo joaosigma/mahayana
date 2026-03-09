@@ -1,66 +1,42 @@
 #pragma once
 
+#include <concepts>
+#include <span>
+
 namespace hr::imaging
 {
-    template<class TFormat>
-    class ImageFormat
+    namespace concepts
     {
-        static constexpr size_t size()
-        {
-            return TFormat::template size();
-        }
+        template<class T, class TDataType>
+        concept ImageFormat = requires(std::span<const TDataType> dataIn,
+                                       std::span<const TDataType, 4> dataInRGBA,
+                                       std::span<TDataType> dataOut,
+                                       std::span<TDataType, 3> dataOutRGB,
+                                       std::span<TDataType, 4> dataOutRGBA,
+                                       TDataType defaultValue) {
+            { T::size } -> std::common_reference_with<size_t>;
+            { T::hasAlpha } -> std::common_reference_with<bool>;
+            T::template readRGB<TDataType>(dataIn, dataOutRGB, defaultValue);
+            T::template readRGBA<TDataType>(dataIn, dataOutRGBA, defaultValue, defaultValue);
+            T::template writeRGB<TDataType>(dataOut, dataInRGBA);
+            T::template writeRGBA<TDataType>(dataOut, dataInRGBA);
+        };
+    }
 
-        static constexpr bool hasAlpha()
-        {
-            return TFormat::template hasAlpha();
-        }
-
-        template<typename T>
-        static constexpr void readRGB(const T* const dataIn, T* const dataOut, const T defaultColorValue)
-        {
-            TFormat::template readRGB<T>(dataIn, dataOut, defaultColorValue);
-        }
-
-        template<typename T>
-        static constexpr void readRGBA(const T* const dataIn, T* const dataOut, const T defaultColorValue, const T defaultAlphaValue)
-        {
-            TFormat::template readRGBA<T>(dataIn, dataOut, defaultColorValue, defaultAlphaValue);
-        }
-
-        template<typename T>
-        static constexpr void writeRGB(T* const dataOut, const T* const pixelValue)
-        {
-            TFormat::template writeRGBA<T>(dataOut, pixelValue);
-        }
-
-        template<typename T>
-        static constexpr void writeRGBA(T* const dataOut, const T* const pixelValue)
-        {
-            TFormat::template writeRGBA<T>(dataOut, pixelValue);
-        }
-    };
-
-    struct ImageFormatR: ImageFormat<ImageFormatR>
+    struct ImageFormatR
     {
-        static constexpr size_t size()
-        {
-            return 1;
-        }
-
-        static constexpr bool hasAlpha()
-        {
-            return false;
-        }
+        static constexpr size_t size = 1;
+        static constexpr bool hasAlpha = false;
 
         template<typename T>
-        static constexpr void readRGB(const T* const dataIn, T* const dataOut, const T defaultColorValue)
+        static constexpr void readRGB(std::span<const T> dataIn, std::span<T, 3> dataOut, const T defaultColorValue)
         {
             dataOut[0] = dataIn[0];
             dataOut[1] = dataOut[2] = defaultColorValue;
         }
 
         template<typename T>
-        static constexpr void readRGBA(const T* const dataIn, T* const dataOut, const T defaultColorValue, const T defaultAlphaValue)
+        static constexpr void readRGBA(std::span<const T> dataIn, std::span<T, 4> dataOut, const T defaultColorValue, const T defaultAlphaValue)
         {
             dataOut[0] = dataIn[0];
             dataOut[1] = dataOut[2] = defaultColorValue;
@@ -68,39 +44,32 @@ namespace hr::imaging
         }
 
         template<typename T>
-        static constexpr void writeRGB(T* const dataOut, const T* const pixelValue)
+        static constexpr void writeRGB(std::span<T> dataOut, std::span<const T, 4> pixelValue)
         {
             dataOut[0] = pixelValue[0];
         }
 
         template<typename T>
-        static constexpr void writeRGBA(T* const dataOut, const T* const pixelValue)
+        static constexpr void writeRGBA(std::span<T> dataOut, std::span<const T, 4> pixelValue)
         {
             dataOut[0] = pixelValue[0];
         }
     };
 
-    struct ImageFormatRA: ImageFormat<ImageFormatRA>
+    struct ImageFormatRA
     {
-        static constexpr size_t size()
-        {
-            return 2;
-        }
-
-        static constexpr bool hasAlpha()
-        {
-            return true;
-        }
+        static constexpr size_t size = 2;
+        static constexpr bool hasAlpha = true;
 
         template<typename T>
-        static constexpr void readRGB(const T* const dataIn, T* const dataOut, const T defaultColorValue)
+        static constexpr void readRGB(std::span<const T> dataIn, std::span<T, 3> dataOut, const T defaultColorValue)
         {
             dataOut[0] = dataIn[0];
             dataOut[1] = dataOut[2] = defaultColorValue;
         }
 
         template<typename T>
-        static constexpr void readRGBA(const T* const dataIn, T* const dataOut, const T defaultColorValue, const T)
+        static constexpr void readRGBA(std::span<const T> dataIn, std::span<T, 4> dataOut, const T defaultColorValue, const T)
         {
             dataOut[0] = dataIn[0];
             dataOut[1] = dataOut[2] = defaultColorValue;
@@ -108,91 +77,77 @@ namespace hr::imaging
         }
 
         template<typename T>
-        static constexpr void writeRGB(T* const dataOut, const T* const pixelValue)
+        static constexpr void writeRGB(std::span<T> dataOut, std::span<const T, 4> pixelValue)
         {
             dataOut[0] = pixelValue[0];
         }
 
         template<typename T>
-        static constexpr void writeRGBA(T* const dataOut, const T* const pixelValue)
+        static constexpr void writeRGBA(std::span<T> dataOut, std::span<const T, 4> pixelValue)
         {
             dataOut[0] = pixelValue[0];
             dataOut[1] = pixelValue[3];
         }
     };
 
-    struct ImageFormatRGB: ImageFormat<ImageFormatRGB>
+    struct ImageFormatRGB
     {
-        static constexpr size_t size()
-        {
-            return 3;
-        }
+        static constexpr size_t size = 3;
+        static constexpr bool hasAlpha = false;
 
-        static constexpr bool hasAlpha()
+        template<typename T>
+        static constexpr void readRGB(std::span<const T> dataIn, std::span<T, 3> dataOut, const T)
         {
-            return false;
+            std::memcpy(dataOut.data(), dataIn.data(), sizeof(T) * 3);
         }
 
         template<typename T>
-        static constexpr void readRGB(const T* const dataIn, T* const dataOut, const T)
+        static constexpr void readRGBA(std::span<const T> dataIn, std::span<T, 4> dataOut, const T, const T defaultAlphaValue)
         {
-            std::memcpy(dataOut, dataIn, sizeof(T) * 3);
-        }
-
-        template<typename T>
-        static constexpr void readRGBA(const T* const dataIn, T* const dataOut, const T, const T defaultAlphaValue)
-        {
-            std::memcpy(dataOut, dataIn, sizeof(T) * 3);
+            std::memcpy(dataOut.data(), dataIn.data(), sizeof(T) * 3);
             dataOut[3] = defaultAlphaValue;
         }
 
         template<typename T>
-        static constexpr void writeRGB(T* const dataOut, const T* const pixelValue)
+        static constexpr void writeRGB(std::span<T> dataOut, std::span<const T, 4> pixelValue)
         {
-            std::memcpy(dataOut, pixelValue, sizeof(T) * 3);
+            std::memcpy(dataOut.data(), pixelValue.data(), sizeof(T) * 3);
         }
 
         template<typename T>
-        static constexpr void writeRGBA(T* const dataOut, const T* const pixelValue)
+        static constexpr void writeRGBA(std::span<T> dataOut, std::span<const T, 4> pixelValue)
         {
-            std::memcpy(dataOut, pixelValue, sizeof(T) * 3);
+            std::memcpy(dataOut.data(), pixelValue.data(), sizeof(T) * 3);
         }
     };
 
-    struct ImageFormatRGBA: ImageFormat<ImageFormatRGBA>
+    struct ImageFormatRGBA
     {
-        static constexpr size_t size()
-        {
-            return 4;
-        }
+        static constexpr size_t size = 4;
+        static constexpr bool hasAlpha = true;
 
-        static constexpr bool hasAlpha()
+        template<typename T>
+        static constexpr void readRGB(std::span<const T> dataIn, std::span<T, 3> dataOut, const T)
         {
-            return true;
+            std::memcpy(dataOut.data(), dataIn.data(), sizeof(T) * 3);
         }
 
         template<typename T>
-        static constexpr void readRGB(const T* const dataIn, T* const dataOut, const T)
+        static constexpr void readRGBA(std::span<const T> dataIn, std::span<T, 4> dataOut, const T, const T)
         {
-            std::memcpy(dataOut, dataIn, sizeof(T) * 3);
+            std::memcpy(dataOut.data(), dataIn.data(), sizeof(T) * 4);
         }
 
         template<typename T>
-        static constexpr void readRGBA(const T* const dataIn, T* const dataOut, const T, const T)
+        static constexpr void writeRGB(std::span<T> dataOut, std::span<const T, 4> pixelValue)
         {
-            std::memcpy(dataOut, dataIn, sizeof(T) * 4);
+            std::memcpy(dataOut.data(), pixelValue.data(), sizeof(T) * 3);
         }
 
         template<typename T>
-        static constexpr void writeRGB(T* const dataOut, const T* const pixelValue)
+        static constexpr void writeRGBA(std::span<T> dataOut, std::span<const T, 4> pixelValue)
         {
-            std::memcpy(dataOut, pixelValue, sizeof(T) * 3);
-        }
-
-        template<typename T>
-        static constexpr void writeRGBA(T* const dataOut, const T* const pixelValue)
-        {
-            std::memcpy(dataOut, pixelValue, sizeof(T) * 4);
+            std::memcpy(dataOut.data(), pixelValue.data(), sizeof(T) * 4);
         }
     };
 }

@@ -8,13 +8,14 @@
 #include <cassert>
 #include <format>
 #include <io.h>
-#include <regex>
 
 #include <fcntl.h>
 #include <intrin.h>
 
-#include <shellapi.h>
+// clang-format off
 #include <windows.h>
+#include <shellapi.h>
+// clang-format on
 
 namespace hr::platform
 {

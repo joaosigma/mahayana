@@ -357,6 +357,15 @@ namespace hr::streams
             return true;
         }
 
+        template<typename T, size_t N>
+        bool read(std::span<T, N> data)
+        {
+            if (!mStream.canRead(data.size_bytes()))
+                return false;
+
+            return (mStream.read(data.data(), data.size_bytes()) == data.size_bytes());
+        }
+
         size_t read(void* const buffer, size_t numBytes)
         {
             return mStream.read(buffer, numBytes);
@@ -407,6 +416,7 @@ namespace hr::streams
         {
             if (!mStream.canWrite())
                 return false;
+
             return (mStream.write(&value, sizeof(T)) == sizeof(T));
         }
 
@@ -415,6 +425,7 @@ namespace hr::streams
         {
             if (!mStream.canWrite())
                 return 0;
+
             return (mStream.write(data.data(), data.size_bytes()) == data.size_bytes());
         }
 
@@ -422,6 +433,7 @@ namespace hr::streams
         {
             if (!mStream.canWrite())
                 return 0;
+
             return mStream.write(buffer, numBytes);
         }
 

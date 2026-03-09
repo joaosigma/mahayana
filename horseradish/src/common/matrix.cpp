@@ -808,6 +808,12 @@ namespace hr
     }
 
     template<typename TDataType>
+    Matrix4<TDataType> Matrix4<TDataType>::glModelView(const Vector3Type& pos, const Vector3Type& target) noexcept
+    {
+        return Matrix4<TDataType>::glModelView(pos, target, Vector3Type{0.0, 1.0, 0.0});
+    }
+
+    template<typename TDataType>
     Matrix4<TDataType> Matrix4<TDataType>::glModelView(const Vector3Type& pos, TDataType angleDegX, TDataType angleDegY, const Vector3Type& up) noexcept
     {
         TDataType sx, sy, cx, cy;
@@ -1105,40 +1111,37 @@ namespace hr
     }
 
     template<typename TDataType>
-    void Matrix4<TDataType>::transform(std::span<TDataType> vec) const noexcept
+    void Matrix4<TDataType>::transform(std::span<TDataType, 3> vec) const noexcept
     {
-        assert((vec.size() == 3) || (vec.size() == 4));
+        auto vecX = vec[0];
+        auto vecY = vec[1];
+        auto vecZ = vec[2];
 
-        if (vec.size() == 3)
+        vec[0] = vecX * m[0] + vecY * m[4] + vecZ * m[8] + m[12];
+        vec[1] = vecX * m[1] + vecY * m[5] + vecZ * m[9] + m[13];
+        vec[2] = vecX * m[2] + vecY * m[6] + vecZ * m[10] + m[14];
+    }
+
+    template<typename TDataType>
+    void Matrix4<TDataType>::transform(std::span<TDataType, 4> vec) const noexcept
+    {
+        auto vecData = vec.data();
+
+        if constexpr (std::is_same_v<TDataType, float>)
         {
-            auto vecX = vec[0];
-            auto vecY = vec[1];
-            auto vecZ = vec[2];
-
-            vec[0] = vecX * m[0] + vecY * m[4] + vecZ * m[8] + m[12];
-            vec[1] = vecX * m[1] + vecY * m[5] + vecZ * m[9] + m[13];
-            vec[2] = vecX * m[2] + vecY * m[6] + vecZ * m[10] + m[14];
+            __m128 row1 = _mm_mul_ps(_mm_load_ps1(vecData + 0), _mm_load_ps(m));
+            __m128 row2 = _mm_mul_ps(_mm_load_ps1(vecData + 1), _mm_load_ps(m + 4));
+            __m128 row3 = _mm_mul_ps(_mm_load_ps1(vecData + 2), _mm_load_ps(m + 8));
+            __m128 row4 = _mm_mul_ps(_mm_load_ps1(vecData + 3), _mm_load_ps(m + 12));
+            _mm_store_ps(vec.data(), _mm_add_ps(_mm_add_ps(row1, row2), _mm_add_ps(row3, row4)));
         }
         else
         {
-            auto vecData = vec.data();
-
-            if constexpr (std::is_same_v<TDataType, float>)
-            {
-                __m128 row1 = _mm_mul_ps(_mm_load_ps1(vecData + 0), _mm_load_ps(m));
-                __m128 row2 = _mm_mul_ps(_mm_load_ps1(vecData + 1), _mm_load_ps(m + 4));
-                __m128 row3 = _mm_mul_ps(_mm_load_ps1(vecData + 2), _mm_load_ps(m + 8));
-                __m128 row4 = _mm_mul_ps(_mm_load_ps1(vecData + 3), _mm_load_ps(m + 12));
-                _mm_store_ps(vec.data(), _mm_add_ps(_mm_add_ps(row1, row2), _mm_add_ps(row3, row4)));
-            }
-            else
-            {
-                __m256d row1 = _mm256_mul_pd(_mm256_broadcast_sd(vecData + 0), _mm256_load_pd(m));
-                __m256d row2 = _mm256_mul_pd(_mm256_broadcast_sd(vecData + 1), _mm256_load_pd(m + 4));
-                __m256d row3 = _mm256_mul_pd(_mm256_broadcast_sd(vecData + 2), _mm256_load_pd(m + 8));
-                __m256d row4 = _mm256_mul_pd(_mm256_broadcast_sd(vecData + 3), _mm256_load_pd(m + 12));
-                _mm256_store_pd(vec.data(), _mm256_add_pd(_mm256_add_pd(row1, row2), _mm256_add_pd(row3, row4)));
-            }
+            __m256d row1 = _mm256_mul_pd(_mm256_broadcast_sd(vecData + 0), _mm256_load_pd(m));
+            __m256d row2 = _mm256_mul_pd(_mm256_broadcast_sd(vecData + 1), _mm256_load_pd(m + 4));
+            __m256d row3 = _mm256_mul_pd(_mm256_broadcast_sd(vecData + 2), _mm256_load_pd(m + 8));
+            __m256d row4 = _mm256_mul_pd(_mm256_broadcast_sd(vecData + 3), _mm256_load_pd(m + 12));
+            _mm256_store_pd(vec.data(), _mm256_add_pd(_mm256_add_pd(row1, row2), _mm256_add_pd(row3, row4)));
         }
     }
 
@@ -1150,14 +1153,14 @@ namespace hr
             __m128 row1 = _mm_mul_ps(_mm_load_ps1(&vec[0]), _mm_load_ps(m));
             __m128 row2 = _mm_mul_ps(_mm_load_ps1(&vec[1]), _mm_load_ps(m + 4));
             __m128 row3 = _mm_mul_ps(_mm_load_ps1(&vec[2]), _mm_load_ps(m + 8));
-            _mm_store_ps(vec.data(), _mm_add_ps(_mm_add_ps(row1, row2), _mm_add_ps(row3, _mm_load_ps(m + 12))));
+            _mm_store_ps(vec.data().data(), _mm_add_ps(_mm_add_ps(row1, row2), _mm_add_ps(row3, _mm_load_ps(m + 12))));
         }
         else
         {
             __m256d row1 = _mm256_mul_pd(_mm256_broadcast_sd(&vec[0]), _mm256_load_pd(m));
             __m256d row2 = _mm256_mul_pd(_mm256_broadcast_sd(&vec[1]), _mm256_load_pd(m + 4));
             __m256d row3 = _mm256_mul_pd(_mm256_broadcast_sd(&vec[2]), _mm256_load_pd(m + 8));
-            _mm256_store_pd(vec.data(), _mm256_add_pd(_mm256_add_pd(row1, row2), _mm256_add_pd(row3, _mm256_load_pd(m + 12))));
+            _mm256_store_pd(vec.data().data(), _mm256_add_pd(_mm256_add_pd(row1, row2), _mm256_add_pd(row3, _mm256_load_pd(m + 12))));
         }
     }
 
@@ -1171,7 +1174,7 @@ namespace hr
             __m128 row3 = _mm_mul_ps(_mm_load_ps1(&vec[2]), _mm_load_ps(m + 8));
 
             Vector3Type result;
-            _mm_store_ps(result.data(), _mm_add_ps(_mm_add_ps(row1, row2), _mm_add_ps(row3, _mm_load_ps(m + 12))));
+            _mm_store_ps(result.data().data(), _mm_add_ps(_mm_add_ps(row1, row2), _mm_add_ps(row3, _mm_load_ps(m + 12))));
             return result;
         }
         else
@@ -1181,7 +1184,7 @@ namespace hr
             __m256d row3 = _mm256_mul_pd(_mm256_broadcast_sd(&vec[2]), _mm256_load_pd(m + 8));
 
             Vector3Type result;
-            _mm256_store_pd(result.data(), _mm256_add_pd(_mm256_add_pd(row1, row2), _mm256_add_pd(row3, _mm256_load_pd(m + 12))));
+            _mm256_store_pd(result.data().data(), _mm256_add_pd(_mm256_add_pd(row1, row2), _mm256_add_pd(row3, _mm256_load_pd(m + 12))));
             return result;
         }
     }
@@ -1189,13 +1192,13 @@ namespace hr
     template<typename TDataType>
     void Matrix4<TDataType>::transform(std::span<Vector3Type> vecs) const noexcept
     {
-        asmMat4x4Vec3(vecs.data()->data(), vecs.data()->data(), kOne<TDataType>, sizeof(Vector3Type), m, vecs.size());
+        asmMat4x4Vec3(vecs.data()->data().data(), vecs.data()->data().data(), kOne<TDataType>, sizeof(Vector3Type), m, vecs.size());
     }
 
     template<typename TDataType>
     void Matrix4<TDataType>::transform(Vector4Type& vec) const noexcept
     {
-        transform({vec.data(), 4});
+        transform(vec.data());
     }
 
     template<typename TDataType>
@@ -1209,7 +1212,7 @@ namespace hr
             __m128 row4 = _mm_mul_ps(_mm_load_ps1(&vec[3]), _mm_load_ps(m + 12));
 
             Vector4Type result;
-            _mm_store_ps(result.data(), _mm_add_ps(_mm_add_ps(row1, row2), _mm_add_ps(row3, row4)));
+            _mm_store_ps(result.data().data(), _mm_add_ps(_mm_add_ps(row1, row2), _mm_add_ps(row3, row4)));
             return result;
         }
         else
@@ -1220,7 +1223,7 @@ namespace hr
             __m256d row4 = _mm256_mul_pd(_mm256_broadcast_sd(&vec[3]), _mm256_load_pd(m + 12));
 
             Vector4Type result;
-            _mm256_store_pd(result.data(), _mm256_add_pd(_mm256_add_pd(row1, row2), _mm256_add_pd(row3, row4)));
+            _mm256_store_pd(result.data().data(), _mm256_add_pd(_mm256_add_pd(row1, row2), _mm256_add_pd(row3, row4)));
             return result;
         }
     }
@@ -1228,7 +1231,7 @@ namespace hr
     template<typename TDataType>
     void Matrix4<TDataType>::transform(std::span<Vector4Type> vecs) const noexcept
     {
-        asmMat4x4Vec4(vecs.data()->data(), vecs.data()->data(), sizeof(Vector4Type), m, vecs.size());
+        asmMat4x4Vec4(vecs.data()->data().data(), vecs.data()->data().data(), sizeof(Vector4Type), m, vecs.size());
     }
 
     template<typename TDataType>
@@ -1240,7 +1243,7 @@ namespace hr
         transform(pts);
 
         bbox.reset();
-        bbox.merge(pts.data(), 8);
+        bbox.merge(pts);
     }
 
     template<typename TDataType>
@@ -1252,7 +1255,7 @@ namespace hr
         transform(pts);
 
         BBox<Vector3Type> result;
-        result.merge(pts.data(), 8);
+        result.merge(pts);
         return result;
     }
 
@@ -1656,10 +1659,8 @@ namespace hr
     }
 
     template<typename TDataType>
-    void Matrix3<TDataType>::transform(std::span<TDataType> vec) const noexcept
+    void Matrix3<TDataType>::transform(std::span<TDataType, 3> vec) const noexcept
     {
-        assert(vec.size() == 3);
-
         auto vecX = vec[0];
         auto vecY = vec[1];
         auto vecZ = vec[2];
@@ -1703,7 +1704,7 @@ namespace hr
     template<typename TDataType>
     Matrix3<TDataType>::Vector3Type Matrix3<TDataType>::getRow(size_t rowIndex) const noexcept
     {
-        return Vector3Type(m + ((rowIndex % 3) * 3));
+        return Vector3Type(std::span<const TDataType, 3>(m + ((rowIndex % 3) * 3), 3));
     }
 
     template<typename TDataType>

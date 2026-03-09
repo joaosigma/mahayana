@@ -62,24 +62,16 @@ namespace hr
             }
         }
 
-        TDataType* data() noexcept
+        template<typename Self>
+        constexpr auto data(this Self&& self) noexcept
         {
-            return mData;
+            return std::span{self.mData, NComponents}.first<NComponents>();
         }
 
-        const TDataType* data() const noexcept
+        template<typename Self>
+        constexpr auto& operator[](this Self&& self, const size_t index) noexcept
         {
-            return mData;
-        }
-
-        TDataType& operator[](const size_t index) noexcept
-        {
-            return mData[index % NComponents];
-        }
-
-        const TDataType& operator[](const size_t index) const noexcept
-        {
-            return mData[index % NComponents];
+            return self.mData[index % NComponents];
         }
 
         Vector& operator=(const Vector& v) noexcept
@@ -486,7 +478,7 @@ namespace hr
           : mData{vx, vy, vz, 0.0f}
         {}
 
-        explicit constexpr Vector(const float v[3]) noexcept
+        explicit constexpr Vector(std::span<const float, 3> v) noexcept
         {
             mData[0] = v[0];
             mData[1] = v[1];
@@ -499,24 +491,16 @@ namespace hr
             _mm_store_ps(mData, vecDat);
         }
 
-        constexpr float* data() noexcept
+        template<typename Self>
+        constexpr auto data(this Self&& self) noexcept
         {
-            return mData;
+            return std::span{self.mData, 3}.first<3>();
         }
 
-        constexpr const float* data() const noexcept
+        template<typename Self>
+        constexpr auto& operator[](this Self&& self, const size_t index) noexcept
         {
-            return mData;
-        }
-
-        constexpr float& operator[](const size_t index) noexcept
-        {
-            return mData[index % 3];
-        }
-
-        constexpr const float& operator[](const size_t index) const noexcept
-        {
-            return mData[index % 3];
+            return self.mData[index % 3];
         }
 
         void operator+=(const Vector& v) noexcept
@@ -922,7 +906,7 @@ namespace hr
           : mData{vx, vy, vz, 0.0}
         {}
 
-        explicit constexpr Vector(const double v[3])
+        explicit constexpr Vector(std::span<const double, 3> v) noexcept
           : mData{v[0], v[1], v[2], 0.0}
         {}
 
@@ -931,24 +915,16 @@ namespace hr
             _mm256_store_pd(mData, vecDat);
         }
 
-        constexpr double* data() noexcept
+        template<typename Self>
+        constexpr auto data(this Self&& self) noexcept
         {
-            return mData;
+            return std::span{self.mData, 3}.first<3>();
         }
 
-        constexpr const double* data() const noexcept
+        template<typename Self>
+        constexpr auto& operator[](this Self&& self, const size_t index) noexcept
         {
-            return mData;
-        }
-
-        constexpr double& operator[](const size_t index) noexcept
-        {
-            return mData[index % 3];
-        }
-
-        constexpr const double& operator[](const size_t index) const noexcept
-        {
-            return mData[index % 3];
+            return self.mData[index % 3];
         }
 
         void operator+=(const Vector& v) noexcept
@@ -1248,7 +1224,7 @@ namespace hr
           : mData{vx, vy, vz, vw}
         {}
 
-        explicit constexpr Vector(const float v[4]) noexcept
+        explicit constexpr Vector(std::span<const float, 4> v) noexcept
           : mData{v[0], v[1], v[2], v[3]}
         {}
 
@@ -1257,24 +1233,16 @@ namespace hr
             _mm_store_ps(mData, vecDat);
         }
 
-        constexpr float* data() noexcept
+        template<typename Self>
+        constexpr auto data(this Self&& self) noexcept
         {
-            return mData;
+            return std::span{self.mData, 4}.first<4>();
         }
 
-        constexpr const float* data() const noexcept
+        template<typename Self>
+        constexpr auto& operator[](this Self&& self, const size_t index) noexcept
         {
-            return mData;
-        }
-
-        constexpr float& operator[](const size_t index) noexcept
-        {
-            return mData[index % 4];
-        }
-
-        constexpr const float& operator[](const size_t index) const noexcept
-        {
-            return mData[index % 4];
+            return self.mData[index % 4];
         }
 
         void operator+=(const Vector& v) noexcept
@@ -1588,7 +1556,7 @@ namespace hr
           : mData{vx, vy, vz, vw}
         {}
 
-        explicit constexpr Vector(const double v[4])
+        explicit constexpr Vector(std::span<const double, 4> v) noexcept
           : mData{v[0], v[1], v[2], v[3]}
         {}
 
@@ -1597,24 +1565,16 @@ namespace hr
             _mm256_store_pd(mData, vecDat);
         }
 
-        constexpr double* data() noexcept
+        template<typename Self>
+        constexpr auto data(this Self&& self) noexcept
         {
-            return mData;
+            return std::span{self.mData, 4}.first<4>();
         }
 
-        constexpr const double* data() const noexcept
+        template<typename Self>
+        constexpr auto& operator[](this Self&& self, const size_t index) noexcept
         {
-            return mData;
-        }
-
-        constexpr double& operator[](const size_t index) noexcept
-        {
-            return mData[index % 4];
-        }
-
-        constexpr const double& operator[](const size_t index) const noexcept
-        {
-            return mData[index % 4];
+            return self.mData[index % 4];
         }
 
         void operator+=(const Vector& v) noexcept
@@ -1824,14 +1784,14 @@ namespace hr
         if constexpr (std::is_same_v<TTargetType, float>)
         {
             Vector<float, 3> newVec;
-            _mm_store_ps(newVec.data(), _mm_load_ps(mData));
+            _mm_store_ps(newVec.data().data(), _mm_load_ps(mData));
 
             return newVec;
         }
         else
         {
             Vector<double, 3> newVec;
-            _mm256_store_pd(newVec.data(), _mm256_cvtps_pd(_mm_load_ps(mData)));
+            _mm256_store_pd(newVec.data().data(), _mm256_cvtps_pd(_mm_load_ps(mData)));
 
             return newVec;
         }
@@ -1848,14 +1808,14 @@ namespace hr
             if constexpr (std::is_same_v<TTargetType, float>)
             {
                 Vector<float, 3> newVec;
-                _mm_store_ps(newVec.data(), _mm_load_ps(mData));
+                _mm_store_ps(newVec.data().data(), _mm_load_ps(mData));
 
                 return newVec;
             }
             else
             {
                 Vector<double, 3> newVec;
-                _mm256_store_pd(newVec.data(), _mm256_cvtps_pd(_mm_load_ps(mData)));
+                _mm256_store_pd(newVec.data().data(), _mm256_cvtps_pd(_mm_load_ps(mData)));
 
                 return newVec;
             }
@@ -1865,7 +1825,7 @@ namespace hr
             if constexpr (std::is_same_v<TTargetType, float>)
             {
                 Vector<float, 4> newVec;
-                _mm_store_ps(newVec.data(), _mm_load_ps(mData));
+                _mm_store_ps(newVec.data().data(), _mm_load_ps(mData));
                 newVec.data()[3] = w;
 
                 return newVec;
@@ -1873,7 +1833,7 @@ namespace hr
             else
             {
                 Vector<double, 4> newVec;
-                _mm256_store_pd(newVec.data(), _mm256_cvtps_pd(_mm_load_ps(mData)));
+                _mm256_store_pd(newVec.data().data(), _mm256_cvtps_pd(_mm_load_ps(mData)));
                 newVec.data()[3] = w;
 
                 return newVec;
@@ -1890,14 +1850,14 @@ namespace hr
         if constexpr (std::is_same_v<TTargetType, double>)
         {
             Vector<double, 3> newVec;
-            _mm256_store_pd(newVec.data(), _mm256_load_pd(mData));
+            _mm256_store_pd(newVec.data().data(), _mm256_load_pd(mData));
 
             return newVec;
         }
         else
         {
             Vector<float, 3> newVec;
-            _mm_store_ps(newVec.data(), _mm256_cvtpd_ps(_mm256_load_pd(mData)));
+            _mm_store_ps(newVec.data().data(), _mm256_cvtpd_ps(_mm256_load_pd(mData)));
 
             return newVec;
         }
@@ -1914,14 +1874,14 @@ namespace hr
             if constexpr (std::is_same_v<TTargetType, double>)
             {
                 Vector<double, 3> newVec;
-                _mm256_store_pd(newVec.data(), _mm256_load_pd(mData));
+                _mm256_store_pd(newVec.data().data(), _mm256_load_pd(mData));
 
                 return newVec;
             }
             else
             {
                 Vector<float, 3> newVec;
-                _mm_store_ps(newVec.data(), _mm256_cvtpd_ps(_mm256_load_pd(mData)));
+                _mm_store_ps(newVec.data().data(), _mm256_cvtpd_ps(_mm256_load_pd(mData)));
 
                 return newVec;
             }
@@ -1931,7 +1891,7 @@ namespace hr
             if constexpr (std::is_same_v<TTargetType, double>)
             {
                 Vector<double, 4> newVec;
-                _mm256_store_pd(newVec.data(), _mm256_load_pd(mData));
+                _mm256_store_pd(newVec.data().data(), _mm256_load_pd(mData));
                 newVec.data()[3] = w;
 
                 return newVec;
@@ -1939,7 +1899,7 @@ namespace hr
             else
             {
                 Vector<float, 4> newVec;
-                _mm_store_ps(newVec.data(), _mm256_cvtpd_ps(_mm256_load_pd(mData)));
+                _mm_store_ps(newVec.data().data(), _mm256_cvtpd_ps(_mm256_load_pd(mData)));
                 newVec.data()[3] = w;
 
                 return newVec;
@@ -1958,14 +1918,14 @@ namespace hr
         if constexpr (std::is_same_v<TTargetType, float>)
         {
             Vector<float, NTargetComponents> newVec;
-            _mm_store_ps(newVec.data(), _mm_load_ps(mData));
+            _mm_store_ps(newVec.data().data(), _mm_load_ps(mData));
 
             return newVec;
         }
         else
         {
             Vector<double, NTargetComponents> newVec;
-            _mm256_store_pd(newVec.data(), _mm256_cvtps_pd(_mm_load_ps(mData)));
+            _mm256_store_pd(newVec.data().data(), _mm256_cvtps_pd(_mm_load_ps(mData)));
 
             return newVec;
         }
@@ -1982,14 +1942,14 @@ namespace hr
         if constexpr (std::is_same_v<TTargetType, double>)
         {
             Vector<double, NTargetComponents> newVec;
-            _mm256_store_pd(newVec.data(), _mm256_load_pd(mData));
+            _mm256_store_pd(newVec.data().data(), _mm256_load_pd(mData));
 
             return newVec;
         }
         else
         {
             Vector<float, NTargetComponents> newVec;
-            _mm_store_ps(newVec.data(), _mm256_cvtpd_ps(_mm256_load_pd(mData)));
+            _mm_store_ps(newVec.data().data(), _mm256_cvtpd_ps(_mm256_load_pd(mData)));
 
             return newVec;
         }

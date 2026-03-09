@@ -2,7 +2,6 @@
 
 #include "matrix.hpp"
 #include "quaternion.hpp"
-#include "serialize.hpp"
 #include "vector.hpp"
 
 namespace hr
@@ -13,16 +12,13 @@ namespace hr
         template<class TArchiveWriter>
         static void save(TArchiveWriter& writer, const Vector3f& vec)
         {
-            writer << std::span<const float>(vec.data(), 3);
+            writer << vec.data();
         }
 
         template<class TArchiveReader>
         static void load(TArchiveReader& reader, Vector3f& vec)
         {
-            std::array<float, 3> values;
-            reader >> std::span(values);
-
-            vec = Vector3f(values.data());
+            reader >> vec.data();
         }
     };
 
@@ -32,16 +28,13 @@ namespace hr
         template<class TArchiveWriter>
         static void save(TArchiveWriter& writer, const Vector3d& vec)
         {
-            writer << std::span<const double>(vec.data(), 3);
+            writer << vec.data();
         }
 
         template<class TArchiveReader>
         static void load(TArchiveReader& reader, Vector3d& vec)
         {
-            std::array<double, 3> values;
-            reader >> std::span(values);
-
-            vec = Vector3d(values.data());
+            reader >> vec.data();
         }
     };
 
@@ -51,16 +44,13 @@ namespace hr
         template<class TArchiveWriter>
         static void save(TArchiveWriter& writer, const Vector4f& vec)
         {
-            writer << std::span<const float>(vec.data(), 4);
+            writer << vec.data();
         }
 
         template<class TArchiveReader>
         static void load(TArchiveReader& reader, Vector4f& vec)
         {
-            std::array<float, 4> values;
-            reader >> std::span(values);
-
-            vec = Vector4f(values.data());
+            reader >> vec.data();
         }
     };
 
@@ -70,16 +60,13 @@ namespace hr
         template<class TArchiveWriter>
         static void save(TArchiveWriter& writer, const Vector4d& vec)
         {
-            writer << std::span<const double>(vec.data(), 4);
+            writer << vec.data();
         }
 
         template<class TArchiveReader>
         static void load(TArchiveReader& reader, Vector4d& vec)
         {
-            std::array<double, 4> values;
-            reader >> std::span(values);
-
-            vec = Vector4d(values.data());
+            reader >> vec.data();
         }
     };
 

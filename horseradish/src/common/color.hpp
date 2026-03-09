@@ -7,6 +7,7 @@
 
 #include <array>
 #include <emmintrin.h>
+#include <span>
 #include <type_traits>
 #include <xmmintrin.h>
 
@@ -20,7 +21,7 @@ namespace hr
      ******/
 
     template<typename TDataType = uint8_t>
-    class Color
+    class Color final
     {
         TDataType mRGBA[4];
 
@@ -48,27 +49,19 @@ namespace hr
           : mRGBA{rgba[0], rgba[1], rgba[2], rgba[3]}
         {}
 
-        constexpr TDataType* data() noexcept
+        template<typename Self>
+        constexpr auto data(this Self&& self) noexcept
         {
-            return mRGBA;
+            return std::span{self.mRGBA};
         }
 
-        constexpr const TDataType* data() const noexcept
+        template<typename Self>
+        constexpr auto& operator[](this Self&& self, const size_t index) noexcept
         {
-            return mRGBA;
+            return self.mRGBA[index % 4];
         }
 
-        constexpr TDataType& operator[](const size_t index)
-        {
-            return mRGBA[index % 4];
-        }
-
-        constexpr const TDataType& operator[](const size_t index) const
-        {
-            return mRGBA[index % 4];
-        }
-
-        void operator+=(const Color& c)
+        void operator+=(const Color& c) noexcept
         {
             mRGBA[0] += c.mRGBA[0];
             mRGBA[1] += c.mRGBA[1];
@@ -76,7 +69,7 @@ namespace hr
             mRGBA[3] += c.mRGBA[3];
         }
 
-        void operator-=(const Color& c)
+        void operator-=(const Color& c) noexcept
         {
             mRGBA[0] -= c.mRGBA[0];
             mRGBA[1] -= c.mRGBA[1];
@@ -84,7 +77,7 @@ namespace hr
             mRGBA[3] -= c.mRGBA[3];
         }
 
-        void operator*=(const Color& c)
+        void operator*=(const Color& c) noexcept
         {
             mRGBA[0] *= c.mRGBA[0];
             mRGBA[1] *= c.mRGBA[1];
@@ -92,7 +85,7 @@ namespace hr
             mRGBA[3] *= c.mRGBA[3];
         }
 
-        void operator/=(const Color& c)
+        void operator/=(const Color& c) noexcept
         {
             mRGBA[0] /= c.mRGBA[0];
             mRGBA[1] /= c.mRGBA[1];
@@ -100,7 +93,7 @@ namespace hr
             mRGBA[3] /= c.mRGBA[3];
         }
 
-        void operator+=(const TDataType n)
+        void operator+=(const TDataType n) noexcept
         {
             mRGBA[0] += n;
             mRGBA[1] += n;
@@ -108,7 +101,7 @@ namespace hr
             mRGBA[3] += n;
         }
 
-        void operator-=(const TDataType n)
+        void operator-=(const TDataType n) noexcept
         {
             mRGBA[0] -= n;
             mRGBA[1] -= n;
@@ -116,7 +109,7 @@ namespace hr
             mRGBA[3] -= n;
         }
 
-        void operator*=(const TDataType n)
+        void operator*=(const TDataType n) noexcept
         {
             mRGBA[0] *= n;
             mRGBA[1] *= n;
@@ -124,7 +117,7 @@ namespace hr
             mRGBA[3] *= n;
         }
 
-        void operator/=(const TDataType n)
+        void operator/=(const TDataType n) noexcept
         {
             mRGBA[0] /= n;
             mRGBA[1] /= n;
@@ -132,7 +125,7 @@ namespace hr
             mRGBA[3] /= n;
         }
 
-        Color operator+(const Color& c) const
+        Color operator+(const Color& c) const noexcept
         {
             Color result;
             result.mRGBA[0] = mRGBA[0] + c.mRGBA[0];
@@ -143,7 +136,7 @@ namespace hr
             return result;
         }
 
-        Color operator-(const Color& c) const
+        Color operator-(const Color& c) const noexcept
         {
             Color result;
             result.mRGBA[0] = mRGBA[0] - c.mRGBA[0];
@@ -154,7 +147,7 @@ namespace hr
             return result;
         }
 
-        Color operator*(const Color& c) const
+        Color operator*(const Color& c) const noexcept
         {
             Color result;
             result.mRGBA[0] = mRGBA[0] * c.mRGBA[0];
@@ -165,7 +158,7 @@ namespace hr
             return result;
         }
 
-        Color operator/(const Color& c) const
+        Color operator/(const Color& c) const noexcept
         {
             Color result;
             result.mRGBA[0] = mRGBA[0] / c.mRGBA[0];
@@ -176,7 +169,7 @@ namespace hr
             return result;
         }
 
-        Color operator+(const TDataType n) const
+        Color operator+(const TDataType n) const noexcept
         {
             Color result;
             result.mRGBA[0] = mRGBA[0] + n;
@@ -187,7 +180,7 @@ namespace hr
             return result;
         }
 
-        Color operator-(const TDataType n) const
+        Color operator-(const TDataType n) const noexcept
         {
             Color result;
             result.mRGBA[0] = mRGBA[0] - n;
@@ -198,7 +191,7 @@ namespace hr
             return result;
         }
 
-        Color operator*(const TDataType n) const
+        Color operator*(const TDataType n) const noexcept
         {
             Color result;
             result.mRGBA[0] = mRGBA[0] * n;
@@ -209,7 +202,7 @@ namespace hr
             return result;
         }
 
-        Color operator/(const TDataType n) const
+        Color operator/(const TDataType n) const noexcept
         {
             Color result;
             result.mRGBA[0] = mRGBA[0] / n;
@@ -220,7 +213,7 @@ namespace hr
             return result;
         }
 
-        Color& set(const Color& color)
+        Color& set(const Color& color) noexcept
         {
             mRGBA[0] = color.mRGBA[0];
             mRGBA[1] = color.mRGBA[1];
@@ -229,7 +222,7 @@ namespace hr
             return *this;
         }
 
-        Color& set(const Color& color, const TDataType a)
+        Color& set(const Color& color, const TDataType a) noexcept
         {
             mRGBA[0] = color.mRGBA[0];
             mRGBA[1] = color.mRGBA[1];
@@ -238,7 +231,7 @@ namespace hr
             return *this;
         }
 
-        Color& set(const TDataType* rgba)
+        Color& set(std::span<const TDataType, 4> rgba) noexcept
         {
             mRGBA[0] = rgba[0];
             mRGBA[1] = rgba[1];
@@ -247,7 +240,7 @@ namespace hr
             return *this;
         }
 
-        Color& set(const TDataType* const rgb, const TDataType a)
+        Color& set(std::span<const TDataType, 3> rgb, const TDataType a) noexcept
         {
             mRGBA[0] = rgb[0];
             mRGBA[1] = rgb[1];
@@ -256,7 +249,7 @@ namespace hr
             return *this;
         }
 
-        Color& set(TDataType rgba)
+        Color& set(TDataType rgba) noexcept
         {
             mRGBA[0] = rgba;
             mRGBA[1] = rgba;
@@ -265,14 +258,14 @@ namespace hr
             return *this;
         }
 
-        Color& set(TDataType rgb, TDataType a)
+        Color& set(TDataType rgb, TDataType a) noexcept
         {
             mRGBA[0] = mRGBA[1] = mRGBA[2] = rgb;
             mRGBA[3] = a;
             return *this;
         }
 
-        Color& set(TDataType r, TDataType g, TDataType b, TDataType a)
+        Color& set(TDataType r, TDataType g, TDataType b, TDataType a) noexcept
         {
             mRGBA[0] = r;
             mRGBA[1] = g;
@@ -281,19 +274,19 @@ namespace hr
             return *this;
         }
 
-        void write(TDataType* const dest) const
+        void write(std::span<TDataType, 4> dest) const noexcept
         {
-            std::memcpy(dest, mRGBA, sizeof(TDataType) * 4);
+            std::memcpy(dest.data(), mRGBA, sizeof(TDataType) * 4);
         }
 
-        void writeRGB(TDataType* const dest) const
+        void writeRGB(std::span<TDataType, 3> dest) const noexcept
         {
             dest[0] = mRGBA[0];
             dest[1] = mRGBA[1];
             dest[2] = mRGBA[2];
         }
 
-        void swapRB()
+        void swapRB() noexcept
         {
             std::swap(mRGBA[0], mRGBA[2]);
         }
@@ -305,6 +298,8 @@ namespace hr
     template<>
     class alignas(16) Color<float>
     {
+        friend class Color<double>;
+
         float mRGBA[4];
 
         static constexpr std::array<float, 256> TableSRGB2Linear{
@@ -331,150 +326,150 @@ namespace hr
         class KnownColors
         {
         public:
-            static constexpr uint8_t Transparent[] = {255, 255, 255, 0};
-            static constexpr uint8_t PureRed[] = {255, 0, 0, 255};
-            static constexpr uint8_t PureGreen[] = {0, 255, 0, 255};
-            static constexpr uint8_t PureBlue[] = {0, 0, 255, 255};
-            static constexpr uint8_t AliceBlue[] = {240, 248, 255, 255};
-            static constexpr uint8_t AntiqueWhite[] = {250, 235, 215, 255};
-            static constexpr uint8_t Aqua[] = {0, 255, 255, 255};
-            static constexpr uint8_t Aquamarine[] = {127, 255, 212, 255};
-            static constexpr uint8_t Azure[] = {240, 255, 255, 255};
-            static constexpr uint8_t Beige[] = {245, 245, 220, 255};
-            static constexpr uint8_t Bisque[] = {255, 228, 196, 255};
-            static constexpr uint8_t Black[] = {0, 0, 0, 255};
-            static constexpr uint8_t BlanchedAlmond[] = {255, 235, 205, 255};
-            static constexpr uint8_t Blue[] = {0, 0, 255, 255};
-            static constexpr uint8_t BlueViolet[] = {138, 43, 226, 255};
-            static constexpr uint8_t Brown[] = {165, 42, 42, 255};
-            static constexpr uint8_t BurlyWood[] = {222, 184, 135, 255};
-            static constexpr uint8_t CadetBlue[] = {95, 158, 160, 255};
-            static constexpr uint8_t Chartreuse[] = {127, 255, 0, 255};
-            static constexpr uint8_t Chocolate[] = {210, 105, 30, 255};
-            static constexpr uint8_t Coral[] = {255, 127, 80, 255};
-            static constexpr uint8_t CornflowerBlue[] = {100, 149, 237, 255};
-            static constexpr uint8_t Cornsilk[] = {255, 248, 220, 255};
-            static constexpr uint8_t Crimson[] = {220, 20, 60, 255};
-            static constexpr uint8_t Cyan[] = {0, 255, 255, 255};
-            static constexpr uint8_t DarkBlue[] = {0, 0, 139, 255};
-            static constexpr uint8_t DarkCyan[] = {0, 139, 139, 255};
-            static constexpr uint8_t DarkGoldenrod[] = {184, 134, 11, 255};
-            static constexpr uint8_t DarkGray[] = {169, 169, 169, 255};
-            static constexpr uint8_t DarkGreen[] = {0, 100, 0, 255};
-            static constexpr uint8_t DarkKhaki[] = {189, 183, 107, 255};
-            static constexpr uint8_t DarkMagenta[] = {139, 0, 139, 255};
-            static constexpr uint8_t DarkOliveGreen[] = {85, 107, 47, 255};
-            static constexpr uint8_t DarkOrange[] = {255, 140, 0, 255};
-            static constexpr uint8_t DarkOrchid[] = {153, 50, 204, 255};
-            static constexpr uint8_t DarkRed[] = {139, 0, 0, 255};
-            static constexpr uint8_t DarkSalmon[] = {233, 150, 122, 255};
-            static constexpr uint8_t DarkSeaGreen[] = {143, 188, 139, 255};
-            static constexpr uint8_t DarkSlateBlue[] = {72, 61, 139, 255};
-            static constexpr uint8_t DarkSlateGray[] = {47, 79, 79, 255};
-            static constexpr uint8_t DarkTurquoise[] = {0, 206, 209, 255};
-            static constexpr uint8_t DarkViolet[] = {148, 0, 211, 255};
-            static constexpr uint8_t DeepPink[] = {255, 20, 147, 255};
-            static constexpr uint8_t DeepSkyBlue[] = {0, 191, 255, 255};
-            static constexpr uint8_t DimGray[] = {105, 105, 105, 255};
-            static constexpr uint8_t DodgerBlue[] = {30, 144, 255, 255};
-            static constexpr uint8_t Firebrick[] = {178, 34, 34, 255};
-            static constexpr uint8_t FloralWhite[] = {255, 250, 240, 255};
-            static constexpr uint8_t ForestGreen[] = {34, 139, 34, 255};
-            static constexpr uint8_t Fuchsia[] = {255, 0, 255, 255};
-            static constexpr uint8_t Gainsboro[] = {220, 220, 220, 255};
-            static constexpr uint8_t GhostWhite[] = {248, 248, 255, 255};
-            static constexpr uint8_t Gold[] = {255, 215, 0, 255};
-            static constexpr uint8_t Goldenrod[] = {218, 165, 32, 255};
-            static constexpr uint8_t Gray[] = {128, 128, 128, 255};
-            static constexpr uint8_t Green[] = {0, 128, 0, 255};
-            static constexpr uint8_t GreenYellow[] = {173, 255, 47, 255};
-            static constexpr uint8_t Honeydew[] = {240, 255, 240, 255};
-            static constexpr uint8_t HotPink[] = {255, 105, 180, 255};
-            static constexpr uint8_t IndianRed[] = {205, 92, 92, 255};
-            static constexpr uint8_t Indigo[] = {75, 0, 130, 255};
-            static constexpr uint8_t Ivory[] = {255, 255, 240, 255};
-            static constexpr uint8_t Khaki[] = {240, 230, 140, 255};
-            static constexpr uint8_t Lavender[] = {230, 230, 250, 255};
-            static constexpr uint8_t LavenderBlush[] = {255, 240, 245, 255};
-            static constexpr uint8_t LawnGreen[] = {124, 252, 0, 255};
-            static constexpr uint8_t LemonChiffon[] = {255, 250, 205, 255};
-            static constexpr uint8_t LightBlue[] = {173, 216, 230, 255};
-            static constexpr uint8_t LightCoral[] = {240, 128, 128, 255};
-            static constexpr uint8_t LightCyan[] = {224, 255, 255, 255};
-            static constexpr uint8_t LightGoldenrodYellow[] = {250, 250, 210, 255};
-            static constexpr uint8_t LightGreen[] = {144, 238, 144, 255};
-            static constexpr uint8_t LightGray[] = {211, 211, 211, 255};
-            static constexpr uint8_t LightPink[] = {255, 182, 193, 255};
-            static constexpr uint8_t LightSalmon[] = {255, 160, 122, 255};
-            static constexpr uint8_t LightSeaGreen[] = {32, 178, 170, 255};
-            static constexpr uint8_t LightSkyBlue[] = {135, 206, 250, 255};
-            static constexpr uint8_t LightSlateGray[] = {119, 136, 153, 255};
-            static constexpr uint8_t LightSteelBlue[] = {176, 196, 222, 255};
-            static constexpr uint8_t LightYellow[] = {255, 255, 224, 255};
-            static constexpr uint8_t Lime[] = {0, 255, 0, 255};
-            static constexpr uint8_t LimeGreen[] = {50, 205, 50, 255};
-            static constexpr uint8_t Linen[] = {250, 240, 230, 255};
-            static constexpr uint8_t Magenta[] = {255, 0, 255, 255};
-            static constexpr uint8_t Maroon[] = {128, 0, 0, 255};
-            static constexpr uint8_t MediumAquamarine[] = {102, 205, 170, 255};
-            static constexpr uint8_t MediumBlue[] = {0, 0, 205, 255};
-            static constexpr uint8_t MediumOrchid[] = {186, 85, 211, 255};
-            static constexpr uint8_t MediumPurple[] = {147, 112, 219, 255};
-            static constexpr uint8_t MediumSeaGreen[] = {60, 179, 113, 255};
-            static constexpr uint8_t MediumSlateBlue[] = {123, 104, 238, 255};
-            static constexpr uint8_t MediumSpringGreen[] = {0, 250, 154, 255};
-            static constexpr uint8_t MediumTurquoise[] = {72, 209, 204, 255};
-            static constexpr uint8_t MediumVioletRed[] = {199, 21, 133, 255};
-            static constexpr uint8_t MidnightBlue[] = {25, 25, 112, 255};
-            static constexpr uint8_t MintCream[] = {245, 255, 250, 255};
-            static constexpr uint8_t MistyRose[] = {255, 228, 225, 255};
-            static constexpr uint8_t Moccasin[] = {255, 228, 181, 255};
-            static constexpr uint8_t NavajoWhite[] = {255, 222, 173, 255};
-            static constexpr uint8_t Navy[] = {0, 0, 128, 255};
-            static constexpr uint8_t OldLace[] = {253, 245, 230, 255};
-            static constexpr uint8_t Olive[] = {128, 128, 0, 255};
-            static constexpr uint8_t OliveDrab[] = {107, 142, 35, 255};
-            static constexpr uint8_t Orange[] = {255, 165, 0, 255};
-            static constexpr uint8_t OrangeRed[] = {255, 69, 0, 255};
-            static constexpr uint8_t Orchid[] = {218, 112, 214, 255};
-            static constexpr uint8_t PaleGoldenrod[] = {238, 232, 170, 255};
-            static constexpr uint8_t PaleGreen[] = {152, 251, 152, 255};
-            static constexpr uint8_t PaleTurquoise[] = {175, 238, 238, 255};
-            static constexpr uint8_t PaleVioletRed[] = {219, 112, 147, 255};
-            static constexpr uint8_t PapayaWhip[] = {255, 239, 213, 255};
-            static constexpr uint8_t PeachPuff[] = {255, 218, 185, 255};
-            static constexpr uint8_t Peru[] = {205, 133, 63, 255};
-            static constexpr uint8_t Pink[] = {255, 192, 203, 255};
-            static constexpr uint8_t Plum[] = {221, 160, 221, 255};
-            static constexpr uint8_t PowderBlue[] = {176, 224, 230, 255};
-            static constexpr uint8_t Purple[] = {128, 0, 128, 255};
-            static constexpr uint8_t Red[] = {255, 0, 0, 255};
-            static constexpr uint8_t RosyBrown[] = {188, 143, 143, 255};
-            static constexpr uint8_t RoyalBlue[] = {65, 105, 225, 255};
-            static constexpr uint8_t SaddleBrown[] = {139, 69, 19, 255};
-            static constexpr uint8_t Salmon[] = {250, 128, 114, 255};
-            static constexpr uint8_t SandyBrown[] = {244, 164, 96, 255};
-            static constexpr uint8_t SeaGreen[] = {46, 139, 87, 255};
-            static constexpr uint8_t SeaShell[] = {255, 245, 238, 255};
-            static constexpr uint8_t Sienna[] = {160, 82, 45, 255};
-            static constexpr uint8_t Silver[] = {192, 192, 192, 255};
-            static constexpr uint8_t SkyBlue[] = {135, 206, 235, 255};
-            static constexpr uint8_t SlateBlue[] = {106, 90, 205, 255};
-            static constexpr uint8_t SlateGray[] = {112, 128, 144, 255};
-            static constexpr uint8_t Snow[] = {255, 250, 250, 255};
-            static constexpr uint8_t SpringGreen[] = {0, 255, 127, 255};
-            static constexpr uint8_t SteelBlue[] = {70, 130, 180, 255};
-            static constexpr uint8_t Tan[] = {210, 180, 140, 255};
-            static constexpr uint8_t Teal[] = {0, 128, 128, 255};
-            static constexpr uint8_t Thistle[] = {216, 191, 216, 255};
-            static constexpr uint8_t Tomato[] = {255, 99, 71, 255};
-            static constexpr uint8_t Turquoise[] = {64, 224, 208, 255};
-            static constexpr uint8_t Violet[] = {238, 130, 238, 255};
-            static constexpr uint8_t Wheat[] = {245, 222, 179, 255};
-            static constexpr uint8_t White[] = {255, 255, 255, 255};
-            static constexpr uint8_t WhiteSmoke[] = {245, 245, 245, 255};
-            static constexpr uint8_t Yellow[] = {255, 255, 0, 255};
-            static constexpr uint8_t YellowGreen[] = {154, 205, 50, 255};
+            static constexpr std::array<uint8_t, 4> Transparent{255, 255, 255, 0};
+            static constexpr std::array<uint8_t, 4> PureRed{255, 0, 0, 255};
+            static constexpr std::array<uint8_t, 4> PureGreen{0, 255, 0, 255};
+            static constexpr std::array<uint8_t, 4> PureBlue{0, 0, 255, 255};
+            static constexpr std::array<uint8_t, 4> AliceBlue{240, 248, 255, 255};
+            static constexpr std::array<uint8_t, 4> AntiqueWhite{250, 235, 215, 255};
+            static constexpr std::array<uint8_t, 4> Aqua{0, 255, 255, 255};
+            static constexpr std::array<uint8_t, 4> Aquamarine{127, 255, 212, 255};
+            static constexpr std::array<uint8_t, 4> Azure{240, 255, 255, 255};
+            static constexpr std::array<uint8_t, 4> Beige{245, 245, 220, 255};
+            static constexpr std::array<uint8_t, 4> Bisque{255, 228, 196, 255};
+            static constexpr std::array<uint8_t, 4> Black{0, 0, 0, 255};
+            static constexpr std::array<uint8_t, 4> BlanchedAlmond{255, 235, 205, 255};
+            static constexpr std::array<uint8_t, 4> Blue{0, 0, 255, 255};
+            static constexpr std::array<uint8_t, 4> BlueViolet{138, 43, 226, 255};
+            static constexpr std::array<uint8_t, 4> Brown{165, 42, 42, 255};
+            static constexpr std::array<uint8_t, 4> BurlyWood{222, 184, 135, 255};
+            static constexpr std::array<uint8_t, 4> CadetBlue{95, 158, 160, 255};
+            static constexpr std::array<uint8_t, 4> Chartreuse{127, 255, 0, 255};
+            static constexpr std::array<uint8_t, 4> Chocolate{210, 105, 30, 255};
+            static constexpr std::array<uint8_t, 4> Coral{255, 127, 80, 255};
+            static constexpr std::array<uint8_t, 4> CornflowerBlue{100, 149, 237, 255};
+            static constexpr std::array<uint8_t, 4> Cornsilk{255, 248, 220, 255};
+            static constexpr std::array<uint8_t, 4> Crimson{220, 20, 60, 255};
+            static constexpr std::array<uint8_t, 4> Cyan{0, 255, 255, 255};
+            static constexpr std::array<uint8_t, 4> DarkBlue{0, 0, 139, 255};
+            static constexpr std::array<uint8_t, 4> DarkCyan{0, 139, 139, 255};
+            static constexpr std::array<uint8_t, 4> DarkGoldenrod{184, 134, 11, 255};
+            static constexpr std::array<uint8_t, 4> DarkGray{169, 169, 169, 255};
+            static constexpr std::array<uint8_t, 4> DarkGreen{0, 100, 0, 255};
+            static constexpr std::array<uint8_t, 4> DarkKhaki{189, 183, 107, 255};
+            static constexpr std::array<uint8_t, 4> DarkMagenta{139, 0, 139, 255};
+            static constexpr std::array<uint8_t, 4> DarkOliveGreen{85, 107, 47, 255};
+            static constexpr std::array<uint8_t, 4> DarkOrange{255, 140, 0, 255};
+            static constexpr std::array<uint8_t, 4> DarkOrchid{153, 50, 204, 255};
+            static constexpr std::array<uint8_t, 4> DarkRed{139, 0, 0, 255};
+            static constexpr std::array<uint8_t, 4> DarkSalmon{233, 150, 122, 255};
+            static constexpr std::array<uint8_t, 4> DarkSeaGreen{143, 188, 139, 255};
+            static constexpr std::array<uint8_t, 4> DarkSlateBlue{72, 61, 139, 255};
+            static constexpr std::array<uint8_t, 4> DarkSlateGray{47, 79, 79, 255};
+            static constexpr std::array<uint8_t, 4> DarkTurquoise{0, 206, 209, 255};
+            static constexpr std::array<uint8_t, 4> DarkViolet{148, 0, 211, 255};
+            static constexpr std::array<uint8_t, 4> DeepPink{255, 20, 147, 255};
+            static constexpr std::array<uint8_t, 4> DeepSkyBlue{0, 191, 255, 255};
+            static constexpr std::array<uint8_t, 4> DimGray{105, 105, 105, 255};
+            static constexpr std::array<uint8_t, 4> DodgerBlue{30, 144, 255, 255};
+            static constexpr std::array<uint8_t, 4> Firebrick{178, 34, 34, 255};
+            static constexpr std::array<uint8_t, 4> FloralWhite{255, 250, 240, 255};
+            static constexpr std::array<uint8_t, 4> ForestGreen{34, 139, 34, 255};
+            static constexpr std::array<uint8_t, 4> Fuchsia{255, 0, 255, 255};
+            static constexpr std::array<uint8_t, 4> Gainsboro{220, 220, 220, 255};
+            static constexpr std::array<uint8_t, 4> GhostWhite{248, 248, 255, 255};
+            static constexpr std::array<uint8_t, 4> Gold{255, 215, 0, 255};
+            static constexpr std::array<uint8_t, 4> Goldenrod{218, 165, 32, 255};
+            static constexpr std::array<uint8_t, 4> Gray{128, 128, 128, 255};
+            static constexpr std::array<uint8_t, 4> Green{0, 128, 0, 255};
+            static constexpr std::array<uint8_t, 4> GreenYellow{173, 255, 47, 255};
+            static constexpr std::array<uint8_t, 4> Honeydew{240, 255, 240, 255};
+            static constexpr std::array<uint8_t, 4> HotPink{255, 105, 180, 255};
+            static constexpr std::array<uint8_t, 4> IndianRed{205, 92, 92, 255};
+            static constexpr std::array<uint8_t, 4> Indigo{75, 0, 130, 255};
+            static constexpr std::array<uint8_t, 4> Ivory{255, 255, 240, 255};
+            static constexpr std::array<uint8_t, 4> Khaki{240, 230, 140, 255};
+            static constexpr std::array<uint8_t, 4> Lavender{230, 230, 250, 255};
+            static constexpr std::array<uint8_t, 4> LavenderBlush{255, 240, 245, 255};
+            static constexpr std::array<uint8_t, 4> LawnGreen{124, 252, 0, 255};
+            static constexpr std::array<uint8_t, 4> LemonChiffon{255, 250, 205, 255};
+            static constexpr std::array<uint8_t, 4> LightBlue{173, 216, 230, 255};
+            static constexpr std::array<uint8_t, 4> LightCoral{240, 128, 128, 255};
+            static constexpr std::array<uint8_t, 4> LightCyan{224, 255, 255, 255};
+            static constexpr std::array<uint8_t, 4> LightGoldenrodYellow{250, 250, 210, 255};
+            static constexpr std::array<uint8_t, 4> LightGreen{144, 238, 144, 255};
+            static constexpr std::array<uint8_t, 4> LightGray{211, 211, 211, 255};
+            static constexpr std::array<uint8_t, 4> LightPink{255, 182, 193, 255};
+            static constexpr std::array<uint8_t, 4> LightSalmon{255, 160, 122, 255};
+            static constexpr std::array<uint8_t, 4> LightSeaGreen{32, 178, 170, 255};
+            static constexpr std::array<uint8_t, 4> LightSkyBlue{135, 206, 250, 255};
+            static constexpr std::array<uint8_t, 4> LightSlateGray{119, 136, 153, 255};
+            static constexpr std::array<uint8_t, 4> LightSteelBlue{176, 196, 222, 255};
+            static constexpr std::array<uint8_t, 4> LightYellow{255, 255, 224, 255};
+            static constexpr std::array<uint8_t, 4> Lime{0, 255, 0, 255};
+            static constexpr std::array<uint8_t, 4> LimeGreen{50, 205, 50, 255};
+            static constexpr std::array<uint8_t, 4> Linen{250, 240, 230, 255};
+            static constexpr std::array<uint8_t, 4> Magenta{255, 0, 255, 255};
+            static constexpr std::array<uint8_t, 4> Maroon{128, 0, 0, 255};
+            static constexpr std::array<uint8_t, 4> MediumAquamarine{102, 205, 170, 255};
+            static constexpr std::array<uint8_t, 4> MediumBlue{0, 0, 205, 255};
+            static constexpr std::array<uint8_t, 4> MediumOrchid{186, 85, 211, 255};
+            static constexpr std::array<uint8_t, 4> MediumPurple{147, 112, 219, 255};
+            static constexpr std::array<uint8_t, 4> MediumSeaGreen{60, 179, 113, 255};
+            static constexpr std::array<uint8_t, 4> MediumSlateBlue{123, 104, 238, 255};
+            static constexpr std::array<uint8_t, 4> MediumSpringGreen{0, 250, 154, 255};
+            static constexpr std::array<uint8_t, 4> MediumTurquoise{72, 209, 204, 255};
+            static constexpr std::array<uint8_t, 4> MediumVioletRed{199, 21, 133, 255};
+            static constexpr std::array<uint8_t, 4> MidnightBlue{25, 25, 112, 255};
+            static constexpr std::array<uint8_t, 4> MintCream{245, 255, 250, 255};
+            static constexpr std::array<uint8_t, 4> MistyRose{255, 228, 225, 255};
+            static constexpr std::array<uint8_t, 4> Moccasin{255, 228, 181, 255};
+            static constexpr std::array<uint8_t, 4> NavajoWhite{255, 222, 173, 255};
+            static constexpr std::array<uint8_t, 4> Navy{0, 0, 128, 255};
+            static constexpr std::array<uint8_t, 4> OldLace{253, 245, 230, 255};
+            static constexpr std::array<uint8_t, 4> Olive{128, 128, 0, 255};
+            static constexpr std::array<uint8_t, 4> OliveDrab{107, 142, 35, 255};
+            static constexpr std::array<uint8_t, 4> Orange{255, 165, 0, 255};
+            static constexpr std::array<uint8_t, 4> OrangeRed{255, 69, 0, 255};
+            static constexpr std::array<uint8_t, 4> Orchid{218, 112, 214, 255};
+            static constexpr std::array<uint8_t, 4> PaleGoldenrod{238, 232, 170, 255};
+            static constexpr std::array<uint8_t, 4> PaleGreen{152, 251, 152, 255};
+            static constexpr std::array<uint8_t, 4> PaleTurquoise{175, 238, 238, 255};
+            static constexpr std::array<uint8_t, 4> PaleVioletRed{219, 112, 147, 255};
+            static constexpr std::array<uint8_t, 4> PapayaWhip{255, 239, 213, 255};
+            static constexpr std::array<uint8_t, 4> PeachPuff{255, 218, 185, 255};
+            static constexpr std::array<uint8_t, 4> Peru{205, 133, 63, 255};
+            static constexpr std::array<uint8_t, 4> Pink{255, 192, 203, 255};
+            static constexpr std::array<uint8_t, 4> Plum{221, 160, 221, 255};
+            static constexpr std::array<uint8_t, 4> PowderBlue{176, 224, 230, 255};
+            static constexpr std::array<uint8_t, 4> Purple{128, 0, 128, 255};
+            static constexpr std::array<uint8_t, 4> Red{255, 0, 0, 255};
+            static constexpr std::array<uint8_t, 4> RosyBrown{188, 143, 143, 255};
+            static constexpr std::array<uint8_t, 4> RoyalBlue{65, 105, 225, 255};
+            static constexpr std::array<uint8_t, 4> SaddleBrown{139, 69, 19, 255};
+            static constexpr std::array<uint8_t, 4> Salmon{250, 128, 114, 255};
+            static constexpr std::array<uint8_t, 4> SandyBrown{244, 164, 96, 255};
+            static constexpr std::array<uint8_t, 4> SeaGreen{46, 139, 87, 255};
+            static constexpr std::array<uint8_t, 4> SeaShell{255, 245, 238, 255};
+            static constexpr std::array<uint8_t, 4> Sienna{160, 82, 45, 255};
+            static constexpr std::array<uint8_t, 4> Silver{192, 192, 192, 255};
+            static constexpr std::array<uint8_t, 4> SkyBlue{135, 206, 235, 255};
+            static constexpr std::array<uint8_t, 4> SlateBlue{106, 90, 205, 255};
+            static constexpr std::array<uint8_t, 4> SlateGray{112, 128, 144, 255};
+            static constexpr std::array<uint8_t, 4> Snow{255, 250, 250, 255};
+            static constexpr std::array<uint8_t, 4> SpringGreen{0, 255, 127, 255};
+            static constexpr std::array<uint8_t, 4> SteelBlue{70, 130, 180, 255};
+            static constexpr std::array<uint8_t, 4> Tan{210, 180, 140, 255};
+            static constexpr std::array<uint8_t, 4> Teal{0, 128, 128, 255};
+            static constexpr std::array<uint8_t, 4> Thistle{216, 191, 216, 255};
+            static constexpr std::array<uint8_t, 4> Tomato{255, 99, 71, 255};
+            static constexpr std::array<uint8_t, 4> Turquoise{64, 224, 208, 255};
+            static constexpr std::array<uint8_t, 4> Violet{238, 130, 238, 255};
+            static constexpr std::array<uint8_t, 4> Wheat{245, 222, 179, 255};
+            static constexpr std::array<uint8_t, 4> White{255, 255, 255, 255};
+            static constexpr std::array<uint8_t, 4> WhiteSmoke{245, 245, 245, 255};
+            static constexpr std::array<uint8_t, 4> Yellow{255, 255, 0, 255};
+            static constexpr std::array<uint8_t, 4> YellowGreen{154, 205, 50, 255};
         };
 
     public:
@@ -488,7 +483,7 @@ namespace hr
             return Colorf{1.0f, 1.0f, 1.0f, alpha};
         }
 
-        static uint8_t convertColor(float val)
+        static uint8_t convertColor(float val) noexcept
         {
             __m128i valConvert;
             uint8_t valFinal;
@@ -501,57 +496,60 @@ namespace hr
             return valFinal;
         }
 
-        static float convertColor(uint8_t val)
+        static float convertColor(uint8_t val) noexcept
         {
             return (static_cast<float>(val) * Math::UByteMaxInv<float>);
         }
 
-        static void convertColor(uint8_t* valB, const float* const valF, bool processAlphaChannel)
+        static void convertColor(std::span<uint8_t, 3> valB, std::span<const float, 3> valF) noexcept
         {
             __m128i valConvert;
 
-            if (!processAlphaChannel)
-            {
-                valConvert = _mm_cvtps_epi32(_mm_mul_ps(_mm_set_ps(0.0f, valF[2], valF[1], valF[0]), _mm_set_ps1(Math::UByteMax<float>)));
-                valConvert = _mm_packs_epi32(valConvert, valConvert);
-                valConvert = _mm_packus_epi16(valConvert, valConvert);
-
-                _mm_maskmoveu_si128(valConvert, _mm_set_epi32(0x0, 0x0, 0x0, 0x00808080), (char*)valB);
-                return;
-            }
-
-            valConvert = _mm_cvtps_epi32(_mm_mul_ps(_mm_load_ps(valF), _mm_set_ps1(Math::UByteMax<float>)));
+            valConvert = _mm_cvtps_epi32(_mm_mul_ps(_mm_set_ps(0.0f, valF[2], valF[1], valF[0]), _mm_set_ps1(Math::UByteMax<float>)));
             valConvert = _mm_packs_epi32(valConvert, valConvert);
             valConvert = _mm_packus_epi16(valConvert, valConvert);
 
-            _mm_maskmoveu_si128(valConvert, _mm_set_epi32(0x0, 0x0, 0x0, 0x80808080), (char*)valB);
+            _mm_maskmoveu_si128(valConvert, _mm_set_epi32(0x0, 0x0, 0x0, 0x00808080), (char*)valB.data());
         }
 
-        static void convertColor(float* const valF, const uint8_t* valB, bool processAlphaChannel)
+        static void convertColor(std::span<uint8_t, 4> valB, std::span<const float, 4> valF) noexcept
+        {
+            __m128i valConvert;
+
+            valConvert = _mm_cvtps_epi32(_mm_mul_ps(_mm_load_ps(valF.data()), _mm_set_ps1(Math::UByteMax<float>)));
+            valConvert = _mm_packs_epi32(valConvert, valConvert);
+            valConvert = _mm_packus_epi16(valConvert, valConvert);
+
+            _mm_maskmoveu_si128(valConvert, _mm_set_epi32(0x0, 0x0, 0x0, 0x80808080), (char*)valB.data());
+        }
+
+        static void convertColor(std::span<float, 3> valF, std::span<const uint8_t, 3> valB)
         {
             __m128i valConvert;
             __m128 valFinal;
 
-            if (!processAlphaChannel)
-            {
-                valConvert = _mm_cvtsi32_si128(((valB[2] << 16) | (valB[1] << 8) | valB[0]));
-                valConvert = _mm_unpacklo_epi8(valConvert, _mm_setzero_si128());
-                valConvert = _mm_unpacklo_epi16(valConvert, _mm_setzero_si128());
+            valConvert = _mm_cvtsi32_si128(((valB[2] << 16) | (valB[1] << 8) | valB[0]));
+            valConvert = _mm_unpacklo_epi8(valConvert, _mm_setzero_si128());
+            valConvert = _mm_unpacklo_epi16(valConvert, _mm_setzero_si128());
 
-                valFinal = _mm_mul_ps(_mm_cvtepi32_ps(valConvert), _mm_set_ps1(Math::UByteMaxInv<float>));
+            valFinal = _mm_mul_ps(_mm_cvtepi32_ps(valConvert), _mm_set_ps1(Math::UByteMaxInv<float>));
 
-                valF[0] = valFinal.m128_f32[0];
-                valF[1] = valFinal.m128_f32[1];
-                valF[2] = valFinal.m128_f32[2];
-                return;
-            }
+            valF[0] = valFinal.m128_f32[0];
+            valF[1] = valFinal.m128_f32[1];
+            valF[2] = valFinal.m128_f32[2];
+        }
+
+        static void convertColor(std::span<float, 4> valF, std::span<const uint8_t, 4> valB)
+        {
+            __m128i valConvert;
+            __m128 valFinal;
 
             valConvert = _mm_cvtsi32_si128(((valB[3] << 24) | (valB[2] << 16) | (valB[1] << 8) | valB[0]));
             valConvert = _mm_unpacklo_epi8(valConvert, _mm_setzero_si128());
             valConvert = _mm_unpacklo_epi16(valConvert, _mm_setzero_si128());
 
             valFinal = _mm_mul_ps(_mm_cvtepi32_ps(valConvert), _mm_set_ps1(Math::UByteMaxInv<float>));
-            _mm_store_ps(valF, valFinal);
+            _mm_store_ps(valF.data(), valFinal);
         }
 
         static constexpr float convertSRGB2Linear(uint8_t value) noexcept
@@ -594,24 +592,30 @@ namespace hr
             return color;
         }
 
-        static Color parseFromHTML(const char* hexColor, bool gammaCorrect = true) noexcept
+        static Color parseFromHTML(std::string_view hexColor, bool gammaCorrect = true) noexcept
         {
-            if (*hexColor == '#')
-                hexColor++;
+            if (hexColor.empty())
+                return Color::black();
+
+            if (hexColor.front() == '#')
+                hexColor.remove_prefix(1);
+
+            if (hexColor.size() < 6)
+                return Color::black();
 
             Color color;
             if (gammaCorrect)
             {
-                color.mRGBA[0] = convertSRGB2Linear(Encoders::decodeHexByte(hexColor + 0));
-                color.mRGBA[1] = convertSRGB2Linear(Encoders::decodeHexByte(hexColor + 2));
-                color.mRGBA[2] = convertSRGB2Linear(Encoders::decodeHexByte(hexColor + 4));
+                color.mRGBA[0] = convertSRGB2Linear(Encoders::decodeHexByte(hexColor));
+                color.mRGBA[1] = convertSRGB2Linear(Encoders::decodeHexByte(hexColor.substr(2)));
+                color.mRGBA[2] = convertSRGB2Linear(Encoders::decodeHexByte(hexColor.substr(4)));
                 color.mRGBA[3] = 1.0f;
             }
             else
             {
-                color.mRGBA[0] = Encoders::decodeHexByte(hexColor + 0);
-                color.mRGBA[1] = Encoders::decodeHexByte(hexColor + 2);
-                color.mRGBA[2] = Encoders::decodeHexByte(hexColor + 4);
+                color.mRGBA[0] = Encoders::decodeHexByte(hexColor);
+                color.mRGBA[1] = Encoders::decodeHexByte(hexColor.substr(2));
+                color.mRGBA[2] = Encoders::decodeHexByte(hexColor.substr(4));
                 color.mRGBA[3] = 255.0f;
 
                 _mm_store_ps(color.mRGBA, _mm_mul_ps(_mm_load_ps(color.mRGBA), _mm_set_ps1(Math::UByteMaxInv<float>)));
@@ -639,83 +643,75 @@ namespace hr
           : mRGBA{rgba[0], rgba[1], rgba[2], rgba[3]}
         {}
 
-        explicit Color(const uint8_t* const rgba) noexcept
+        explicit Color(std::span<const uint8_t, 4> rgba) noexcept
         {
-            Color::convertColor(mRGBA, rgba, true);
+            Color::convertColor(mRGBA, rgba);
         }
 
         explicit Color(const Vector3f& v) noexcept
         {
-            _mm_store_ps(mRGBA, _mm_load_ps(v.data()));
+            _mm_store_ps(mRGBA, _mm_load_ps(v.data().data()));
             mRGBA[3] = 1.0f;
         }
 
         explicit Color(const Vector4f& v) noexcept
         {
-            _mm_store_ps(mRGBA, _mm_load_ps(v.data()));
+            _mm_store_ps(mRGBA, _mm_load_ps(v.data().data()));
         }
 
-        constexpr float* data() noexcept
+        template<typename Self>
+        constexpr auto data(this Self&& self) noexcept
         {
-            return mRGBA;
+            return std::span{self.mRGBA};
         }
 
-        constexpr const float* data() const noexcept
+        template<typename Self>
+        constexpr auto& operator[](this Self&& self, const size_t index) noexcept
         {
-            return mRGBA;
+            return self.mRGBA[index % 4];
         }
 
-        constexpr float& operator[](const size_t index) noexcept
-        {
-            return mRGBA[index % 4];
-        }
-
-        constexpr const float& operator[](const size_t index) const noexcept
-        {
-            return mRGBA[index % 4];
-        }
-
-        void operator+=(const Color& c)
+        void operator+=(const Color& c) noexcept
         {
             _mm_store_ps(mRGBA, _mm_add_ps(_mm_load_ps(mRGBA), _mm_load_ps(c.mRGBA)));
         }
 
-        void operator-=(const Color& c)
+        void operator-=(const Color& c) noexcept
         {
             _mm_store_ps(mRGBA, _mm_sub_ps(_mm_load_ps(mRGBA), _mm_load_ps(c.mRGBA)));
         }
 
-        void operator*=(const Color& c)
+        void operator*=(const Color& c) noexcept
         {
             _mm_store_ps(mRGBA, _mm_mul_ps(_mm_load_ps(mRGBA), _mm_load_ps(c.mRGBA)));
         }
 
-        void operator/=(const Color& c)
+        void operator/=(const Color& c) noexcept
         {
             _mm_store_ps(mRGBA, _mm_div_ps(_mm_load_ps(mRGBA), _mm_load_ps(c.mRGBA)));
         }
 
-        void operator+=(const float n)
+        void operator+=(const float n) noexcept
         {
             _mm_store_ps(mRGBA, _mm_add_ps(_mm_load_ps(mRGBA), _mm_set_ps1(n)));
         }
 
-        void operator-=(const float n)
+        void operator-=(const float n) noexcept
         {
             _mm_store_ps(mRGBA, _mm_sub_ps(_mm_load_ps(mRGBA), _mm_set_ps1(n)));
         }
 
-        void operator*=(const float n)
+        void operator*=(const float n) noexcept
         {
             _mm_store_ps(mRGBA, _mm_mul_ps(_mm_load_ps(mRGBA), _mm_set_ps1(n)));
         }
 
-        void operator/=(const float n)
+        void operator/=(const float n) noexcept
         {
             _mm_store_ps(mRGBA, _mm_div_ps(_mm_load_ps(mRGBA), _mm_set_ps1(n)));
         }
 
-        Color operator+(const Color& c) const
+        Color operator+(const Color& c) const noexcept
         {
             Color result;
             _mm_store_ps(result.mRGBA, _mm_add_ps(_mm_load_ps(mRGBA), _mm_load_ps(c.mRGBA)));
@@ -723,7 +719,7 @@ namespace hr
             return result;
         }
 
-        Color operator-(const Color& c) const
+        Color operator-(const Color& c) const noexcept
         {
             Color result;
             _mm_store_ps(result.mRGBA, _mm_sub_ps(_mm_load_ps(mRGBA), _mm_load_ps(c.mRGBA)));
@@ -731,7 +727,7 @@ namespace hr
             return result;
         }
 
-        Color operator*(const Color& c) const
+        Color operator*(const Color& c) const noexcept
         {
             Color result;
             _mm_store_ps(result.mRGBA, _mm_mul_ps(_mm_load_ps(mRGBA), _mm_load_ps(c.mRGBA)));
@@ -739,7 +735,7 @@ namespace hr
             return result;
         }
 
-        Color operator/(const Color& c) const
+        Color operator/(const Color& c) const noexcept
         {
             Color result;
             _mm_store_ps(result.mRGBA, _mm_div_ps(_mm_load_ps(mRGBA), _mm_load_ps(c.mRGBA)));
@@ -747,7 +743,7 @@ namespace hr
             return result;
         }
 
-        Color operator+(const float n) const
+        Color operator+(const float n) const noexcept
         {
             Color result;
             _mm_store_ps(result.mRGBA, _mm_add_ps(_mm_load_ps(mRGBA), _mm_set_ps1(n)));
@@ -755,7 +751,7 @@ namespace hr
             return result;
         }
 
-        Color operator-(const float n) const
+        Color operator-(const float n) const noexcept
         {
             Color result;
             _mm_store_ps(result.mRGBA, _mm_sub_ps(_mm_load_ps(mRGBA), _mm_set_ps1(n)));
@@ -763,7 +759,7 @@ namespace hr
             return result;
         }
 
-        Color operator*(const float n) const
+        Color operator*(const float n) const noexcept
         {
             Color result;
             _mm_store_ps(result.mRGBA, _mm_mul_ps(_mm_load_ps(mRGBA), _mm_set_ps1(n)));
@@ -771,7 +767,7 @@ namespace hr
             return result;
         }
 
-        Color operator/(const float n) const
+        Color operator/(const float n) const noexcept
         {
             Color result;
             _mm_store_ps(result.mRGBA, _mm_div_ps(_mm_load_ps(mRGBA), _mm_set_ps1(n)));
@@ -779,13 +775,13 @@ namespace hr
             return result;
         }
 
-        Color& set(const Color& color)
+        Color& set(const Color& color) noexcept
         {
             _mm_store_ps(mRGBA, _mm_load_ps(color.mRGBA));
             return *this;
         }
 
-        Color& set(const Color& color, float a)
+        Color& set(const Color& color, float a) noexcept
         {
             _mm_store_ps(mRGBA, _mm_load_ps(color.mRGBA));
             mRGBA[3] = a;
@@ -793,13 +789,13 @@ namespace hr
             return *this;
         }
 
-        Color& set(const float* color)
+        Color& set(std::span<const float, 4> color) noexcept
         {
-            _mm_store_ps(mRGBA, _mm_load_ps(color));
+            _mm_store_ps(mRGBA, _mm_load_ps(color.data()));
             return *this;
         }
 
-        Color& set(const float* const color, float a)
+        Color& set(std::span<const float, 3> color, float a) noexcept
         {
             mRGBA[0] = color[0];
             mRGBA[1] = color[1];
@@ -809,20 +805,20 @@ namespace hr
             return *this;
         }
 
-        Color& set(float crgba)
+        Color& set(float rgba) noexcept
         {
-            _mm_store_ps(mRGBA, _mm_set_ps1(crgba));
+            _mm_store_ps(mRGBA, _mm_set_ps1(rgba));
             return *this;
         }
 
-        Color& set(float crgb, float a)
+        Color& set(float rgb, float a) noexcept
         {
-            mRGBA[0] = mRGBA[1] = mRGBA[2] = crgb;
+            mRGBA[0] = mRGBA[1] = mRGBA[2] = rgb;
             mRGBA[3] = a;
             return *this;
         }
 
-        Color& set(float r, float g, float b, float a)
+        Color& set(float r, float g, float b, float a) noexcept
         {
             mRGBA[0] = r;
             mRGBA[1] = g;
@@ -832,13 +828,13 @@ namespace hr
             return *this;
         }
 
-        Color& set(const uint8_t* color)
+        Color& set(std::span<const uint8_t, 4> color) noexcept
         {
-            Color::convertColor(mRGBA, color, true);
+            Color::convertColor(mRGBA, color);
             return *this;
         }
 
-        Color& set(const uint8_t* color, uint8_t a)
+        Color& set(std::span<const uint8_t, 3> color, uint8_t a) noexcept
         {
             mRGBA[0] = static_cast<float>(color[0]);
             mRGBA[1] = static_cast<float>(color[1]);
@@ -849,7 +845,7 @@ namespace hr
             return *this;
         }
 
-        Color& set(uint8_t r, uint8_t g, uint8_t b, uint8_t a)
+        Color& set(uint8_t r, uint8_t g, uint8_t b, uint8_t a) noexcept
         {
             mRGBA[0] = static_cast<float>(r);
             mRGBA[1] = static_cast<float>(g);
@@ -860,7 +856,7 @@ namespace hr
             return *this;
         }
 
-        Color& set(uint8_t r, uint8_t g, uint8_t b)
+        Color& set(uint8_t r, uint8_t g, uint8_t b) noexcept
         {
             mRGBA[0] = static_cast<float>(r);
             mRGBA[1] = static_cast<float>(g);
@@ -871,13 +867,14 @@ namespace hr
             return *this;
         }
 
-        Color& setWeight(const Color& c, const float weight)
+        Color& setWeight(const Color& c, const float weight) noexcept
         {
             _mm_store_ps(mRGBA, _mm_mul_ps(_mm_load_ps(c.mRGBA), _mm_set_ps1(weight)));
             return *this;
         }
 
-        Color& setWeight(const Color& c1, const float weight1, const Color& c2, const float weight2, const Color& c3, const float weight3, const Color& c4, const float weight4)
+        Color&
+        setWeight(const Color& c1, const float weight1, const Color& c2, const float weight2, const Color& c3, const float weight3, const Color& c4, const float weight4) noexcept
         {
             __m128 temp;
 
@@ -889,13 +886,13 @@ namespace hr
             return *this;
         }
 
-        Color& setYUV(const float* const yuv)
+        Color& setYUV(std::span<const float, 3> yuv) noexcept
         {
             setYUV(yuv[0], yuv[1], yuv[2]);
             return *this;
         }
 
-        Color& setYUV(float y, float u, float v)
+        Color& setYUV(float y, float u, float v) noexcept
         {
             mRGBA[0] = y + (v * 1.140f);
             mRGBA[1] = y - ((u * 0.395f) + (v * 0.581f));
@@ -905,13 +902,13 @@ namespace hr
             return *this;
         }
 
-        Color& setYUV(const uint8_t* const yuv)
+        Color& setYUV(std::span<const uint8_t, 3> yuv) noexcept
         {
             setYUV(yuv[0], yuv[1], yuv[2]);
             return *this;
         }
 
-        Color& setYUV(uint8_t y, uint8_t u, uint8_t v)
+        Color& setYUV(uint8_t y, uint8_t u, uint8_t v) noexcept
         {
             alignas(16) float pixelAux[4];
 
@@ -926,13 +923,13 @@ namespace hr
             return *this;
         }
 
-        Color& setYCbCr(const float* const ycbcr, bool fullRange)
+        Color& setYCbCr(std::span<const float, 3> ycbcr, bool fullRange) noexcept
         {
             setYCbCr(ycbcr[0], ycbcr[1], ycbcr[2], fullRange);
             return *this;
         }
 
-        Color& setYCbCr(float y, float cb, float cr, bool fullRange)
+        Color& setYCbCr(float y, float cb, float cr, bool fullRange) noexcept
         {
             float auxCb = cb - 0.5f;
             float auxCr = cr - 0.5f;
@@ -956,13 +953,13 @@ namespace hr
             return *this;
         }
 
-        Color& setYCbCr(const uint8_t* const ycbcr, bool fullRange)
+        Color& setYCbCr(std::span<const uint8_t, 3> ycbcr, bool fullRange) noexcept
         {
             setYCbCr(ycbcr[0], ycbcr[1], ycbcr[2], fullRange);
             return *this;
         }
 
-        Color& setYCbCr(uint8_t y, uint8_t cb, uint8_t cr, bool fullRange)
+        Color& setYCbCr(uint8_t y, uint8_t cb, uint8_t cr, bool fullRange) noexcept
         {
             alignas(16) float pixelAux[4];
 
@@ -977,13 +974,13 @@ namespace hr
             return *this;
         }
 
-        Color& setYPbPr(const float* const ypbpr, bool coefficientsSDTV)
+        Color& setYPbPr(std::span<const float, 3> ypbpr, bool coefficientsSDTV) noexcept
         {
             setYPbPr(ypbpr[0], ypbpr[1], ypbpr[2], coefficientsSDTV);
             return *this;
         }
 
-        Color& setYPbPr(float y, float pb, float pr, bool coefficientsSDTV)
+        Color& setYPbPr(float y, float pb, float pr, bool coefficientsSDTV) noexcept
         {
             if (coefficientsSDTV)
             {
@@ -1003,13 +1000,13 @@ namespace hr
             return *this;
         }
 
-        Color& setYPbPr(const uint8_t* const ypbpr, bool coefficientsSDTV)
+        Color& setYPbPr(std::span<const uint8_t, 3> ypbpr, bool coefficientsSDTV) noexcept
         {
             setYPbPr(ypbpr[0], ypbpr[1], ypbpr[2], coefficientsSDTV);
             return *this;
         }
 
-        Color& setYPbPr(uint8_t y, uint8_t pb, uint8_t pr, bool coefficientsSDTV)
+        Color& setYPbPr(uint8_t y, uint8_t pb, uint8_t pr, bool coefficientsSDTV) noexcept
         {
             alignas(16) float pixelAux[4];
 
@@ -1024,13 +1021,13 @@ namespace hr
             return *this;
         }
 
-        Color& setCMYK(const float* const cmyk)
+        Color& setCMYK(std::span<const float, 4> cmyk) noexcept
         {
             setCMYK(cmyk[0], cmyk[1], cmyk[2], cmyk[3]);
             return *this;
         }
 
-        Color& setCMYK(float c, float m, float y, float k)
+        Color& setCMYK(float c, float m, float y, float k) noexcept
         {
             mRGBA[0] = 1.0f - (c * (1.0f - k)) + k;
             mRGBA[1] = 1.0f - (m * (1.0f - k)) + k;
@@ -1040,13 +1037,13 @@ namespace hr
             return *this;
         }
 
-        Color& setCMYK(const uint8_t* const cmyk)
+        Color& setCMYK(std::span<const uint8_t, 4> cmyk) noexcept
         {
             setCMYK(cmyk[0], cmyk[1], cmyk[2], cmyk[3]);
             return *this;
         }
 
-        Color& setCMYK(uint8_t c, uint8_t m, uint8_t y, uint8_t k)
+        Color& setCMYK(uint8_t c, uint8_t m, uint8_t y, uint8_t k) noexcept
         {
             alignas(16) float pixelAux[4];
 
@@ -1062,46 +1059,46 @@ namespace hr
         }
 
         template<typename TTargetType>
-        Color<TTargetType> convert() const;
+        Color<TTargetType> convert() const noexcept;
 
-        void write(float* const dest) const
+        void write(std::span<float, 4> dest) const noexcept
         {
-            std::memcpy(dest, mRGBA, sizeof(float) * 4);
+            std::memcpy(dest.data(), mRGBA, sizeof(float) * 4);
         }
 
-        void write(uint8_t* const dest) const
+        void write(std::span<uint8_t, 4> dest) const noexcept
         {
-            Color::convertColor(dest, mRGBA, true);
+            Color::convertColor(dest, mRGBA);
         }
 
-        void writeRGB(float* const dest) const
+        void writeRGB(std::span<float, 3> dest) const noexcept
         {
             dest[0] = mRGBA[0];
             dest[1] = mRGBA[1];
             dest[2] = mRGBA[2];
         }
 
-        void writeRGB(uint8_t* const dest) const
+        void writeRGB(std::span<uint8_t, 3> dest) const noexcept
         {
-            Color::convertColor(dest, mRGBA, false);
+            Color::convertColor(dest, std::span<const float, 3>(mRGBA, 3));
         }
 
-        void writeYUV(float* const dest) const
+        void writeYUV(std::span<float, 3> dest) const noexcept
         {
             dest[0] = (mRGBA[0] * 0.299f) + (mRGBA[1] * 0.587f) + (mRGBA[2] * 0.114f);
             dest[1] = -(mRGBA[0] * 0.147f) - (mRGBA[1] * 0.289f) + (mRGBA[2] * 0.436f);
             dest[2] = (mRGBA[0] * 0.615f) - (mRGBA[1] * 0.515f) - (mRGBA[2] * 0.100f);
         }
 
-        void writeYUV(uint8_t* const dest) const
+        void writeYUV(std::span<uint8_t, 3> dest) const noexcept
         {
             float bufferAux[3];
-
             writeYUV(bufferAux);
-            Color::convertColor(dest, bufferAux, false);
+
+            Color::convertColor(dest, bufferAux);
         }
 
-        void writeYCbCr(float* const dest, bool fullRange) const
+        void writeYCbCr(std::span<float, 3> dest, bool fullRange) const noexcept
         {
             if (fullRange)
             {
@@ -1117,15 +1114,15 @@ namespace hr
             }
         }
 
-        void writeYCbCr(uint8_t* const dest, bool fullRange) const
+        void writeYCbCr(std::span<uint8_t, 3> dest, bool fullRange) const noexcept
         {
             float bufferAux[3];
-
             writeYCbCr(bufferAux, fullRange);
-            Color::convertColor(dest, bufferAux, false);
+
+            Color::convertColor(dest, bufferAux);
         }
 
-        void writeYPbPr(float* const dest, bool coefficientsSDTV) const
+        void writeYPbPr(std::span<float, 3> dest, bool coefficientsSDTV) const noexcept
         {
             if (coefficientsSDTV)
             {
@@ -1140,15 +1137,16 @@ namespace hr
                 dest[2] = (mRGBA[0] * 0.500f) - (mRGBA[1] * 0.454f) - (mRGBA[2] * 0.046f);
             }
         }
-        void writeYPbPr(uint8_t* const dest, bool coefficientsSDTV) const
+
+        void writeYPbPr(std::span<uint8_t, 3> dest, bool coefficientsSDTV) const noexcept
         {
             float bufferAux[3];
-
             writeYPbPr(bufferAux, coefficientsSDTV);
-            Color::convertColor(dest, bufferAux, false);
+
+            Color::convertColor(dest, bufferAux);
         }
 
-        void writeCMYK(float* const dest) const
+        void writeCMYK(std::span<float, 4> dest) const noexcept
         {
             if (Math::isZero(mRGBA[0]) && Math::isZero(mRGBA[1]) && Math::isZero(mRGBA[2]))
             {
@@ -1166,15 +1164,15 @@ namespace hr
             dest[3] = 1.0f - w;
         }
 
-        void writeCMYK(uint8_t* const dest) const
+        void writeCMYK(std::span<uint8_t, 4> dest) const noexcept
         {
             float bufferAux[4];
-
             writeCMYK(bufferAux);
-            Color::convertColor(dest, bufferAux, true);
+
+            Color::convertColor(dest, bufferAux);
         }
 
-        void addColorWeighted(const Color& color, float weight)
+        void addColorWeighted(const Color& color, float weight) noexcept
         {
             __m128 temp;
 
@@ -1182,7 +1180,7 @@ namespace hr
             _mm_store_ps(mRGBA, _mm_add_ps(_mm_load_ps(mRGBA), temp));
         }
 
-        void toGrayscale()
+        void toGrayscale() noexcept
         {
             float newLum = mRGBA[0] * 0.3019607843f;
             newLum += mRGBA[1] * 0.5921568627f;
@@ -1193,7 +1191,7 @@ namespace hr
             mRGBA[2] = newLum;
         }
 
-        void toGrayscale(float rWeight, float gWeight, float bWeight)
+        void toGrayscale(float rWeight, float gWeight, float bWeight) noexcept
         {
             float newLum = mRGBA[0] * rWeight;
             newLum += mRGBA[1] * gWeight;
@@ -1204,33 +1202,33 @@ namespace hr
             mRGBA[2] = newLum;
         }
 
-        void negativeRGB()
+        void negativeRGB() noexcept
         {
             float alphaAux = mRGBA[3];
             _mm_store_ps(mRGBA, _mm_sub_ps(_mm_set_ps1(1.0f), _mm_load_ps(mRGBA)));
             mRGBA[3] = alphaAux;
         }
 
-        void negativeRGB(float value)
+        void negativeRGB(float value) noexcept
         {
             float alphaAux = mRGBA[3];
             _mm_store_ps(mRGBA, _mm_sub_ps(_mm_set_ps1(value), _mm_load_ps(mRGBA)));
             mRGBA[3] = alphaAux;
         }
 
-        void swapRB()
+        void swapRB() noexcept
         {
             std::swap(mRGBA[0], mRGBA[2]);
         }
 
-        void weightRGB(float weight)
+        void weightRGB(float weight) noexcept
         {
             mRGBA[0] *= weight;
             mRGBA[1] *= weight;
             mRGBA[2] *= weight;
         }
 
-        void mad(float opMul, float opAdd)
+        void mad(float opMul, float opAdd) noexcept
         {
             __m128 pixelVal, valMul, valAdd;
 
@@ -1242,17 +1240,17 @@ namespace hr
             _mm_store_ps(mRGBA, _mm_add_ps(pixelVal, valAdd));
         }
 
-        void clamp()
+        void clamp() noexcept
         {
             _mm_store_ps(mRGBA, _mm_min_ps(_mm_max_ps(_mm_load_ps(mRGBA), _mm_setzero_ps()), _mm_set_ps1(1.0f)));
         }
 
-        void clamp(float min, float max)
+        void clamp(float min, float max) noexcept
         {
             _mm_store_ps(mRGBA, _mm_min_ps(_mm_max_ps(_mm_load_ps(mRGBA), _mm_set_ps1(min)), _mm_set_ps1(max)));
         }
 
-        void interpolate(const Color& to, float t)
+        void interpolate(const Color& to, float t) noexcept
         {
             __m128 tmp;
 
@@ -1261,7 +1259,7 @@ namespace hr
             _mm_store_ps(mRGBA, tmp);
         }
 
-        void setInterpolate(const Color& from, const Color& to, float t)
+        void setInterpolate(const Color& from, const Color& to, float t) noexcept
         {
             __m128 tmp;
 
@@ -1270,12 +1268,12 @@ namespace hr
             _mm_store_ps(mRGBA, tmp);
         }
 
-        void setInterpolate(const float* const from, const float* const to, float t)
+        void setInterpolate(std::span<const float, 4> from, std::span<const float, 4> to, float t) noexcept
         {
             __m128 tmp;
 
-            tmp = _mm_mul_ps(_mm_load_ps(from), _mm_set_ps1(1.0f - t));
-            tmp = _mm_add_ps(tmp, _mm_mul_ps(_mm_load_ps(to), _mm_set_ps1(t)));
+            tmp = _mm_mul_ps(_mm_load_ps(from.data()), _mm_set_ps1(1.0f - t));
+            tmp = _mm_add_ps(tmp, _mm_mul_ps(_mm_load_ps(to.data()), _mm_set_ps1(t)));
             _mm_store_ps(mRGBA, tmp);
         }
     };
@@ -1283,6 +1281,8 @@ namespace hr
     template<>
     class alignas(32) Color<double>
     {
+        friend class Color<float>;
+
         double mRGBA[4];
 
     public:
@@ -1328,82 +1328,74 @@ namespace hr
 
         explicit Color(const Vector3f& v) noexcept
         {
-            _mm256_store_pd(mRGBA, _mm256_cvtps_pd(_mm_load_ps(v.data())));
+            _mm256_store_pd(mRGBA, _mm256_cvtps_pd(_mm_load_ps(v.data().data())));
             mRGBA[3] = 1.0;
         }
 
         explicit Color(const Vector3d& v) noexcept
         {
-            _mm256_store_pd(mRGBA, _mm256_load_pd(v.data()));
+            _mm256_store_pd(mRGBA, _mm256_load_pd(v.data().data()));
             mRGBA[3] = 1.0;
         }
 
         explicit Color(const Vector4f& v) noexcept
         {
-            _mm256_store_pd(mRGBA, _mm256_cvtps_pd(_mm_load_ps(v.data())));
+            _mm256_store_pd(mRGBA, _mm256_cvtps_pd(_mm_load_ps(v.data().data())));
         }
 
-        constexpr double* data() noexcept
+        template<typename Self>
+        constexpr auto data(this Self&& self) noexcept
         {
-            return mRGBA;
+            return std::span{self.mRGBA};
         }
 
-        constexpr const double* data() const noexcept
+        template<typename Self>
+        constexpr auto& operator[](this Self&& self, const size_t index) noexcept
         {
-            return mRGBA;
+            return self.mRGBA[index % 4];
         }
 
-        constexpr double& operator[](const size_t index) noexcept
-        {
-            return mRGBA[index % 4];
-        }
-
-        constexpr const double& operator[](const size_t index) const noexcept
-        {
-            return mRGBA[index % 4];
-        }
-
-        void operator+=(const Color& c)
+        void operator+=(const Color& c) noexcept
         {
             _mm256_store_pd(mRGBA, _mm256_add_pd(_mm256_load_pd(mRGBA), _mm256_load_pd(c.mRGBA)));
         }
 
-        void operator-=(const Color& c)
+        void operator-=(const Color& c) noexcept
         {
             _mm256_store_pd(mRGBA, _mm256_sub_pd(_mm256_load_pd(mRGBA), _mm256_load_pd(c.mRGBA)));
         }
 
-        void operator*=(const Color& c)
+        void operator*=(const Color& c) noexcept
         {
             _mm256_store_pd(mRGBA, _mm256_mul_pd(_mm256_load_pd(mRGBA), _mm256_load_pd(c.mRGBA)));
         }
 
-        void operator/=(const Color& c)
+        void operator/=(const Color& c) noexcept
         {
             _mm256_store_pd(mRGBA, _mm256_div_pd(_mm256_load_pd(mRGBA), _mm256_load_pd(c.mRGBA)));
         }
 
-        void operator+=(const double n)
+        void operator+=(const double n) noexcept
         {
             _mm256_store_pd(mRGBA, _mm256_add_pd(_mm256_load_pd(mRGBA), _mm256_set1_pd(n)));
         }
 
-        void operator-=(const double n)
+        void operator-=(const double n) noexcept
         {
             _mm256_store_pd(mRGBA, _mm256_sub_pd(_mm256_load_pd(mRGBA), _mm256_set1_pd(n)));
         }
 
-        void operator*=(const double n)
+        void operator*=(const double n) noexcept
         {
             _mm256_store_pd(mRGBA, _mm256_mul_pd(_mm256_load_pd(mRGBA), _mm256_set1_pd(n)));
         }
 
-        void operator/=(const double n)
+        void operator/=(const double n) noexcept
         {
             _mm256_store_pd(mRGBA, _mm256_div_pd(_mm256_load_pd(mRGBA), _mm256_set1_pd(n)));
         }
 
-        Color operator+(const Color& c) const
+        Color operator+(const Color& c) const noexcept
         {
             Color result;
             _mm256_store_pd(result.mRGBA, _mm256_add_pd(_mm256_load_pd(mRGBA), _mm256_load_pd(c.mRGBA)));
@@ -1411,7 +1403,7 @@ namespace hr
             return result;
         }
 
-        Color operator-(const Color& c) const
+        Color operator-(const Color& c) const noexcept
         {
             Color result;
             _mm256_store_pd(result.mRGBA, _mm256_sub_pd(_mm256_load_pd(mRGBA), _mm256_load_pd(c.mRGBA)));
@@ -1419,7 +1411,7 @@ namespace hr
             return result;
         }
 
-        Color operator*(const Color& c) const
+        Color operator*(const Color& c) const noexcept
         {
             Color result;
             _mm256_store_pd(result.mRGBA, _mm256_mul_pd(_mm256_load_pd(mRGBA), _mm256_load_pd(c.mRGBA)));
@@ -1427,7 +1419,7 @@ namespace hr
             return result;
         }
 
-        Color operator/(const Color& c) const
+        Color operator/(const Color& c) const noexcept
         {
             Color result;
             _mm256_store_pd(result.mRGBA, _mm256_div_pd(_mm256_load_pd(mRGBA), _mm256_load_pd(c.mRGBA)));
@@ -1435,7 +1427,7 @@ namespace hr
             return result;
         }
 
-        Color operator+(const double n) const
+        Color operator+(const double n) const noexcept
         {
             Color result;
             _mm256_store_pd(result.mRGBA, _mm256_add_pd(_mm256_load_pd(mRGBA), _mm256_set1_pd(n)));
@@ -1443,7 +1435,7 @@ namespace hr
             return result;
         }
 
-        Color operator-(const double n) const
+        Color operator-(const double n) const noexcept
         {
             Color result;
             _mm256_store_pd(result.mRGBA, _mm256_sub_pd(_mm256_load_pd(mRGBA), _mm256_set1_pd(n)));
@@ -1451,7 +1443,7 @@ namespace hr
             return result;
         }
 
-        Color operator*(const double n) const
+        Color operator*(const double n) const noexcept
         {
             Color result;
             _mm256_store_pd(result.mRGBA, _mm256_mul_pd(_mm256_load_pd(mRGBA), _mm256_set1_pd(n)));
@@ -1459,7 +1451,7 @@ namespace hr
             return result;
         }
 
-        Color operator/(const double n) const
+        Color operator/(const double n) const noexcept
         {
             Color result;
             _mm256_store_pd(result.mRGBA, _mm256_div_pd(_mm256_load_pd(mRGBA), _mm256_set1_pd(n)));
@@ -1467,13 +1459,13 @@ namespace hr
             return result;
         }
 
-        Color& set(const Color& color)
+        Color& set(const Color& color) noexcept
         {
             _mm256_store_pd(mRGBA, _mm256_load_pd(color.mRGBA));
             return *this;
         }
 
-        Color& set(const Color& color, double a)
+        Color& set(const Color& color, double a) noexcept
         {
             _mm256_store_pd(mRGBA, _mm256_load_pd(color.mRGBA));
             mRGBA[3] = a;
@@ -1481,13 +1473,13 @@ namespace hr
             return *this;
         }
 
-        Color& set(const double* color)
+        Color& set(const double* color) noexcept
         {
             _mm256_store_pd(mRGBA, _mm256_load_pd(color));
             return *this;
         }
 
-        Color& set(const double* const color, double a)
+        Color& set(const double* const color, double a) noexcept
         {
             mRGBA[0] = color[0];
             mRGBA[1] = color[1];
@@ -1497,20 +1489,20 @@ namespace hr
             return *this;
         }
 
-        Color& set(double rgba)
+        Color& set(double rgba) noexcept
         {
             _mm256_store_pd(mRGBA, _mm256_set1_pd(rgba));
             return *this;
         }
 
-        Color& set(double rgb, double a)
+        Color& set(double rgb, double a) noexcept
         {
             mRGBA[0] = mRGBA[1] = mRGBA[2] = rgb;
             mRGBA[3] = a;
             return *this;
         }
 
-        Color& set(double r, double g, double b, double a)
+        Color& set(double r, double g, double b, double a) noexcept
         {
             mRGBA[0] = r;
             mRGBA[1] = g;
@@ -1520,13 +1512,20 @@ namespace hr
             return *this;
         }
 
-        Color& setWeight(const Color& c, const double weight)
+        Color& setWeight(const Color& c, const double weight) noexcept
         {
             _mm256_store_pd(mRGBA, _mm256_mul_pd(_mm256_load_pd(c.mRGBA), _mm256_set1_pd(weight)));
             return *this;
         }
 
-        Color& setWeight(const Color& c1, const double weight1, const Color& c2, const double weight2, const Color& c3, const double weight3, const Color& c4, const double weight4)
+        Color& setWeight(const Color& c1,
+                         const double weight1,
+                         const Color& c2,
+                         const double weight2,
+                         const Color& c3,
+                         const double weight3,
+                         const Color& c4,
+                         const double weight4) noexcept
         {
             __m256d temp;
 
@@ -1538,13 +1537,13 @@ namespace hr
             return *this;
         }
 
-        Color& setYCbCr(const double* const ycbcr, bool fullRange)
+        Color& setYCbCr(const double* const ycbcr, bool fullRange) noexcept
         {
             setYCbCr(ycbcr[0], ycbcr[1], ycbcr[2], fullRange);
             return *this;
         }
 
-        Color& setYCbCr(double y, double cb, double cr, bool fullRange)
+        Color& setYCbCr(double y, double cb, double cr, bool fullRange) noexcept
         {
             double auxCb = cb - 0.5;
             double auxCr = cr - 0.5;
@@ -1568,13 +1567,13 @@ namespace hr
             return *this;
         }
 
-        Color& setCMYK(const double* const cmyk)
+        Color& setCMYK(const double* const cmyk) noexcept
         {
             setCMYK(cmyk[0], cmyk[1], cmyk[2], cmyk[3]);
             return *this;
         }
 
-        Color& setCMYK(double c, double m, double y, double k)
+        Color& setCMYK(double c, double m, double y, double k) noexcept
         {
             mRGBA[0] = 1.0 - (c * (1.0 - k)) + k;
             mRGBA[1] = 1.0 - (m * (1.0 - k)) + k;
@@ -1585,21 +1584,21 @@ namespace hr
         }
 
         template<typename TTargetType>
-        Color<TTargetType> convert() const;
+        Color<TTargetType> convert() const noexcept;
 
         void write(double* const dest) const
         {
             std::memcpy(dest, mRGBA, sizeof(double) * 4);
         }
 
-        void writeRGB(double* const dest) const
+        void writeRGB(double* const dest) const noexcept
         {
             dest[0] = mRGBA[0];
             dest[1] = mRGBA[1];
             dest[2] = mRGBA[2];
         }
 
-        void writeYCbCr(double* const dest, bool fullRange) const
+        void writeYCbCr(double* const dest, bool fullRange) const noexcept
         {
             if (fullRange)
             {
@@ -1615,7 +1614,7 @@ namespace hr
             }
         }
 
-        void writeCMYK(double* const dest) const
+        void writeCMYK(double* const dest) const noexcept
         {
             if (Math::isZero(mRGBA[0]) && Math::isZero(mRGBA[1]) && Math::isZero(mRGBA[2]))
             {
@@ -1633,7 +1632,7 @@ namespace hr
             dest[3] = 1.0 - w;
         }
 
-        void addColorWeighted(const Color& color, double weight)
+        void addColorWeighted(const Color& color, double weight) noexcept
         {
             __m256d temp;
 
@@ -1641,7 +1640,7 @@ namespace hr
             _mm256_store_pd(mRGBA, _mm256_add_pd(_mm256_load_pd(mRGBA), temp));
         }
 
-        void toGrayscale()
+        void toGrayscale() noexcept
         {
             double newLum = mRGBA[0] * 0.3019607843;
             newLum += mRGBA[1] * 0.5921568627;
@@ -1652,7 +1651,7 @@ namespace hr
             mRGBA[2] = newLum;
         }
 
-        void toGrayscale(double rWeight, double gWeight, double bWeight)
+        void toGrayscale(double rWeight, double gWeight, double bWeight) noexcept
         {
             double newLum = mRGBA[0] * rWeight;
             newLum += mRGBA[1] * gWeight;
@@ -1663,33 +1662,33 @@ namespace hr
             mRGBA[2] = newLum;
         }
 
-        void negativeRGB()
+        void negativeRGB() noexcept
         {
             double alphaAux = mRGBA[3];
             _mm256_store_pd(mRGBA, _mm256_sub_pd(_mm256_set1_pd(1.0), _mm256_load_pd(mRGBA)));
             mRGBA[3] = alphaAux;
         }
 
-        void negativeRGB(double value)
+        void negativeRGB(double value) noexcept
         {
             double alphaAux = mRGBA[3];
             _mm256_store_pd(mRGBA, _mm256_sub_pd(_mm256_set1_pd(value), _mm256_load_pd(mRGBA)));
             mRGBA[3] = alphaAux;
         }
 
-        void swapRB()
+        void swapRB() noexcept
         {
             std::swap(mRGBA[0], mRGBA[2]);
         }
 
-        void weightRGB(double weight)
+        void weightRGB(double weight) noexcept
         {
             mRGBA[0] *= weight;
             mRGBA[1] *= weight;
             mRGBA[2] *= weight;
         }
 
-        void mad(double opMul, double opAdd)
+        void mad(double opMul, double opAdd) noexcept
         {
             __m256d valMul, valAdd;
 
@@ -1699,17 +1698,17 @@ namespace hr
             _mm256_store_pd(mRGBA, _mm256_add_pd(_mm256_mul_pd(_mm256_load_pd(mRGBA), valMul), valAdd));
         }
 
-        void clamp()
+        void clamp() noexcept
         {
             _mm256_store_pd(mRGBA, _mm256_min_pd(_mm256_max_pd(_mm256_load_pd(mRGBA), _mm256_setzero_pd()), _mm256_set1_pd(1.0)));
         }
 
-        void clamp(double min, double max)
+        void clamp(double min, double max) noexcept
         {
             _mm256_store_pd(mRGBA, _mm256_min_pd(_mm256_max_pd(_mm256_load_pd(mRGBA), _mm256_set1_pd(min)), _mm256_set1_pd(max)));
         }
 
-        void interpolate(const Color& to, double t)
+        void interpolate(const Color& to, double t) noexcept
         {
             __m256d tmp;
 
@@ -1718,7 +1717,7 @@ namespace hr
             _mm256_store_pd(mRGBA, tmp);
         }
 
-        void setInterpolate(const Color& from, const Color& to, double t)
+        void setInterpolate(const Color& from, const Color& to, double t) noexcept
         {
             __m256d tmp;
 
@@ -1727,7 +1726,7 @@ namespace hr
             _mm256_store_pd(mRGBA, tmp);
         }
 
-        void setInterpolate(const double* const from, const double* const to, double t)
+        void setInterpolate(const double* const from, const double* const to, double t) noexcept
         {
             __m256d tmp;
 
@@ -1743,42 +1742,42 @@ namespace hr
     static_assert(std::is_trivially_copyable_v<Color<double>>, "For performance reasons, this class should be trivially copyable");
 
     template<typename TTargetType>
-    Color<TTargetType> Color<float>::convert() const
+    Color<TTargetType> Color<float>::convert() const noexcept
     {
         static_assert(std::is_same_v<TTargetType, double> || std::is_same_v<TTargetType, float>, "Unsupported data type");
 
         if constexpr (std::is_same_v<TTargetType, float>)
         {
             Color<float> newColor;
-            _mm_store_ps(newColor.data(), _mm_load_ps(mRGBA));
+            _mm_store_ps(newColor.mRGBA, _mm_load_ps(mRGBA));
 
             return newColor;
         }
         else
         {
             Color<double> newColor;
-            _mm256_store_pd(newColor.data(), _mm256_cvtps_pd(_mm_load_ps(mRGBA)));
+            _mm256_store_pd(newColor.mRGBA, _mm256_cvtps_pd(_mm_load_ps(mRGBA)));
 
             return newColor;
         }
     }
 
     template<typename TTargetType>
-    Color<TTargetType> Color<double>::convert() const
+    Color<TTargetType> Color<double>::convert() const noexcept
     {
         static_assert(std::is_same_v<TTargetType, double> || std::is_same_v<TTargetType, float>, "Unsupported data type");
 
         if constexpr (std::is_same_v<TTargetType, double>)
         {
             Color<double> newColor;
-            _mm256_store_pd(newColor.data(), _mm256_load_pd(mRGBA));
+            _mm256_store_pd(newColor.mRGBA, _mm256_load_pd(mRGBA));
 
             return newColor;
         }
         else
         {
             Color<float> newColor;
-            _mm_store_ps(newColor.data(), _mm256_cvtpd_ps(_mm256_load_pd(mRGBA)));
+            _mm_store_ps(newColor.mRGBA, _mm256_cvtpd_ps(_mm256_load_pd(mRGBA)));
 
             return newColor;
         }

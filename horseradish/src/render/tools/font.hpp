@@ -131,7 +131,7 @@ namespace hr::render::tools
 
         void setColor(const float r, const float g, const float b, const float a);
         void setColor(const float r, const float g, const float b);
-        void setColor(const float* const color);
+        void setColor(std::span<const float, 4> color);
         void setColor(const Colorf& color);
     };
 

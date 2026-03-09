@@ -399,7 +399,7 @@ namespace hr::render
                 //
                 //	double rayT;
                 //	auto wasHit = bvh.bvh.intersects(ray, tMin, tMax, [&obj = std::get<0>(targetObj), &meshHit](std::span<size_t> triIndices, const Ray<Vector3d>& ray, double
-                //rayDistMin, double rayDistMax, double& rayT)
+                // rayDistMin, double rayDistMax, double& rayT)
                 //	{
                 //		auto wasHit{ false };
                 //		for (auto triIndex : triIndices)
@@ -487,8 +487,10 @@ namespace hr::render
     }
 
     Raytracer::Raytracer(Dispatcher& asyncDispatcher, size_t maxWidth, size_t maxHeight)
-      : mAsyncDispatcher{asyncDispatcher}, mBuffer{maxWidth, maxHeight}
-    {}
+      : mAsyncDispatcher{asyncDispatcher}
+    {
+        mBuffer = imaging::Image<float, imaging::ImageFormatRGB>::create(maxWidth, maxHeight);
+    }
 
     bool Raytracer::trace(const tools::Camera& camera, const gl::tools::Viewport& viewport)
     {

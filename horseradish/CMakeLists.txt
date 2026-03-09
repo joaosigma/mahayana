@@ -70,13 +70,13 @@ project(mustard VERSION 0.9 LANGUAGES C CXX)
 include(CTest)
 
 add_executable(horseradish WIN32 "")
-target_compile_features(horseradish PRIVATE c_std_17)
-target_compile_features(horseradish PRIVATE cxx_std_20)
+target_compile_features(horseradish PRIVATE c_std_23)
+target_compile_features(horseradish PRIVATE cxx_std_23)
 
 if (BUILD_TESTING)
 	add_executable(horseradish-utests "")
-	target_compile_features(horseradish-utests PRIVATE c_std_17)
-	target_compile_features(horseradish-utests PRIVATE cxx_std_20)
+	target_compile_features(horseradish-utests PRIVATE c_std_23)
+	target_compile_features(horseradish-utests PRIVATE cxx_std_23)
 
 	add_test(NAME "horseradish unit tests" COMMAND horseradish-utests)
 endif()
@@ -99,7 +99,7 @@ if (BUILD_ENV STREQUAL "windows")
 
 		WINVER=0x0A00 # Windows 10
 		_WIN32_WINNT=0x0A00 # Windows 10
-		NTDDI_VERSION=0x06010000
+		NTDDI_VERSION=0x0A000007 # NTDDI_WIN10_19H1
 
 		_UNICODE #default Windows APIs to Unicode
 		UNICODE
@@ -156,7 +156,7 @@ if (CMAKE_GENERATOR MATCHES "^Visual Studio")
 		/W4 # warning level
 		#/WX # treat warnings as errors
 		/MP # enable parallel builds
-		/Bv # print toolchain info
+		#/Bv # print toolchain info
 		#/Bt # print time spent in the compiler
 
 		/arch:AVX2

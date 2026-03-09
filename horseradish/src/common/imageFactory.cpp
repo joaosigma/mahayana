@@ -41,7 +41,7 @@ namespace hr::imaging
             return {};
 
         if (outBuffer)
-            return {std::unique_ptr<uint8_t[]>(outBuffer), outW, outH};
+            return Image<uint8_t, ImageFormatRGB>::create(std::unique_ptr<uint8_t[]>(outBuffer), outW, outH);
 
         return {};
     }
@@ -58,7 +58,7 @@ namespace hr::imaging
             return {};
 
         if (outBuffer)
-            return Image<uint8_t, ImageFormatRGBA>(std::unique_ptr<uint8_t[]>(outBuffer), outW, outH);
+            return Image<uint8_t, ImageFormatRGBA>::create(std::unique_ptr<uint8_t[]>(outBuffer), outW, outH);
 
         return {};
     }
@@ -70,7 +70,7 @@ namespace hr::imaging
 
         uint8_t* bufferOut = nullptr;
         size_t bufferOutSize = 0;
-        lodepng_encode24(&bufferOut, &bufferOutSize, imgView.data(), imgView.width(), imgView.height());
+        lodepng_encode24(&bufferOut, &bufferOutSize, imgView.data().data(), imgView.width(), imgView.height());
 
         if (!bufferOut || (bufferOutSize <= 0))
             return false;
@@ -89,7 +89,7 @@ namespace hr::imaging
 
         uint8_t* bufferOut = nullptr;
         size_t bufferOutSize = 0;
-        lodepng_encode32(&bufferOut, &bufferOutSize, imgView.data(), imgView.width(), imgView.height());
+        lodepng_encode32(&bufferOut, &bufferOutSize, imgView.data().data(), imgView.width(), imgView.height());
 
         if (!bufferOut || (bufferOutSize <= 0))
             return false;
@@ -114,7 +114,7 @@ namespace hr::imaging
         if (!imgData)
             return {};
 
-        return Image<uint8_t, ImageFormatRGBA>(std::unique_ptr<uint8_t[]>(imgData), imgWidth, imgHeight);
+        return Image<uint8_t, ImageFormatRGBA>::create(std::unique_ptr<uint8_t[]>(imgData), imgWidth, imgHeight);
     }
 
     Image<uint8_t, ImageFormatRGB> Factory::readJPG(hr::streams::StreamReader& streamReader)
@@ -130,7 +130,7 @@ namespace hr::imaging
         if (!imgData)
             return {};
 
-        return Image<uint8_t, ImageFormatRGB>(std::unique_ptr<uint8_t[]>(imgData), imgWidth, imgHeight);
+        return Image<uint8_t, ImageFormatRGB>::create(std::unique_ptr<uint8_t[]>(imgData), imgWidth, imgHeight);
     }
 
     Image<float, ImageFormatRGB> Factory::readHDRI(hr::streams::StreamReader& streamReader)
@@ -146,7 +146,7 @@ namespace hr::imaging
         if (!imgData)
             return {};
 
-        return Image<float, ImageFormatRGB>(std::unique_ptr<float[]>(imgData), imgWidth, imgHeight);
+        return Image<float, ImageFormatRGB>::create(std::unique_ptr<float[]>(imgData), imgWidth, imgHeight);
     }
 
     Image<float, ImageFormatRGBA> Factory::readEXR(const char* const fileName)
@@ -163,6 +163,6 @@ namespace hr::imaging
             return {};
         }
 
-        return Image<float, ImageFormatRGBA>(std::unique_ptr<float[]>(bufferOut), width, height);
+        return Image<float, ImageFormatRGBA>::create(std::unique_ptr<float[]>(bufferOut), width, height);
     }
 }

@@ -1,7 +1,10 @@
 #pragma once
 
 #include "image.hpp"
+#include "imageFormats.hpp"
 #include "stream.hpp"
+
+#include <cstdint>
 
 namespace hr::imaging
 {
