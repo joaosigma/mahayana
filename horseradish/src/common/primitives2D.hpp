@@ -2,25 +2,30 @@
 
 #include "math.hpp"
 
+#include <type_traits>
+
 namespace hr
 {
     template<typename T>
     struct Rectangle
     {
-        static_assert(std::is_arithmetic<T>::value, "Data type must be arithmetic (e.g.: float, unsigned char, etc.)");
+        static_assert(std::is_arithmetic_v<T>, "Data type must be arithmetic (e.g.: float, unsigned char, etc.)");
 
-        T x{};
-        T y{};
-        T width{};
-        T height{};
+        T x;
+        T y;
+        T width;
+        T height;
 
-        Rectangle() = default;
-        Rectangle(const Rectangle&) = default;
-        Rectangle& operator=(const Rectangle&) = default;
-        Rectangle(Rectangle&&) = default;
-        Rectangle& operator=(Rectangle&&) = default;
+    public:
+        static constexpr Rectangle zero() noexcept
+        {
+            return Rectangle{T(), T(), T(), T()};
+        }
 
-        Rectangle(T x, T y, T width, T height) noexcept
+    public:
+        constexpr Rectangle() noexcept = delete;
+
+        constexpr Rectangle(T x, T y, T width, T height) noexcept
           : x{x}, y{y}, width{width}, height{height}
         {}
 
@@ -86,21 +91,27 @@ namespace hr
         }
     };
 
+    static_assert(std::is_trivially_copyable_v<Rectangle<size_t>>, "For performance reasons, the Rectangle<size_t> data type should be trivially copyable");
+    static_assert(std::is_trivially_copyable_v<Rectangle<float>>, "For performance reasons, the Rectangle<float> data type should be trivially copyable");
+
     template<typename T>
     struct Size
     {
-        static_assert(std::is_arithmetic<T>::value, "Data type must be arithmetic (e.g.: float, unsigned char, etc.)");
+        static_assert(std::is_arithmetic_v<T>, "Data type must be arithmetic (e.g.: float, unsigned char, etc.)");
 
-        T width{};
-        T height{};
+        T width;
+        T height;
 
-        Size() = default;
-        Size(const Size&) = default;
-        Size& operator=(const Size&) = default;
-        Size(Size&&) = default;
-        Size& operator=(Size&&) = default;
+    public:
+        static constexpr Size zero() noexcept
+        {
+            return Size{T(), T()};
+        }
 
-        Size(T width, T height) noexcept
+    public:
+        constexpr Size() noexcept = delete;
+
+        constexpr Size(T width, T height) noexcept
           : width{width}, height{height}
         {}
 
@@ -169,18 +180,21 @@ namespace hr
     template<typename T>
     struct Point
     {
-        static_assert(std::is_arithmetic<T>::value, "Data type must be arithmetic (e.g.: float, unsigned char, etc.)");
+        static_assert(std::is_arithmetic_v<T>, "Data type must be arithmetic (e.g.: float, unsigned char, etc.)");
 
-        T x{};
-        T y{};
+        T x;
+        T y;
 
-        Point() = default;
-        Point(const Point&) = default;
-        Point& operator=(const Point&) = default;
-        Point(Point&&) = default;
-        Point& operator=(Point&&) = default;
+    public:
+        static constexpr Point zero() noexcept
+        {
+            return Point{T(), T()};
+        }
 
-        Point(T x, T y) noexcept
+    public:
+        constexpr Point() noexcept = delete;
+
+        constexpr Point(T x, T y) noexcept
           : x{x}, y{y}
         {}
 

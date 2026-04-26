@@ -52,27 +52,23 @@ namespace hr::engine
         }
 
         // mount main game resource directory
-        mFileSystem->mountPath(std::filesystem::path{"d:/jogos/doom3/base/"}, {});
-        mLoggerRuntimeCtx->info("${olive}->${default}Path set to: \"d:/jogos/doom3/base/\"");
+        mFileSystem->mountPath("d:/stuff/doom3/base/", {});
+        mLoggerRuntimeCtx->info("${olive}->${default}Path set to: \"d:/stuff/doom3/base/\"");
 
         size_t totalFich = 0;
         size_t totalPacks = 0;
 
         // for every pack/zip/7zip file
-        hr::io::FileSystem::findFiles("d:/jogos/doom3/base/pak*.pk4", true,
-                                      [&](const std::filesystem::path& path, const uint64_t&)
-                                      {
-                                          size_t numFilesZip;
-
-                                          // mount the zip file as a directoty
-                                          if (mFileSystem->mountZip(path, {}, &numFilesZip))
-                                          {
-                                              totalPacks += 1;
-                                              totalFich += numFilesZip;
-                                          }
-
-                                          return true;
-                                      });
+        for (const auto& file : hr::io::FileSystem::findFiles("d:/stuff/doom3/base/", "pak*.pk4", true))
+        {
+            // mount the zip file as a directoty
+            size_t numFilesZip;
+            if (mFileSystem->mountZip(file.path, {}, &numFilesZip))
+            {
+                totalPacks += 1;
+                totalFich += numFilesZip;
+            }
+        }
 
         mLoggerRuntimeCtx->info("   loaded {0} archives with a total of {1} files", totalPacks, totalFich);
     }

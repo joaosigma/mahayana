@@ -67,8 +67,7 @@ namespace hr::platform
         }
     }
 
-    const char* Platform::NewLine = "\r\n";
-    const size_t Platform::NewLineSize = 2;
+    const std::string_view Platform::NewLine{"\r\n"};
 
     const unsigned int Platform::DirectorySeparatorChar = '\\';
     const unsigned int Platform::VolumeSeparatorChar = ':';

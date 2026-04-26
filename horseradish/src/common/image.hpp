@@ -733,9 +733,11 @@ namespace hr::imaging
             auto newImg = Image<uint8_t, TDataFormat>::create(width, height);
 
             if (assumeSRGB)
-                stbir_resize_uint8_srgb(mDataPtr, mWidth, mHeight, 0, newImg.data().data(), width, height, 0, pixelLayout);
+                stbir_resize_uint8_srgb(mDataPtr, static_cast<int>(mWidth), static_cast<int>(mHeight), 0, newImg.data().data(), static_cast<int>(width), static_cast<int>(height),
+                                        0, pixelLayout);
             else
-                stbir_resize_uint8_linear(mDataPtr, mWidth, mHeight, 0, newImg.data().data(), width, height, 0, pixelLayout);
+                stbir_resize_uint8_linear(mDataPtr, static_cast<int>(mWidth), static_cast<int>(mHeight), 0, newImg.data().data(), static_cast<int>(width), static_cast<int>(height),
+                                          0, pixelLayout);
 
             return newImg;
         }
@@ -745,7 +747,8 @@ namespace hr::imaging
 
             auto newImg = Image<float, TDataFormat>::create(width, height);
 
-            stbir_resize_float_linear(mDataPtr, mWidth, mHeight, 0, newImg.data().data(), width, height, 0, pixelLayout);
+            stbir_resize_float_linear(mDataPtr, static_cast<int>(mWidth), static_cast<int>(mHeight), 0, newImg.data().data(), static_cast<int>(width), static_cast<int>(height), 0,
+                                      pixelLayout);
 
             return newImg;
         }

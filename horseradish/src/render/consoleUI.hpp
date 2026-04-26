@@ -8,6 +8,10 @@
 #include "../platform/window.hpp"
 #include "renderer2D.hpp"
 
+#include <deque>
+#include <functional>
+#include <string>
+
 namespace hr::render
 {
 
@@ -37,7 +41,8 @@ namespace hr::render
         std::deque<std::string> mAlerts;
         hr::render::Renderer2D& mRenderer;
         const hr::engine::Logger& mLogger;
-        hr::Rectangle<float> mViewRect, mTextRect;
+        hr::Rectangle<float> mViewRect = hr::Rectangle<float>::zero();
+        hr::Rectangle<float> mTextRect = hr::Rectangle<float>::zero();
 
         void updateCursorOffset(int offset);
         void processMsgPrompt(const platform::Window::Message& msg);

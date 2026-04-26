@@ -563,8 +563,8 @@ namespace hr::render
                     jsonContent = jFile.dump(4);
                 }
 
-                hr::streams::FileStream streamScene(std::string(scenePath), false, true);
-                streamScene.write(jsonContent.data(), jsonContent.size());
+                hr::streams::FileStream streamScene(scenePath, false, true);
+                hr::streams::StreamWriter(streamScene).write(jsonContent);
             }
 
             {
@@ -1607,6 +1607,6 @@ namespace hr::render
         }
 
         hr::streams::FileStream streamScene(areaData.pathScene, false, true);
-        streamScene.write(jsonContent.data(), jsonContent.size());
+        hr::streams::StreamWriter(streamScene).write(jsonContent);
     }
 }

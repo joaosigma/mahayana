@@ -3,6 +3,7 @@
 #include "types.hpp"
 
 #include <cstring>
+#include <utility>
 
 namespace hr
 {
@@ -78,8 +79,6 @@ namespace hr
 
     void Sorting::radixQueue(float* baseArray, float* tempArray, int* orderOut, int* orderTemp, size_t numElements)
     {
-        int* tmpi;
-        float* tmp;
         unsigned char* c;
         size_t i, counter[256], offset[256];
 
@@ -108,13 +107,8 @@ namespace hr
                 ++offset[*c];
             }
 
-            tmp = baseArray;
-            baseArray = tempArray;
-            tempArray = tmp;
-
-            tmpi = orderOut;
-            orderOut = orderTemp;
-            orderTemp = tmpi;
+            std::swap(baseArray, tempArray);
+            std::swap(orderOut, orderTemp);
         }
     }
 }

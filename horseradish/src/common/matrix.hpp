@@ -6,6 +6,7 @@
 #include "vector.hpp"
 
 #include <span>
+#include <type_traits>
 
 namespace hr
 {
@@ -195,24 +196,16 @@ namespace hr
         Matrix4 operator+(const Matrix4& mat) const noexcept;
         Matrix4 operator-(const Matrix4& mat) const noexcept;
 
-        constexpr TDataType& operator[](size_t index) noexcept
+        template<typename Self>
+        constexpr auto& operator[](this Self&& self, const size_t index) noexcept
         {
-            return m[index % 16];
+            return self.m[index % 16];
         }
 
-        constexpr const TDataType& operator[](size_t index) const noexcept
+        template<typename Self>
+        constexpr auto data(this Self&& self) noexcept
         {
-            return m[index % 16];
-        }
-
-        constexpr std::span<TDataType, 16> data() noexcept
-        {
-            return {m};
-        }
-
-        constexpr std::span<const TDataType, 16> data() const noexcept
-        {
-            return {m};
+            return std::span{self.m}.first<16>();
         }
 
         void transform(std::span<TDataType, 3> vec) const noexcept;
@@ -440,24 +433,16 @@ namespace hr
         Matrix3 operator+(const Matrix3& mat) const noexcept;
         Matrix3 operator-(const Matrix3& mat) const noexcept;
 
-        constexpr TDataType& operator[](const size_t index) noexcept
+        template<typename Self>
+        constexpr auto& operator[](this Self&& self, const size_t index) noexcept
         {
-            return m[index % 9];
+            return self.m[index % 9];
         }
 
-        constexpr const TDataType& operator[](const size_t index) const noexcept
+        template<typename Self>
+        constexpr auto data(this Self&& self) noexcept
         {
-            return m[index % 9];
-        }
-
-        constexpr std::span<TDataType, 9> data() noexcept
-        {
-            return {m};
-        }
-
-        constexpr std::span<const TDataType, 9> data() const noexcept
-        {
-            return {m};
+            return std::span{self.m}.first<9>();
         }
 
         void transform(std::span<TDataType, 3> vec) const noexcept;

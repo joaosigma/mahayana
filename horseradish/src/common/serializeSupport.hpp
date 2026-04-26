@@ -76,13 +76,13 @@ namespace hr
         template<class TArchiveWriter>
         static void save(TArchiveWriter& writer, const Quaternionf& quat)
         {
-            writer << std::span<const float>(quat.data(), 4);
+            writer << quat.data();
         }
 
         template<class TArchiveReader>
         static void load(TArchiveReader& reader, Quaternionf& quat)
         {
-            reader >> std::span<float>(quat.data(), 4);
+            reader >> quat.data();
         }
     };
 
@@ -92,13 +92,13 @@ namespace hr
         template<class TArchiveWriter>
         static void save(TArchiveWriter& writer, const Quaterniond& quat)
         {
-            writer << std::span<const double>(quat.data(), 4);
+            writer << quat.data();
         }
 
         template<class TArchiveReader>
         static void load(TArchiveReader& reader, Quaterniond& quat)
         {
-            reader >> std::span<double>(quat.data(), 4);
+            reader >> quat.data();
         }
     };
 

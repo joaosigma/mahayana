@@ -26,13 +26,13 @@ namespace hr
     }
 
     template<typename TDataType>
-    Quaternion<TDataType> Quaternion<TDataType>::fromAxisAngle(const Vector3Type& unitVec, const TDataType angleDeg)
+    Quaternion<TDataType> Quaternion<TDataType>::fromAxisAngle(const Vector3Type& unitVec, const TDataType angleDeg) noexcept
     {
         return Quaternion::fromAxisAngle(unitVec[0], unitVec[1], unitVec[2], angleDeg);
     }
 
     template<typename TDataType>
-    Quaternion<TDataType> Quaternion<TDataType>::fromAxisAngle(const TDataType unitVecX, const TDataType unitVecY, const TDataType unitVecZ, const TDataType angleDeg)
+    Quaternion<TDataType> Quaternion<TDataType>::fromAxisAngle(const TDataType unitVecX, const TDataType unitVecY, const TDataType unitVecZ, const TDataType angleDeg) noexcept
     {
         auto angleRad = Math::Deg2Rad<TDataType> * angleDeg;
 

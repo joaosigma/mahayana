@@ -1,5 +1,7 @@
 #include "encoders.hpp"
 
+#include <array>
+
 namespace hr
 {
     namespace
@@ -87,8 +89,8 @@ namespace hr
         stringOut.reserve(stringOut.size() + (4 * (buffer.size() + 3) / 3 + 2));
 
         size_t i = 0;
-        unsigned char char_array_3[3];
-        unsigned char char_array_4[4];
+        std::array<unsigned char, 4> char_array_4;
+        std::array<unsigned char, 3> char_array_3;
 
         auto bufferSize = buffer.size();
         auto bufferWalker = reinterpret_cast<const unsigned char*>(buffer.data());
@@ -132,11 +134,13 @@ namespace hr
     void Encoders::encodeBase64(std::span<const std::byte> buffer, hr::streams::Stream& streamOut)
     {
         size_t i = 0;
-        unsigned char char_array_3[3];
-        unsigned char char_array_4[4];
+        std::array<unsigned char, 4> char_array_4;
+        std::array<unsigned char, 3> char_array_3;
 
         auto bufferSize = buffer.size();
         auto bufferWalker = reinterpret_cast<const unsigned char*>(buffer.data());
+
+        hr::streams::StreamWriter streamWriter(streamOut);
 
         while (bufferSize--)
         {
@@ -148,10 +152,10 @@ namespace hr
                 char_array_4[2] = ((char_array_3[1] & 0x0f) << 2) + ((char_array_3[2] & 0xc0) >> 6);
                 char_array_4[3] = char_array_3[2] & 0x3f;
 
-                streamOut.write(base64Chars + char_array_4[0], sizeof(char));
-                streamOut.write(base64Chars + char_array_4[1], sizeof(char));
-                streamOut.write(base64Chars + char_array_4[2], sizeof(char));
-                streamOut.write(base64Chars + char_array_4[3], sizeof(char));
+                streamWriter.write(base64Chars + char_array_4[0]);
+                streamWriter.write(base64Chars + char_array_4[1]);
+                streamWriter.write(base64Chars + char_array_4[2]);
+                streamWriter.write(base64Chars + char_array_4[3]);
                 i = 0;
             }
         }
@@ -167,11 +171,11 @@ namespace hr
             char_array_4[3] = char_array_3[2] & 0x3f;
 
             for (size_t j = 0; (j < i + 1); j++)
-                streamOut.write(base64Chars + char_array_4[j], sizeof(char));
+                streamWriter.write(base64Chars + char_array_4[j]);
 
             char endChar = '=';
             while ((i++ < 3))
-                streamOut.write(&endChar, sizeof(char));
+                streamWriter.write(&endChar);
         }
     }
 
@@ -214,7 +218,8 @@ namespace hr
         size_t i = 0;
         size_t in_ = 0;
         size_t bytesWritten = 0;
-        unsigned char char_array_4[4], char_array_3[3];
+        std::array<unsigned char, 4> char_array_4;
+        std::array<unsigned char, 3> char_array_3;
 
         auto data = reinterpret_cast<const unsigned char*>(dataBase64.data());
 
@@ -233,7 +238,7 @@ namespace hr
                 char_array_3[1] = ((char_array_4[1] & 0xf) << 4) + ((char_array_4[2] & 0x3c) >> 2);
                 char_array_3[2] = ((char_array_4[2] & 0x3) << 6) + char_array_4[3];
 
-                std::memcpy(bufferOut.data(), char_array_3, sizeof(unsigned char) * 3);
+                std::memcpy(bufferOut.data(), char_array_3.data(), char_array_3.size());
                 bufferOut = bufferOut.subspan(3);
                 bytesWritten += 3;
 
@@ -257,7 +262,7 @@ namespace hr
 
             for (size_t j = 0; (j < i - 1); j++)
             {
-                std::memcpy(bufferOut.data(), char_array_3 + j, sizeof(unsigned char));
+                bufferOut[0] = static_cast<std::byte>(char_array_3[j]);
                 bufferOut = bufferOut.subspan(1);
                 bytesWritten++;
             }
@@ -277,7 +282,8 @@ namespace hr
         size_t i = 0;
         size_t in_ = 0;
         size_t bytesWritten = 0;
-        unsigned char char_array_4[4], char_array_3[3];
+        std::array<unsigned char, 4> char_array_4;
+        std::array<unsigned char, 3> char_array_3;
 
         auto data = reinterpret_cast<const unsigned char*>(dataBase64.data());
 
@@ -338,8 +344,10 @@ namespace hr
         size_t i = 0;
         size_t in_ = 0;
         size_t bytesWritten = 0;
-        unsigned char char_array_4[4], char_array_3[3];
+        std::array<unsigned char, 4> char_array_4;
+        std::array<unsigned char, 3> char_array_3;
 
+        hr::streams::StreamWriter streamWriter(streamOut);
         auto data = reinterpret_cast<const unsigned char*>(dataBase64.data());
 
         while (in_len-- && (data[in_] != '=') && isBase64Char(data[in_]))
@@ -357,7 +365,7 @@ namespace hr
                 char_array_3[1] = ((char_array_4[1] & 0xf) << 4) + ((char_array_4[2] & 0x3c) >> 2);
                 char_array_3[2] = ((char_array_4[2] & 0x3) << 6) + char_array_4[3];
 
-                streamOut.write(char_array_3, sizeof(unsigned char) * 3);
+                streamWriter.write<unsigned char, 3>(char_array_3);
                 bytesWritten += 3;
 
                 i = 0;
@@ -380,7 +388,7 @@ namespace hr
 
             for (size_t j = 0; (j < i - 1); j++)
             {
-                streamOut.write(char_array_3 + j, sizeof(unsigned char));
+                streamWriter.write(char_array_3[j]);
                 bytesWritten++;
             }
         }
@@ -417,11 +425,13 @@ namespace hr
         auto bufferHex = toUppercase ? hexEncodeLookupUpper : hexEncodeLookupLower;
         auto bufferWalker = reinterpret_cast<const unsigned char*>(buffer.data());
 
+        hr::streams::StreamWriter streamWriter(streamOut);
+
         for (size_t i = 0; i < buffer.size(); i++, bufferWalker++)
         {
             auto hexPair = bufferHex + ((*bufferWalker) * 2);
 
-            streamOut.write(hexPair, sizeof(unsigned char) * 2);
+            streamWriter.write(std::span{hexPair, 2});
         }
     }
 
@@ -447,12 +457,14 @@ namespace hr
         size_t bytesWritten = 0;
         auto* inWalker = reinterpret_cast<const unsigned char*>(dataHex.data());
 
+        hr::streams::StreamWriter streamWriter(streamOut);
+
         for (size_t i = 0; i < inSize; i += 2)
         {
             int valHex = hexDecodeLookup[*inWalker++] << 4;
             valHex |= hexDecodeLookup[*inWalker++];
 
-            streamOut.write(&valHex, 1);
+            streamWriter.write(valHex);
             bytesWritten++;
         }
 

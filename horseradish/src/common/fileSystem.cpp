@@ -1,12 +1,13 @@
 #include "fileSystem.hpp"
 
-#include "hashing.hpp"
-#include "math.hpp"
-#include "sorting.hpp"
+#include "scopedAction.hpp"
 #include "stringUtils.hpp"
-#include "types.hpp"
 
 #include <algorithm>
+#include <cstddef>
+#include <format>
+
+#include <windows.h>
 
 namespace hr::io
 {
@@ -33,28 +34,34 @@ namespace hr::io
         {
             auto fileStream = reinterpret_cast<hr::streams::FileStream*>(stream);
 
-            return fileStream->read(buf, size);
+            return static_cast<uLong>(fileStream->read({reinterpret_cast<std::byte*>(buf), static_cast<size_t>(size)}));
         }
 
         long ZCALLBACK ztell(voidpf, voidpf stream)
         {
             auto fileStream = reinterpret_cast<hr::streams::FileStream*>(stream);
 
-            return fileStream->position();
+            return static_cast<long>(fileStream->position());
         }
 
         long ZCALLBACK zseek(voidpf, voidpf stream, uLong offset, int origin)
         {
             auto fileStream = reinterpret_cast<hr::streams::FileStream*>(stream);
 
-            if (origin == ZLIB_FILEFUNC_SEEK_CUR)
-                fileStream->seek(hr::streams::Stream::SeekOrigin::Current, offset);
-            else if (origin == ZLIB_FILEFUNC_SEEK_END)
-                fileStream->seek(hr::streams::Stream::SeekOrigin::End, offset);
-            else if (origin == ZLIB_FILEFUNC_SEEK_SET)
-                fileStream->seek(hr::streams::Stream::SeekOrigin::Begin, offset);
-            else
-                return 1;
+            switch (origin)
+            {
+                case ZLIB_FILEFUNC_SEEK_CUR:
+                    fileStream->seek(hr::streams::Stream::SeekOrigin::Current, offset);
+                    break;
+                case ZLIB_FILEFUNC_SEEK_END:
+                    fileStream->seek(hr::streams::Stream::SeekOrigin::End, offset);
+                    break;
+                case ZLIB_FILEFUNC_SEEK_SET:
+                    fileStream->seek(hr::streams::Stream::SeekOrigin::Begin, offset);
+                    break;
+                default:
+                    return 1;
+            }
 
             return 0;
         }
@@ -179,18 +186,19 @@ namespace hr::io
         if (it == m_fileEntries.end())
             return nullptr;
 
-        std::shared_ptr<unsigned char> fileData(new unsigned char[it->second.fileSize], std::default_delete<unsigned char[]>());
+        streams::MemoryStream memStream;
+        memStream.truncate(it->second.fileSize);
 
         unz_file_pos file_pos = it->second.filePos;
         unzGoToFilePos(m_zipFile, &file_pos);
 
         unzOpenCurrentFile(m_zipFile);
 
-        unzReadCurrentFile(m_zipFile, fileData.get(), it->second.fileSize);
+        unzReadCurrentFile(m_zipFile, memStream.data().data(), static_cast<unsigned int>(it->second.fileSize));
 
         unzCloseCurrentFile(m_zipFile);
 
-        return std::unique_ptr<streams::Stream>(new streams::MemoryViewStream(std::move(fileData), it->second.fileSize));
+        return std::make_unique<streams::MemoryStream>(std::move(memStream));
     }
 
     bool FileSystem::MountDataZip::fileExists(const std::filesystem::path& filePath) const
@@ -198,21 +206,46 @@ namespace hr::io
         if (filePath.empty())
             return false;
 
-        return (m_fileEntries.find(filePath) != m_fileEntries.end());
+        return m_fileEntries.contains(filePath);
     }
 
-    const int FileSystem::FolderNameLength = 128;
-    const int FileSystem::FileNameLength = 256;
-    const int FileSystem::PathLength = 16383;
-
-    FileSystem::FileSystem(size_t maxNumMounts)
+    std::generator<FileSystem::FindFileData> FileSystem::findFiles(std::filesystem::path baseFolder, std::filesystem::path filter, bool returnFullPath)
     {
-        m_maxNumMounts = (maxNumMounts < 1) ? 1 : ((maxNumMounts > 10) ? 10 : maxNumMounts);
+        if (baseFolder.empty() || filter.empty())
+            co_return;
 
-        m_listMounts.reserve(m_maxNumMounts);
+        WIN32_FIND_DATA findData;
+        HANDLE handleFind = FindFirstFile((baseFolder / filter).c_str(), &findData);
+        if (handleFind == INVALID_HANDLE_VALUE)
+            co_return;
+
+        ScopedAction _([&]() { FindClose(handleFind); });
+
+        do
+        {
+            if (findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+                continue;
+
+            auto filePath = std::filesystem::path{hr::StringUtils::conv2UTF8(findData.cFileName)};
+            if (returnFullPath)
+                filePath = baseFolder / filePath;
+
+            ULARGE_INTEGER ul;
+            ul.HighPart = findData.nFileSizeHigh;
+            ul.LowPart = findData.nFileSizeLow;
+
+            co_yield FileSystem::FindFileData{std::move(filePath), static_cast<uint64_t>(ul.QuadPart)};
+
+        } while (FindNextFile(handleFind, &findData) != 0);
     }
 
-    FileSystem::~FileSystem()
+    bool FileSystem::fileExists(const std::filesystem::path& path)
+    {
+        auto status = std::filesystem::status(path);
+        return std::filesystem::is_regular_file(status) && std::filesystem::exists(status);
+    }
+
+    FileSystem::~FileSystem() noexcept
     {
         for (auto& change : m_listWatchChange)
             FindCloseChangeNotification(change.changeHandle);
@@ -220,52 +253,6 @@ namespace hr::io
 
         m_listMounts.clear();
         m_maxNumMounts = 0;
-    }
-
-    void FileSystem::findFiles(const std::filesystem::path& baseFolderAndFilter,
-                               const bool returnFilesFullPath,
-                               const std::function<bool(const std::filesystem::path& filePath, const uint64_t& fileSize)>& cb)
-    {
-        if (!cb || baseFolderAndFilter.empty())
-            return;
-
-        WIN32_FIND_DATA findData;
-        HANDLE handleFind = FindFirstFile(baseFolderAndFilter.c_str(), &findData);
-        if (handleFind == INVALID_HANDLE_VALUE)
-            return;
-
-        auto basePath = baseFolderAndFilter.parent_path();
-
-        do
-        {
-            if (findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
-                continue;
-
-            auto filePath = hr::StringUtils::conv2UTF8(findData.cFileName);
-
-            ULARGE_INTEGER ul;
-            ul.HighPart = findData.nFileSizeHigh;
-            ul.LowPart = findData.nFileSizeLow;
-            uint64_t fileSize = ul.QuadPart;
-
-            bool res;
-            if (!returnFilesFullPath)
-                res = cb(filePath, fileSize);
-            else
-                res = cb(basePath / filePath, fileSize);
-
-            if (!res)
-                break;
-
-        } while (FindNextFile(handleFind, &findData) != 0);
-
-        FindClose(handleFind);
-    }
-
-    bool FileSystem::fileExists(const std::filesystem::path& path)
-    {
-        auto status = std::filesystem::status(path);
-        return std::filesystem::is_regular_file(status) && std::filesystem::exists(status);
     }
 
     bool FileSystem::mountPath(const std::filesystem::path& baseFolder, std::string mountPoint)
@@ -333,11 +320,15 @@ namespace hr::io
         if (!fileStream)
             return std::string();
 
-        hr::streams::MemoryViewStream fileData;
-        if (!fileStream->cloneAllContent(fileData))
-            return std::string();
+        std::string fileData;
+        auto res = fileStream->cloneAllContent(
+          [&fileData](size_t size) -> std::span<std::byte>
+          {
+              fileData.resize(size);
+              return {reinterpret_cast<std::byte*>(fileData.data()), fileData.size()};
+          });
 
-        return fileData.toStr();
+        return res ? fileData : std::string{};
     }
 
     int FileSystem::watchChangeCreate(const std::filesystem::path& baseFolder, bool includeSubFolders, FileSystem::ChangeType changeType)
@@ -361,7 +352,7 @@ namespace hr::io
                 return 0;
         }
 
-        auto changeID = m_listWatchChange.size() + 13;
+        auto changeID = static_cast<int>(m_listWatchChange.size() + 13);
         m_listWatchChange.push_back(WatchChangeData(changeID, handleChange));
 
         return changeID;

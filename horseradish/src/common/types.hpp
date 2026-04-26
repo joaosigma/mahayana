@@ -116,18 +116,4 @@ namespace hr::types
     static_assert(sizeof(hData256) == 32);
 
 #pragma warning(pop)
-
-    bool operator==(const hData128& a, const hData128& b);
-    bool operator!=(const hData128& a, const hData128& b);
-    bool operator<(const hData128& a, const hData128& b);
-    bool operator>(const hData128& a, const hData128& b);
-    bool operator<=(const hData128& a, const hData128& b);
-    bool operator>=(const hData128& a, const hData128& b);
-
-    bool operator==(const hData256& a, const hData256& b);
-    bool operator!=(const hData256& a, const hData256& b);
-    bool operator<(const hData256& a, const hData256& b);
-    bool operator>(const hData256& a, const hData256& b);
-    bool operator<=(const hData256& a, const hData256& b);
-    bool operator>=(const hData256& a, const hData256& b);
 }

@@ -150,7 +150,7 @@ namespace hr
             {
                 if constexpr (std::is_same_v<void, decltype(callback(std::forward<TArgs>(args)...))>)
                 {
-                    // task receives and returns
+                    // task receives and returns nothing
                     callback(std::forward<TArgs>(args)...);
                     co_return;
                 }

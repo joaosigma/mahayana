@@ -13,7 +13,7 @@ namespace hr::imaging
         int stbIORead(void* user, char* data, int size)
         {
             auto streamReader = static_cast<hr::streams::StreamReader*>(user);
-            return streamReader->read(data, size);
+            return static_cast<int>(streamReader->stream().read({reinterpret_cast<std::byte*>(data), static_cast<size_t>(size)}));
         }
 
         void stbIOSkip(void* user, int n)
@@ -31,13 +31,20 @@ namespace hr::imaging
 
     Image<uint8_t, ImageFormatRGB> Factory::readPNG(const hr::streams::StreamReader& streamReader)
     {
-        hr::streams::MemoryViewStream streamContent;
-        streamReader.stream().cloneAllContent(streamContent);
+        hr::streams::MemoryStream streamContent;
+        streamReader.stream().cloneAllContent(
+          [&streamContent](size_t size)
+          {
+              streamContent.truncate(size);
+              return streamContent.data();
+          });
 
         unsigned int outW = 0, outH = 0;
         uint8_t* outBuffer = nullptr;
 
-        if (lodepng_decode24(&outBuffer, &outW, &outH, static_cast<const uint8_t*>(streamContent.data()), streamContent.length()) != 0)
+        auto fileData = streamContent.data();
+
+        if (lodepng_decode24(&outBuffer, &outW, &outH, reinterpret_cast<const uint8_t*>(fileData.data()), fileData.size()) != 0)
             return {};
 
         if (outBuffer)
@@ -48,13 +55,20 @@ namespace hr::imaging
 
     Image<uint8_t, ImageFormatRGBA> Factory::readPNGWithAlpha(const hr::streams::StreamReader& streamReader)
     {
-        hr::streams::MemoryViewStream streamContent;
-        streamReader.stream().cloneAllContent(streamContent);
+        hr::streams::MemoryStream streamContent;
+        streamReader.stream().cloneAllContent(
+          [&streamContent](size_t size)
+          {
+              streamContent.truncate(size);
+              return streamContent.data();
+          });
 
         unsigned int outW = 0, outH = 0;
         uint8_t* outBuffer = nullptr;
 
-        if (lodepng_decode32(&outBuffer, &outW, &outH, static_cast<const uint8_t*>(streamContent.data()), streamContent.length()) != 0)
+        auto fileData = streamContent.data();
+
+        if (lodepng_decode32(&outBuffer, &outW, &outH, reinterpret_cast<const uint8_t*>(fileData.data()), fileData.size()) != 0)
             return {};
 
         if (outBuffer)
@@ -75,7 +89,7 @@ namespace hr::imaging
         if (!bufferOut || (bufferOutSize <= 0))
             return false;
 
-        streamWriter.write(bufferOut, bufferOutSize);
+        streamWriter.write<uint8_t>(std::span{bufferOut, bufferOutSize});
 
         free(bufferOut);
 
@@ -94,7 +108,7 @@ namespace hr::imaging
         if (!bufferOut || (bufferOutSize <= 0))
             return false;
 
-        streamWriter.write(bufferOut, bufferOutSize);
+        streamWriter.write<uint8_t>(std::span{bufferOut, bufferOutSize});
 
         free(bufferOut);
 

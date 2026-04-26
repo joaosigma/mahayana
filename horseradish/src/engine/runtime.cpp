@@ -658,7 +658,10 @@ namespace hr::engine
 
         {
             auto script = hr::streams::FileStream::readEntireFileAsString(filePath);
-            auto scriptWChar = hr::StringUtils::conv2Native(script);
+            if (!script)
+                return false;
+
+            auto scriptWChar = hr::StringUtils::conv2Native(script.value());
 
             if (SQ_FAILED(sq_compilebuffer(mVM, scriptWChar.c_str(), scriptWChar.size(), _SC("main runtime"), SQTrue)))
             {

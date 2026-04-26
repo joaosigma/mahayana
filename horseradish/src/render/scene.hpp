@@ -10,6 +10,8 @@
 #include "../engine/runtime.hpp"
 
 #include <chrono>
+#include <functional>
+#include <memory>
 #include <string>
 
 namespace hr::misc
@@ -36,14 +38,14 @@ namespace hr::render
             std::unique_ptr<misc::VideoStream> stream;
             int64_t frameLastID = -1;
             std::chrono::milliseconds waitDuration = std::chrono::milliseconds::zero();
-            hr::Size<size_t> frameSize;
+            hr::Size<size_t> frameSize = hr::Size<size_t>::zero();
         } mVideoData;
         struct RenderData
         {
             bool fading = false;
             float fadingAlpha = 1.0f;
             hr::Matrix4f proj2D = hr::Matrix4f::identity();
-            hr::Size<int> windowSize;
+            hr::Size<int> windowSize = hr::Size<int>::zero();
             hr::gl::tools::ImmediateMode imode;
             hr::gl::objects::Texture texVideo;
 

@@ -110,7 +110,7 @@ namespace hr::render::tools
             if (!createCharData(charMap))
                 return false;
 
-            if (!stbtt_InitFont(&fontInfo, fileContent->dataAs<unsigned char>(), 0))
+            if (!stbtt_InitFont(&fontInfo, reinterpret_cast<const unsigned char*>(fileContent->data().data()), 0))
                 return false;
 
             targetScale = stbtt_ScaleForPixelHeight(&fontInfo, baseFontSize);

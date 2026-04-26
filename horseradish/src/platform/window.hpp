@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../common/opengl/objects.hpp"
+#include "../common/types.hpp"
 #include "../common/vector.hpp"
 #include "../engine/logger.hpp"
 

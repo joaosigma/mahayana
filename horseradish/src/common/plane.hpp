@@ -4,16 +4,17 @@
 #include "ray.hpp"
 #include "vector.hpp"
 
+#include <type_traits>
+
 namespace hr
 {
     template<typename TDataType>
     class Plane
     {
+        static_assert(std::is_arithmetic_v<TDataType>, "Data type must be arithmetic (e.g.: float, unsigned char, etc.)");
+
         // scalar equation of plane: ax + by + cz = d
         TDataType mA, mB, mC, mD;
-
-        static_assert(std::is_arithmetic<TDataType>::value, "Data type must be arithmetic (e.g.: float, unsigned char, etc.)");
-        static_assert(std::is_trivially_copyable_v<TDataType>, "For performance reasons, the data type should be trivially copyable");
 
     public:
         using DataType = TDataType;
@@ -31,7 +32,7 @@ namespace hr
     public:
         static constexpr Plane zero() noexcept
         {
-            return Plane{0.0f};
+            return Plane{TDataType()};
         }
 
         static Plane lerp(const Plane& from, const Plane& to, TDataType factor) noexcept
@@ -55,15 +56,7 @@ namespace hr
         }
 
     public:
-        constexpr Plane() noexcept
-        {
-            mA = mB = mC = mD = 0;
-        }
-
-        constexpr Plane(const Plane&) = default;
-        constexpr Plane& operator=(const Plane&) = default;
-        constexpr Plane(Plane&&) = default;
-        constexpr Plane& operator=(Plane&&) = default;
+        constexpr Plane() noexcept = delete;
 
         explicit constexpr Plane(TDataType scalar) noexcept
           : mA{scalar}, mB{scalar}, mC{scalar}, mD{scalar}
@@ -249,4 +242,7 @@ namespace hr
             return (((c1 == c2) && (c2 == c3)) ? c1 : Position::Intersect);
         }
     };
+
+    static_assert(std::is_trivially_copyable_v<Plane<size_t>>, "For performance reasons, the Plane<size_t> data type should be trivially copyable");
+    static_assert(std::is_trivially_copyable_v<Plane<float>>, "For performance reasons, the Plane<float> data type should be trivially copyable");
 }

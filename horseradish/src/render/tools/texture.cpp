@@ -396,8 +396,10 @@ namespace hr::render::tools
 
     bool TextureTools::uploadCompressedDiffuse(hr::streams::StreamReader& streamIn, hr::gl::objects::Texture& textureDst)
     {
+        hr::streams::StreamReader streamReader(streamIn);
+
         CTextureHeader ctexHeader;
-        if (streamIn.read(&ctexHeader, sizeof(CTextureHeader)) != sizeof(CTextureHeader))
+        if (!streamReader.read(ctexHeader))
             return false;
         if (std::memcmp(ctexHeader.fileSig, CTextureFileSig.data(), sizeof(ctexHeader.fileSig)) != 0)
             return false;
@@ -417,17 +419,17 @@ namespace hr::render::tools
 
         textureDst.init(hr::gl::objects::Texture::Type::Tex2D, storageType, ctexHeader.width, ctexHeader.height);
 
-        std::unique_ptr<uint8_t[]> tmpCompressedData;
+        std::unique_ptr<std::byte[]> tmpCompressedData;
         for (size_t curLevel = 0; curLevel < ctexHeader.numLevels; ++curLevel)
         {
             CTextureLevelInfo ctexLevelInfo;
-            if (streamIn.read(&ctexLevelInfo, sizeof(CTextureLevelInfo)) != sizeof(CTextureLevelInfo))
+            if (!streamReader.read(ctexLevelInfo))
                 return false;
 
             if (!tmpCompressedData)
-                tmpCompressedData = std::unique_ptr<uint8_t[]>(new uint8_t[ctexLevelInfo.size]);
+                tmpCompressedData = std::make_unique<std::byte[]>(ctexLevelInfo.size);
 
-            if (streamIn.read(tmpCompressedData.get(), ctexLevelInfo.size) != ctexLevelInfo.size)
+            if (!streamReader.read(std::span{tmpCompressedData.get(), ctexLevelInfo.size}))
                 return false;
 
             textureDst.uploadCompressedData(curLevel, 0, 0, ctexLevelInfo.width, ctexLevelInfo.height, storageType, ctexLevelInfo.size, tmpCompressedData.get());
@@ -457,7 +459,7 @@ namespace hr::render::tools
         ctexHeader.height = imageSrc.height();
         ctexHeader.compression = 6; // BC7
         ctexHeader.numLevels = static_cast<uint16_t>(hr::gl::objects::Texture::calculateNumMipMaps(ctexHeader.width, ctexHeader.height));
-        streamOut.write(&ctexHeader, sizeof(CTextureHeader));
+        streamOut.writeObject(ctexHeader);
 
         uint16_t curLevel = 0;
         auto imageScaled = imageSrc.clone();
@@ -472,9 +474,9 @@ namespace hr::render::tools
             ctexLevelInfo.width = imageScaled.width();
             ctexLevelInfo.height = imageScaled.height();
             ctexLevelInfo.size = compressBlock.width * compressBlock.height * compressBlock.perPixelBytes;
-            streamOut.write(&ctexLevelInfo, sizeof(CTextureLevelInfo));
+            streamOut.writeObject(ctexLevelInfo);
 
-            streamOut.write(compressedImg.get(), ctexLevelInfo.size);
+            streamOut.write<uint8_t>(std::span{compressedImg.get(), ctexLevelInfo.size});
 
             if (imageScaled.area() <= 1)
                 break;
@@ -520,8 +522,10 @@ namespace hr::render::tools
 
     bool TextureTools::uploadCompressedNormal(hr::streams::StreamReader& streamIn, hr::gl::objects::Texture& textureDst)
     {
+        hr::streams::StreamReader streamReader(streamIn);
+
         CTextureHeader ctexHeader;
-        if (streamIn.read(&ctexHeader, sizeof(CTextureHeader)) != sizeof(CTextureHeader))
+        if (!streamReader.read(ctexHeader))
             return false;
         if (std::memcmp(ctexHeader.fileSig, CTextureFileSig.data(), sizeof(ctexHeader.fileSig)) != 0)
             return false;
@@ -531,17 +535,17 @@ namespace hr::render::tools
 
         textureDst.init(hr::gl::objects::Texture::Type::Tex2D, hr::gl::objects::Texture::StorageType::COMPRESSED_BC5, ctexHeader.width, ctexHeader.height);
 
-        std::unique_ptr<uint8_t[]> tmpCompressedData;
+        std::unique_ptr<std::byte[]> tmpCompressedData;
         for (size_t curLevel = 0; curLevel < ctexHeader.numLevels; ++curLevel)
         {
             CTextureLevelInfo ctexLevelInfo;
-            if (streamIn.read(&ctexLevelInfo, sizeof(CTextureLevelInfo)) != sizeof(CTextureLevelInfo))
+            if (!streamReader.read(ctexLevelInfo))
                 return false;
 
             if (!tmpCompressedData)
-                tmpCompressedData = std::unique_ptr<uint8_t[]>(new uint8_t[ctexLevelInfo.size]);
+                tmpCompressedData = std::make_unique<std::byte[]>(ctexLevelInfo.size);
 
-            if (streamIn.read(tmpCompressedData.get(), ctexLevelInfo.size) != ctexLevelInfo.size)
+            if (!streamReader.read(std::span{tmpCompressedData.get(), ctexLevelInfo.size}))
                 return false;
 
             textureDst.uploadCompressedData(curLevel, 0, 0, ctexLevelInfo.width, ctexLevelInfo.height, hr::gl::objects::Texture::StorageType::COMPRESSED_BC5, ctexLevelInfo.size,
@@ -572,7 +576,7 @@ namespace hr::render::tools
         ctexHeader.height = imageSrc.height();
         ctexHeader.compression = 5; // BC5
         ctexHeader.numLevels = static_cast<uint16_t>(hr::gl::objects::Texture::calculateNumMipMaps(ctexHeader.width, ctexHeader.height));
-        streamOut.write(&ctexHeader, sizeof(CTextureHeader));
+        streamOut.writeObject(ctexHeader);
 
         uint16_t curLevel = 0;
 
@@ -595,9 +599,9 @@ namespace hr::render::tools
                 ctexLevelInfo.width = curWidth;
                 ctexLevelInfo.height = curHeight;
                 ctexLevelInfo.size = compressBlock.width * compressBlock.height * compressBlock.perPixelBytes;
-                streamOut.write(&ctexLevelInfo, sizeof(CTextureLevelInfo));
+                streamOut.writeObject(ctexLevelInfo);
 
-                streamOut.write(compressedImg.get(), ctexLevelInfo.size);
+                streamOut.write<uint8_t>(std::span{compressedImg.get(), ctexLevelInfo.size});
 
                 if ((curWidth * curHeight) <= 1)
                     break;
@@ -626,9 +630,9 @@ namespace hr::render::tools
                 ctexLevelInfo.width = imageScaled.width();
                 ctexLevelInfo.height = imageScaled.height();
                 ctexLevelInfo.size = compressBlock.width * compressBlock.height * compressBlock.perPixelBytes;
-                streamOut.write(&ctexLevelInfo, sizeof(CTextureLevelInfo));
+                streamOut.writeObject(ctexLevelInfo);
 
-                streamOut.write(compressedImg.get(), ctexLevelInfo.size);
+                streamOut.write<uint8_t>(std::span{compressedImg.get(), ctexLevelInfo.size});
 
                 if (imageScaled.area() <= 1)
                     break;

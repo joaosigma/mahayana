@@ -30,24 +30,16 @@ namespace hr
           : mOrigin{origin}, mDirection{direction}
         {}
 
-        constexpr TVectorType& origin() noexcept
+        template<typename Self>
+        constexpr auto& origin(this Self&& self) noexcept
         {
-            return mOrigin;
+            return self.mOrigin;
         }
 
-        constexpr const TVectorType& origin() const noexcept
+        template<typename Self>
+        constexpr auto& direction(this Self&& self) noexcept
         {
-            return mOrigin;
-        }
-
-        constexpr TVectorType& direction() noexcept
-        {
-            return mDirection;
-        }
-
-        constexpr const TVectorType& direction() const noexcept
-        {
-            return mDirection;
+            return self.mDirection;
         }
 
         constexpr TVectorType pointAt(typename TVectorType::DataType t) const noexcept

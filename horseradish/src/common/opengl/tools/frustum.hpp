@@ -1,8 +1,11 @@
 #pragma once
 
+#include "common/bvolumes.hpp"
 #include "common/matrix.hpp"
-#include "common/ray.hpp"
+#include "common/plane.hpp"
 #include "common/vector.hpp"
+
+#include <array>
 
 namespace hr::gl::tools
 {
@@ -26,7 +29,8 @@ namespace hr::gl::tools
         };
 
     private:
-        hr::Plane<float> mPlanes[6];
+        std::array<hr::Plane<float>, 6> mPlanes{hr::Plane<float>::zero(), hr::Plane<float>::zero(), hr::Plane<float>::zero(),
+                                                hr::Plane<float>::zero(), hr::Plane<float>::zero(), hr::Plane<float>::zero()};
         hr::Vector3f mPosition;
         float mZNear{0.0f}, mZFar{0.0f};
 
@@ -40,17 +44,6 @@ namespace hr::gl::tools
 
     public:
         Frustum() = default;
-
-        Frustum& operator=(const Frustum& frustum)
-        {
-            mPlanes[0] = frustum.mPlanes[0];
-            mPlanes[1] = frustum.mPlanes[1];
-            mPlanes[2] = frustum.mPlanes[2];
-            mPlanes[3] = frustum.mPlanes[3];
-            mPlanes[4] = frustum.mPlanes[4];
-            mPlanes[5] = frustum.mPlanes[5];
-            return *this;
-        }
 
         bool testCube(const hr::Vector3f& point, const float& size) const;
         bool testBox(const hr::Vector3f& min, const hr::Vector3f& max) const;

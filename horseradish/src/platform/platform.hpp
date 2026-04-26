@@ -72,8 +72,7 @@ namespace hr::platform
         };
 
     public:
-        static const char* NewLine;
-        static const size_t NewLineSize;
+        static const std::string_view NewLine;
 
         static const unsigned int DirectorySeparatorChar;
         static const unsigned int VolumeSeparatorChar;

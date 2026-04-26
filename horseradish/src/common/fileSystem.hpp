@@ -1,15 +1,16 @@
 #pragma once
 
 #include "stream.hpp"
-#include "types.hpp"
 
 #include <minizip/unzip.h>
-#include <zlib.h>
 
 #include <filesystem>
-#include <functional>
+#include <generator>
 #include <memory>
+#include <string>
+#include <string_view>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 namespace hr::io
@@ -29,20 +30,20 @@ namespace hr::io
             FileLastWrite = (1 << 2)
         };
 
-        static const int FolderNameLength;
-        static const int FileNameLength;
-        static const int PathLength;
+        static constexpr int FolderNameLength = 128;
+        static constexpr int FileNameLength = 256;
+        static constexpr int PathLength = 16383;
 
     private:
         class WatchChangeData
         {
         public:
             int changeID = 0;
-            HANDLE changeHandle = nullptr;
+            void* changeHandle = nullptr;
 
             WatchChangeData() = default;
 
-            WatchChangeData(int changeID, HANDLE changeHandle)
+            WatchChangeData(int changeID, void* changeHandle)
               : changeID(changeID), changeHandle(changeHandle)
             {}
         };
@@ -64,7 +65,7 @@ namespace hr::io
             virtual bool fileExists(const std::filesystem::path& filePath) const = 0;
         };
 
-        class MountDataPath: public MountData
+        class MountDataPath final: public MountData
         {
             std::filesystem::path m_baseFolder;
 
@@ -86,7 +87,7 @@ namespace hr::io
             bool fileExists(const std::filesystem::path& filePath) const override;
         };
 
-        class MountDataZip: public MountData
+        class MountDataZip final: public MountData
         {
         private:
             struct ZipEntry
@@ -115,13 +116,21 @@ namespace hr::io
         std::vector<WatchChangeData> m_listWatchChange;
 
     public:
-        FileSystem(size_t maxNumMounts);
-        ~FileSystem();
+        struct FindFileData
+        {
+            std::filesystem::path path;
+            uint64_t size;
+        };
 
-        static void findFiles(const std::filesystem::path& baseFolderAndFilter,
-                              const bool returnFilesFullPath,
-                              const std::function<bool(const std::filesystem::path& filePath, const uint64_t& fileSize)>& actionFileFound);
+        static std::generator<FindFileData> findFiles(std::filesystem::path baseFolder, std::filesystem::path filter, bool returnFullPath);
         static bool fileExists(const std::filesystem::path& path);
+
+    public:
+        FileSystem(size_t maxNumMounts)
+          : m_maxNumMounts(std::clamp(maxNumMounts, 1uz, 10uz))
+        {}
+
+        ~FileSystem() noexcept;
 
         bool mountPath(const std::filesystem::path& baseFolder, std::string mountPoint);
         bool mountZip(const std::filesystem::path& zipPath, std::string mountPoint, size_t* const numFilesZip = nullptr);

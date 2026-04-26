@@ -93,18 +93,6 @@ namespace hr::geom
         }
     }
 
-    MeshAnim::VertexJoint& MeshAnim::vertexJoint(size_t vertexIndex, size_t jointIndex) noexcept
-    {
-        auto index = ((vertexIndex % mMesh.numVertices()) * numJointsPerVertex()) + (jointIndex % numJointsPerVertex());
-        return *(mVertexJoints.get() + index);
-    }
-
-    const MeshAnim::VertexJoint& MeshAnim::vertexJoint(size_t vertexIndex, size_t jointIndex) const noexcept
-    {
-        auto index = ((vertexIndex % mMesh.numVertices()) * numJointsPerVertex()) + (jointIndex % numJointsPerVertex());
-        return *(mVertexJoints.get() + index);
-    }
-
     void MeshAnim::collectVertexJoints(size_t vertexIndex, std::array<MeshAnim::VertexJoint, 4>& vertexJoints) const noexcept
     {
         auto startIndex = (vertexIndex % mMesh.numVertices()) * numJointsPerVertex();

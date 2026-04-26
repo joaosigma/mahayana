@@ -3,6 +3,7 @@
 #include "vector.hpp"
 
 #include <span>
+#include <type_traits>
 
 namespace hr
 {
@@ -63,7 +64,7 @@ namespace hr
             return quat;
         }
 
-        static constexpr Quaternion zero()
+        static constexpr Quaternion zero() noexcept
         {
             Quaternion quat;
             quat.mData[0] = quat.mData[1] = quat.mData[2] = quat.mData[3] = kZero<TDataType>;
@@ -96,7 +97,7 @@ namespace hr
             return quat;
         }
 
-        static constexpr Quaternion from(const TDataType qx, const TDataType qy, const TDataType qz, const TDataType qw)
+        static constexpr Quaternion from(const TDataType qx, const TDataType qy, const TDataType qz, const TDataType qw) noexcept
         {
             Quaternion quat;
             quat.mData[0] = qx;
@@ -107,7 +108,7 @@ namespace hr
             return quat;
         }
 
-        static constexpr Quaternion from(const Vector3Type& vec, const TDataType qw)
+        static constexpr Quaternion from(const Vector3Type& vec, const TDataType qw) noexcept
         {
             Quaternion quat;
             quat.mData[0] = vec[0];
@@ -118,7 +119,7 @@ namespace hr
             return quat;
         }
 
-        static constexpr Quaternion from(const Vector4Type& vec)
+        static constexpr Quaternion from(const Vector4Type& vec) noexcept
         {
             Quaternion quat;
             quat.mData[0] = vec[0];
@@ -129,8 +130,8 @@ namespace hr
             return quat;
         }
 
-        static Quaternion fromAxisAngle(const Vector3Type& unitVec, const TDataType angleDeg);
-        static Quaternion fromAxisAngle(const TDataType unitVecX, const TDataType unitVecY, const TDataType unitVecZ, const TDataType angleDeg);
+        static Quaternion fromAxisAngle(const Vector3Type& unitVec, const TDataType angleDeg) noexcept;
+        static Quaternion fromAxisAngle(const TDataType unitVecX, const TDataType unitVecY, const TDataType unitVecZ, const TDataType angleDeg) noexcept;
 
         static Quaternion fromMatrix3x3(std::span<const TDataType, 9> matrix) noexcept;
         static Quaternion fromMatrix4x4(std::span<const TDataType, 16> matrix) noexcept;
@@ -152,24 +153,16 @@ namespace hr
         constexpr Quaternion(Quaternion&&) = default;
         constexpr Quaternion& operator=(Quaternion&&) = default;
 
-        constexpr TDataType* data() noexcept
+        template<typename Self>
+        constexpr auto data(this Self&& self) noexcept
         {
-            return mData;
+            return std::span{self.mData}.first<4>();
         }
 
-        constexpr const TDataType* data() const noexcept
+        template<typename Self>
+        constexpr auto& operator[](this Self&& self, const size_t index) noexcept
         {
-            return mData;
-        }
-
-        constexpr TDataType& operator[](const size_t index) noexcept
-        {
-            return mData[index % 4];
-        }
-
-        constexpr const TDataType& operator[](const size_t index) const noexcept
-        {
-            return mData[index % 4];
+            return self.mData[index % 4];
         }
 
         Quaternion& operator+=(const Quaternion& quat) noexcept;

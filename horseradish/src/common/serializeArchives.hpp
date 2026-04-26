@@ -31,9 +31,7 @@ namespace hr::serialize::archive
 
         bool readBytes(std::span<std::byte> buffer)
         {
-            if (buffer.empty())
-                return true;
-            return (mReader.read(buffer.data(), buffer.size_bytes()) == buffer.size_bytes());
+            return buffer.empty() ? true : mReader.read(buffer);
         }
 
         bool skipBytes(size_t size)

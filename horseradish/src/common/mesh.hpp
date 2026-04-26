@@ -215,60 +215,30 @@ namespace hr::geom
             return mNumIndices / 3;
         }
 
-        template<class TCallback>
-        size_t iterateVertices(TCallback&& cb) noexcept
+        template<typename Self, class TCallback>
+        size_t iterateVertices(this Self&& self, TCallback&& cb) noexcept
         {
             static_assert(std::is_invocable_r_v<bool, TCallback, size_t, TVertex&>);
 
             size_t i = 0;
-            for (; i < mNumVertices; i++)
+            for (; i < self.mNumVertices; i++)
             {
-                if (!cb(i, mData[i]))
+                if (!cb(i, self.mData[i]))
                     break;
             }
 
             return i;
         }
 
-        template<class TCallback>
-        size_t iterateVertices(TCallback&& cb) const noexcept
+        template<typename Self, class TCallback>
+        size_t iterateTris(this Self&& self, TCallback&& cb) noexcept
         {
-            static_assert(std::is_invocable_r_v<bool, TCallback, size_t, const TVertex&>);
-
-            size_t i = 0;
-            for (; i < mNumVertices; i++)
-            {
-                if (!cb(i, mData[i]))
-                    break;
-            }
-
-            return i;
-        }
-
-        template<class TCallback>
-        size_t iterateTris(TCallback&& cb) noexcept
-        {
-            static_assert(std::is_invocable_r_v<bool, TCallback, size_t, TVertex&, TVertex&, TVertex>);
+            static_assert(std::is_invocable_r_v<bool, TCallback, size_t, TVertex&, TVertex&, TVertex&>);
 
             size_t count{0};
-            for (size_t i = 0; i < mNumIndices; i += 3, count++)
+            for (size_t i = 0; i < self.mNumIndices; i += 3, count++)
             {
-                if (!cb(count, mData[mIndices[i + 0]], mData[mIndices[i + 1]], mData[mIndices[i + 2]]))
-                    break;
-            }
-
-            return count;
-        }
-
-        template<class TCallback>
-        size_t iterateTris(TCallback&& cb) const noexcept
-        {
-            static_assert(std::is_invocable_r_v<bool, TCallback, size_t, const TVertex&, const TVertex&, const TVertex>);
-
-            size_t count{0};
-            for (size_t i = 0; i < mNumIndices; i += 3, count++)
-            {
-                if (!cb(count, mData[mIndices[i + 0]], mData[mIndices[i + 1]], mData[mIndices[i + 2]]))
+                if (!cb(count, self.mData[self.mIndices[i + 0]], self.mData[self.mIndices[i + 1]], self.mData[self.mIndices[i + 2]]))
                     break;
             }
 

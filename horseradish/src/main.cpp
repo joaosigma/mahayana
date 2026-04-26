@@ -61,8 +61,7 @@ wWinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ PWSTR lpCmdLine, _In_ int)
         return 0;
     }
 
-    auto engineError = engine.getErrorDesc();
-    if (!engineError.empty())
+    if (auto engineError = engine.getErrorDesc(); !engineError.empty())
         hr::platform::Window::MsgBoxError(engineError);
 
     switch (engine.getExitAction())

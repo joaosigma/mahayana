@@ -11,7 +11,8 @@
 #include <algorithm>
 #include <array>
 #include <cstdint>
-#include <unordered_set>
+#include <span>
+#include <vector>
 
 namespace hr::render
 {
@@ -96,28 +97,28 @@ namespace hr::render
 
                 if (numGeoms > 0)
                 {
-                    geomChunksTmp = std::unique_ptr<GeomChunkInfo[]>(new GeomChunkInfo[numGeoms]);
+                    geomChunksTmp = std::make_unique<GeomChunkInfo[]>(numGeoms);
 
                     freader.seek(hr::streams::Stream::SeekOrigin::End, -(geomChunksSize + animSetchunksSize + animChunksSize));
-                    if (freader.read(geomChunksTmp.get(), geomChunksSize) != geomChunksSize)
+                    if (!freader.read(std::span{geomChunksTmp.get(), numGeoms}))
                         return false;
                 }
 
                 if (numAnimSets > 0)
                 {
-                    animSetChunksTmp = std::unique_ptr<AnimSetChunkInfo[]>(new AnimSetChunkInfo[numAnimSets]);
+                    animSetChunksTmp = std::make_unique<AnimSetChunkInfo[]>(numAnimSets);
 
                     freader.seek(hr::streams::Stream::SeekOrigin::End, -(animSetchunksSize + animChunksSize));
-                    if (freader.read(animSetChunksTmp.get(), animSetchunksSize) != animSetchunksSize)
+                    if (!freader.read(std::span{animSetChunksTmp.get(), numAnimSets}))
                         return false;
                 }
 
                 if (numAnims > 0)
                 {
-                    animChunksTmp = std::unique_ptr<AnimChunkInfo[]>(new AnimChunkInfo[numAnims]);
+                    animChunksTmp = std::make_unique<AnimChunkInfo[]>(numAnims);
 
                     freader.seek(hr::streams::Stream::SeekOrigin::End, -animChunksSize);
-                    if (freader.read(animChunksTmp.get(), animChunksSize) != animChunksSize)
+                    if (!freader.read(std::span{animChunksTmp.get(), numAnims}))
                         return false;
                 }
             }
@@ -133,7 +134,7 @@ namespace hr::render
 
             if (geomChunksTmp)
             {
-                if (fwriter.write(geomChunksTmp.get(), geomChunksSize) != geomChunksSize)
+                if (!fwriter.writeObject(geomChunksTmp))
                     return false;
             }
 
@@ -142,7 +143,7 @@ namespace hr::render
 
             if (animSetChunksTmp)
             {
-                if (fwriter.write(animSetChunksTmp.get(), animSetchunksSize) != animSetchunksSize)
+                if (!fwriter.writeObject(animSetChunksTmp))
                     return false;
             }
 
@@ -151,7 +152,7 @@ namespace hr::render
 
             if (animChunksTmp)
             {
-                if (fwriter.write(animChunksTmp.get(), animChunksSize) != animChunksSize)
+                if (!fwriter.writeObject(animChunksTmp))
                     return false;
             }
 
@@ -179,7 +180,7 @@ namespace hr::render
             // read header and every chunk info
             {
                 freader.seek(hr::streams::Stream::SeekOrigin::Begin, 0);
-                if (freader.read(&geomHeader, sizeof(GeomHeader)) != sizeof(GeomHeader))
+                if (!freader.read(geomHeader))
                     return false;
 
                 int geomChunksSize = sizeof(GeomChunkInfo) * geomHeader.numGeoms;
@@ -191,7 +192,7 @@ namespace hr::render
                     oldGeomChunks.resize(geomHeader.numGeoms);
 
                     freader.seek(hr::streams::Stream::SeekOrigin::End, -(geomChunksSize + animSetchunksSize + animChunksSize));
-                    if (freader.read(oldGeomChunks.data(), geomChunksSize) != geomChunksSize)
+                    if (!freader.read(std::span{oldGeomChunks.data(), geomHeader.numGeoms}))
                         return false;
                 }
 
@@ -200,7 +201,7 @@ namespace hr::render
                     oldAnimSetChunks.resize(geomHeader.numAnimSets);
 
                     freader.seek(hr::streams::Stream::SeekOrigin::End, -(animSetchunksSize + animChunksSize));
-                    if (freader.read(oldAnimSetChunks.data(), animSetchunksSize) != animSetchunksSize)
+                    if (!freader.read(std::span{oldAnimSetChunks.data(), geomHeader.numAnimSets}))
                         return false;
                 }
 
@@ -209,7 +210,7 @@ namespace hr::render
                     oldAnimChunks.resize(geomHeader.numAnims);
 
                     freader.seek(hr::streams::Stream::SeekOrigin::End, -animChunksSize);
-                    if (freader.read(oldAnimChunks.data(), animChunksSize) != animChunksSize)
+                    if (!freader.read(std::span{oldAnimChunks.data(), geomHeader.numAnims}))
                         return false;
                 }
             }
@@ -282,7 +283,7 @@ namespace hr::render
             geomHeader.numGeoms = newGeomChunks.size();
             geomHeader.numAnims = newAnimChunks.size();
             geomHeader.numAnimSets = newAnimSetChunks.size();
-            if (fwriter.write(&geomHeader, sizeof(GeomHeader)) != sizeof(GeomHeader))
+            if (!fwriter.writeObject(geomHeader))
                 return false;
 
             // write all data chunks
@@ -331,13 +332,13 @@ namespace hr::render
 
             // write all chunks
 
-            if (fwriter.write(newGeomChunks.data(), sizeof(GeomChunkInfo) * newGeomChunks.size()) != (sizeof(GeomChunkInfo) * newGeomChunks.size()))
+            if (!fwriter.write<GeomChunkInfo>(newGeomChunks))
                 return false;
 
-            if (fwriter.write(newAnimSetChunks.data(), sizeof(AnimSetChunkInfo) * newAnimSetChunks.size()) != (sizeof(AnimSetChunkInfo) * newAnimSetChunks.size()))
+            if (!fwriter.write<AnimSetChunkInfo>(newAnimSetChunks))
                 return false;
 
-            if (fwriter.write(newAnimChunks.data(), sizeof(AnimChunkInfo) * newAnimChunks.size()) != (sizeof(AnimChunkInfo) * newAnimChunks.size()))
+            if (!fwriter.write<AnimChunkInfo>(newAnimChunks))
                 return false;
 
             return true;
@@ -446,7 +447,7 @@ namespace hr::render
         {
             fileStream.seek(hr::streams::Stream::SeekOrigin::Begin, geom.fstreamVertexOffset);
 
-            auto bytesRead = fileStream.read(destBuffer, requestedDataSize);
+            auto bytesRead = fileStream.read({reinterpret_cast<std::byte*>(destBuffer), requestedDataSize});
             assert(bytesRead == requestedDataSize);
 
             return bytesRead;
@@ -456,7 +457,7 @@ namespace hr::render
         {
             fileStream.seek(hr::streams::Stream::SeekOrigin::Begin, geom.fstreamIndexOffset);
 
-            auto bytesRead = fileStream.read(destBuffer, requestedDataSize);
+            auto bytesRead = fileStream.read({reinterpret_cast<std::byte*>(destBuffer), requestedDataSize});
             assert(bytesRead == requestedDataSize);
 
             return bytesRead;
@@ -484,8 +485,7 @@ namespace hr::render
         std::memcpy(geomHeader.fileSig, FileBinSig.data(), sizeof(geomHeader.fileSig));
         std::memset(geomHeader.reserved, 0, sizeof(geomHeader.reserved));
 
-        fstream.write(&geomHeader, sizeof(geomHeader));
-        return true;
+        return hr::streams::StreamWriter(fstream).writeObject(geomHeader);
     }
 
     bool World::geomFileAddMesh(hr::streams::FileStream& fstream, size_t geomId, const geom::Mesh<geom::VertexFull, uint32_t>& mesh)
@@ -504,7 +504,7 @@ namespace hr::render
                 hr::streams::StreamReader stream(fstream);
 
                 stream.seek(hr::streams::Stream::SeekOrigin::Begin, 0);
-                if (stream.read(&geomHeader, sizeof(GeomHeader)) != sizeof(GeomHeader))
+                if (!stream.read(geomHeader))
                     return false;
             }
 
@@ -518,7 +518,7 @@ namespace hr::render
                 hr::streams::StreamWriter stream(fstream);
 
                 stream.seek(hr::streams::Stream::SeekOrigin::Begin, 0);
-                if (stream.write(&geomHeader, sizeof(GeomHeader)) != sizeof(GeomHeader))
+                if (!stream.writeObject(geomHeader))
                     return false;
             }
         }
@@ -539,9 +539,9 @@ namespace hr::render
           {
               newGeomChunk.geomsOffset = fwriter.position();
 
-              if (fwriter.write(mesh.vertices().data(), mesh.sizeVertices()) != mesh.sizeVertices())
+              if (!fwriter.write<geom::VertexShading>(mesh.vertices()))
                   return false;
-              if (fwriter.write(mesh.indices().data(), mesh.sizeIndices()) != mesh.sizeIndices())
+              if (!fwriter.write<uint16_t>(mesh.indices()))
                   return false;
 
               if (!fwriter.write(meshBBox.min().data()))
@@ -553,14 +553,7 @@ namespace hr::render
 
               return true;
           },
-          [&newGeomChunk](hr::streams::StreamWriter& fwriter)
-          {
-              if (fwriter.write(&newGeomChunk, sizeof(GeomChunkInfo)) != sizeof(GeomChunkInfo))
-                  return false;
-
-              return true;
-          },
-          nullptr, nullptr);
+          [&newGeomChunk](hr::streams::StreamWriter& fwriter) { return fwriter.writeObject(newGeomChunk); }, nullptr, nullptr);
 
         return success;
     }
@@ -576,7 +569,7 @@ namespace hr::render
                 hr::streams::StreamReader stream(fstream);
 
                 stream.seek(hr::streams::Stream::SeekOrigin::Begin, 0);
-                if (stream.read(&geomHeader, sizeof(GeomHeader)) != sizeof(GeomHeader))
+                if (!stream.read(geomHeader))
                     return false;
             }
 
@@ -590,7 +583,7 @@ namespace hr::render
                 hr::streams::StreamWriter stream(fstream);
 
                 stream.seek(hr::streams::Stream::SeekOrigin::Begin, 0);
-                if (stream.write(&geomHeader, sizeof(GeomHeader)) != sizeof(GeomHeader))
+                if (!stream.writeObject(geomHeader))
                     return false;
             }
         }
@@ -611,9 +604,9 @@ namespace hr::render
           {
               newGeomChunk.geomsOffset = fwriter.position();
 
-              if (fwriter.write(meshAnim.mesh().vertices().data(), meshAnim.mesh().sizeVertices()) != meshAnim.mesh().sizeVertices())
+              if (!fwriter.write<hr::geom::MeshAnim::TMesh::VertexType>(meshAnim.mesh().vertices()))
                   return false;
-              if (fwriter.write(meshAnim.mesh().indices().data(), meshAnim.mesh().sizeIndices()) != meshAnim.mesh().sizeIndices())
+              if (!fwriter.write<hr::geom::MeshAnim::TMesh::IndexType>(meshAnim.mesh().indices()))
                   return false;
 
               auto bbox = meshAnim.mesh().bbox();
@@ -623,21 +616,14 @@ namespace hr::render
               if (!fwriter.write(bbox.max().data()))
                   return false;
 
-              if (fwriter.write(meshAnim.verticesJoints(), meshAnim.sizeVerticesJoints()) != meshAnim.sizeVerticesJoints())
+              if (!fwriter.write<hr::geom::MeshAnim::VertexJoint>(meshAnim.verticesJoints()))
                   return false;
 
               newGeomChunk.size = fwriter.position() - newGeomChunk.geomsOffset;
 
               return true;
           },
-          [&newGeomChunk](hr::streams::StreamWriter& fwriter)
-          {
-              if (fwriter.write(&newGeomChunk, sizeof(GeomChunkInfo)) != sizeof(GeomChunkInfo))
-                  return false;
-
-              return true;
-          },
-          nullptr, nullptr);
+          [&newGeomChunk](hr::streams::StreamWriter& fwriter) { return fwriter.writeObject(newGeomChunk); }, nullptr, nullptr);
 
         return success;
     }
@@ -653,7 +639,7 @@ namespace hr::render
                 hr::streams::StreamReader stream(fstream);
 
                 stream.seek(hr::streams::Stream::SeekOrigin::Begin, 0);
-                if (stream.read(&geomHeader, sizeof(GeomHeader)) != sizeof(GeomHeader))
+                if (!stream.read(geomHeader))
                     return false;
             }
 
@@ -667,7 +653,7 @@ namespace hr::render
                 hr::streams::StreamWriter stream(fstream);
 
                 stream.seek(hr::streams::Stream::SeekOrigin::Begin, 0);
-                if (stream.write(&geomHeader, sizeof(GeomHeader)) != sizeof(GeomHeader))
+                if (!stream.writeObject(geomHeader))
                     return false;
             }
         }
@@ -696,15 +682,7 @@ namespace hr::render
 
               return true;
           },
-          nullptr,
-          [&newAnimSetChunk](hr::streams::StreamWriter& fwriter)
-          {
-              if (fwriter.write(&newAnimSetChunk, sizeof(AnimSetChunkInfo)) != sizeof(AnimSetChunkInfo))
-                  return false;
-
-              return true;
-          },
-          nullptr);
+          nullptr, [&newAnimSetChunk](hr::streams::StreamWriter& fwriter) { return fwriter.writeObject(newAnimSetChunk); }, nullptr);
 
         return success;
     }
@@ -720,7 +698,7 @@ namespace hr::render
                 hr::streams::StreamReader stream(fstream);
 
                 stream.seek(hr::streams::Stream::SeekOrigin::Begin, 0);
-                if (stream.read(&geomHeader, sizeof(GeomHeader)) != sizeof(GeomHeader))
+                if (!stream.read(geomHeader))
                     return false;
             }
 
@@ -734,7 +712,7 @@ namespace hr::render
                 hr::streams::StreamWriter stream(fstream);
 
                 stream.seek(hr::streams::Stream::SeekOrigin::Begin, 0);
-                if (stream.write(&geomHeader, sizeof(GeomHeader)) != sizeof(GeomHeader))
+                if (!stream.writeObject(geomHeader))
                     return false;
             }
         }
@@ -763,14 +741,7 @@ namespace hr::render
 
               return true;
           },
-          nullptr, nullptr,
-          [&newAnimChunk](hr::streams::StreamWriter& fwriter)
-          {
-              if (fwriter.write(&newAnimChunk, sizeof(AnimChunkInfo)) != sizeof(AnimChunkInfo))
-                  return false;
-
-              return true;
-          });
+          nullptr, nullptr, [&newAnimChunk](hr::streams::StreamWriter& fwriter) { return fwriter.writeObject(newAnimChunk); });
 
         return success;
     }
@@ -784,7 +755,7 @@ namespace hr::render
 
         GeomHeader geomHeader;
         {
-            if (streamBin.read(&geomHeader, sizeof(GeomHeader)) != sizeof(GeomHeader))
+            if (!streamBin.read(geomHeader))
                 return false;
             if (std::memcmp(geomHeader.fileSig, FileBinSig.data(), sizeof(geomHeader.fileSig)) != 0)
                 return false;
@@ -804,7 +775,7 @@ namespace hr::render
             GeomChunkInfo chunkInfo;
             streamBin.seek(hr::streams::Stream::SeekOrigin::End, -(geomChunksSize + animSetchunksSize + animChunksSize));
             streamBin.seek(hr::streams::Stream::SeekOrigin::Current, sizeof(GeomChunkInfo) * curGeom);
-            streamBin.read(&chunkInfo, sizeof(GeomChunkInfo));
+            streamBin.read(chunkInfo);
 
             if (!geomIds.empty() && (std::find(geomIds.begin(), geomIds.end(), static_cast<size_t>(chunkInfo.id)) == geomIds.end()))
                 continue;
@@ -814,8 +785,8 @@ namespace hr::render
             geom::Mesh<geom::VertexShading, uint16_t> mesh(numVertices, numIndices);
 
             streamBin.seek(hr::streams::Stream::SeekOrigin::Begin, chunkInfo.geomsOffset);
-            streamBin.read(mesh.vertices().data(), mesh.sizeVertices());
-            streamBin.read(mesh.indices().data(), mesh.sizeIndices());
+            streamBin.read(mesh.vertices());
+            streamBin.read(mesh.indices());
 
             {
                 auto tmp = mesh.convert<geom::VertexFull, uint32_t>();
@@ -830,8 +801,8 @@ namespace hr::render
                 hr::streams::StreamWriter streamWriter(fstream);
 
                 streamWriter.seek(hr::streams::Stream::SeekOrigin::Begin, chunkInfo.geomsOffset);
-                streamWriter.write(mesh.vertices().data(), mesh.sizeVertices());
-                streamWriter.write(mesh.indices().data(), mesh.sizeIndices());
+                streamWriter.write<geom::VertexShading>(mesh.vertices());
+                streamWriter.write<uint16_t>(mesh.indices());
 
                 auto bbox = mesh.bbox();
 
@@ -853,7 +824,7 @@ namespace hr::render
 
         GeomHeader geomHeader;
         {
-            if (streamBin.read(&geomHeader, sizeof(GeomHeader)) != sizeof(GeomHeader))
+            if (!streamBin.read(geomHeader))
                 return false;
             if (std::memcmp(geomHeader.fileSig, FileBinSig.data(), sizeof(geomHeader.fileSig)) != 0)
                 return false;
@@ -873,7 +844,7 @@ namespace hr::render
         for (size_t curGeom = 0; curGeom < geomHeader.numGeoms; ++curGeom)
         {
             GeomChunkInfo chunkInfo;
-            streamBin.read(&chunkInfo, sizeof(GeomChunkInfo));
+            streamBin.read(chunkInfo);
 
             if (chunkInfo.id == geomId)
             {
@@ -1134,7 +1105,7 @@ namespace hr::render
         // read infos
         {
             GeomHeader geomHeader;
-            if (sreader.read(&geomHeader, sizeof(GeomHeader)) != sizeof(GeomHeader))
+            if (!sreader.read(geomHeader))
                 return false;
 
             int animChunksSize = sizeof(AnimChunkInfo) * geomHeader.numAnims;
@@ -1148,7 +1119,7 @@ namespace hr::render
                 for (size_t curGeom = 0; curGeom < geomHeader.numAnimSets; ++curGeom)
                 {
                     AnimSetChunkInfo chunkInfo;
-                    sreader.read(&chunkInfo, sizeof(AnimSetChunkInfo));
+                    sreader.read(chunkInfo);
 
                     animSetInfos.push_back(std::move(chunkInfo));
                 }
@@ -1162,7 +1133,7 @@ namespace hr::render
                 for (size_t curGeom = 0; curGeom < geomHeader.numAnims; ++curGeom)
                 {
                     AnimChunkInfo chunkInfo;
-                    sreader.read(&chunkInfo, sizeof(AnimChunkInfo));
+                    sreader.read(chunkInfo);
 
                     animInfos.push_back(std::move(chunkInfo));
                 }
@@ -1222,7 +1193,7 @@ namespace hr::render
         // check file
         GeomHeader geomHeader;
         {
-            if (streamBin.read(&geomHeader, sizeof(GeomHeader)) != sizeof(GeomHeader))
+            if (!streamBin.read(geomHeader))
                 return false;
             if (std::memcmp(geomHeader.fileSig, FileBinSig.data(), sizeof(geomHeader.fileSig)) != 0)
                 return false;
@@ -1258,7 +1229,7 @@ namespace hr::render
                     for (size_t curGeom = 0; curGeom < geomHeader.numGeoms; ++curGeom)
                     {
                         GeomChunkInfo chunkInfo;
-                        streamBin.read(&chunkInfo, sizeof(GeomChunkInfo));
+                        streamBin.read(chunkInfo);
 
                         geomInfo[chunkInfo.id] = chunkInfo;
                     }
@@ -1267,16 +1238,18 @@ namespace hr::render
 
             // read scene
             {
-                std::shared_ptr<unsigned char> buffer;
+                std::shared_ptr<unsigned char[]> buffer;
                 size_t bufferSize;
 
-                streamScene.stream().cloneAllContent(buffer, bufferSize,
-                                                     [](size_t requiredSize)
-                                                     {
-                                                         std::shared_ptr<unsigned char> buffer(new unsigned char[requiredSize + 1], std::default_delete<unsigned char[]>());
-                                                         buffer.get()[requiredSize] = '\0';
-                                                         return buffer;
-                                                     });
+                streamScene.stream().cloneAllContent(
+                  [&bufferSize, &buffer](size_t requiredSize) mutable
+                  {
+                      bufferSize = requiredSize;
+                      buffer = std::make_shared<unsigned char[]>(requiredSize + 1);
+
+                      buffer.get()[requiredSize] = '\0';
+                      return std::span<std::byte>{reinterpret_cast<std::byte*>(buffer.get()), requiredSize + 1};
+                  });
 
                 using nlohmann::json;
 
@@ -1347,8 +1320,8 @@ namespace hr::render
 
                                     // read and store the base mesh (normally the bind pose)
                                     object.anim.meshAnimated = geom::Mesh<geom::VertexShading, uint16_t>(geomIt->second.numVertices, geomIt->second.numIndices);
-                                    streamBin.read(object.anim.meshAnimated.vertices().data(), object.anim.meshAnimated.sizeVertices());
-                                    streamBin.read(object.anim.meshAnimated.indices().data(), object.anim.meshAnimated.sizeIndices());
+                                    streamBin.read(object.anim.meshAnimated.vertices());
+                                    streamBin.read(object.anim.meshAnimated.indices());
                                 }
                                 else
                                 {
@@ -1379,7 +1352,7 @@ namespace hr::render
                                     else
                                         object.anim.meshAnim = hr::geom::MeshAnim(object.anim.meshAnimated, hr::geom::MeshAnim::SkinningType::Vertex4Joints);
 
-                                    streamBin.read(object.anim.meshAnim.verticesJoints(), object.anim.meshAnim.sizeVerticesJoints());
+                                    streamBin.read(object.anim.meshAnim.verticesJoints());
                                 }
                             }
                         }

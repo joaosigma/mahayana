@@ -5,13 +5,11 @@
 #include "matrix.hpp"
 #include "quaternion.hpp"
 #include "serialize.hpp"
-#include "serializeSupport.hpp"
 #include "vector.hpp"
 
 #include <array>
-#include <functional>
+#include <cstdint>
 #include <map>
-#include <optional>
 #include <span>
 #include <string>
 #include <string_view>
@@ -28,9 +26,9 @@ namespace hr::geom
 
     class MeshAnim
     {
+    public:
         using TMesh = Mesh<VertexShading, uint16_t>;
 
-    public:
         enum class SkinningType
         {
             Vertex4Joints,
@@ -84,28 +82,26 @@ namespace hr::geom
             return mSkinningType;
         }
 
-        const VertexJoint* verticesJoints() const noexcept
+        template<typename Self>
+        auto verticesJoints(this Self&& self) noexcept
         {
-            return mVertexJoints.get();
-        }
-        VertexJoint* verticesJoints() noexcept
-        {
-            return mVertexJoints.get();
+            return std::span{self.mVertexJoints.get(), self.numJoints()};
         }
 
-        TMesh& mesh() noexcept
+        template<typename Self>
+        auto& mesh(this Self&& self) noexcept
         {
-            return mMesh;
-        }
-        const TMesh& mesh() const noexcept
-        {
-            return mMesh;
+            return self.mMesh;
         }
 
         void correctWeights() noexcept;
 
-        VertexJoint& vertexJoint(size_t vertexIndex, size_t jointIndex) noexcept;
-        const VertexJoint& vertexJoint(size_t vertexIndex, size_t jointIndex) const noexcept;
+        template<typename Self>
+        auto& vertexJoint(this Self&& self, size_t vertexIndex, size_t jointIndex) noexcept
+        {
+            auto index = ((vertexIndex % self.mMesh.numVertices()) * self.numJointsPerVertex()) + (jointIndex % self.numJointsPerVertex());
+            return *(self.mVertexJoints.get() + index);
+        }
 
         void collectVertexJoints(size_t vertexIndex, std::array<VertexJoint, 4>& vertexJoints) const noexcept;
         void collectVertexJoints(size_t vertexIndex, std::array<VertexJoint, 8>& vertexJoints) const noexcept;
@@ -226,6 +222,7 @@ namespace hr::geom
         {
             return mRootTransform;
         }
+
         std::span<const Joint> joints() const noexcept
         {
             return mJoints;
@@ -235,6 +232,7 @@ namespace hr::geom
         {
             return mJoints.size();
         }
+
         size_t numAnimations() const noexcept
         {
             return mAnimations.size();

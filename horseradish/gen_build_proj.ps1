@@ -133,7 +133,7 @@ try {
         $generator = Get-VSCMakeGen
         Write-Host "Using generator: $generator"
 
-        & cmake -DHR_ENABLE_DEVEL=1 -DHR_ENABLE_LOGGING=1 -DHR_ENABLE_PROFILLING=1 -G "$generator" -A x64 -T host=x64 ..
+        & cmake -DHR_ENABLE_DEVEL=1 -DHR_ENABLE_LOGGING=1 -DHR_ENABLE_PROFILLING=1 --fresh -G "$generator" -A x64 -T host=x64 ..
         if ($LASTEXITCODE -ne 0) { return; }
 
         if ($buildTest) {

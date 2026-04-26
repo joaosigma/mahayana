@@ -469,7 +469,7 @@ namespace hr::misc
     hr::Rectangle<int> VideoStream::getVideoRect(size_t winWidth, size_t winHeight, bool maintainAspectRatio) const
     {
         if (!mVideoInfo.codecContext)
-            return hr::Rectangle<int>();
+            return hr::Rectangle<int>::zero();
 
         size_t videoWidth, videoHeight;
         getVideoDims(videoWidth, videoHeight);
@@ -499,7 +499,7 @@ namespace hr::misc
     hr::Rectangle<int> VideoStream::getVideoRectCenter(float scale, size_t winWidth, size_t winHeight) const
     {
         if (!mVideoInfo.codecContext)
-            return hr::Rectangle<int>();
+            return hr::Rectangle<int>::zero();
 
         size_t videoWidth, videoHeight;
         getVideoDims(videoWidth, videoHeight);

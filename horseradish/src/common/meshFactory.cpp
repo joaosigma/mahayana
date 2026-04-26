@@ -4,6 +4,8 @@
 
 #include "libs/par/par_shapes.h"
 
+#include <memory>
+
 namespace hr::geom
 {
     namespace

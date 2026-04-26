@@ -1,40 +1,54 @@
 #include "stream.hpp"
 
 #include "scopedAction.hpp"
-#include "stringUtils.hpp"
 
-#include <cstring>
-#include <memory>
+#include <algorithm>
+#include <cassert>
+#include <optional>
+
+#include <windows.h>
 
 namespace hr::streams
 {
-    void MemoryStream::close()
+    namespace
     {
-        if (mData)
-            free(mData);
+        std::optional<size_t> calculateSeek(size_t currentPos, size_t size, Stream::SeekOrigin seekOrigin, int offset)
+        {
+            int newPos;
+            switch (seekOrigin)
+            {
+                case Stream::SeekOrigin::Begin:
+                    newPos = offset;
+                    break;
+                case Stream::SeekOrigin::End:
+                    newPos = static_cast<int>(size) + offset;
+                    break;
+                case Stream::SeekOrigin::Current:
+                    newPos = static_cast<int>(currentPos) + offset;
+                default:
+                    return {};
+            };
 
-        mDataSize = 0;
-        mIsClosed = true;
-        mData = mDataBegin = mDataEnd = mDataWalker = nullptr;
+            newPos = std::clamp(newPos, 0, static_cast<int>(size));
+            return static_cast<size_t>(newPos);
+        }
     }
 
-    void MemoryStream::flush()
-    {}
+    void MemoryStream::close()
+    {
+        mPos = 0;
+        mData.clear();
+        mData.shrink_to_fit();
+    }
 
     bool MemoryStream::canRead() const
     {
-        if (mIsClosed)
-            return false;
-
-        return (mDataWalker < mDataEnd);
+        return !mIsClosed && (mPos < mData.size());
     }
 
     bool MemoryStream::canRead(size_t numBytes) const
     {
-        if (!canRead())
-            return false;
-
-        return (numBytes <= (mDataEnd - mDataWalker));
+        return canRead() && (numBytes <= (mData.size() - mPos));
     }
 
     bool MemoryStream::canWrite() const
@@ -49,143 +63,92 @@ namespace hr::streams
 
     size_t MemoryStream::length() const
     {
-        return mDataSize;
+        return mData.size();
     }
 
     size_t MemoryStream::position() const
     {
-        return (mDataWalker - mDataBegin);
+        return mPos;
     }
 
-    size_t MemoryStream::read(void* const outBuffer, size_t numBytes)
+    size_t MemoryStream::read(std::span<std::byte> dst)
     {
         if (!canRead())
             return 0;
 
-        if (numBytes > (mDataEnd - mDataWalker))
-            numBytes = (mDataEnd - mDataWalker);
-
-        if (numBytes <= 0)
+        auto numBytes = std::min(dst.size(), mData.size() - mPos);
+        if (numBytes <= 0) [[unlikely]]
             return 0;
 
-        std::memcpy(outBuffer, mDataWalker, numBytes);
-        mDataWalker += numBytes;
+        std::ranges::copy_n(mData.data() + mPos, numBytes, dst.data());
+        mPos += numBytes;
+
         return numBytes;
     }
 
-    size_t MemoryStream::write(const void* const inBuffer, size_t numBytes)
+    size_t MemoryStream::write(std::span<const std::byte> src)
     {
-        if (!canWrite())
+        if (src.empty() || !canWrite(src.size()))
             return 0;
 
-        if ((mDataEnd - mDataWalker) > numBytes)
+        if (src.size() > (mData.size() - mPos))
         {
-            if (mDataSize <= 1024)
-                mDataSize = (mDataSize * 10) / 4;
-            else if (mDataSize <= (100 * 1024))
-                mDataSize = (mDataSize * 10) / 5;
-            else if (mDataSize <= (1024 * 1024))
-                mDataSize = (mDataSize * 10) / 8;
-            else if (mDataSize <= (1024 * 1024))
-                mDataSize = (mDataSize * 10) / 8;
-            else if (mDataSize <= (10 * 1024 * 1024))
-                mDataSize = mDataSize + (1024 * 1024);
-
-            auto oldPtr = mData;
-            mData = std::realloc(mData, mDataSize);
-            if (mData != oldPtr)
-            {
-                mDataBegin = reinterpret_cast<unsigned char*>(mData);
-                mDataWalker = mDataBegin + (mDataWalker - reinterpret_cast<unsigned char*>(oldPtr));
-                mDataEnd = mDataBegin + mDataSize;
-            }
+            mData.resize(mData.size() + (src.size() - (mData.size() - mPos)));
         }
 
-        std::memcpy(mDataWalker, inBuffer, numBytes);
-        mDataWalker += numBytes;
-        return numBytes;
+        std::ranges::copy_n(src.data(), src.size(), mData.data() + mPos);
+        mPos += src.size();
+
+        return src.size();
     }
 
     bool MemoryStream::seek(SeekOrigin seekOrigin, int offset)
     {
-        switch (seekOrigin)
-        {
-            case SeekOrigin::Begin:
-                mDataWalker = mDataBegin + offset;
-            case SeekOrigin::End:
-                mDataWalker = mDataEnd + offset;
-            case SeekOrigin::Current:
-                mDataWalker += offset;
-        };
-
-        if (mDataWalker < mDataBegin)
-            mDataWalker = mDataBegin;
-        if (mDataWalker > mDataEnd)
-            mDataWalker = mDataEnd;
-
-        return true;
-    }
-
-    bool MemoryStream::cloneAllContent(MemoryViewStream& memView) const
-    {
-        std::shared_ptr<unsigned char> buffer;
-        size_t bufferSize;
-
-        if (!cloneAllContent(buffer, bufferSize))
+        if (mIsClosed)
             return false;
 
-        memView = MemoryViewStream(std::move(buffer), bufferSize);
-        return true;
-    }
-
-    bool MemoryStream::cloneAllContent(std::shared_ptr<unsigned char>& buffer, size_t& bufferSize, std::function<std::shared_ptr<unsigned char>(size_t)> allocatorFunc) const
-    {
-        auto requiredSize = length();
-        if (requiredSize == 0)
+        auto res = calculateSeek(mPos, mData.size(), seekOrigin, offset);
+        if (!res)
             return false;
 
-        if (allocatorFunc)
-        {
-            auto extBuffer = allocatorFunc(requiredSize);
-            if (!extBuffer)
-                return false;
-
-            bufferSize = requiredSize;
-            buffer = extBuffer;
-        }
-        else
-        {
-            bufferSize = requiredSize;
-            buffer = std::shared_ptr<unsigned char>(new unsigned char[bufferSize], std::default_delete<unsigned char[]>());
-        }
-
-        std::memcpy(buffer.get(), mData, bufferSize);
+        mPos = *res;
         return true;
     }
 
-    const void* MemoryStream::data() const
+    bool MemoryStream::cloneAllContent(const std::function<std::span<std::byte>(size_t)>& targetBuffer) const
     {
-        return mData;
+        auto buffer = targetBuffer(mData.size());
+        if (buffer.empty())
+            return false;
+
+        std::ranges::copy_n(mData.data(), std::min(buffer.size(), mData.size()), buffer.data());
+        return true;
     }
 
-    std::string MemoryStream::toStr() const
+    void MemoryStream::reset() noexcept
     {
-        std::string finalStr;
-        finalStr.resize(length() + 1);
+        if (mIsClosed)
+            return;
 
-        std::memcpy(&finalStr[0], mData, length());
-        reinterpret_cast<char*>(&finalStr[0])[length()] = '\0';
+        mPos = 0;
+        mData.clear();
+        mData.shrink_to_fit();
+    }
 
-        return finalStr;
+    void MemoryStream::truncate(size_t newSize)
+    {
+        if (mIsClosed)
+            return;
+
+        mData.resize(newSize);
+        mData.shrink_to_fit();
+        mPos = std::clamp(mPos, 0uz, newSize);
     }
 
     void MemoryViewStream::close()
     {
         mIsClosed = true;
     }
-
-    void MemoryViewStream::flush()
-    {}
 
     bool MemoryViewStream::canRead() const
     {
@@ -194,10 +157,7 @@ namespace hr::streams
 
     bool MemoryViewStream::canRead(size_t numBytes) const
     {
-        if (!canRead())
-            return false;
-
-        return (numBytes <= (mDataEnd - mDataWalker));
+        return canRead() && (numBytes <= (mData.size() - mPos));
     }
 
     bool MemoryViewStream::canWrite() const
@@ -212,100 +172,55 @@ namespace hr::streams
 
     size_t MemoryViewStream::length() const
     {
-        return (mDataEnd - mDataBegin);
+        return mData.size();
     }
 
     size_t MemoryViewStream::position() const
     {
-        return (mDataWalker - mDataBegin);
+        return mPos;
     }
 
-    size_t MemoryViewStream::read(void* const outBuffer, size_t numBytes)
+    size_t MemoryViewStream::read(std::span<std::byte> dst)
     {
-        if (numBytes > (mDataEnd - mDataWalker))
-            numBytes = (mDataEnd - mDataWalker);
-
-        if (numBytes <= 0)
+        if (!canRead())
             return 0;
 
-        std::memcpy(outBuffer, mDataWalker, numBytes);
-        mDataWalker += numBytes;
+        auto numBytes = std::min(dst.size(), mData.size() - mPos);
+        if (numBytes <= 0) [[unlikely]]
+            return 0;
+
+        std::ranges::copy_n(mData.data() + mPos, numBytes, dst.data());
+        mPos += numBytes;
 
         return numBytes;
     }
 
-    size_t MemoryViewStream::write(const void* const, size_t)
+    size_t MemoryViewStream::write(std::span<const std::byte>)
     {
         return 0;
     }
 
     bool MemoryViewStream::seek(SeekOrigin seekOrigin, int offset)
     {
-        switch (seekOrigin)
-        {
-            case SeekOrigin::Begin:
-                mDataWalker = mDataBegin + offset;
-                break;
-            case SeekOrigin::End:
-                mDataWalker = mDataEnd + offset;
-                break;
-            default:
-                mDataWalker += offset;
-        }
-
-        if (mDataWalker < mDataBegin)
-            mDataWalker = mDataBegin;
-        if (mDataWalker > mDataEnd)
-            mDataWalker = mDataEnd;
-
-        return true;
-    }
-
-    bool MemoryViewStream::cloneAllContent(MemoryViewStream& memView) const
-    {
-        memView = MemoryViewStream(mDataShared, length());
-        return true;
-    }
-
-    bool MemoryViewStream::cloneAllContent(std::shared_ptr<unsigned char>& buffer, size_t& bufferSize, std::function<std::shared_ptr<unsigned char>(size_t)> allocatorFunc) const
-    {
-        auto requiredSize = length();
-        if (requiredSize == 0)
+        if (mIsClosed)
             return false;
 
-        if (allocatorFunc)
-        {
-            auto extBuffer = allocatorFunc(requiredSize);
-            if (!extBuffer)
-                return false;
+        auto res = calculateSeek(mPos, mData.size(), seekOrigin, offset);
+        if (!res)
+            return false;
 
-            bufferSize = requiredSize;
-            buffer = extBuffer;
-        }
-        else
-        {
-            bufferSize = requiredSize;
-            buffer = std::shared_ptr<unsigned char>(new unsigned char[requiredSize], std::default_delete<unsigned char[]>());
-        }
-
-        std::memcpy(buffer.get(), mData, bufferSize);
+        mPos = *res;
         return true;
     }
 
-    const void* MemoryViewStream::data() const noexcept
+    bool MemoryViewStream::cloneAllContent(const std::function<std::span<std::byte>(size_t)>& targetBuffer) const
     {
-        return mData;
-    }
+        auto buffer = targetBuffer(mData.size());
+        if (buffer.empty())
+            return false;
 
-    std::string MemoryViewStream::toStr() const
-    {
-        std::string finalStr;
-        finalStr.resize(length() + 1);
-
-        std::memcpy(&finalStr[0], mData, length());
-        reinterpret_cast<char*>(&finalStr[0])[length()] = '\0';
-
-        return finalStr;
+        std::ranges::copy_n(mData.data() + mPos, std::min(buffer.size(), mData.size()), buffer.data());
+        return true;
     }
 
     bool FileStream::openFile(const std::filesystem::path& filePath, bool toRead, bool toWrite)
@@ -351,53 +266,67 @@ namespace hr::streams
         }
     }
 
-    std::unique_ptr<MemoryViewStream> FileStream::readEntireFile(const std::filesystem::path& filePath)
+    std::optional<MemoryStream> FileStream::readEntireFile(const std::filesystem::path& filePath)
     {
         if (filePath.empty())
-            return std::unique_ptr<MemoryViewStream>();
+            return {};
 
         auto fileHandle = CreateFile(filePath.c_str(), GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
         if (fileHandle == INVALID_HANDLE_VALUE)
-            return std::unique_ptr<MemoryViewStream>();
+            return {};
 
         ScopedAction scopedAction([&]() { CloseHandle(fileHandle); });
 
         auto outBufferSize = GetFileSize(fileHandle, nullptr);
         if (outBufferSize <= 0)
-            return std::unique_ptr<MemoryViewStream>(new MemoryViewStream());
+            return MemoryStream();
 
-        std::shared_ptr<unsigned char> outBuffer(new unsigned char[outBufferSize], std::default_delete<unsigned char[]>());
+        MemoryStream memStream;
+        memStream.truncate(outBufferSize);
+        assert(memStream.data().size() == outBufferSize);
 
         DWORD bytesRead;
-        if ((ReadFile(fileHandle, outBuffer.get(), outBufferSize, &bytesRead, nullptr) == 0) || (outBufferSize != bytesRead))
-            return std::unique_ptr<MemoryViewStream>();
+        if ((ReadFile(fileHandle, memStream.data().data(), outBufferSize, &bytesRead, nullptr) == 0) || (outBufferSize != bytesRead))
+            return {};
 
-        return std::unique_ptr<MemoryViewStream>(new MemoryViewStream(outBuffer, outBufferSize));
+        return memStream;
     }
 
-    std::string FileStream::readEntireFileAsString(const std::filesystem::path& filePath)
+    std::optional<std::string> FileStream::readEntireFileAsString(const std::filesystem::path& filePath)
     {
         if (filePath.empty())
-            return std::string();
+            return {};
 
         auto fileHandle = CreateFile(filePath.c_str(), GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
         if (fileHandle == INVALID_HANDLE_VALUE)
-            return std::string();
+            return {};
 
         ScopedAction scopedAction([&]() { CloseHandle(fileHandle); });
 
         auto outBufferSize = GetFileSize(fileHandle, nullptr);
+        if (outBufferSize <= 0)
+            return std::string{};
 
-        std::unique_ptr<char[]> tmpBuffer(new char[outBufferSize]);
+        std::string str;
+        str.resize_and_overwrite(static_cast<size_t>(outBufferSize),
+                                 [fileHandle, outBufferSize](char* buffer, size_t bufferSize)
+                                 {
+                                     auto targetSize = std::min(static_cast<DWORD>(bufferSize), outBufferSize);
 
-        DWORD bytesRead;
-        if ((ReadFile(fileHandle, tmpBuffer.get(), outBufferSize, &bytesRead, nullptr) == 0) || (outBufferSize != bytesRead))
-            return std::string();
+                                     DWORD bytesRead;
+                                     if ((ReadFile(fileHandle, buffer, targetSize, &bytesRead, nullptr) == 0) || (bytesRead != targetSize))
+                                         return 0uz;
 
-        return std::string(tmpBuffer.get(), outBufferSize);
+                                     return static_cast<size_t>(bytesRead);
+                                 });
+
+        if (str.empty())
+            return {};
+
+        return str;
     }
 
-    bool FileStream::streamDump(Stream& stream, const std::filesystem::path& filePath)
+    bool FileStream::streamFullDump(Stream& stream, const std::filesystem::path& filePath)
     {
         if (!stream.canRead() || (filePath.empty()))
             return false;
@@ -406,29 +335,28 @@ namespace hr::streams
         if (!fileHandle)
             return false;
 
+        ScopedAction _([&]() { CloseHandle(fileHandle); });
+
         auto filePos = stream.position();
         stream.seek(SeekOrigin::Begin, 0);
 
-        unsigned char auxBuffer[1024];
+        ScopedAction __([&]() { stream.seek(SeekOrigin::Begin, filePos); });
 
+        std::array<std::byte, 1024> auxBuffer;
         while (true)
         {
-            auto bytesRead = stream.read(auxBuffer, sizeof(auxBuffer));
+            auto bytesRead = stream.read(auxBuffer);
             if (bytesRead <= 0)
                 break;
 
             DWORD bytesWritten;
-            WriteFile(fileHandle, auxBuffer, bytesRead, &bytesWritten, nullptr);
+            WriteFile(fileHandle, auxBuffer.data(), bytesRead, &bytesWritten, nullptr);
             if (bytesWritten != bytesRead)
-                break;
+                return false;
 
-            if (bytesRead < sizeof(auxBuffer))
-                break;
+            if (bytesRead < auxBuffer.size())
+                break; // done
         }
-
-        CloseHandle(fileHandle);
-
-        stream.seek(SeekOrigin::Begin, filePos);
 
         return true;
     }
@@ -446,7 +374,7 @@ namespace hr::streams
 
     void FileStream::flush()
     {
-        if (mFileHandle)
+        if (!mClosed && mFileHandle)
             FlushFileBuffers(mFileHandle);
     }
 
@@ -489,7 +417,7 @@ namespace hr::streams
         if (!mFileHandle)
             return 0;
 
-        return SetFilePointer(mFileHandle, 0, nullptr, FILE_CURRENT);
+        return static_cast<size_t>(SetFilePointer(mFileHandle, 0, nullptr, FILE_CURRENT));
     }
 
     bool FileStream::isValid() const
@@ -497,35 +425,31 @@ namespace hr::streams
         return (mFileHandle != nullptr);
     }
 
-    size_t FileStream::read(void* const outBuffer, size_t numBytes)
+    size_t FileStream::read(std::span<std::byte> dst)
     {
-        if (!outBuffer || (numBytes <= 0))
+        if (dst.size() <= 0)
             return 0;
 
         if (!mFileHandle)
             return 0;
 
         DWORD bytesRead;
-        if (ReadFile(mFileHandle, outBuffer, numBytes, &bytesRead, nullptr) == 0)
+        if (ReadFile(mFileHandle, dst.data(), dst.size(), &bytesRead, nullptr) == 0)
             return 0;
 
-        return bytesRead;
+        return static_cast<size_t>(bytesRead);
     }
 
-    size_t FileStream::write(const void* const inBuffer, size_t numBytes)
+    size_t FileStream::write(std::span<const std::byte> src)
     {
+        if (src.empty() || !mFileHandle)
+            return 0;
+
         DWORD bytesWritten;
-
-        if (!inBuffer || (numBytes <= 0))
+        if (WriteFile(mFileHandle, src.data(), src.size(), &bytesWritten, nullptr) == 0)
             return 0;
 
-        if (!mFileHandle)
-            return 0;
-
-        if (WriteFile(mFileHandle, inBuffer, numBytes, &bytesWritten, nullptr) == 0)
-            return 0;
-
-        return bytesWritten;
+        return static_cast<size_t>(bytesWritten);
     }
 
     bool FileStream::seek(SeekOrigin seekOrigin, int offset)
@@ -548,48 +472,27 @@ namespace hr::streams
         return false;
     }
 
-    bool FileStream::cloneAllContent(MemoryViewStream& memView) const
-    {
-        std::shared_ptr<unsigned char> buffer;
-        size_t bufferSize;
-
-        if (!cloneAllContent(buffer, bufferSize))
-            return false;
-
-        memView = MemoryViewStream(std::move(buffer), bufferSize);
-        return true;
-    }
-
-    bool FileStream::cloneAllContent(std::shared_ptr<unsigned char>& buffer, size_t& bufferSize, std::function<std::shared_ptr<unsigned char>(size_t)> allocatorFunc) const
+    bool FileStream::cloneAllContent(const std::function<std::span<std::byte>(size_t)>& targetBuffer) const
     {
         if (!mFileHandle)
             return false;
 
         auto outBufferSize = GetFileSize(mFileHandle, nullptr);
         if (outBufferSize <= 0)
-            return false;
+            return true;
 
-        std::shared_ptr<unsigned char> outBuffer;
-        if (allocatorFunc)
-            outBuffer = allocatorFunc(outBufferSize);
-        else
-            outBuffer = std::shared_ptr<unsigned char>(new unsigned char[outBufferSize], std::default_delete<unsigned char[]>());
-        if (!outBuffer)
+        auto outBuffer = targetBuffer(outBufferSize);
+        if (outBuffer.empty())
             return false;
 
         auto curPos = SetFilePointer(mFileHandle, 0, nullptr, FILE_CURRENT);
         SetFilePointer(mFileHandle, 0, nullptr, FILE_BEGIN);
 
+        ScopedAction _([&]() { SetFilePointer(mFileHandle, curPos, nullptr, FILE_BEGIN); });
+
+        outBufferSize = std::min(static_cast<DWORD>(outBuffer.size()), outBufferSize);
+
         DWORD bytesRead;
-        auto readSuccess = (ReadFile(mFileHandle, outBuffer.get(), outBufferSize, &bytesRead, nullptr) != 0);
-
-        SetFilePointer(mFileHandle, curPos, nullptr, FILE_BEGIN);
-
-        if (!readSuccess || (outBufferSize != bytesRead))
-            return false;
-
-        buffer = outBuffer;
-        bufferSize = outBufferSize;
-        return true;
+        return (ReadFile(mFileHandle, outBuffer.data(), outBufferSize, &bytesRead, nullptr) != 0) && (outBufferSize == bytesRead);
     }
 }

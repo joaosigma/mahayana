@@ -1,12 +1,12 @@
 #pragma once
 
-#include "types.hpp"
-
 #include <algorithm>
+#include <bit>
 #include <cassert>
 #include <cmath>
 #include <cstdint>
 #include <emmintrin.h>
+#include <span>
 #include <xmmintrin.h>
 
 #include <limits>
@@ -23,8 +23,8 @@ namespace hr
         class SIMD
         {
         public:
-            static void mad(float* values, size_t numValues, float mulVal, float addVal);
-            static void mad(double* values, size_t numValues, double mulVal, double addVal);
+            static void mad(std::span<float> values, float mulVal, float addVal) noexcept;
+            static void mad(std::span<double> values, double mulVal, double addVal) noexcept;
         };
 
         template<class T>
@@ -46,23 +46,23 @@ namespace hr
         template<class T>
         static constexpr T UByteMaxInv = T(0.003921568627450980392); // 1.0 / 255.0
 
-        static float sqrt(const float x)
+        static float sqrt(const float x) noexcept
         {
             return _mm_cvtss_f32(_mm_sqrt_ss(_mm_set_ss(x)));
         }
 
-        static float sqrtInv(const float x)
+        static float sqrtInv(const float x) noexcept
         {
             return _mm_cvtss_f32(_mm_rsqrt_ss(_mm_set_ss(x)));
         }
 
-        static double sqrt(const double x)
+        static double sqrt(const double x) noexcept
         {
             auto temp = _mm_set1_pd(x);
             return _mm_cvtsd_f64(_mm_sqrt_sd(temp, temp));
         }
 
-        static double sqrtInv(const double x)
+        static double sqrtInv(const double x) noexcept
         {
             /* AVX512
             auto temp = _mm_set1_pd(x);
@@ -72,27 +72,27 @@ namespace hr
             return 1.0 / std::sqrt(x);
         }
 
-        static float sin(const float radians)
+        static float sin(const float radians) noexcept
         {
             return Math::cos(Math::PiHalf<float> - radians);
         }
 
-        static float cos(const float radians)
+        static float cos(const float radians) noexcept
         {
             return std::cos(radians);
         }
 
-        static double sin(const double radians)
+        static double sin(const double radians) noexcept
         {
-            return Math::cos(Math::PiHalf<float> - radians);
+            return Math::cos(Math::PiHalf<double> - radians);
         }
 
-        static double cos(const double radians)
+        static double cos(const double radians) noexcept
         {
             return std::cos(radians);
         }
 
-        static void sinCos(float radians, float& s, float& c)
+        static void sinCos(float radians, float& s, float& c) noexcept
         {
             __m128 mmCos;
             __m128 mmSin = _mm_sincos_ps(&mmCos, _mm_set1_ps(radians));
@@ -100,7 +100,7 @@ namespace hr
             c = _mm_cvtss_f32(mmCos);
         }
 
-        static void sinCos(double radians, double& s, double& c)
+        static void sinCos(double radians, double& s, double& c) noexcept
         {
             __m128d mmCos;
             __m128d mmSin = _mm_sincos_pd(&mmCos, _mm_set1_pd(radians));
@@ -108,52 +108,52 @@ namespace hr
             c = _mm_cvtsd_f64(mmCos);
         }
 
-        static std::tuple<float, float> sinCos(float radians)
+        static std::tuple<float, float> sinCos(float radians) noexcept
         {
             float s, c;
             Math::sinCos(radians, s, c);
             return {s, c};
         }
 
-        static std::tuple<double, double> sinCos(double radians)
+        static std::tuple<double, double> sinCos(double radians) noexcept
         {
             double s, c;
             Math::sinCos(radians, s, c);
             return {s, c};
         }
 
-        static float floor(const float val)
+        static float floor(const float val) noexcept
         {
             return std::floor(val);
         }
 
-        static double floor(const double val)
+        static double floor(const double val) noexcept
         {
             return std::floor(val);
         }
 
-        static float ceil(const float val)
+        static float ceil(const float val) noexcept
         {
             return std::ceil(val);
         }
 
-        static double ceil(const double val)
+        static double ceil(const double val) noexcept
         {
             return std::ceil(val);
         }
 
-        static float nearestInt(const float val)
+        static float nearestInt(const float val) noexcept
         {
             return std::floor(val + 0.5f);
         }
 
-        static double nearestInt(const double val)
+        static double nearestInt(const double val) noexcept
         {
             return std::floor(val + 0.5);
         }
 
         template<typename T>
-        static T ftoi(const float val)
+        static T ftoi(const float val) noexcept
         {
             static_assert(std::is_integral_v<T>, "Target must must be either [u]int32_t or [u]int64_t");
 
@@ -174,7 +174,8 @@ namespace hr
 
             static_assert(std::is_same_v<T, uint32_t> || std::is_same_v<T, int32_t> || std::is_same_v<T, uint64_t> || std::is_same_v<T, int64_t>);
         }
-        static int64_t ftoi(const double val)
+
+        static int64_t ftoi(const double val) noexcept
         {
             /* AVX512
             return _mm_cvtsd_i64(_mm_set_sd(val));
@@ -183,42 +184,32 @@ namespace hr
             return static_cast<int64_t>(std::llround(val));
         }
 
-        static bool isZero(const double d)
+        static bool isZero(const double d) noexcept
         {
             return (std::abs(d) <= std::numeric_limits<double>::epsilon());
         }
 
-        static int iPrevPowerOfTwo(const int x)
+        static constexpr auto iPrevPowerOfTwo(unsigned int x) noexcept
         {
-            // std::bit_floor
-            return (iProxPowerOfTwo(x) >> 1);
+            return std::bit_floor(x);
         }
 
-        static int iProxPowerOfTwo(const int& x)
+        static constexpr auto iProxPowerOfTwo(unsigned int x) noexcept
         {
-            // std::bit_ceil
-            int in;
-
-            in = x - 1;
-            in |= in >> 16;
-            in |= in >> 8;
-            in |= in >> 4;
-            in |= in >> 2;
-            in |= in >> 1;
-            return (in + 1);
+            return std::bit_ceil(x);
         }
 
-        static float fClamp(const float val, const float min, const float max)
+        static float fClamp(const float val, const float min, const float max) noexcept
         {
             return _mm_cvtss_f32(_mm_min_ss(_mm_max_ss(_mm_load_ss(&val), _mm_load_ss(&min)), _mm_load_ss(&max)));
         }
 
-        static double fClamp(const double val, const double min, const double max)
+        static double fClamp(const double val, const double min, const double max) noexcept
         {
             return _mm_cvtsd_f64(_mm_min_sd(_mm_max_sd(_mm_load_sd(&val), _mm_load_sd(&min)), _mm_load_sd(&max)));
         }
 
-        static bool fAlmostEqual(const float a, const float b, int maxUlps = 4)
+        static bool fAlmostEqual(const float a, const float b, int maxUlps = 4) noexcept
         {
             // make sure maxUlps is non-negative and small enough that the default NAN won't compare as equal to anything.
             assert(maxUlps > 0 && maxUlps < 4 * 1024 * 1024);

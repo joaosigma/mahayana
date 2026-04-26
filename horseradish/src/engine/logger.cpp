@@ -1,6 +1,8 @@
 #include "logger.hpp"
 
-#include <ctime>
+#include <cassert>
+#include <format>
+#include <span>
 
 namespace hr::engine
 {
@@ -67,56 +69,56 @@ namespace hr::engine
         switch (entry.moduleType)
         {
             case Logger::ModuleType::SysRuntime:
-                streamWriter.writeString("sysRuntime\t");
+                streamWriter.write("sysRuntime\t");
                 break;
             case Logger::ModuleType::FileSystem:
-                streamWriter.writeString("fileSystem\t");
+                streamWriter.write("fileSystem\t");
                 break;
             case Logger::ModuleType::Graphics:
-                streamWriter.writeString("graphics\t");
+                streamWriter.write("graphics\t");
                 break;
             case Logger::ModuleType::Audio:
-                streamWriter.writeString("audio\t");
+                streamWriter.write("audio\t");
                 break;
             case Logger::ModuleType::Network:
-                streamWriter.writeString("network\t");
+                streamWriter.write("network\t");
                 break;
             case Logger::ModuleType::PlayRuntime:
-                streamWriter.writeString("playRuntime\t");
+                streamWriter.write("playRuntime\t");
                 break;
             case Logger::ModuleType::Misc:
             default:
-                streamWriter.writeString("misc\t");
+                streamWriter.write("misc\t");
                 break;
         }
 
         switch (entry.entryType)
         {
             case Logger::EntryType::Error:
-                streamWriter.writeString("error\t");
+                streamWriter.write("error\t");
                 break;
             case Logger::EntryType::Info:
-                streamWriter.writeString("info\t");
+                streamWriter.write("info\t");
                 break;
             case Logger::EntryType::Warning:
-                streamWriter.writeString("warning\t");
+                streamWriter.write("warning\t");
                 break;
             default:
-                streamWriter.writeString("????\t");
+                streamWriter.write("????\t");
                 break;
         }
 
         {
-            char buffer[64];
-            const auto result = std::format_to_n(buffer, std::size(buffer) - 1, "{:%Y-%m-%d %H:%M:%S}", entry.timestamp);
+            std::array<char, 64> buffer;
+            const auto result = std::format_to_n(buffer.data(), buffer.size() - 1, "{:%Y-%m-%d %H:%M:%S}", entry.timestamp);
 
-            streamWriter.write(buffer, result.size);
-            streamWriter.writeString("\t");
+            streamWriter.write<char>(std::span{buffer.data(), static_cast<size_t>(result.size)});
+            streamWriter.write("\t");
         }
 
         if (!entry.isMsgFormated)
         {
-            streamWriter.writeString(entry.msg.c_str());
+            streamWriter.write(entry.msg.c_str());
         }
         else
         {
@@ -136,7 +138,7 @@ namespace hr::engine
                 if ((walkerNext[0] == '$') && (walkerNext[1] == '{') && (walker[-1] != '$'))
                 {
                     if ((walkerNext - walker) > 0)
-                        streamWriter.write(walker, walkerNext - walker);
+                        streamWriter.write(std::span{walker, static_cast<size_t>(walkerNext - walker)});
 
                     for (; (*walkerNext != '\0') && (*walkerNext != '}'); walkerNext++)
                         ;
@@ -150,10 +152,10 @@ namespace hr::engine
             }
 
             if ((walkerNext - walker) > 0)
-                streamWriter.write(walker, walkerNext - walker);
+                streamWriter.write(std::span{walker, static_cast<size_t>(walkerNext - walker)});
         }
 
-        streamWriter.write(hr::platform::Platform::NewLine, hr::platform::Platform::NewLineSize);
+        streamWriter.write(hr::platform::Platform::NewLine);
 
         mOutFileStream->flush();
     }

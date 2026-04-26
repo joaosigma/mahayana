@@ -61,7 +61,7 @@ namespace hr::utests
                 for (auto& val : targets)
                     val = (val * 0.46f) + 0.27f;
 
-                hr::Math::SIMD::mad(valsf.data(), valsf.size(), 0.46f, 0.27f);
+                hr::Math::SIMD::mad(valsf, 0.46f, 0.27f);
                 REQUIRE_THAT(valsf, Catch::Matchers::Approx(targets));
             }
 
@@ -74,7 +74,7 @@ namespace hr::utests
                 for (auto& val : targets)
                     val = (val * 0.69) - 0.17;
 
-                hr::Math::SIMD::mad(valsd.data(), valsd.size(), 0.69f, -0.17f);
+                hr::Math::SIMD::mad(valsd, 0.69f, -0.17f);
                 REQUIRE_THAT(valsd, Catch::Matchers::Approx(targets));
             }
 
@@ -105,7 +105,7 @@ namespace hr::utests
                 meter.measure(
                   [&vals]
                   {
-                      hr::Math::SIMD::mad(vals.data(), vals.size(), 0.46f, 0.27f);
+                      hr::Math::SIMD::mad(vals, 0.46f, 0.27f);
                       return vals.back();
                   });
             };
@@ -135,7 +135,7 @@ namespace hr::utests
                 meter.measure(
                   [&vals]
                   {
-                      hr::Math::SIMD::mad(vals.data(), vals.size(), 0.46, 0.27);
+                      hr::Math::SIMD::mad(vals, 0.46, 0.27);
                       return vals.back();
                   });
             };
