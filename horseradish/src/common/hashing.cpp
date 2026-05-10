@@ -1,8 +1,10 @@
-#include "hashing.hpp"
-
-#include <array>
+module;
 
 #include <MurmurHash3.h>
+
+module core:hashing.impl;
+
+import :hashing;
 
 namespace hr
 {

@@ -1,14 +1,18 @@
-#include "rendererMain.hpp"
+module;
 
-#include "common/imageFactory.hpp"
-#include "common/mesh.hpp"
-#include "common/stringUtils.hpp"
-#include "common/timer.hpp"
-#include "rendererDebug.hpp"
-#include "tools/texture.hpp"
-
-#include <algorithm>
+#include <cassert>
 #include <cstddef>
+
+#include "glcorearb.h"
+
+module RendererMain;
+
+import std;
+
+import core;
+import gal;
+import RendererDebug;
+import Texture;
 
 namespace hr::render
 {
@@ -180,8 +184,8 @@ namespace hr::render
         manager.iterateObjects(
           [&vboMeshSize, &vboMeshIndexSize](IRenderObject& obj)
           {
-              vboMeshSize += hr::geom::Mesh<hr::geom::VertexShading, uint16_t>::sizeVertices(obj.numVertices());
-              vboMeshIndexSize += hr::geom::Mesh<hr::geom::VertexShading, uint16_t>::sizeIndices(obj.numIndices());
+              vboMeshSize += hr::geom::Mesh<hr::geom::VertexShading, std::uint16_t>::sizeVertices(obj.numVertices());
+              vboMeshIndexSize += hr::geom::Mesh<hr::geom::VertexShading, std::uint16_t>::sizeIndices(obj.numIndices());
           });
 
         assert((vboMeshSize > 0) && (vboMeshIndexSize > 0));

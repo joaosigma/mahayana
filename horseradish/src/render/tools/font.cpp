@@ -1,12 +1,16 @@
-#include "font.hpp"
+module;
 
-#include "common/image.hpp"
-#include "common/opengl/openGLext.hpp"
+#include <cassert>
+#include <cstddef>
+#include <cstdint>
+
+#include "glcorearb.h"
 
 #include <stb_truetype.h>
 
-#include <algorithm>
-#include <cstddef>
+module Font;
+
+import std;
 
 namespace hr::render::tools
 {
@@ -17,7 +21,7 @@ namespace hr::render::tools
         constexpr unsigned short sdfBufferMargin = 2;
 
         constexpr std::array<std::pair<uint32_t, uint32_t>, 6> validFontCharacters{{{32, 126}, {192, 255}, {880, 1008}, {7936, 8176}, {1536, 1791}, {1040, 1299}}};
-        constexpr auto validAditionalFontCharacters{u8"¥§©®±µ€"};
+        constexpr auto validAditionalFontCharacters{u8"Â¥Â§Â©Â®Â±Âµâ‚¬"};
     }
 
     void Font::writeLayout(std::span<Font::VertexDataLayout, 4> layout, float posX, float posY, const Font::CharacterData& charData, float scale) noexcept
@@ -84,7 +88,7 @@ namespace hr::render::tools
         return true;
     }
 
-    bool Font::initFont(const char* const fontFilePath)
+    bool Font::initFont(std::string_view fontFilePath)
     {
         struct GlyphData
         {
@@ -430,12 +434,12 @@ namespace hr::render::tools
         return 0.0f;
     }
 
-    Font::Font(const char* const fontFilePath, unsigned int glVertexProgramID, unsigned int glFragmentProgramID, unsigned int glProgramPipelineID)
+    Font::Font(std::string_view fontFilePath, unsigned int glVertexProgramID, unsigned int glFragmentProgramID, unsigned int glProgramPipelineID)
       : mGlVertexProgramID(glVertexProgramID), mGlFragmentProgramID(glFragmentProgramID), mGlProgramPipelineID(glProgramPipelineID)
     {
         mState.stateColor.set(1.0f, 1.0f, 1.0f, 1.0f);
 
-        if (!fontFilePath)
+        if (fontFilePath.empty())
             return;
 
         mGlUniformSampler = hr::gl::glGetUniformLocation(glFragmentProgramID, "texTextSampler");
@@ -626,10 +630,10 @@ namespace hr::render::tools
         writeLayout(std::span<VertexDataLayout, 4>(writeData, 4), px, py + (mFontInfo.baseHeight * mState.scale), charData, mState.scale);
 
         mState.stateColor.write(colorTemp);
-        memcpy(writeData[0].color, colorTemp, sizeof(unsigned char) * 4);
-        memcpy(writeData[1].color, colorTemp, sizeof(unsigned char) * 4);
-        memcpy(writeData[2].color, colorTemp, sizeof(unsigned char) * 4);
-        memcpy(writeData[3].color, colorTemp, sizeof(unsigned char) * 4);
+        std::memcpy(writeData[0].color, colorTemp, sizeof(unsigned char) * 4);
+        std::memcpy(writeData[1].color, colorTemp, sizeof(unsigned char) * 4);
+        std::memcpy(writeData[2].color, colorTemp, sizeof(unsigned char) * 4);
+        std::memcpy(writeData[3].color, colorTemp, sizeof(unsigned char) * 4);
 
         mState.numCharWritten++;
         return charData.advanceX * mState.scale;

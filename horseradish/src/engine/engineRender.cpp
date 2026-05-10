@@ -1,22 +1,22 @@
-#include "engine.hpp"
+module;
 
-#include <format>
-#include <thread>
+#include "glcorearb.h"
 
-#include "profiler.hpp"
+module Engine;
 
-#include "../common/opengl/openGL.hpp"
-#include "../common/opengl/tools/viewport.hpp"
-#include "../common/timer.hpp"
+import std;
 
-#include "../render/consoleUI.hpp"
-#include "../render/profilerUI.hpp"
-#include "../render/renderer2D.hpp"
-#include "../render/rendererDebug.hpp"
-#include "../render/rendererMain.hpp"
-#include "../render/stage.hpp"
-#include "../render/world.hpp"
-#include "../render/worldEditor.hpp"
+import core;
+import gal;
+import ConsoleUI;
+import ProfilerUI;
+import Stage;
+import World;
+import Renderer2D;
+import RendererDebug;
+import RendererMain;
+import Camera;
+import Profiler;
 
 namespace hr::engine
 {
@@ -215,7 +215,7 @@ namespace hr::engine
         std::unique_ptr<hr::render::RendererDebug> rendererDebug;
         std::unique_ptr<hr::render::Renderer2D> renderer2D;
         std::unique_ptr<hr::render::World> renderData;
-        std::unique_ptr<platform::OpenglContext> glContext;
+        std::unique_ptr<renderPlatform::OpenglContext> glContext;
         std::unique_ptr<hr::render::ConsoleUI> consoleUI;
         std::unique_ptr<hr::render::ProfilerUI> profilerUI;
 
@@ -239,7 +239,7 @@ namespace hr::engine
         {
             int glMajorVersion, glMinorVersion;
 
-            glContext = std::make_unique<platform::OpenglContext>(*mWindow, "OpenGL32.dll", 4, 6, var<bool>("renderer.glDebug"), true);
+            glContext = std::make_unique<renderPlatform::OpenglContext>(*mWindow, "Opengl32.dll", 4, 6, var<bool>("renderer.glDebug"), true);
             if (!glContext->isValid())
             {
                 if (auto errorMsg = glContext->getErrorMsg(); errorMsg.empty())
@@ -288,7 +288,7 @@ namespace hr::engine
             size_t displayHeight = var<int>("renderer.dims.height");
 
             renderer2D = std::make_unique<hr::render::Renderer2D>(*glContext);
-            renderer2D->initialize(displayWidth, displayHeight, mFileSystem.get(), var<std::string>("sys.console.text.font").c_str());
+            renderer2D->initialize(displayWidth, displayHeight, *mFileSystem, var<std::string>("sys.console.text.font").c_str());
 
             rendererDebug = std::make_unique<hr::render::RendererDebug>(*glContext, *mFileSystem, *renderer2D);
 
@@ -415,19 +415,19 @@ namespace hr::engine
                     auto mousePosition = mWindow->rawInputGetMouseStatus();
 
                     hr::render::tools::CameraFPS::CameraAction cameraActions = hr::render::tools::CameraFPS::None;
-                    if (mWindow->rawInputGetKeyStatus(platform::Window::VirtualKeys::Up) || mWindow->rawInputGetKeyStatus('W'))
+                    if (mWindow->rawInputGetKeyStatus(renderPlatform::Window::VirtualKeys::Up) || mWindow->rawInputGetKeyStatus('W'))
                         cameraActions = (hr::render::tools::CameraFPS::CameraAction)(cameraActions | hr::render::tools::CameraFPS::Forward);
-                    if (mWindow->rawInputGetKeyStatus(platform::Window::VirtualKeys::Down) || mWindow->rawInputGetKeyStatus('S'))
+                    if (mWindow->rawInputGetKeyStatus(renderPlatform::Window::VirtualKeys::Down) || mWindow->rawInputGetKeyStatus('S'))
                         cameraActions = (hr::render::tools::CameraFPS::CameraAction)(cameraActions | hr::render::tools::CameraFPS::Backward);
-                    if (mWindow->rawInputGetKeyStatus(platform::Window::VirtualKeys::Left) || mWindow->rawInputGetKeyStatus('A'))
+                    if (mWindow->rawInputGetKeyStatus(renderPlatform::Window::VirtualKeys::Left) || mWindow->rawInputGetKeyStatus('A'))
                         cameraActions = (hr::render::tools::CameraFPS::CameraAction)(cameraActions | hr::render::tools::CameraFPS::StrifeLeft);
-                    if (mWindow->rawInputGetKeyStatus(platform::Window::VirtualKeys::Right) || mWindow->rawInputGetKeyStatus('D'))
+                    if (mWindow->rawInputGetKeyStatus(renderPlatform::Window::VirtualKeys::Right) || mWindow->rawInputGetKeyStatus('D'))
                         cameraActions = (hr::render::tools::CameraFPS::CameraAction)(cameraActions | hr::render::tools::CameraFPS::StrifeRight);
-                    if (mWindow->rawInputGetKeyStatus(platform::Window::VirtualKeys::Space))
+                    if (mWindow->rawInputGetKeyStatus(renderPlatform::Window::VirtualKeys::Space))
                         cameraActions = (hr::render::tools::CameraFPS::CameraAction)(cameraActions | hr::render::tools::CameraFPS::Up);
-                    if (mWindow->rawInputGetKeyStatus(platform::Window::VirtualKeys::Control))
+                    if (mWindow->rawInputGetKeyStatus(renderPlatform::Window::VirtualKeys::Control))
                         cameraActions = (hr::render::tools::CameraFPS::CameraAction)(cameraActions | hr::render::tools::CameraFPS::Down);
-                    if (mWindow->rawInputGetKeyStatus(platform::Window::VirtualKeys::Shift))
+                    if (mWindow->rawInputGetKeyStatus(renderPlatform::Window::VirtualKeys::Shift))
                         cameraActions = (hr::render::tools::CameraFPS::CameraAction)(cameraActions | hr::render::tools::CameraFPS::Run);
 
                     camera.commitInput(cameraActions, mousePosition[0], mousePosition[1], true, lastFrameTimeS);
@@ -435,9 +435,9 @@ namespace hr::engine
 
                 // process window messages
                 mWindow->processMessages(
-                  [this, &stage, &consoleUI](const platform::Window::Message& msg)
+                  [this, &stage, &consoleUI](const renderPlatform::Window::Message& msg)
                   {
-                      if (msg.isType(platform::Window::Message::MessageType::CharacterKey))
+                      if (msg.isType(renderPlatform::Window::Message::MessageType::CharacterKey))
                           mRuntime->callVoidMethod("events.onKeyPress", msg.getParam());
 
                       stage->processMessage(msg);

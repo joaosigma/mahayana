@@ -1,10 +1,15 @@
-#include "profilerUI.hpp"
+module;
 
-#include "../common/color.hpp"
+#include <cassert>
 
-#include <format>
-#include <functional>
-#include <span>
+#include "glcorearb.h"
+
+module ProfilerUI;
+
+import std;
+
+import core;
+import gal;
 
 namespace hr::render
 {

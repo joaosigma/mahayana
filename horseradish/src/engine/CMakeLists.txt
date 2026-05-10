@@ -1,15 +1,23 @@
-cmake_minimum_required(VERSION 3.17.3)
+cmake_minimum_required(VERSION 4.2.1)
 
 set(HR_SOURCES
 	engine.cpp
-	engine.hpp
 	engineRender.cpp
-	logger.cpp
-	logger.hpp
 	profiler.cpp
-	profiler.hpp
 	runtime.cpp
-	runtime.hpp
 )
 
-target_sources(horseradish PRIVATE ${HR_SOURCES})
+set(HR_MODULES
+	engine.cppm
+	profiler.cppm
+	runtime.cppm
+)
+
+target_sources(horseradish
+	PRIVATE
+		${HR_SOURCES}
+	PRIVATE
+		FILE_SET CXX_MODULES
+		BASE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}
+		FILES ${HR_MODULES}
+)

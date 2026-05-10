@@ -1,8 +1,15 @@
-#include "texture.hpp"
+module;
+
+#include <cassert>
 
 #include "libs/bc7/bc7enc16.h"
+
 #include <squish.h>
 #include <stb_dxt.h>
+
+module Texture;
+
+import std;
 
 namespace hr::render::tools
 {

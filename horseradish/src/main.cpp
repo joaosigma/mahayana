@@ -1,6 +1,8 @@
-#include "common/stringUtils.hpp"
-#include "engine/engine.hpp"
-#include "platform/platform.hpp"
+#include <windows.h>
+
+import core;
+import gal;
+import Engine;
 
 int WINAPI
 wWinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ PWSTR lpCmdLine, _In_ int)
@@ -19,19 +21,19 @@ wWinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ PWSTR lpCmdLine, _In_ int)
         if (!hr::platform::Platform::cpuCheckFeatures(
               (hr::platform::Platform::CPUFeature)(hr::platform::Platform::SSE | hr::platform::Platform::SSE2 | hr::platform::Platform::CMov)))
         {
-            hr::platform::Window::MsgBoxWarn("The CPU doesn't have the minimum required features.\nThe application cannot proceed.");
+            hr::renderPlatform::Window::MsgBoxWarn("The CPU doesn't have the minimum required features.\nThe application cannot proceed.");
             return 0;
         }
 
         if (hr::platform::Platform::systemInfoInt(hr::platform::Platform::SystemInfo::CleanBoot).value_or(0) == 0)
         {
-            hr::platform::Window::MsgBoxWarn("The OS did not boot normally!\nFor security reasons the application will now exit.");
+            hr::renderPlatform::Window::MsgBoxWarn("The OS did not boot normally!\nFor security reasons the application will now exit.");
             return 0;
         }
 
         if (hr::platform::Platform::SingleInstance().isAnotherRunning())
         {
-            hr::platform::Window::MsgBoxError("Another instance of this application is already running.");
+            hr::renderPlatform::Window::MsgBoxError("Another instance of this application is already running.");
             return 0;
         }
     }
@@ -57,12 +59,12 @@ wWinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ PWSTR lpCmdLine, _In_ int)
 
     if (!success)
     {
-        hr::platform::Window::MsgBoxError("Unable to start engine (invalid state call)");
+        hr::renderPlatform::Window::MsgBoxError("Unable to start engine (invalid state call)");
         return 0;
     }
 
     if (auto engineError = engine.getErrorDesc(); !engineError.empty())
-        hr::platform::Window::MsgBoxError(engineError);
+        hr::renderPlatform::Window::MsgBoxError(engineError);
 
     switch (engine.getExitAction())
     {

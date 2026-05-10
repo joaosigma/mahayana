@@ -1,4 +1,6 @@
-#include "timer.hpp"
+module core:timer.impl;
+
+import :timer;
 
 namespace hr
 {

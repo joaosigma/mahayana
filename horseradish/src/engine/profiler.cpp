@@ -1,6 +1,8 @@
-#include "profiler.hpp"
+module;
 
 #include <cassert>
+
+module Profiler;
 
 namespace hr::engine
 {

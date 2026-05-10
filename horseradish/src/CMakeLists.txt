@@ -1,8 +1,13 @@
-cmake_minimum_required(VERSION 3.17.3)
+cmake_minimum_required(VERSION 4.2.1)
 
 target_sources(horseradish
 	PRIVATE
-		build.hpp
+		FILE_SET HEADERS
+		BASE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}
+		FILES
+			build.hpp
+
+	PRIVATE
 		main.cpp
 )
 
@@ -14,8 +19,8 @@ if (BUILD_TESTING)
 endif()
 
 add_subdirectory(common)
+add_subdirectory(gal)
 add_subdirectory(engine)
 add_subdirectory(libs)
 add_subdirectory(misc)
-add_subdirectory(platform)
 add_subdirectory(render)

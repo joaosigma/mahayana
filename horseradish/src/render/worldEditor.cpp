@@ -1,26 +1,15 @@
-#include "worldEditor.hpp"
+module;
 
-#include "common/encoders.hpp"
-#include "common/fileSystem.hpp"
-#include "common/imageFactory.hpp"
-#include "common/meshAnim.hpp"
-#include "common/quaternion.hpp"
-#include "common/stringUtils.hpp"
+#include <cassert>
 
 #include <nlohmann/json.hpp>
 
 #include <tiny_gltf.h>
 #include <tiny_obj_loader.h>
 
-#include "glcorearb.h"
+module WorldEditor;
 
-#include <algorithm>
-#include <array>
-#include <cstdint>
-#include <filesystem>
-#include <map>
-#include <set>
-#include <unordered_set>
+import core;
 
 namespace hr::render
 {

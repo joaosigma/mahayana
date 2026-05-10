@@ -1,13 +1,15 @@
-#include "fileSystem.hpp"
+module;
 
-#include "scopedAction.hpp"
-#include "stringUtils.hpp"
-
-#include <algorithm>
-#include <cstddef>
-#include <format>
+#include <minizip/unzip.h>
 
 #include <windows.h>
+
+module core:fileSystem.impl;
+
+import :fileSystem;
+import :stream;
+import :scopedAction;
+import :stringUtils;
 
 namespace hr::io
 {
@@ -48,22 +50,23 @@ namespace hr::io
         {
             auto fileStream = reinterpret_cast<hr::streams::FileStream*>(stream);
 
+            bool success{false};
             switch (origin)
             {
                 case ZLIB_FILEFUNC_SEEK_CUR:
-                    fileStream->seek(hr::streams::Stream::SeekOrigin::Current, offset);
+                    success = fileStream->seek(hr::streams::Stream::SeekOrigin::Current, offset);
                     break;
                 case ZLIB_FILEFUNC_SEEK_END:
-                    fileStream->seek(hr::streams::Stream::SeekOrigin::End, offset);
+                    success = fileStream->seek(hr::streams::Stream::SeekOrigin::End, offset);
                     break;
                 case ZLIB_FILEFUNC_SEEK_SET:
-                    fileStream->seek(hr::streams::Stream::SeekOrigin::Begin, offset);
+                    success = fileStream->seek(hr::streams::Stream::SeekOrigin::Begin, offset);
                     break;
                 default:
-                    return 1;
+                    break;
             }
 
-            return 0;
+            return success ? 1 : 0;
         }
 
         int ZCALLBACK zclose(voidpf, voidpf stream)
@@ -279,12 +282,12 @@ namespace hr::io
         return true;
     }
 
-    std::unique_ptr<streams::Stream> FileSystem::fileRead(std::string_view filePath)
+    std::unique_ptr<streams::Stream> FileSystem::fileRead(std::string_view filePath) const
     {
         if (filePath.empty())
             return nullptr;
 
-        for (auto& curMount : m_listMounts)
+        for (const auto& curMount : m_listMounts)
         {
             if (!curMount->fileExists(filePath))
                 continue;
@@ -295,12 +298,12 @@ namespace hr::io
         return nullptr;
     }
 
-    std::unique_ptr<streams::Stream> FileSystem::fileRead(std::string_view filePath, FileSystem::MountType mountType)
+    std::unique_ptr<streams::Stream> FileSystem::fileRead(std::string_view filePath, FileSystem::MountType mountType) const
     {
         if (filePath.empty())
             return nullptr;
 
-        for (auto& curMount : m_listMounts)
+        for (const auto& curMount : m_listMounts)
         {
             if (curMount->mountType() != mountType)
                 continue;
@@ -314,7 +317,7 @@ namespace hr::io
         return nullptr;
     }
 
-    std::string FileSystem::readFileAsString(std::string_view filePath)
+    std::string FileSystem::readFileAsString(std::string_view filePath) const
     {
         auto fileStream = fileRead(filePath);
         if (!fileStream)

@@ -1,6 +1,6 @@
-#include "encoders.hpp"
+module core:encoders.impl;
 
-#include <array>
+import :encoders;
 
 namespace hr
 {

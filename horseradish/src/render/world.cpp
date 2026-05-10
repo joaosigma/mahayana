@@ -1,18 +1,13 @@
-#include "world.hpp"
-
-#include "common/encoders.hpp"
-#include "common/fileSystem.hpp"
-#include "common/imageFactory.hpp"
-#include "common/serializeArchives.hpp"
-#include "common/serializeSupport.hpp"
+module;
 
 #include <nlohmann/json.hpp>
 
-#include <algorithm>
-#include <array>
-#include <cstdint>
-#include <span>
-#include <vector>
+module World;
+
+import std;
+
+import core;
+import gal;
 
 namespace hr::render
 {

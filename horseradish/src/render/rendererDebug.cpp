@@ -1,10 +1,13 @@
-#include "rendererDebug.hpp"
+module;
 
-#include "renderer2D.hpp"
-#include "rendererMain.hpp"
+#include "glcorearb.h"
 
-#include <algorithm>
-#include <cstddef>
+module RendererDebug;
+
+import std;
+
+import gal;
+import Camera;
 
 namespace hr::render
 {

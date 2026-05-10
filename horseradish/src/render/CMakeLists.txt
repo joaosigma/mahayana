@@ -1,29 +1,39 @@
-cmake_minimum_required(VERSION 3.17.3)
+cmake_minimum_required(VERSION 4.2.1)
 
 set(HR_SOURCES
-	consoleUI.cpp
-	consoleUI.hpp
-	profilerUI.cpp
-	profilerUI.hpp
-	raytracer.hpp
 	raytracer.cpp
-	renderer.hpp
 	renderer2D.cpp
-	renderer2D.hpp
 	rendererDebug.cpp
-	rendererDebug.hpp
 	rendererMain.cpp
-	rendererMain.hpp
+	consoleUI.cpp
+	profilerUI.cpp
 	scene.cpp
-	scene.hpp
 	stage.cpp
-	stage.hpp
 	world.cpp
-	world.hpp
 	worldEditor.cpp
-	worldEditor.hpp
 )
 
-target_sources(horseradish PRIVATE ${HR_SOURCES})
+set(HR_MODULES
+	raytracer.cppm
+	renderer.cppm
+	renderer2D.cppm
+	rendererDebug.cppm
+	rendererMain.cppm
+	consoleUI.cppm
+	profilerUI.cppm
+	scene.cppm
+	stage.cppm
+	world.cppm
+	worldEditor.cppm
+)
+
+target_sources(horseradish
+	PRIVATE
+		${HR_SOURCES}
+	PRIVATE
+		FILE_SET CXX_MODULES
+		BASE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}
+		FILES ${HR_MODULES}
+)
 
 add_subdirectory(tools)

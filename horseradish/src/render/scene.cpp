@@ -1,9 +1,20 @@
-#include "scene.hpp"
+module;
 
-#include "../common/opengl/openGL.hpp"
-#include "../common/opengl/tools/viewport.hpp"
+#include "glcorearb.h"
 
-#include "../misc/videoStream.hpp"
+extern "C"
+{
+#include <libavcodec/avcodec.h>
+#include <libavformat/avformat.h>
+#include <libswscale/swscale.h>
+}
+
+module Scene;
+
+import gal;
+import core;
+import VideoStream;
+import Runtime;
 
 namespace hr::render
 {

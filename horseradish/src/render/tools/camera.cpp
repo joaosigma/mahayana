@@ -1,10 +1,9 @@
-#include "camera.hpp"
+module Camera;
 
-#include "common/quaternion.hpp"
+import core;
 
 namespace
 {
-
     void evalPointListCatmullRom(const hr::Vector3f* const pList, const int pNum, float nrmTime, hr::Vector3f& pWrite)
     {
         if (!pList || pNum < 4)

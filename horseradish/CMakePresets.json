@@ -1,0 +1,125 @@
+{
+  "version": 11,
+  "cmakeMinimumRequired": {
+    "major": 4,
+    "minor": 2,
+    "patch": 1
+  },
+  "configurePresets": [
+    {
+      "name": "base",
+      "hidden": true,
+      "toolchainFile": "${sourceDir}/build-tools/vcpkg/scripts/buildsystems/vcpkg.cmake",
+      "cacheVariables": {
+        "HR_ENABLE_DEVEL": "ON",
+        "HR_ENABLE_LOGGING": "ON",
+        "HR_ENABLE_PROFILLING": "ON"
+      },
+      "environment": {
+        "VCPKG_DISABLE_METRICS": "1",
+        "VCPKG_ROOT": "${sourceDir}/build-tools/vcpkg",
+        "PATH": "$env{VCPKG_ROOT}:$penv{PATH}"
+      }
+    },
+    {
+      "name": "ninja-base",
+      "inherits": "base",
+      "hidden": true,
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build-${presetName}",
+      "cacheVariables": {
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+      },
+      "environment": {
+        "PATH": "${sourceDir}/build-tools/ninja:$penv{PATH}"
+      }
+    },
+    {
+      "name": "ninja-debug",
+      "inherits": "ninja-base",
+      "displayName": "Ninja (debug mode)",
+      "description": "Debug build using Ninja generator",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
+    },
+    {
+      "name": "ninja-release",
+      "inherits": "ninja-base",
+      "displayName": "Ninja (release mode)",
+      "description": "Release build using Ninja generator",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    },
+    {
+      "name": "vs-2026",
+      "inherits": "base",
+      "displayName": "Visual Studio 2026",
+      "description": "Visual Studio 2026 generator",
+      "generator": "Visual Studio 18 2026",
+      "binaryDir": "${sourceDir}/build-vs-2026",
+      "architecture": "x64",
+      "toolset": "host=x64",
+      "cacheVariables": {
+        "BUILD_ENV": "windows"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "ninja-debug",
+      "configurePreset": "ninja-debug",
+      "targets": "horseradish-utests"
+    },
+    {
+      "name": "ninja-release",
+      "configurePreset": "ninja-release",
+      "targets": "horseradish-utests"
+    },
+    {
+      "name": "vs-2026-debug",
+      "configurePreset": "vs-2026",
+      "configuration": "Debug",
+      "targets": "horseradish-utests"
+    },
+    {
+      "name": "vs-2026-release",
+      "configurePreset": "vs-2026",
+      "configuration": "Release",
+      "targets": "horseradish-utests"
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "ninja-debug",
+      "configurePreset": "ninja-debug",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "ninja-release",
+      "configurePreset": "ninja-release",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "vs-2026-debug",
+      "configurePreset": "vs-2026",
+      "configuration": "Debug",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "vs-2026-release",
+      "configurePreset": "vs-2026",
+      "configuration": "Release",
+      "output": {
+        "outputOnFailure": true
+      }
+    }
+  ]
+}

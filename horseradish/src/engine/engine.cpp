@@ -1,13 +1,16 @@
-#include "engine.hpp"
-
-#include "common/imageFactory.hpp"
-#include "common/opengl/openGL.hpp"
-#include "render/raytracer.hpp"
+module;
 
 #include "../build.hpp"
 
 #include <cassert>
-#include <format>
+
+module Engine;
+
+import std;
+
+import core;
+import gal;
+import RayTracer;
 
 namespace hr::engine
 {
@@ -262,7 +265,6 @@ namespace hr::engine
         }
 
         mLoggerRuntimeCtx->info("   Operating system: {0}", hr::platform::Platform::systemInfoStr(hr::platform::Platform::SystemInfo::OperatingSystemName).value_or(""));
-        mLoggerRuntimeCtx->info(hr::platform::Platform::isArch64() ? "   Build type: x86 64bit" : "   Build type: x86 32bit");
         mLoggerRuntimeCtx->info("   Machine name: {0}", hr::platform::Platform::systemInfoStr(hr::platform::Platform::SystemInfo::MachineName).value_or(""));
         mLoggerRuntimeCtx->info("   User name: {0}", hr::platform::Platform::systemInfoStr(hr::platform::Platform::SystemInfo::CurrentUsername).value_or(""));
 
@@ -502,9 +504,10 @@ namespace hr::engine
             initFileSystem();
             mLoggerRuntimeCtx->info("");
 
-            mWindow = std::make_shared<platform::Window>(*mLogger);
+            hr::gl::OpenGLLoadLibrary("Opengl32.dll");
+            mWindow = std::make_shared<renderPlatform::Window>(*mLogger);
 
-            auto windowStyle = platform::Window::WindowStyle::StyleWindow;
+            auto windowStyle = renderPlatform::Window::WindowStyle::StyleWindow;
             bool onSecondary = false;
             size_t targetWidth = var<int>("renderer.dims.width");
             size_t targetHeight = var<int>("renderer.dims.height");

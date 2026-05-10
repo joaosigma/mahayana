@@ -26,6 +26,10 @@ set(HR_ENABLE_PROFILLING OFF CACHE BOOL "Enables the profiler in the engine, oth
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+# set(CMAKE_EXPERIMENTAL_CXX_IMPORT_STD "451f2fe2-a8a2-47c3-bc32-94786d8fc91b")
+# set(CMAKE_CXX_MODULE_STD ON)
+# set(CMAKE_CXX_SCAN_FOR_MODULES ON)
+
 #######################
 ### check some stuff
 
@@ -70,13 +74,13 @@ project(mustard VERSION 0.9 LANGUAGES C CXX)
 include(CTest)
 
 add_executable(horseradish WIN32 "")
-target_compile_features(horseradish PRIVATE c_std_23)
-target_compile_features(horseradish PRIVATE cxx_std_23)
+target_compile_features(horseradish PUBLIC c_std_23)
+target_compile_features(horseradish PUBLIC cxx_std_23)
 
 if (BUILD_TESTING)
 	add_executable(horseradish-utests "")
-	target_compile_features(horseradish-utests PRIVATE c_std_23)
-	target_compile_features(horseradish-utests PRIVATE cxx_std_23)
+	target_compile_features(horseradish-utests PUBLIC c_std_23)
+	target_compile_features(horseradish-utests PUBLIC cxx_std_23)
 
 	add_test(NAME "horseradish unit tests" COMMAND horseradish-utests)
 endif()
@@ -133,6 +137,9 @@ if (BUILD_ENV STREQUAL "windows")
 		NODEFERWINDOWPOS
 		NOMCX
 
+		_MSVC_STL_HARDENING=1
+		_MSVC_STL_DESTRUCTOR_TOMBSTONES=1
+
 		_CRT_SECURE_NO_WARNINGS
 		#_SCL_SECURE_NO_WARNINGS
 		_WINSOCK_DEPRECATED_NO_WARNINGS
@@ -155,7 +162,7 @@ if (CMAKE_GENERATOR MATCHES "^Visual Studio")
 		/permissive- # make sure we keep up with standards conformance
 		/W4 # warning level
 		#/WX # treat warnings as errors
-		/MP # enable parallel builds
+		#/MP # enable parallel builds
 		#/Bv # print toolchain info
 		#/Bt # print time spent in the compiler
 
@@ -271,45 +278,16 @@ set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT h
 #######################
 ### final configs
 
-# enable pre-compiled headers
-
-if (${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.16.3")
-
-	target_precompile_headers(horseradish
-
-		PRIVATE
-
-		"$<$<COMPILE_LANGUAGE:CXX>:<algorithm$<ANGLE-R>>"
-		"$<$<COMPILE_LANGUAGE:CXX>:<array$<ANGLE-R>>"
-		"$<$<COMPILE_LANGUAGE:CXX>:<atomic$<ANGLE-R>>"
-		"$<$<COMPILE_LANGUAGE:CXX>:<cstring$<ANGLE-R>>"
-		"$<$<COMPILE_LANGUAGE:CXX>:<format$<ANGLE-R>>"
-		"$<$<COMPILE_LANGUAGE:CXX>:<functional$<ANGLE-R>>"
-		"$<$<COMPILE_LANGUAGE:CXX>:<map$<ANGLE-R>>"
-		"$<$<COMPILE_LANGUAGE:CXX>:<memory$<ANGLE-R>>"
-		"$<$<COMPILE_LANGUAGE:CXX>:<mutex$<ANGLE-R>>"
-		"$<$<COMPILE_LANGUAGE:CXX>:<optional$<ANGLE-R>>"
-		"$<$<COMPILE_LANGUAGE:CXX>:<set$<ANGLE-R>>"
-		"$<$<COMPILE_LANGUAGE:CXX>:<span$<ANGLE-R>>"
-		"$<$<COMPILE_LANGUAGE:CXX>:<sstream$<ANGLE-R>>"
-		"$<$<COMPILE_LANGUAGE:CXX>:<string$<ANGLE-R>>"
-		"$<$<COMPILE_LANGUAGE:CXX>:<string_view$<ANGLE-R>>"
-		"$<$<COMPILE_LANGUAGE:CXX>:<tuple$<ANGLE-R>>"
-		"$<$<COMPILE_LANGUAGE:CXX>:<type_traits$<ANGLE-R>>"
-		"$<$<COMPILE_LANGUAGE:CXX>:<unordered_map$<ANGLE-R>>"
-		"$<$<COMPILE_LANGUAGE:CXX>:<unordered_set$<ANGLE-R>>"
-		"$<$<COMPILE_LANGUAGE:CXX>:<utility$<ANGLE-R>>"
-		"$<$<COMPILE_LANGUAGE:CXX>:<vector$<ANGLE-R>>"
-	)
-
-endif()
-
 # just to make things pretty in IDEs
 
 get_property(HR_SOURCES TARGET horseradish PROPERTY SOURCES)
-source_group(TREE "${CMAKE_CURRENT_LIST_DIR}/src" FILES ${HR_SOURCES}) # just to make things pretty in IDEs
+get_property(HR_HEADERS TARGET horseradish PROPERTY HEADER_SET)
+get_property(HR_MODULES TARGET horseradish PROPERTY CXX_MODULE_SET)
+source_group(TREE "${CMAKE_CURRENT_LIST_DIR}/src" FILES ${HR_SOURCES} ${HR_HEADERS} ${HR_MODULES}) # just to make things pretty in IDEs
 
 if (BUILD_TESTING)
 	get_property(HR_SOURCES TARGET horseradish-utests PROPERTY SOURCES)
-	source_group(TREE "${CMAKE_CURRENT_LIST_DIR}/src" FILES ${HR_SOURCES}) # just to make things pretty in IDEs
+	get_property(HR_HEADERS TARGET horseradish-utests PROPERTY HEADER_SET)
+	get_property(HR_MODULES TARGET horseradish-utests PROPERTY CXX_MODULE_SET)
+	source_group(TREE "${CMAKE_CURRENT_LIST_DIR}/src" FILES ${HR_SOURCES} ${HR_HEADERS} ${HR_MODULES}) # just to make things pretty in IDEs
 endif()

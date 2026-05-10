@@ -1,12 +1,4 @@
-#include "raytracer.hpp"
-
-#include "common/bvolumes.hpp"
-#include "common/color.hpp"
-#include "common/mesh.hpp"
-#include "common/meshFactory.hpp"
-#include "common/ray.hpp"
-#include "common/timer.hpp"
-#include "common/triangle.hpp"
+module;
 
 #include <libs/bvh/bvh.hpp>
 #include <libs/bvh/primitive_intersectors.hpp>
@@ -17,9 +9,11 @@
 #include <libs/bvh/triangle.hpp>
 #include <libs/bvh/vector.hpp>
 
-#include <numeric>
-#include <span>
-#include <variant>
+module RayTracer;
+
+import std;
+
+import core;
 
 namespace hr::render
 {

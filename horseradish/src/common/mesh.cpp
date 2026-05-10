@@ -1,17 +1,21 @@
-#pragma once
+module;
 
-#include "mesh.hpp"
-
-#include "math.hpp"
-#include "triangle.hpp"
-#include "types.hpp"
-#include "vector.hpp"
+#include <cassert>
+#include <cstdint>
 
 #include <meshoptimizer.h>
 #include <mikktspace.h>
 
-#include <unordered_map>
-#include <vector>
+#include <immintrin.h>
+#include <xmmintrin.h>
+
+module core:mesh.impl;
+
+import std;
+import :mesh;
+import :types;
+import :vector;
+import :triangle;
 
 namespace hr::geom
 {

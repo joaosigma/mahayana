@@ -1,4 +1,7 @@
-#include "random.hpp"
+module core:random.impl;
+
+import std;
+import :random;
 
 namespace hr
 {

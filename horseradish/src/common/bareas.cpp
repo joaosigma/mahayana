@@ -1,6 +1,6 @@
-#include "bareas.hpp"
+module core:bareas.impl;
 
-#include <type_traits>
+import :bareas;
 
 namespace hr
 {

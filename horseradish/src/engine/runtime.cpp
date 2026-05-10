@@ -1,18 +1,19 @@
-#include "runtime.hpp"
+module;
 
-#include "common/stream.hpp"
-#include "common/stringUtils.hpp"
+#include <cstdarg>
+#include <stdio.h>
+
+#include <libs/squirrel/squirrel.h>
 
 #include <libs/squirrel/sqstdblob.h>
 #include <libs/squirrel/sqstdmath.h>
 #include <libs/squirrel/sqstdstring.h>
 
-#include <codecvt>
-#include <cstdarg>
-#include <cstdio>
-#include <cwchar>
-#include <locale>
-#include <memory>
+module Runtime;
+
+import std;
+
+import core;
 
 namespace hr::engine
 {

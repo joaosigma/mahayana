@@ -1,12 +1,17 @@
-#include "render/stage.hpp"
-#include "render/scene.hpp"
+module;
 
-#include "common/opengl/tools/viewport.hpp"
-#include "common/timer.hpp"
+#include <cassert>
 
-#include <codecvt>
-#include <locale>
-#include <memory>
+#include "glcorearb.h"
+
+module Stage;
+
+import std;
+
+import core;
+import gal;
+import Scene;
+import Runtime;
 
 namespace hr::render
 {
@@ -122,9 +127,9 @@ namespace hr::render
             this->invokeVoidMethod("events.onMessage", msg, payload);
         }
 
-        void rtInvokeMessage(const platform::Window::Message& msg)
+        void rtInvokeMessage(const renderPlatform::Window::Message& msg)
         {
-            if (msg.isType(platform::Window::Message::MessageType::CharacterKey))
+            if (msg.isType(renderPlatform::Window::Message::MessageType::CharacterKey))
                 this->invokeVoidMethod("events.onKeyPress", msg.getParam());
         }
     };
@@ -353,7 +358,7 @@ namespace hr::render
         mTempScenes.clear();
     }
 
-    void Stage::processMessage(const platform::Window::Message& msg)
+    void Stage::processMessage(const renderPlatform::Window::Message& msg)
     {
         for (auto& sceneIt : mRuntimeScenes)
         {

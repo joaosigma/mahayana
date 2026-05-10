@@ -1,10 +1,14 @@
-#include "videoStream.hpp"
+module;
 
 extern "C"
 {
 #include <libavcodec/avcodec.h>
+#include <libavformat/avformat.h>
 #include <libavutil/imgutils.h>
+#include <libswscale/swscale.h>
 }
+
+module VideoStream;
 
 // define this to reproduce the video as quickly as possible
 // #define VIDEO_IGNORE_TIMING

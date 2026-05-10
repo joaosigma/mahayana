@@ -1,6 +1,13 @@
-#include "math.hpp"
+module;
 
-#include <type_traits>
+#include <cassert>
+#include <immintrin.h>
+#include <xmmintrin.h>
+
+module core:math.impl;
+
+import std;
+import :math;
 
 namespace hr
 {

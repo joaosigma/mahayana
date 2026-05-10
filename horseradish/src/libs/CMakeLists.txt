@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.17.3)
+cmake_minimum_required(VERSION 4.2.1)
 
 file(GLOB_RECURSE HR_LIBS_SOURCES
 	LIST_DIRECTORIES false

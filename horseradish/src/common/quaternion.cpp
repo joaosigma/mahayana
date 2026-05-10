@@ -1,8 +1,12 @@
-#include "quaternion.hpp"
+module;
 
-#include "math.hpp"
+#include <immintrin.h>
+#include <smmintrin.h>
+#include <xmmintrin.h>
 
-#include <type_traits>
+module core:quaternion.impl;
+
+import :quaternion;
 
 namespace hr
 {

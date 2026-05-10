@@ -1,12 +1,12 @@
-#include "matrix.hpp"
+module;
 
-#include "math.hpp"
-
-#include <array>
-#include <cstring>
+#include <cassert>
 #include <immintrin.h>
-#include <type_traits>
 #include <xmmintrin.h>
+
+module core:matrix.impl;
+
+import :matrix;
 
 namespace hr
 {

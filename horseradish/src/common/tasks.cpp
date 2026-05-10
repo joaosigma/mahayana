@@ -1,4 +1,6 @@
-#include "tasks.hpp"
+module core:tasks.impl;
+
+import :tasks;
 
 namespace hr
 {

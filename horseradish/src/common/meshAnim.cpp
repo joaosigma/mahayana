@@ -1,11 +1,13 @@
-#include "meshAnim.hpp"
+module;
 
-#include "types.hpp"
-
-#include <algorithm>
-#include <array>
 #include <cassert>
-#include <functional>
+#include <cstdint>
+
+module core:meshAnim.impl;
+
+import :types;
+import :matrix;
+import :meshAnim;
 
 namespace hr::geom
 {

@@ -1,9 +1,11 @@
-#include "sorting.hpp"
+module;
 
 #include "types.hpp"
 
-#include <cstring>
-#include <utility>
+module core:sorting.impl;
+
+import :types;
+import :sorting;
 
 namespace hr
 {

@@ -1,12 +1,13 @@
-#include "stream.hpp"
+module;
 
-#include "scopedAction.hpp"
-
-#include <algorithm>
 #include <cassert>
-#include <optional>
-
 #include <windows.h>
+
+module core:stream.impl;
+
+import :stream;
+import :platform;
+import :scopedAction;
 
 namespace hr::streams
 {
@@ -102,7 +103,7 @@ namespace hr::streams
         return src.size();
     }
 
-    bool MemoryStream::seek(SeekOrigin seekOrigin, int offset)
+    bool MemoryStream::seek(Stream::SeekOrigin seekOrigin, int offset)
     {
         if (mIsClosed)
             return false;
@@ -200,7 +201,7 @@ namespace hr::streams
         return 0;
     }
 
-    bool MemoryViewStream::seek(SeekOrigin seekOrigin, int offset)
+    bool MemoryViewStream::seek(Stream::SeekOrigin seekOrigin, int offset)
     {
         if (mIsClosed)
             return false;
@@ -494,5 +495,11 @@ namespace hr::streams
 
         DWORD bytesRead;
         return (ReadFile(mFileHandle, outBuffer.data(), outBufferSize, &bytesRead, nullptr) != 0) && (outBufferSize == bytesRead);
+    }
+
+    bool TextWriter::writeNewLine()
+    {
+        const auto newLine = hr::platform::Platform::NewLine;
+        return mStream.write({reinterpret_cast<const std::byte*>(newLine.data()), newLine.size()}) == newLine.size();
     }
 }

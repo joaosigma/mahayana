@@ -1,10 +1,14 @@
-#pragma once
+module;
 
-#include "meshFactory.hpp"
+#include <cassert>
 
 #include "libs/par/par_shapes.h"
 
-#include <memory>
+module core:meshFactory.impl;
+
+import std;
+import :mesh;
+import :meshFactory;
 
 namespace hr::geom
 {

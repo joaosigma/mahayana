@@ -1,10 +1,13 @@
-#include "common/imageFactory.hpp"
+module;
 
 #include <lodepng.h>
 #include <stb_image.h>
 #include <tinyexr.h>
 
-#include <memory>
+module core:imageFactory.impl;
+
+import :stream;
+import :imageFactory;
 
 namespace hr::imaging
 {

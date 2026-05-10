@@ -1,8 +1,10 @@
-#include "stringUtils.hpp"
+module;
 
-#include <codecvt>
-#include <format>
-#include <memory>
+#include <cstdint>
+
+module core:stringUtils.impl;
+
+import :stringUtils;
 
 namespace hr
 {

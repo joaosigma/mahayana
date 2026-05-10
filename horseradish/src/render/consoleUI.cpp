@@ -1,4 +1,10 @@
-#include "consoleUI.hpp"
+module ConsoleUI;
+
+import std;
+
+import core;
+import gal;
+import Renderer2D;
 
 namespace hr::render
 {
@@ -18,15 +24,15 @@ namespace hr::render
         mCursor.timer.reStart();
     }
 
-    void ConsoleUI::processMsgPrompt(const platform::Window::Message& msg)
+    void ConsoleUI::processMsgPrompt(const renderPlatform::Window::Message& msg)
     {
-        if (msg.getType() == platform::Window::Message::MessageType::VirtualKey)
+        if (msg.getType() == renderPlatform::Window::Message::MessageType::VirtualKey)
         {
-            auto virtualKey = static_cast<platform::Window::VirtualKeys>(msg.getParam());
+            auto virtualKey = static_cast<renderPlatform::Window::VirtualKeys>(msg.getParam());
 
-            if ((msg.getFlags().piecesShort.short1 & static_cast<int>(platform::Window::Message::MessageFlags::ControlKey)) != 0)
+            if ((msg.getFlags().piecesShort.short1 & static_cast<int>(renderPlatform::Window::Message::MessageFlags::ControlKey)) != 0)
             {
-                if (virtualKey == platform::Window::VirtualKeys::Left && (mCursor.offset > 0))
+                if (virtualKey == renderPlatform::Window::VirtualKeys::Left && (mCursor.offset > 0))
                 {
                     int newOffset = mCursor.offset;
                     for (newOffset--; newOffset > 0; newOffset--)
@@ -38,7 +44,7 @@ namespace hr::render
                     updateCursorOffset(newOffset);
                     return;
                 }
-                if (virtualKey == platform::Window::VirtualKeys::Right && (mCursor.offset < mPrompt.promptUnicode.size()))
+                if (virtualKey == renderPlatform::Window::VirtualKeys::Right && (mCursor.offset < mPrompt.promptUnicode.size()))
                 {
                     int newOffset = mCursor.offset;
                     for (newOffset++; newOffset < mPrompt.promptUnicode.size(); newOffset++)
@@ -56,28 +62,28 @@ namespace hr::render
 
             switch (virtualKey)
             {
-                case platform::Window::VirtualKeys::Left:
+                case renderPlatform::Window::VirtualKeys::Left:
                     updateCursorOffset(mCursor.offset - 1);
                     break;
-                case platform::Window::VirtualKeys::Right:
+                case renderPlatform::Window::VirtualKeys::Right:
                     updateCursorOffset(mCursor.offset + 1);
                     break;
 
-                case platform::Window::VirtualKeys::Home:
+                case renderPlatform::Window::VirtualKeys::Home:
                     updateCursorOffset(0);
                     break;
-                case platform::Window::VirtualKeys::End:
+                case renderPlatform::Window::VirtualKeys::End:
                     updateCursorOffset(mPrompt.promptUnicode.size());
                     break;
 
-                case platform::Window::VirtualKeys::Delete:
+                case renderPlatform::Window::VirtualKeys::Delete:
                     if (mCursor.offset < mPrompt.promptUnicode.size())
                         mPrompt.promptUnicode.erase(mPrompt.promptUnicode.begin() + mCursor.offset);
                     updateCursorOffset(mCursor.offset);
                     break;
             }
         }
-        else if (msg.getType() == platform::Window::Message::MessageType::CharacterKey)
+        else if (msg.getType() == renderPlatform::Window::Message::MessageType::CharacterKey)
         {
             auto keyVal = msg.getParam();
 
@@ -379,11 +385,11 @@ namespace hr::render
         mCursor.timer.reStart();
     }
 
-    void ConsoleUI::processMsg(const platform::Window::Message& msg, std::function<void(const char* const)> execPromptCmdCb)
+    void ConsoleUI::processMsg(const renderPlatform::Window::Message& msg, std::function<void(const char* const)> execPromptCmdCb)
     {
         if (isVisible())
         {
-            if (msg.getType() == platform::Window::Message::MessageType::MouseWheel)
+            if (msg.getType() == renderPlatform::Window::Message::MessageType::MouseWheel)
             {
                 mLogView.offset += static_cast<signed short>(msg.getFlags().piecesShort.short0);
                 if (mLogView.offset < 0)
@@ -392,16 +398,16 @@ namespace hr::render
                 return;
             }
 
-            if ((msg.getType() != platform::Window::Message::MessageType::CharacterKey) && (msg.getType() != platform::Window::Message::MessageType::VirtualKey))
+            if ((msg.getType() != renderPlatform::Window::Message::MessageType::CharacterKey) && (msg.getType() != renderPlatform::Window::Message::MessageType::VirtualKey))
                 return;
 
-            if (msg.getType() == platform::Window::Message::MessageType::VirtualKey)
+            if (msg.getType() == renderPlatform::Window::Message::MessageType::VirtualKey)
             {
-                switch (static_cast<platform::Window::VirtualKeys>(msg.getParam()))
+                switch (static_cast<renderPlatform::Window::VirtualKeys>(msg.getParam()))
                 {
-                    case platform::Window::VirtualKeys::PageUp:
+                    case renderPlatform::Window::VirtualKeys::PageUp:
                     {
-                        if (msg.getFlags().piecesShort.short1 & static_cast<int>(platform::Window::Message::MessageFlags::ControlKey))
+                        if (msg.getFlags().piecesShort.short1 & static_cast<int>(renderPlatform::Window::Message::MessageFlags::ControlKey))
                             mLogView.offset = 0;
                         else
                             mLogView.offset++;
@@ -409,16 +415,16 @@ namespace hr::render
                         return;
                     }
 
-                    case platform::Window::VirtualKeys::PageDown:
+                    case renderPlatform::Window::VirtualKeys::PageDown:
                     {
-                        if (msg.getFlags().piecesShort.short1 & static_cast<int>(platform::Window::Message::MessageFlags::ControlKey))
+                        if (msg.getFlags().piecesShort.short1 & static_cast<int>(renderPlatform::Window::Message::MessageFlags::ControlKey))
                             mLogView.offset = 0;
                         else
                             mLogView.offset -= (mLogView.offset > 0) ? 1 : 0;
                         return;
                     }
 
-                    case platform::Window::VirtualKeys::Up:
+                    case renderPlatform::Window::VirtualKeys::Up:
                     {
                         if (mPrompt.history.empty())
                             return;
@@ -435,7 +441,7 @@ namespace hr::render
                         return;
                     }
 
-                    case platform::Window::VirtualKeys::Down:
+                    case renderPlatform::Window::VirtualKeys::Down:
                     {
                         if (mPrompt.historyOffset == 0)
                             return;
@@ -452,7 +458,7 @@ namespace hr::render
                 }
             }
 
-            if (msg.getType() == platform::Window::Message::MessageType::CharacterKey && msg.getParam() == 13) // enter
+            if (msg.getType() == renderPlatform::Window::Message::MessageType::CharacterKey && msg.getParam() == 13) // enter
             {
                 if (mPrompt.promptUnicode.empty())
                     return;
@@ -475,7 +481,7 @@ namespace hr::render
             processMsgPrompt(msg);
         }
 
-        if ((msg.getType() == platform::Window::Message::MessageType::VirtualKey) && (msg.getParam() == static_cast<int>(platform::Window::VirtualKeys::Escape)))
+        if ((msg.getType() == renderPlatform::Window::Message::MessageType::VirtualKey) && (msg.getParam() == static_cast<int>(renderPlatform::Window::VirtualKeys::Escape)))
         {
             mMainVisible = !mMainVisible;
             return;
